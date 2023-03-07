@@ -13,6 +13,8 @@ log = "0.4.17"
 codec = { package = "parity-scale-codec", version = "3.0.0" }
 serde = { version = "1.0.152", features = ["derive"] }
 jsonrpsee = { version = "0.16.2", features = ["server"] }
+async-io = "1.3"
+futures = { version = "0.3.1" }
 
 # Local
 test-runtime = { path = "../runtime/test" }
@@ -25,6 +27,7 @@ sc-chain-spec = { git = "https://github.com/paritytech/substrate", branch = "pol
 sc-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
+sc-consensus-manual-seal = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-executor = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-network = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-network-common = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
