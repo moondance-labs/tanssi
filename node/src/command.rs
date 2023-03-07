@@ -428,7 +428,6 @@ impl CliConfiguration<Self> for RelayChainCli {
     }
 
     fn chain_id(&self, is_dev: bool) -> Result<String> {
-        info!("chain id is {:?}", is_dev);
         let chain_id = self.base.base.chain_id(is_dev)?;
 
         Ok(if chain_id.is_empty() {
