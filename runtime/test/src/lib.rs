@@ -404,6 +404,21 @@ impl pallet_collator_selection::Config for Runtime {
 	type WeightInfo = ();
 }
 
+parameter_types! {
+	pub const MaxLengthParaIds: u32 = 100u32;
+}
+
+impl pallet_registrar::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type RegistrarOrigin = EnsureRoot<AccountId>;
+	type MaxLengthParaIds = MaxLengthParaIds;
+}
+
+impl pallet_sudo::Config for Runtime {
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub enum Runtime where
@@ -416,6 +431,7 @@ construct_runtime!(
 		ParachainSystem: cumulus_pallet_parachain_system = 1,
 		Timestamp: pallet_timestamp = 2,
 		ParachainInfo: parachain_info = 3,
+		Sudo: pallet_sudo = 4,
 
 		// Monetary stuff.
 		Balances: pallet_balances = 10,
@@ -426,6 +442,9 @@ construct_runtime!(
 		Session: pallet_session = 22,
 		Aura: pallet_aura = 23, 
 		AuraExt: cumulus_pallet_aura_ext = 24,
+
+		// ContainerChain management
+		Registrar: pallet_registrar = 30,
 	}
 );
 

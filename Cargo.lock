@@ -5920,6 +5920,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-registrar"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
 name = "pallet-scheduler"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.38#18bb7c7c841b101c19a8d1881b893ae8e37de460"
@@ -11260,7 +11273,9 @@ dependencies = [
  "pallet-authorship",
  "pallet-balances",
  "pallet-collator-selection",
+ "pallet-registrar",
  "pallet-session",
+ "pallet-sudo",
  "pallet-timestamp",
  "parachain-info",
  "parity-scale-codec",
