@@ -411,6 +411,13 @@ parameter_types! {
     pub const MaxLengthParaIds: u32 = 100u32;
 }
 
+impl pallet_configuration::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type WeightInfo = ();
+    type SessionDelay = ConstU32<2>;
+}
+
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
@@ -448,6 +455,7 @@ construct_runtime!(
 
         // ContainerChain management
         Registrar: pallet_registrar = 30,
+        Configuration: pallet_configuration = 31,
     }
 );
 
