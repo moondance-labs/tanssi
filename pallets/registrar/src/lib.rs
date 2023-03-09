@@ -18,18 +18,10 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::genesis_config]
+    #[derive(Default)]
     pub struct GenesisConfig {
         /// Para ids
         pub para_ids: Vec<u32>,
-    }
-
-    #[cfg(feature = "std")]
-    impl Default for GenesisConfig {
-        fn default() -> Self {
-            Self {
-                para_ids: Default::default(),
-            }
-        }
     }
 
     #[pallet::genesis_build]
