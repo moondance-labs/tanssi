@@ -11235,6 +11235,7 @@ name = "test-node"
 version = "0.1.0"
 dependencies = [
  "async-io",
+ "async-trait",
  "clap",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
@@ -11275,6 +11276,7 @@ dependencies = [
  "sp-blockchain",
  "sp-consensus-aura",
  "sp-core",
+ "sp-inherents",
  "sp-io",
  "sp-keystore",
  "sp-offchain",

@@ -62,6 +62,12 @@ type ParachainBackend = TFullBackend<Block>;
 
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
 
+thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
+
+/// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
+/// Each call will increment timestamp by slot_duration making Aura think time has passed.
+struct MockTimestampInherentDataProvider;
+
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
@@ -560,6 +566,28 @@ pub fn new_dev(
 
         let client_set_aside_for_cidp = client.clone();
 
+	    #[async_trait::async_trait]
+	    impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
+		    async fn provide_inherent_data(
+		        &self,
+			    inherent_data: &mut sp_inherents::InherentData,
+		    ) -> Result<(), sp_inherents::Error> {
+                TIMESTAMP.with(|x| {
+                    *x.borrow_mut() += test_runtime::SLOT_DURATION;
+                    inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
+                })
+            }
+
+            async fn try_handle_error(
+                &self,
+                _identifier: &sp_inherents::InherentIdentifier,
+                _error: &[u8],
+            ) -> Option<Result<(), sp_inherents::Error>> {
+                // The pallet never reports error.
+                None
+            }
+        }
+
         task_manager.spawn_essential_handle().spawn_blocking(
             "authorship_task",
             Some("block-authoring"),
@@ -583,8 +611,8 @@ pub fn new_dev(
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {
-                        let time = sp_timestamp::InherentDataProvider::from_system_time();
-
+                        //let time = sp_timestamp::InherentDataProvider::from_system_time();
+                        let time = MockTimestampInherentDataProvider;
                         let mocked_parachain = MockValidationDataInherentDataProvider {
                             current_para_block,
                             relay_offset: 1000,
