@@ -54,6 +54,6 @@ where
         deny_unsafe,
     } = deps;
 
-    module.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
+    module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
     Ok(module)
 }
