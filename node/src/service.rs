@@ -472,7 +472,7 @@ pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from
 /// Builds a new development service. This service uses manual seal, and mocks
 /// the parachain inherent.
 pub fn new_dev(
-    mut config: Configuration,
+    config: Configuration,
     _author_id: Option<AccountId>,
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -491,7 +491,7 @@ pub fn new_dev(
         select_chain: maybe_select_chain,
         transaction_pool,
         other: (block_import, mut telemetry, _telemetry_worker_handle),
-    } = new_partial(&mut config, true)?;
+    } = new_partial(&config, true)?;
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter) =
         sc_service::build_network(sc_service::BuildNetworkParams {
@@ -654,13 +654,13 @@ pub fn new_dev(
 
     let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         rpc_builder,
-        client: client.clone(),
-        transaction_pool: transaction_pool.clone(),
+        client,
+        transaction_pool,
         task_manager: &mut task_manager,
-        config: config,
+        config,
         keystore: keystore_container.sync_keystore(),
         backend,
-        network: network.clone(),
+        network,
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
@@ -720,7 +720,7 @@ impl FromStr for Sealing {
             "manual" => Self::Manual,
             s => {
                 let millis =
-                    u64::from_str_radix(s, 10).map_err(|_| "couldn't decode sealing param")?;
+                    s.parse::<u64>().map_err(|_| "couldn't decode sealing param")?;
                 Self::Interval(millis)
             }
         })
