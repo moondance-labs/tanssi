@@ -300,16 +300,15 @@ pub fn run() -> Result<()> {
 
 				let dev_service =
 					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
-				
+
 				if dev_service {
 
 					let author_id = Some(crate::chain_spec::get_account_id_from_seed::<sr25519::Public>("Alice"));
 					return crate::service::new_dev(config, author_id, cli.run.sealing, hwbench).map_err(Into::into)
 				}
-					
+
 				//let dev_service =
 					//config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
-				
 
 				let id = ParaId::from(para_id);
 

@@ -545,7 +545,7 @@ pub fn new_dev(
                 Sealing::Manual => {
                     let (_, stream) = futures::channel::mpsc::channel(1000);
                     // Keep a reference to the other end of the channel. It goes to the RPC.
-	                Box::new(stream)
+                    Box::new(stream)
                 }
                 Sealing::Interval(millis) => Box::new(futures::StreamExt::map(
                     Timer::interval(Duration::from_millis(millis)),
@@ -566,12 +566,12 @@ pub fn new_dev(
 
         let client_set_aside_for_cidp = client.clone();
 
-	    #[async_trait::async_trait]
-	    impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
-		    async fn provide_inherent_data(
-		        &self,
-			    inherent_data: &mut sp_inherents::InherentData,
-		    ) -> Result<(), sp_inherents::Error> {
+        #[async_trait::async_trait]
+        impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
+            async fn provide_inherent_data(
+                &self,
+                inherent_data: &mut sp_inherents::InherentData,
+            ) -> Result<(), sp_inherents::Error> {
                 TIMESTAMP.with(|x| {
                     *x.borrow_mut() += test_runtime::SLOT_DURATION;
                     inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
