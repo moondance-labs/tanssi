@@ -4,10 +4,6 @@ use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
 use sp_std::prelude::*;
 
-// TODO: SessionIndex should be imported from sp_staking?
-//use primitives::SessionIndex;
-pub type SessionIndex = u32;
-
 pub use pallet::*;
 
 #[cfg(test)]
@@ -94,6 +90,14 @@ impl WeightInfo for () {
     }
 }
 
+pub trait GetSessionIndex<SessionIndex> {
+    /// Returns current session index.
+    fn session_index() -> SessionIndex;
+
+    /// Returns `Self::session_index().saturating_add(delay)`
+    fn scheduled_session(delay: SessionIndex) -> SessionIndex;
+}
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -118,7 +122,11 @@ pub mod pallet {
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
-        type SessionDelay: Get<u32>;
+        type SessionDelay: Get<Self::SessionIndex>;
+
+        type SessionIndex: Default + codec::FullCodec + PartialOrd + TypeInfo + Copy;
+
+        type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
     }
 
     #[pallet::error]
@@ -138,12 +146,6 @@ pub mod pallet {
     #[pallet::getter(fn config)]
     pub(crate) type ActiveConfig<T: Config> = StorageValue<_, HostConfiguration, ValueQuery>;
 
-    // TODO: this item should go in the consensus pallet or something
-    /// The current session index.
-    #[pallet::storage]
-    #[pallet::getter(fn session_index)]
-    pub(super) type CurrentSessionIndex<T: Config> = StorageValue<_, SessionIndex, ValueQuery>;
-
     /// Pending configuration changes.
     ///
     /// This is a list of configuration changes, each with a session index at which it should
@@ -153,7 +155,7 @@ pub mod pallet {
     /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
     pub(crate) type PendingConfigs<T: Config> =
-        StorageValue<_, Vec<(SessionIndex, HostConfiguration)>, ValueQuery>;
+        StorageValue<_, Vec<(T::SessionIndex, HostConfiguration)>, ValueQuery>;
 
     /// If this is set, then the configuration setters will bypass the consistency checks. This
     /// is meant to be used only as the last resort.
@@ -236,8 +238,8 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Return the session index that should be used for any future scheduled changes.
-        fn scheduled_session() -> SessionIndex {
-            Self::session_index().saturating_add(T::SessionDelay::get())
+        fn scheduled_session() -> T::SessionIndex {
+            T::CurrentSessionIndex::scheduled_session(T::SessionDelay::get())
         }
 
         /// This function should be used to update members of the configuration.

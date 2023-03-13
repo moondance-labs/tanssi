@@ -411,11 +411,28 @@ parameter_types! {
     pub const MaxLengthParaIds: u32 = 100u32;
 }
 
+pub struct CurrentSessionIndexGetter;
+
+impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
+    fn session_index() -> u32 {
+        // TODO: where to get this from?
+        todo!()
+    }
+
+    /// Returns `Self::session_index().saturating_add(delay)`
+    fn scheduled_session(delay: u32) -> u32 {
+        Self::session_index().saturating_add(delay)
+    }
+}
+
 impl pallet_configuration::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
     type WeightInfo = ();
     type SessionDelay = ConstU32<2>;
+    type SessionIndex = u32;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 
 impl pallet_registrar::Config for Runtime {
