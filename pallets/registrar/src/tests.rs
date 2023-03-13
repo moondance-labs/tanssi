@@ -8,7 +8,7 @@ fn register_para_id_42() {
         System::set_block_number(1);
         assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42));
         assert_eq!(
-            ParaRegistrar::registered_para_ids().unwrap_or_default(),
+            ParaRegistrar::registered_para_ids(),
             vec![42]
         );
         // Assert that the correct event was deposited
@@ -45,12 +45,12 @@ fn deregister_para_id_42() {
         System::set_block_number(1);
         assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42));
         assert_eq!(
-            ParaRegistrar::registered_para_ids().unwrap_or_default(),
+            ParaRegistrar::registered_para_ids(),
             vec![42]
         );
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42));
         assert_eq!(
-            ParaRegistrar::registered_para_ids().unwrap_or_default(),
+            ParaRegistrar::registered_para_ids(),
             vec![]
         );
 
@@ -65,12 +65,12 @@ fn deregister_para_id_42_twice() {
         System::set_block_number(1);
         assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42));
         assert_eq!(
-            ParaRegistrar::registered_para_ids().unwrap_or_default(),
+            ParaRegistrar::registered_para_ids(),
             vec![42]
         );
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42));
         assert_eq!(
-            ParaRegistrar::registered_para_ids().unwrap_or_default(),
+            ParaRegistrar::registered_para_ids(),
             vec![]
         );
         assert_noop!(
@@ -107,7 +107,7 @@ fn genesis_loads_para_ids() {
     new_test_ext_with_genesis(vec![1, 2, 3, 4]).execute_with(|| {
         System::set_block_number(1);
         assert_eq!(
-            ParaRegistrar::registered_para_ids().unwrap_or_default(),
+            ParaRegistrar::registered_para_ids(),
             vec![1, 2, 3, 4]
         );
     });
@@ -118,7 +118,7 @@ fn genesis_sorts_para_ids() {
     new_test_ext_with_genesis(vec![4, 2, 3, 1]).execute_with(|| {
         System::set_block_number(1);
         assert_eq!(
-            ParaRegistrar::registered_para_ids().unwrap_or_default(),
+            ParaRegistrar::registered_para_ids(),
             vec![1, 2, 3, 4]
         );
     });
