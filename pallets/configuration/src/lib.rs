@@ -9,6 +9,9 @@ use sp_std::prelude::*;
 pub use pallet::*;
 
 #[cfg(test)]
+mod mock;
+
+#[cfg(test)]
 mod tests;
 
 const LOG_TARGET: &str = "pallet_configuration";
