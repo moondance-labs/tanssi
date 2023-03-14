@@ -55,9 +55,8 @@ pub struct CurrentSessionIndexGetter;
 impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     /// Returns current session index.
     fn session_index() -> u32 {
-        // TODO: where to get this from?
-        // From pallet_session CurrentIndex, but can we read that from here?
-        todo!()
+        // For tests, let 1 session be 1 block
+        System::block_number() as u32
     }
 }
 

@@ -24,5 +24,19 @@ fn config_set_value() {
             Configuration::set_max_collators(RuntimeOrigin::root(), 50),
             ()
         );
+        assert_eq!(Configuration::config().max_collators, 0);
+        System::set_block_number(2);
+        assert_eq!(Configuration::config().max_collators, 0);
+        System::set_block_number(3);
+        // TODO: the session delay is 2 so this should work, but it doesnt
+        assert_eq!(Configuration::config().max_collators, 50);
+        System::set_block_number(4);
+        assert_eq!(Configuration::config().max_collators, 50);
+        System::set_block_number(5);
+        assert_eq!(Configuration::config().max_collators, 50);
+        System::set_block_number(6);
+        assert_eq!(Configuration::config().max_collators, 50);
+        System::set_block_number(7);
+        assert_eq!(Configuration::config().max_collators, 50);
     });
 }
