@@ -55,8 +55,8 @@ pub struct CurrentSessionIndexGetter;
 impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     /// Returns current session index.
     fn session_index() -> u32 {
-        // For tests, let 1 session be 1 block
-        System::block_number() as u32
+        // For tests, let 1 session be 5 blocks
+        (System::block_number() / 5) as u32
     }
 }
 
@@ -85,4 +85,21 @@ pub fn new_test_ext_with_genesis(config: HostConfiguration) -> sp_io::TestExtern
     .build_storage()
     .unwrap()
     .into()
+}
+
+pub fn run_to_block(n: u64) {
+    let old_block_number = System::block_number();
+    if old_block_number == 0 {
+        Configuration::initializer_on_new_session(&0);
+    }
+    let session_len = 5;
+
+    for x in old_block_number..n {
+        System::set_block_number(x);
+
+        if x % session_len == 0 {
+            let session_index = (x / session_len) as u32;
+            Configuration::initializer_on_new_session(&session_index);
+        }
+    }
 }
