@@ -60,7 +60,8 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn registered_para_ids)]
-    pub type RegisteredParaIds<T: Config> = StorageValue<_, BoundedVec<u32, T::MaxLengthParaIds>, ValueQuery>;
+    pub type RegisteredParaIds<T: Config> =
+        StorageValue<_, BoundedVec<u32, T::MaxLengthParaIds>, ValueQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
