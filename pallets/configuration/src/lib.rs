@@ -2,6 +2,8 @@
 
 use frame_support::pallet_prelude::*;
 use frame_system::pallet_prelude::*;
+use sp_runtime::traits::AtLeast32BitUnsigned;
+use sp_runtime::Saturating;
 use sp_std::prelude::*;
 
 pub use pallet::*;
@@ -93,9 +95,6 @@ impl WeightInfo for () {
 pub trait GetSessionIndex<SessionIndex> {
     /// Returns current session index.
     fn session_index() -> SessionIndex;
-
-    /// Returns `Self::session_index().saturating_add(delay)`
-    fn scheduled_session(delay: SessionIndex) -> SessionIndex;
 }
 
 #[frame_support::pallet]
@@ -113,18 +112,15 @@ pub mod pallet {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        /// Origin that is allowed to call register and deregister
-        type RegistrarOrigin: EnsureOrigin<Self::RuntimeOrigin>;
-
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
+
+        type SessionIndex: codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
         type SessionDelay: Get<Self::SessionIndex>;
-
-        type SessionIndex: Default + codec::FullCodec + PartialOrd + TypeInfo + Copy;
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
     }
@@ -239,7 +235,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Return the session index that should be used for any future scheduled changes.
         fn scheduled_session() -> T::SessionIndex {
-            T::CurrentSessionIndex::scheduled_session(T::SessionDelay::get())
+            T::CurrentSessionIndex::session_index().saturating_add(T::SessionDelay::get())
         }
 
         /// This function should be used to update members of the configuration.
