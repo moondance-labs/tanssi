@@ -235,10 +235,82 @@ pub mod pallet {
         }
     }
 
+    /// A struct that holds the configuration that was active before the session change and optionally
+    /// a configuration that became active after the session change.
+    pub struct SessionChangeOutcome {
+        /// Previously active configuration.
+        pub prev_config: HostConfiguration,
+        /// If new configuration was applied during the session change, this is the new configuration.
+        pub new_config: Option<HostConfiguration>,
+    }
+
     impl<T: Config> Pallet<T> {
+        /// Called by the initializer to initialize the configuration pallet.
+        pub(crate) fn initializer_initialize(_now: T::BlockNumber) -> Weight {
+            Weight::zero()
+        }
+
+        /// Called by the initializer to finalize the configuration pallet.
+        pub(crate) fn initializer_finalize() {}
+
+        /// Called by the initializer to note that a new session has started.
+        ///
+        /// Returns the configuration that was actual before the session change and the configuration
+        /// that became active after the session change. If there were no scheduled changes, both will
+        /// be the same.
+        pub(crate) fn initializer_on_new_session(
+            session_index: &T::SessionIndex,
+        ) -> SessionChangeOutcome {
+            let pending_configs = <PendingConfigs<T>>::get();
+            let prev_config = ActiveConfig::<T>::get();
+
+            // No pending configuration changes, so we're done.
+            if pending_configs.is_empty() {
+                return SessionChangeOutcome {
+                    prev_config,
+                    new_config: None,
+                };
+            }
+
+            let (mut past_and_present, future) = pending_configs
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
+                    apply_at_session <= *session_index
+                });
+
+            if past_and_present.len() > 1 {
+                // This should never happen since we schedule configuration changes only into the future
+                // sessions and this handler called for each session change.
+                log::error!(
+                    target: LOG_TARGET,
+                    "Skipping applying configuration changes scheduled sessions in the past",
+                );
+            }
+
+            let new_config = past_and_present.pop().map(|(_, config)| config);
+            if let Some(ref new_config) = new_config {
+                // Apply the new configuration.
+                ActiveConfig::<T>::put(new_config);
+            }
+
+            <PendingConfigs<T>>::put(future);
+
+            SessionChangeOutcome {
+                prev_config,
+                new_config,
+            }
+        }
+
         /// Return the session index that should be used for any future scheduled changes.
         fn scheduled_session() -> T::SessionIndex {
             T::CurrentSessionIndex::session_index().saturating_add(T::SessionDelay::get())
+        }
+
+        /// Forcibly set the active config. This should be used with extreme care, and typically
+        /// only when enabling parachains runtime pallets for the first time on a chain which has
+        /// been running without them.
+        pub fn force_set_active_config(config: HostConfiguration) {
+            ActiveConfig::<T>::set(config);
         }
 
         /// This function should be used to update members of the configuration.
