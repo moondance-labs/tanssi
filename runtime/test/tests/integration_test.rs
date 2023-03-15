@@ -63,3 +63,23 @@ fn genesis_para_registrar_deregister() {
             assert_eq!(Registrar::registered_para_ids(), vec![1001]);
         });
 }
+
+#[test]
+fn genesis_collators() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            set_parachain_inherent_data();
+
+            run_to_block(100, None);
+        });
+}

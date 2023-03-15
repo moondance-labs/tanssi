@@ -5,7 +5,7 @@ use frame_support::{
     traits::{GenesisBuild, OnFinalize, OnInitialize},
 };
 use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_runtime::{testing::UintAuthorityId, Digest, DigestItem};
+use sp_runtime::{testing::UintAuthorityId, Digest, DigestItem, MultiSigner};
 
 pub use test_runtime::{
     AccountId, Aura, Balance, Balances, Registrar, Runtime, RuntimeEvent, System,
@@ -106,16 +106,21 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        // TODO: how to set collators? use aura? but that needs a public key
-        // pallet_authorship has invulnerables, that may be useful
+        // TODO: set invulnerables in pallet_authorship
 
         pallet_aura::GenesisConfig::<Runtime> {
             authorities: self
                 .collators
                 .into_iter()
-                .map(|(a, _b)| UintAuthorityId(a).to_public_key())
+                .map(|(a, _b)| {
+                    let a_slice: &[u8] = a.as_ref();
+                    // TODO: this match is just to avoid importing the Public type, fix this
+                    match MultiSigner::Sr25519(a_slice.try_into().unwrap()) {
+                        MultiSigner::Sr25519(x) => x.into(),
+                        _ => unreachable!(),
+                    }
+                })
                 .collect(),
-            //authorities: self.collators.into_iter().map(|(a, b)| a.try_into().unwrap()).collect(),
         }
         .assimilate_storage(&mut t)
         .unwrap();
