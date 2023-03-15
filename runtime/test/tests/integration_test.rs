@@ -73,13 +73,58 @@ fn genesis_collators() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
+            (
+                AccountId::from(ALICE),
+                get_aura_id_from_seed("Alice"),
+                210 * UNIT,
+            ),
+            (
+                AccountId::from(BOB),
+                get_aura_id_from_seed("Bob"),
+                100 * UNIT,
+            ),
         ])
         .build()
         .execute_with(|| {
             set_parachain_inherent_data();
 
             run_to_block(100, None);
+        });
+}
+
+#[test]
+fn test_author_collation_aura() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (
+                AccountId::from(ALICE),
+                get_aura_id_from_seed("Alice"),
+                210 * UNIT,
+            ),
+            (
+                AccountId::from(BOB),
+                get_aura_id_from_seed("Bob"),
+                100 * UNIT,
+            ),
+        ])
+        .with_para_ids(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            run_to_block(5, Some(AccountId::from(ALICE)));
+            // Assert current slot gets updated
+            assert_eq!(Aura::current_slot(), 4u64);
+            // slot 4, alice
+            assert!(Authorship::author().unwrap() == AccountId::from(ALICE));
+
+            run_to_block(6, Some(AccountId::from(ALICE)));
+
+            assert_eq!(Aura::current_slot(), 5u64);
+            // slot 5, alice
+            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
         });
 }

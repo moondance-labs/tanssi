@@ -5,10 +5,12 @@ use frame_support::{
     traits::{GenesisBuild, OnFinalize, OnInitialize},
 };
 use sp_consensus_aura::AURA_ENGINE_ID;
+use sp_core::Pair;
 use sp_runtime::{testing::UintAuthorityId, Digest, DigestItem, MultiSigner};
 
 pub use test_runtime::{
-    AccountId, Aura, Balance, Balances, Registrar, Runtime, RuntimeEvent, System,
+    AccountId, Aura, AuraId, Authorship, Balance, Balances, Registrar, Runtime, RuntimeEvent,
+    System,
 };
 
 pub fn rpc_run_to_block(n: u32) {
@@ -30,7 +32,7 @@ pub fn run_to_block(n: u32, author: Option<AccountId>) {
             Some(_author) => {
                 let slot = Aura::current_slot();
                 let pre_digest = Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, (slot + 1).encode())],
                 };
                 System::reset_events();
                 System::initialize(
@@ -44,15 +46,13 @@ pub fn run_to_block(n: u32, author: Option<AccountId>) {
             }
         }
 
-        /*
         // Initialize the new block
-        AuthorInherent::on_initialize(System::block_number());
-        ParachainStaking::on_initialize(System::block_number());
+        Aura::on_initialize(System::block_number());
+        Authorship::on_initialize(System::block_number());
 
         // Finalize the block
-        AuthorInherent::on_finalize(System::block_number());
-        ParachainStaking::on_finalize(System::block_number());
-        */
+        Aura::on_finalize(System::block_number());
+        Authorship::on_finalize(System::block_number());
     }
 }
 
@@ -64,7 +64,7 @@ pub struct ExtBuilder {
     // endowed accounts with balances
     balances: Vec<(AccountId, Balance)>,
     // [collator, amount]
-    collators: Vec<(AccountId, Balance)>,
+    collators: Vec<(AccountId, AuraId, Balance)>,
     // list of registered para ids
     para_ids: Vec<u32>,
 }
@@ -85,7 +85,10 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
+    pub fn with_collators(
+        mut self,
+        collators: Vec<(AccountId, test_runtime::AuraId, Balance)>,
+    ) -> Self {
         self.collators = collators;
         self
     }
@@ -106,24 +109,43 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        // TODO: set invulnerables in pallet_authorship
-
-        pallet_aura::GenesisConfig::<Runtime> {
-            authorities: self
+        if !self.collators.is_empty() {
+            // We set invulnerables in pallet_collator_selection
+            let invulnerables: Vec<AccountId> = self
                 .collators
+                .clone()
                 .into_iter()
-                .map(|(a, _b)| {
-                    let a_slice: &[u8] = a.as_ref();
-                    // TODO: this match is just to avoid importing the Public type, fix this
-                    match MultiSigner::Sr25519(a_slice.try_into().unwrap()) {
-                        MultiSigner::Sr25519(x) => x.into(),
-                        _ => unreachable!(),
-                    }
+                .map(|(account, _, _)| account)
+                .collect();
+
+            pallet_collator_selection::GenesisConfig::<Runtime> {
+                invulnerables: invulnerables.clone(),
+                candidacy_bond: Default::default(),
+                desired_candidates: invulnerables.len() as u32,
+            }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
+            // But we also initialize their keys in the session pallet
+            let keys: Vec<_> = self
+                .collators
+                .clone()
+                .iter()
+                .cloned()
+                .map(|(account, aura_id, _)| {
+                    (
+                        account.clone(),
+                        account,
+                        test_runtime::SessionKeys { aura: aura_id },
+                    )
                 })
-                .collect(),
+                .collect();
+            <pallet_session::GenesisConfig<Runtime> as GenesisBuild<Runtime>>::assimilate_storage(
+                &pallet_session::GenesisConfig { keys: keys },
+                &mut t,
+            )
+            .unwrap();
         }
-        .assimilate_storage(&mut t)
-        .unwrap();
 
         <pallet_registrar::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
             &pallet_registrar::GenesisConfig {
@@ -187,4 +209,12 @@ pub fn set_parachain_inherent_data() {
     )
     .dispatch(inherent_origin()));
     */
+}
+
+/// Helper function to generate a crypto pair from seed
+pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
+    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
+        .expect("static values are valid; qed")
+        .public()
+        .into()
 }
