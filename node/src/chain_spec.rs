@@ -217,6 +217,7 @@ fn testnet_genesis(
         aura: Default::default(),
         aura_ext: Default::default(),
         parachain_system: Default::default(),
+        configuration: Default::default(),
         registrar: Default::default(),
         sudo: SudoConfig {
             key: Some(root_key),
