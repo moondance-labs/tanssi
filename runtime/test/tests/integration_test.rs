@@ -3,6 +3,8 @@
 mod common;
 use common::*;
 use frame_support::assert_ok;
+use pallet_configuration::HostConfiguration;
+use test_runtime::Configuration;
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
 
@@ -126,5 +128,70 @@ fn test_author_collation_aura() {
             assert_eq!(Aura::current_slot(), 5u64);
             // slot 5, alice
             assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+        });
+}
+
+#[test]
+fn test_configuration_on_session_change() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(1, None);
+            assert_eq!(Configuration::config().max_collators, 0);
+            assert_eq!(Configuration::config().moondance_collators, 0);
+            assert_eq!(Configuration::config().collators_per_container, 0);
+            assert_ok!(Configuration::set_max_collators(root_origin(), 50), ());
+            run_to_block(6, None);
+            assert_ok!(
+                Configuration::set_moondance_collators(root_origin(), 20),
+                ()
+            );
+            assert_eq!(Configuration::config().max_collators, 0);
+            assert_eq!(Configuration::config().moondance_collators, 0);
+            assert_eq!(Configuration::config().collators_per_container, 0);
+            run_to_block(11, None);
+            assert_ok!(
+                Configuration::set_collators_per_container(root_origin(), 10),
+                ()
+            );
+            /*
+            assert_eq!(
+                <Configuration as Store>::PendingConfigs::get(),
+                vec![
+                    (
+                        3,
+                        HostConfiguration {
+                            max_collators: 50,
+                            moondance_collators: 20,
+                            collators_per_container: 0,
+                        }
+                    ),
+                    (
+                        4,
+                        HostConfiguration {
+                            max_collators: 50,
+                            moondance_collators: 20,
+                            collators_per_container: 10,
+                        }
+                    )
+                ]
+            );
+            */
+            assert_eq!(Configuration::config().max_collators, 50);
+            assert_eq!(Configuration::config().moondance_collators, 0);
+            assert_eq!(Configuration::config().collators_per_container, 0);
+            run_to_block(16, None);
+            assert_eq!(Configuration::config().max_collators, 50);
+            assert_eq!(Configuration::config().moondance_collators, 20);
+            assert_eq!(Configuration::config().collators_per_container, 0);
+            run_to_block(21, None);
+            assert_eq!(Configuration::config().max_collators, 50);
+            assert_eq!(Configuration::config().moondance_collators, 20);
+            assert_eq!(Configuration::config().collators_per_container, 10);
         });
 }

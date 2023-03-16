@@ -1,8 +1,10 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::pallet_prelude::*;
+use frame_support::traits::OneSessionHandler;
 use frame_system::pallet_prelude::*;
 use sp_runtime::traits::AtLeast32BitUnsigned;
+use sp_runtime::RuntimeAppPublic;
 use sp_runtime::Saturating;
 use sp_std::prelude::*;
 
@@ -126,6 +128,13 @@ pub mod pallet {
         type SessionDelay: Get<Self::SessionIndex>;
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
+
+        /// The identifier type for an authority.
+        type AuthorityId: Member
+            + Parameter
+            + RuntimeAppPublic
+            + MaybeSerializeDeserialize
+            + MaxEncodedLen;
     }
 
     #[pallet::error]
@@ -417,5 +426,30 @@ pub mod pallet {
 
             Ok(())
         }
+    }
+
+    // These traits are to automatically call initializer_on_new_session when needed.
+    // Can be removed after we implement the initializer pallet
+    impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
+        type Public = T::AuthorityId;
+    }
+
+    impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
+        type Key = T::AuthorityId;
+
+        fn on_genesis_session<'a, I: 'a>(_validators: I)
+        where
+            I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+        {
+        }
+
+        fn on_new_session<'a, I: 'a>(_changed: bool, _validators: I, _queued_validators: I)
+        where
+            I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+        {
+            Self::initializer_on_new_session(&T::CurrentSessionIndex::session_index());
+        }
+
+        fn on_disabled(_i: u32) {}
     }
 }
