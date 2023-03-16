@@ -5449,6 +5449,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-collator-assignment"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-collator-selection"
 version = "3.0.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.38#3275e271e8937c06dca44331e98f31ef020a71e6"
