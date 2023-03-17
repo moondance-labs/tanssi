@@ -1,6 +1,6 @@
 name: CI
 
-on: ["push"]
+on: ["pull_request"]
 
 jobs:
 
@@ -16,7 +16,7 @@ jobs:
         run: rustup show
 
       - name: Formatter
-        run: cargo fmt --all
+        run: cargo fmt --all --check
 
       - name: Build
         run: cargo build --release --all
