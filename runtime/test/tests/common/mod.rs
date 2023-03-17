@@ -11,34 +11,31 @@ pub use test_runtime::{
 
 pub fn run_to_session(n: u32) {
     let block_number = test_runtime::Period::get() * n;
-    run_to_block(block_number + 1, None);
+    run_to_block(block_number + 1, false);
 }
 
 /// Utility function that advances the chain to the desired block number.
-/// If an author is provided, that author information is injected to all the blocks in the meantime.
-pub fn run_to_block(n: u32, author: Option<AccountId>) {
+/// If add_author is true, the author information is injected to all the blocks in the meantime.
+pub fn run_to_block(n: u32, add_author: bool) {
     /*
     // Finalize the first block
     AuthorInherent::on_finalize(System::block_number());
     */
     while System::block_number() < n {
         // Set the new block number and author
-        match &author {
-            Some(_author) => {
-                let slot = Aura::current_slot();
-                let pre_digest = Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, (slot + 1).encode())],
-                };
-                System::reset_events();
-                System::initialize(
-                    &(System::block_number() + 1),
-                    &System::parent_hash(),
-                    &pre_digest,
-                );
-            }
-            None => {
-                System::set_block_number(System::block_number() + 1);
-            }
+        if add_author {
+            let slot = Aura::current_slot();
+            let pre_digest = Digest {
+                logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, (slot + 1).encode())],
+            };
+            System::reset_events();
+            System::initialize(
+                &(System::block_number() + 1),
+                &System::parent_hash(),
+                &pre_digest,
+            );
+        } else {
+            System::set_block_number(System::block_number() + 1);
         }
 
         // Initialize the new block
@@ -58,7 +55,7 @@ pub struct ExtBuilder {
     // endowed accounts with balances
     balances: Vec<(AccountId, Balance)>,
     // [collator, amount]
-    collators: Vec<(AccountId, AuraId, Balance)>,
+    collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
     para_ids: Vec<u32>,
 }
@@ -79,10 +76,7 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_collators(
-        mut self,
-        collators: Vec<(AccountId, test_runtime::AuraId, Balance)>,
-    ) -> Self {
+    pub fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
         self.collators = collators;
         self
     }
@@ -109,7 +103,7 @@ impl ExtBuilder {
                 .collators
                 .clone()
                 .into_iter()
-                .map(|(account, _, _)| account)
+                .map(|(account, _balance)| account)
                 .collect();
 
             pallet_collator_selection::GenesisConfig::<Runtime> {
@@ -123,10 +117,9 @@ impl ExtBuilder {
             // But we also initialize their keys in the session pallet
             let keys: Vec<_> = self
                 .collators
-                .clone()
-                .iter()
-                .cloned()
-                .map(|(account, aura_id, _)| {
+                .into_iter()
+                .map(|(account, _balance)| {
+                    let aura_id = get_aura_id_from_seed(&account.to_string());
                     (
                         account.clone(),
                         account,

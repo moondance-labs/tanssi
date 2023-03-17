@@ -56,35 +56,9 @@ fn genesis_para_registrar_deregister() {
         .execute_with(|| {
             assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
 
-            run_to_block(2, None);
+            run_to_block(2, false);
             assert_ok!(Registrar::deregister(root_origin(), 1002), ());
             assert_eq!(Registrar::registered_para_ids(), vec![1001]);
-        });
-}
-
-#[test]
-fn genesis_collators() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (
-                AccountId::from(ALICE),
-                get_aura_id_from_seed("Alice"),
-                210 * UNIT,
-            ),
-            (
-                AccountId::from(BOB),
-                get_aura_id_from_seed("Bob"),
-                100 * UNIT,
-            ),
-        ])
-        .build()
-        .execute_with(|| {
-            run_to_block(100, None);
         });
 }
 
@@ -97,30 +71,22 @@ fn test_author_collation_aura() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_collators(vec![
-            (
-                AccountId::from(ALICE),
-                get_aura_id_from_seed("Alice"),
-                210 * UNIT,
-            ),
-            (
-                AccountId::from(BOB),
-                get_aura_id_from_seed("Bob"),
-                100 * UNIT,
-            ),
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![1001, 1002])
         .build()
         .execute_with(|| {
-            run_to_block(5, Some(AccountId::from(ALICE)));
+            run_to_block(5, true);
             // Assert current slot gets updated
             assert_eq!(Aura::current_slot(), 4u64);
             // slot 4, alice
             assert!(Authorship::author().unwrap() == AccountId::from(ALICE));
 
-            run_to_block(6, Some(AccountId::from(ALICE)));
+            run_to_block(6, true);
 
             assert_eq!(Aura::current_slot(), 5u64);
-            // slot 5, alice
+            // slot 5, bob
             assert!(Authorship::author().unwrap() == AccountId::from(BOB));
         });
 }
@@ -135,7 +101,7 @@ fn test_configuration_on_session_change() {
         ])
         .build()
         .execute_with(|| {
-            run_to_block(1, None);
+            run_to_block(1, false);
             assert_eq!(Configuration::config().max_collators, 0);
             assert_eq!(Configuration::config().moondance_collators, 0);
             assert_eq!(Configuration::config().collators_per_container, 0);
