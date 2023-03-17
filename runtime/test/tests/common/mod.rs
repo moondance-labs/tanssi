@@ -1,22 +1,17 @@
 use codec::Encode;
-use frame_support::{
-    assert_ok,
-    dispatch::Dispatchable,
-    traits::{GenesisBuild, OnFinalize, OnInitialize},
-};
+use frame_support::traits::{GenesisBuild, OnFinalize, OnInitialize};
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_core::Pair;
-use sp_runtime::{testing::UintAuthorityId, Digest, DigestItem, MultiSigner};
+use sp_runtime::{Digest, DigestItem};
 
 pub use test_runtime::{
     AccountId, Aura, AuraId, Authorship, Balance, Balances, Registrar, Runtime, RuntimeEvent,
-    System,
+    Session, System,
 };
 
-pub fn rpc_run_to_block(n: u32) {
-    while System::block_number() < n {
-        System::set_block_number(System::block_number() + 1);
-    }
+pub fn run_to_session(n: u32) {
+    let block_number = test_runtime::Period::get() * n;
+    run_to_block(block_number + 1, None);
 }
 
 /// Utility function that advances the chain to the desired block number.
@@ -47,17 +42,16 @@ pub fn run_to_block(n: u32, author: Option<AccountId>) {
         }
 
         // Initialize the new block
+
+        Session::on_initialize(System::block_number());
         Aura::on_initialize(System::block_number());
         Authorship::on_initialize(System::block_number());
 
         // Finalize the block
+        Session::on_finalize(System::block_number());
         Aura::on_finalize(System::block_number());
         Authorship::on_finalize(System::block_number());
     }
-}
-
-pub fn last_event() -> RuntimeEvent {
-    System::events().pop().expect("Event expected").event
 }
 
 pub struct ExtBuilder {
@@ -136,7 +130,10 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        test_runtime::SessionKeys { aura: aura_id },
+                        test_runtime::SessionKeys {
+                            aura: aura_id.clone(),
+                            config: aura_id,
+                        },
                     )
                 })
                 .collect();
@@ -166,49 +163,9 @@ impl ExtBuilder {
 
 pub const ALICE: [u8; 32] = [4u8; 32];
 pub const BOB: [u8; 32] = [5u8; 32];
-pub const CHARLIE: [u8; 32] = [6u8; 32];
-pub const DAVE: [u8; 32] = [7u8; 32];
-
-pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::RuntimeOrigin {
-    <Runtime as frame_system::Config>::RuntimeOrigin::signed(account_id)
-}
-
-pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
-    <Runtime as frame_system::Config>::RuntimeOrigin::none()
-}
 
 pub fn root_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::root()
-}
-
-/// Mock the inherent that sets validation data in ParachainSystem, which
-/// contains the `relay_chain_block_number`, which is used in `author-filter` as a
-/// source of randomness to filter valid authors at each block.
-pub fn set_parachain_inherent_data() {
-    // TODO
-    /*
-    use cumulus_primitives_core::PersistedValidationData;
-    use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
-    let (relay_parent_storage_root, relay_chain_state) =
-        RelayStateSproofBuilder::default().into_state_root_and_proof();
-    let vfp = PersistedValidationData {
-        relay_parent_number: 1u32,
-        relay_parent_storage_root,
-        ..Default::default()
-    };
-    let parachain_inherent_data = ParachainInherentData {
-        validation_data: vfp,
-        relay_chain_state: relay_chain_state,
-        downward_messages: Default::default(),
-        horizontal_messages: Default::default(),
-    };
-    assert_ok!(RuntimeCall::ParachainSystem(
-        cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
-            data: parachain_inherent_data
-        }
-    )
-    .dispatch(inherent_origin()));
-    */
 }
 
 /// Helper function to generate a crypto pair from seed

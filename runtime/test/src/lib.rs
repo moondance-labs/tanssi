@@ -157,6 +157,7 @@ pub mod opaque {
 impl_opaque_keys! {
     pub struct SessionKeys {
         pub aura: Aura,
+        pub config: Configuration,
     }
 }
 
@@ -355,7 +356,7 @@ impl parachain_info::Config for Runtime {}
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 parameter_types! {
-    pub const Period: u32 = 6 * HOURS;
+    pub const Period: u32 = 6 *  HOURS;
     pub const Offset: u32 = 0;
 }
 
@@ -426,6 +427,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type AuthorityId = AuraId;
 }
 
 impl pallet_registrar::Config for Runtime {

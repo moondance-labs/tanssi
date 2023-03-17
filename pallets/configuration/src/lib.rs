@@ -254,14 +254,6 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        /// Called by the initializer to initialize the configuration pallet.
-        pub(crate) fn initializer_initialize(_now: T::BlockNumber) -> Weight {
-            Weight::zero()
-        }
-
-        /// Called by the initializer to finalize the configuration pallet.
-        pub(crate) fn initializer_finalize() {}
-
         /// Called by the initializer to note that a new session has started.
         ///
         /// Returns the configuration that was actual before the session change and the configuration
