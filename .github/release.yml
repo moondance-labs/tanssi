@@ -1,0 +1,25 @@
+name: CI
+
+on: ["push"]
+
+jobs:
+
+  ####### Building and Testing binaries #######
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Rust toolchain
+        run: rustup show
+
+      - name: Formatter
+        run: cargo fmt --all
+
+      - name: Build
+        run: cargo build --release --all
+
+      - name: Test
+        run: cargo test --release --features=runtime-benchmarks --all
