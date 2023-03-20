@@ -1,31 +1,31 @@
 [package]
 name = "pallet-registrar"
-version = "0.1.0"
-description = "ParaRegistrar pallet that allows to register and deregister ParaIds"
 authors = []
+description = "ParaRegistrar pallet that allows to register and deregister ParaIds"
 edition = "2021"
 publish = false
+version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
+targets = [ "x86_64-unknown-linux-gnu" ]
 
 [dependencies]
-codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false }
-scale-info = { version = "2.1.1", default-features = false }
-frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
-frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
+frame-support = { workspace = true, default-features = false }
+frame-system = { workspace = true, default-features = false }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true, default-features = false }
 
 [dev-dependencies]
-sp-core = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
-sp-io = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
-sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38" }
+sp-core = { workspace = true, default-features = false }
+sp-io = { workspace = true, default-features = false }
+sp-runtime = { workspace = true, default-features = false }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
-	"codec/std",
 	"frame-support/std",
 	"frame-system/std",
+	"parity-scale-codec/std",
 	"scale-info/std",
 ]
-try-runtime = ["frame-support/try-runtime"]
+try-runtime = [ "frame-support/try-runtime" ]
