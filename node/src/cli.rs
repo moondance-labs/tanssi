@@ -1,3 +1,4 @@
+use crate::service::Sealing;
 use std::path::PathBuf;
 
 /// Sub-commands supported by the collator.
@@ -45,6 +46,31 @@ pub enum Subcommand {
 }
 
 #[derive(Debug, clap::Parser)]
+#[group(skip)]
+pub struct RunCmd {
+    #[clap(flatten)]
+    pub base: cumulus_client_cli::RunCmd,
+
+    /// Enable the development service to run without a backing relay chain
+    #[clap(long)]
+    pub dev_service: bool,
+
+    /// When blocks should be sealed in the dev service.
+    ///
+    /// Options are "instant", "manual", or timer interval in milliseconds
+    #[clap(long, default_value = "instant")]
+    pub sealing: Sealing,
+}
+
+impl std::ops::Deref for RunCmd {
+    type Target = cumulus_client_cli::RunCmd;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
+#[derive(Debug, clap::Parser)]
 #[command(
     propagate_version = true,
     args_conflicts_with_subcommands = true,
@@ -55,7 +81,7 @@ pub struct Cli {
     pub subcommand: Option<Subcommand>,
 
     #[command(flatten)]
-    pub run: cumulus_client_cli::RunCmd,
+    pub run: RunCmd,
 
     /// Disable automatic hardware benchmarks.
     ///
