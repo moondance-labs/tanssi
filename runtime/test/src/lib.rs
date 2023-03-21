@@ -411,6 +411,23 @@ parameter_types! {
     pub const MaxLengthParaIds: u32 = 100u32;
 }
 
+pub struct CurrentSessionIndexGetter;
+
+impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
+    fn session_index() -> u32 {
+        Session::current_index()
+    }
+}
+
+impl pallet_configuration::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    type SessionDelay = ConstU32<2>;
+    type SessionIndex = u32;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+}
+
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
@@ -448,6 +465,7 @@ construct_runtime!(
 
         // ContainerChain management
         Registrar: pallet_registrar = 30,
+        Configuration: pallet_configuration = 31,
     }
 );
 
