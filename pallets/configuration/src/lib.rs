@@ -14,6 +14,8 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+// Recompile
+
 const LOG_TARGET: &str = "pallet_configuration";
 
 /// All configuration of the runtime with respect to parachains and parathreads.
