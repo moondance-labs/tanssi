@@ -4,7 +4,7 @@ use frame_support::traits::{ConstU16, ConstU64};
 use frame_system as system;
 use sp_core::{ConstU32, H256};
 use sp_runtime::{
-    testing::Header,
+    testing::{Header, UintAuthorityId},
     traits::{BlakeTwo256, IdentityLookup},
 };
 
@@ -141,13 +141,25 @@ impl pallet_collator_assignment::GetParachains for ParachainsGetter {
     }
 }
 
+pub struct CurrentSessionIndexGetter;
+
+impl pallet_collator_assignment::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
+    fn session_index() -> u32 {
+        // For tests, let 1 session be 5 blocks
+        (System::block_number() / 5) as u32
+    }
+}
+
 impl pallet_collator_assignment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
+    type AuthorityId = UintAuthorityId;
     type MoondanceParaId = ConstU32<999>;
     type HostConfiguration = HostConfigurationGetter;
     type Collators = CollatorsGetter;
     type Parachains = ParachainsGetter;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 
 // Build genesis storage according to the mock runtime.
