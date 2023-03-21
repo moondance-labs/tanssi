@@ -12,8 +12,6 @@ fn assign_initial_collators() {
         run_to_block(1);
 
         MockData::mutate(|m| {
-            m.max_collators = 100;
-
             m.collators_per_container = 2;
             m.moondance_collators = 5;
 
@@ -67,8 +65,6 @@ fn assign_collators_after_one_leaves_container() {
         run_to_block(1);
 
         MockData::mutate(|m| {
-            m.max_collators = 100;
-
             m.collators_per_container = 2;
             m.moondance_collators = 5;
 
@@ -165,8 +161,6 @@ fn assign_collators_after_one_leaves_moondance() {
         run_to_block(1);
 
         MockData::mutate(|m| {
-            m.max_collators = 100;
-
             m.collators_per_container = 2;
             m.moondance_collators = 5;
 
@@ -264,8 +258,6 @@ fn assign_collators_if_config_moondance_collators_increases() {
         run_to_block(1);
 
         MockData::mutate(|m| {
-            m.max_collators = 100;
-
             m.collators_per_container = 2;
             m.moondance_collators = 5;
 
@@ -364,8 +356,6 @@ fn assign_collators_if_config_moondance_collators_decreases() {
         run_to_block(1);
 
         MockData::mutate(|m| {
-            m.max_collators = 100;
-
             m.collators_per_container = 2;
             m.moondance_collators = 5;
 
@@ -428,8 +418,6 @@ fn assign_collators_if_config_collators_per_container_increases() {
         run_to_block(1);
 
         MockData::mutate(|m| {
-            m.max_collators = 100;
-
             m.collators_per_container = 2;
             m.moondance_collators = 5;
 
@@ -574,8 +562,6 @@ fn assign_collators_if_parachain_is_removed() {
         run_to_block(1);
 
         MockData::mutate(|m| {
-            m.max_collators = 100;
-
             m.collators_per_container = 2;
             m.moondance_collators = 5;
 
@@ -664,8 +650,6 @@ fn assign_collators_if_parachain_is_added() {
         run_to_block(1);
 
         MockData::mutate(|m| {
-            m.max_collators = 100;
-
             m.collators_per_container = 2;
             m.moondance_collators = 5;
 
@@ -757,13 +741,11 @@ fn assign_collators_if_parachain_is_added() {
 }
 
 #[test]
-fn assign_collators_after_decrease_max_collators() {
+fn assign_collators_after_decrease_num_collators() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
         MockData::mutate(|m| {
-            m.max_collators = 100;
-
             m.collators_per_container = 2;
             m.moondance_collators = 5;
 
@@ -809,13 +791,10 @@ fn assign_collators_after_decrease_max_collators() {
         }
 
         MockData::mutate(|m| {
-            m.max_collators = 0;
             m.collators = vec![];
         });
 
         run_to_block(11);
-        // TODO: this test should fail if the call to clear is modified to use a limit of 0, but it does not fail
-        // So find a way to make this test fail in that case, because otherwise it is useless as it is supposed to be testing the limit
-        assert_eq!(assigned_collators(), HashMap::from_iter(vec![]),);
+        assert_eq!(assigned_collators(), HashMap::from_iter(vec![]));
     });
 }

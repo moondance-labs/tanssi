@@ -88,7 +88,6 @@ pub mod mock_data {
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub max_collators: u32,
     pub moondance_collators: u32,
     pub collators_per_container: u32,
     pub collators: Vec<u64>,
@@ -98,7 +97,6 @@ pub struct Mocks {
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            max_collators: 0,
             moondance_collators: 0,
             collators_per_container: 0,
             collators: vec![],
@@ -112,10 +110,6 @@ impl mock_data::Config for Test {}
 pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration for HostConfigurationGetter {
-    fn max_collators() -> u32 {
-        MockData::mock().max_collators
-    }
-
     fn moondance_collators() -> u32 {
         MockData::mock().moondance_collators
     }

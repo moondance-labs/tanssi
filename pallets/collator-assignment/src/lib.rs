@@ -2,8 +2,6 @@
 
 use frame_support::pallet_prelude::*;
 use frame_support::traits::OneSessionHandler;
-use frame_support::traits::OriginTrait;
-use frame_system::pallet_prelude::*;
 use scale_info::prelude::collections::HashMap;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::RuntimeAppPublic;
@@ -18,7 +16,6 @@ mod mock;
 mod tests;
 
 pub trait GetHostConfiguration {
-    fn max_collators() -> u32;
     fn moondance_collators() -> u32;
     fn collators_per_container() -> u32;
 }
@@ -72,14 +69,11 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        /// The new value for a configuration parameter is invalid.
-        InvalidNewValue,
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        ScheduledConfigUpdate,
     }
 
     #[pallet::storage]
@@ -88,67 +82,7 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, T::AccountId, u32>;
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> {
-        #[pallet::call_index(0)]
-        // TODO: weight
-        #[pallet::weight((
-			10_000,
-			DispatchClass::Operational,
-		))]
-        pub fn assign_collators(origin: OriginFor<T>) -> DispatchResult {
-            ensure_root(origin)?;
-
-            let collators = T::Collators::collators();
-            let max_collators = T::HostConfiguration::max_collators();
-            assert!(collators.len() <= max_collators as usize);
-            let parachain_ids = T::Parachains::parachains();
-
-            let (old_assigned, old_num_collators) = Self::read_assigned_collators();
-
-            let AssignedCollators {
-                moondance,
-                parachains,
-            } = Self::assign_collators_always_keep_old(
-                collators,
-                &parachain_ids,
-                T::HostConfiguration::moondance_collators() as usize,
-                T::HostConfiguration::collators_per_container() as usize,
-                old_assigned,
-            );
-
-            // Write changes to storage
-            // TODO: maybe it will be more efficient to store it everything under a single key?
-            // TODO: we cannot use max_collators here because this can fail if max_collators is decreased: write 1000 collators, set max_collators=10, this will only remove 10
-            // TODO: but a limit of 0 also works?
-            let multi_removal_result =
-                CollatorParachain::<T>::clear(old_num_collators as u32, None);
-            assert!(multi_removal_result.maybe_cursor.is_none(), "the limit was calculated by iterating over the map, so the clear must always succeed");
-
-            // Write new collators to storage
-            // TODO: this can be optimized:
-            // Do not clear.
-            // Iterate over old_collators:
-            // If the new para_id has changed, write to storage.
-            // If the collator no longer exists, remove from storage
-            // Iterate over new_collators:
-            // If the collator does not exist in old_collators, write to storage.
-            for (para_id, collators) in parachains {
-                for collator in collators {
-                    CollatorParachain::<T>::insert(collator, para_id);
-                }
-            }
-            let moondance_para_id = T::MoondanceParaId::get();
-            for collator in moondance {
-                CollatorParachain::<T>::insert(collator, moondance_para_id);
-            }
-            // TODO: we may want to wait a few sessions before making the change, to give
-            // new collators enough time to sync the respective parachain
-            // In that case, instead of writing to CollatorParachain we must write to PendingCollatorParachain or similar
-            // And the optimization mentioned above does not make sense anymore because we will be writing a new map
-
-            Ok(())
-        }
-    }
+    impl<T: Config> Pallet<T> {}
 
     #[derive(Debug, Clone, Default)]
     struct AssignedCollators<AccountId> {
@@ -227,6 +161,53 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        /// Assign new collators
+        pub fn assign_collators() {
+            let collators = T::Collators::collators();
+            let parachain_ids = T::Parachains::parachains();
+
+            let (old_assigned, old_num_collators) = Self::read_assigned_collators();
+
+            let AssignedCollators {
+                moondance,
+                parachains,
+            } = Self::assign_collators_always_keep_old(
+                collators,
+                &parachain_ids,
+                T::HostConfiguration::moondance_collators() as usize,
+                T::HostConfiguration::collators_per_container() as usize,
+                old_assigned,
+            );
+
+            // Write changes to storage
+            // TODO: maybe it will be more efficient to store it everything under a single key?
+            // TODO: but a limit of 0 also works?
+            let _multi_removal_result =
+                CollatorParachain::<T>::clear(old_num_collators as u32, None);
+
+            // Write new collators to storage
+            // TODO: this can be optimized:
+            // Do not clear.
+            // Iterate over old_collators:
+            // If the new para_id has changed, write to storage.
+            // If the collator no longer exists, remove from storage
+            // Iterate over new_collators:
+            // If the collator does not exist in old_collators, write to storage.
+            for (para_id, collators) in parachains {
+                for collator in collators {
+                    CollatorParachain::<T>::insert(collator, para_id);
+                }
+            }
+            let moondance_para_id = T::MoondanceParaId::get();
+            for collator in moondance {
+                CollatorParachain::<T>::insert(collator, moondance_para_id);
+            }
+            // TODO: we may want to wait a few sessions before making the change, to give
+            // new collators enough time to sync the respective parachain
+            // In that case, instead of writing to CollatorParachain we must write to PendingCollatorParachain or similar
+            // And the optimization mentioned above does not make sense anymore because we will be writing a new map
+        }
+
         /// Assign new collators to missing parachains.
         /// Old collators always have preference to remain on the same chain.
         /// If there are no missing collators, nothing is changed.
@@ -290,7 +271,7 @@ pub mod pallet {
         }
 
         pub fn initializer_on_new_session(_session_index: &T::SessionIndex) {
-            Self::assign_collators(T::RuntimeOrigin::root()).unwrap();
+            Self::assign_collators();
         }
     }
 
