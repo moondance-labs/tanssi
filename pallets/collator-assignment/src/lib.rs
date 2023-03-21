@@ -68,13 +68,11 @@ pub mod pallet {
     }
 
     #[pallet::error]
-    pub enum Error<T> {
-    }
+    pub enum Error<T> {}
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config> {
-    }
+    pub enum Event<T: Config> {}
 
     #[pallet::storage]
     #[pallet::getter(fn collator_parachain)]
