@@ -3,7 +3,7 @@ use frame_support::traits::{ConstU16, ConstU64};
 use frame_system as system;
 use sp_core::{ConstU32, H256};
 use sp_runtime::{
-    testing::Header,
+    testing::{Header, UintAuthorityId},
     traits::{BlakeTwo256, IdentityLookup},
     BuildStorage,
 };
@@ -66,6 +66,7 @@ impl pallet_configuration::Config for Test {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type AuthorityId = UintAuthorityId;
 }
 
 // Build genesis storage according to the mock runtime.

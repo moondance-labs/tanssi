@@ -1,5 +1,6 @@
 use std::net::SocketAddr;
 
+use crate::service::IdentifyVariant;
 use codec::Encode;
 use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
@@ -11,6 +12,7 @@ use sc_cli::{
 };
 use sc_service::config::{BasePath, PrometheusConfig};
 use sp_core::hexdisplay::HexDisplay;
+use sp_core::sr25519;
 use sp_runtime::traits::{AccountIdConversion, Block as BlockT};
 use test_runtime::Block;
 
@@ -115,7 +117,7 @@ macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		runner.async_run(|$config| {
-			let $components = new_partial(&$config)?;
+			let $components = new_partial(&$config, false)?;
 			let task_manager = $components.task_manager;
 			{ $( $code )* }.map(|v| (v, task_manager))
 		})
@@ -206,21 +208,18 @@ pub fn run() -> Result<()> {
                     }
                 }
                 BenchmarkCmd::Block(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config)?;
+                    let partials = new_partial(&config, false)?;
                     cmd.run(partials.client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
-                BenchmarkCmd::Storage(_) => {
-                    return Err(sc_cli::Error::Input(
-                        "Compile with --features=runtime-benchmarks \
+                BenchmarkCmd::Storage(_) => Err(sc_cli::Error::Input(
+                    "Compile with --features=runtime-benchmarks \
 						to enable storage benchmarks."
-                            .into(),
-                    )
-                    .into())
-                }
+                        .into(),
+                )),
                 #[cfg(feature = "runtime-benchmarks")]
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config)?;
+                    let partials = new_partial(&config, false)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
                     cmd.run(config, partials.client.clone(), db, storage)
@@ -291,6 +290,22 @@ pub fn run() -> Result<()> {
 					&config,
 					[RelayChainCli::executable_name()].iter().chain(cli.relay_chain_args.iter()),
 				);
+
+				let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
+
+				let relay_chain_id = extension.map(|e| e.relay_chain.clone());
+
+				let dev_service =
+					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
+
+				if dev_service {
+
+					let author_id = Some(crate::chain_spec::get_account_id_from_seed::<sr25519::Public>("Alice"));
+					return crate::service::new_dev(config, author_id, cli.run.sealing, hwbench).map_err(Into::into)
+				}
+
+				//let dev_service =
+					//config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
 
 				let id = ParaId::from(para_id);
 

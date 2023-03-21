@@ -60,7 +60,8 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn registered_para_ids)]
-    pub type RegisteredParaIds<T: Config> = StorageValue<_, BoundedVec<u32, T::MaxLengthParaIds>>;
+    pub type RegisteredParaIds<T: Config> =
+        StorageValue<_, BoundedVec<u32, T::MaxLengthParaIds>, ValueQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -89,7 +90,7 @@ pub mod pallet {
         pub fn register(origin: OriginFor<T>, para_id: u32) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
-            let mut para_ids = <RegisteredParaIds<T>>::get().unwrap_or_default();
+            let mut para_ids = <RegisteredParaIds<T>>::get();
 
             // We don't want to add duplicate para ids, so we check whether the potential new
             // para id is already present in the list. Because the list is always ordered, we can
@@ -118,7 +119,7 @@ pub mod pallet {
         pub fn deregister(origin: OriginFor<T>, para_id: u32) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
-            let mut para_ids = <RegisteredParaIds<T>>::get().unwrap_or_default();
+            let mut para_ids = <RegisteredParaIds<T>>::get();
 
             // We have to find out where, in the sorted vec the para id is, if anywhere.
             match para_ids.binary_search(&para_id) {

@@ -54,7 +54,10 @@ where
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
 pub fn template_session_keys(keys: AuraId) -> test_runtime::SessionKeys {
-    test_runtime::SessionKeys { aura: keys }
+    test_runtime::SessionKeys {
+        aura: keys.clone(),
+        config: keys,
+    }
 }
 
 pub fn development_config() -> ChainSpec {
