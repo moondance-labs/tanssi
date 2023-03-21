@@ -5,7 +5,7 @@ use std::{sync::Arc, time::Duration};
 
 use cumulus_client_cli::CollatorOptions;
 // Local Runtime Types
-use test_runtime::{opaque::Block, Hash, RuntimeApi};
+use test_runtime::{opaque::Block, AccountId, Hash, RuntimeApi};
 
 // Cumulus Imports
 use cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion};
@@ -17,11 +17,16 @@ use cumulus_client_service::{
     build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
     StartCollatorParams, StartFullNodeParams,
 };
-use cumulus_primitives_core::ParaId;
-use cumulus_relay_chain_interface::{RelayChainError, RelayChainInterface};
+use futures::StreamExt;
+use sc_service::Error as ServiceError;
 
+use cumulus_primitives_core::ParaId;
+use cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider;
+use cumulus_primitives_parachain_inherent::MockXcmConfig;
+use cumulus_relay_chain_interface::{RelayChainError, RelayChainInterface};
 // Substrate Imports
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
+use sc_client_api::HeaderBackend;
 use sc_consensus::ImportQueue;
 use sc_executor::NativeElseWasmExecutor;
 use sc_network::NetworkService;
@@ -30,6 +35,9 @@ use sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, Ta
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
 use sp_keystore::SyncCryptoStorePtr;
 use substrate_prometheus_endpoint::Registry;
+
+type FullBackend = TFullBackend<Block>;
+type MaybeSelectChain = Option<sc_consensus::LongestChain<FullBackend, Block>>;
 
 /// Native executor type.
 pub struct ParachainNativeExecutor;
@@ -54,17 +62,24 @@ type ParachainBackend = TFullBackend<Block>;
 
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
 
+thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
+
+/// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
+/// Each call will increment timestamp by slot_duration making Aura think time has passed.
+struct MockTimestampInherentDataProvider;
+
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
 pub fn new_partial(
     config: &Configuration,
+    dev_service: bool,
 ) -> Result<
     PartialComponents<
         ParachainClient,
         ParachainBackend,
-        (),
+        MaybeSelectChain,
         sc_consensus::DefaultImportQueue<Block, ParachainClient>,
         sc_transaction_pool::FullPool<Block, ParachainClient>,
         (
@@ -128,6 +143,13 @@ pub fn new_partial(
         &task_manager,
     )?;
 
+    log::info!("dev service is {:?}", dev_service);
+    let maybe_select_chain = if dev_service {
+        Some(sc_consensus::LongestChain::new(backend.clone()))
+    } else {
+        None
+    };
+
     Ok(PartialComponents {
         backend,
         client,
@@ -135,7 +157,7 @@ pub fn new_partial(
         keystore_container,
         task_manager,
         transaction_pool,
-        select_chain: (),
+        select_chain: maybe_select_chain,
         other: (block_import, telemetry, telemetry_worker_handle),
     })
 }
@@ -153,7 +175,7 @@ async fn start_node_impl(
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
 
-    let params = new_partial(&parachain_config)?;
+    let params = new_partial(&parachain_config, false)?;
     let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
     let client = params.client.clone();
@@ -443,4 +465,265 @@ pub async fn start_parachain_node(
         hwbench,
     )
     .await
+}
+
+pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from_percent(100);
+
+/// Builds a new development service. This service uses manual seal, and mocks
+/// the parachain inherent.
+pub fn new_dev(
+    config: Configuration,
+    _author_id: Option<AccountId>,
+    sealing: Sealing,
+    hwbench: Option<sc_sysinfo::HwBench>,
+) -> Result<TaskManager, ServiceError> {
+    use async_io::Timer;
+    use futures::Stream;
+    use sc_consensus_manual_seal::{run_manual_seal, EngineCommand, ManualSealParams};
+    use sp_core::H256;
+
+    let sc_service::PartialComponents {
+        client,
+        backend,
+        mut task_manager,
+        import_queue,
+        keystore_container,
+        select_chain: maybe_select_chain,
+        transaction_pool,
+        other: (block_import, mut telemetry, _telemetry_worker_handle),
+    } = new_partial(&config, true)?;
+
+    let (network, system_rpc_tx, tx_handler_controller, network_starter) =
+        sc_service::build_network(sc_service::BuildNetworkParams {
+            config: &config,
+            client: client.clone(),
+            transaction_pool: transaction_pool.clone(),
+            spawn_handle: task_manager.spawn_handle(),
+            import_queue,
+            block_announce_validator_builder: None,
+            warp_sync: None,
+        })?;
+
+    if config.offchain_worker.enabled {
+        sc_service::build_offchain_workers(
+            &config,
+            task_manager.spawn_handle(),
+            client.clone(),
+            network.clone(),
+        );
+    }
+
+    let prometheus_registry = config.prometheus_registry().cloned();
+    let collator = config.role.is_authority();
+
+    if collator {
+        let mut env = sc_basic_authorship::ProposerFactory::new(
+            task_manager.spawn_handle(),
+            client.clone(),
+            transaction_pool.clone(),
+            prometheus_registry.as_ref(),
+            telemetry.as_ref().map(|x| x.handle()),
+        );
+        env.set_soft_deadline(SOFT_DEADLINE_PERCENT);
+        let commands_stream: Box<dyn Stream<Item = EngineCommand<H256>> + Send + Sync + Unpin> =
+            match sealing {
+                Sealing::Instant => {
+                    Box::new(
+                        // This bit cribbed from the implementation of instant seal.
+                        transaction_pool
+                            .pool()
+                            .validated_pool()
+                            .import_notification_stream()
+                            .map(|_| EngineCommand::SealNewBlock {
+                                create_empty: false,
+                                finalize: true,
+                                parent_hash: None,
+                                sender: None,
+                            }),
+                    )
+                }
+                Sealing::Manual => {
+                    let (_, stream) = futures::channel::mpsc::channel(1000);
+                    // Keep a reference to the other end of the channel. It goes to the RPC.
+                    Box::new(stream)
+                }
+                Sealing::Interval(millis) => Box::new(futures::StreamExt::map(
+                    Timer::interval(Duration::from_millis(millis)),
+                    |_| EngineCommand::SealNewBlock {
+                        create_empty: true,
+                        finalize: true,
+                        parent_hash: None,
+                        sender: None,
+                    },
+                )),
+            };
+
+        let select_chain = maybe_select_chain.expect(
+            "`new_partial` builds a `LongestChainRule` when building dev service.\
+				We specified the dev service when calling `new_partial`.\
+				Therefore, a `LongestChainRule` is present. qed.",
+        );
+
+        let client_set_aside_for_cidp = client.clone();
+
+        #[async_trait::async_trait]
+        impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
+            async fn provide_inherent_data(
+                &self,
+                inherent_data: &mut sp_inherents::InherentData,
+            ) -> Result<(), sp_inherents::Error> {
+                TIMESTAMP.with(|x| {
+                    *x.borrow_mut() += test_runtime::SLOT_DURATION;
+                    inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
+                })
+            }
+
+            async fn try_handle_error(
+                &self,
+                _identifier: &sp_inherents::InherentIdentifier,
+                _error: &[u8],
+            ) -> Option<Result<(), sp_inherents::Error>> {
+                // The pallet never reports error.
+                None
+            }
+        }
+
+        task_manager.spawn_essential_handle().spawn_blocking(
+            "authorship_task",
+            Some("block-authoring"),
+            run_manual_seal(ManualSealParams {
+                block_import,
+                env,
+                client: client.clone(),
+                pool: transaction_pool.clone(),
+                commands_stream,
+                select_chain,
+                consensus_data_provider: Some(Box::new(
+                    sc_consensus_manual_seal::consensus::aura::AuraConsensusDataProvider::new(
+                        client.clone(),
+                    ),
+                )),
+                create_inherent_data_providers: move |block: H256, ()| {
+                    let current_para_block = client_set_aside_for_cidp
+                        .number(block)
+                        .expect("Header lookup should succeed")
+                        .expect("Header passed in as parent should be present in backend.");
+
+                    let client_for_xcm = client_set_aside_for_cidp.clone();
+                    async move {
+                        //let time = sp_timestamp::InherentDataProvider::from_system_time();
+                        let time = MockTimestampInherentDataProvider;
+                        let mocked_parachain = MockValidationDataInherentDataProvider {
+                            current_para_block,
+                            relay_offset: 1000,
+                            relay_blocks_per_para_block: 2,
+                            // TODO: Recheck
+                            para_blocks_per_relay_epoch: 10,
+                            relay_randomness_config: (),
+                            xcm_config: MockXcmConfig::new(
+                                &*client_for_xcm,
+                                block,
+                                Default::default(),
+                                Default::default(),
+                            ),
+                            raw_downward_messages: vec![],
+                            raw_horizontal_messages: vec![],
+                        };
+
+                        Ok((time, mocked_parachain))
+                    }
+                },
+            }),
+        );
+    }
+
+    let rpc_builder = {
+        let client = client.clone();
+        let transaction_pool = transaction_pool.clone();
+
+        Box::new(move |deny_unsafe, _| {
+            let deps = crate::rpc::FullDeps {
+                client: client.clone(),
+                pool: transaction_pool.clone(),
+                deny_unsafe,
+            };
+
+            crate::rpc::create_full(deps).map_err(Into::into)
+        })
+    };
+
+    let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+        rpc_builder,
+        client,
+        transaction_pool,
+        task_manager: &mut task_manager,
+        config,
+        keystore: keystore_container.sync_keystore(),
+        backend,
+        network,
+        system_rpc_tx,
+        tx_handler_controller,
+        telemetry: telemetry.as_mut(),
+    })?;
+
+    if let Some(hwbench) = hwbench {
+        sc_sysinfo::print_hwbench(&hwbench);
+
+        if let Some(ref mut telemetry) = telemetry {
+            let telemetry_handle = telemetry.handle();
+            task_manager.spawn_handle().spawn(
+                "telemetry_hwbench",
+                None,
+                sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
+            );
+        }
+    }
+
+    log::info!("Development Service Ready");
+
+    network_starter.start_network();
+    Ok(task_manager)
+}
+
+/// Can be called for a `Configuration` to check if it is a configuration for
+/// the `Moondance` network.
+pub trait IdentifyVariant {
+    /// Returns `true` if this is a configuration for a dev network.
+    fn is_dev(&self) -> bool;
+}
+
+impl IdentifyVariant for Box<dyn sc_service::ChainSpec> {
+    fn is_dev(&self) -> bool {
+        self.chain_type() == sc_chain_spec::ChainType::Development
+    }
+}
+
+/// Block authoring scheme to be used by the dev service.
+#[derive(Debug, Copy, Clone)]
+pub enum Sealing {
+    /// Author a block immediately upon receiving a transaction into the transaction pool
+    Instant,
+    /// Author a block upon receiving an RPC command
+    Manual,
+    /// Author blocks at a regular interval specified in milliseconds
+    Interval(u64),
+}
+
+use std::str::FromStr;
+
+impl FromStr for Sealing {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "instant" => Self::Instant,
+            "manual" => Self::Manual,
+            s => {
+                let millis = s
+                    .parse::<u64>()
+                    .map_err(|_| "couldn't decode sealing param")?;
+                Self::Interval(millis)
+            }
+        })
+    }
 }
