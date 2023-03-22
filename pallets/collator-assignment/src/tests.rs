@@ -22,40 +22,20 @@ fn assign_initial_collators() {
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
 
-        let para_id_collator_6 = CollatorAssignment::collator_parachain(6).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
     });
 }
 
@@ -75,40 +55,20 @@ fn assign_collators_after_one_leaves_container() {
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
 
-        let para_id_collator_6 = CollatorAssignment::collator_parachain(6).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
 
         MockData::mutate(|m| {
             // Remove 6
@@ -116,42 +76,22 @@ fn assign_collators_after_one_leaves_container() {
         });
         run_to_block(11);
 
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    //(6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                    // 10 is assigned in place of 6
-                    (10, 1001),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    //(6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                    // 10 is assigned in place of 6
-                    (10, 1002),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                //(6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+                // 10 is assigned in place of 6
+                (10, 1001),
+            ]),
+        );
     });
 }
 
@@ -171,40 +111,20 @@ fn assign_collators_after_one_leaves_moondance() {
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
 
-        let para_id_collator_6 = CollatorAssignment::collator_parachain(6).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
 
         MockData::mutate(|m| {
             // Remove 4
@@ -213,42 +133,22 @@ fn assign_collators_after_one_leaves_moondance() {
 
         run_to_block(11);
 
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    //(4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                    // 10 is assigned in place of 4
-                    (10, 999),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    //(4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                    // 10 is assigned in place of 4
-                    (10, 999),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                //(4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+                // 10 is assigned in place of 4
+                (10, 999),
+            ]),
+        );
     });
 }
 
@@ -267,40 +167,20 @@ fn assign_collators_if_config_moondance_collators_increases() {
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
 
-        let para_id_collator_6 = CollatorAssignment::collator_parachain(6).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
 
         MockData::mutate(|m| {
             // Add 3 new collators to moondance
@@ -309,44 +189,23 @@ fn assign_collators_if_config_moondance_collators_increases() {
 
         run_to_block(11);
 
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                    (10, 999),
-                    (11, 999),
-                    (12, 999),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                    (10, 999),
-                    (11, 999),
-                    (12, 999),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+                (10, 999),
+                (11, 999),
+                (12, 999),
+            ]),
+        );
     });
 }
 
@@ -365,40 +224,20 @@ fn assign_collators_if_config_moondance_collators_decreases() {
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
 
-        let para_id_collator_6 = CollatorAssignment::collator_parachain(6).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
 
         MockData::mutate(|m| {
             // Remove 3 collators from moondance
@@ -428,40 +267,20 @@ fn assign_collators_if_config_collators_per_container_increases() {
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
 
-        let para_id_collator_6 = CollatorAssignment::collator_parachain(6).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
 
         MockData::mutate(|m| {
             // Add 2 new collators to each parachain
@@ -470,89 +289,24 @@ fn assign_collators_if_config_collators_per_container_increases() {
 
         run_to_block(11);
 
-        let para_id_collator_10 = CollatorAssignment::collator_parachain(10).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            if para_id_collator_10 == 1001 {
-                assert_eq!(
-                    assigned_collators(),
-                    HashMap::from_iter(vec![
-                        (1, 999),
-                        (2, 999),
-                        (3, 999),
-                        (4, 999),
-                        (5, 999),
-                        (6, 1001),
-                        (7, 1001),
-                        (8, 1002),
-                        (9, 1002),
-                        (10, 1001),
-                        (11, 1001),
-                        (12, 1002),
-                        (13, 1002),
-                    ]),
-                );
-            } else {
-                assert_eq!(
-                    assigned_collators(),
-                    HashMap::from_iter(vec![
-                        (1, 999),
-                        (2, 999),
-                        (3, 999),
-                        (4, 999),
-                        (5, 999),
-                        (6, 1001),
-                        (7, 1001),
-                        (8, 1002),
-                        (9, 1002),
-                        (10, 1002),
-                        (11, 1002),
-                        (12, 1001),
-                        (13, 1001),
-                    ]),
-                );
-            }
-        } else {
-            if para_id_collator_10 == 1001 {
-                assert_eq!(
-                    assigned_collators(),
-                    HashMap::from_iter(vec![
-                        (1, 999),
-                        (2, 999),
-                        (3, 999),
-                        (4, 999),
-                        (5, 999),
-                        (6, 1002),
-                        (7, 1002),
-                        (8, 1001),
-                        (9, 1001),
-                        (10, 1001),
-                        (11, 1001),
-                        (12, 1002),
-                        (13, 1002),
-                    ]),
-                );
-            } else {
-                assert_eq!(
-                    assigned_collators(),
-                    HashMap::from_iter(vec![
-                        (1, 999),
-                        (2, 999),
-                        (3, 999),
-                        (4, 999),
-                        (5, 999),
-                        (6, 1002),
-                        (7, 1002),
-                        (8, 1001),
-                        (9, 1001),
-                        (10, 1002),
-                        (11, 1002),
-                        (12, 1001),
-                        (13, 1001),
-                    ]),
-                );
-            }
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+                (10, 1001),
+                (11, 1001),
+                (12, 1002),
+                (13, 1002),
+            ]),
+        );
     });
 }
 
@@ -571,40 +325,20 @@ fn assign_collators_if_parachain_is_removed() {
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
 
-        let para_id_collator_6 = CollatorAssignment::collator_parachain(6).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
 
         MockData::mutate(|m| {
             // Remove 1 parachain
@@ -613,34 +347,18 @@ fn assign_collators_if_parachain_is_removed() {
 
         run_to_block(11);
 
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+            ]),
+        );
     });
 }
 
@@ -659,40 +377,20 @@ fn assign_collators_if_parachain_is_added() {
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
 
-        let para_id_collator_6 = CollatorAssignment::collator_parachain(6).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
 
         MockData::mutate(|m| {
             // Add 1 new parachain
@@ -701,42 +399,22 @@ fn assign_collators_if_parachain_is_added() {
 
         run_to_block(11);
 
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                    (10, 1003),
-                    (11, 1003),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                    (10, 1003),
-                    (11, 1003),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+                (10, 1003),
+                (11, 1003),
+            ]),
+        );
     });
 }
 
@@ -755,40 +433,20 @@ fn assign_collators_after_decrease_num_collators() {
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
 
-        let para_id_collator_6 = CollatorAssignment::collator_parachain(6).unwrap();
-
-        if para_id_collator_6 == 1001 {
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1001),
-                    (7, 1001),
-                    (8, 1002),
-                    (9, 1002),
-                ]),
-            );
-        } else {
-            // Because the code uses a hashmap to store parachain ids, the order is random
-            assert_eq!(
-                assigned_collators(),
-                HashMap::from_iter(vec![
-                    (1, 999),
-                    (2, 999),
-                    (3, 999),
-                    (4, 999),
-                    (5, 999),
-                    (6, 1002),
-                    (7, 1002),
-                    (8, 1001),
-                    (9, 1001),
-                ]),
-            );
-        }
+        assert_eq!(
+            assigned_collators(),
+            HashMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
 
         MockData::mutate(|m| {
             m.collators = vec![];

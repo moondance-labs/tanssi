@@ -142,8 +142,6 @@ pub mod pallet {
         where
             I: Iterator<Item = AccountId>,
         {
-            // TODO: the iteration order of a HashMap is not deterministic, so testing this is a bit annoying
-            // Could be fixed using a BTreeMap instead, or sorting here before iterating
             for (_id, cs) in self.parachains.iter_mut() {
                 while cs.len() < num_each_parachain {
                     if let Some(nc) = next_collator.next() {
