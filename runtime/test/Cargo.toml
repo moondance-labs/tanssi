@@ -19,6 +19,7 @@ smallvec = { workspace = true }
 
 # Own
 pallet-collator-assignment = { workspace = true }
+pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 

@@ -8,6 +8,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use cumulus_primitives_core::BodyId;
+use cumulus_primitives_core::ParaId;
 use frame_support::weights::constants::RocksDbWeight;
 use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight};
 use smallvec::smallvec;
@@ -626,6 +627,27 @@ impl_runtime_apis! {
             // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
             // have a backtrace here.
             Executive::try_execute_block(block, state_root_check, signature_check, select).unwrap()
+        }
+    }
+
+    impl pallet_collator_assignment_runtime_api::CollatorAssignmentApi<Block, AccountId, ParaId> for Runtime {
+        /// Return the parachain that the given `AccountId` is collating for.
+        /// Returns `None` if the `AccountId` is not collating.
+        fn collator_parachain(account: AccountId) -> Option<ParaId> {
+            todo!()
+        }
+
+        /// Return the parachain that the given `AccountId` will be collating for
+        /// in the next session change.
+        /// Returns `None` if the `AccountId` will not be collating.
+        fn future_collator_parachain(account: AccountId) -> Option<ParaId> {
+            todo!()
+        }
+
+        /// Return the list of collators of the given `ParaId`.
+        /// Returns `None` if the `ParaId` is not in the registrar.
+        fn parachain_collators(para_id: ParaId) -> Option<Vec<ParaId>> {
+            todo!()
         }
     }
 }

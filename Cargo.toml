@@ -2,6 +2,7 @@
 members = [
 	"node",
 	"pallets/*",
+	"pallets/collator-assignment/rpc/runtime-api",
 	"runtime/test",
 ]
 resolver = "2"
@@ -9,6 +10,7 @@ resolver = "2"
 [workspace.dependencies]
 # Members
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
+pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/rpc/runtime-api", default-features = false }
 pallet-configuration = { path = "pallets/configuration", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 test-runtime = { path = "runtime/test", default-features = false }

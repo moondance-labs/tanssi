@@ -18,6 +18,7 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
+pallet-collator-assignment-runtime-api = { workspace = true }
 test-runtime = { workspace = true }
 
 # Substrate

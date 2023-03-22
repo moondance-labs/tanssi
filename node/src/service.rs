@@ -4,6 +4,7 @@
 use std::{sync::Arc, time::Duration};
 
 use cumulus_client_cli::CollatorOptions;
+use polkadot_cli::ProvideRuntimeApi;
 // Local Runtime Types
 use test_runtime::{opaque::Block, AccountId, Hash, RuntimeApi};
 
@@ -654,7 +655,7 @@ pub fn new_dev(
 
     let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         rpc_builder,
-        client,
+        client: client.clone(),
         transaction_pool,
         task_manager: &mut task_manager,
         config,
@@ -682,6 +683,17 @@ pub fn new_dev(
     log::info!("Development Service Ready");
 
     network_starter.start_network();
+
+    use pallet_collator_assignment_runtime_api::CollatorAssignmentApi;
+    let block_number = polkadot_primitives::BlockId::number(1);
+    let para_id = ParaId::from(1001);
+    panic!(
+        "{:?}",
+        client
+            .runtime_api()
+            .parachain_collators(&block_number, para_id)
+    );
+
     Ok(task_manager)
 }
 
