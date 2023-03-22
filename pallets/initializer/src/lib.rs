@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use parity_scale_codec::{Decode, Encode};
 use frame_support::traits::OneSessionHandler;
+use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::RuntimeAppPublic;
@@ -9,7 +9,7 @@ use sp_std::prelude::*;
 
 pub use pallet::*;
 
-#[frame_support::pallet]	
+#[frame_support::pallet]
 pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
