@@ -380,6 +380,45 @@ impl pallet_aura::Config for Runtime {
     type MaxAuthorities = ConstU32<100_000>;
 }
 
+pub struct CollatorsGetter;
+
+impl pallet_collator_assignment::GetCollators<AccountId> for CollatorsGetter {
+    fn collators() -> Vec<AccountId> {
+        todo!()
+    }
+}
+
+pub struct HostConfigurationGetter;
+
+impl pallet_collator_assignment::GetHostConfiguration for HostConfigurationGetter {
+    fn collators_per_container() -> u32 {
+        todo!()
+    }
+
+    fn moondance_collators() -> u32 {
+        todo!()
+    }
+}
+
+pub struct ParachainsGetter;
+
+impl pallet_collator_assignment::GetParachains for ParachainsGetter {
+    fn parachains() -> Vec<u32> {
+        Registrar::registered_para_ids().into()
+    }
+}
+
+impl pallet_collator_assignment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type AuthorityId = AuraId;
+    type Collators = CollatorsGetter;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type MoondanceParaId = ConstU32<999>;
+    type HostConfiguration = HostConfigurationGetter;
+    type Parachains = ParachainsGetter;
+    type SessionIndex = u32;
+}
+
 parameter_types! {
     pub const PotId: PalletId = PalletId(*b"PotStake");
     pub const MaxCandidates: u32 = 1000;
@@ -415,6 +454,13 @@ parameter_types! {
 pub struct CurrentSessionIndexGetter;
 
 impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
+    fn session_index() -> u32 {
+        Session::current_index()
+    }
+}
+
+impl pallet_collator_assignment::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     /// Returns current session index.
     fn session_index() -> u32 {
         Session::current_index()
@@ -468,6 +514,7 @@ construct_runtime!(
         // ContainerChain management
         Registrar: pallet_registrar = 30,
         Configuration: pallet_configuration = 31,
+        CollatorAssignment: pallet_collator_assignment = 32,
     }
 );
 

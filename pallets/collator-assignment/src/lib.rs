@@ -2,7 +2,7 @@
 
 use frame_support::pallet_prelude::*;
 use frame_support::traits::OneSessionHandler;
-use scale_info::prelude::collections::HashMap;
+use scale_info::prelude::collections::BTreeMap;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
@@ -89,7 +89,7 @@ pub mod pallet {
     #[derive(Debug, Clone, Default)]
     struct AssignedCollators<AccountId> {
         moondance: Vec<AccountId>,
-        parachains: HashMap<u32, Vec<AccountId>>,
+        parachains: BTreeMap<u32, Vec<AccountId>>,
     }
 
     impl<AccountId> AssignedCollators<AccountId>
@@ -252,7 +252,7 @@ pub mod pallet {
 
         // Returns the current assigned collators as read from storage, and the number of collators.
         fn read_assigned_collators() -> (AssignedCollators<T::AccountId>, usize) {
-            let mut parachains: HashMap<u32, Vec<T::AccountId>> = HashMap::new();
+            let mut parachains: BTreeMap<u32, Vec<T::AccountId>> = BTreeMap::new();
             let mut num_collators = 0;
 
             for (c, para_id) in CollatorParachain::<T>::iter() {

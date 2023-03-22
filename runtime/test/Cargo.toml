@@ -18,6 +18,7 @@ scale-info = { workspace = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Own
+pallet-collator-assignment = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 

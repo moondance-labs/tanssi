@@ -11303,6 +11303,7 @@ dependencies = [
  "pallet-aura",
  "pallet-authorship",
  "pallet-balances",
+ "pallet-collator-assignment",
  "pallet-collator-selection",
  "pallet-configuration",
  "pallet-registrar",
