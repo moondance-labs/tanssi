@@ -160,34 +160,6 @@ impl_opaque_keys! {
     }
 }
 
-pub struct OwnSessionHandler;
-impl sp_runtime::BoundToRuntimeAppPublic for OwnSessionHandler {
-    type Public = AuraId;
-}
-
-use frame_support::traits::OneSessionHandler;
-impl OneSessionHandler<AccountId> for OwnSessionHandler {
-    type Key = AuraId;
-
-    fn on_genesis_session<'a, I: 'a>(authorities: I)
-    where
-        I: Iterator<Item = (&'a AccountId, Self::Key)>,
-    {
-        Initializer::on_genesis_session(authorities)
-    }
-
-    fn on_new_session<'a, I: 'a>(changed: bool, validators: I, queued_validators: I)
-    where
-        I: Iterator<Item = (&'a AccountId, Self::Key)>,
-    {
-        Initializer::on_new_session(changed, validators, queued_validators)
-    }
-
-    fn on_disabled(_i: u32) {
-        // ignore
-    }
-}
-
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("template-parachain"),

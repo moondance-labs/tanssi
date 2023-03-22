@@ -7,6 +7,12 @@ use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 pub use pallet::*;
 
 #[frame_support::pallet]
@@ -130,7 +136,7 @@ impl<T: Config> Pallet<T> {
     #[cfg(any(test, feature = "runtime-benchmarks"))]
     pub(crate) fn test_trigger_on_new_session<'a, I: 'a>(
         changed: bool,
-        session_index: SessionIndex,
+        session_index: T::SessionIndex,
         validators: I,
         queued: Option<I>,
     ) where
