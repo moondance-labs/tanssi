@@ -1,7 +1,7 @@
 use crate::{self as pallet_collator_assignment};
-use codec::{Decode, Encode};
 use frame_support::traits::{ConstU16, ConstU64};
 use frame_system as system;
+use parity_scale_codec::{Decode, Encode};
 use sp_core::{ConstU32, H256};
 use sp_runtime::{
     testing::{Header, UintAuthorityId},

@@ -49,7 +49,7 @@ pub mod pallet {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        type SessionIndex: codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
+        type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
         /// The identifier type for an authority.
         type AuthorityId: Member
