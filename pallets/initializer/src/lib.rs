@@ -1,6 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use codec::{Decode, Encode};
+use parity_scale_codec::{Decode, Encode};
 use frame_support::traits::OneSessionHandler;
 use scale_info::TypeInfo;
 use sp_runtime::traits::AtLeast32BitUnsigned;
@@ -9,7 +9,7 @@ use sp_std::prelude::*;
 
 pub use pallet::*;
 
-#[frame_support::pallet]
+#[frame_support::pallet]	
 pub mod pallet {
     use super::*;
     use frame_support::pallet_prelude::*;
@@ -40,7 +40,7 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        type SessionIndex: codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
+        type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
         /// The identifier type for an authority.
         type AuthorityId: Member
