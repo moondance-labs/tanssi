@@ -79,6 +79,10 @@ pub mod pallet {
     pub(crate) type CollatorParachain<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, u32>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn moondance_collators)]
+    pub(crate) type MoondanceCollators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {}
 
@@ -197,6 +201,7 @@ pub mod pallet {
                 }
             }
             let moondance_para_id = T::MoondanceParaId::get();
+            MoondanceCollators::<T>::put(moondance.clone());
             for collator in moondance {
                 CollatorParachain::<T>::insert(collator, moondance_para_id);
             }
