@@ -156,8 +156,35 @@ pub mod opaque {
 
 impl_opaque_keys! {
     pub struct SessionKeys {
-        pub aura: Aura,
-        pub config: Configuration,
+        pub aura: Initializer,
+    }
+}
+
+pub struct OwnSessionHandler;
+impl sp_runtime::BoundToRuntimeAppPublic for OwnSessionHandler {
+    type Public = AuraId;
+}
+
+use frame_support::traits::OneSessionHandler;
+impl OneSessionHandler<AccountId> for OwnSessionHandler {
+    type Key = AuraId;
+
+    fn on_genesis_session<'a, I: 'a>(authorities: I)
+    where
+        I: Iterator<Item = (&'a AccountId, Self::Key)>,
+    {
+        Initializer::on_genesis_session(authorities)
+    }
+
+    fn on_new_session<'a, I: 'a>(changed: bool, validators: I, queued_validators: I)
+    where
+        I: Iterator<Item = (&'a AccountId, Self::Key)>,
+    {
+        Initializer::on_new_session(changed, validators, queued_validators)
+    }
+
+    fn on_disabled(_i: u32) {
+        // ignore
     }
 }
 
@@ -351,6 +378,37 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
+pub struct OwnApplySession;
+impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
+    fn apply_new_session(
+        changed: bool,
+        session_index: u32,
+        all_validators: Vec<(AccountId, AuraId)>,
+        queued: Vec<(AccountId, AuraId)>,
+    ) {
+        // We first initialize Configuration
+        Configuration::initializer_on_new_session(&session_index);
+        let validators: Vec<_> = all_validators.iter().map(|(k, v)| (k, v.clone())).collect();
+        let queued: Vec<_> = queued.iter().map(|(k, v)| (k, v.clone())).collect();
+        // Then we apply Aura
+
+        if session_index == 0 {
+            Aura::on_genesis_session(validators.into_iter());
+        } else {
+            Aura::on_new_session(changed, validators.into_iter(), queued.into_iter());
+        }
+    }
+}
+
+impl pallet_initializer::Config for Runtime {
+    type SessionIndex = u32;
+
+    /// The identifier type for an authority.
+    type AuthorityId = AuraId;
+
+    type SessionHandler = OwnApplySession;
+}
+
 impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
@@ -422,7 +480,6 @@ impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
 }
 
 impl pallet_configuration::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
@@ -468,6 +525,7 @@ construct_runtime!(
         // ContainerChain management
         Registrar: pallet_registrar = 30,
         Configuration: pallet_configuration = 31,
+        Initializer: pallet_initializer = 32,
     }
 );
 

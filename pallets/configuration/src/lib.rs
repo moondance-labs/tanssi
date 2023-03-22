@@ -114,9 +114,6 @@ pub mod pallet {
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Because this pallet emits events, it depends on the runtime's definition of an event.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
 
@@ -141,12 +138,6 @@ pub mod pallet {
     pub enum Error<T> {
         /// The new value for a configuration parameter is invalid.
         InvalidNewValue,
-    }
-
-    #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config> {
-        ScheduledConfigUpdate,
     }
 
     /// The active configuration for the current session.
@@ -259,9 +250,7 @@ pub mod pallet {
         /// Returns the configuration that was actual before the session change and the configuration
         /// that became active after the session change. If there were no scheduled changes, both will
         /// be the same.
-        pub(crate) fn initializer_on_new_session(
-            session_index: &T::SessionIndex,
-        ) -> SessionChangeOutcome {
+        pub fn initializer_on_new_session(session_index: &T::SessionIndex) -> SessionChangeOutcome {
             let pending_configs = <PendingConfigs<T>>::get();
             let prev_config = ActiveConfig::<T>::get();
 
