@@ -120,7 +120,7 @@ pub mod pallet {
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
 
-        type SessionIndex: codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
+        type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
