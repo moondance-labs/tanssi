@@ -7,9 +7,6 @@ use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
 
-#[cfg(test)]
-mod tests;
-
 pub use pallet::*;
 
 #[frame_support::pallet]
