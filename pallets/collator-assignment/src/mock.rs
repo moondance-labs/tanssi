@@ -91,7 +91,7 @@ pub struct Mocks {
     pub moondance_collators: u32,
     pub collators_per_container: u32,
     pub collators: Vec<u64>,
-    pub parachains: Vec<u32>,
+    pub container_chains: Vec<u32>,
 }
 
 impl Default for Mocks {
@@ -100,7 +100,7 @@ impl Default for Mocks {
             moondance_collators: 0,
             collators_per_container: 0,
             collators: vec![],
-            parachains: vec![],
+            container_chains: vec![],
         }
     }
 }
@@ -127,11 +127,11 @@ impl pallet_collator_assignment::GetCollators<u64> for CollatorsGetter {
     }
 }
 
-pub struct ParachainsGetter;
+pub struct ContainerChainsGetter;
 
-impl pallet_collator_assignment::GetParachains for ParachainsGetter {
-    fn parachains() -> Vec<u32> {
-        MockData::mock().parachains.clone()
+impl pallet_collator_assignment::GetContainerChains for ContainerChainsGetter {
+    fn container_chains() -> Vec<u32> {
+        MockData::mock().container_chains.clone()
     }
 }
 
@@ -152,7 +152,7 @@ impl pallet_collator_assignment::Config for Test {
     type MoondanceParaId = ConstU32<999>;
     type HostConfiguration = HostConfigurationGetter;
     type Collators = CollatorsGetter;
-    type Parachains = ParachainsGetter;
+    type ContainerChains = ContainerChainsGetter;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 

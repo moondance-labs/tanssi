@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{mock::*, Store};
 
 fn assigned_collators() -> HashMap<u64, u32> {
-    <CollatorAssignment as Store>::CollatorParachain::iter().collect()
+    <CollatorAssignment as Store>::CollatorContainerChain::iter().collect()
 }
 
 #[test]
@@ -16,7 +16,7 @@ fn assign_initial_collators() {
             m.moondance_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
 
         assert_eq!(assigned_collators(), HashMap::new(),);
@@ -49,7 +49,7 @@ fn assign_collators_after_one_leaves_container() {
             m.moondance_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
 
         assert_eq!(assigned_collators(), HashMap::new(),);
@@ -105,7 +105,7 @@ fn assign_collators_after_one_leaves_moondance() {
             m.moondance_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
 
         assert_eq!(assigned_collators(), HashMap::new(),);
@@ -162,7 +162,7 @@ fn assign_collators_if_config_moondance_collators_increases() {
             m.moondance_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
@@ -219,7 +219,7 @@ fn assign_collators_if_config_moondance_collators_decreases() {
             m.moondance_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
@@ -261,7 +261,7 @@ fn assign_collators_if_config_collators_per_container_increases() {
             m.moondance_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
 
         assert_eq!(assigned_collators(), HashMap::new(),);
@@ -283,7 +283,7 @@ fn assign_collators_if_config_collators_per_container_increases() {
         );
 
         MockData::mutate(|m| {
-            // Add 2 new collators to each parachain
+            // Add 2 new collators to each container_chain
             m.collators_per_container = 4;
         });
 
@@ -311,7 +311,7 @@ fn assign_collators_if_config_collators_per_container_increases() {
 }
 
 #[test]
-fn assign_collators_if_parachain_is_removed() {
+fn assign_collators_if_container_chain_is_removed() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
@@ -320,7 +320,7 @@ fn assign_collators_if_parachain_is_removed() {
             m.moondance_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
@@ -341,8 +341,8 @@ fn assign_collators_if_parachain_is_removed() {
         );
 
         MockData::mutate(|m| {
-            // Remove 1 parachain
-            m.parachains = vec![1001 /*1002*/];
+            // Remove 1 container_chain
+            m.container_chains = vec![1001 /*1002*/];
         });
 
         run_to_block(11);
@@ -363,7 +363,7 @@ fn assign_collators_if_parachain_is_removed() {
 }
 
 #[test]
-fn assign_collators_if_parachain_is_added() {
+fn assign_collators_if_container_chain_is_added() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
@@ -372,7 +372,7 @@ fn assign_collators_if_parachain_is_added() {
             m.moondance_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);
@@ -393,8 +393,8 @@ fn assign_collators_if_parachain_is_added() {
         );
 
         MockData::mutate(|m| {
-            // Add 1 new parachain
-            m.parachains = vec![1001, 1002, 1003];
+            // Add 1 new container_chain
+            m.container_chains = vec![1001, 1002, 1003];
         });
 
         run_to_block(11);
@@ -428,7 +428,7 @@ fn assign_collators_after_decrease_num_collators() {
             m.moondance_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), HashMap::new(),);
         run_to_block(6);

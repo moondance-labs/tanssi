@@ -400,10 +400,10 @@ impl pallet_collator_assignment::GetHostConfiguration for HostConfigurationGette
     }
 }
 
-pub struct ParachainsGetter;
+pub struct ContainerChainsGetter;
 
-impl pallet_collator_assignment::GetParachains for ParachainsGetter {
-    fn parachains() -> Vec<u32> {
+impl pallet_collator_assignment::GetContainerChains for ContainerChainsGetter {
+    fn container_chains() -> Vec<u32> {
         Registrar::registered_para_ids().into()
     }
 }
@@ -415,7 +415,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type MoondanceParaId = ConstU32<999>;
     type HostConfiguration = HostConfigurationGetter;
-    type Parachains = ParachainsGetter;
+    type ContainerChains = ContainerChainsGetter;
     type SessionIndex = u32;
 }
 

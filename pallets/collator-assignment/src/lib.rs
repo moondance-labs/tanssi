@@ -24,9 +24,9 @@ pub trait GetCollators<AccountId> {
     fn collators() -> Vec<AccountId>;
 }
 
-pub trait GetParachains {
+pub trait GetContainerChains {
     // TODO: import ParaId type
-    fn parachains() -> Vec<u32>;
+    fn container_chains() -> Vec<u32>;
 }
 
 pub trait GetSessionIndex<SessionIndex> {
@@ -63,7 +63,7 @@ pub mod pallet {
 
         type HostConfiguration: GetHostConfiguration;
         type Collators: GetCollators<Self::AccountId>;
-        type Parachains: GetParachains;
+        type ContainerChains: GetContainerChains;
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
     }
 
@@ -75,8 +75,8 @@ pub mod pallet {
     pub enum Event<T: Config> {}
 
     #[pallet::storage]
-    #[pallet::getter(fn collator_parachain)]
-    pub(crate) type CollatorParachain<T: Config> =
+    #[pallet::getter(fn collator_container_chain)]
+    pub(crate) type CollatorContainerChain<T: Config> =
         StorageMap<_, Blake2_128Concat, T::AccountId, u32>;
 
     #[pallet::storage]
@@ -89,7 +89,7 @@ pub mod pallet {
     #[derive(Debug, Clone, Default)]
     struct AssignedCollators<AccountId> {
         moondance: Vec<AccountId>,
-        parachains: BTreeMap<u32, Vec<AccountId>>,
+        container_chains: BTreeMap<u32, Vec<AccountId>>,
     }
 
     impl<AccountId> AssignedCollators<AccountId>
@@ -99,18 +99,19 @@ pub mod pallet {
         fn find_collator(&self, x: &AccountId) -> bool {
             self.moondance.iter().any(|a| a == x)
                 || self
-                    .parachains
+                    .container_chains
                     .iter()
                     .any(|(_id, cs)| cs.iter().any(|a| a == x))
         }
 
-        fn remove_parachains_not_in_list(&mut self, parachains: &[u32]) {
-            self.parachains.retain(|id, _cs| parachains.contains(id));
+        fn remove_container_chains_not_in_list(&mut self, container_chains: &[u32]) {
+            self.container_chains
+                .retain(|id, _cs| container_chains.contains(id));
         }
 
         fn remove_collators_not_in_list(&mut self, collators: &[AccountId]) {
             self.moondance.retain(|c| collators.contains(c));
-            for (_id, cs) in self.parachains.iter_mut() {
+            for (_id, cs) in self.container_chains.iter_mut() {
                 cs.retain(|c| collators.contains(c))
             }
         }
@@ -119,9 +120,9 @@ pub mod pallet {
             self.moondance.truncate(num_moondance);
         }
 
-        fn remove_parachain_excess_collators(&mut self, num_each_parachain: usize) {
-            for (_id, cs) in self.parachains.iter_mut() {
-                cs.truncate(num_each_parachain);
+        fn remove_container_chain_excess_collators(&mut self, num_each_container_chain: usize) {
+            for (_id, cs) in self.container_chains.iter_mut() {
+                cs.truncate(num_each_container_chain);
             }
         }
 
@@ -138,12 +139,15 @@ pub mod pallet {
             }
         }
 
-        fn fill_parachain_collators<I>(&mut self, num_each_parachain: usize, next_collator: &mut I)
-        where
+        fn fill_container_chain_collators<I>(
+            &mut self,
+            num_each_container_chain: usize,
+            next_collator: &mut I,
+        ) where
             I: Iterator<Item = AccountId>,
         {
-            for (_id, cs) in self.parachains.iter_mut() {
-                while cs.len() < num_each_parachain {
+            for (_id, cs) in self.container_chains.iter_mut() {
+                while cs.len() < num_each_container_chain {
                     if let Some(nc) = next_collator.next() {
                         cs.push(nc);
                     } else {
@@ -153,9 +157,9 @@ pub mod pallet {
             }
         }
 
-        fn add_new_parachains(&mut self, parachains: &[u32]) {
-            for para_id in parachains {
-                self.parachains.entry(*para_id).or_default();
+        fn add_new_container_chains(&mut self, container_chains: &[u32]) {
+            for para_id in container_chains {
+                self.container_chains.entry(*para_id).or_default();
             }
         }
     }
@@ -164,16 +168,16 @@ pub mod pallet {
         /// Assign new collators
         pub fn assign_collators() {
             let collators = T::Collators::collators();
-            let parachain_ids = T::Parachains::parachains();
+            let container_chain_ids = T::ContainerChains::container_chains();
 
             let (old_assigned, old_num_collators) = Self::read_assigned_collators();
 
             let AssignedCollators {
                 moondance,
-                parachains,
+                container_chains,
             } = Self::assign_collators_always_keep_old(
                 collators,
-                &parachain_ids,
+                &container_chain_ids,
                 T::HostConfiguration::moondance_collators() as usize,
                 T::HostConfiguration::collators_per_container() as usize,
                 old_assigned,
@@ -183,7 +187,7 @@ pub mod pallet {
             // TODO: maybe it will be more efficient to store it everything under a single key?
             // TODO: but a limit of 0 also works?
             let _multi_removal_result =
-                CollatorParachain::<T>::clear(old_num_collators as u32, None);
+                CollatorContainerChain::<T>::clear(old_num_collators as u32, None);
 
             // Write new collators to storage
             // TODO: this can be optimized:
@@ -193,44 +197,44 @@ pub mod pallet {
             // If the collator no longer exists, remove from storage
             // Iterate over new_collators:
             // If the collator does not exist in old_collators, write to storage.
-            for (para_id, collators) in parachains {
+            for (para_id, collators) in container_chains {
                 for collator in collators {
-                    CollatorParachain::<T>::insert(collator, para_id);
+                    CollatorContainerChain::<T>::insert(collator, para_id);
                 }
             }
             let moondance_para_id = T::MoondanceParaId::get();
             MoondanceCollators::<T>::put(moondance.clone());
             for collator in moondance {
-                CollatorParachain::<T>::insert(collator, moondance_para_id);
+                CollatorContainerChain::<T>::insert(collator, moondance_para_id);
             }
             // TODO: we may want to wait a few sessions before making the change, to give
-            // new collators enough time to sync the respective parachain
-            // In that case, instead of writing to CollatorParachain we must write to PendingCollatorParachain or similar
+            // new collators enough time to sync the respective container_chain
+            // In that case, instead of writing to CollatorContainerChain we must write to PendingCollatorContainerChain or similar
             // And the optimization mentioned above does not make sense anymore because we will be writing a new map
         }
 
-        /// Assign new collators to missing parachains.
+        /// Assign new collators to missing container_chains.
         /// Old collators always have preference to remain on the same chain.
         /// If there are no missing collators, nothing is changed.
         fn assign_collators_always_keep_old(
             collators: Vec<T::AccountId>,
-            parachain_ids: &[u32],
+            container_chain_ids: &[u32],
             num_moondance: usize,
-            num_each_parachain: usize,
+            num_each_container_chain: usize,
             old_assigned: AssignedCollators<T::AccountId>,
         ) -> AssignedCollators<T::AccountId> {
             // TODO: the performance of this function is sad, could be improved by having sets of
             // old_collators and new_collators instead of doing array.contains() every time.
             let mut new_assigned = old_assigned;
             new_assigned.remove_collators_not_in_list(&collators);
-            new_assigned.remove_parachains_not_in_list(parachain_ids);
+            new_assigned.remove_container_chains_not_in_list(container_chain_ids);
             // Only need to do these two if the config params change
             new_assigned.remove_moondance_excess_collators(num_moondance);
-            new_assigned.remove_parachain_excess_collators(num_each_parachain);
+            new_assigned.remove_container_chain_excess_collators(num_each_container_chain);
 
             // Collators that are not present in old_assigned
             // TODO: unless we save all the old_collators somewhere, it is still possible for a
-            // collator to change from parachain 1001 to None to 1002
+            // collator to change from container_chain 1001 to None to 1002
             // And ideally that should not happen until the automatic chain rotation is implemented
             // But the current implementation allows changes, even without passing through None
             let mut new_collators = vec![];
@@ -242,30 +246,31 @@ pub mod pallet {
 
             let mut new_collators = new_collators.into_iter();
             new_assigned.fill_moondance_collators(num_moondance, &mut new_collators);
-            new_assigned.add_new_parachains(parachain_ids);
-            new_assigned.fill_parachain_collators(num_each_parachain, &mut new_collators);
+            new_assigned.add_new_container_chains(container_chain_ids);
+            new_assigned
+                .fill_container_chain_collators(num_each_container_chain, &mut new_collators);
 
             new_assigned
         }
 
         // Returns the current assigned collators as read from storage, and the number of collators.
         fn read_assigned_collators() -> (AssignedCollators<T::AccountId>, usize) {
-            let mut parachains: BTreeMap<u32, Vec<T::AccountId>> = BTreeMap::new();
+            let mut container_chains: BTreeMap<u32, Vec<T::AccountId>> = BTreeMap::new();
             let mut num_collators = 0;
 
-            for (c, para_id) in CollatorParachain::<T>::iter() {
-                parachains.entry(para_id).or_default().push(c);
+            for (c, para_id) in CollatorContainerChain::<T>::iter() {
+                container_chains.entry(para_id).or_default().push(c);
                 num_collators += 1;
             }
 
-            let moondance = parachains
+            let moondance = container_chains
                 .remove(&T::MoondanceParaId::get())
                 .unwrap_or_default();
 
             (
                 AssignedCollators {
                     moondance,
-                    parachains,
+                    container_chains,
                 },
                 num_collators,
             )
