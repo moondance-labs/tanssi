@@ -1,7 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::pallet_prelude::*;
-use frame_support::traits::OneSessionHandler;
 use scale_info::prelude::collections::BTreeMap;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::RuntimeAppPublic;
@@ -274,30 +273,5 @@ pub mod pallet {
         pub fn initializer_on_new_session(_session_index: &T::SessionIndex) {
             Self::assign_collators();
         }
-    }
-
-    // These traits are to automatically call initializer_on_new_session when needed.
-    // Can be removed after we implement the initializer pallet
-    impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
-        type Public = T::AuthorityId;
-    }
-
-    impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
-        type Key = T::AuthorityId;
-
-        fn on_genesis_session<'a, I: 'a>(_validators: I)
-        where
-            I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
-        {
-        }
-
-        fn on_new_session<'a, I: 'a>(_changed: bool, _validators: I, _queued_validators: I)
-        where
-            I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
-        {
-            Self::initializer_on_new_session(&T::CurrentSessionIndex::session_index());
-        }
-
-        fn on_disabled(_i: u32) {}
     }
 }
