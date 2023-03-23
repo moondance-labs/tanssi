@@ -197,7 +197,7 @@ pub mod pallet {
                 }
             }
             let orchestrator_chain_para_id = T::MoondanceParaId::get();
-            OrchestratorChainCollators::<T>::put(orchestrator_chain.clone());
+            OrchestratorChainCollators::<T>::put(&orchestrator_chain);
             for collator in orchestrator_chain {
                 CollatorContainerChain::<T>::insert(collator, orchestrator_chain_para_id);
             }
