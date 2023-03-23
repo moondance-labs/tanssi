@@ -204,7 +204,7 @@ pub mod pallet {
             // If an entry with the target_session_index already exists, overwrite it.
             // Otherwise, insert a new entry.
             match pending.binary_search_by(|(session_index, _assigned_collators)| {
-                target_session_index.cmp(session_index)
+                session_index.cmp(&target_session_index)
             }) {
                 Ok(i) => {
                     pending[i] = (target_session_index, new_assigned);
@@ -220,7 +220,7 @@ pub mod pallet {
             // TODO: merge with previous step to avoid more than one read and one write to storage
             let mut pending = PendingCollatorContainerChain::<T>::get();
             let i = match pending.binary_search_by(|(session_index, _assigned_collators)| {
-                current_session_index.cmp(session_index)
+                session_index.cmp(current_session_index)
             }) {
                 Ok(i) => Some(i),
                 Err(i) => {
@@ -299,7 +299,7 @@ pub mod pallet {
 
             let assigned_collators_index = pending_collator_list.binary_search_by(
                 |(pending_session_index, _assigned_collators)| {
-                    session_index.cmp(pending_session_index)
+                    pending_session_index.cmp(&session_index)
                 },
             );
 
