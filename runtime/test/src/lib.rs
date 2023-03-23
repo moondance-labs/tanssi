@@ -12,7 +12,7 @@ use frame_support::weights::constants::RocksDbWeight;
 use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight};
 use smallvec::smallvec;
 use sp_api::impl_runtime_apis;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
@@ -408,11 +408,15 @@ impl pallet_collator_assignment::GetContainerChains for ContainerChainsGetter {
     }
 }
 
+parameter_types! {
+    pub SelfParaId: u32 = ParachainInfo::get().into();
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type AuthorityId = AuraId;
     type Collators = CollatorsGetter;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type SelfParaId = ConstU32<999>;
+    type SelfParaId = SelfParaId;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
     type SessionIndex = u32;
