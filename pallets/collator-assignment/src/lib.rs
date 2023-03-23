@@ -46,7 +46,6 @@ pub mod pallet {
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
-
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
         /// The identifier type for an authority.
@@ -64,9 +63,6 @@ pub mod pallet {
         type ContainerChains: GetContainerChains;
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
     }
-
-    #[pallet::error]
-    pub enum Error<T> {}
 
     #[pallet::storage]
     #[pallet::getter(fn collator_container_chain)]
