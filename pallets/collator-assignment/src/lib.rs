@@ -3,7 +3,9 @@
 use frame_support::pallet_prelude::*;
 use scale_info::prelude::collections::BTreeMap;
 use sp_runtime::traits::AtLeast32BitUnsigned;
+use sp_runtime::traits::One;
 use sp_runtime::RuntimeAppPublic;
+use sp_runtime::Saturating;
 use sp_std::prelude::*;
 
 pub use pallet::*;
@@ -14,18 +16,18 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-pub trait GetHostConfiguration {
-    fn orchestrator_chain_collators() -> u32;
-    fn collators_per_container() -> u32;
+pub trait GetHostConfiguration<SessionIndex> {
+    fn orchestrator_chain_collators(session_index: SessionIndex) -> u32;
+    fn collators_per_container(session_index: SessionIndex) -> u32;
 }
 
-pub trait GetCollators<AccountId> {
-    fn collators() -> Vec<AccountId>;
+pub trait GetCollators<AccountId, SessionIndex> {
+    fn collators(session_index: SessionIndex) -> Vec<AccountId>;
 }
 
-pub trait GetContainerChains {
+pub trait GetContainerChains<SessionIndex> {
     // TODO: import ParaId type
-    fn container_chains() -> Vec<u32>;
+    fn container_chains(session_index: SessionIndex) -> Vec<u32>;
 }
 
 pub trait GetSessionIndex<SessionIndex> {
@@ -46,6 +48,10 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
+        // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
+        // Wait until the session index is 2 larger then the current index to apply any changes,
+        // which guarantees that at least one full session has passed before any changes are applied.
+        type SessionDelay: Get<Self::SessionIndex>;
 
         /// The identifier type for an authority.
         type AuthorityId: Member
@@ -57,29 +63,46 @@ pub mod pallet {
         #[pallet::constant]
         type SelfParaId: Get<u32>;
 
-        type HostConfiguration: GetHostConfiguration;
-        type Collators: GetCollators<Self::AccountId>;
-        type ContainerChains: GetContainerChains;
+        type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
+        type Collators: GetCollators<Self::AccountId, Self::SessionIndex>;
+        type ContainerChains: GetContainerChains<Self::SessionIndex>;
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
     }
 
     #[pallet::storage]
     #[pallet::getter(fn collator_container_chain)]
     pub(crate) type CollatorContainerChain<T: Config> =
-        StorageMap<_, Blake2_128Concat, T::AccountId, u32>;
+        StorageValue<_, AssignedCollators<T::AccountId>, ValueQuery>;
 
+    /// Pending configuration changes.
+    ///
+    /// This is a list of configuration changes, each with a session index at which it should
+    /// be applied.
+    ///
+    /// The list is sorted ascending by session index. Also, this list can only contain at most
+    /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
-    #[pallet::getter(fn orchestrator_chain_collators)]
-    pub(crate) type OrchestratorChainCollators<T: Config> =
-        StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+    pub(crate) type PendingCollatorContainerChain<T: Config> =
+        StorageValue<_, Vec<(T::SessionIndex, AssignedCollators<T::AccountId>)>, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {}
 
-    #[derive(Debug, Clone, Default)]
-    struct AssignedCollators<AccountId> {
-        orchestrator_chain: Vec<AccountId>,
-        container_chains: BTreeMap<u32, Vec<AccountId>>,
+    #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
+    #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+    pub struct AssignedCollators<AccountId> {
+        pub orchestrator_chain: Vec<AccountId>,
+        pub container_chains: BTreeMap<u32, Vec<AccountId>>,
+    }
+
+    // Manual default impl that does not require AccountId: Default
+    impl<AccountId> Default for AssignedCollators<AccountId> {
+        fn default() -> Self {
+            Self {
+                orchestrator_chain: Default::default(),
+                container_chains: Default::default(),
+            }
+        }
     }
 
     impl<AccountId> AssignedCollators<AccountId>
@@ -159,51 +182,69 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Assign new collators
-        pub fn assign_collators() {
-            let collators = T::Collators::collators();
-            let container_chain_ids = T::ContainerChains::container_chains();
+        pub fn assign_collators(current_session_index: &T::SessionIndex) {
+            let target_session_index = current_session_index.saturating_add(T::SessionDelay::get());
+            let collators = T::Collators::collators(target_session_index);
+            let container_chain_ids = T::ContainerChains::container_chains(target_session_index);
 
-            let (old_assigned, old_num_collators) = Self::read_assigned_collators();
+            let previous_session_index =
+                target_session_index.saturating_sub(T::SessionIndex::one());
+            let old_assigned = Self::read_assigned_collators(previous_session_index);
 
-            let AssignedCollators {
-                orchestrator_chain,
-                container_chains,
-            } = Self::assign_collators_always_keep_old(
+            let new_assigned = Self::assign_collators_always_keep_old(
                 collators,
                 &container_chain_ids,
-                T::HostConfiguration::orchestrator_chain_collators() as usize,
-                T::HostConfiguration::collators_per_container() as usize,
+                T::HostConfiguration::orchestrator_chain_collators(target_session_index) as usize,
+                T::HostConfiguration::collators_per_container(target_session_index) as usize,
                 old_assigned,
             );
 
-            // Write changes to storage
-            // TODO: maybe it will be more efficient to store it everything under a single key?
-            // TODO: but a limit of 0 also works?
-            let _multi_removal_result =
-                CollatorContainerChain::<T>::clear(old_num_collators as u32, None);
-
-            // Write new collators to storage
-            // TODO: this can be optimized:
-            // Do not clear.
-            // Iterate over old_collators:
-            // If the new para_id has changed, write to storage.
-            // If the collator no longer exists, remove from storage
-            // Iterate over new_collators:
-            // If the collator does not exist in old_collators, write to storage.
-            for (para_id, collators) in container_chains {
-                for collator in collators {
-                    CollatorContainerChain::<T>::insert(collator, para_id);
+            // Store new_assigned in PendingCollatorContainerChain
+            let mut pending = PendingCollatorContainerChain::<T>::get();
+            // If an entry with the target_session_index already exists, overwrite it.
+            // Otherwise, insert a new entry.
+            match pending.binary_search_by(|(session_index, _assigned_collators)| {
+                target_session_index.cmp(session_index)
+            }) {
+                Ok(i) => {
+                    pending[i] = (target_session_index, new_assigned);
+                }
+                Err(i) => {
+                    pending.insert(i, (target_session_index, new_assigned));
                 }
             }
-            let orchestrator_chain_para_id = T::SelfParaId::get();
-            OrchestratorChainCollators::<T>::put(&orchestrator_chain);
-            for collator in orchestrator_chain {
-                CollatorContainerChain::<T>::insert(collator, orchestrator_chain_para_id);
+
+            PendingCollatorContainerChain::<T>::put(pending);
+
+            // Update CollatorContainerChain using first entry of pending, if needed
+            // TODO: merge with previous step to avoid more than one read and one write to storage
+            let mut pending = PendingCollatorContainerChain::<T>::get();
+            let i = match pending.binary_search_by(|(session_index, _assigned_collators)| {
+                current_session_index.cmp(session_index)
+            }) {
+                Ok(i) => Some(i),
+                Err(i) => {
+                    if i == 0 {
+                        // There are no pending changes to be applied in this session
+                        None
+                    } else {
+                        Some(i - 1)
+                    }
+                }
+            };
+
+            if let Some(i) = i {
+                let (_session_index, assigned_collators) = pending.remove(i);
+
+                CollatorContainerChain::<T>::put(assigned_collators);
+
+                // Remove any elements with session index lower than the current, as they will never be applied
+                pending.retain(|(session_index, _assigned_collators)| {
+                    session_index > current_session_index
+                });
+
+                PendingCollatorContainerChain::<T>::put(pending);
             }
-            // TODO: we may want to wait a few sessions before making the change, to give
-            // new collators enough time to sync the respective container_chain
-            // In that case, instead of writing to CollatorContainerChain we must write to PendingCollatorContainerChain or similar
-            // And the optimization mentioned above does not make sense anymore because we will be writing a new map
         }
 
         /// Assign new collators to missing container_chains.
@@ -247,31 +288,39 @@ pub mod pallet {
             new_assigned
         }
 
-        // Returns the current assigned collators as read from storage, and the number of collators.
-        fn read_assigned_collators() -> (AssignedCollators<T::AccountId>, usize) {
-            let mut container_chains: BTreeMap<u32, Vec<T::AccountId>> = BTreeMap::new();
-            let mut num_collators = 0;
+        // Returns the assigned collators as read from storage.
+        // If there is any item in PendingCollatorContainerChain whose index is lower than or equal
+        // to the provided `session_index`, returns that element. Otherwise, reads and returns the
+        // current CollatorContainerChain
+        fn read_assigned_collators(
+            session_index: T::SessionIndex,
+        ) -> AssignedCollators<T::AccountId> {
+            let pending_collator_list = PendingCollatorContainerChain::<T>::get();
 
-            for (c, para_id) in CollatorContainerChain::<T>::iter() {
-                container_chains.entry(para_id).or_default().push(c);
-                num_collators += 1;
-            }
-
-            let orchestrator_chain = container_chains
-                .remove(&T::SelfParaId::get())
-                .unwrap_or_default();
-
-            (
-                AssignedCollators {
-                    orchestrator_chain,
-                    container_chains,
+            let assigned_collators_index = pending_collator_list.binary_search_by(
+                |(pending_session_index, _assigned_collators)| {
+                    session_index.cmp(pending_session_index)
                 },
-                num_collators,
-            )
+            );
+
+            let assigned_collators = match assigned_collators_index {
+                Ok(i) => pending_collator_list[i].1.clone(),
+                Err(i) => {
+                    if i == 0 {
+                        // Read current
+                        CollatorContainerChain::<T>::get()
+                    } else {
+                        // Read the latest pending change before index `session_index`
+                        pending_collator_list[i - 1].1.clone()
+                    }
+                }
+            };
+
+            assigned_collators
         }
 
-        pub fn initializer_on_new_session(_session_index: &T::SessionIndex) {
-            Self::assign_collators();
+        pub fn initializer_on_new_session(session_index: &T::SessionIndex) {
+            Self::assign_collators(session_index);
         }
     }
 }

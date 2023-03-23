@@ -109,28 +109,28 @@ impl mock_data::Config for Test {}
 
 pub struct HostConfigurationGetter;
 
-impl pallet_collator_assignment::GetHostConfiguration for HostConfigurationGetter {
-    fn orchestrator_chain_collators() -> u32 {
+impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
+    fn orchestrator_chain_collators(session_index: u32) -> u32 {
         MockData::mock().orchestrator_chain_collators
     }
 
-    fn collators_per_container() -> u32 {
+    fn collators_per_container(session_index: u32) -> u32 {
         MockData::mock().collators_per_container
     }
 }
 
 pub struct CollatorsGetter;
 
-impl pallet_collator_assignment::GetCollators<u64> for CollatorsGetter {
-    fn collators() -> Vec<u64> {
+impl pallet_collator_assignment::GetCollators<u64, u32> for CollatorsGetter {
+    fn collators(session_index: u32) -> Vec<u64> {
         MockData::mock().collators.clone()
     }
 }
 
 pub struct ContainerChainsGetter;
 
-impl pallet_collator_assignment::GetContainerChains for ContainerChainsGetter {
-    fn container_chains() -> Vec<u32> {
+impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
+    fn container_chains(session_index: u32) -> Vec<u32> {
         MockData::mock().container_chains.clone()
     }
 }
@@ -147,6 +147,7 @@ impl pallet_collator_assignment::GetSessionIndex<u32> for CurrentSessionIndexGet
 
 impl pallet_collator_assignment::Config for Test {
     type SessionIndex = u32;
+    type SessionDelay = ConstU32<2>;
     type AuthorityId = UintAuthorityId;
     type SelfParaId = ConstU32<999>;
     type HostConfiguration = HostConfigurationGetter;

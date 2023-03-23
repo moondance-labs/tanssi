@@ -382,28 +382,28 @@ impl pallet_aura::Config for Runtime {
 
 pub struct CollatorsGetter;
 
-impl pallet_collator_assignment::GetCollators<AccountId> for CollatorsGetter {
-    fn collators() -> Vec<AccountId> {
+impl pallet_collator_assignment::GetCollators<AccountId, u32> for CollatorsGetter {
+    fn collators(session_index: u32) -> Vec<AccountId> {
         todo!()
     }
 }
 
 pub struct HostConfigurationGetter;
 
-impl pallet_collator_assignment::GetHostConfiguration for HostConfigurationGetter {
-    fn collators_per_container() -> u32 {
+impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
+    fn collators_per_container(session_index: u32) -> u32 {
         todo!()
     }
 
-    fn orchestrator_chain_collators() -> u32 {
+    fn orchestrator_chain_collators(session_index: u32) -> u32 {
         todo!()
     }
 }
 
 pub struct ContainerChainsGetter;
 
-impl pallet_collator_assignment::GetContainerChains for ContainerChainsGetter {
-    fn container_chains() -> Vec<u32> {
+impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
+    fn container_chains(session_index: u32) -> Vec<u32> {
         Registrar::registered_para_ids().into()
     }
 }
@@ -420,6 +420,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
     type SessionIndex = u32;
+    type SessionDelay = ConstU32<2>;
 }
 
 parameter_types! {

@@ -3,7 +3,21 @@ use std::collections::HashMap;
 use crate::{mock::*, Store};
 
 fn assigned_collators() -> HashMap<u64, u32> {
-    <CollatorAssignment as Store>::CollatorContainerChain::iter().collect()
+    let assigned_collators = <CollatorAssignment as Store>::CollatorContainerChain::get();
+
+    let mut h = HashMap::new();
+
+    for (para_id, collators) in assigned_collators.container_chains.iter() {
+        for collator in collators.iter() {
+            h.insert(*collator, *para_id);
+        }
+    }
+
+    for collator in assigned_collators.orchestrator_chain {
+        h.insert(collator, 999);
+    }
+
+    h
 }
 
 #[test]
