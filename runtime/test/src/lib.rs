@@ -412,7 +412,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type AuthorityId = AuraId;
     type Collators = CollatorsGetter;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type MoondanceParaId = ConstU32<999>;
+    type SelfParaId = ConstU32<999>;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
     type SessionIndex = u32;

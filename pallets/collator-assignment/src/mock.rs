@@ -148,7 +148,7 @@ impl pallet_collator_assignment::GetSessionIndex<u32> for CurrentSessionIndexGet
 impl pallet_collator_assignment::Config for Test {
     type SessionIndex = u32;
     type AuthorityId = UintAuthorityId;
-    type MoondanceParaId = ConstU32<999>;
+    type SelfParaId = ConstU32<999>;
     type HostConfiguration = HostConfigurationGetter;
     type Collators = CollatorsGetter;
     type ContainerChains = ContainerChainsGetter;

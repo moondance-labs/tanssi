@@ -55,7 +55,7 @@ pub mod pallet {
             + MaxEncodedLen;
 
         #[pallet::constant]
-        type MoondanceParaId: Get<u32>;
+        type SelfParaId: Get<u32>;
 
         type HostConfiguration: GetHostConfiguration;
         type Collators: GetCollators<Self::AccountId>;
@@ -195,7 +195,7 @@ pub mod pallet {
                     CollatorContainerChain::<T>::insert(collator, para_id);
                 }
             }
-            let orchestrator_chain_para_id = T::MoondanceParaId::get();
+            let orchestrator_chain_para_id = T::SelfParaId::get();
             OrchestratorChainCollators::<T>::put(&orchestrator_chain);
             for collator in orchestrator_chain {
                 CollatorContainerChain::<T>::insert(collator, orchestrator_chain_para_id);
@@ -258,7 +258,7 @@ pub mod pallet {
             }
 
             let orchestrator_chain = container_chains
-                .remove(&T::MoondanceParaId::get())
+                .remove(&T::SelfParaId::get())
                 .unwrap_or_default();
 
             (
