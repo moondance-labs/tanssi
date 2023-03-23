@@ -1,5 +1,5 @@
-use codec::Encode;
 use frame_support::traits::{GenesisBuild, OnFinalize, OnInitialize};
+use parity_scale_codec::Encode;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_core::Pair;
 use sp_runtime::{Digest, DigestItem};
