@@ -88,7 +88,7 @@ pub mod mock_data {
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub moondance_collators: u32,
+    pub orchestrator_chain_collators: u32,
     pub collators_per_container: u32,
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
@@ -97,7 +97,7 @@ pub struct Mocks {
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            moondance_collators: 0,
+            orchestrator_chain_collators: 0,
             collators_per_container: 0,
             collators: vec![],
             container_chains: vec![],
@@ -110,8 +110,8 @@ impl mock_data::Config for Test {}
 pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration for HostConfigurationGetter {
-    fn moondance_collators() -> u32 {
-        MockData::mock().moondance_collators
+    fn orchestrator_chain_collators() -> u32 {
+        MockData::mock().orchestrator_chain_collators
     }
 
     fn collators_per_container() -> u32 {

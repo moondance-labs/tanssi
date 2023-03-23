@@ -16,7 +16,7 @@ mod mock;
 mod tests;
 
 pub trait GetHostConfiguration {
-    fn moondance_collators() -> u32;
+    fn orchestrator_chain_collators() -> u32;
     fn collators_per_container() -> u32;
 }
 
@@ -70,15 +70,16 @@ pub mod pallet {
         StorageMap<_, Blake2_128Concat, T::AccountId, u32>;
 
     #[pallet::storage]
-    #[pallet::getter(fn moondance_collators)]
-    pub(crate) type MoondanceCollators<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+    #[pallet::getter(fn orchestrator_chain_collators)]
+    pub(crate) type OrchestratorChainCollators<T: Config> =
+        StorageValue<_, Vec<T::AccountId>, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {}
 
     #[derive(Debug, Clone, Default)]
     struct AssignedCollators<AccountId> {
-        moondance: Vec<AccountId>,
+        orchestrator_chain: Vec<AccountId>,
         container_chains: BTreeMap<u32, Vec<AccountId>>,
     }
 
@@ -87,7 +88,7 @@ pub mod pallet {
         AccountId: PartialEq,
     {
         fn find_collator(&self, x: &AccountId) -> bool {
-            self.moondance.iter().any(|a| a == x)
+            self.orchestrator_chain.iter().any(|a| a == x)
                 || self
                     .container_chains
                     .iter()
@@ -100,14 +101,14 @@ pub mod pallet {
         }
 
         fn remove_collators_not_in_list(&mut self, collators: &[AccountId]) {
-            self.moondance.retain(|c| collators.contains(c));
+            self.orchestrator_chain.retain(|c| collators.contains(c));
             for (_id, cs) in self.container_chains.iter_mut() {
                 cs.retain(|c| collators.contains(c))
             }
         }
 
-        fn remove_moondance_excess_collators(&mut self, num_moondance: usize) {
-            self.moondance.truncate(num_moondance);
+        fn remove_orchestrator_chain_excess_collators(&mut self, num_orchestrator_chain: usize) {
+            self.orchestrator_chain.truncate(num_orchestrator_chain);
         }
 
         fn remove_container_chain_excess_collators(&mut self, num_each_container_chain: usize) {
@@ -116,13 +117,16 @@ pub mod pallet {
             }
         }
 
-        fn fill_moondance_collators<I>(&mut self, num_moondance: usize, next_collator: &mut I)
-        where
+        fn fill_orchestrator_chain_collators<I>(
+            &mut self,
+            num_orchestrator_chain: usize,
+            next_collator: &mut I,
+        ) where
             I: Iterator<Item = AccountId>,
         {
-            while self.moondance.len() < num_moondance {
+            while self.orchestrator_chain.len() < num_orchestrator_chain {
                 if let Some(nc) = next_collator.next() {
-                    self.moondance.push(nc);
+                    self.orchestrator_chain.push(nc);
                 } else {
                     return;
                 }
@@ -163,12 +167,12 @@ pub mod pallet {
             let (old_assigned, old_num_collators) = Self::read_assigned_collators();
 
             let AssignedCollators {
-                moondance,
+                orchestrator_chain,
                 container_chains,
             } = Self::assign_collators_always_keep_old(
                 collators,
                 &container_chain_ids,
-                T::HostConfiguration::moondance_collators() as usize,
+                T::HostConfiguration::orchestrator_chain_collators() as usize,
                 T::HostConfiguration::collators_per_container() as usize,
                 old_assigned,
             );
@@ -192,10 +196,10 @@ pub mod pallet {
                     CollatorContainerChain::<T>::insert(collator, para_id);
                 }
             }
-            let moondance_para_id = T::MoondanceParaId::get();
-            MoondanceCollators::<T>::put(moondance.clone());
-            for collator in moondance {
-                CollatorContainerChain::<T>::insert(collator, moondance_para_id);
+            let orchestrator_chain_para_id = T::MoondanceParaId::get();
+            OrchestratorChainCollators::<T>::put(orchestrator_chain.clone());
+            for collator in orchestrator_chain {
+                CollatorContainerChain::<T>::insert(collator, orchestrator_chain_para_id);
             }
             // TODO: we may want to wait a few sessions before making the change, to give
             // new collators enough time to sync the respective container_chain
@@ -209,7 +213,7 @@ pub mod pallet {
         fn assign_collators_always_keep_old(
             collators: Vec<T::AccountId>,
             container_chain_ids: &[u32],
-            num_moondance: usize,
+            num_orchestrator_chain: usize,
             num_each_container_chain: usize,
             old_assigned: AssignedCollators<T::AccountId>,
         ) -> AssignedCollators<T::AccountId> {
@@ -219,7 +223,7 @@ pub mod pallet {
             new_assigned.remove_collators_not_in_list(&collators);
             new_assigned.remove_container_chains_not_in_list(container_chain_ids);
             // Only need to do these two if the config params change
-            new_assigned.remove_moondance_excess_collators(num_moondance);
+            new_assigned.remove_orchestrator_chain_excess_collators(num_orchestrator_chain);
             new_assigned.remove_container_chain_excess_collators(num_each_container_chain);
 
             // Collators that are not present in old_assigned
@@ -235,7 +239,8 @@ pub mod pallet {
             }
 
             let mut new_collators = new_collators.into_iter();
-            new_assigned.fill_moondance_collators(num_moondance, &mut new_collators);
+            new_assigned
+                .fill_orchestrator_chain_collators(num_orchestrator_chain, &mut new_collators);
             new_assigned.add_new_container_chains(container_chain_ids);
             new_assigned
                 .fill_container_chain_collators(num_each_container_chain, &mut new_collators);
@@ -253,13 +258,13 @@ pub mod pallet {
                 num_collators += 1;
             }
 
-            let moondance = container_chains
+            let orchestrator_chain = container_chains
                 .remove(&T::MoondanceParaId::get())
                 .unwrap_or_default();
 
             (
                 AssignedCollators {
-                    moondance,
+                    orchestrator_chain,
                     container_chains,
                 },
                 num_collators,

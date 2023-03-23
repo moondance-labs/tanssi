@@ -395,7 +395,7 @@ impl pallet_collator_assignment::GetHostConfiguration for HostConfigurationGette
         todo!()
     }
 
-    fn moondance_collators() -> u32 {
+    fn orchestrator_chain_collators() -> u32 {
         todo!()
     }
 }
