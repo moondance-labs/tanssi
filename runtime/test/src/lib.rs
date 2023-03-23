@@ -409,7 +409,6 @@ impl pallet_collator_assignment::GetContainerChains for ContainerChainsGetter {
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type AuthorityId = AuraId;
     type Collators = CollatorsGetter;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
