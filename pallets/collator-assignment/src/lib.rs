@@ -196,6 +196,10 @@ pub mod pallet {
                 }
             }
 
+            // TODO: remove duplicate items from pending: if there is a
+            // [(2, x), (3, y)] where x == y, we can remove (3, y), but only if there are no other
+            // changes between 2 and 3
+
             PendingCollatorContainerChain::<T>::put(pending);
 
             // Update CollatorContainerChain using first entry of pending, if needed

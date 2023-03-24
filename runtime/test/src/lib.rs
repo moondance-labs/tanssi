@@ -384,6 +384,7 @@ pub struct CollatorsGetter;
 
 impl pallet_collator_assignment::GetCollators<AccountId, u32> for CollatorsGetter {
     fn collators(session_index: u32) -> Vec<AccountId> {
+        // TODO: use session_index to read future collators
         todo!()
     }
 }
@@ -392,6 +393,7 @@ pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
     fn collators_per_container(session_index: u32) -> u32 {
+        // TODO: use session_index to read future config
         todo!()
     }
 
@@ -404,6 +406,7 @@ pub struct ContainerChainsGetter;
 
 impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
     fn container_chains(session_index: u32) -> Vec<u32> {
+        // TODO: use session_index to read future para_ids
         Registrar::registered_para_ids().into()
     }
 }

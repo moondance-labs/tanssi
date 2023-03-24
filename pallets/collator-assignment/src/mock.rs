@@ -107,14 +107,16 @@ impl Default for Mocks {
 
 impl mock_data::Config for Test {}
 
+// In tests, we ignore the session_index param, so changes to the configuration are instant
+
 pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
-    fn orchestrator_chain_collators(session_index: u32) -> u32 {
+    fn orchestrator_chain_collators(_session_index: u32) -> u32 {
         MockData::mock().orchestrator_chain_collators
     }
 
-    fn collators_per_container(session_index: u32) -> u32 {
+    fn collators_per_container(_session_index: u32) -> u32 {
         MockData::mock().collators_per_container
     }
 }
@@ -122,7 +124,7 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
 pub struct CollatorsGetter;
 
 impl pallet_collator_assignment::GetCollators<u64, u32> for CollatorsGetter {
-    fn collators(session_index: u32) -> Vec<u64> {
+    fn collators(_session_index: u32) -> Vec<u64> {
         MockData::mock().collators.clone()
     }
 }
@@ -130,7 +132,7 @@ impl pallet_collator_assignment::GetCollators<u64, u32> for CollatorsGetter {
 pub struct ContainerChainsGetter;
 
 impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
-    fn container_chains(session_index: u32) -> Vec<u32> {
+    fn container_chains(_session_index: u32) -> Vec<u32> {
         MockData::mock().container_chains.clone()
     }
 }
