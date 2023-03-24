@@ -64,7 +64,7 @@ pub mod pallet {
     /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
     pub(crate) type PendingCollatorContainerChain<T: Config> =
-        StorageValue<_, Vec<AssignedCollators<T::AccountId>>, ValueQuery>;
+        StorageValue<_, Option<AssignedCollators<T::AccountId>>, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {}
@@ -181,12 +181,12 @@ pub mod pallet {
             let old_assigned_changed = old_assigned != new_assigned;
             let mut pending_changed = false;
             // Update CollatorContainerChain using last entry of pending, if needed
-            if let Some(current) = pending.pop() {
+            if let Some(current) = pending.take() {
                 pending_changed = true;
                 CollatorContainerChain::<T>::put(current);
             }
             if old_assigned_changed {
-                pending.push(new_assigned);
+                pending = Some(new_assigned);
                 pending_changed = true;
             }
             // Update PendingCollatorContainerChain, if it changed
@@ -242,7 +242,7 @@ pub mod pallet {
         fn read_assigned_collators() -> AssignedCollators<T::AccountId> {
             let mut pending_collator_list = PendingCollatorContainerChain::<T>::get();
 
-            if let Some(assigned_collators) = pending_collator_list.pop() {
+            if let Some(assigned_collators) = pending_collator_list.take() {
                 assigned_collators
             } else {
                 // Read current
