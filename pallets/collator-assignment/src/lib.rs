@@ -45,7 +45,6 @@ pub mod pallet {
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
-        type SessionDelay: Get<Self::SessionIndex>;
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
         type Collators: GetCollators<Self::AccountId, Self::SessionIndex>;
         type ContainerChains: GetContainerChains<Self::SessionIndex>;
@@ -65,7 +64,7 @@ pub mod pallet {
     /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
     pub(crate) type PendingCollatorContainerChain<T: Config> =
-        StorageValue<_, Vec<(T::SessionIndex, AssignedCollators<T::AccountId>)>, ValueQuery>;
+        StorageValue<_, Vec<AssignedCollators<T::AccountId>>, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {}
@@ -165,14 +164,11 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Assign new collators
         pub fn assign_collators(current_session_index: &T::SessionIndex) {
-            let target_session_index = current_session_index.saturating_add(T::SessionDelay::get());
+            let session_delay = T::SessionIndex::one();
+            let target_session_index = current_session_index.saturating_add(session_delay);
             let collators = T::Collators::collators(target_session_index);
             let container_chain_ids = T::ContainerChains::container_chains(target_session_index);
-
-            let previous_session_index =
-                target_session_index.saturating_sub(T::SessionIndex::one());
-            let old_assigned = Self::read_assigned_collators(previous_session_index);
-
+            let old_assigned = Self::read_assigned_collators();
             let new_assigned = Self::assign_collators_always_keep_old(
                 collators,
                 &container_chain_ids,
@@ -183,43 +179,19 @@ pub mod pallet {
 
             let mut pending = PendingCollatorContainerChain::<T>::get();
             let old_assigned_changed = old_assigned != new_assigned;
-            if old_assigned_changed {
-                // Store new_assigned in PendingCollatorContainerChain.
-                // If an entry with the target_session_index already exists, overwrite it.
-                // Otherwise, insert a new entry.
-                if let Some(&mut (ref mut apply_at_session, ref mut assigned_collators)) = pending
-                    .iter_mut()
-                    .find(|&&mut (apply_at_session, _)| apply_at_session >= target_session_index)
-                {
-                    *assigned_collators = new_assigned;
-                    // If there was a scheduled change for session 4 but we insert a change for session 3,
-                    // we want to apply the change in session 3.
-                    *apply_at_session = target_session_index;
-                } else {
-                    // We are scheduling a new configuration change for the scheduled session.
-                    pending.push((target_session_index, new_assigned));
-                }
-            }
-
-            // Update CollatorContainerChain using first entry of pending, if needed
-            let (mut past_and_present, future) =
-                pending
-                    .into_iter()
-                    .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
-                        apply_at_session <= *current_session_index
-                    });
-
-            let current = past_and_present
-                .pop()
-                .map(|(_session_index, assigned_collators)| assigned_collators);
-            pending = future;
-
-            // Update PendingCollatorContainerChain, if it changed
-            if old_assigned_changed || current.is_some() {
-                PendingCollatorContainerChain::<T>::put(pending);
-            }
-            if let Some(current) = current {
+            let mut pending_changed = false;
+            // Update CollatorContainerChain using last entry of pending, if needed
+            if let Some(current) = pending.pop() {
+                pending_changed = true;
                 CollatorContainerChain::<T>::put(current);
+            }
+            if old_assigned_changed {
+                pending.push(new_assigned);
+                pending_changed = true;
+            }
+            // Update PendingCollatorContainerChain, if it changed
+            if pending_changed {
+                PendingCollatorContainerChain::<T>::put(pending);
             }
         }
 
@@ -265,34 +237,17 @@ pub mod pallet {
         }
 
         // Returns the assigned collators as read from storage.
-        // If there is any item in PendingCollatorContainerChain whose index is lower than or equal
-        // to the provided `session_index`, returns that element. Otherwise, reads and returns the
-        // current CollatorContainerChain
-        fn read_assigned_collators(
-            session_index: T::SessionIndex,
-        ) -> AssignedCollators<T::AccountId> {
-            let pending_collator_list = PendingCollatorContainerChain::<T>::get();
+        // If there is any item in PendingCollatorContainerChain, returns that element.
+        // Otherwise, reads and returns the current CollatorContainerChain
+        fn read_assigned_collators() -> AssignedCollators<T::AccountId> {
+            let mut pending_collator_list = PendingCollatorContainerChain::<T>::get();
 
-            let assigned_collators_index = pending_collator_list.binary_search_by(
-                |(pending_session_index, _assigned_collators)| {
-                    pending_session_index.cmp(&session_index)
-                },
-            );
-
-            let assigned_collators = match assigned_collators_index {
-                Ok(i) => pending_collator_list[i].1.clone(),
-                Err(i) => {
-                    if i == 0 {
-                        // Read current
-                        CollatorContainerChain::<T>::get()
-                    } else {
-                        // Read the latest pending change before index `session_index`
-                        pending_collator_list[i - 1].1.clone()
-                    }
-                }
-            };
-
-            assigned_collators
+            if let Some(assigned_collators) = pending_collator_list.pop() {
+                assigned_collators
+            } else {
+                // Read current
+                CollatorContainerChain::<T>::get()
+            }
         }
 
         pub fn initializer_on_new_session(session_index: &T::SessionIndex) {

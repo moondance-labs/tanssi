@@ -2,7 +2,7 @@ use crate::{self as pallet_collator_assignment};
 use frame_support::traits::{ConstU16, ConstU64};
 use frame_system as system;
 use parity_scale_codec::{Decode, Encode};
-use sp_core::{ConstU32, H256};
+use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -139,7 +139,6 @@ impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGett
 
 impl pallet_collator_assignment::Config for Test {
     type SessionIndex = u32;
-    type SessionDelay = ConstU32<2>;
     type HostConfiguration = HostConfigurationGetter;
     type Collators = CollatorsGetter;
     type ContainerChains = ContainerChainsGetter;

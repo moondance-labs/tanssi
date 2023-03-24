@@ -416,7 +416,6 @@ impl pallet_collator_assignment::Config for Runtime {
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
     type SessionIndex = u32;
-    type SessionDelay = ConstU32<2>;
 }
 
 parameter_types! {

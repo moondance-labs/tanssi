@@ -39,9 +39,6 @@ fn assign_initial_collators() {
         assert_eq!(assigned_collators(), BTreeMap::new(),);
         run_to_block(11);
 
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
-        run_to_block(16);
-
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
@@ -78,9 +75,6 @@ fn assign_collators_after_one_leaves_container() {
         assert_eq!(assigned_collators(), BTreeMap::new(),);
         run_to_block(11);
 
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
-        run_to_block(16);
-
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
@@ -101,9 +95,8 @@ fn assign_collators_after_one_leaves_container() {
             m.collators = vec![1, 2, 3, 4, 5, /*6,*/ 7, 8, 9, 10];
         });
 
+        run_to_block(16);
         run_to_block(21);
-        run_to_block(26);
-        run_to_block(31);
 
         assert_eq!(
             assigned_collators(),
@@ -138,7 +131,7 @@ fn assign_collators_after_one_leaves_orchestrator_chain() {
         });
 
         assert_eq!(assigned_collators(), BTreeMap::new(),);
-        run_to_block(16);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
@@ -159,7 +152,7 @@ fn assign_collators_after_one_leaves_orchestrator_chain() {
             // Remove 4
             m.collators = vec![1, 2, 3, /*4,*/ 5, 6, 7, 8, 9, 10];
         });
-        run_to_block(31);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
@@ -193,7 +186,7 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
             m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), BTreeMap::new(),);
-        run_to_block(16);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
@@ -215,7 +208,7 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
             m.orchestrator_chain_collators = 8;
         });
 
-        run_to_block(31);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
@@ -250,7 +243,7 @@ fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
             m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), BTreeMap::new(),);
-        run_to_block(16);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
@@ -272,7 +265,7 @@ fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
             m.orchestrator_chain_collators = 2;
         });
 
-        run_to_block(31);
+        run_to_block(21);
 
         // The removed collators are random so no easy way to test the full list
         assert_eq!(assigned_collators().len(), 6,);
@@ -293,7 +286,7 @@ fn assign_collators_if_config_collators_per_container_increases() {
         });
 
         assert_eq!(assigned_collators(), BTreeMap::new(),);
-        run_to_block(16);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
@@ -315,7 +308,7 @@ fn assign_collators_if_config_collators_per_container_increases() {
             m.collators_per_container = 4;
         });
 
-        run_to_block(31);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
@@ -351,7 +344,7 @@ fn assign_collators_if_container_chain_is_removed() {
             m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), BTreeMap::new(),);
-        run_to_block(16);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
@@ -373,7 +366,7 @@ fn assign_collators_if_container_chain_is_removed() {
             m.container_chains = vec![1001 /*1002*/];
         });
 
-        run_to_block(31);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
@@ -403,7 +396,7 @@ fn assign_collators_if_container_chain_is_added() {
             m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), BTreeMap::new(),);
-        run_to_block(16);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
@@ -425,7 +418,7 @@ fn assign_collators_if_container_chain_is_added() {
             m.container_chains = vec![1001, 1002, 1003];
         });
 
-        run_to_block(31);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
@@ -459,7 +452,7 @@ fn assign_collators_after_decrease_num_collators() {
             m.container_chains = vec![1001, 1002]
         });
         assert_eq!(assigned_collators(), BTreeMap::new(),);
-        run_to_block(16);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
@@ -480,7 +473,7 @@ fn assign_collators_after_decrease_num_collators() {
             m.collators = vec![];
         });
 
-        run_to_block(31);
+        run_to_block(21);
         assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![]));
     });
 }
