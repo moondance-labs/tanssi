@@ -380,6 +380,44 @@ impl pallet_aura::Config for Runtime {
     type MaxAuthorities = ConstU32<100_000>;
 }
 
+pub struct CollatorsGetter;
+
+impl pallet_collator_assignment::GetCollators<AccountId, u32> for CollatorsGetter {
+    fn collators(session_index: u32) -> Vec<AccountId> {
+        // TODO: use session_index to read future collators
+        todo!()
+    }
+}
+
+pub struct HostConfigurationGetter;
+
+impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
+    fn collators_per_container(session_index: u32) -> u32 {
+        // TODO: use session_index to read future config
+        todo!()
+    }
+
+    fn orchestrator_chain_collators(session_index: u32) -> u32 {
+        todo!()
+    }
+}
+
+pub struct ContainerChainsGetter;
+
+impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
+    fn container_chains(session_index: u32) -> Vec<u32> {
+        // TODO: use session_index to read future para_ids
+        Registrar::registered_para_ids().into()
+    }
+}
+
+impl pallet_collator_assignment::Config for Runtime {
+    type Collators = CollatorsGetter;
+    type HostConfiguration = HostConfigurationGetter;
+    type ContainerChains = ContainerChainsGetter;
+    type SessionIndex = u32;
+}
+
 parameter_types! {
     pub const PotId: PalletId = PalletId(*b"PotStake");
     pub const MaxCandidates: u32 = 1000;
@@ -468,6 +506,7 @@ construct_runtime!(
         // ContainerChain management
         Registrar: pallet_registrar = 30,
         Configuration: pallet_configuration = 31,
+        CollatorAssignment: pallet_collator_assignment = 32,
     }
 );
 

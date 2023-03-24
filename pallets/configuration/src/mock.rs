@@ -90,15 +90,12 @@ pub fn new_test_ext_with_genesis(config: HostConfiguration) -> sp_io::TestExtern
 
 pub fn run_to_block(n: u64) {
     let old_block_number = System::block_number();
-    if old_block_number == 0 {
-        Configuration::initializer_on_new_session(&0);
-    }
     let session_len = 5;
 
-    for x in old_block_number..n {
+    for x in (old_block_number + 1)..=n {
         System::set_block_number(x);
 
-        if x % session_len == 0 {
+        if x % session_len == 1 {
             let session_index = (x / session_len) as u32;
             Configuration::initializer_on_new_session(&session_index);
         }
