@@ -4,7 +4,6 @@ use frame_support::pallet_prelude::*;
 use scale_info::prelude::collections::BTreeMap;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::traits::One;
-use sp_runtime::RuntimeAppPublic;
 use sp_runtime::Saturating;
 use sp_std::prelude::*;
 
@@ -30,11 +29,6 @@ pub trait GetContainerChains<SessionIndex> {
     fn container_chains(session_index: SessionIndex) -> Vec<u32>;
 }
 
-pub trait GetSessionIndex<SessionIndex> {
-    /// Returns current session index.
-    fn session_index() -> SessionIndex;
-}
-
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -52,21 +46,9 @@ pub mod pallet {
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
         type SessionDelay: Get<Self::SessionIndex>;
-
-        /// The identifier type for an authority.
-        type AuthorityId: Member
-            + Parameter
-            + RuntimeAppPublic
-            + MaybeSerializeDeserialize
-            + MaxEncodedLen;
-
-        #[pallet::constant]
-        type SelfParaId: Get<u32>;
-
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
         type Collators: GetCollators<Self::AccountId, Self::SessionIndex>;
         type ContainerChains: GetContainerChains<Self::SessionIndex>;
-        type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
     }
 
     #[pallet::storage]
