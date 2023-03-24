@@ -178,58 +178,48 @@ pub mod pallet {
                 &container_chain_ids,
                 T::HostConfiguration::orchestrator_chain_collators(target_session_index) as usize,
                 T::HostConfiguration::collators_per_container(target_session_index) as usize,
-                old_assigned,
+                old_assigned.clone(),
             );
 
-            // Store new_assigned in PendingCollatorContainerChain
             let mut pending = PendingCollatorContainerChain::<T>::get();
-            // If an entry with the target_session_index already exists, overwrite it.
-            // Otherwise, insert a new entry.
-            match pending.binary_search_by(|(session_index, _assigned_collators)| {
-                session_index.cmp(&target_session_index)
-            }) {
-                Ok(i) => {
-                    pending[i] = (target_session_index, new_assigned);
-                }
-                Err(i) => {
-                    pending.insert(i, (target_session_index, new_assigned));
+            let old_assigned_changed = old_assigned != new_assigned;
+            if old_assigned_changed {
+                // Store new_assigned in PendingCollatorContainerChain.
+                // If an entry with the target_session_index already exists, overwrite it.
+                // Otherwise, insert a new entry.
+                if let Some(&mut (ref mut apply_at_session, ref mut assigned_collators)) = pending
+                    .iter_mut()
+                    .find(|&&mut (apply_at_session, _)| apply_at_session >= target_session_index)
+                {
+                    *assigned_collators = new_assigned;
+                    // If there was a scheduled change for session 4 but we insert a change for session 3,
+                    // we want to apply the change in session 3.
+                    *apply_at_session = target_session_index;
+                } else {
+                    // We are scheduling a new configuration change for the scheduled session.
+                    pending.push((target_session_index, new_assigned));
                 }
             }
 
-            // TODO: remove duplicate items from pending: if there is a
-            // [(2, x), (3, y)] where x == y, we can remove (3, y), but only if there are no other
-            // changes between 2 and 3
-
-            PendingCollatorContainerChain::<T>::put(pending);
-
             // Update CollatorContainerChain using first entry of pending, if needed
-            // TODO: merge with previous step to avoid more than one read and one write to storage
-            let mut pending = PendingCollatorContainerChain::<T>::get();
-            let i = match pending.binary_search_by(|(session_index, _assigned_collators)| {
-                session_index.cmp(current_session_index)
-            }) {
-                Ok(i) => Some(i),
-                Err(i) => {
-                    if i == 0 {
-                        // There are no pending changes to be applied in this session
-                        None
-                    } else {
-                        Some(i - 1)
-                    }
-                }
-            };
+            let (mut past_and_present, future) =
+                pending
+                    .into_iter()
+                    .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
+                        apply_at_session <= *current_session_index
+                    });
 
-            if let Some(i) = i {
-                let (_session_index, assigned_collators) = pending.remove(i);
+            let current = past_and_present
+                .pop()
+                .map(|(_session_index, assigned_collators)| assigned_collators);
+            pending = future;
 
-                CollatorContainerChain::<T>::put(assigned_collators);
-
-                // Remove any elements with session index lower than the current, as they will never be applied
-                pending.retain(|(session_index, _assigned_collators)| {
-                    session_index > current_session_index
-                });
-
+            // Update PendingCollatorContainerChain, if it changed
+            if old_assigned_changed || current.is_some() {
                 PendingCollatorContainerChain::<T>::put(pending);
+            }
+            if let Some(current) = current {
+                CollatorContainerChain::<T>::put(current);
             }
         }
 
