@@ -18,6 +18,7 @@ scale-info = { workspace = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Own
+pallet-collator-assignment = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-initializer = { workspace = true }
@@ -64,7 +65,7 @@ parachain-info = { workspace = true }
 substrate-wasm-builder = { workspace = true }
 
 [dev-dependencies]
-sp-io = { git = "https://github.com/paritytech/substrate", default-features = false, branch = "polkadot-v0.9.38" }
+sp-io = { workspace = true, default-features = false }
 
 [features]
 default = [

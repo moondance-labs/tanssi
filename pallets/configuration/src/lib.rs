@@ -22,6 +22,7 @@ const LOG_TARGET: &str = "pallet_configuration";
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct HostConfiguration {
     pub max_collators: u32,
+    // TODO: rename this to orchestrator_chain_collators
     pub moondance_collators: u32,
     pub collators_per_container: u32,
 }
