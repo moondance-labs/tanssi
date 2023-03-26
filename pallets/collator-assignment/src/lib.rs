@@ -6,6 +6,7 @@ use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::traits::One;
 use sp_runtime::Saturating;
 use sp_std::prelude::*;
+use sp_std::vec;
 
 pub use pallet::*;
 

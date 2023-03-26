@@ -414,9 +414,9 @@ impl pallet_aura::Config for Runtime {
 pub struct CollatorsGetter;
 
 impl pallet_collator_assignment::GetCollators<AccountId, u32> for CollatorsGetter {
-    fn collators(session_index: u32) -> Vec<AccountId> {
-        // TODO: use session_index to read future collators
-        todo!()
+    fn collators(_session_index: u32) -> Vec<AccountId> {
+        let queued = Session::queued_keys();
+        queued.iter().map(|(k, _)| k.clone()).collect()
     }
 }
 
@@ -424,12 +424,29 @@ pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
     fn collators_per_container(session_index: u32) -> u32 {
-        // TODO: use session_index to read future config
-        todo!()
+        let (past_and_present, _) = Configuration::pending_configs()
+            .into_iter()
+            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+        let config = if let Some(last) = past_and_present.last() {
+            last.1.clone()
+        } else {
+            Configuration::config()
+        };
+        config.collators_per_container
     }
 
     fn orchestrator_chain_collators(session_index: u32) -> u32 {
-        todo!()
+        let (past_and_present, _) = Configuration::pending_configs()
+            .into_iter()
+            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+        let config = if let Some(last) = past_and_present.last() {
+            last.1.clone()
+        } else {
+            Configuration::config()
+        };
+        config.moondance_collators
     }
 }
 
