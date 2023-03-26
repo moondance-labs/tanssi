@@ -16,6 +16,7 @@ pub mod pallet {
     use pallet_configuration::GetSessionIndex;
     use sp_runtime::traits::AtLeast32BitUnsigned;
     use sp_runtime::Saturating;
+    use sp_std::prelude::*;
 
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]

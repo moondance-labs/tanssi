@@ -2,7 +2,7 @@
 
 mod common;
 use common::*;
-use frame_support::assert_ok;
+use frame_support::{assert_ok, BoundedVec};
 use test_runtime::{CollatorSelection, Configuration};
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -58,7 +58,12 @@ fn genesis_para_registrar_deregister() {
 
             run_to_block(2, false);
             assert_ok!(Registrar::deregister(root_origin(), 1002), ());
-            assert_eq!(Registrar::registered_para_ids(), vec![1001]);
+
+            // Pending
+            assert_eq!(
+                Registrar::pending_registered_para_ids(),
+                vec![(2u32, BoundedVec::try_from(vec![1001u32]).unwrap())]
+            );
         });
 }
 

@@ -361,6 +361,13 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     ) {
         // We first initialize Configuration
         Configuration::initializer_on_new_session(&session_index);
+        // Next: Registrar
+        Registrar::initializer_on_new_session(&session_index);
+        // Next: CollatorAssignment
+        CollatorAssignment::initializer_on_new_session(&session_index);
+
+        // TODO: we should output from the previous line the orchestrator chain assigned
+        // collators
         let validators: Vec<_> = all_validators.iter().map(|(k, v)| (k, v.clone())).collect();
         let queued: Vec<_> = queued.iter().map(|(k, v)| (k, v.clone())).collect();
         // Then we apply Aura
@@ -454,8 +461,17 @@ pub struct ContainerChainsGetter;
 
 impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
     fn container_chains(session_index: u32) -> Vec<u32> {
-        // TODO: use session_index to read future para_ids
-        Registrar::registered_para_ids().into()
+        let (past_and_present, _) = Registrar::pending_registered_para_ids()
+            .into_iter()
+            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+        let paras = if let Some(last) = past_and_present.last() {
+            last.1.clone()
+        } else {
+            Registrar::registered_para_ids()
+        };
+
+        paras.into()
     }
 }
 
@@ -519,6 +535,9 @@ impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
+    type SessionDelay = ConstU32<2>;
+    type SessionIndex = u32;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 
 impl pallet_sudo::Config for Runtime {

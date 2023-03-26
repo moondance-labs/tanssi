@@ -126,10 +126,6 @@ pub mod pallet {
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
 
-        /// Max length of para id list
-        #[pallet::constant]
-        type MaxLengthParaIds: Get<u32>;
-
         /// The identifier type for an authority.
         type AuthorityId: Member
             + Parameter
@@ -160,10 +156,6 @@ pub mod pallet {
     #[pallet::getter(fn pending_configs)]
     pub(crate) type PendingConfigs<T: Config> =
         StorageValue<_, Vec<(T::SessionIndex, HostConfiguration)>, ValueQuery>;
-
-    #[pallet::storage]
-    pub type PendingParaIds<T: Config> =
-        StorageValue<_, Vec<(T::SessionIndex, BoundedVec<u32, T::MaxLengthParaIds>)>, ValueQuery>;
 
     /// If this is set, then the configuration setters will bypass the consistency checks. This
     /// is meant to be used only as the last resort.
