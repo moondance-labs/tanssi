@@ -13,6 +13,7 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::LOG_TARGET;
     use frame_system::pallet_prelude::*;
+    // TODO: move this trait to a common primitives folder
     use pallet_configuration::GetSessionIndex;
     use sp_runtime::traits::AtLeast32BitUnsigned;
     use sp_runtime::Saturating;
@@ -151,9 +152,9 @@ pub mod pallet {
     }
 
     pub struct SessionChangeOutcome<T: Config> {
-        /// Previously active configuration.
+        /// Previously active parachains.
         pub prev_paras: BoundedVec<u32, T::MaxLengthParaIds>,
-        /// If new configuration was applied during the session change, this is the new configuration.
+        /// If new parachains have been applied in the new session, this is the new  list.
         pub new_paras: Option<BoundedVec<u32, T::MaxLengthParaIds>>,
     }
 
@@ -180,7 +181,7 @@ pub mod pallet {
             {
                 *paras = new_paras;
             } else {
-                // We are scheduling a new configuration change for the scheduled session.
+                // We are scheduling a new parachains change for the scheduled session.
                 pending_paras.push((scheduled_session, new_paras));
             }
 
@@ -196,7 +197,7 @@ pub mod pallet {
 
         /// Called by the initializer to note that a new session has started.
         ///
-        /// Returns the configuration that was actual before the session change and the configuration
+        /// Returns the parachain list that was actual before the session change and the parachain list
         /// that became active after the session change. If there were no scheduled changes, both will
         /// be the same.
         pub fn initializer_on_new_session(
@@ -231,7 +232,7 @@ pub mod pallet {
 
             let new_paras = past_and_present.pop().map(|(_, paras)| paras);
             if let Some(ref new_paras) = new_paras {
-                // Apply the new configuration.
+                // Apply the new parachain list.
                 RegisteredParaIds::<T>::put(new_paras);
             }
 
