@@ -15,8 +15,26 @@ fn config_sets_values_from_genesis() {
 }
 
 #[test]
-fn config_set_value() {
+fn config_sets_default_values() {
+    let default_config = HostConfiguration {
+        max_collators: 100,
+        moondance_collators: 2,
+        collators_per_container: 2,
+    };
     new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_eq!(Configuration::config(), default_config);
+    });
+}
+
+#[test]
+fn config_set_value() {
+    new_test_ext_with_genesis(HostConfiguration {
+        max_collators: 0,
+        moondance_collators: 0,
+        collators_per_container: 0,
+    })
+    .execute_with(|| {
         run_to_block(1);
         assert_eq!(Configuration::config().max_collators, 0);
         assert_ok!(
@@ -54,7 +72,12 @@ fn config_set_value() {
 
 #[test]
 fn config_set_many_values_same_block() {
-    new_test_ext().execute_with(|| {
+    new_test_ext_with_genesis(HostConfiguration {
+        max_collators: 0,
+        moondance_collators: 0,
+        collators_per_container: 0,
+    })
+    .execute_with(|| {
         run_to_block(1);
         assert_eq!(Configuration::config().max_collators, 0);
         assert_eq!(Configuration::config().collators_per_container, 0);
@@ -100,7 +123,12 @@ fn config_set_many_values_same_block() {
 
 #[test]
 fn config_set_many_values_different_blocks() {
-    new_test_ext().execute_with(|| {
+    new_test_ext_with_genesis(HostConfiguration {
+        max_collators: 0,
+        moondance_collators: 0,
+        collators_per_container: 0,
+    })
+    .execute_with(|| {
         run_to_block(1);
         assert_eq!(Configuration::config().max_collators, 0);
         assert_eq!(Configuration::config().collators_per_container, 0);
@@ -148,7 +176,12 @@ fn config_set_many_values_different_blocks() {
 
 #[test]
 fn config_set_many_values_different_sessions() {
-    new_test_ext().execute_with(|| {
+    new_test_ext_with_genesis(HostConfiguration {
+        max_collators: 0,
+        moondance_collators: 0,
+        collators_per_container: 0,
+    })
+    .execute_with(|| {
         run_to_block(1);
         assert_eq!(Configuration::config().max_collators, 0);
         assert_eq!(Configuration::config().moondance_collators, 0);
