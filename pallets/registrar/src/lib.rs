@@ -1,3 +1,13 @@
+//! # Registrar Pallet
+//!
+//! This pallet is in charge of registering containerChains (identified by their Id)
+//! that have to be served by the orchestrator chain. Parachains registrations and de-
+//! registrations are not immediatly applied, but rather they take T::SessionDelay sessions
+//! to be applied.
+//! 
+//! Registered container chains are stored in the PendingParaIds storage item until the session
+//! in which they can be onboarded arrives, in which case they are added to the RegisteredParaIds
+//! storage item.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;

@@ -1,3 +1,16 @@
+//! # Configuration Pallet
+//!
+//! This pallet stores the configuration for an orchestration-collator assignation chain. In
+//! particular stores:
+//! 
+//!    - How many collators are taken.
+//!    - How many of those collators should be serving the orchestrator chain
+//!    - Howe many of those collators should be serving the containerChains
+//! 
+//! All configuration changes are protected behind the root origin
+//! CHanges to the configuration are not immeditaly applied, but rather we wait
+//! T::SessionDelay to apply these changes
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::pallet_prelude::*;

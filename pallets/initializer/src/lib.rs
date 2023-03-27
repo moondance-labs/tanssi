@@ -1,3 +1,12 @@
+//! # Initializer Pallet
+//!
+//! This pallet is in charge of organizing what happens on sessio changes.
+//! In particular this pallet has implemented the OneSessionHandler trait
+//! which will be called upon a session change. This pallet will then store
+//! the bufferedSessionChanges (collators, new session index, etc) in the
+//! BufferedSessionChanges storage item. This storage item gets read on_finalize
+//! and calls the  SessionHandler config trait
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::traits::OneSessionHandler;

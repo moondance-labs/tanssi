@@ -1,3 +1,24 @@
+//! # Collator Assignment Pallet
+//!
+//! This pallet assigns a list of collators to:
+//!    - the orchestrator chain
+//!    - a set of container chains
+//! 
+//! The set of container chains is retrieved thanks to the GetContainerChains trait
+//! The number of collators to assign to the orchestrator chain and the number
+//! of collators to assign to each container chain is retrieved through the GetHostConfiguration
+//! trait.
+//!  
+//! The pallet uses the following approach:
+//!
+//! - First, it aims at filling the necessary collators to serve the orchestrator chain
+//! - Second, it aims at filling in-order (FIFO) the existing containerChains
+//! 
+//! Upon new session, this pallet takes whatever assignation was in the PendingCollatorContainerChain
+//! storage, and assigns it as the current CollatorContainerChain. In addition, it takes the next
+//! queued set of parachains and collators and calculates the assignment for the next session, storing
+//! it in the PendingCollatorContainerChain storage item.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::pallet_prelude::*;
