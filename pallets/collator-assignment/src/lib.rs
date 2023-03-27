@@ -26,8 +26,7 @@
 
 use frame_support::pallet_prelude::*;
 use scale_info::prelude::collections::BTreeMap;
-use sp_runtime::traits::AtLeast32BitUnsigned;
-use sp_runtime::traits::One;
+use sp_runtime::traits::{AtLeast32BitUnsigned, One, Zero};
 use sp_runtime::Saturating;
 use sp_std::prelude::*;
 use sp_std::vec;
@@ -226,7 +225,7 @@ pub mod pallet {
             }
 
             // Only applies to session index 0
-            if current_session_index.clone() == 0u32.into() {
+            if current_session_index == &T::SessionIndex::zero() {
                 CollatorContainerChain::<T>::put(new_assigned.clone());
                 return SessionChangeOutcome {
                     active_assignment: new_assigned.clone(),
