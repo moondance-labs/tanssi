@@ -264,7 +264,6 @@ fn test_authors_without_paras() {
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
-
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -305,7 +304,6 @@ fn test_authors_paras_inserted_a_posteriori() {
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
-
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -329,20 +327,19 @@ fn test_authors_paras_inserted_a_posteriori() {
 
             assert_ok!(Registrar::register(root_origin(), 1001), ());
             assert_ok!(Registrar::register(root_origin(), 1002), ());
-            
+
             // Assignment should happen after 2 sessions
             run_to_session(1u32, true);
             let assignment = CollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
             run_to_session(2u32, true);
-            
+
             // Charlie and Dave should be assigne dot para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32],
                 vec![CHARLIE.into(), DAVE.into()]
             );
-
         });
 }
 
@@ -354,6 +351,11 @@ fn test_configuration_on_session_change() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 0,
+            moondance_collators: 0,
+            collators_per_container: 0,
+        })
         .build()
         .execute_with(|| {
             run_to_block(1, false);
