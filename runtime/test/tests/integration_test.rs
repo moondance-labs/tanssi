@@ -386,16 +386,15 @@ fn test_parachains_deregister_collators_re_assigned() {
 
             assert_ok!(Registrar::deregister(root_origin(), 1001), ());
 
-
             // Assignment should happen after 2 sessions
             run_to_session(1u32, true);
-            
+
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32],
                 vec![CHARLIE.into(), DAVE.into()]
             );
-            
+
             run_to_session(2u32, true);
 
             // Charlie and Dave should be assigne dot para 1002 this time
