@@ -30,9 +30,9 @@ pub struct HostConfiguration {
 impl Default for HostConfiguration {
     fn default() -> Self {
         Self {
-            max_collators: Default::default(),
-            moondance_collators: Default::default(),
-            collators_per_container: Default::default(),
+            max_collators: 100u32,
+            moondance_collators: 2u32,
+            collators_per_container: 2u32,
         }
     }
 }
