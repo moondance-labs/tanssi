@@ -21,10 +21,6 @@ pub trait GetHostConfiguration<SessionIndex> {
     fn collators_per_container(session_index: SessionIndex) -> u32;
 }
 
-pub trait GetCollators<AccountId, SessionIndex> {
-    fn collators(session_index: SessionIndex) -> Vec<AccountId>;
-}
-
 pub trait GetContainerChains<SessionIndex> {
     // TODO: import ParaId type
     fn container_chains(session_index: SessionIndex) -> Vec<u32>;
@@ -47,7 +43,6 @@ pub mod pallet {
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
-        type Collators: GetCollators<Self::AccountId, Self::SessionIndex>;
         type ContainerChains: GetContainerChains<Self::SessionIndex>;
     }
 

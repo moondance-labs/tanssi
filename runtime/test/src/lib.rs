@@ -443,15 +443,6 @@ impl pallet_aura::Config for Runtime {
     type MaxAuthorities = ConstU32<100_000>;
 }
 
-pub struct CollatorsGetter;
-
-impl pallet_collator_assignment::GetCollators<AccountId, u32> for CollatorsGetter {
-    fn collators(_session_index: u32) -> Vec<AccountId> {
-        let queued = Session::queued_keys();
-        queued.iter().map(|(k, _)| k.clone()).collect()
-    }
-}
-
 pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
@@ -501,7 +492,6 @@ impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGett
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type Collators = CollatorsGetter;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
     type SessionIndex = u32;
