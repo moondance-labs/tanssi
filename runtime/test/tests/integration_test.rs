@@ -80,6 +80,11 @@ fn test_author_collation_aura() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![1001, 1002])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            moondance_collators: 2,
+            collators_per_container: 2,
+        })
         .build()
         .execute_with(|| {
             run_to_block(5, true);
@@ -111,8 +116,14 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![1001, 1002])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            moondance_collators: 2,
+            collators_per_container: 2,
+        })
         .build()
         .execute_with(|| {
+            println!("Sessiopn queued {:?}", Session::queued_keys());
             run_to_block(2, true);
             // Assert current slot gets updated
             assert_eq!(Aura::current_slot(), 1u64);

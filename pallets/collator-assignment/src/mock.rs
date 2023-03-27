@@ -152,6 +152,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .into()
 }
 
+use crate::GetCollators;
 pub fn run_to_block(n: u64) {
     let old_block_number = System::block_number();
     let session_len = 5;
@@ -161,7 +162,10 @@ pub fn run_to_block(n: u64) {
 
         if x % session_len == 1 {
             let session_index = (x / session_len) as u32;
-            CollatorAssignment::initializer_on_new_session(&session_index);
+            CollatorAssignment::initializer_on_new_session(
+                &session_index,
+                CollatorsGetter::collators(session_index),
+            );
         }
     }
 }

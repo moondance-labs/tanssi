@@ -162,12 +162,23 @@ pub mod pallet {
         }
     }
 
+    /// A struct that holds the assignment that is active after the session change and optionally
+    /// the assignment that becomes active after the next session change.
+    pub struct SessionChangeOutcome<T: Config> {
+        /// New active assignment.
+        pub active_assignment: AssignedCollators<T::AccountId>,
+        /// Optionally, next session active assignment.
+        pub next_assignment: AssignedCollators<T::AccountId>,
+    }
+
     impl<T: Config> Pallet<T> {
         /// Assign new collators
-        pub fn assign_collators(current_session_index: &T::SessionIndex) {
+        pub fn assign_collators(
+            current_session_index: &T::SessionIndex,
+            collators: Vec<T::AccountId>,
+        ) -> SessionChangeOutcome<T> {
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
-            let collators = T::Collators::collators(target_session_index);
             let container_chain_ids = T::ContainerChains::container_chains(target_session_index);
             let old_assigned = Self::read_assigned_collators();
             let new_assigned = Self::assign_collators_always_keep_old(
@@ -187,12 +198,26 @@ pub mod pallet {
                 CollatorContainerChain::<T>::put(current);
             }
             if old_assigned_changed {
-                pending = Some(new_assigned);
+                pending = Some(new_assigned.clone());
                 pending_changed = true;
             }
             // Update PendingCollatorContainerChain, if it changed
             if pending_changed {
                 PendingCollatorContainerChain::<T>::put(pending);
+            }
+
+            // Only applies to session index 0
+            if current_session_index.clone() == 0u32.into() {
+                CollatorContainerChain::<T>::put(new_assigned.clone());
+                return SessionChangeOutcome {
+                    active_assignment: new_assigned.clone(),
+                    next_assignment: new_assigned,
+                };
+            }
+
+            SessionChangeOutcome {
+                active_assignment: old_assigned,
+                next_assignment: new_assigned,
             }
         }
 
@@ -251,8 +276,11 @@ pub mod pallet {
             }
         }
 
-        pub fn initializer_on_new_session(session_index: &T::SessionIndex) {
-            Self::assign_collators(session_index);
+        pub fn initializer_on_new_session(
+            session_index: &T::SessionIndex,
+            collators: Vec<T::AccountId>,
+        ) -> SessionChangeOutcome<T> {
+            Self::assign_collators(session_index, collators)
         }
     }
 }

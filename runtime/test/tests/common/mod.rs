@@ -60,6 +60,8 @@ pub struct ExtBuilder {
     collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
     para_ids: Vec<u32>,
+    // list of registered para ids
+    config: pallet_configuration::HostConfiguration,
 }
 
 impl Default for ExtBuilder {
@@ -68,6 +70,7 @@ impl Default for ExtBuilder {
             balances: vec![],
             collators: vec![],
             para_ids: vec![],
+            config: Default::default(),
         }
     }
 }
@@ -88,6 +91,11 @@ impl ExtBuilder {
         self
     }
 
+    pub fn with_config(mut self, config: pallet_configuration::HostConfiguration) -> Self {
+        self.config = config;
+        self
+    }
+
     pub fn build(self) -> sp_io::TestExternalities {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
@@ -97,6 +105,24 @@ impl ExtBuilder {
             balances: self.balances,
         }
         .assimilate_storage(&mut t)
+        .unwrap();
+
+        // We need to initialize these pallets first. When initializing pallet-session,
+        // these values will be taken into account for collator-assignment.
+        <pallet_registrar::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+            &pallet_registrar::GenesisConfig {
+                para_ids: self.para_ids,
+            },
+            &mut t,
+        )
+        .unwrap();
+
+        <pallet_configuration::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+            &pallet_configuration::GenesisConfig {
+                config: self.config,
+            },
+            &mut t,
+        )
         .unwrap();
 
         if !self.collators.is_empty() {
@@ -137,14 +163,6 @@ impl ExtBuilder {
             )
             .unwrap();
         }
-
-        <pallet_registrar::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-            &pallet_registrar::GenesisConfig {
-                para_ids: self.para_ids,
-            },
-            &mut t,
-        )
-        .unwrap();
 
         let mut ext = sp_io::TestExternalities::new(t);
 

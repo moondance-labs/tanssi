@@ -363,15 +363,40 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         Configuration::initializer_on_new_session(&session_index);
         // Next: Registrar
         Registrar::initializer_on_new_session(&session_index);
+
+        let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
+
         // Next: CollatorAssignment
-        CollatorAssignment::initializer_on_new_session(&session_index);
+        let assignments =
+            CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
+        let orchestrator_current_assignemnt = assignments.active_assignment.orchestrator_chain;
+        let orchestrator_queued_assignemnt = assignments.next_assignment.orchestrator_chain;
 
         // TODO: we should output from the previous line the orchestrator chain assigned
         // collators
-        let validators: Vec<_> = all_validators.iter().map(|(k, v)| (k, v.clone())).collect();
-        let queued: Vec<_> = queued.iter().map(|(k, v)| (k, v.clone())).collect();
-        // Then we apply Aura
+        let validators: Vec<_> = all_validators
+            .iter()
+            .filter_map(|(k, v)| {
+                if orchestrator_current_assignemnt.contains(k) {
+                    Some((k, v.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
 
+        let queued: Vec<_> = queued
+            .iter()
+            .filter_map(|(k, v)| {
+                if orchestrator_queued_assignemnt.contains(k) {
+                    Some((k, v.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        // Then we apply Aura
         if session_index == 0 {
             Aura::on_genesis_session(validators.into_iter());
         } else {
