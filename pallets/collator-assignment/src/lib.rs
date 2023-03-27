@@ -19,6 +19,9 @@
 //! queued set of parachains and collators and calculates the assignment for the next session, storing
 //! it in the PendingCollatorContainerChain storage item.
 
+//! The reason for the collator-assignment pallet to work with a one-session delay assignment is because
+//! we want collators to know at least one session in advance the container chain/orchestrator that they
+//! are assigned to.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::pallet_prelude::*;
