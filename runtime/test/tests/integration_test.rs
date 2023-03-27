@@ -250,6 +250,103 @@ fn test_author_collation_aura_add_assigned_to_paras() {
 }
 
 #[test]
+fn test_authors_without_paras() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            moondance_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2, true);
+            // Assert current slot gets updated
+            assert_eq!(Aura::current_slot(), 1u64);
+            // slot 4, alice
+            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+
+            // We change invulnerables
+            // We first need to set the keys
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            // It does not matter if we insert more collators, only two will be assigned
+            // TODO: should this work like this?
+            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
+        });
+}
+
+#[test]
+fn test_authors_paras_inserted_a_posteriori() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            moondance_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2, true);
+            // Assert current slot gets updated
+            assert_eq!(Aura::current_slot(), 1u64);
+            // slot 4, alice
+            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+
+            // We change invulnerables
+            // We first need to set the keys
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
+
+            assert_ok!(Registrar::register(root_origin(), 1001), ());
+            assert_ok!(Registrar::register(root_origin(), 1002), ());
+            
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32, true);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+            run_to_session(2u32, true);
+            
+            // Charlie and Dave should be assigne dot para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+        });
+}
+
+#[test]
 fn test_configuration_on_session_change() {
     ExtBuilder::default()
         .with_balances(vec![
