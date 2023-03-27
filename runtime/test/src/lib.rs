@@ -13,7 +13,7 @@ use frame_support::weights::constants::RocksDbWeight;
 use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight};
 use smallvec::smallvec;
 use sp_api::impl_runtime_apis;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
@@ -626,20 +626,37 @@ impl_runtime_apis! {
         /// Return the parachain that the given `AccountId` is collating for.
         /// Returns `None` if the `AccountId` is not collating.
         fn collator_parachain(account: AccountId) -> Option<ParaId> {
-            todo!()
+            let assigned_collators = CollatorAssignment::collator_container_chain();
+            let self_para_id = ParachainInfo::get().into();
+
+            assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
         }
 
         /// Return the parachain that the given `AccountId` will be collating for
         /// in the next session change.
         /// Returns `None` if the `AccountId` will not be collating.
         fn future_collator_parachain(account: AccountId) -> Option<ParaId> {
-            todo!()
+            let assigned_collators = CollatorAssignment::pending_collator_container_chain();
+
+            match assigned_collators {
+                Some(assigned_collators) => {
+                    let self_para_id = ParachainInfo::get().into();
+                    
+                    assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
+                }
+                None => {
+                    Self::collator_parachain(account)
+                }
+            }
+
         }
 
         /// Return the list of collators of the given `ParaId`.
         /// Returns `None` if the `ParaId` is not in the registrar.
-        fn parachain_collators(para_id: ParaId) -> Option<Vec<ParaId>> {
-            todo!()
+        fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>> {
+            let assigned_collators = CollatorAssignment::collator_container_chain();
+
+            assigned_collators.container_chains.get(&para_id.into()).cloned()
         }
     }
 }

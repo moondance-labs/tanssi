@@ -16,6 +16,6 @@ sp_api::decl_runtime_apis! {
         fn future_collator_parachain(account: AccountId) -> Option<ParaId>;
         /// Return the list of collators of the given `ParaId`.
         /// Returns `None` if the `ParaId` is not in the registrar.
-        fn parachain_collators(para_id: ParaId) -> Option<Vec<ParaId>>;
+        fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>>;
     }
 }
