@@ -641,7 +641,7 @@ impl_runtime_apis! {
             match assigned_collators {
                 Some(assigned_collators) => {
                     let self_para_id = ParachainInfo::get().into();
-                    
+
                     assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
                 }
                 None => {
