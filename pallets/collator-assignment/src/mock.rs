@@ -2,9 +2,9 @@ use crate::{self as pallet_collator_assignment};
 use frame_support::traits::{ConstU16, ConstU64};
 use frame_system as system;
 use parity_scale_codec::{Decode, Encode};
-use sp_core::{ConstU32, H256};
+use sp_core::H256;
 use sp_runtime::{
-    testing::{Header, UintAuthorityId},
+    testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
 };
 
@@ -88,72 +88,60 @@ pub mod mock_data {
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub moondance_collators: u32,
+    pub orchestrator_chain_collators: u32,
     pub collators_per_container: u32,
     pub collators: Vec<u64>,
-    pub parachains: Vec<u32>,
+    pub container_chains: Vec<u32>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            moondance_collators: 0,
+            orchestrator_chain_collators: 0,
             collators_per_container: 0,
             collators: vec![],
-            parachains: vec![],
+            container_chains: vec![],
         }
     }
 }
 
 impl mock_data::Config for Test {}
 
+// In tests, we ignore the session_index param, so changes to the configuration are instant
+
 pub struct HostConfigurationGetter;
 
-impl pallet_collator_assignment::GetHostConfiguration for HostConfigurationGetter {
-    fn moondance_collators() -> u32 {
-        MockData::mock().moondance_collators
+impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
+    fn orchestrator_chain_collators(_session_index: u32) -> u32 {
+        MockData::mock().orchestrator_chain_collators
     }
 
-    fn collators_per_container() -> u32 {
+    fn collators_per_container(_session_index: u32) -> u32 {
         MockData::mock().collators_per_container
     }
 }
 
 pub struct CollatorsGetter;
 
-impl pallet_collator_assignment::GetCollators<u64> for CollatorsGetter {
-    fn collators() -> Vec<u64> {
+impl pallet_collator_assignment::GetCollators<u64, u32> for CollatorsGetter {
+    fn collators(_session_index: u32) -> Vec<u64> {
         MockData::mock().collators.clone()
     }
 }
 
-pub struct ParachainsGetter;
+pub struct ContainerChainsGetter;
 
-impl pallet_collator_assignment::GetParachains for ParachainsGetter {
-    fn parachains() -> Vec<u32> {
-        MockData::mock().parachains.clone()
-    }
-}
-
-pub struct CurrentSessionIndexGetter;
-
-impl pallet_collator_assignment::GetSessionIndex<u32> for CurrentSessionIndexGetter {
-    /// Returns current session index.
-    fn session_index() -> u32 {
-        // For tests, let 1 session be 5 blocks
-        (System::block_number() / 5) as u32
+impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
+    fn container_chains(_session_index: u32) -> Vec<u32> {
+        MockData::mock().container_chains.clone()
     }
 }
 
 impl pallet_collator_assignment::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
-    type AuthorityId = UintAuthorityId;
-    type MoondanceParaId = ConstU32<999>;
     type HostConfiguration = HostConfigurationGetter;
     type Collators = CollatorsGetter;
-    type Parachains = ParachainsGetter;
-    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type ContainerChains = ContainerChainsGetter;
 }
 
 // Build genesis storage according to the mock runtime.

@@ -383,40 +383,39 @@ impl pallet_aura::Config for Runtime {
 
 pub struct CollatorsGetter;
 
-impl pallet_collator_assignment::GetCollators<AccountId> for CollatorsGetter {
-    fn collators() -> Vec<AccountId> {
+impl pallet_collator_assignment::GetCollators<AccountId, u32> for CollatorsGetter {
+    fn collators(session_index: u32) -> Vec<AccountId> {
+        // TODO: use session_index to read future collators
         todo!()
     }
 }
 
 pub struct HostConfigurationGetter;
 
-impl pallet_collator_assignment::GetHostConfiguration for HostConfigurationGetter {
-    fn collators_per_container() -> u32 {
+impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
+    fn collators_per_container(session_index: u32) -> u32 {
+        // TODO: use session_index to read future config
         todo!()
     }
 
-    fn moondance_collators() -> u32 {
+    fn orchestrator_chain_collators(session_index: u32) -> u32 {
         todo!()
     }
 }
 
-pub struct ParachainsGetter;
+pub struct ContainerChainsGetter;
 
-impl pallet_collator_assignment::GetParachains for ParachainsGetter {
-    fn parachains() -> Vec<u32> {
+impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
+    fn container_chains(session_index: u32) -> Vec<u32> {
+        // TODO: use session_index to read future para_ids
         Registrar::registered_para_ids().into()
     }
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type AuthorityId = AuraId;
     type Collators = CollatorsGetter;
-    type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type MoondanceParaId = ConstU32<999>;
     type HostConfiguration = HostConfigurationGetter;
-    type Parachains = ParachainsGetter;
+    type ContainerChains = ContainerChainsGetter;
     type SessionIndex = u32;
 }
 
@@ -455,13 +454,6 @@ parameter_types! {
 pub struct CurrentSessionIndexGetter;
 
 impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
-    /// Returns current session index.
-    fn session_index() -> u32 {
-        Session::current_index()
-    }
-}
-
-impl pallet_collator_assignment::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     /// Returns current session index.
     fn session_index() -> u32 {
         Session::current_index()

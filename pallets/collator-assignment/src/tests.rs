@@ -1,9 +1,23 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::{mock::*, Store};
 
-fn assigned_collators() -> HashMap<u64, u32> {
-    <CollatorAssignment as Store>::CollatorParachain::iter().collect()
+fn assigned_collators() -> BTreeMap<u64, u32> {
+    let assigned_collators = <CollatorAssignment as Store>::CollatorContainerChain::get();
+
+    let mut h = BTreeMap::new();
+
+    for (para_id, collators) in assigned_collators.container_chains.iter() {
+        for collator in collators.iter() {
+            h.insert(*collator, *para_id);
+        }
+    }
+
+    for collator in assigned_collators.orchestrator_chain {
+        h.insert(collator, 999);
+    }
+
+    h
 }
 
 #[test]
@@ -13,18 +27,21 @@ fn assign_initial_collators() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.moondance_collators = 5;
+            m.orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
 
-        assert_eq!(assigned_collators(), HashMap::new(),);
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
         run_to_block(6);
+
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -46,18 +63,21 @@ fn assign_collators_after_one_leaves_container() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.moondance_collators = 5;
+            m.orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
 
-        assert_eq!(assigned_collators(), HashMap::new(),);
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
         run_to_block(6);
+
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -74,11 +94,13 @@ fn assign_collators_after_one_leaves_container() {
             // Remove 6
             m.collators = vec![1, 2, 3, 4, 5, /*6,*/ 7, 8, 9, 10];
         });
-        run_to_block(11);
+
+        run_to_block(16);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -96,24 +118,24 @@ fn assign_collators_after_one_leaves_container() {
 }
 
 #[test]
-fn assign_collators_after_one_leaves_moondance() {
+fn assign_collators_after_one_leaves_orchestrator_chain() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.moondance_collators = 5;
+            m.orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
 
-        assert_eq!(assigned_collators(), HashMap::new(),);
-        run_to_block(6);
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -130,12 +152,11 @@ fn assign_collators_after_one_leaves_moondance() {
             // Remove 4
             m.collators = vec![1, 2, 3, /*4,*/ 5, 6, 7, 8, 9, 10];
         });
-
-        run_to_block(11);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -153,23 +174,23 @@ fn assign_collators_after_one_leaves_moondance() {
 }
 
 #[test]
-fn assign_collators_if_config_moondance_collators_increases() {
+fn assign_collators_if_config_orchestrator_chain_collators_increases() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.moondance_collators = 5;
+            m.orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), HashMap::new(),);
-        run_to_block(6);
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -183,15 +204,15 @@ fn assign_collators_if_config_moondance_collators_increases() {
         );
 
         MockData::mutate(|m| {
-            // Add 3 new collators to moondance
-            m.moondance_collators = 8;
+            // Add 3 new collators to orchestrator_chain
+            m.orchestrator_chain_collators = 8;
         });
 
-        run_to_block(11);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -210,23 +231,23 @@ fn assign_collators_if_config_moondance_collators_increases() {
 }
 
 #[test]
-fn assign_collators_if_config_moondance_collators_decreases() {
+fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.moondance_collators = 5;
+            m.orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), HashMap::new(),);
-        run_to_block(6);
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -240,11 +261,11 @@ fn assign_collators_if_config_moondance_collators_decreases() {
         );
 
         MockData::mutate(|m| {
-            // Remove 3 collators from moondance
-            m.moondance_collators = 2;
+            // Remove 3 collators from orchestrator_chain
+            m.orchestrator_chain_collators = 2;
         });
 
-        run_to_block(11);
+        run_to_block(21);
 
         // The removed collators are random so no easy way to test the full list
         assert_eq!(assigned_collators().len(), 6,);
@@ -258,18 +279,18 @@ fn assign_collators_if_config_collators_per_container_increases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.moondance_collators = 5;
+            m.orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
 
-        assert_eq!(assigned_collators(), HashMap::new(),);
-        run_to_block(6);
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -283,15 +304,15 @@ fn assign_collators_if_config_collators_per_container_increases() {
         );
 
         MockData::mutate(|m| {
-            // Add 2 new collators to each parachain
+            // Add 2 new collators to each container_chain
             m.collators_per_container = 4;
         });
 
-        run_to_block(11);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -311,23 +332,23 @@ fn assign_collators_if_config_collators_per_container_increases() {
 }
 
 #[test]
-fn assign_collators_if_parachain_is_removed() {
+fn assign_collators_if_container_chain_is_removed() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.moondance_collators = 5;
+            m.orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), HashMap::new(),);
-        run_to_block(6);
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -341,15 +362,15 @@ fn assign_collators_if_parachain_is_removed() {
         );
 
         MockData::mutate(|m| {
-            // Remove 1 parachain
-            m.parachains = vec![1001 /*1002*/];
+            // Remove 1 container_chain
+            m.container_chains = vec![1001 /*1002*/];
         });
 
-        run_to_block(11);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -363,23 +384,23 @@ fn assign_collators_if_parachain_is_removed() {
 }
 
 #[test]
-fn assign_collators_if_parachain_is_added() {
+fn assign_collators_if_container_chain_is_added() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.moondance_collators = 5;
+            m.orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), HashMap::new(),);
-        run_to_block(6);
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -393,15 +414,15 @@ fn assign_collators_if_parachain_is_added() {
         );
 
         MockData::mutate(|m| {
-            // Add 1 new parachain
-            m.parachains = vec![1001, 1002, 1003];
+            // Add 1 new container_chain
+            m.container_chains = vec![1001, 1002, 1003];
         });
 
-        run_to_block(11);
+        run_to_block(21);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -425,17 +446,17 @@ fn assign_collators_after_decrease_num_collators() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.moondance_collators = 5;
+            m.orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-            m.parachains = vec![1001, 1002]
+            m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), HashMap::new(),);
-        run_to_block(6);
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
 
         assert_eq!(
             assigned_collators(),
-            HashMap::from_iter(vec![
+            BTreeMap::from_iter(vec![
                 (1, 999),
                 (2, 999),
                 (3, 999),
@@ -452,7 +473,7 @@ fn assign_collators_after_decrease_num_collators() {
             m.collators = vec![];
         });
 
-        run_to_block(11);
-        assert_eq!(assigned_collators(), HashMap::from_iter(vec![]));
+        run_to_block(21);
+        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![]));
     });
 }
