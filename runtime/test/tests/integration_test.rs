@@ -126,7 +126,6 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             run_to_block(2, true);
             // Assert current slot gets updated
             assert_eq!(Aura::current_slot(), 1u64);
-            // slot 4, alice
             assert!(Authorship::author().unwrap() == AccountId::from(BOB));
 
             // We change invulnerables
@@ -198,7 +197,6 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             run_to_block(2, true);
             // Assert current slot gets updated
             assert_eq!(Aura::current_slot(), 1u64);
-            // slot 4, alice
             assert!(Authorship::author().unwrap() == AccountId::from(BOB));
 
             // We change invulnerables
@@ -275,7 +273,6 @@ fn test_authors_without_paras() {
             run_to_block(2, true);
             // Assert current slot gets updated
             assert_eq!(Aura::current_slot(), 1u64);
-            // slot 4, alice
             assert!(Authorship::author().unwrap() == AccountId::from(BOB));
 
             // Only Alice and Bob collate for our chain
@@ -314,7 +311,6 @@ fn test_authors_paras_inserted_a_posteriori() {
             run_to_block(2, true);
             // Assert current slot gets updated
             assert_eq!(Aura::current_slot(), 1u64);
-            // slot 4, alice
             assert!(Authorship::author().unwrap() == AccountId::from(BOB));
 
             // Alice and Bob collate in our chain
@@ -368,7 +364,6 @@ fn test_parachains_deregister_collators_re_assigned() {
             run_to_block(2, true);
             // Assert current slot gets updated
             assert_eq!(Aura::current_slot(), 1u64);
-            // slot 4, alice
             assert!(Authorship::author().unwrap() == AccountId::from(BOB));
 
             // Alice and Bob are authorities
@@ -433,7 +428,6 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             run_to_block(2, true);
             // Assert current slot gets updated
             assert_eq!(Aura::current_slot(), 1u64);
-            // slot 4, alice
             assert!(Authorship::author().unwrap() == AccountId::from(BOB));
 
             // Alice and Bob are authorities
@@ -477,6 +471,34 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             );
 
             assert_eq!(assignment.orchestrator_chain, vec![ALICE.into()]);
+        });
+}
+
+#[test]
+fn test_orchestrator_collators_with_non_sufficient_collators() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+        ])
+        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_para_ids(vec![1001, 1002])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            moondance_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2, true);
+            // Assert current slot gets updated
+            assert_eq!(Aura::current_slot(), 1u64);
+            assert!(Authorship::author().unwrap() == AccountId::from(ALICE));
+
+            // Alice and Bob are authorities
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+
+            assert_eq!(Aura::authorities(), vec![alice_id]);
         });
 }
 
