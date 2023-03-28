@@ -14,7 +14,7 @@ fn session_0_is_instantly_applied() {
         );
 
         let v = BufferedSessionChanges::<Test>::get();
-        assert!(v.is_empty());
+        assert!(!v.is_some());
 
         assert_eq!(session_change_validators(), Some((0, Vec::new())));
     });
@@ -37,7 +37,7 @@ fn session_change_before_initialize_is_still_buffered_after() {
         assert_eq!(session_change_validators(), None);
 
         let v = BufferedSessionChanges::<Test>::get();
-        assert_eq!(v.len(), 1);
+        assert!(v.is_some());
     });
 }
 
@@ -57,6 +57,6 @@ fn session_change_applied_on_finalize() {
         // Session change validators are applied after on_finalize
         assert_eq!(session_change_validators(), Some((1, Vec::new())));
 
-        assert!(BufferedSessionChanges::<Test>::get().is_empty());
+        assert!(!BufferedSessionChanges::<Test>::get().is_some());
     });
 }

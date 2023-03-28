@@ -76,7 +76,7 @@ pub mod pallet {
     /// upgrade boundaries or if governance intervenes.
     #[pallet::storage]
     pub(super) type BufferedSessionChanges<T: Config> =
-        StorageValue<_, Vec<BufferedSessionChange<T>>, ValueQuery>;
+        StorageValue<_, BufferedSessionChange<T>, OptionQuery>;
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -90,7 +90,7 @@ pub mod pallet {
                 session_index,
                 validators,
                 queued,
-            }) = BufferedSessionChanges::<T>::take().pop()
+            }) = BufferedSessionChanges::<T>::take()
             {
                 // Changes to be applied on new session
                 T::SessionHandler::apply_new_session(changed, session_index, validators, queued);
@@ -122,7 +122,7 @@ impl<T: Config> Pallet<T> {
             T::SessionHandler::apply_new_session(false, 0u32.into(), validators, queued);
         } else {
             BufferedSessionChanges::<T>::mutate(|v| {
-                v.push(BufferedSessionChange {
+                *v = Some(BufferedSessionChange {
                     changed,
                     validators,
                     queued,
