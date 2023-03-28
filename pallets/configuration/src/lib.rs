@@ -1,7 +1,19 @@
+//! # Configuration Pallet
+//!
+//! This pallet stores the configuration for an orchestration-collator assignation chain. In
+//! particular stores:
+//!
+//!    - How many collators are taken.
+//!    - How many of those collators should be serving the orchestrator chain
+//!    - Howe many of those collators should be serving the containerChains
+//!
+//! All configuration changes are protected behind the root origin
+//! CHanges to the configuration are not immeditaly applied, but rather we wait
+//! T::SessionDelay to apply these changes
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::pallet_prelude::*;
-use frame_support::traits::OneSessionHandler;
 use frame_system::pallet_prelude::*;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::RuntimeAppPublic;
@@ -24,16 +36,16 @@ const LOG_TARGET: &str = "pallet_configuration";
 pub struct HostConfiguration {
     pub max_collators: u32,
     // TODO: rename this to orchestrator_chain_collators
-    pub moondance_collators: u32,
+    pub orchestrator_collators: u32,
     pub collators_per_container: u32,
 }
 
 impl Default for HostConfiguration {
     fn default() -> Self {
         Self {
-            max_collators: Default::default(),
-            moondance_collators: Default::default(),
-            collators_per_container: Default::default(),
+            max_collators: 100u32,
+            orchestrator_collators: 2u32,
+            collators_per_container: 2u32,
         }
     }
 }
@@ -115,9 +127,6 @@ pub mod pallet {
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Because this pallet emits events, it depends on the runtime's definition of an event.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
 
@@ -144,12 +153,6 @@ pub mod pallet {
         InvalidNewValue,
     }
 
-    #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
-    pub enum Event<T: Config> {
-        ScheduledConfigUpdate,
-    }
-
     /// The active configuration for the current session.
     #[pallet::storage]
     #[pallet::getter(fn config)]
@@ -163,6 +166,7 @@ pub mod pallet {
     /// The list is sorted ascending by session index. Also, this list can only contain at most
     /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
+    #[pallet::getter(fn pending_configs)]
     pub(crate) type PendingConfigs<T: Config> =
         StorageValue<_, Vec<(T::SessionIndex, HostConfiguration)>, ValueQuery>;
 
@@ -212,10 +216,10 @@ pub mod pallet {
 			T::WeightInfo::set_config_with_u32(),
 			DispatchClass::Operational,
 		))]
-        pub fn set_moondance_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
+        pub fn set_orchestrator_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
-                config.moondance_collators = new;
+                config.orchestrator_collators = new;
             })
         }
 
@@ -260,9 +264,7 @@ pub mod pallet {
         /// Returns the configuration that was actual before the session change and the configuration
         /// that became active after the session change. If there were no scheduled changes, both will
         /// be the same.
-        pub(crate) fn initializer_on_new_session(
-            session_index: &T::SessionIndex,
-        ) -> SessionChangeOutcome {
+        pub fn initializer_on_new_session(session_index: &T::SessionIndex) -> SessionChangeOutcome {
             let pending_configs = <PendingConfigs<T>>::get();
             let prev_config = ActiveConfig::<T>::get();
 
@@ -274,6 +276,8 @@ pub mod pallet {
                 };
             }
 
+            // We partition those configs scheduled for the present
+            // and those for the future
             let (mut past_and_present, future) = pending_configs
                 .into_iter()
                 .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
@@ -295,6 +299,7 @@ pub mod pallet {
                 ActiveConfig::<T>::put(new_config);
             }
 
+            // We insert future as PendingConfig
             <PendingConfigs<T>>::put(future);
 
             SessionChangeOutcome {
@@ -419,30 +424,5 @@ pub mod pallet {
 
             Ok(())
         }
-    }
-
-    // These traits are to automatically call initializer_on_new_session when needed.
-    // Can be removed after we implement the initializer pallet
-    impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
-        type Public = T::AuthorityId;
-    }
-
-    impl<T: Config> OneSessionHandler<T::AccountId> for Pallet<T> {
-        type Key = T::AuthorityId;
-
-        fn on_genesis_session<'a, I: 'a>(_validators: I)
-        where
-            I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
-        {
-        }
-
-        fn on_new_session<'a, I: 'a>(_changed: bool, _validators: I, _queued_validators: I)
-        where
-            I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
-        {
-            Self::initializer_on_new_session(&T::CurrentSessionIndex::session_index());
-        }
-
-        fn on_disabled(_i: u32) {}
     }
 }

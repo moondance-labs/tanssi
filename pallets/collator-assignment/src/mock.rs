@@ -123,7 +123,7 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
 
 pub struct CollatorsGetter;
 
-impl pallet_collator_assignment::GetCollators<u64, u32> for CollatorsGetter {
+impl GetCollators<u64, u32> for CollatorsGetter {
     fn collators(_session_index: u32) -> Vec<u64> {
         MockData::mock().collators.clone()
     }
@@ -140,7 +140,6 @@ impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGett
 impl pallet_collator_assignment::Config for Test {
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
-    type Collators = CollatorsGetter;
     type ContainerChains = ContainerChainsGetter;
 }
 
@@ -152,6 +151,10 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .into()
 }
 
+pub trait GetCollators<AccountId, SessionIndex> {
+    fn collators(session_index: SessionIndex) -> Vec<AccountId>;
+}
+
 pub fn run_to_block(n: u64) {
     let old_block_number = System::block_number();
     let session_len = 5;
@@ -161,7 +164,10 @@ pub fn run_to_block(n: u64) {
 
         if x % session_len == 1 {
             let session_index = (x / session_len) as u32;
-            CollatorAssignment::initializer_on_new_session(&session_index);
+            CollatorAssignment::initializer_on_new_session(
+                &session_index,
+                CollatorsGetter::collators(session_index),
+            );
         }
     }
 }

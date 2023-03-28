@@ -5,13 +5,13 @@ use sp_core::Pair;
 use sp_runtime::{Digest, DigestItem};
 
 pub use test_runtime::{
-    AccountId, Aura, AuraId, Authorship, Balance, Balances, Registrar, Runtime, RuntimeEvent,
-    Session, System,
+    AccountId, Aura, AuraId, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
+    RuntimeEvent, Session, System,
 };
 
-pub fn run_to_session(n: u32) {
+pub fn run_to_session(n: u32, add_author: bool) {
     let block_number = test_runtime::Period::get() * n;
-    run_to_block(block_number + 1, false);
+    run_to_block(block_number + 1, add_author);
 }
 
 /// Utility function that advances the chain to the desired block number.
@@ -41,11 +41,13 @@ pub fn run_to_block(n: u32, add_author: bool) {
         // Initialize the new block
 
         Session::on_initialize(System::block_number());
+        Initializer::on_initialize(System::block_number());
         Aura::on_initialize(System::block_number());
         Authorship::on_initialize(System::block_number());
 
         // Finalize the block
         Session::on_finalize(System::block_number());
+        Initializer::on_finalize(System::block_number());
         Aura::on_finalize(System::block_number());
         Authorship::on_finalize(System::block_number());
     }
@@ -58,6 +60,8 @@ pub struct ExtBuilder {
     collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
     para_ids: Vec<u32>,
+    // configuration to apply
+    config: pallet_configuration::HostConfiguration,
 }
 
 impl Default for ExtBuilder {
@@ -66,6 +70,7 @@ impl Default for ExtBuilder {
             balances: vec![],
             collators: vec![],
             para_ids: vec![],
+            config: Default::default(),
         }
     }
 }
@@ -86,6 +91,11 @@ impl ExtBuilder {
         self
     }
 
+    pub fn with_config(mut self, config: pallet_configuration::HostConfiguration) -> Self {
+        self.config = config;
+        self
+    }
+
     pub fn build(self) -> sp_io::TestExternalities {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
@@ -95,6 +105,24 @@ impl ExtBuilder {
             balances: self.balances,
         }
         .assimilate_storage(&mut t)
+        .unwrap();
+
+        // We need to initialize these pallets first. When initializing pallet-session,
+        // these values will be taken into account for collator-assignment.
+        <pallet_registrar::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+            &pallet_registrar::GenesisConfig {
+                para_ids: self.para_ids,
+            },
+            &mut t,
+        )
+        .unwrap();
+
+        <pallet_configuration::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+            &pallet_configuration::GenesisConfig {
+                config: self.config,
+            },
+            &mut t,
+        )
         .unwrap();
 
         if !self.collators.is_empty() {
@@ -125,7 +153,6 @@ impl ExtBuilder {
                         account,
                         test_runtime::SessionKeys {
                             aura: aura_id.clone(),
-                            config: aura_id,
                         },
                     )
                 })
@@ -136,14 +163,6 @@ impl ExtBuilder {
             )
             .unwrap();
         }
-
-        <pallet_registrar::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-            &pallet_registrar::GenesisConfig {
-                para_ids: self.para_ids,
-            },
-            &mut t,
-        )
-        .unwrap();
 
         let mut ext = sp_io::TestExternalities::new(t);
 
@@ -156,9 +175,15 @@ impl ExtBuilder {
 
 pub const ALICE: [u8; 32] = [4u8; 32];
 pub const BOB: [u8; 32] = [5u8; 32];
+pub const CHARLIE: [u8; 32] = [6u8; 32];
+pub const DAVE: [u8; 32] = [7u8; 32];
 
 pub fn root_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::root()
+}
+
+pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::RuntimeOrigin {
+    <Runtime as frame_system::Config>::RuntimeOrigin::signed(account_id)
 }
 
 /// Helper function to generate a crypto pair from seed

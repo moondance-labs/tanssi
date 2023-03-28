@@ -5700,6 +5700,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-initializer"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-session",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-membership"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.38#18bb7c7c841b101c19a8d1881b893ae8e37de460"
@@ -5943,11 +5958,15 @@ version = "0.1.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "log",
+ "pallet-configuration",
  "parity-scale-codec",
  "scale-info",
+ "serde",
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -11306,6 +11325,7 @@ dependencies = [
  "pallet-collator-assignment",
  "pallet-collator-selection",
  "pallet-configuration",
+ "pallet-initializer",
  "pallet-registrar",
  "pallet-session",
  "pallet-sudo",

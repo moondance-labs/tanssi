@@ -61,7 +61,6 @@ impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
 }
 
 impl pallet_configuration::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;

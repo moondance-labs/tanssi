@@ -1,11 +1,35 @@
+//! # Collator Assignment Pallet
+//!
+//! This pallet assigns a list of collators to:
+//!    - the orchestrator chain
+//!    - a set of container chains
+//!
+//! The set of container chains is retrieved thanks to the GetContainerChains trait
+//! The number of collators to assign to the orchestrator chain and the number
+//! of collators to assign to each container chain is retrieved through the GetHostConfiguration
+//! trait.
+//!  
+//! The pallet uses the following approach:
+//!
+//! - First, it aims at filling the necessary collators to serve the orchestrator chain
+//! - Second, it aims at filling in-order (FIFO) the existing containerChains
+//!
+//! Upon new session, this pallet takes whatever assignation was in the PendingCollatorContainerChain
+//! storage, and assigns it as the current CollatorContainerChain. In addition, it takes the next
+//! queued set of parachains and collators and calculates the assignment for the next session, storing
+//! it in the PendingCollatorContainerChain storage item.
+
+//! The reason for the collator-assignment pallet to work with a one-session delay assignment is because
+//! we want collators to know at least one session in advance the container chain/orchestrator that they
+//! are assigned to.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::pallet_prelude::*;
 use scale_info::prelude::collections::BTreeMap;
-use sp_runtime::traits::AtLeast32BitUnsigned;
-use sp_runtime::traits::One;
+use sp_runtime::traits::{AtLeast32BitUnsigned, One, Zero};
 use sp_runtime::Saturating;
 use sp_std::prelude::*;
+use sp_std::vec;
 
 pub use pallet::*;
 
@@ -18,10 +42,6 @@ mod tests;
 pub trait GetHostConfiguration<SessionIndex> {
     fn orchestrator_chain_collators(session_index: SessionIndex) -> u32;
     fn collators_per_container(session_index: SessionIndex) -> u32;
-}
-
-pub trait GetCollators<AccountId, SessionIndex> {
-    fn collators(session_index: SessionIndex) -> Vec<AccountId>;
 }
 
 pub trait GetContainerChains<SessionIndex> {
@@ -46,7 +66,6 @@ pub mod pallet {
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
-        type Collators: GetCollators<Self::AccountId, Self::SessionIndex>;
         type ContainerChains: GetContainerChains<Self::SessionIndex>;
     }
 
@@ -161,14 +180,31 @@ pub mod pallet {
         }
     }
 
+    /// A struct that holds the assignment that is active after the session change and optionally
+    /// the assignment that becomes active after the next session change.
+    pub struct SessionChangeOutcome<T: Config> {
+        /// New active assignment.
+        pub active_assignment: AssignedCollators<T::AccountId>,
+        /// Next session active assignment.
+        pub next_assignment: AssignedCollators<T::AccountId>,
+    }
+
     impl<T: Config> Pallet<T> {
         /// Assign new collators
-        pub fn assign_collators(current_session_index: &T::SessionIndex) {
+        /// collators should be queued collators
+        pub fn assign_collators(
+            current_session_index: &T::SessionIndex,
+            collators: Vec<T::AccountId>,
+        ) -> SessionChangeOutcome<T> {
+            // We work with one session delay to calculate assignments
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
-            let collators = T::Collators::collators(target_session_index);
+            // We get the containerChains that we will have at the target session
             let container_chain_ids = T::ContainerChains::container_chains(target_session_index);
+            // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
+            // We assign new collators
+            // we use the config scheduled at the target_session_index
             let new_assigned = Self::assign_collators_always_keep_old(
                 collators,
                 &container_chain_ids,
@@ -186,12 +222,26 @@ pub mod pallet {
                 CollatorContainerChain::<T>::put(current);
             }
             if old_assigned_changed {
-                pending = Some(new_assigned);
+                pending = Some(new_assigned.clone());
                 pending_changed = true;
             }
             // Update PendingCollatorContainerChain, if it changed
             if pending_changed {
                 PendingCollatorContainerChain::<T>::put(pending);
+            }
+
+            // Only applies to session index 0
+            if current_session_index == &T::SessionIndex::zero() {
+                CollatorContainerChain::<T>::put(new_assigned.clone());
+                return SessionChangeOutcome {
+                    active_assignment: new_assigned.clone(),
+                    next_assignment: new_assigned,
+                };
+            }
+
+            SessionChangeOutcome {
+                active_assignment: old_assigned,
+                next_assignment: new_assigned,
             }
         }
 
@@ -250,8 +300,11 @@ pub mod pallet {
             }
         }
 
-        pub fn initializer_on_new_session(session_index: &T::SessionIndex) {
-            Self::assign_collators(session_index);
+        pub fn initializer_on_new_session(
+            session_index: &T::SessionIndex,
+            collators: Vec<T::AccountId>,
+        ) -> SessionChangeOutcome<T> {
+            Self::assign_collators(session_index, collators)
         }
     }
 }
