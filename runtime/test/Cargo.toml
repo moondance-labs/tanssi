@@ -22,6 +22,7 @@ pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-registrar = { workspace = true }
+pallet-initializer = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -106,6 +107,7 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+	"pallet-initializer/std", 
 ]
 
 runtime-benchmarks = [

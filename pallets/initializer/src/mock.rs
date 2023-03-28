@@ -1,13 +1,12 @@
-use crate as pallet_registrar;
+use crate as pallet_initializer;
 use frame_support::traits::{ConstU16, ConstU64};
 use frame_system as system;
-use sp_core::{ConstU32, H256};
+use sp_core::H256;
 use sp_runtime::{
-    testing::Header,
+    testing::{Header, UintAuthorityId},
     traits::{BlakeTwo256, IdentityLookup},
-    BuildStorage,
 };
-
+use sp_std::cell::RefCell;
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
@@ -19,7 +18,7 @@ frame_support::construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         System: frame_system,
-        ParaRegistrar: pallet_registrar,
+        Initializer: pallet_initializer,
     }
 );
 
@@ -50,40 +49,43 @@ impl system::Config for Test {
     type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
-pub struct CurrentSessionIndexGetter;
+thread_local! {
+    pub static SESSION_CHANGE_VALIDATORS: RefCell<Option<(u32, Vec<u64>)>> = RefCell::new(None);
+}
 
-impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
-    /// Returns current session index.
-    fn session_index() -> u32 {
-        // For tests, let 1 session be 5 blocks
-        (System::block_number() / 5) as u32
+pub fn session_change_validators() -> Option<(u32, Vec<u64>)> {
+    SESSION_CHANGE_VALIDATORS.with(|q| (*q.borrow()).clone())
+}
+
+pub struct OwnApplySession;
+impl pallet_initializer::ApplyNewSession<Test> for OwnApplySession {
+    fn apply_new_session(
+        _changed: bool,
+        session_index: u32,
+        all_validators: Vec<(u64, UintAuthorityId)>,
+        _queued: Vec<(u64, UintAuthorityId)>,
+    ) {
+        let validators: Vec<_> = all_validators.iter().map(|(k, _)| k.clone()).collect();
+        SESSION_CHANGE_VALIDATORS.with(|r| *r.borrow_mut() = Some((session_index, validators)));
     }
 }
 
-impl pallet_registrar::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
-    type RegistrarOrigin = frame_system::EnsureRoot<u64>;
-    type MaxLengthParaIds = ConstU32<1000>;
-    type SessionDelay = ConstU32<2>;
+impl pallet_initializer::Config for Test {
     type SessionIndex = u32;
-    type CurrentSessionIndex = CurrentSessionIndexGetter;
+
+    /// The identifier type for an authority.
+    type AuthorityId = UintAuthorityId;
+
+    type SessionHandler = OwnApplySession;
 }
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
+    // Start with None in the global var
+    SESSION_CHANGE_VALIDATORS.with(|r| *r.borrow_mut() = None);
+
     system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap()
         .into()
-}
-
-// Build genesis storage according to the mock runtime.
-pub fn new_test_ext_with_genesis(para_ids: Vec<u32>) -> sp_io::TestExternalities {
-    GenesisConfig {
-        system: Default::default(),
-        para_registrar: pallet_registrar::GenesisConfig { para_ids },
-    }
-    .build_storage()
-    .unwrap()
-    .into()
 }

@@ -9,6 +9,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use cumulus_primitives_core::BodyId;
 use cumulus_primitives_core::ParaId;
+use frame_support::traits::OneSessionHandler;
 use frame_support::weights::constants::RocksDbWeight;
 use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight};
 use smallvec::smallvec;
@@ -157,8 +158,7 @@ pub mod opaque {
 
 impl_opaque_keys! {
     pub struct SessionKeys {
-        pub aura: Aura,
-        pub config: Configuration,
+        pub aura: Initializer,
     }
 }
 
@@ -352,6 +352,69 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
+pub struct OwnApplySession;
+impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
+    fn apply_new_session(
+        changed: bool,
+        session_index: u32,
+        all_validators: Vec<(AccountId, AuraId)>,
+        queued: Vec<(AccountId, AuraId)>,
+    ) {
+        // We first initialize Configuration
+        Configuration::initializer_on_new_session(&session_index);
+        // Next: Registrar
+        Registrar::initializer_on_new_session(&session_index);
+
+        let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
+
+        // Next: CollatorAssignment
+        let assignments =
+            CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
+        let orchestrator_current_assignemnt = assignments.active_assignment.orchestrator_chain;
+        let orchestrator_queued_assignemnt = assignments.next_assignment.orchestrator_chain;
+
+        // We filter the accounts based on the collators assigned to the orchestrator chain (this chain)
+        // We insert these in Aura
+        let validators: Vec<_> = all_validators
+            .iter()
+            .filter_map(|(k, v)| {
+                if orchestrator_current_assignemnt.contains(k) {
+                    Some((k, v.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let queued: Vec<_> = queued
+            .iter()
+            .filter_map(|(k, v)| {
+                if orchestrator_queued_assignemnt.contains(k) {
+                    Some((k, v.clone()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        // Then we apply Aura
+        if session_index == 0 {
+            Aura::on_genesis_session(validators.into_iter());
+        } else {
+            Aura::on_new_session(changed, validators.into_iter(), queued.into_iter());
+        }
+    }
+}
+
+impl pallet_initializer::Config for Runtime {
+    type SessionIndex = u32;
+
+    /// The identifier type for an authority.
+    type AuthorityId = AuraId;
+
+    type SessionHandler = OwnApplySession;
+}
+
 impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
@@ -381,25 +444,33 @@ impl pallet_aura::Config for Runtime {
     type MaxAuthorities = ConstU32<100_000>;
 }
 
-pub struct CollatorsGetter;
-
-impl pallet_collator_assignment::GetCollators<AccountId, u32> for CollatorsGetter {
-    fn collators(session_index: u32) -> Vec<AccountId> {
-        // TODO: use session_index to read future collators
-        todo!()
-    }
-}
-
 pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
     fn collators_per_container(session_index: u32) -> u32 {
-        // TODO: use session_index to read future config
-        todo!()
+        let (past_and_present, _) = Configuration::pending_configs()
+            .into_iter()
+            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+        let config = if let Some(last) = past_and_present.last() {
+            last.1.clone()
+        } else {
+            Configuration::config()
+        };
+        config.collators_per_container
     }
 
     fn orchestrator_chain_collators(session_index: u32) -> u32 {
-        todo!()
+        let (past_and_present, _) = Configuration::pending_configs()
+            .into_iter()
+            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+        let config = if let Some(last) = past_and_present.last() {
+            last.1.clone()
+        } else {
+            Configuration::config()
+        };
+        config.orchestrator_collators
     }
 }
 
@@ -407,13 +478,21 @@ pub struct ContainerChainsGetter;
 
 impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
     fn container_chains(session_index: u32) -> Vec<u32> {
-        // TODO: use session_index to read future para_ids
-        Registrar::registered_para_ids().into()
+        let (past_and_present, _) = Registrar::pending_registered_para_ids()
+            .into_iter()
+            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+        let paras = if let Some(last) = past_and_present.last() {
+            last.1.clone()
+        } else {
+            Registrar::registered_para_ids()
+        };
+
+        paras.into()
     }
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type Collators = CollatorsGetter;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
     type SessionIndex = u32;
@@ -461,7 +540,6 @@ impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
 }
 
 impl pallet_configuration::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = ();
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
@@ -473,6 +551,9 @@ impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
+    type SessionDelay = ConstU32<2>;
+    type SessionIndex = u32;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -508,6 +589,7 @@ construct_runtime!(
         Registrar: pallet_registrar = 30,
         Configuration: pallet_configuration = 31,
         CollatorAssignment: pallet_collator_assignment = 32,
+        Initializer: pallet_initializer = 33,
     }
 );
 
