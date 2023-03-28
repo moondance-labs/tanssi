@@ -81,6 +81,9 @@ impl pallet_initializer::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
+    // Start with None in the global var
+    SESSION_CHANGE_VALIDATORS.with(|r| *r.borrow_mut() = None);
+
     system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap()
