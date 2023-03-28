@@ -737,8 +737,13 @@ impl_runtime_apis! {
         /// Returns `None` if the `ParaId` is not in the registrar.
         fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>> {
             let assigned_collators = CollatorAssignment::collator_container_chain();
+            let self_para_id = ParachainInfo::get().into();
 
-            assigned_collators.container_chains.get(&para_id.into()).cloned()
+            if para_id == self_para_id {
+                Some(assigned_collators.orchestrator_chain)
+            } else {
+                assigned_collators.container_chains.get(&para_id.into()).cloned()
+            }
         }
     }
 }

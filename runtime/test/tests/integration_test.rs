@@ -564,17 +564,145 @@ fn test_configuration_on_session_change() {
 }
 
 #[test]
-fn test_collator_assignment_runtime_api() {
+fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_para_ids(vec![1001, 1002])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
         .build()
         .execute_with(|| {
-            run_to_block(1, false);
+            run_to_block(2, true);
+            // Assert current slot gets updated
+            assert_eq!(Aura::current_slot(), 1u64);
+            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert_eq!(
+                Runtime::parachain_collators(100.into()),
+                Some(vec![ALICE.into(), BOB.into()])
+            );
+            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::collator_parachain(ALICE.into()), Some(100.into()));
+            assert_eq!(
+                Runtime::future_collator_parachain(ALICE.into()),
+                Some(100.into())
+            );
+            assert_eq!(Runtime::collator_parachain(CHARLIE.into()), None);
+            assert_eq!(Runtime::future_collator_parachain(CHARLIE.into()), None);
 
-            assert_eq!(Runtime::parachain_collators(1001.into()), None);
+            // We change invulnerables
+            // We first need to set the keys
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            let charlie_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+
+            // Set CHARLIE and DAVE keys
+            assert_ok!(Session::set_keys(
+                origin_of(CHARLIE.into()),
+                test_runtime::SessionKeys {
+                    aura: charlie_id.clone(),
+                },
+                vec![]
+            ));
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                test_runtime::SessionKeys {
+                    aura: dave_id.clone(),
+                },
+                vec![]
+            ));
+
+            // Set new invulnerables
+            assert_ok!(CollatorSelection::set_invulnerables(
+                root_origin(),
+                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
+            ));
+
+            // SESSION CHANGE. First session. it takes 2 sessions to see the change
+            run_to_session(1u32, true);
+            // Session boundary even slot, ALICE.
+            assert!(Authorship::author().unwrap() == AccountId::from(ALICE));
+            assert!(Aura::authorities() == vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(
+                Runtime::parachain_collators(100.into()),
+                Some(vec![ALICE.into(), BOB.into()])
+            );
+            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::collator_parachain(CHARLIE.into()), None);
+            assert_eq!(
+                Runtime::future_collator_parachain(CHARLIE.into()),
+                Some(1001.into())
+            );
+
+            // Invulnerables should have triggered on new session authorities change
+            // However charlie and dave shoudl have gone to one para (1001)
+            run_to_session(2u32, true);
+            assert!(Aura::authorities() == vec![alice_id, bob_id]);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            assert_eq!(
+                Runtime::parachain_collators(100.into()),
+                Some(vec![ALICE.into(), BOB.into()])
+            );
+            assert_eq!(
+                Runtime::parachain_collators(1001.into()),
+                Some(vec![CHARLIE.into(), DAVE.into()])
+            );
+            assert_eq!(
+                Runtime::collator_parachain(CHARLIE.into()),
+                Some(1001.into())
+            );
+            assert_eq!(
+                Runtime::future_collator_parachain(CHARLIE.into()),
+                Some(1001.into())
+            );
+
+            // Remove BOB
+            assert_ok!(CollatorSelection::set_invulnerables(
+                root_origin(),
+                vec![ALICE.into(), CHARLIE.into(), DAVE.into()]
+            ));
+
+            run_to_session(3u32, true);
+            assert_eq!(
+                Runtime::parachain_collators(100.into()),
+                Some(vec![ALICE.into(), BOB.into()])
+            );
+            assert_eq!(
+                Runtime::parachain_collators(1001.into()),
+                Some(vec![CHARLIE.into(), DAVE.into()])
+            );
+            assert_eq!(Runtime::collator_parachain(BOB.into()), Some(100.into()));
+            assert_eq!(Runtime::future_collator_parachain(BOB.into()), None);
+
+            run_to_session(4u32, true);
+            assert_eq!(
+                Runtime::parachain_collators(100.into()),
+                Some(vec![ALICE.into()])
+            );
+            assert_eq!(
+                Runtime::parachain_collators(1001.into()),
+                Some(vec![CHARLIE.into(), DAVE.into()])
+            );
+            assert_eq!(Runtime::collator_parachain(BOB.into()), None);
+            assert_eq!(Runtime::future_collator_parachain(BOB.into()), None);
         });
 }
