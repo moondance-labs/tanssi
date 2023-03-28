@@ -185,7 +185,7 @@ pub mod pallet {
     pub struct SessionChangeOutcome<T: Config> {
         /// New active assignment.
         pub active_assignment: AssignedCollators<T::AccountId>,
-        /// Optionally, next session active assignment.
+        /// Next session active assignment.
         pub next_assignment: AssignedCollators<T::AccountId>,
     }
 

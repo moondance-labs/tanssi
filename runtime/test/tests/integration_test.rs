@@ -280,7 +280,7 @@ fn test_authors_without_paras() {
             let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
 
             // It does not matter if we insert more collators, only two will be assigned
-            // TODO: should this work like this?
+            // FIXME(#32): should this work like this?
             assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
         });
 }
