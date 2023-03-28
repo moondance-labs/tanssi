@@ -60,7 +60,7 @@ pub struct ExtBuilder {
     collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
     para_ids: Vec<u32>,
-    // list of registered para ids
+    // configuration to apply
     config: pallet_configuration::HostConfiguration,
 }
 
