@@ -3,6 +3,8 @@
 mod common;
 use common::*;
 use frame_support::assert_ok;
+use pallet_collator_assignment_runtime_api::runtime_decl_for_CollatorAssignmentApi::CollatorAssignmentApi;
+use sp_std::vec;
 use test_runtime::Configuration;
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -140,4 +142,9 @@ fn test_configuration_on_session_change() {
             assert_eq!(Configuration::config().moondance_collators, 20);
             assert_eq!(Configuration::config().collators_per_container, 10);
         });
+}
+
+#[test]
+fn test_collator_assignment_runtime_api() {
+    assert_eq!(Runtime::parachain_collators(1001.into()), None);
 }

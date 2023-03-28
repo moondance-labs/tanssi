@@ -1,5 +1,6 @@
 use crate::{mock::*, HostConfiguration, Store};
 use frame_support::assert_ok;
+use sp_std::vec;
 
 #[test]
 fn config_sets_values_from_genesis() {

@@ -684,16 +684,6 @@ pub fn new_dev(
 
     network_starter.start_network();
 
-    use pallet_collator_assignment_runtime_api::CollatorAssignmentApi;
-    let block_number = polkadot_primitives::BlockId::number(1);
-    let para_id = ParaId::from(1001);
-    panic!(
-        "{:?}",
-        client
-            .runtime_api()
-            .parachain_collators(&block_number, para_id)
-    );
-
     Ok(task_manager)
 }
 
