@@ -1,6 +1,6 @@
 //! # Initializer Pallet
 //!
-//! This pallet is in charge of organizing what happens on sessio changes.
+//! This pallet is in charge of organizing what happens on session changes.
 //! In particular this pallet has implemented the OneSessionHandler trait
 //! which will be called upon a session change. This pallet will then store
 //! the bufferedSessionChanges (collators, new session index, etc) in the
