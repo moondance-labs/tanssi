@@ -469,7 +469,7 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
         } else {
             Configuration::config()
         };
-        config.moondance_collators
+        config.orchestrator_collators
     }
 }
 

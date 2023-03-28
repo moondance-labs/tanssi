@@ -36,7 +36,7 @@ const LOG_TARGET: &str = "pallet_configuration";
 pub struct HostConfiguration {
     pub max_collators: u32,
     // TODO: rename this to orchestrator_chain_collators
-    pub moondance_collators: u32,
+    pub orchestrator_collators: u32,
     pub collators_per_container: u32,
 }
 
@@ -44,7 +44,7 @@ impl Default for HostConfiguration {
     fn default() -> Self {
         Self {
             max_collators: 100u32,
-            moondance_collators: 2u32,
+            orchestrator_collators: 2u32,
             collators_per_container: 2u32,
         }
     }
@@ -216,10 +216,10 @@ pub mod pallet {
 			T::WeightInfo::set_config_with_u32(),
 			DispatchClass::Operational,
 		))]
-        pub fn set_moondance_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
+        pub fn set_orchestrator_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
-                config.moondance_collators = new;
+                config.orchestrator_collators = new;
             })
         }
 
