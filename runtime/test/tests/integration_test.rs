@@ -146,5 +146,16 @@ fn test_configuration_on_session_change() {
 
 #[test]
 fn test_collator_assignment_runtime_api() {
-    assert_eq!(Runtime::parachain_collators(1001.into()), None);
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(1, false);
+
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
+        });
 }

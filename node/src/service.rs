@@ -4,7 +4,6 @@
 use std::{sync::Arc, time::Duration};
 
 use cumulus_client_cli::CollatorOptions;
-use polkadot_cli::ProvideRuntimeApi;
 // Local Runtime Types
 use test_runtime::{opaque::Block, AccountId, Hash, RuntimeApi};
 
