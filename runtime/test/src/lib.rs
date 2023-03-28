@@ -372,8 +372,8 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         let orchestrator_current_assignemnt = assignments.active_assignment.orchestrator_chain;
         let orchestrator_queued_assignemnt = assignments.next_assignment.orchestrator_chain;
 
-        // TODO: we should output from the previous line the orchestrator chain assigned
-        // collators
+        // We filter the accounts based on the collators assigned to the orchestrator chain (this chain)
+        // We insert these in Aura
         let validators: Vec<_> = all_validators
             .iter()
             .filter_map(|(k, v)| {

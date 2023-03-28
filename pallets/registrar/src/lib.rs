@@ -216,7 +216,7 @@ pub mod pallet {
             let pending_paras = <PendingParaIds<T>>::get();
             let prev_paras = RegisteredParaIds::<T>::get();
 
-            // No pending configuration changes, so we're done.
+            // No pending parachain changes, so we're done.
             if pending_paras.is_empty() {
                 return SessionChangeOutcome {
                     prev_paras,

@@ -276,6 +276,8 @@ pub mod pallet {
                 };
             }
 
+            // We partition those configs scheduled for the present
+            // and those for the future
             let (mut past_and_present, future) = pending_configs
                 .into_iter()
                 .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
@@ -297,6 +299,7 @@ pub mod pallet {
                 ActiveConfig::<T>::put(new_config);
             }
 
+            // We insert future as PendingConfig
             <PendingConfigs<T>>::put(future);
 
             SessionChangeOutcome {

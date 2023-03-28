@@ -12,7 +12,7 @@
 use frame_support::traits::OneSessionHandler;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::traits::AtLeast32BitUnsigned;
+use sp_runtime::traits::{AtLeast32BitUnsigned, Zero};
 use sp_runtime::RuntimeAppPublic;
 use sp_std::prelude::*;
 
@@ -92,6 +92,7 @@ pub mod pallet {
                 queued,
             }) = BufferedSessionChanges::<T>::take().pop()
             {
+                // Changes to be applied on new session
                 T::SessionHandler::apply_new_session(changed, session_index, validators, queued);
             }
         }
@@ -116,7 +117,7 @@ impl<T: Config> Pallet<T> {
             validators.clone()
         };
 
-        if session_index == 0u32.into() {
+        if session_index == T::SessionIndex::zero() {
             // Genesis session should be immediately enacted.
             T::SessionHandler::apply_new_session(false, 0u32.into(), validators, queued);
         } else {

@@ -191,14 +191,20 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Assign new collators
+        /// collators should be queued collators
         pub fn assign_collators(
             current_session_index: &T::SessionIndex,
             collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
+            // We work with one session delay to calculate assignments
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
+            // We get the containerChains that we will have at the target session
             let container_chain_ids = T::ContainerChains::container_chains(target_session_index);
+            // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
+            // We assign new collators
+            // we use the config scheduled at the target_session_index
             let new_assigned = Self::assign_collators_always_keep_old(
                 collators,
                 &container_chain_ids,
