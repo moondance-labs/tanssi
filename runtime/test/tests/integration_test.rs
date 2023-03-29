@@ -407,13 +407,15 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             assert!(assignment.container_chains.is_empty());
             run_to_session(2u32, true);
 
-            // Charlie and Dave are not assigned to para 1001 because they were
-            // already assigned to the orchestrator chain
+            // Charlie and Dave are now assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains[&1001u32], vec![]);
+            assert_eq!(
+                assignment.container_chains[&1001u32],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
             assert_eq!(
                 assignment.orchestrator_chain,
-                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
+                vec![ALICE.into(), BOB.into()]
             );
         });
 }

@@ -488,3 +488,85 @@ fn assign_collators_after_decrease_num_collators() {
         assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![]));
     });
 }
+
+#[test]
+fn assign_collators_stay_constant_if_new_collators_can_take_new_chains() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+            m.container_chains = vec![];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![
+            (1, 999),
+            (2, 999),
+            (3, 999),
+            (4, 999),
+            (5, 999),
+        ]),);
+
+        MockData::mutate(|m| {
+            m.container_chains = vec![1001, 1002];
+        });
+        run_to_block(21);
+
+        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![
+            (1, 999),
+            (2, 999),
+            (3, 999),
+            (4, 999),
+            (5, 999),
+            (6, 1001),
+            (7, 1001),
+            (8, 1002),
+            (9, 1002),
+        ]),);
+    });
+}
+
+#[test]
+fn assign_collators_move_extra_orchestrator_to_new_parachain_if_not_enough_collators() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            m.collators = vec![1, 2, 3, 4];
+            m.container_chains = vec![];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![
+            (1, 999),
+            (2, 999),
+            (3, 999),
+            (4, 999),
+        ]),);
+
+        MockData::mutate(|m| {
+            m.collators = vec![1, 2, 3, 4, 5];
+            m.container_chains = vec![1001, 1002];
+        });
+        run_to_block(21);
+
+        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![
+            (1, 999),
+            (2, 999),
+            (5, 1001),
+            (3, 1001),
+            (4, 1002),
+        ]),);
+    });
+}

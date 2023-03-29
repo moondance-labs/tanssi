@@ -130,8 +130,15 @@ pub mod pallet {
             }
         }
 
-        fn remove_orchestrator_chain_excess_collators(&mut self, num_orchestrator_chain: usize) {
-            self.orchestrator_chain.truncate(num_orchestrator_chain);
+        fn remove_orchestrator_chain_excess_collators(
+            &mut self,
+            num_orchestrator_chain: usize,
+        ) -> Vec<AccountId> {
+            if num_orchestrator_chain <= self.orchestrator_chain.len() {
+                self.orchestrator_chain.split_off(num_orchestrator_chain)
+            } else {
+                vec![]
+            }
         }
 
         fn remove_container_chain_excess_collators(&mut self, num_each_container_chain: usize) {
@@ -265,8 +272,9 @@ pub mod pallet {
             let mut new_assigned = old_assigned;
             new_assigned.remove_collators_not_in_list(&collators);
             new_assigned.remove_container_chains_not_in_list(container_chain_ids);
-            // Only need to do these two if the config params change
-            new_assigned.remove_orchestrator_chain_excess_collators(max_num_orchestrator_chain);
+            let extra_orchestrator_collators =
+                new_assigned.remove_orchestrator_chain_excess_collators(min_num_orchestrator_chain);
+            // Only need to do this if the config params change
             new_assigned.remove_container_chain_excess_collators(num_each_container_chain);
 
             // Collators that are not present in old_assigned
@@ -276,19 +284,36 @@ pub mod pallet {
             // But the current implementation allows changes, even without passing through None
             let mut new_collators = vec![];
             for c in collators {
-                if !new_assigned.find_collator(&c) {
+                if !new_assigned.find_collator(&c) && !extra_orchestrator_collators.contains(&c) {
                     new_collators.push(c);
                 }
             }
 
+            // Fill orchestrator chain collators up to min_num_orchestrator_chain
             let mut new_collators = new_collators.into_iter();
             new_assigned
                 .fill_orchestrator_chain_collators(min_num_orchestrator_chain, &mut new_collators);
+
+            // Fill container chain collators using new collators and also the extra
+            // collators that were previously assigned to the orchestrator chain,
+            // but give preference to new collators
+            let mut extra_orchestrator_collators = extra_orchestrator_collators.into_iter();
+            let mut new_plus_extra_collators = new_collators
+                .by_ref()
+                .chain(&mut extra_orchestrator_collators);
             new_assigned.add_new_container_chains(container_chain_ids);
-            new_assigned
-                .fill_container_chain_collators(num_each_container_chain, &mut new_collators);
-            new_assigned
-                .fill_orchestrator_chain_collators(max_num_orchestrator_chain, &mut new_collators);
+            new_assigned.fill_container_chain_collators(
+                num_each_container_chain,
+                &mut new_plus_extra_collators,
+            );
+
+            // Fill orchestrator chain collators back up to max_num_orchestrator_chain,
+            // but give preference to collators that were already there
+            let mut extra_collators_plus_new = extra_orchestrator_collators.by_ref().chain(&mut new_collators);
+            new_assigned.fill_orchestrator_chain_collators(
+                max_num_orchestrator_chain,
+                &mut extra_collators_plus_new,
+            );
 
             new_assigned
         }
