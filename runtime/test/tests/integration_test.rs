@@ -594,13 +594,22 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Some(vec![ALICE.into(), BOB.into()])
             );
             assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
-            assert_eq!(Runtime::collator_parachain(ALICE.into()), Some(100.into()));
             assert_eq!(
-                Runtime::future_collator_parachain(ALICE.into()),
+                Runtime::current_collator_parachain_assignment(ALICE.into()),
                 Some(100.into())
             );
-            assert_eq!(Runtime::collator_parachain(CHARLIE.into()), None);
-            assert_eq!(Runtime::future_collator_parachain(CHARLIE.into()), None);
+            assert_eq!(
+                Runtime::future_collator_parachain_assignment(ALICE.into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::current_collator_parachain_assignment(CHARLIE.into()),
+                None
+            );
+            assert_eq!(
+                Runtime::future_collator_parachain_assignment(CHARLIE.into()),
+                None
+            );
 
             // We change invulnerables
             // We first need to set the keys
@@ -642,9 +651,12 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Some(vec![ALICE.into(), BOB.into()])
             );
             assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
-            assert_eq!(Runtime::collator_parachain(CHARLIE.into()), None);
             assert_eq!(
-                Runtime::future_collator_parachain(CHARLIE.into()),
+                Runtime::current_collator_parachain_assignment(CHARLIE.into()),
+                None
+            );
+            assert_eq!(
+                Runtime::future_collator_parachain_assignment(CHARLIE.into()),
                 Some(1001.into())
             );
 
@@ -667,11 +679,11 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Some(vec![CHARLIE.into(), DAVE.into()])
             );
             assert_eq!(
-                Runtime::collator_parachain(CHARLIE.into()),
+                Runtime::current_collator_parachain_assignment(CHARLIE.into()),
                 Some(1001.into())
             );
             assert_eq!(
-                Runtime::future_collator_parachain(CHARLIE.into()),
+                Runtime::future_collator_parachain_assignment(CHARLIE.into()),
                 Some(1001.into())
             );
 
@@ -690,8 +702,14 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(1001.into()),
                 Some(vec![CHARLIE.into(), DAVE.into()])
             );
-            assert_eq!(Runtime::collator_parachain(BOB.into()), Some(100.into()));
-            assert_eq!(Runtime::future_collator_parachain(BOB.into()), None);
+            assert_eq!(
+                Runtime::current_collator_parachain_assignment(BOB.into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::future_collator_parachain_assignment(BOB.into()),
+                None
+            );
 
             run_to_session(4u32, true);
             assert_eq!(
@@ -702,7 +720,13 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(1001.into()),
                 Some(vec![CHARLIE.into(), DAVE.into()])
             );
-            assert_eq!(Runtime::collator_parachain(BOB.into()), None);
-            assert_eq!(Runtime::future_collator_parachain(BOB.into()), None);
+            assert_eq!(
+                Runtime::current_collator_parachain_assignment(BOB.into()),
+                None
+            );
+            assert_eq!(
+                Runtime::future_collator_parachain_assignment(BOB.into()),
+                None
+            );
         });
 }

@@ -707,7 +707,7 @@ impl_runtime_apis! {
     impl pallet_collator_assignment_runtime_api::CollatorAssignmentApi<Block, AccountId, ParaId> for Runtime {
         /// Return the parachain that the given `AccountId` is collating for.
         /// Returns `None` if the `AccountId` is not collating.
-        fn collator_parachain(account: AccountId) -> Option<ParaId> {
+        fn current_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
             let assigned_collators = CollatorAssignment::collator_container_chain();
             let self_para_id = ParachainInfo::get().into();
 
@@ -717,7 +717,7 @@ impl_runtime_apis! {
         /// Return the parachain that the given `AccountId` will be collating for
         /// in the next session change.
         /// Returns `None` if the `AccountId` will not be collating.
-        fn future_collator_parachain(account: AccountId) -> Option<ParaId> {
+        fn future_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
             let assigned_collators = CollatorAssignment::pending_collator_container_chain();
 
             match assigned_collators {
@@ -727,7 +727,7 @@ impl_runtime_apis! {
                     assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
                 }
                 None => {
-                    Self::collator_parachain(account)
+                    Self::current_collator_parachain_assignment(account)
                 }
             }
 
