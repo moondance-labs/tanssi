@@ -25,6 +25,10 @@ pub use pallet::*;
 pub const PARAS_HEADS_INDEX: &[u8] =
     &hex_literal::hex!["cd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c3"];
 
+pub trait GetContainerChains {
+    fn container_chains() -> Vec<ParaId>;
+}
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::{DispatchResult, *};
@@ -43,8 +47,7 @@ pub mod pallet {
             + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
             + GetDispatchInfo;
 
-        /// Our own para
-        type SelfParaId: Get<ParaId>;
+        type ContainerChains: GetContainerChains;
 
         type AuthorFetcher: GetAuthorFromSlot<Self>;
     }
@@ -60,7 +63,7 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        #[pallet::call_index(1)]
+        #[pallet::call_index(0)]
         #[pallet::weight((0, DispatchClass::Mandatory))]
         // TODO: This weight should be corrected.
         pub fn set_latest_author_data(
@@ -74,35 +77,37 @@ pub mod pallet {
                 relay_chain_state,
             } = data;
 
-            let relay_state_proof = RelayChainStateProof::new(
-                T::SelfParaId::get(),
-                vfp.relay_parent_storage_root,
-                relay_chain_state.clone(),
-            )
-            .expect("Invalid relay chain state proof");
+            let para_ids = T::ContainerChains::container_chains();
 
-            let own_para: ParaId = T::SelfParaId::get();
+            for para_id in para_ids {
+                let relay_state_proof = RelayChainStateProof::new(
+                    para_id,
+                    vfp.relay_parent_storage_root,
+                    relay_chain_state.clone(),
+                )
+                .expect("Invalid relay chain state proof");
 
-            let bytes = own_para.twox_64_concat();
-            // CONCAT
-            let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
+                let bytes = para_id.twox_64_concat();
+                // CONCAT
+                let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
 
-            let mut author_header: sp_runtime::generic::Header<BlockNumber, BlakeTwo256> =
-                relay_state_proof
-                    .read_entry(key.as_slice(), None)
-                    .expect("Header not present");
+                let mut author_header: sp_runtime::generic::Header<BlockNumber, BlakeTwo256> =
+                    relay_state_proof
+                        .read_entry(key.as_slice(), None)
+                        .expect("Header not present");
 
-            let aura_digest = author_header
-                .digest_mut()
-                .logs()
-                .first()
-                .expect("Aura digest is present and is first item");
+                let aura_digest = author_header
+                    .digest_mut()
+                    .logs()
+                    .first()
+                    .expect("Aura digest is present and is first item");
 
-            let (id, mut data) = aura_digest.as_pre_runtime().expect("qed");
-            if id == AURA_ENGINE_ID {
-                if let Some(slot) = InherentType::decode(&mut data).ok() {
-                    if let Some(author) = T::AuthorFetcher::author_from_inherent(slot) {
-                        LatestAuthor::<T>::put(author);
+                let (id, mut data) = aura_digest.as_pre_runtime().expect("qed");
+                if id == AURA_ENGINE_ID {
+                    if let Some(slot) = InherentType::decode(&mut data).ok() {
+                        if let Some(author) = T::AuthorFetcher::author_from_inherent(slot) {
+                            LatestAuthor::<T>::insert(para_id, author);
+                        }
                     }
                 }
             }
@@ -113,12 +118,19 @@ pub mod pallet {
             })
         }
 
-        #[pallet::call_index(0)]
+        #[pallet::call_index(1)]
         #[pallet::weight(0)]
-        pub fn set_author(origin: OriginFor<T>, new: T::AccountId) -> DispatchResult {
+        pub fn set_author(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            new: T::AccountId,
+        ) -> DispatchResult {
             ensure_root(origin)?;
-            LatestAuthor::<T>::put(&new);
-            Self::deposit_event(Event::LatestAuthorChanged { new_author: new });
+            LatestAuthor::<T>::insert(para_id, &new);
+            Self::deposit_event(Event::LatestAuthorChanged {
+                para_id,
+                new_author: new,
+            });
             Ok(())
         }
     }
@@ -127,12 +139,16 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Latest author changed
-        LatestAuthorChanged { new_author: T::AccountId },
+        LatestAuthorChanged {
+            para_id: ParaId,
+            new_author: T::AccountId,
+        },
     }
 
     #[pallet::storage]
     #[pallet::getter(fn latest_author)]
-    pub(super) type LatestAuthor<T: Config> = StorageValue<_, T::AccountId, OptionQuery>;
+    pub(super) type LatestAuthor<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
 
     #[pallet::inherent]
     impl<T: Config> ProvideInherent for Pallet<T> {
