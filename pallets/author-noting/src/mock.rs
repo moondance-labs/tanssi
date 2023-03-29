@@ -78,7 +78,6 @@ impl crate::GetAuthorFromSlot<Test> for MockAuthorFetcher {
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type RuntimeCall = RuntimeCall;
     type SelfParaId = ParachainId;
     type AuthorFetcher = MockAuthorFetcher;
 }
@@ -138,7 +137,11 @@ pub struct BlockTests {
     persisted_author: Option<InherentType>,
     inherent_data_hook: Option<
         Box<
-            dyn Fn(&BlockTests, RelayChainBlockNumber, &mut crate::types::OwnParachainInherentData),
+            dyn Fn(
+                &BlockTests,
+                RelayChainBlockNumber,
+                &mut tp_author_noting_inherent::OwnParachainInherentData,
+            ),
         >,
     >,
 }
@@ -214,10 +217,11 @@ impl BlockTests {
                 // to storage; they must also be included in the inherent data.
                 let inherent_data = {
                     let mut inherent_data = InherentData::default();
-                    let mut system_inherent_data = crate::types::OwnParachainInherentData {
-                        validation_data: vfp.clone(),
-                        relay_chain_state,
-                    };
+                    let mut system_inherent_data =
+                        tp_author_noting_inherent::OwnParachainInherentData {
+                            validation_data: vfp.clone(),
+                            relay_chain_state,
+                        };
                     if let Some(ref hook) = self.inherent_data_hook {
                         hook(self, *n as RelayChainBlockNumber, &mut system_inherent_data);
                     }
@@ -304,7 +308,11 @@ impl OwnRelayStateSproofBuilder {
             };
 
             let para_key = self.para_id.twox_64_concat();
-            let key = [crate::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+            let key = [
+                tp_author_noting_inherent::PARAS_HEADS_INDEX,
+                para_key.as_slice(),
+            ]
+            .concat();
 
             let encoded = match self.author_id {
                 HeaderAs::AlreadyEncoded(encoded) => encoded,

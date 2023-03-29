@@ -1,5 +1,4 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-
 use cumulus_pallet_parachain_system::RelayChainStateProof;
 use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
@@ -18,12 +17,7 @@ mod mock;
 #[cfg(test)]
 mod test;
 
-pub mod types;
 pub use pallet::*;
-
-// TODO: Probably should me moved to something like primitives
-pub const PARAS_HEADS_INDEX: &[u8] =
-    &hex_literal::hex!["cd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c3"];
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -32,16 +26,12 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::Hashable;
     use frame_system::pallet_prelude::*;
+    use tp_author_noting_inherent::PARAS_HEADS_INDEX;
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
-        /// A sudo-able call.
-        type RuntimeCall: Parameter
-            + UnfilteredDispatchable<RuntimeOrigin = Self::RuntimeOrigin>
-            + GetDispatchInfo;
 
         /// Our own para
         type SelfParaId: Get<ParaId>;
@@ -65,11 +55,11 @@ pub mod pallet {
         // TODO: This weight should be corrected.
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
-            data: crate::types::OwnParachainInherentData,
+            data: tp_author_noting_inherent::OwnParachainInherentData
         ) -> DispatchResultWithPostInfo {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
-            let crate::types::OwnParachainInherentData {
+            let tp_author_noting_inherent::OwnParachainInherentData {
                 validation_data: vfp,
                 relay_chain_state,
             } = data;
@@ -139,12 +129,12 @@ pub mod pallet {
         type Call = Call<T>;
         type Error = sp_inherents::MakeFatalError<()>;
         // TODO, what should we put here
-        const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
+        const INHERENT_IDENTIFIER: InherentIdentifier = tp_author_noting_inherent::INHERENT_IDENTIFIER;
 
         fn create_inherent(data: &InherentData) -> Option<Self::Call> {
-            let data: crate::types::OwnParachainInherentData =
+            let data: tp_author_noting_inherent::OwnParachainInherentData =
                 data.get_data(&INHERENT_IDENTIFIER).ok().flatten().expect(
-                    "validation function params are always injected into inherent data; qed",
+                    "there is not data to be posted; qed",
                 );
 
             Some(Call::set_latest_author_data { data })

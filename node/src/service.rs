@@ -408,6 +408,16 @@ fn build_consensus(
                         para_id,
                     )
                     .await;
+
+                let author_noting_inherent =
+                    tp_author_noting_inherent::OwnParachainInherentData::create_at(
+                        relay_parent,
+                        &relay_chain_interface,
+                        &validation_data,
+                        para_id,
+                    )
+                    .await;
+                
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
                 let slot =
@@ -421,7 +431,14 @@ fn build_consensus(
                         "Failed to create parachain inherent",
                     )
                 })?;
-                Ok((slot, timestamp, parachain_inherent))
+
+                let author_noting_inherent = author_noting_inherent.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to create author noting inherent",
+                    )
+                })?;
+
+                Ok((slot, timestamp, parachain_inherent, author_noting_inherent))
             }
         },
         block_import,

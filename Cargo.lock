@@ -5306,8 +5306,8 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-std",
- "sp-trie",
  "sp-version",
+ "tp-author-noting-inherent",
 ]
 
 [[package]]
@@ -11326,6 +11326,7 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "test-runtime",
+ "tp-author-noting-inherent",
  "try-runtime-cli",
 ]
 
@@ -11347,6 +11348,7 @@ dependencies = [
  "hex-literal",
  "log",
  "pallet-aura",
+ "pallet-author-noting",
  "pallet-authorship",
  "pallet-balances",
  "pallet-collator-assignment",
@@ -11374,8 +11376,10 @@ dependencies = [
  "sp-session",
  "sp-std",
  "sp-transaction-pool",
+ "sp-trie",
  "sp-version",
  "substrate-wasm-builder",
+ "tp-author-noting-inherent",
 ]
 
 [[package]]
@@ -11674,6 +11678,28 @@ name = "tower-service"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
+
+[[package]]
+name = "tp-author-noting-inherent"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cumulus-primitives-core",
+ "cumulus-relay-chain-interface",
+ "hex-literal",
+ "parity-scale-codec",
+ "sc-client-api",
+ "scale-info",
+ "sp-api",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std",
+ "sp-storage",
+ "sp-trie",
+ "tracing",
+]
 
 [[package]]
 name = "tracing"

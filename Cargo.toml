@@ -3,6 +3,7 @@ members = [
 	"node",
 	"pallets/*",
 	"runtime/test",
+	"primitives/*",
 ]
 resolver = "2"
 
@@ -12,7 +13,10 @@ pallet-collator-assignment = { path = "pallets/collator-assignment", default-fea
 pallet-configuration = { path = "pallets/configuration", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
+pallet-author-noting = { path = "pallets/author-noting", default-features = false }
+
 test-runtime = { path = "runtime/test", default-features = false }
+tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
@@ -40,6 +44,7 @@ sp-session = { git = "https://github.com/paritytech/substrate", branch = "polkad
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 sp-transaction-pool = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 sp-version = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
+sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 
 # Substrate (client)
 frame-benchmarking = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
@@ -65,7 +70,7 @@ sp-keystore = { git = "https://github.com/paritytech/substrate", branch = "polka
 sp-timestamp = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sp-externalities = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sp-state-machine = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
-sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
+sp-storage = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 substrate-build-script-utils = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 substrate-frame-rpc-system = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 substrate-prometheus-endpoint = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
