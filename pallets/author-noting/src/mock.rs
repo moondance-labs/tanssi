@@ -1,5 +1,5 @@
 use super::*;
-use crate as author_reward_pallet;
+use crate as author_noting_pallet;
 use cumulus_primitives_core::PersistedValidationData;
 use frame_support::inherent::{InherentData, ProvideInherent};
 use frame_support::parameter_types;
@@ -33,7 +33,7 @@ frame_support::construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-        AuthorRewarding: author_reward_pallet::{Pallet, Call, Storage, Event<T>},
+        AuthorNoting: author_noting_pallet::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -228,13 +228,13 @@ impl BlockTests {
                 };
 
                 // execute the block
-                AuthorRewarding::on_initialize(*n);
-                AuthorRewarding::create_inherent(&inherent_data)
+                AuthorNoting::on_initialize(*n);
+                AuthorNoting::create_inherent(&inherent_data)
                     .expect("got an inherent")
                     .dispatch_bypass_filter(RawOrigin::None.into())
                     .expect("dispatch succeeded");
                 within_block();
-                AuthorRewarding::on_finalize(*n);
+                AuthorNoting::on_finalize(*n);
 
                 // clean up
                 System::finalize();

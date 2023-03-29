@@ -25,7 +25,7 @@ fn test_author_id_insertion() {
             _ => unreachable!(),
         })
         .add(1, || {
-            assert_eq!(AuthorRewarding::latest_author(), Some(13u64));
+            assert_eq!(AuthorNoting::latest_author(), Some(13u64));
         });
 }
 
@@ -51,7 +51,7 @@ fn test_author_id_insertion_real_data() {
         })
         .add(1, || {
             assert_eq!(
-                AuthorRewarding::latest_author(),
+                AuthorNoting::latest_author(),
                 // Our mock author fetcher will just note the slot
                 Some(140006956u64)
             );
