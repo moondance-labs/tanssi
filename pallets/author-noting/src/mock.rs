@@ -249,7 +249,6 @@ impl BlockTests {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }
 
-                //let para_id = sproof_builder.para_id;
                 let (relay_parent_storage_root, relay_chain_state) =
                     sproof_builder.into_state_root_and_proof();
 
