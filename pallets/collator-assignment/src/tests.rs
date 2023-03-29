@@ -27,7 +27,8 @@ fn assign_initial_collators() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
             m.container_chains = vec![1001, 1002]
@@ -63,7 +64,8 @@ fn assign_collators_after_one_leaves_container() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
             m.container_chains = vec![1001, 1002]
@@ -124,7 +126,8 @@ fn assign_collators_after_one_leaves_orchestrator_chain() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
             m.container_chains = vec![1001, 1002]
@@ -180,7 +183,8 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -205,7 +209,8 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
 
         MockData::mutate(|m| {
             // Add 3 new collators to orchestrator_chain
-            m.orchestrator_chain_collators = 8;
+            m.min_orchestrator_chain_collators = 8;
+            m.max_orchestrator_chain_collators = 8;
         });
 
         run_to_block(21);
@@ -237,7 +242,8 @@ fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -262,7 +268,8 @@ fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
 
         MockData::mutate(|m| {
             // Remove 3 collators from orchestrator_chain
-            m.orchestrator_chain_collators = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 2;
         });
 
         run_to_block(21);
@@ -279,7 +286,8 @@ fn assign_collators_if_config_collators_per_container_increases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -338,7 +346,8 @@ fn assign_collators_if_container_chain_is_removed() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -390,7 +399,8 @@ fn assign_collators_if_container_chain_is_added() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -446,7 +456,8 @@ fn assign_collators_after_decrease_num_collators() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]

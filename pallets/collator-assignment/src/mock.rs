@@ -88,7 +88,8 @@ pub mod mock_data {
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub orchestrator_chain_collators: u32,
+    pub min_orchestrator_chain_collators: u32,
+    pub max_orchestrator_chain_collators: u32,
     pub collators_per_container: u32,
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
@@ -97,7 +98,8 @@ pub struct Mocks {
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            orchestrator_chain_collators: 0,
+            min_orchestrator_chain_collators: 0,
+            max_orchestrator_chain_collators: 0,
             collators_per_container: 0,
             collators: vec![],
             container_chains: vec![],
@@ -112,8 +114,12 @@ impl mock_data::Config for Test {}
 pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
-    fn orchestrator_chain_collators(_session_index: u32) -> u32 {
-        MockData::mock().orchestrator_chain_collators
+    fn min_orchestrator_chain_collators(_session_index: u32) -> u32 {
+        MockData::mock().min_orchestrator_chain_collators
+    }
+
+    fn max_orchestrator_chain_collators(_session_index: u32) -> u32 {
+        MockData::mock().max_orchestrator_chain_collators
     }
 
     fn collators_per_container(_session_index: u32) -> u32 {

@@ -82,7 +82,8 @@ fn test_author_collation_aura() {
         .with_para_ids(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            orchestrator_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
             collators_per_container: 2,
         })
         .build()
@@ -118,7 +119,8 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
         .with_para_ids(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            orchestrator_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
             collators_per_container: 2,
         })
         .build()
@@ -189,7 +191,8 @@ fn test_author_collation_aura_add_assigned_to_paras() {
         .with_para_ids(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            orchestrator_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
             collators_per_container: 2,
         })
         .build()
@@ -265,7 +268,8 @@ fn test_authors_without_paras() {
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            orchestrator_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
             collators_per_container: 2,
         })
         .build()
@@ -278,10 +282,27 @@ fn test_authors_without_paras() {
             // Only Alice and Bob collate for our chain
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
             let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+            let charlie_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
 
             // It does not matter if we insert more collators, only two will be assigned
-            // FIXME(#32): should this work like this?
-            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
+            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+
+            // Set moondance collators to min 2 max 5
+            assert_ok!(
+                Configuration::set_min_orchestrator_collators(root_origin(), 2),
+                ()
+            );
+            assert_ok!(
+                Configuration::set_max_orchestrator_collators(root_origin(), 5),
+                ()
+            );
+
+            run_to_session(2, true);
+            assert_eq!(
+                Aura::authorities(),
+                vec![alice_id, bob_id, charlie_id, dave_id]
+            );
         });
 }
 
@@ -303,7 +324,8 @@ fn test_authors_paras_inserted_a_posteriori() {
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            orchestrator_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
             collators_per_container: 2,
         })
         .build()
@@ -338,6 +360,65 @@ fn test_authors_paras_inserted_a_posteriori() {
 }
 
 #[test]
+fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 5,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2, true);
+            // Assert current slot gets updated
+            assert_eq!(Aura::current_slot(), 1u64);
+            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+
+            // Alice and Bob collate in our chain
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+            let charlie_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+
+            assert_eq!(
+                Aura::authorities(),
+                vec![alice_id, bob_id, charlie_id, dave_id]
+            );
+
+            assert_ok!(Registrar::register(root_origin(), 1001), ());
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32, true);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+            run_to_session(2u32, true);
+
+            // Charlie and Dave are not assigned to para 1001 because they were
+            // already assigned to the orchestrator chain
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains[&1001u32], vec![]);
+            assert_eq!(
+                assignment.orchestrator_chain,
+                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
+            );
+        });
+}
+
+#[test]
 fn test_parachains_deregister_collators_re_assigned() {
     ExtBuilder::default()
         .with_balances(vec![
@@ -356,7 +437,8 @@ fn test_parachains_deregister_collators_re_assigned() {
         .with_para_ids(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            orchestrator_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
             collators_per_container: 2,
         })
         .build()
@@ -420,7 +502,8 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
         .with_para_ids(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            orchestrator_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
             collators_per_container: 2,
         })
         .build()
@@ -438,7 +521,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
 
             // Set moondance collators to 1
             assert_ok!(
-                Configuration::set_orchestrator_collators(root_origin(), 1),
+                Configuration::set_max_orchestrator_collators(root_origin(), 1),
                 ()
             );
 
@@ -488,7 +571,8 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
         .with_para_ids(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            orchestrator_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
             collators_per_container: 2,
         })
         .build()
@@ -515,26 +599,27 @@ fn test_configuration_on_session_change() {
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 0,
-            orchestrator_collators: 0,
+            min_orchestrator_collators: 0,
+            max_orchestrator_collators: 0,
             collators_per_container: 0,
         })
         .build()
         .execute_with(|| {
             run_to_block(1, false);
             assert_eq!(Configuration::config().max_collators, 0);
-            assert_eq!(Configuration::config().orchestrator_collators, 0);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 0);
             assert_eq!(Configuration::config().collators_per_container, 0);
             assert_ok!(Configuration::set_max_collators(root_origin(), 50), ());
 
             run_to_session(1u32, false);
 
             assert_ok!(
-                Configuration::set_orchestrator_collators(root_origin(), 20),
+                Configuration::set_min_orchestrator_collators(root_origin(), 20),
                 ()
             );
 
             assert_eq!(Configuration::config().max_collators, 0);
-            assert_eq!(Configuration::config().orchestrator_collators, 0);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 0);
             assert_eq!(Configuration::config().collators_per_container, 0);
 
             run_to_session(2u32, false);
@@ -544,19 +629,19 @@ fn test_configuration_on_session_change() {
                 ()
             );
             assert_eq!(Configuration::config().max_collators, 50);
-            assert_eq!(Configuration::config().orchestrator_collators, 0);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 0);
             assert_eq!(Configuration::config().collators_per_container, 0);
 
             run_to_session(3u32, false);
 
             assert_eq!(Configuration::config().max_collators, 50);
-            assert_eq!(Configuration::config().orchestrator_collators, 20);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 20);
             assert_eq!(Configuration::config().collators_per_container, 0);
 
             run_to_session(4u32, false);
 
             assert_eq!(Configuration::config().max_collators, 50);
-            assert_eq!(Configuration::config().orchestrator_collators, 20);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 20);
             assert_eq!(Configuration::config().collators_per_container, 10);
         });
 }

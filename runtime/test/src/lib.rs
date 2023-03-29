@@ -459,7 +459,7 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
         config.collators_per_container
     }
 
-    fn orchestrator_chain_collators(session_index: u32) -> u32 {
+    fn min_orchestrator_chain_collators(session_index: u32) -> u32 {
         let (past_and_present, _) = Configuration::pending_configs()
             .into_iter()
             .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
@@ -469,7 +469,20 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
         } else {
             Configuration::config()
         };
-        config.orchestrator_collators
+        config.min_orchestrator_collators
+    }
+
+    fn max_orchestrator_chain_collators(session_index: u32) -> u32 {
+        let (past_and_present, _) = Configuration::pending_configs()
+            .into_iter()
+            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+        let config = if let Some(last) = past_and_present.last() {
+            last.1.clone()
+        } else {
+            Configuration::config()
+        };
+        config.max_orchestrator_collators
     }
 }
 

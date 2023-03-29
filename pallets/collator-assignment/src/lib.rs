@@ -40,7 +40,8 @@ mod mock;
 mod tests;
 
 pub trait GetHostConfiguration<SessionIndex> {
-    fn orchestrator_chain_collators(session_index: SessionIndex) -> u32;
+    fn min_orchestrator_chain_collators(session_index: SessionIndex) -> u32;
+    fn max_orchestrator_chain_collators(session_index: SessionIndex) -> u32;
     fn collators_per_container(session_index: SessionIndex) -> u32;
 }
 
@@ -208,7 +209,10 @@ pub mod pallet {
             let new_assigned = Self::assign_collators_always_keep_old(
                 collators,
                 &container_chain_ids,
-                T::HostConfiguration::orchestrator_chain_collators(target_session_index) as usize,
+                T::HostConfiguration::min_orchestrator_chain_collators(target_session_index)
+                    as usize,
+                T::HostConfiguration::max_orchestrator_chain_collators(target_session_index)
+                    as usize,
                 T::HostConfiguration::collators_per_container(target_session_index) as usize,
                 old_assigned.clone(),
             );
@@ -251,7 +255,8 @@ pub mod pallet {
         fn assign_collators_always_keep_old(
             collators: Vec<T::AccountId>,
             container_chain_ids: &[u32],
-            num_orchestrator_chain: usize,
+            min_num_orchestrator_chain: usize,
+            max_num_orchestrator_chain: usize,
             num_each_container_chain: usize,
             old_assigned: AssignedCollators<T::AccountId>,
         ) -> AssignedCollators<T::AccountId> {
@@ -261,7 +266,7 @@ pub mod pallet {
             new_assigned.remove_collators_not_in_list(&collators);
             new_assigned.remove_container_chains_not_in_list(container_chain_ids);
             // Only need to do these two if the config params change
-            new_assigned.remove_orchestrator_chain_excess_collators(num_orchestrator_chain);
+            new_assigned.remove_orchestrator_chain_excess_collators(max_num_orchestrator_chain);
             new_assigned.remove_container_chain_excess_collators(num_each_container_chain);
 
             // Collators that are not present in old_assigned
@@ -278,10 +283,12 @@ pub mod pallet {
 
             let mut new_collators = new_collators.into_iter();
             new_assigned
-                .fill_orchestrator_chain_collators(num_orchestrator_chain, &mut new_collators);
+                .fill_orchestrator_chain_collators(min_num_orchestrator_chain, &mut new_collators);
             new_assigned.add_new_container_chains(container_chain_ids);
             new_assigned
                 .fill_container_chain_collators(num_each_container_chain, &mut new_collators);
+            new_assigned
+                .fill_orchestrator_chain_collators(max_num_orchestrator_chain, &mut new_collators);
 
             new_assigned
         }
