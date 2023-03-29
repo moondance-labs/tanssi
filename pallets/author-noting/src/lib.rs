@@ -5,16 +5,16 @@ use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
 use cumulus_primitives_core::ParaId;
 use frame_support::{dispatch::GetDispatchInfo, traits::UnfilteredDispatchable};
+use sp_consensus_aura::inherents::{InherentType, INHERENT_IDENTIFIER};
+use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_inherents::InherentIdentifier;
 use sp_runtime::traits::Header;
 use sp_runtime::DispatchResult;
 use sp_std::prelude::*;
-use sp_consensus_aura::inherents::{INHERENT_IDENTIFIER, InherentType};
-use sp_consensus_aura::digests::CompatibleDigestItem;
-use sp_runtime::generic::DigestItem;
-use sp_consensus_aura::AURA_ENGINE_ID;
+
 #[cfg(test)]
 mod mock;
+
 #[cfg(test)]
 mod test;
 
@@ -97,15 +97,15 @@ pub mod pallet {
                 .logs()
                 .first()
                 .expect("Aura digest is present and is first item");
-            
+
             let (id, mut data) = aura_digest.as_pre_runtime().expect("qed");
             if id == AURA_ENGINE_ID {
-                if let Some(slot)  = InherentType::decode(&mut data).ok() {
+                if let Some(slot) = InherentType::decode(&mut data).ok() {
                     if let Some(author) = T::AuthorFetcher::author_from_inherent(slot) {
                         LatestAuthor::<T>::put(author);
                     }
                 }
-			}
+            }
 
             Ok(PostDispatchInfo {
                 actual_weight: Some(total_weight),

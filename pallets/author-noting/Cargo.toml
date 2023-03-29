@@ -27,7 +27,12 @@ cumulus-primitives-core = { workspace = true, default-features = false }
 cumulus-pallet-parachain-system = { workspace = true, default-features = false }
 
 [dev-dependencies]
-sp-io = { workspace = true, default-features = false }
+sp-io = { workspace = true }
+sp-version = { workspace = true }
+sp-externalities = { workspace = true }
+sp-state-machine = { workspace = true }
+polkadot-parachain = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.38"}
+polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.38"}
 
 [features]
 default = ["std"]
