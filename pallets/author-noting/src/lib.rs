@@ -98,17 +98,9 @@ pub mod pallet {
                         if let Some(slot) = InherentType::decode(&mut data).ok() {
                             if let Some(author) = T::AuthorFetcher::author_from_inherent(slot) {
                                 LatestAuthor::<T>::put(author);
-                            } else {
-                                log::info!("cannot four");
                             }
-                        } else {
-                            log::info!("cannot three");
                         }
-                    } else {
-                        log::info!("cannot two");
                     }
-                } else {
-                    log::info!("cannot one");
                 }
             }
 

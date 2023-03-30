@@ -1,8 +1,10 @@
+use cumulus_primitives_core::relay_chain::HeadData;
 use cumulus_primitives_core::ParaId;
 use frame_support::Hashable;
 use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::traits::HashFor;
 use sp_trie::MemoryDB;
+
 #[derive(Clone)]
 pub enum HeaderAs {
     AlreadyEncoded(Vec<u8>),
@@ -61,7 +63,9 @@ impl AuthorNotingSproofBuilder {
                 HeaderAs::AlreadyEncoded(encoded) => encoded,
                 HeaderAs::NonEncoded(header) => header.encode(),
             };
-            insert(key, encoded);
+
+            let head_data: HeadData = encoded.into();
+            insert(key, head_data.encode());
         }
 
         let root = backend.root().clone();
