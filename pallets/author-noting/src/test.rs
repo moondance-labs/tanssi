@@ -59,3 +59,28 @@ fn test_author_id_insertion_real_data() {
             );
         });
 }
+
+#[test]
+fn test_author_id_insertion_real_local_data() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| {
+            // Statemint data:
+            // Block: 3,511,063
+            // Slot: 140,006,956
+            let statemint_data = hex!(
+                "c92cfcc6e3d52a25b4fa838aed71c598c5e4ddd7eb1acaa7b3cad1576eeb592b25014691b49f5ac47cad16fb6564194b41e9488c4a20a05536b29214471350af01329b33f77dce97a590fdc99b403052becdbe93d9d3868751cd1006b1c44f08106d08066175726120d57658080000000005617572610101026a0f5431a3740ca953fb16b8591778f5bf4b2c3f1520e04ca30d9a2f78fb664c7b7637efc02441e1a05e1b8f18aea75e6557d8b5d9eaf7ecef52776f87d988"
+            );
+
+            match relay_block_num {
+                1 => sproof.author_id = HeaderAs::AlreadyEncoded(statemint_data.to_vec()),
+                _ => unreachable!(),
+            }
+        })
+        .add(1, || {
+            assert_eq!(
+                AuthorNoting::latest_author(),
+                // Our mock author fetcher will just note the slot
+                Some(140006956u64)
+            );
+        });
+}

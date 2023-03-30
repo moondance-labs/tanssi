@@ -2,6 +2,7 @@
 use cumulus_pallet_parachain_system::RelayChainStateProof;
 use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
+use cumulus_primitives_core::relay_chain::HeadData;
 use cumulus_primitives_core::ParaId;
 use sp_consensus_aura::inherents::InherentType;
 use sp_consensus_aura::AURA_ENGINE_ID;
@@ -77,27 +78,37 @@ pub mod pallet {
             // CONCAT
             let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
 
+            log::info!("key is {:?}", key);
             // We might encounter enty vecs
             // We only note if we can decode
-            if let Ok(mut author_header) = relay_state_proof
-                .read_entry::<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>(
-                    key.as_slice(),
-                    None,
-                )
-            {
-                let aura_digest = author_header
-                    .digest_mut()
-                    .logs()
-                    .first()
-                    .expect("Aura digest is present and is first item");
+            if let Ok(head_data) = relay_state_proof.read_entry::<HeadData>(key.as_slice(), None) {
+                if let Ok(mut author_header) =
+                    sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
+                        &mut head_data.0.as_slice(),
+                    )
+                {
+                    let aura_digest = author_header
+                        .digest_mut()
+                        .logs()
+                        .first()
+                        .expect("Aura digest is present and is first item");
 
-                let (id, mut data) = aura_digest.as_pre_runtime().expect("qed");
-                if id == AURA_ENGINE_ID {
-                    if let Some(slot) = InherentType::decode(&mut data).ok() {
-                        if let Some(author) = T::AuthorFetcher::author_from_inherent(slot) {
-                            LatestAuthor::<T>::put(author);
+                    let (id, mut data) = aura_digest.as_pre_runtime().expect("qed");
+                    if id == AURA_ENGINE_ID {
+                        if let Some(slot) = InherentType::decode(&mut data).ok() {
+                            if let Some(author) = T::AuthorFetcher::author_from_inherent(slot) {
+                                LatestAuthor::<T>::put(author);
+                            } else {
+                                log::info!("cannot four");
+                            }
+                        } else {
+                            log::info!("cannot three");
                         }
+                    } else {
+                        log::info!("cannot two");
                     }
+                } else {
+                    log::info!("cannot one");
                 }
             }
 

@@ -1,6 +1,7 @@
 use super::*;
 use crate as author_noting_pallet;
 use cumulus_primitives_core::PersistedValidationData;
+use frame_support::dispatch::UnfilteredDispatchable;
 use frame_support::inherent::{InherentData, ProvideInherent};
 use frame_support::parameter_types;
 use frame_support::traits::Everything;
