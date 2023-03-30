@@ -3,13 +3,13 @@ use cumulus_pallet_parachain_system::RelayChainStateProof;
 use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
 use cumulus_primitives_core::ParaId;
-use frame_support::{dispatch::GetDispatchInfo, traits::UnfilteredDispatchable};
-use sp_consensus_aura::inherents::{InherentType, INHERENT_IDENTIFIER};
+use sp_consensus_aura::inherents::InherentType;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_inherents::InherentIdentifier;
 use sp_runtime::traits::Header;
 use sp_runtime::DispatchResult;
 use sp_std::prelude::*;
+use tp_author_noting_inherent::INHERENT_IDENTIFIER;
 
 #[cfg(test)]
 mod mock;
@@ -55,7 +55,7 @@ pub mod pallet {
         // TODO: This weight should be corrected.
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
-            data: tp_author_noting_inherent::OwnParachainInherentData
+            data: tp_author_noting_inherent::OwnParachainInherentData,
         ) -> DispatchResultWithPostInfo {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
@@ -77,22 +77,26 @@ pub mod pallet {
             // CONCAT
             let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
 
-            let mut author_header: sp_runtime::generic::Header<BlockNumber, BlakeTwo256> =
-                relay_state_proof
-                    .read_entry(key.as_slice(), None)
-                    .expect("Header not present");
+            // We might encounter enty vecs
+            // We only note if we can decode
+            if let Ok(mut author_header) = relay_state_proof
+                .read_entry::<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>(
+                    key.as_slice(),
+                    None,
+                )
+            {
+                let aura_digest = author_header
+                    .digest_mut()
+                    .logs()
+                    .first()
+                    .expect("Aura digest is present and is first item");
 
-            let aura_digest = author_header
-                .digest_mut()
-                .logs()
-                .first()
-                .expect("Aura digest is present and is first item");
-
-            let (id, mut data) = aura_digest.as_pre_runtime().expect("qed");
-            if id == AURA_ENGINE_ID {
-                if let Some(slot) = InherentType::decode(&mut data).ok() {
-                    if let Some(author) = T::AuthorFetcher::author_from_inherent(slot) {
-                        LatestAuthor::<T>::put(author);
+                let (id, mut data) = aura_digest.as_pre_runtime().expect("qed");
+                if id == AURA_ENGINE_ID {
+                    if let Some(slot) = InherentType::decode(&mut data).ok() {
+                        if let Some(author) = T::AuthorFetcher::author_from_inherent(slot) {
+                            LatestAuthor::<T>::put(author);
+                        }
                     }
                 }
             }
@@ -129,13 +133,15 @@ pub mod pallet {
         type Call = Call<T>;
         type Error = sp_inherents::MakeFatalError<()>;
         // TODO, what should we put here
-        const INHERENT_IDENTIFIER: InherentIdentifier = tp_author_noting_inherent::INHERENT_IDENTIFIER;
+        const INHERENT_IDENTIFIER: InherentIdentifier =
+            tp_author_noting_inherent::INHERENT_IDENTIFIER;
 
         fn create_inherent(data: &InherentData) -> Option<Self::Call> {
-            let data: tp_author_noting_inherent::OwnParachainInherentData =
-                data.get_data(&INHERENT_IDENTIFIER).ok().flatten().expect(
-                    "there is not data to be posted; qed",
-                );
+            let data: tp_author_noting_inherent::OwnParachainInherentData = data
+                .get_data(&INHERENT_IDENTIFIER)
+                .ok()
+                .flatten()
+                .expect("there is not data to be posted; qed");
 
             Some(Call::set_latest_author_data { data })
         }

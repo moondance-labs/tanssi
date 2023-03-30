@@ -12,9 +12,9 @@ use parity_scale_codec::Encode;
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use sp_consensus_aura::inherents::InherentType;
 use sp_core::H256;
-use sp_runtime::traits::HashFor;
-use sp_trie::MemoryDB;
 use sp_version::RuntimeVersion;
+use tp_author_noting_inherent::AuthorNotingSproofBuilder;
+use tp_author_noting_inherent::HeaderAs;
 
 use sp_io;
 use sp_runtime::{
@@ -133,7 +133,7 @@ pub struct BlockTests {
     tests: Vec<BlockTest>,
     ran: bool,
     relay_sproof_builder_hook:
-        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut OwnRelayStateSproofBuilder)>>,
+        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut AuthorNotingSproofBuilder)>>,
     persisted_author: Option<InherentType>,
     inherent_data_hook: Option<
         Box<
@@ -169,7 +169,7 @@ impl BlockTests {
 
     pub fn with_relay_sproof_builder<F>(mut self, f: F) -> Self
     where
-        F: 'static + Fn(&BlockTests, RelayChainBlockNumber, &mut OwnRelayStateSproofBuilder),
+        F: 'static + Fn(&BlockTests, RelayChainBlockNumber, &mut AuthorNotingSproofBuilder),
     {
         self.relay_sproof_builder_hook = Some(Box::new(f));
         self
@@ -194,7 +194,7 @@ impl BlockTests {
                 System::initialize(&n, &Default::default(), &Default::default());
 
                 // now mess with the storage the way validate_block does
-                let mut sproof_builder = OwnRelayStateSproofBuilder::default();
+                let mut sproof_builder = AuthorNotingSproofBuilder::default();
                 if let Some(ref hook) = self.relay_sproof_builder_hook {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }
@@ -226,7 +226,10 @@ impl BlockTests {
                         hook(self, *n as RelayChainBlockNumber, &mut system_inherent_data);
                     }
                     inherent_data
-                        .put_data(crate::INHERENT_IDENTIFIER, &system_inherent_data)
+                        .put_data(
+                            tp_author_noting_inherent::INHERENT_IDENTIFIER,
+                            &system_inherent_data,
+                        )
                         .expect("failed to put VFP inherent");
                     inherent_data
                 };
@@ -255,74 +258,5 @@ impl Drop for BlockTests {
         if !self.ran {
             self.run();
         }
-    }
-}
-
-#[derive(Clone)]
-pub enum HeaderAs {
-    AlreadyEncoded(Vec<u8>),
-    NonEncoded(sp_runtime::generic::Header<u32, BlakeTwo256>),
-}
-
-/// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
-#[derive(Clone)]
-pub struct OwnRelayStateSproofBuilder {
-    /// The para id of the current parachain.
-    ///
-    /// This doesn't get into the storage proof produced by the builder, however, it is used for
-    /// generation of the storage image and by auxiliary methods.
-    ///
-    /// It's recommended to change this value once in the very beginning of usage.
-    ///
-    /// The default value is 200.
-    pub para_id: ParaId,
-
-    pub author_id: HeaderAs,
-}
-
-impl OwnRelayStateSproofBuilder {
-    fn default() -> Self {
-        OwnRelayStateSproofBuilder {
-            para_id: ParaId::from(200),
-            author_id: HeaderAs::AlreadyEncoded(vec![]),
-        }
-    }
-
-    pub fn into_state_root_and_proof(
-        self,
-    ) -> (
-        polkadot_primitives::v2::Hash,
-        sp_state_machine::StorageProof,
-    ) {
-        let (db, root) = MemoryDB::<HashFor<polkadot_primitives::v2::Block>>::default_with_root();
-        let state_version = Default::default(); // for test using default.
-        let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
-
-        let mut relevant_keys = Vec::new();
-        {
-            use parity_scale_codec::Encode as _;
-
-            let mut insert = |key: Vec<u8>, value: Vec<u8>| {
-                relevant_keys.push(key.clone());
-                backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
-            };
-
-            let para_key = self.para_id.twox_64_concat();
-            let key = [
-                tp_author_noting_inherent::PARAS_HEADS_INDEX,
-                para_key.as_slice(),
-            ]
-            .concat();
-
-            let encoded = match self.author_id {
-                HeaderAs::AlreadyEncoded(encoded) => encoded,
-                HeaderAs::NonEncoded(header) => header.encode(),
-            };
-            insert(key, encoded);
-        }
-
-        let root = backend.root().clone();
-        let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
-        (root, proof)
     }
 }

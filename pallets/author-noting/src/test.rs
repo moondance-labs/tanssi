@@ -5,6 +5,8 @@ use sp_consensus_aura::inherents::InherentType;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_runtime::generic::DigestItem;
 use sp_runtime::traits::BlakeTwo256;
+use tp_author_noting_inherent::HeaderAs;
+
 #[test]
 fn test_author_id_insertion() {
     BlockTests::new()

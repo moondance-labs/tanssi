@@ -501,7 +501,10 @@ pub struct AuthorFetcher;
 use sp_consensus_aura::inherents::InherentType;
 impl pallet_author_noting::GetAuthorFromSlot<Runtime> for AuthorFetcher {
     fn author_from_inherent(inherent: InherentType) -> Option<AccountId> {
-        None
+        let collator_orchestrators =
+            CollatorAssignment::collator_container_chain().orchestrator_chain;
+        let author_index = u64::from(inherent) % collator_orchestrators.len() as u64;
+        collator_orchestrators.get(author_index as usize).cloned()
     }
 }
 
