@@ -62,6 +62,18 @@ pub mod pallet {
         fn author_from_inherent(inherent: InherentType) -> Option<T::AccountId>;
     }
 
+    #[pallet::error]
+    pub enum Error<T> {
+        /// The new value for a configuration parameter is invalid.
+        FailedReading,
+        FailedDecodingHeader,
+        AuraDigestFirstItem,
+        AsPreRuntimeError,
+        NonDecodableSlot,
+        AuthorNotFound,
+        NonAuraDigest,
+    }
+
     #[pallet::pallet]
     #[pallet::generate_store(pub(super) trait Store)]
     pub struct Pallet<T>(PhantomData<T>);
@@ -96,31 +108,53 @@ pub mod pallet {
                 // CONCAT
                 let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
 
-                // We might encounter enty vecs
-                // We only note if we can decode
-                if let Ok(head_data) =
-                    relay_state_proof.read_entry::<HeadData>(key.as_slice(), None)
-                {
-                    if let Ok(mut author_header) =
+                match {
+                    // We might encounter empty vecs
+                    // We only note if we can decode
+                    // In this process several errors can occur, but we will only log if such errors happen
+                    // We first take the HeadData
+                    let head_data = relay_state_proof
+                        .read_entry::<HeadData>(key.as_slice(), None)
+                        .map_err(|_| Error::<T>::FailedReading)?;
+
+                    // We later take the Header decoded
+                    let mut author_header =
                         sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
                             &mut head_data.0.as_slice(),
                         )
-                    {
-                        let aura_digest = author_header
-                            .digest_mut()
-                            .logs()
-                            .first()
-                            .expect("Aura digest is present and is first item");
+                        .map_err(|_| Error::<T>::FailedDecodingHeader)?
+                        .clone();
 
-                        let (id, mut data) = aura_digest.as_pre_runtime().expect("qed");
-                        if id == AURA_ENGINE_ID {
-                            if let Some(slot) = InherentType::decode(&mut data).ok() {
-                                if let Some(author) = T::AuthorFetcher::author_from_inherent(slot) {
-                                    LatestAuthor::<T>::insert(para_id, author);
-                                }
-                            }
-                        }
+                    // We take the aura digest as the first item
+                    // TODO: improve in the future as iteration
+                    let aura_digest = author_header
+                        .digest_mut()
+                        .logs()
+                        .first()
+                        .ok_or(Error::<T>::AuraDigestFirstItem)?;
+
+                    // We decode the digest as pre-runtime digest
+                    let (id, mut data) = aura_digest
+                        .as_pre_runtime()
+                        .ok_or(Error::<T>::AsPreRuntimeError)?;
+
+                    // Match against the Aura digest
+                    if id == AURA_ENGINE_ID {
+                        // DecodeSlot
+                        let slot = InherentType::decode(&mut data)
+                            .map_err(|_| Error::<T>::NonDecodableSlot)?;
+
+                        // Fetch Author
+                        let author = T::AuthorFetcher::author_from_inherent(slot)
+                            .ok_or(Error::<T>::AuthorNotFound)?;
+
+                        Ok(author)
+                    } else {
+                        Err(Error::<T>::NonAuraDigest)
                     }
+                } {
+                    Ok(author) => LatestAuthor::<T>::insert(para_id, author),
+                    Err(e) => log::warn!("Author-noting error {:?} found in para {:?}", e, para_id),
                 }
             }
 
