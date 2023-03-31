@@ -18,6 +18,8 @@ use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
 use cumulus_primitives_core::relay_chain::HeadData;
 use cumulus_primitives_core::ParaId;
+use frame_support::Hashable;
+use parity_scale_codec::Decode;
 use sp_consensus_aura::inherents::InherentType;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_inherents::InherentIdentifier;
@@ -25,6 +27,7 @@ use sp_runtime::traits::Header;
 use sp_runtime::DispatchResult;
 use sp_std::prelude::*;
 use tp_author_noting_inherent::INHERENT_IDENTIFIER;
+use tp_author_noting_inherent::PARAS_HEADS_INDEX;
 
 #[cfg(test)]
 mod mock;
@@ -43,9 +46,7 @@ pub mod pallet {
     use super::{DispatchResult, *};
     use frame_support::dispatch::PostDispatchInfo;
     use frame_support::pallet_prelude::*;
-    use frame_support::Hashable;
     use frame_system::pallet_prelude::*;
-    use tp_author_noting_inherent::PARAS_HEADS_INDEX;
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -53,6 +54,8 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         type ContainerChains: GetContainerChains;
+
+        type SelfParaId: Get<ParaId>;
 
         type AuthorFetcher: GetAuthorFromSlot<Self>;
     }
@@ -95,64 +98,15 @@ pub mod pallet {
             } = data;
 
             let para_ids = T::ContainerChains::container_chains();
+            let relay_state_proof = RelayChainStateProof::new(
+                T::SelfParaId::get(),
+                vfp.relay_parent_storage_root,
+                relay_chain_state.clone(),
+            )
+            .expect("Invalid relay chain state proof");
 
             for para_id in para_ids {
-                let relay_state_proof = RelayChainStateProof::new(
-                    para_id,
-                    vfp.relay_parent_storage_root,
-                    relay_chain_state.clone(),
-                )
-                .expect("Invalid relay chain state proof");
-
-                let bytes = para_id.twox_64_concat();
-                // CONCAT
-                let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
-
-                match {
-                    // We might encounter empty vecs
-                    // We only note if we can decode
-                    // In this process several errors can occur, but we will only log if such errors happen
-                    // We first take the HeadData
-                    let head_data = relay_state_proof
-                        .read_entry::<HeadData>(key.as_slice(), None)
-                        .map_err(|_| Error::<T>::FailedReading)?;
-
-                    // We later take the Header decoded
-                    let mut author_header =
-                        sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
-                            &mut head_data.0.as_slice(),
-                        )
-                        .map_err(|_| Error::<T>::FailedDecodingHeader)?
-                        .clone();
-
-                    // We take the aura digest as the first item
-                    // TODO: improve in the future as iteration
-                    let aura_digest = author_header
-                        .digest_mut()
-                        .logs()
-                        .first()
-                        .ok_or(Error::<T>::AuraDigestFirstItem)?;
-
-                    // We decode the digest as pre-runtime digest
-                    let (id, mut data) = aura_digest
-                        .as_pre_runtime()
-                        .ok_or(Error::<T>::AsPreRuntimeError)?;
-
-                    // Match against the Aura digest
-                    if id == AURA_ENGINE_ID {
-                        // DecodeSlot
-                        let slot = InherentType::decode(&mut data)
-                            .map_err(|_| Error::<T>::NonDecodableSlot)?;
-
-                        // Fetch Author
-                        let author = T::AuthorFetcher::author_from_inherent(slot)
-                            .ok_or(Error::<T>::AuthorNotFound)?;
-
-                        Ok(author)
-                    } else {
-                        Err(Error::<T>::NonAuraDigest)
-                    }
-                } {
+                match { Self::fetch_author_slot_from_proof(&relay_state_proof, para_id) } {
                     Ok(author) => LatestAuthor::<T>::insert(para_id, author),
                     Err(e) => log::warn!("Author-noting error {:?} found in para {:?}", e, para_id),
                 }
@@ -216,6 +170,60 @@ pub mod pallet {
 
         fn is_inherent(call: &Self::Call) -> bool {
             matches!(call, Call::set_latest_author_data { .. })
+        }
+    }
+}
+
+impl<T: Config> Pallet<T> {
+    /// Should be called when a new session occurs. Buffers the session notification to be applied
+    /// at the end of the block. If `queued` is `None`, the `validators` are considered queued.
+    fn fetch_author_slot_from_proof(
+        relay_state_proof: &RelayChainStateProof,
+        para_id: ParaId,
+    ) -> Result<T::AccountId, Error<T>> {
+        let bytes = para_id.twox_64_concat();
+        // CONCAT
+        let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
+        // We might encounter empty vecs
+        // We only note if we can decode
+        // In this process several errors can occur, but we will only log if such errors happen
+        // We first take the HeadData
+        let head_data = relay_state_proof
+            .read_entry::<HeadData>(key.as_slice(), None)
+            .map_err(|_| Error::<T>::FailedReading)?;
+
+        // We later take the Header decoded
+        let mut author_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
+            &mut head_data.0.as_slice(),
+        )
+        .map_err(|_| Error::<T>::FailedDecodingHeader)?
+        .clone();
+
+        // We take the aura digest as the first item
+        // TODO: improve in the future as iteration
+        let aura_digest = author_header
+            .digest_mut()
+            .logs()
+            .first()
+            .ok_or(Error::<T>::AuraDigestFirstItem)?;
+
+        // We decode the digest as pre-runtime digest
+        let (id, mut data) = aura_digest
+            .as_pre_runtime()
+            .ok_or(Error::<T>::AsPreRuntimeError)?;
+
+        // Match against the Aura digest
+        if id == AURA_ENGINE_ID {
+            // DecodeSlot
+            let slot = InherentType::decode(&mut data).map_err(|_| Error::<T>::NonDecodableSlot)?;
+
+            // Fetch Author
+            let author =
+                T::AuthorFetcher::author_from_inherent(slot).ok_or(Error::<T>::AuthorNotFound)?;
+
+            Ok(author)
+        } else {
+            Err(Error::<T>::NonAuraDigest)
         }
     }
 }

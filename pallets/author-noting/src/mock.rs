@@ -136,6 +136,7 @@ impl crate::GetContainerChains for MockContainerChainGetter {
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type AuthorFetcher = MockAuthorFetcher;
+    type SelfParaId = ParachainId;
     type ContainerChains = MockContainerChainGetter;
 }
 

@@ -521,6 +521,7 @@ impl pallet_author_noting::GetContainerChains for ContainerChainFetcher {
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = ContainerChainFetcher;
+    type SelfParaId = parachain_info::Pallet<Runtime>;
     type AuthorFetcher = AuthorFetcher;
 }
 
