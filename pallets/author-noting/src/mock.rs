@@ -1,21 +1,17 @@
-use super::*;
-use crate as author_noting_pallet;
-use cumulus_primitives_core::PersistedValidationData;
-use frame_support::dispatch::UnfilteredDispatchable;
+use crate::{self as author_noting_pallet, Config};
+use cumulus_primitives_core::{ParaId, PersistedValidationData};
 use frame_support::inherent::{InherentData, ProvideInherent};
 use frame_support::parameter_types;
-use frame_support::traits::Everything;
 use frame_support::traits::{ConstU32, ConstU64};
+use frame_support::traits::{Everything, UnfilteredDispatchable};
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::Hashable;
 use frame_system::RawOrigin;
-use parity_scale_codec::Encode;
+use parity_scale_codec::{Decode, Encode};
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use sp_consensus_aura::inherents::InherentType;
 use sp_core::H256;
 use sp_version::RuntimeVersion;
 use tp_author_noting_inherent::AuthorNotingSproofBuilder;
-use tp_author_noting_inherent::HeaderAs;
 
 use sp_io;
 use sp_runtime::{
@@ -35,6 +31,7 @@ frame_support::construct_runtime!(
     {
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
         AuthorNoting: author_noting_pallet::{Pallet, Call, Storage, Event<T>},
+        MockData: mock_data,
     }
 );
 
@@ -69,6 +66,56 @@ parameter_types! {
     pub const ParachainId: ParaId = ParaId::new(200);
 }
 
+// Pallet to provide some mock data, used to test
+#[frame_support::pallet]
+pub mod mock_data {
+    use super::*;
+    use frame_support::pallet_prelude::*;
+
+    #[pallet::config]
+    pub trait Config: frame_system::Config {}
+
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {}
+
+    #[pallet::pallet]
+    #[pallet::generate_store(pub(super) trait Store)]
+    #[pallet::without_storage_info]
+    pub struct Pallet<T>(_);
+
+    #[pallet::storage]
+    #[pallet::getter(fn mock)]
+    pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
+
+    impl<T: Config> Pallet<T> {
+        pub fn get() -> Mocks {
+            Mock::<T>::get()
+        }
+        pub fn mutate<F, R>(f: F) -> R
+        where
+            F: FnOnce(&mut Mocks) -> R,
+        {
+            Mock::<T>::mutate(f)
+        }
+    }
+}
+
+impl mock_data::Config for Test {}
+
+#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+pub struct Mocks {
+    pub container_chains: Vec<ParaId>,
+}
+
+impl Default for Mocks {
+    fn default() -> Self {
+        Self {
+            container_chains: vec![1001.into()],
+        }
+    }
+}
+
 pub struct MockAuthorFetcher;
 
 impl crate::GetAuthorFromSlot<Test> for MockAuthorFetcher {
@@ -76,11 +123,20 @@ impl crate::GetAuthorFromSlot<Test> for MockAuthorFetcher {
         return Some(inherent.into());
     }
 }
+
+pub struct MockContainerChainGetter;
+
+impl crate::GetContainerChains for MockContainerChainGetter {
+    fn container_chains() -> Vec<ParaId> {
+        MockData::mock().container_chains
+    }
+}
+
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type SelfParaId = ParachainId;
     type AuthorFetcher = MockAuthorFetcher;
+    type ContainerChains = MockContainerChainGetter;
 }
 
 struct BlockTest {
@@ -135,7 +191,6 @@ pub struct BlockTests {
     ran: bool,
     relay_sproof_builder_hook:
         Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut AuthorNotingSproofBuilder)>>,
-    persisted_author: Option<InherentType>,
     inherent_data_hook: Option<
         Box<
             dyn Fn(
@@ -176,11 +231,6 @@ impl BlockTests {
         self
     }
 
-    pub fn with_slot(mut self, inherent: InherentType) -> Self {
-        self.persisted_author = Some(inherent);
-        self
-    }
-
     pub fn run(&mut self) {
         self.ran = true;
         wasm_ext().execute_with(|| {
@@ -199,6 +249,7 @@ impl BlockTests {
                 if let Some(ref hook) = self.relay_sproof_builder_hook {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }
+
                 let (relay_parent_storage_root, relay_chain_state) =
                     sproof_builder.into_state_root_and_proof();
 
@@ -207,12 +258,6 @@ impl BlockTests {
                     relay_parent_storage_root,
                     ..Default::default()
                 };
-
-                if let Some(inherent) = self.persisted_author {
-                    if let Some(author) = MockAuthorFetcher::author_from_inherent(inherent) {
-                        <LatestAuthor<Test>>::put(author);
-                    }
-                }
 
                 // It is insufficient to push the author function params
                 // to storage; they must also be included in the inherent data.

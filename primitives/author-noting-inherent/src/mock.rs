@@ -8,6 +8,7 @@ use sp_inherents::InherentData;
 use sp_inherents::InherentDataProvider;
 use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::DigestItem;
+use crate::AuthorNotingSproofBuilder;
 
 /// Inherent data provider that supplies mocked validation data.
 ///
@@ -55,8 +56,8 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
             InherentType::from(self.slots_per_para_block as u64 * self.current_para_block as u64);
 
         // Use the "sproof" (spoof proof) builder to build valid mock state root and proof.
-        let mut sproof_builder = crate::AuthorNotingSproofBuilder::default();
-        sproof_builder.para_id = self.para_id.into();
+        let mut sproof_builder_item = crate::AuthorNotingSproofBuilderItem::default();
+        sproof_builder_item.para_id = self.para_id.into();
 
         let header = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
             parent_hash: Default::default(),
@@ -68,7 +69,11 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
             },
         });
 
-        sproof_builder.author_id = header;
+        sproof_builder_item.author_id = header;
+
+        let sproof_builder = AuthorNotingSproofBuilder {
+            items: vec![sproof_builder_item]
+        };
 
         let (relay_parent_storage_root, proof) = sproof_builder.into_state_root_and_proof();
 

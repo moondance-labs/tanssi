@@ -13,7 +13,7 @@ pub enum HeaderAs {
 
 /// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
 #[derive(Clone)]
-pub struct AuthorNotingSproofBuilder {
+pub struct AuthorNotingSproofBuilderItem {
     /// The para id of the current parachain.
     ///
     /// This doesn't get into the storage proof produced by the builder, however, it is used for
@@ -27,14 +27,22 @@ pub struct AuthorNotingSproofBuilder {
     pub author_id: HeaderAs,
 }
 
-impl AuthorNotingSproofBuilder {
-    pub fn default() -> Self {
-        AuthorNotingSproofBuilder {
+impl Default for AuthorNotingSproofBuilderItem {
+    fn default() -> Self {
+        Self {
             para_id: ParaId::from(200),
             author_id: HeaderAs::AlreadyEncoded(vec![]),
         }
     }
+}
 
+/// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
+#[derive(Clone, Default)]
+pub struct AuthorNotingSproofBuilder {
+    pub items: Vec<AuthorNotingSproofBuilderItem>,
+}
+
+impl AuthorNotingSproofBuilder {
     pub fn into_state_root_and_proof(
         self,
     ) -> (
@@ -54,18 +62,19 @@ impl AuthorNotingSproofBuilder {
                 backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
             };
 
-            let para_key = self.para_id.twox_64_concat();
-            let key = [crate::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+            for item in self.items {
 
-            log::info!("key in sproof is {:?}", key);
+                let para_key = item.para_id.twox_64_concat();
+                let key = [crate::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
 
-            let encoded = match self.author_id {
-                HeaderAs::AlreadyEncoded(encoded) => encoded,
-                HeaderAs::NonEncoded(header) => header.encode(),
-            };
+                let encoded = match item.author_id {
+                    HeaderAs::AlreadyEncoded(encoded) => encoded,
+                    HeaderAs::NonEncoded(header) => header.encode(),
+                };
 
-            let head_data: HeadData = encoded.into();
-            insert(key, head_data.encode());
+                let head_data: HeadData = encoded.into();
+                insert(key, head_data.encode());
+            }
         }
 
         let root = backend.root().clone();

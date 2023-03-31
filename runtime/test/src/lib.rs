@@ -508,9 +508,19 @@ impl pallet_author_noting::GetAuthorFromSlot<Runtime> for AuthorFetcher {
     }
 }
 
+// TODO: change this to get the real container chains
+use cumulus_primitives_core::ParaId;
+use sp_core::Get;
+pub struct ContainerChainFetcher;
+impl pallet_author_noting::GetContainerChains for ContainerChainFetcher {
+    fn container_chains() -> Vec<ParaId> {
+        vec![parachain_info::Pallet::<Runtime>::get().into()]
+    }
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type SelfParaId = parachain_info::Pallet<Runtime>;
+    type ContainerChains = ContainerChainFetcher;
     type AuthorFetcher = AuthorFetcher;
 }
 
