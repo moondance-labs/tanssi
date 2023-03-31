@@ -78,7 +78,6 @@ pub mod pallet {
             // CONCAT
             let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
 
-            log::info!("key is {:?}", key);
             // We might encounter enty vecs
             // We only note if we can decode
             if let Ok(head_data) = relay_state_proof.read_entry::<HeadData>(key.as_slice(), None) {
