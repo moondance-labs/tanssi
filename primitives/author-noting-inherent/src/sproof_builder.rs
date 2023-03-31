@@ -5,6 +5,7 @@ use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::traits::HashFor;
 use sp_trie::MemoryDB;
 
+// Enum representing how we want to insert the Header
 #[derive(Clone)]
 pub enum HeaderAs {
     AlreadyEncoded(Vec<u8>),
@@ -15,15 +16,9 @@ pub enum HeaderAs {
 #[derive(Clone)]
 pub struct AuthorNotingSproofBuilderItem {
     /// The para id of the current parachain.
-    ///
-    /// This doesn't get into the storage proof produced by the builder, however, it is used for
-    /// generation of the storage image and by auxiliary methods.
-    ///
-    /// It's recommended to change this value once in the very beginning of usage.
-    ///
-    /// The default value is 200.
     pub para_id: ParaId,
 
+    /// The author_id, which represents a Header with a Aura Digest
     pub author_id: HeaderAs,
 }
 
@@ -37,6 +32,8 @@ impl Default for AuthorNotingSproofBuilderItem {
 }
 
 /// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
+/// Receives a vec of individual AuthorNotingSproofBuilderItem items of which
+/// we need to insert the header
 #[derive(Clone, Default)]
 pub struct AuthorNotingSproofBuilder {
     pub items: Vec<AuthorNotingSproofBuilderItem>,

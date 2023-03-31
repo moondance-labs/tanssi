@@ -1,3 +1,15 @@
+/// Inherent data provider that supplies mocked author noting data.
+///
+/// This is useful when running a node that is not actually backed by any relay chain.
+/// For example when running a local node, or running integration tests.
+///
+/// We mock a relay chain block number as follows:
+/// relay_block_number = offset + relay_blocks_per_para_block * current_para_block
+/// To simulate a parachain that starts in relay block 1000 and gets a block in every other relay
+/// block, use 1000 and 2
+///
+/// para_id: the parachain of which we are gonna mock the headData
+/// slots_per_para_block: the number of slots to be applied per parachain block
 use crate::AuthorNotingSproofBuilder;
 use crate::HeaderAs;
 use crate::OwnParachainInherentData;
@@ -10,20 +22,6 @@ use sp_inherents::InherentDataProvider;
 use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::DigestItem;
 
-/// Inherent data provider that supplies mocked validation data.
-///
-/// This is useful when running a node that is not actually backed by any relay chain.
-/// For example when running a local node, or running integration tests.
-///
-/// We mock a relay chain block number as follows:
-/// relay_block_number = offset + relay_blocks_per_para_block * current_para_block
-/// To simulate a parachain that starts in relay block 1000 and gets a block in every other relay
-/// block, use 1000 and 2
-///
-/// Optionally, mock XCM messages can be injected into the runtime. When mocking XCM,
-/// in addition to the messages themselves, you must provide some information about
-/// your parachain's configuration in order to mock the MQC heads properly.
-/// See [`MockXcmConfig`] for more information
 pub struct MockAuthorNotingInherentDataProvider {
     /// The current block number of the local block chain (the parachain)
     pub current_para_block: u32,

@@ -1,14 +1,11 @@
-use crate::OwnParachainInherentData;
-use crate::PARAS_HEADS_INDEX;
+use crate::{para_id_head, OwnParachainInherentData};
 use cumulus_primitives_core::ParaId;
 use cumulus_primitives_core::PersistedValidationData;
 use cumulus_relay_chain_interface::PHash;
 use cumulus_relay_chain_interface::RelayChainInterface;
-use parity_scale_codec::Encode;
-use sp_core::twox_64;
-
-/// Collect the relevant relay chain state in form of a proof for putting it into the validation
-/// data inherent.
+/// Collect the relevant relay chain state in form of a proof
+/// for putting it into the author
+/// noting inherent.
 async fn collect_relay_storage_proof(
     relay_chain_interface: &impl RelayChainInterface,
     para_id: ParaId,
@@ -23,25 +20,8 @@ async fn collect_relay_storage_proof(
         .ok()
 }
 
-/// The upward message dispatch queue for the given para id.
-///
-/// The storage entry stores a tuple of two values:
-///
-/// - `count: u32`, the number of messages currently in the queue for given para,
-/// - `total_size: u32`, the total size of all messages in the queue.
-pub fn para_id_head(para_id: ParaId) -> Vec<u8> {
-    para_id.using_encoded(|para_id: &[u8]| {
-        PARAS_HEADS_INDEX
-            .iter()
-            .chain(twox_64(para_id).iter())
-            .chain(para_id.iter())
-            .cloned()
-            .collect()
-    })
-}
-
 impl OwnParachainInherentData {
-    /// Create the [`ParachainInherentData`] at the given `relay_parent`.
+    /// Create the [`OwnParachainInherentData`] at the given `relay_parent`.
     ///
     /// Returns `None` if the creation failed.
     pub async fn create_at(
@@ -60,6 +40,7 @@ impl OwnParachainInherentData {
     }
 }
 
+// Implementation of InherentDataProvider
 #[async_trait::async_trait]
 impl sp_inherents::InherentDataProvider for OwnParachainInherentData {
     async fn provide_inherent_data(
