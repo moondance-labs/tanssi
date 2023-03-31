@@ -21,7 +21,8 @@ sp-runtime = { workspace = true, optional = true }
 sp-state-machine = { workspace = true, optional = true }
 sp-storage = { workspace = true, optional = true }
 sp-consensus-aura = { workspace = true, optional = true }
-sp-std = { workspace = true, optional = true }
+sp-std = { workspace = true, default-features = false }
+sp-io = { workspace = true, default-features = false }
 sp-trie = { workspace = true, default-features = false }
 frame-support = { workspace = true, optional = true }
 
@@ -52,5 +53,6 @@ std = [
 	"cumulus-relay-chain-interface",
 	"polkadot-primitives",
 	"frame-support",
-	"sp-consensus-aura"
+	"sp-consensus-aura",
+	"sp-io/std"
 ]

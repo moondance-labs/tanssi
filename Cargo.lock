@@ -11698,6 +11698,7 @@ dependencies = [
  "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
+ "sp-io",
  "sp-runtime",
  "sp-state-machine",
  "sp-std",
