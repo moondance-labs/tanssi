@@ -84,7 +84,9 @@ pub mod pallet {
 
                 // We might encounter enty vecs
                 // We only note if we can decode
-                if let Ok(head_data) = relay_state_proof.read_entry::<HeadData>(key.as_slice(), None) {
+                if let Ok(head_data) =
+                    relay_state_proof.read_entry::<HeadData>(key.as_slice(), None)
+                {
                     if let Ok(mut author_header) =
                         sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
                             &mut head_data.0.as_slice(),

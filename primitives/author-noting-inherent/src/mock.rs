@@ -1,3 +1,4 @@
+use crate::AuthorNotingSproofBuilder;
 use crate::HeaderAs;
 use crate::OwnParachainInherentData;
 use cumulus_primitives_core::PersistedValidationData;
@@ -8,7 +9,6 @@ use sp_inherents::InherentData;
 use sp_inherents::InherentDataProvider;
 use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::DigestItem;
-use crate::AuthorNotingSproofBuilder;
 
 /// Inherent data provider that supplies mocked validation data.
 ///
@@ -72,7 +72,7 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
         sproof_builder_item.author_id = header;
 
         let sproof_builder = AuthorNotingSproofBuilder {
-            items: vec![sproof_builder_item]
+            items: vec![sproof_builder_item],
         };
 
         let (relay_parent_storage_root, proof) = sproof_builder.into_state_root_and_proof();

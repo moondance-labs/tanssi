@@ -63,7 +63,6 @@ impl AuthorNotingSproofBuilder {
             };
 
             for item in self.items {
-
                 let para_key = item.para_id.twox_64_concat();
                 let key = [crate::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
 
