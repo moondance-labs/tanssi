@@ -16,8 +16,8 @@ use cumulus_primitives_core::PersistedValidationData;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_inherents::InherentIdentifier;
-use sp_std::vec::Vec;
 use sp_io::hashing::twox_64;
+use sp_std::vec::Vec;
 
 #[cfg(feature = "std")]
 mod client_side;
