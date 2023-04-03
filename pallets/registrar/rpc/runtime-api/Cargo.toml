@@ -1,0 +1,21 @@
+[package]
+name = "pallet-registrar-runtime-api"
+version = "0.1.0"
+edition = "2021"
+authors = []
+description = "Runtime API definition of pallet-registrar"
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+scale-info = { workspace = true, default-features = false }
+sp-api = { workspace = true, default-features = false }
+parity-scale-codec = { workspace = true, default-features = false }
+
+[features]
+default = ["std"]
+std = [
+	"sp-api/std",
+	"parity-scale-codec/std",
+]
