@@ -654,7 +654,7 @@ pub fn new_dev(
 
     let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         rpc_builder,
-        client,
+        client: client.clone(),
         transaction_pool,
         task_manager: &mut task_manager,
         config,
@@ -682,6 +682,7 @@ pub fn new_dev(
     log::info!("Development Service Ready");
 
     network_starter.start_network();
+
     Ok(task_manager)
 }
 
