@@ -203,6 +203,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
         .into()
 }
 
+/// Mocks the author noting inherent to insert the data we
 pub fn set_author_noting_inherent_data(builder: AuthorNotingSproofBuilder) {
     use cumulus_primitives_core::PersistedValidationData;
     let (relay_parent_storage_root, relay_chain_state) = builder.into_state_root_and_proof();
