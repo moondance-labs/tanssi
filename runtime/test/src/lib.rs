@@ -420,7 +420,7 @@ impl parachain_info::Config for Runtime {}
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 parameter_types! {
-    pub const Period: u32 = 6 * HOURS;
+    pub const Period: u32 = 5;
     pub const Offset: u32 = 0;
 }
 

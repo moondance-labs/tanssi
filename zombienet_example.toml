@@ -38,3 +38,14 @@ id = 2000
   [[parachains.collators]]
   name = "collator04"
   command = "test-node"
+
+[[parachains]]
+id = 2001
+
+  [[parachains.collators]]
+  name = "collator05"
+  command = "test-node"
+
+  [[parachains.collators]]
+  name = "collator06"
+  command = "test-node"
