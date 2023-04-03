@@ -119,7 +119,7 @@ impl Default for Mocks {
 pub struct MockAuthorFetcher;
 
 impl crate::GetAuthorFromSlot<Test> for MockAuthorFetcher {
-    fn author_from_inherent(inherent: InherentType) -> Option<AccountId> {
+    fn author_from_inherent(inherent: InherentType, _para_id: ParaId) -> Option<AccountId> {
         return Some(inherent.into());
     }
 }

@@ -6,8 +6,8 @@ use std::{sync::Arc, time::Duration};
 use cumulus_client_cli::CollatorOptions;
 use polkadot_cli::ProvideRuntimeApi;
 // Local Runtime Types
-use test_runtime::{opaque::Block, AccountId, Hash, RuntimeApi};
 use pallet_registrar_runtime_api::RegistrarApi;
+use test_runtime::{opaque::Block, AccountId, Hash, RuntimeApi};
 // Cumulus Imports
 use cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion};
 use cumulus_client_consensus_common::{
@@ -414,7 +414,9 @@ fn build_consensus(
 
                 // TODO: not sure if this block id is parachain or relaychain
                 // If it is relay chain this won't work
-                let para_ids = client.runtime_api().parachains(&BlockId::Hash(block_hash))?;
+                let para_ids = client
+                    .runtime_api()
+                    .parachains(&BlockId::Hash(block_hash))?;
                 let para_ids: Vec<_> = para_ids.into_iter().map(|x| x.into()).collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(

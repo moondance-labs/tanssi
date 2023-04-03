@@ -501,18 +501,25 @@ impl pallet_collator_assignment::Config for Runtime {
 pub struct AuthorFetcher;
 use sp_consensus_aura::inherents::InherentType;
 impl pallet_author_noting::GetAuthorFromSlot<Runtime> for AuthorFetcher {
-    fn author_from_inherent(inherent: InherentType) -> Option<AccountId> {
-        let collator_orchestrators =
-            CollatorAssignment::collator_container_chain().orchestrator_chain;
-        let author_index = u64::from(inherent) % collator_orchestrators.len() as u64;
-        collator_orchestrators.get(author_index as usize).cloned()
+    fn author_from_inherent(inherent: InherentType, para_id: ParaId) -> Option<AccountId> {
+        let assigned_collators = CollatorAssignment::collator_container_chain();
+        let collators = assigned_collators.container_chains.get(&para_id.into())?;
+        if collators.is_empty() {
+            // Avoid division by zero below
+            return None;
+        }
+        let author_index = u64::from(inherent) % collators.len() as u64;
+        collators.get(author_index as usize).cloned()
     }
 }
 
 pub struct ContainerChainFetcher;
 impl pallet_author_noting::GetContainerChains for ContainerChainFetcher {
     fn container_chains() -> Vec<ParaId> {
-        Registrar::registered_para_ids().into_iter().map(|x| x.into()).collect()
+        Registrar::registered_para_ids()
+            .into_iter()
+            .map(|x| x.into())
+            .collect()
     }
 }
 
