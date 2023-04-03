@@ -18,8 +18,23 @@ chain = "rococo-local"
   name = "dave"
 
 [[parachains]]
-id = 100
+id = 1000
 
-  [parachains.collator]
+  [[parachains.collators]]
   name = "collator01"
+  command = "test-node"
+
+  [[parachains.collators]]
+  name = "collator02"
+  command = "test-node"
+
+[[parachains]]
+id = 2000
+
+  [[parachains.collators]]
+  name = "collator03"
+  command = "test-node"
+
+  [[parachains.collators]]
+  name = "collator04"
   command = "test-node"
