@@ -1,12 +1,17 @@
-use frame_support::traits::{GenesisBuild, OnFinalize, OnInitialize};
+use frame_support::{
+    assert_ok,
+    dispatch::Dispatchable,
+    traits::{GenesisBuild, OnFinalize, OnInitialize},
+};
 use parity_scale_codec::Encode;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_core::Pair;
 use sp_runtime::{Digest, DigestItem};
+use tp_author_noting_inherent::AuthorNotingSproofBuilder;
 
 pub use test_runtime::{
     AccountId, Aura, AuraId, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
-    RuntimeEvent, Session, System,
+    RuntimeCall, RuntimeEvent, Session, System,
 };
 
 pub fn run_to_session(n: u32, add_author: bool) {
@@ -186,10 +191,35 @@ pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::Ru
     <Runtime as frame_system::Config>::RuntimeOrigin::signed(account_id)
 }
 
+pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
+    <Runtime as frame_system::Config>::RuntimeOrigin::none()
+}
+
 /// Helper function to generate a crypto pair from seed
 pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
     sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
         .into()
+}
+
+pub fn set_author_noting_inherent_data(builder: AuthorNotingSproofBuilder) {
+    use cumulus_primitives_core::PersistedValidationData;
+    let (relay_parent_storage_root, relay_chain_state) = builder.into_state_root_and_proof();
+
+    let vfp = PersistedValidationData {
+        relay_parent_number: 1u32,
+        relay_parent_storage_root,
+        ..Default::default()
+    };
+    let parachain_inherent_data = tp_author_noting_inherent::OwnParachainInherentData {
+        validation_data: vfp,
+        relay_chain_state: relay_chain_state,
+    };
+    assert_ok!(RuntimeCall::AuthorNoting(
+        pallet_author_noting::Call::<Runtime>::set_latest_author_data {
+            data: parachain_inherent_data
+        }
+    )
+    .dispatch(inherent_origin()));
 }

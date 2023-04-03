@@ -113,7 +113,8 @@ std = [
 	"sp-version/std",
 	"pallet-initializer/std",
 	"pallet-author-noting/std",
-	"tp-author-noting-inherent/std"
+	"tp-author-noting-inherent/std",
+	"pallet-collator-assignment-runtime-api/std"
 ]
 
 runtime-benchmarks = [

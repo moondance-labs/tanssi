@@ -4,8 +4,15 @@ mod common;
 use common::*;
 use frame_support::{assert_ok, BoundedVec};
 use pallet_collator_assignment_runtime_api::runtime_decl_for_CollatorAssignmentApi::CollatorAssignmentApi;
+use parity_scale_codec::Encode;
+use sp_consensus_aura::AURA_ENGINE_ID;
+use sp_core::Get;
+use sp_runtime::{traits::BlakeTwo256, DigestItem};
 use sp_std::vec;
-use test_runtime::{CollatorAssignment, CollatorSelection, Configuration};
+use test_runtime::{AuthorNoting, CollatorAssignment, CollatorSelection, Configuration};
+use tp_author_noting_inherent::{
+    AuthorNotingSproofBuilder, AuthorNotingSproofBuilderItem, HeaderAs,
+};
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
 
@@ -727,6 +734,46 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             assert_eq!(
                 Runtime::future_collator_parachain_assignment(BOB.into()),
                 None
+            );
+        });
+}
+
+#[test]
+fn test_author_noting_works() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let mut sproof = AuthorNotingSproofBuilder::default();
+            let slot: u64 = 5;
+            let self_para = parachain_info::Pallet::<Runtime>::get();
+            let mut s = AuthorNotingSproofBuilderItem::default();
+            s.para_id = self_para;
+            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: Default::default(),
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                },
+            });
+            sproof.items.push(s);
+
+            set_author_noting_inherent_data(sproof);
+
+            // Odd slot, BOb
+            assert_eq!(
+                AuthorNoting::latest_author(self_para),
+                Some(AccountId::from(BOB))
             );
         });
 }
