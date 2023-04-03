@@ -106,7 +106,7 @@ pub mod pallet {
             .expect("Invalid relay chain state proof");
 
             for para_id in para_ids {
-                match { Self::fetch_author_slot_from_proof(&relay_state_proof, para_id) } {
+                match Self::fetch_author_slot_from_proof(&relay_state_proof, para_id) {
                     Ok(author) => LatestAuthor::<T>::insert(para_id, author),
                     Err(e) => log::warn!("Author-noting error {:?} found in para {:?}", e, para_id),
                 }
@@ -175,8 +175,7 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-    /// Should be called when a new session occurs. Buffers the session notification to be applied
-    /// at the end of the block. If `queued` is `None`, the `validators` are considered queued.
+    /// Fetch author slot from a proof of header
     fn fetch_author_slot_from_proof(
         relay_state_proof: &RelayChainStateProof,
         para_id: ParaId,
