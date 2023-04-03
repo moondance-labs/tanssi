@@ -82,6 +82,7 @@ pub mod pallet {
     /// The list is sorted ascending by session index. Also, this list can only contain at most
     /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
+    #[pallet::getter(fn pending_collator_container_chain)]
     pub(crate) type PendingCollatorContainerChain<T: Config> =
         StorageValue<_, Option<AssignedCollators<T::AccountId>>, ValueQuery>;
 
@@ -109,12 +110,22 @@ pub mod pallet {
     where
         AccountId: PartialEq,
     {
-        fn find_collator(&self, x: &AccountId) -> bool {
-            self.orchestrator_chain.iter().any(|a| a == x)
-                || self
-                    .container_chains
-                    .iter()
-                    .any(|(_id, cs)| cs.iter().any(|a| a == x))
+        pub fn para_id_of(&self, x: &AccountId, orchestrator_chain_para_id: u32) -> Option<u32> {
+            for (id, cs) in self.container_chains.iter() {
+                if cs.contains(x) {
+                    return Some(*id);
+                }
+            }
+
+            if self.orchestrator_chain.contains(x) {
+                return Some(orchestrator_chain_para_id);
+            }
+
+            None
+        }
+
+        pub fn find_collator(&self, x: &AccountId) -> bool {
+            self.para_id_of(x, 0).is_some()
         }
 
         fn remove_container_chains_not_in_list(&mut self, container_chains: &[u32]) {
