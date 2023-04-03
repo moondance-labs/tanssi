@@ -509,11 +509,10 @@ impl pallet_author_noting::GetAuthorFromSlot<Runtime> for AuthorFetcher {
     }
 }
 
-// TODO: change this to get the real container chains
 pub struct ContainerChainFetcher;
 impl pallet_author_noting::GetContainerChains for ContainerChainFetcher {
     fn container_chains() -> Vec<ParaId> {
-        vec![parachain_info::Pallet::<Runtime>::get().into()]
+        Registrar::registered_para_ids().into_iter().map(|x| x.into()).collect()
     }
 }
 

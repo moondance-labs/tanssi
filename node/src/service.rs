@@ -4,6 +4,7 @@
 use std::{sync::Arc, time::Duration};
 
 use cumulus_client_cli::CollatorOptions;
+use polkadot_cli::ProvideRuntimeApi;
 // Local Runtime Types
 use test_runtime::{opaque::Block, AccountId, Hash, RuntimeApi};
 
@@ -409,12 +410,13 @@ fn build_consensus(
                     )
                     .await;
 
+                let para_ids = client.runtime_api().parachains();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(
                         relay_parent,
                         &relay_chain_interface,
                         &validation_data,
-                        para_id,
+                        para_ids,
                     )
                     .await;
 
