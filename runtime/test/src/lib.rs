@@ -510,8 +510,6 @@ impl pallet_author_noting::GetAuthorFromSlot<Runtime> for AuthorFetcher {
 }
 
 // TODO: change this to get the real container chains
-use cumulus_primitives_core::ParaId;
-use sp_core::Get;
 pub struct ContainerChainFetcher;
 impl pallet_author_noting::GetContainerChains for ContainerChainFetcher {
     fn container_chains() -> Vec<ParaId> {
