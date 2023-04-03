@@ -6,6 +6,8 @@ use sp_consensus_aura::inherents::InherentType;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_runtime::generic::DigestItem;
 use sp_runtime::traits::BlakeTwo256;
+use tp_author_noting_inherent::AuthorNotingSproofBuilderItem;
+use tp_author_noting_inherent::HeaderAs;
 
 #[test]
 fn test_author_id_insertion() {
@@ -13,7 +15,7 @@ fn test_author_id_insertion() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = OwnRelayStateSproofBuilderItem::default();
+                let mut s = AuthorNotingSproofBuilderItem::default();
                 s.para_id = 1001.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
@@ -41,17 +43,18 @@ fn test_author_id_insertion_real_data() {
             // Statemint data:
             // Block: 3,511,063
             // Slot: 140,006,956
+            // RelayHash 0x5ea27df08fe09a82b5e835d4fa67735d0fbdf8d97b9c382f0af7b9c9c92a8545
             let statemint_data = hex!(
-                "5d1b54ce2845dedd7f43805849747c44388b7b7cc84dc5083815cc2b58b513145e4cd6000a98bf2792
-                 1e16366f5a2a388595f87744608684f43ff613026241634390d0c28a9dee52544070b989c71634db54
-                 222b86391a75fa37d12544e7022bcd3cd42a080661757261202c56580800000000056175726101018f
-                 b36de33276e8d54f77ea0a006ed7ab97b8d0aad00869f7ce6a5709eb1fc3256428b8b2428a2a3ec4fa
-                 1c1058ab0e33c5a6b2b5789ab7b3e0accaeccafb4506"
+                "5d1b54ce2845dedd7f43805849747c44388b7b7cc84dc5083815cc2b58b513145e4cd6000a98bf
+                 27921e16366f5a2a388595f87744608684f43ff613026241634390d0c28a9dee52544070b989c71634
+                 db54222b86391a75fa37d12544e7022bcd3cd42a080661757261202c56580800000000056175726101
+                 018fb36de33276e8d54f77ea0a006ed7ab97b8d0aad00869f7ce6a5709eb1fc3256428b8b2428a2a3e
+                 c4fa1c1058ab0e33c5a6b2b5789ab7b3e0accaeccafb4506"
             );
 
             match relay_block_num {
                 1 => {
-                    let mut s = OwnRelayStateSproofBuilderItem::default();
+                    let mut s = AuthorNotingSproofBuilderItem::default();
                     s.para_id = 1001.into();
                     s.author_id = HeaderAs::AlreadyEncoded(statemint_data.to_vec());
                     sproof.items.push(s);
@@ -76,7 +79,7 @@ fn test_author_id_insertion_many_paras() {
                 // Since the default parachain list is vec![1001],
                 // we must always include a sproof for this para_id
                 let slot: InherentType = 10u64.into();
-                let mut s = OwnRelayStateSproofBuilderItem::default();
+                let mut s = AuthorNotingSproofBuilderItem::default();
                 s.para_id = 1001.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
@@ -92,7 +95,7 @@ fn test_author_id_insertion_many_paras() {
             }
             2 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = OwnRelayStateSproofBuilderItem::default();
+                let mut s = AuthorNotingSproofBuilderItem::default();
                 s.para_id = 1001.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
@@ -107,7 +110,7 @@ fn test_author_id_insertion_many_paras() {
                 sproof.items.push(s);
 
                 let slot: InherentType = 14u64.into();
-                let mut s = OwnRelayStateSproofBuilderItem::default();
+                let mut s = AuthorNotingSproofBuilderItem::default();
                 s.para_id = 1002.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {

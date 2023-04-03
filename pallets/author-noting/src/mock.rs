@@ -5,15 +5,13 @@ use frame_support::parameter_types;
 use frame_support::traits::{ConstU32, ConstU64};
 use frame_support::traits::{Everything, UnfilteredDispatchable};
 use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_support::Hashable;
 use frame_system::RawOrigin;
 use parity_scale_codec::{Decode, Encode};
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use sp_consensus_aura::inherents::InherentType;
 use sp_core::H256;
-use sp_runtime::traits::HashFor;
-use sp_trie::MemoryDB;
 use sp_version::RuntimeVersion;
+use tp_author_noting_inherent::AuthorNotingSproofBuilder;
 
 use sp_io;
 use sp_runtime::{
@@ -137,8 +135,8 @@ impl crate::GetContainerChains for MockContainerChainGetter {
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type RuntimeCall = RuntimeCall;
     type AuthorFetcher = MockAuthorFetcher;
+    type SelfParaId = ParachainId;
     type ContainerChains = MockContainerChainGetter;
 }
 
@@ -193,10 +191,14 @@ pub struct BlockTests {
     tests: Vec<BlockTest>,
     ran: bool,
     relay_sproof_builder_hook:
-        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut OwnRelayStateSproofBuilder)>>,
+        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut AuthorNotingSproofBuilder)>>,
     inherent_data_hook: Option<
         Box<
-            dyn Fn(&BlockTests, RelayChainBlockNumber, &mut crate::types::OwnParachainInherentData),
+            dyn Fn(
+                &BlockTests,
+                RelayChainBlockNumber,
+                &mut tp_author_noting_inherent::OwnParachainInherentData,
+            ),
         >,
     >,
 }
@@ -224,7 +226,7 @@ impl BlockTests {
 
     pub fn with_relay_sproof_builder<F>(mut self, f: F) -> Self
     where
-        F: 'static + Fn(&BlockTests, RelayChainBlockNumber, &mut OwnRelayStateSproofBuilder),
+        F: 'static + Fn(&BlockTests, RelayChainBlockNumber, &mut AuthorNotingSproofBuilder),
     {
         self.relay_sproof_builder_hook = Some(Box::new(f));
         self
@@ -244,7 +246,7 @@ impl BlockTests {
                 System::initialize(&n, &Default::default(), &Default::default());
 
                 // now mess with the storage the way validate_block does
-                let mut sproof_builder = OwnRelayStateSproofBuilder::default();
+                let mut sproof_builder = AuthorNotingSproofBuilder::default();
                 if let Some(ref hook) = self.relay_sproof_builder_hook {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }
@@ -262,15 +264,19 @@ impl BlockTests {
                 // to storage; they must also be included in the inherent data.
                 let inherent_data = {
                     let mut inherent_data = InherentData::default();
-                    let mut system_inherent_data = crate::types::OwnParachainInherentData {
-                        validation_data: vfp.clone(),
-                        relay_chain_state,
-                    };
+                    let mut system_inherent_data =
+                        tp_author_noting_inherent::OwnParachainInherentData {
+                            validation_data: vfp.clone(),
+                            relay_chain_state,
+                        };
                     if let Some(ref hook) = self.inherent_data_hook {
                         hook(self, *n as RelayChainBlockNumber, &mut system_inherent_data);
                     }
                     inherent_data
-                        .put_data(crate::INHERENT_IDENTIFIER, &system_inherent_data)
+                        .put_data(
+                            tp_author_noting_inherent::INHERENT_IDENTIFIER,
+                            &system_inherent_data,
+                        )
                         .expect("failed to put VFP inherent");
                     inherent_data
                 };
@@ -299,79 +305,5 @@ impl Drop for BlockTests {
         if !self.ran {
             self.run();
         }
-    }
-}
-
-#[derive(Clone)]
-pub enum HeaderAs {
-    AlreadyEncoded(Vec<u8>),
-    NonEncoded(sp_runtime::generic::Header<u32, BlakeTwo256>),
-}
-
-#[derive(Clone)]
-pub struct OwnRelayStateSproofBuilderItem {
-    /// The para id of the current parachain.
-    ///
-    /// This doesn't get into the storage proof produced by the builder, however, it is used for
-    /// generation of the storage image and by auxiliary methods.
-    ///
-    /// It's recommended to change this value once in the very beginning of usage.
-    ///
-    /// The default value is 200.
-    pub para_id: ParaId,
-
-    pub author_id: HeaderAs,
-}
-
-impl Default for OwnRelayStateSproofBuilderItem {
-    fn default() -> Self {
-        Self {
-            para_id: ParaId::from(200),
-            author_id: HeaderAs::AlreadyEncoded(vec![]),
-        }
-    }
-}
-
-/// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
-#[derive(Clone, Default)]
-pub struct OwnRelayStateSproofBuilder {
-    pub items: Vec<OwnRelayStateSproofBuilderItem>,
-}
-
-impl OwnRelayStateSproofBuilder {
-    pub fn into_state_root_and_proof(
-        self,
-    ) -> (
-        polkadot_primitives::v2::Hash,
-        sp_state_machine::StorageProof,
-    ) {
-        let (db, root) = MemoryDB::<HashFor<polkadot_primitives::v2::Block>>::default_with_root();
-        let state_version = Default::default(); // for test using default.
-        let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
-
-        let mut relevant_keys = Vec::new();
-        {
-            use parity_scale_codec::Encode as _;
-
-            let mut insert = |key: Vec<u8>, value: Vec<u8>| {
-                relevant_keys.push(key.clone());
-                backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
-            };
-
-            for item in self.items {
-                let para_key = item.para_id.twox_64_concat();
-                let key = [crate::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
-
-                let encoded = match item.author_id {
-                    HeaderAs::AlreadyEncoded(encoded) => encoded,
-                    HeaderAs::NonEncoded(header) => header.encode(),
-                };
-                insert(key, encoded);
-            }
-        }
-
-        let root = backend.root().clone();
-        let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
-        (root, proof)
     }
 }
