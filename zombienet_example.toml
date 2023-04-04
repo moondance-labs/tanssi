@@ -48,20 +48,20 @@ id = 1000
 id = 2000
 
   [[parachains.collators]]
-  name = "collator2000-01"
+  name = "Collator2000-01"
   command = "test-node"
 
   [[parachains.collators]]
-  name = "collator2000-02"
+  name = "Collator2000-02"
   command = "test-node"
 
 [[parachains]]
 id = 2001
 
   [[parachains.collators]]
-  name = "collator2001-01"
+  name = "Collator2001-01"
   command = "test-node"
 
   [[parachains.collators]]
-  name = "collator2001-02"
+  name = "Collator2001-02"
   command = "test-node"
