@@ -610,19 +610,19 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
 
-        // Collator support. The order of these 4 are important and shall not change.
-        Authorship: pallet_authorship = 20,
-        CollatorSelection: pallet_collator_selection = 21,
-        Session: pallet_session = 22,
-        Aura: pallet_aura = 23,
-        AuraExt: cumulus_pallet_aura_ext = 24,
+        // ContainerChain management. It should go before Session for Genesis
+        Registrar: pallet_registrar = 20,
+        Configuration: pallet_configuration = 21,
+        CollatorAssignment: pallet_collator_assignment = 22,
+        Initializer: pallet_initializer = 23,
+        AuthorNoting: pallet_author_noting = 24,
 
-        // ContainerChain management
-        Registrar: pallet_registrar = 30,
-        Configuration: pallet_configuration = 31,
-        CollatorAssignment: pallet_collator_assignment = 32,
-        Initializer: pallet_initializer = 33,
-        AuthorNoting: pallet_author_noting = 34,
+        // Collator support. The order of these 4 are important and shall not change.
+        Authorship: pallet_authorship = 30,
+        CollatorSelection: pallet_collator_selection = 31,
+        Session: pallet_session = 32,
+        Aura: pallet_aura = 33,
+        AuraExt: cumulus_pallet_aura_ext = 34,
     }
 );
 
