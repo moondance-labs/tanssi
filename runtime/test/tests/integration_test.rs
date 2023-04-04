@@ -825,6 +825,9 @@ fn test_author_noting_not_self_para() {
 
             set_author_noting_inherent_data(sproof);
 
-            assert_eq!(AuthorNoting::latest_author(other_para), Some(AccountId::from(DAVE)));
+            assert_eq!(
+                AuthorNoting::latest_author(other_para),
+                Some(AccountId::from(DAVE))
+            );
         });
 }
