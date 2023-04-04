@@ -749,8 +749,6 @@ pub enum Sealing {
 
 use std::str::FromStr;
 
-use crate::cli;
-
 impl FromStr for Sealing {
     type Err = String;
 
