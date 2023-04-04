@@ -5,11 +5,11 @@ use common::*;
 use cumulus_primitives_core::ParaId;
 use frame_support::{assert_ok, BoundedVec};
 use pallet_collator_assignment_runtime_api::runtime_decl_for_CollatorAssignmentApi::CollatorAssignmentApi;
+use pallet_registrar_runtime_api::runtime_decl_for_RegistrarApi::RegistrarApi;
 use parity_scale_codec::Encode;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_core::Get;
 use sp_runtime::{traits::BlakeTwo256, DigestItem};
-use pallet_registrar_runtime_api::runtime_decl_for_RegistrarApi::RegistrarApi;
 use sp_std::vec;
 use test_runtime::{AuthorNoting, CollatorAssignment, CollatorSelection, Configuration};
 use tp_author_noting_inherent::{
