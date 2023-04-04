@@ -31,9 +31,8 @@ pub struct MockAuthorNotingInherentDataProvider {
     /// The number of relay blocks that elapses between each parablock. Probably set this to 1 or 2
     /// to simulate optimistic or realistic relay chain behavior.
     pub relay_blocks_per_para_block: u32,
-    /// Number of parachain blocks per relay chain epoch
-    /// Mock epoch is computed by dividing `current_para_block` by this value.
-    pub para_id: u32,
+    /// List of para ids for which to include the header proof. They will all have the same slot number.
+    pub para_ids: Vec<u32>,
     /// Number of parachain blocks per relay chain epoch
     /// Mock epoch is computed by dividing `current_para_block` by this value.
     pub slots_per_para_block: u32,
@@ -53,25 +52,26 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
         let slot_number =
             InherentType::from(self.slots_per_para_block as u64 * self.current_para_block as u64);
 
+        let mut sproof_builder = AuthorNotingSproofBuilder::default();
+
         // Use the "sproof" (spoof proof) builder to build valid mock state root and proof.
-        let mut sproof_builder_item = crate::AuthorNotingSproofBuilderItem::default();
-        sproof_builder_item.para_id = self.para_id.into();
+        for para_id in self.para_ids.iter() {
+            let mut sproof_builder_item = crate::AuthorNotingSproofBuilderItem::default();
+            sproof_builder_item.para_id = (*para_id).into();
 
-        let header = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-            parent_hash: Default::default(),
-            number: Default::default(),
-            state_root: Default::default(),
-            extrinsics_root: Default::default(),
-            digest: sp_runtime::generic::Digest {
-                logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot_number.encode())],
-            },
-        });
+            let header = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: Default::default(),
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot_number.encode())],
+                },
+            });
+            sproof_builder_item.author_id = header;
 
-        sproof_builder_item.author_id = header;
-
-        let sproof_builder = AuthorNotingSproofBuilder {
-            items: vec![sproof_builder_item],
-        };
+            sproof_builder.items.push(sproof_builder_item);
+        }
 
         let (relay_parent_storage_root, proof) = sproof_builder.into_state_root_and_proof();
 
@@ -86,7 +86,9 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
                 },
                 relay_chain_state: proof,
             },
-        )
+        )?;
+
+        Ok(())
     }
 
     // Copied from the real implementation

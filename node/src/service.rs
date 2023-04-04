@@ -500,7 +500,6 @@ pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from
 pub fn new_dev(
     config: Configuration,
     _author_id: Option<AccountId>,
-    para_id: ParaId,
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<TaskManager, ServiceError> {
@@ -636,6 +635,14 @@ pub fn new_dev(
                         .expect("Header lookup should succeed")
                         .expect("Header passed in as parent should be present in backend.");
 
+                    let para_ids = client_set_aside_for_cidp
+                        .runtime_api()
+                        .parachains(&BlockId::Number(current_para_block))
+                        .map_err(|_| {
+                            // TODO: print warning
+                        })
+                        .unwrap_or_default();
+
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {
                         //let time = sp_timestamp::InherentDataProvider::from_system_time();
@@ -662,8 +669,7 @@ pub fn new_dev(
                                 current_para_block,
                                 relay_offset: 1000,
                                 relay_blocks_per_para_block: 2,
-                                // TODO: Recheck
-                                para_id: para_id.into(),
+                                para_ids,
                                 slots_per_para_block: 1,
                             };
 
