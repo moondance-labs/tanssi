@@ -739,6 +739,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
         });
 }
 
+// TODO: this no longer works, author_from_inherent does not support self para
 #[test]
 fn test_author_noting_works() {
     ExtBuilder::default()
@@ -779,9 +780,8 @@ fn test_author_noting_works() {
         });
 }
 
-// TODO: change this whenever we support noting parachain headers
 #[test]
-fn test_author_noting_fails_if_inserting_anything_not_self_para() {
+fn test_author_noting_not_self_para() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -825,7 +825,6 @@ fn test_author_noting_fails_if_inserting_anything_not_self_para() {
 
             set_author_noting_inherent_data(sproof);
 
-            // None
-            assert_eq!(AuthorNoting::latest_author(other_para), None);
+            assert_eq!(AuthorNoting::latest_author(other_para), Some(AccountId::from(DAVE)));
         });
 }
