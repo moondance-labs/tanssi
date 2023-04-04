@@ -748,8 +748,8 @@ impl_runtime_apis! {
     }
 
     impl pallet_registrar_runtime_api::RegistrarApi<Block, u32> for Runtime {
-        /// Return the registered parachain ids
-        fn parachains() -> Vec<u32> {
+        /// Return the registered para ids
+        fn registered_paras() -> Vec<u32> {
             Registrar::registered_para_ids().to_vec()
         }
     }
