@@ -5,7 +5,6 @@
 use scale_info::prelude::vec::Vec;
 
 sp_api::decl_runtime_apis! {
-    /// The API to query account nonce (aka transaction index).
     pub trait CollatorAssignmentApi<AccountId, ParaId> where
         AccountId: parity_scale_codec::Codec,
         ParaId: parity_scale_codec::Codec,

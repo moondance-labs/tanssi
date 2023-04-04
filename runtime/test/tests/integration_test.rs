@@ -4,6 +4,7 @@ mod common;
 use common::*;
 use frame_support::{assert_ok, BoundedVec};
 use pallet_collator_assignment_runtime_api::runtime_decl_for_CollatorAssignmentApi::CollatorAssignmentApi;
+use pallet_registrar_runtime_api::runtime_decl_for_RegistrarApi::RegistrarApi;
 use sp_std::vec;
 use test_runtime::{CollatorAssignment, CollatorSelection, Configuration};
 
@@ -66,6 +67,45 @@ fn genesis_para_registrar_deregister() {
                 Registrar::pending_registered_para_ids(),
                 vec![(2u32, BoundedVec::try_from(vec![1001u32]).unwrap())]
             );
+
+            run_to_session(1, false);
+            assert_eq!(
+                Registrar::pending_registered_para_ids(),
+                vec![(2u32, BoundedVec::try_from(vec![1001u32]).unwrap())]
+            );
+            assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
+
+            run_to_session(2, false);
+            assert_eq!(Registrar::pending_registered_para_ids(), vec![]);
+            assert_eq!(Registrar::registered_para_ids(), vec![1001]);
+        });
+}
+
+#[test]
+fn genesis_para_registrar_runtime_api() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_para_ids(vec![1001, 1002])
+        .build()
+        .execute_with(|| {
+            assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
+            assert_eq!(Runtime::registered_paras(), vec![1001, 1002]);
+
+            run_to_block(2, false);
+            assert_ok!(Registrar::deregister(root_origin(), 1002), ());
+            assert_eq!(Runtime::registered_paras(), vec![1001, 1002]);
+
+            run_to_session(1, false);
+            assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
+            assert_eq!(Runtime::registered_paras(), vec![1001, 1002]);
+
+            run_to_session(2, false);
+            assert_eq!(Registrar::registered_para_ids(), vec![1001]);
+            assert_eq!(Runtime::registered_paras(), vec![1001]);
         });
 }
 
