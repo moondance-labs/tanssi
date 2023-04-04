@@ -21,31 +21,47 @@ chain = "rococo-local"
 id = 1000
 
   [[parachains.collators]]
-  name = "collator01"
+  name = "collator1000-01"
   command = "test-node"
 
   [[parachains.collators]]
-  name = "collator02"
+  name = "collator1000-02"
+  command = "test-node"
+  # container chain collators are also orchestrator chain collators
+  [[parachains.collators]]
+  name = "collator2000-01"
+  command = "test-node"
+
+  [[parachains.collators]]
+  name = "collator2000-02"
+  command = "test-node"
+
+  [[parachains.collators]]
+  name = "collator2001-01"
+  command = "test-node"
+
+  [[parachains.collators]]
+  name = "collator2001-02"
   command = "test-node"
 
 [[parachains]]
 id = 2000
 
   [[parachains.collators]]
-  name = "collator03"
+  name = "collator2000-01"
   command = "test-node"
 
   [[parachains.collators]]
-  name = "collator04"
+  name = "collator2000-02"
   command = "test-node"
 
 [[parachains]]
 id = 2001
 
   [[parachains.collators]]
-  name = "collator05"
+  name = "collator2001-01"
   command = "test-node"
 
   [[parachains.collators]]
-  name = "collator06"
+  name = "collator2001-02"
   command = "test-node"
