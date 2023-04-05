@@ -638,10 +638,7 @@ pub fn new_dev(
                     let para_ids = client_set_aside_for_cidp
                         .runtime_api()
                         .parachains(&BlockId::Number(current_para_block))
-                        .map_err(|_| {
-                            // TODO: print warning
-                        })
-                        .unwrap_or_default();
+                        .expect("para_ids runtime API should exist");
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {
