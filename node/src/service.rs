@@ -416,7 +416,7 @@ fn build_consensus(
                 // If it is relay chain this won't work
                 let para_ids = client
                     .runtime_api()
-                    .parachains(&BlockId::Hash(block_hash))?;
+                    .registered_paras(&BlockId::Hash(block_hash))?;
                 let para_ids: Vec<_> = para_ids.into_iter().map(|x| x.into()).collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(
@@ -637,8 +637,8 @@ pub fn new_dev(
 
                     let para_ids = client_set_aside_for_cidp
                         .runtime_api()
-                        .parachains(&BlockId::Number(current_para_block))
-                        .expect("para_ids runtime API should exist");
+                        .registered_paras(&BlockId::Number(current_para_block))
+                        .expect("registered_paras runtime API should exist");
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {

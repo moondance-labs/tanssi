@@ -6,7 +6,7 @@ sp_api::decl_runtime_apis! {
     pub trait RegistrarApi<ParaId> where
         ParaId: parity_scale_codec::Codec,
     {
-        /// Return the registered parachain ids
-        fn parachains() -> Vec<ParaId>;
+        /// Return the registered para ids
+        fn registered_paras() -> Vec<ParaId>;
     }
 }

@@ -781,8 +781,8 @@ impl_runtime_apis! {
     }
 
     impl pallet_registrar_runtime_api::RegistrarApi<Block, u32> for Runtime {
-        /// Return the registered parachain ids
-        fn parachains() -> Vec<u32> {
+        /// Return the registered para ids
+        fn registered_paras() -> Vec<u32> {
             Registrar::registered_para_ids().to_vec()
         }
     }
@@ -816,3 +816,38 @@ cumulus_pallet_parachain_system::register_validate_block! {
     BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
     CheckInherents = CheckInherents,
 }
+
+/// Holds the most recent relay-parent state root and block number of the current parachain block.
+#[derive(PartialEq, Eq, Clone, Default)]
+pub struct RelayChainState {
+    /// Current relay chain height.
+    pub number: BlockNumber,
+    /// State root for current relay chain height.
+    pub state_root: Hash,
+}
+
+/// This exposes the [`RelayChainState`] to other runtime modules.
+///
+/// Enables parachains to read relay chain state via state proofs.
+pub trait RelaychainStateProvider {
+    /// May be called by any runtime module to obtain the current state of the relay chain.
+    ///
+    /// **NOTE**: This is not guaranteed to return monotonically increasing relay parents.
+    fn current_relay_chain_state() -> RelayChainState;
+}
+
+impl RelaychainStateProvider for RelaychainDataProvider {
+    fn current_relay_chain_state() -> RelayChainState {
+        ParachainSystem::validation_data()
+            .map(|d| RelayChainState {
+                number: d.relay_parent_number,
+                state_root: d.relay_parent_storage_root,
+            })
+            .unwrap_or_default()
+    }
+}
+
+/// Implements [`RelaychainStateProvider`] that returns relevant relay data fetched from
+/// validation data.
+/// NOTE: When validation data is not available (e.g. within on_initialize), default values will be returned.
+pub struct RelaychainDataProvider;
