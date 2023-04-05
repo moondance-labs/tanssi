@@ -4,9 +4,7 @@ use sc_service::ChainType;
 use serde::{Deserialize, Serialize};
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::traits::{IdentifyAccount, Verify};
-use test_runtime::{
-    AccountId, AuraId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
-};
+use test_runtime::{AccountId, AuraId, Signature, SudoConfig, EXISTENTIAL_DEPOSIT};
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<test_runtime::GenesisConfig, Extensions>;
@@ -84,14 +82,6 @@ pub fn development_config() -> ChainSpec {
                         get_account_id_from_seed::<sr25519::Public>("Bob"),
                         get_collator_keys_from_seed("Bob"),
                     ),
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                        get_collator_keys_from_seed("Charlie"),
-                    ),
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Dave"),
-                        get_collator_keys_from_seed("Dave"),
-                    ),
                 ],
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -109,7 +99,6 @@ pub fn development_config() -> ChainSpec {
                 ],
                 1000.into(),
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                vec![2000.into(), 2001.into()],
             )
         },
         Vec::new(),
@@ -166,7 +155,6 @@ pub fn local_testnet_config() -> ChainSpec {
                 ],
                 1000.into(),
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                vec![],
             )
         },
         // Bootnodes
@@ -192,7 +180,6 @@ fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-    para_ids: Vec<ParaId>,
 ) -> test_runtime::GenesisConfig {
     test_runtime::GenesisConfig {
         system: test_runtime::SystemConfig {
@@ -231,9 +218,7 @@ fn testnet_genesis(
         aura_ext: Default::default(),
         parachain_system: Default::default(),
         configuration: Default::default(),
-        registrar: RegistrarConfig {
-            para_ids: para_ids.into_iter().map(|x| x.into()).collect(),
-        },
+        registrar: Default::default(),
         sudo: SudoConfig {
             key: Some(root_key),
         },
