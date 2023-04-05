@@ -412,8 +412,6 @@ fn build_consensus(
                     )
                     .await;
 
-                // TODO: not sure if this block id is parachain or relaychain
-                // If it is relay chain this won't work
                 let para_ids = client
                     .runtime_api()
                     .registered_paras(&BlockId::Hash(block_hash))?;
