@@ -149,6 +149,14 @@ pub fn local_testnet_config() -> ChainSpec {
                         get_account_id_from_seed::<sr25519::Public>("Bob"),
                         get_collator_keys_from_seed("Bob"),
                     ),
+                    (
+                        get_account_id_from_seed::<sr25519::Public>("Charlie"),
+                        get_collator_keys_from_seed("Charlie"),
+                    ),
+                    (
+                        get_account_id_from_seed::<sr25519::Public>("Dave"),
+                        get_collator_keys_from_seed("Dave"),
+                    ),
                 ],
                 vec![
                     get_account_id_from_seed::<sr25519::Public>("Alice"),
@@ -166,7 +174,7 @@ pub fn local_testnet_config() -> ChainSpec {
                 ],
                 1000.into(),
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                vec![],
+                vec![2000.into(), 2001.into()],
             )
         },
         // Bootnodes
