@@ -59,6 +59,27 @@ pub fn template_session_keys(keys: AuraId) -> test_runtime::SessionKeys {
     test_runtime::SessionKeys { aura: keys.clone() }
 }
 
+/// Helper function to turn a list of names into a list of `(AccountId, AuraId)`
+pub fn invulnerables(names: &[&str]) -> Vec<(AccountId, AuraId)> {
+    names
+        .iter()
+        .map(|name| {
+            (
+                get_account_id_from_seed::<sr25519::Public>(name),
+                get_collator_keys_from_seed(name),
+            )
+        })
+        .collect()
+}
+
+/// Helper function to turn a list of names into a list of `AccountId`
+pub fn account_ids(names: &[&str]) -> Vec<AccountId> {
+    names
+        .iter()
+        .map(|name| get_account_id_from_seed::<sr25519::Public>(name))
+        .collect()
+}
+
 pub fn development_config() -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -75,38 +96,21 @@ pub fn development_config() -> ChainSpec {
         move || {
             testnet_genesis(
                 // initial collators.
-                vec![
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        get_collator_keys_from_seed("Alice"),
-                    ),
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Bob"),
-                        get_collator_keys_from_seed("Bob"),
-                    ),
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                        get_collator_keys_from_seed("Charlie"),
-                    ),
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Dave"),
-                        get_collator_keys_from_seed("Dave"),
-                    ),
-                ],
-                vec![
-                    get_account_id_from_seed::<sr25519::Public>("Alice"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-                    get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-                ],
+                invulnerables(&["Alice", "Bob", "Charlie", "Dave"]),
+                account_ids(&[
+                    "Alice",
+                    "Bob",
+                    "Charlie",
+                    "Dave",
+                    "Eve",
+                    "Ferdie",
+                    "Alice//stash",
+                    "Bob//stash",
+                    "Charlie//stash",
+                    "Dave//stash",
+                    "Eve//stash",
+                    "Ferdie//stash",
+                ]),
                 1000.into(),
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 vec![2000.into(), 2001.into()],
@@ -140,33 +144,24 @@ pub fn local_testnet_config() -> ChainSpec {
         move || {
             testnet_genesis(
                 // initial collators.
-                vec![
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        get_collator_keys_from_seed("Alice"),
-                    ),
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Bob"),
-                        get_collator_keys_from_seed("Bob"),
-                    ),
-                ],
-                vec![
-                    get_account_id_from_seed::<sr25519::Public>("Alice"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-                    get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-                ],
+                invulnerables(&["Alice", "Bob", "Charlie", "Dave"]),
+                account_ids(&[
+                    "Alice",
+                    "Bob",
+                    "Charlie",
+                    "Dave",
+                    "Eve",
+                    "Ferdie",
+                    "Alice//stash",
+                    "Bob//stash",
+                    "Charlie//stash",
+                    "Dave//stash",
+                    "Eve//stash",
+                    "Ferdie//stash",
+                ]),
                 1000.into(),
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                vec![],
+                vec![2000.into(), 2001.into()],
             )
         },
         // Bootnodes
