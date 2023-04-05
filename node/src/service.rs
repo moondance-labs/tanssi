@@ -395,13 +395,13 @@ fn build_consensus(
         prometheus_registry,
         telemetry.clone(),
     );
-    let client2 = client.clone();
+    let client_set_aside_for_cidp = client.clone();
 
     let params = BuildAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
-            let client = client2.clone();
+            let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
             async move {
                 let parachain_inherent =
                     cumulus_primitives_parachain_inherent::ParachainInherentData::create_at(
@@ -412,7 +412,7 @@ fn build_consensus(
                     )
                     .await;
 
-                let para_ids = client
+                let para_ids = client_set_aside_for_cidp
                     .runtime_api()
                     .registered_paras(&BlockId::Hash(block_hash))?;
                 let para_ids: Vec<_> = para_ids.into_iter().map(|x| x.into()).collect();
