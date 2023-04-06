@@ -592,7 +592,7 @@ construct_runtime!(
         Configuration: pallet_configuration = 31,
         CollatorAssignment: pallet_collator_assignment = 32,
         Initializer: pallet_initializer = 33,
-        
+
         RootTesting: pallet_root_testing = 100,
     }
 );

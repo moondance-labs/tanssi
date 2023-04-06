@@ -9,16 +9,16 @@ use std::sync::Arc;
 
 use test_runtime::{opaque::Block, AccountId, Index as Nonce};
 
+use polkadot_primitives::Hash;
 use sc_client_api::AuxStore;
+use sc_consensus_manual_seal::rpc::ManualSeal;
+use sc_consensus_manual_seal::rpc::ManualSealApiServer;
+use sc_consensus_manual_seal::EngineCommand;
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 use sc_transaction_pool_api::TransactionPool;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
-use sc_consensus_manual_seal::EngineCommand;
-use polkadot_primitives::Hash;
-use sc_consensus_manual_seal::rpc::ManualSeal;
-use sc_consensus_manual_seal::rpc::ManualSealApiServer;
 
 /// A type representing all RPC extensions.
 pub type RpcExtension = jsonrpsee::RpcModule<()>;
@@ -32,7 +32,7 @@ pub struct FullDeps<C, P> {
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
     /// Manual seal command sink
-	pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
+    pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
 }
 
 /// Instantiate all RPC extensions.
@@ -58,18 +58,18 @@ where
         client,
         pool,
         deny_unsafe,
-        command_sink
+        command_sink,
     } = deps;
 
     module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
 
     if let Some(command_sink) = command_sink {
-		module.merge(
-			// We provide the rpc handler with the sending end of the channel to allow the rpc
-			// send EngineCommands to the background block authorship task.
-			ManualSeal::new(command_sink).into_rpc(),
-		)?;
-	};
+        module.merge(
+            // We provide the rpc handler with the sending end of the channel to allow the rpc
+            // send EngineCommands to the background block authorship task.
+            ManualSeal::new(command_sink).into_rpc(),
+        )?;
+    };
 
     Ok(module)
 }
