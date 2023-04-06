@@ -28,14 +28,18 @@ jobs:
     runs-on: self-hosted
     needs: ["build"]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Pnpm
+        uses: pnpm/action-setup@v2
         with:
           version: 7
-      - uses: actions/setup-node@v3
+      - name: Node  
+        uses: actions/setup-node@v3
         with:
           node-version: 18.x
-
+          cache: "pnpm"
+          cache-dependency-path: test/pnpm-lock.yaml
       - name: "Install and run upgrade test"
         run: |
           cd test
