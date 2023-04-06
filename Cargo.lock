@@ -11304,6 +11304,7 @@ dependencies = [
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
+ "sp-consensus",
  "sp-consensus-aura",
  "sp-core",
  "sp-inherents",

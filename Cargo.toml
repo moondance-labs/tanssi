@@ -34,6 +34,7 @@ parity-scale-codec = { version = "3.0.0", default-features = false, features = [
 scale-info = { version = "2.1.1", default-features = false }
 sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
+sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38", version = "7.0.0", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
