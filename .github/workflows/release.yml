@@ -39,6 +39,7 @@ jobs:
         with:
           node-version: 18.x
           cache: "pnpm"
+          cache-dependency-path: test/pnpm-lock.yaml
       - name: "Install and run upgrade test"
         run: |
           cd test
