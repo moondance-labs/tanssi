@@ -58,10 +58,9 @@ type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 
 type ParachainBackend = TFullBackend<Block>;
 
-type ParachainBlockImport = TanssiParachainBlockImport<Arc<ParachainClient>>;
+type DevParachainBlockImport = TanssiParachainBlockImport<Arc<ParachainClient>>;
 
-type CumulusParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
-type CumulusParachainBlockImport2 = TanssiParachainBlockImport<TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>>;
+type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
 
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
 
@@ -74,8 +73,7 @@ struct MockTimestampInherentDataProvider;
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
 pub fn new_partial(
-    config: &Configuration,
-    dev_service: bool,
+    config: &Configuration
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -134,42 +132,103 @@ pub fn new_partial(
         client.clone(),
     );
 
-    /*let block_import = if dev_service {
-        // The cumulus block import overrides the chain selection rule
-        // for dev service
-        ParachainBlockImport::new(client.clone())
-    }
-    else {
-        let inner = CumulusParachainBlockImport::new(client.clone(), backend.clone());
-        CumulusParachainBlockImport2::new(inner)
-
-    };*/
-
-    let block_import = ParachainBlockImport::new(client.clone());
-    let import_queue = if !dev_service { 
+    let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
+    let import_queue = 
         build_import_queue(
             client.clone(),
             block_import.clone(),
             config,
             telemetry.as_ref().map(|telemetry| telemetry.handle()),
             &task_manager,
-        )?
-    } else {
+        )?;
+
+    let maybe_select_chain = None;
+
+    Ok(PartialComponents {
+        backend,
+        client,
+        import_queue,
+        keystore_container,
+        task_manager,
+        transaction_pool,
+        select_chain: maybe_select_chain,
+        other: (block_import, telemetry, telemetry_worker_handle),
+    })
+}
+
+/// Starts a `ServiceBuilder` for a dev service.
+pub fn new_partial_dev(
+    config: &Configuration
+) -> Result<
+    PartialComponents<
+        ParachainClient,
+        ParachainBackend,
+        MaybeSelectChain,
+        sc_consensus::DefaultImportQueue<Block, ParachainClient>,
+        sc_transaction_pool::FullPool<Block, ParachainClient>,
+        (
+            DevParachainBlockImport,
+            Option<Telemetry>,
+            Option<TelemetryWorkerHandle>,
+        ),
+    >,
+    sc_service::Error,
+> {
+    let telemetry = config
+        .telemetry_endpoints
+        .clone()
+        .filter(|x| !x.is_empty())
+        .map(|endpoints| -> Result<_, sc_telemetry::Error> {
+            let worker = TelemetryWorker::new(16)?;
+            let telemetry = worker.handle().new_telemetry(endpoints);
+            Ok((worker, telemetry))
+        })
+        .transpose()?;
+
+    let executor = ParachainExecutor::new(
+        config.wasm_method,
+        config.default_heap_pages,
+        config.max_runtime_instances,
+        config.runtime_cache_size,
+    );
+
+    let (client, backend, keystore_container, task_manager) =
+        sc_service::new_full_parts::<Block, RuntimeApi, _>(
+            config,
+            telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+            executor,
+        )?;
+    let client = Arc::new(client);
+
+    let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
+
+    let telemetry = telemetry.map(|(worker, telemetry)| {
+        task_manager
+            .spawn_handle()
+            .spawn("telemetry", None, worker.run());
+        telemetry
+    });
+
+    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
+        config.transaction_pool.clone(),
+        config.role.is_authority().into(),
+        config.prometheus_registry(),
+        task_manager.spawn_essential_handle(),
+        client.clone(),
+    );
+
+    let block_import = DevParachainBlockImport::new(client.clone());
+    let import_queue = 
         build_manual_seal_import_queue(
             client.clone(),
             block_import.clone(),
             config,
             telemetry.as_ref().map(|telemetry| telemetry.handle()),
             &task_manager,
-        )?
-    };
+        )?;
 
-    let maybe_select_chain = if dev_service {
-        log::info!("selecting longest chain");
-        Some(sc_consensus::LongestChain::new(backend.clone()))
-    } else {
-        None
-    };
+    let maybe_select_chain = 
+        Some(sc_consensus::LongestChain::new(backend.clone()));
 
     Ok(PartialComponents {
         backend,
@@ -196,7 +255,7 @@ async fn start_node_impl(
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
 
-    let params = new_partial(&parachain_config, false)?;
+    let params = new_partial(&parachain_config)?;
     let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
     let client = params.client.clone();
@@ -397,7 +456,7 @@ fn build_import_queue(
 /// Build the import queue for the parachain runtime (manual seal).
 fn build_manual_seal_import_queue(
     _client: Arc<ParachainClient>,
-    block_import: ParachainBlockImport,
+    block_import: DevParachainBlockImport,
     config: &Configuration,
     _telemetry: Option<TelemetryHandle>,
     task_manager: &TaskManager,
@@ -530,7 +589,7 @@ pub fn new_dev(
         select_chain: maybe_select_chain,
         transaction_pool,
         other: (block_import, mut telemetry, _telemetry_worker_handle),
-    } = new_partial(&config, true)?;
+    } = new_partial_dev(&config)?;
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter) =
         sc_service::build_network(sc_service::BuildNetworkParams {
