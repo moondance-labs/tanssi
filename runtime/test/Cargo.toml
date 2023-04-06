@@ -16,13 +16,16 @@ log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 smallvec = { workspace = true }
+static_assertions = { workspace = true }
 
 # Own
 pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
-pallet-registrar = { workspace = true }
 pallet-initializer = { workspace = true }
+pallet-registrar = { workspace = true }
+pallet-staking = { workspace = true }
+pallet-staking-reward-curve = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -47,6 +50,9 @@ sp-session = { workspace = true }
 sp-std = { workspace = true }
 sp-transaction-pool = { workspace = true }
 sp-version = { workspace = true }
+sp-staking = { workspace = true }
+frame-election-provider-support = { workspace = true }
+pallet-staking-reward-fn = { workspace = true }
 
 # Polkadot
 polkadot-parachain = { workspace = true }
@@ -62,11 +68,11 @@ cumulus-primitives-utility = { workspace = true }
 pallet-collator-selection = { workspace = true }
 parachain-info = { workspace = true }
 
-[build-dependencies]
-substrate-wasm-builder = { workspace = true }
-
 [dev-dependencies]
 sp-io = { workspace = true, default-features = false }
+
+[build-dependencies]
+substrate-wasm-builder = { workspace = true }
 
 [features]
 default = [
@@ -88,8 +94,10 @@ std = [
 	"pallet-balances/std",
 	"pallet-collator-selection/std",
 	"pallet-configuration/std",
+	"pallet-initializer/std",
 	"pallet-registrar/std",
 	"pallet-session/std",
+	"pallet-staking/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"parachain-info/std",
@@ -107,8 +115,10 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
-	"pallet-initializer/std", 
-]
+	"sp-staking/std",
+	"frame-election-provider-support/std",
+	"pallet-staking-reward-fn/std",
+ ]
 
 runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
@@ -117,6 +127,7 @@ runtime-benchmarks = [
 	"hex-literal",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-collator-selection/runtime-benchmarks",
+	"pallet-staking/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
@@ -132,6 +143,7 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-collator-selection/try-runtime",
 	"pallet-session/try-runtime",
+	"pallet-staking/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"parachain-info/try-runtime",
 ]

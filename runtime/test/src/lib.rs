@@ -6,27 +6,11 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+pub mod governance;
+
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
-use cumulus_primitives_core::BodyId;
-use cumulus_primitives_core::ParaId;
-use frame_support::traits::OneSessionHandler;
-use frame_support::weights::constants::RocksDbWeight;
-use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight};
-use smallvec::smallvec;
-use sp_api::impl_runtime_apis;
-use sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata};
-use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys,
-    traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
-    transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature,
-};
-
-use sp_std::prelude::*;
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
-use sp_version::RuntimeVersion;
-
+use cumulus_primitives_core::{relay_chain::LOWEST_PUBLIC_ID, BodyId, ParaId};
+use frame_election_provider_support::{generate_solution_type, onchain};
 use frame_support::{
     construct_runtime,
     dispatch::DispatchClass,
@@ -38,10 +22,32 @@ use frame_support::{
     },
     PalletId,
 };
+use frame_support::{
+    traits::{EitherOf, OneSessionHandler},
+    weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+};
 use frame_system::{
     limits::{BlockLength, BlockWeights},
     EnsureRoot,
 };
+use polkadot_runtime_common::{paras_registrar::Paras, prod_or_fast};
+use smallvec::smallvec;
+use sp_api::impl_runtime_apis;
+use sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata};
+use sp_runtime::{
+    create_runtime_str,
+    curve::PiecewiseLinear,
+    generic, impl_opaque_keys,
+    traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
+    transaction_validity::{TransactionSource, TransactionValidity},
+    ApplyExtrinsicResult, MultiSignature, Perquintill,
+};
+use sp_staking::SessionIndex;
+use sp_std::prelude::*;
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
+use sp_version::RuntimeVersion;
+
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
@@ -185,6 +191,8 @@ pub const MILLISECS_PER_BLOCK: u64 = 12000;
 // NOTE: Currently it is not possible to change the slot duration after the chain has started.
 //       Attempting to do so will brick block production.
 pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
+pub const EPOCH_DURATION: u64 = 6 * HOURS;
+pub const EPOCH_DURATION_IN_SLOTS: u64 = EPOCH_DURATION / SLOT_DURATION;
 
 // Time is measured by number of blocks.
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
@@ -427,8 +435,8 @@ parameter_types! {
 impl pallet_session::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
-    // we don't have stash and controller, thus we don't need the convert as well.
-    type ValidatorIdOf = pallet_collator_selection::IdentityCollator;
+    // Copied from Polkadot: https://github.com/paritytech/polkadot/blob/2c4627d8c63bcd9f08a5b025e44740928c4fbe19/runtime/polkadot/src/lib.rs#L349
+    type ValidatorIdOf = pallet_staking::StashOf<Self>;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type SessionManager = CollatorSelection;
@@ -559,6 +567,203 @@ impl pallet_registrar::Config for Runtime {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
+}
+
+// Copied from Polkadot: https://github.com/paritytech/polkadot/blob/2c4627d8c63bcd9f08a5b025e44740928c4fbe19/runtime/polkadot/src/lib.rs#L506
+parameter_types! {
+    pub EpochDuration: u64 = prod_or_fast!(
+        EPOCH_DURATION_IN_SLOTS as u64,
+        2 * MINUTES as u64,
+        "DOT_EPOCH_DURATION"
+    );
+
+    // phase durations. 1/4 of the last session for each.
+    // in testing: 1min or half of the session for each
+    pub SignedPhase: u32 = prod_or_fast!(
+        EPOCH_DURATION_IN_SLOTS / 4,
+        (1 * MINUTES).min(EpochDuration::get().saturated_into::<u32>() / 2),
+        "DOT_SIGNED_PHASE"
+    );
+    pub UnsignedPhase: u32 = prod_or_fast!(
+        EPOCH_DURATION_IN_SLOTS / 4,
+        (1 * MINUTES).min(EpochDuration::get().saturated_into::<u32>() / 2),
+        "DOT_UNSIGNED_PHASE"
+    );
+
+    // signed config
+    pub const SignedMaxSubmissions: u32 = 16;
+    pub const SignedMaxRefunds: u32 = 16 / 4;
+    // 40 DOTs fixed deposit..
+    pub const SignedDepositBase: Balance = deposit(2, 0);
+    // 0.01 DOT per KB of solution data.
+    pub const SignedDepositByte: Balance = deposit(0, 10) / 1024;
+    // Each good submission will get 1 DOT as reward
+    pub SignedRewardBase: Balance = 1 * UNIT;
+    pub BetterUnsignedThreshold: Perbill = Perbill::from_rational(5u32, 10_000);
+
+    // 4 hour session, 1 hour unsigned phase, 32 offchain executions.
+    pub OffchainRepeat: BlockNumber = UnsignedPhase::get() / 32;
+
+    /// We take the top 22500 nominators as electing voters..
+    pub const MaxElectingVoters: u32 = 22_500;
+    /// ... and all of the validators as electable targets. Whilst this is the case, we cannot and
+    /// shall not increase the size of the validator intentions.
+    pub const MaxElectableTargets: u16 = u16::MAX;
+    /// Setup election pallet to support maximum winners upto 1200. This will mean Staking Pallet
+    /// cannot have active validators higher than this count.
+    pub const MaxActiveValidators: u32 = 1200;
+}
+
+pallet_staking_reward_curve::build! {
+    const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
+        min_inflation: 0_025_000,
+        max_inflation: 0_100_000,
+        // 3:2:1 staked : parachains : float.
+        // while there's no parachains, then this is 75% staked : 25% float.
+        ideal_stake: 0_750_000,
+        falloff: 0_050_000,
+        max_piece_count: 40,
+        test_precision: 0_005_000,
+    );
+}
+
+generate_solution_type!(
+    #[compact]
+    pub struct NposCompactSolution16::<
+        VoterIndex = u32,
+        TargetIndex = u16,
+        Accuracy = sp_runtime::PerU16,
+        MaxVoters = MaxElectingVoters,
+    >(16)
+);
+
+parameter_types! {
+    // Six sessions in an era (24 hours).
+    pub const SessionsPerEra: SessionIndex = prod_or_fast!(6, 1);
+
+    // 28 eras for unbonding (28 days).
+    pub BondingDuration: sp_staking::EraIndex = prod_or_fast!(
+        28,
+        28,
+        "DOT_BONDING_DURATION"
+    );
+    pub SlashDeferDuration: sp_staking::EraIndex = prod_or_fast!(
+        27,
+        27,
+        "DOT_SLASH_DEFER_DURATION"
+    );
+    pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
+    pub const MaxNominatorRewardedPerValidator: u32 = 512;
+    pub const OffendingValidatorsThreshold: Perbill = Perbill::from_percent(17);
+    // 16
+    pub const MaxNominations: u32 = <NposCompactSolution16 as frame_election_provider_support::NposSolution>::LIMIT as u32;
+}
+
+fn era_payout(
+    total_staked: Balance,
+    total_stakable: Balance,
+    max_annual_inflation: Perquintill,
+    period_fraction: Perquintill,
+    auctioned_slots: u64,
+) -> (Balance, Balance) {
+    use pallet_staking_reward_fn::compute_inflation;
+    use sp_runtime::traits::Saturating;
+
+    let min_annual_inflation = Perquintill::from_rational(25u64, 1000u64);
+    let delta_annual_inflation = max_annual_inflation.saturating_sub(min_annual_inflation);
+
+    // 30% reserved for up to 60 slots.
+    let auction_proportion = Perquintill::from_rational(auctioned_slots.min(60), 200u64);
+
+    // Therefore the ideal amount at stake (as a percentage of total issuance) is 75% less the
+    // amount that we expect to be taken up with auctions.
+    let ideal_stake = Perquintill::from_percent(75).saturating_sub(auction_proportion);
+
+    let stake = Perquintill::from_rational(total_staked, total_stakable);
+    let falloff = Perquintill::from_percent(5);
+    let adjustment = compute_inflation(stake, ideal_stake, falloff);
+    let staking_inflation =
+        min_annual_inflation.saturating_add(delta_annual_inflation * adjustment);
+
+    let max_payout = period_fraction * max_annual_inflation * total_stakable;
+    let staking_payout = (period_fraction * staking_inflation) * total_stakable;
+    let rest = max_payout.saturating_sub(staking_payout);
+
+    let other_issuance = total_stakable.saturating_sub(total_staked);
+    if total_staked > other_issuance {
+        let _cap_rest = Perquintill::from_rational(other_issuance, total_staked) * staking_payout;
+        // We don't do anything with this, but if we wanted to, we could introduce a cap on the
+        // treasury amount with: `rest = rest.min(cap_rest);`
+    }
+    (staking_payout, rest)
+}
+
+pub struct EraPayout;
+impl pallet_staking::EraPayout<Balance> for EraPayout {
+    fn era_payout(
+        total_staked: Balance,
+        total_issuance: Balance,
+        era_duration_millis: u64,
+    ) -> (Balance, Balance) {
+        // all para-ids that are not active.
+        let auctioned_slots = Paras::parachains()
+            .into_iter()
+            // all active para-ids that do not belong to a system or common good chain is the number
+            // of parachains that we should take into account for inflation.
+            .filter(|i| *i >= LOWEST_PUBLIC_ID)
+            .count() as u64;
+
+        const MAX_ANNUAL_INFLATION: Perquintill = Perquintill::from_percent(10);
+        const MILLISECONDS_PER_YEAR: u64 = 1000 * 3600 * 24 * 36525 / 100;
+
+        era_payout(
+            total_staked,
+            total_issuance,
+            MAX_ANNUAL_INFLATION,
+            Perquintill::from_rational(era_duration_millis, MILLISECONDS_PER_YEAR),
+            auctioned_slots,
+        )
+    }
+}
+
+pub type CurrencyToVote = frame_support::traits::U128CurrencyToVote;
+static_assertions::assert_eq_size!(Balance, u128);
+
+/// A reasonable benchmarking config for staking pallet.
+pub struct StakingBenchmarkingConfig;
+impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
+    type MaxValidators = ConstU32<1000>;
+    type MaxNominators = ConstU32<1000>;
+}
+
+impl pallet_staking::Config for Runtime {
+    type MaxNominations = MaxNominations;
+    type Currency = Balances;
+    type CurrencyBalance = Balance;
+    type UnixTime = Timestamp;
+    type CurrencyToVote = CurrencyToVote;
+    type RewardRemainder = (); // Polkadot: Treasury
+    type RuntimeEvent = RuntimeEvent;
+    type Slash = (); // Polkadot: Treasury
+    type Reward = ();
+    type SessionsPerEra = SessionsPerEra;
+    type BondingDuration = BondingDuration;
+    type SlashDeferDuration = SlashDeferDuration;
+    type AdminOrigin = EitherOf<EnsureRoot<Self::AccountId>, StakingAdmin>;
+    type SessionInterface = Self;
+    type EraPayout = EraPayout;
+    type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
+    type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
+    type NextNewSession = Session;
+    type ElectionProvider = ElectionProviderMultiPhase;
+    type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
+    type VoterList = VoterList;
+    type TargetList = UseValidatorsMap<Self>;
+    type MaxUnlockingChunks = frame_support::traits::ConstU32<32>;
+    type HistoryDepth = frame_support::traits::ConstU32<84>;
+    type BenchmarkingConfig = StakingBenchmarkingConfig;
+    type OnStakerSlash = NominationPools;
+    type WeightInfo = (); // TODO: weights::pallet_staking::WeightInfo<Runtime>
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
