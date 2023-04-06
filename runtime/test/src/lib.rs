@@ -561,6 +561,8 @@ impl pallet_sudo::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_root_testing::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -590,6 +592,8 @@ construct_runtime!(
         Configuration: pallet_configuration = 31,
         CollatorAssignment: pallet_collator_assignment = 32,
         Initializer: pallet_initializer = 33,
+        
+        RootTesting: pallet_root_testing = 100,
     }
 );
 

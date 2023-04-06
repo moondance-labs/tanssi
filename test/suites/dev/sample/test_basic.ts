@@ -17,8 +17,11 @@ describeSuite({
     let w3;
     let polkadotJs: ApiPromise;
     const anotherLogger = setupLogger("anotherLogger");
-
+    let alice, bob;
     beforeAll(() => {
+      const keyring = new Keyring({ type: 'sr25519' });
+      alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+      bob = keyring.addFromUri('//Bob', { name: 'Bob default' });
       polkadotJs = context.polkadotJs();
     });
 
@@ -40,11 +43,6 @@ describeSuite({
       title: "Checking that substrate txns possible",
       timeout: 20000,
       test: async function () {
-        const keyring = new Keyring({ type: 'sr25519' });
-        const alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-        const bob = keyring.addFromUri('//Bob', { name: 'Bob default' });
-
-
         const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
         await polkadotJs.tx.balances
           .transfer(bob.address, 1000)
@@ -58,6 +56,20 @@ describeSuite({
           )} DEV, balance after ${formatEther(balanceAfter.toBigInt())} DEV`
         );
         expect(balanceBefore.lt(balanceAfter)).to.be.true;
+      },
+    });
+
+    it({
+      id: "E03",
+      title: "Checking that sudo can be used",
+      test: async function () {
+        await context.createBlock();
+        const tx = polkadotJs.tx.rootTesting.fillBlock(60 * 10 ** 7);
+        await polkadotJs.tx.sudo.sudo(tx).signAndSend(alice);
+
+        await context.createBlock();
+        const blockFill = await polkadotJs.query.system.blockWeight();
+        expect(blockFill.normal.refTime.unwrap().gt(new BN(0))).to.be.true;
       },
     });
 
