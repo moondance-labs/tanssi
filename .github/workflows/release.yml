@@ -32,13 +32,13 @@ jobs:
         uses: actions/checkout@v2
       - name: Pnpm
         uses: actions/checkout@v2
-          with:
-            version: 7
+        with:
+          version: 7
       - name: Node  
         uses: actions/setup-node@v3
-          with:
-            node-version: 18.x
-            cache: "pnpm"
+        with:
+          node-version: 18.x
+          cache: "pnpm"
       - name: "Install and run upgrade test"
         run: |
           cd test
