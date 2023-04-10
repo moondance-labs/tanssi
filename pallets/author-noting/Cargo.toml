@@ -22,6 +22,9 @@ sp-std = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 sp-consensus-aura = { workspace = true, default-features = false }
 sp-inherents = { workspace = true, default-features = false }
+sp-state-machine = { workspace = true, default-features = false }
+sp-trie = { workspace = true, default-features = false }
+
 cumulus-primitives-core = { workspace = true, default-features = false }
 cumulus-pallet-parachain-system = { workspace = true, default-features = false }
 tp-author-noting-inherent = { workspace = true, default-features = false }
@@ -45,6 +48,8 @@ std = [
     "sp-consensus-aura/std",
     "cumulus-primitives-core/std",
     "cumulus-pallet-parachain-system/std",
-    "tp-author-noting-inherent/std"
+    "tp-author-noting-inherent/std",
+    "sp-state-machine/std",
+    "sp-trie/std"
 ]
 try-runtime = ["frame-support/try-runtime"]
