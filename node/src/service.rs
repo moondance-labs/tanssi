@@ -169,6 +169,7 @@ pub fn new_partial(
 async fn start_node_impl(
     parachain_config: Configuration,
     polkadot_config: Configuration,
+    moondance_config: Option<(Configuration, ParaId)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -284,6 +285,18 @@ async fn start_node_impl(
 
     let relay_chain_slot_duration = Duration::from_secs(6);
 
+    if let Some((moondance_config, moondance_para_id)) = moondance_config {
+        // Start moondance node
+        let (moondance_task_manager, _moondance_client) = start_node_impl_moondance(
+            moondance_config,
+            relay_chain_interface.clone(),
+            moondance_para_id,
+        )
+        .await?;
+
+        task_manager.add_child(moondance_task_manager);
+    }
+
     if validator {
         let parachain_consensus = build_consensus(
             client.clone(),
@@ -328,6 +341,105 @@ async fn start_node_impl(
 
         start_full_node(params)?;
     }
+
+    start_network.start_network();
+
+    Ok((task_manager, client))
+}
+
+/// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
+///
+/// This is the actual implementation that is abstract over the executor and the runtime api.
+#[sc_tracing::logging::prefix_logs_with("Moondance")]
+async fn start_node_impl_moondance(
+    parachain_config: Configuration,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
+    para_id: ParaId,
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+    let parachain_config = prepare_node_config(parachain_config);
+
+    let params = new_partial(&parachain_config, false)?;
+    let (_block_import, mut telemetry, _telemetry_worker_handle) = params.other;
+
+    let client = params.client.clone();
+    let backend = params.backend.clone();
+    let mut task_manager = params.task_manager;
+
+    let block_announce_validator =
+        BlockAnnounceValidator::new(relay_chain_interface.clone(), para_id);
+
+    let transaction_pool = params.transaction_pool.clone();
+    let import_queue_service = params.import_queue.service();
+
+    let (network, system_rpc_tx, tx_handler_controller, start_network) =
+        sc_service::build_network(sc_service::BuildNetworkParams {
+            config: &parachain_config,
+            client: client.clone(),
+            transaction_pool: transaction_pool.clone(),
+            spawn_handle: task_manager.spawn_handle(),
+            import_queue: params.import_queue,
+            block_announce_validator_builder: Some(Box::new(|_| {
+                Box::new(block_announce_validator)
+            })),
+            warp_sync: None,
+        })?;
+
+    if parachain_config.offchain_worker.enabled {
+        sc_service::build_offchain_workers(
+            &parachain_config,
+            task_manager.spawn_handle(),
+            client.clone(),
+            network.clone(),
+        );
+    }
+
+    let rpc_builder = {
+        let client = client.clone();
+        let transaction_pool = transaction_pool.clone();
+
+        Box::new(move |deny_unsafe, _| {
+            let deps = crate::rpc::FullDeps {
+                client: client.clone(),
+                pool: transaction_pool.clone(),
+                deny_unsafe,
+            };
+
+            crate::rpc::create_full(deps).map_err(Into::into)
+        })
+    };
+
+    sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+        rpc_builder,
+        client: client.clone(),
+        transaction_pool: transaction_pool.clone(),
+        task_manager: &mut task_manager,
+        config: parachain_config,
+        keystore: params.keystore_container.sync_keystore(),
+        backend,
+        network: network.clone(),
+        system_rpc_tx,
+        tx_handler_controller,
+        telemetry: telemetry.as_mut(),
+    })?;
+
+    let announce_block = {
+        let network = network.clone();
+        Arc::new(move |hash, data| network.announce_block(hash, data))
+    };
+
+    let relay_chain_slot_duration = Duration::from_secs(6);
+
+    let params = StartFullNodeParams {
+        client: client.clone(),
+        announce_block,
+        task_manager: &mut task_manager,
+        para_id,
+        relay_chain_interface,
+        relay_chain_slot_duration,
+        import_queue: import_queue_service,
+    };
+
+    start_full_node(params)?;
 
     start_network.start_network();
 
@@ -453,6 +565,7 @@ fn build_consensus(
 pub async fn start_parachain_node(
     parachain_config: Configuration,
     polkadot_config: Configuration,
+    moondance_config: Option<(Configuration, ParaId)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -460,6 +573,7 @@ pub async fn start_parachain_node(
     start_node_impl(
         parachain_config,
         polkadot_config,
+        moondance_config,
         collator_options,
         para_id,
         hwbench,

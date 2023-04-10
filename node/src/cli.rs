@@ -95,7 +95,33 @@ pub struct Cli {
 
     /// Relay chain arguments
     #[arg(raw = true)]
-    pub relay_chain_args: Vec<String>,
+    pub extra_args: Vec<String>,
+}
+
+impl Cli {
+    pub fn relaychain_args(&self) -> &[String] {
+        let (relay_chain_args, _moondance_args) = self.split_extra_args_at_first_dashdash();
+
+        relay_chain_args
+    }
+
+    pub fn moondance_args(&self) -> &[String] {
+        let (_relay_chain_args, moondance_args) = self.split_extra_args_at_first_dashdash();
+
+        moondance_args
+    }
+
+    fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
+        let index_of_dashdash = self.extra_args.iter().position(|x| *x == "--");
+
+        if let Some(i) = index_of_dashdash {
+            let (relay_chain_args, extra_extra) = self.extra_args.split_at(i);
+            (relay_chain_args, &extra_extra[1..])
+        } else {
+            // Only relay chain args
+            (&self.extra_args, &[])
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -111,6 +137,38 @@ pub struct RelayChainCli {
 }
 
 impl RelayChainCli {
+    /// Parse the relay chain CLI parameters using the para chain `Configuration`.
+    pub fn new<'a>(
+        para_config: &sc_service::Configuration,
+        relay_chain_args: impl Iterator<Item = &'a String>,
+    ) -> Self {
+        let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
+        let chain_id = extension.map(|e| e.relay_chain.clone());
+        let base_path = para_config
+            .base_path
+            .as_ref()
+            .map(|x| x.path().join("polkadot"));
+        Self {
+            base_path,
+            chain_id,
+            base: clap::Parser::parse_from(relay_chain_args),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct MoondanceCli {
+    /// The actual relay chain cli object.
+    pub base: polkadot_cli::RunCmd,
+
+    /// Optional chain id that should be passed to the relay chain.
+    pub chain_id: Option<String>,
+
+    /// The base path that should be used by the relay chain.
+    pub base_path: Option<PathBuf>,
+}
+
+impl MoondanceCli {
     /// Parse the relay chain CLI parameters using the para chain `Configuration`.
     pub fn new<'a>(
         para_config: &sc_service::Configuration,
