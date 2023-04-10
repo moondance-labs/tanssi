@@ -37,7 +37,7 @@ jobs:
       - name: Node  
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 16.x
           cache: "pnpm"
           cache-dependency-path: test/pnpm-lock.yaml
       - name: "Install and run upgrade test"
