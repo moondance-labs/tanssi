@@ -10,7 +10,6 @@ publish = false
 targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-hex-literal = "0.3.4"
 parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
 scale-info = { workspace = true }
 frame-support = { workspace = true }
@@ -34,8 +33,9 @@ sp-io = { workspace = true }
 sp-version = { workspace = true }
 sp-externalities = { workspace = true }
 sp-state-machine = { workspace = true }
-polkadot-parachain = {  workspace = true }
-polkadot-primitives = {  workspace = true }
+polkadot-parachain = { workspace = true }
+polkadot-primitives = { workspace = true }
+hex-literal = { workspace = true }
 
 [features]
 default = ["std"]
