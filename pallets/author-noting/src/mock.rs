@@ -10,6 +10,7 @@ use parity_scale_codec::{Decode, Encode};
 use polkadot_parachain::primitives::RelayChainBlockNumber;
 use sp_consensus_aura::inherents::InherentType;
 use sp_core::H256;
+use sp_state_machine::StorageProof;
 use sp_version::RuntimeVersion;
 use tp_author_noting_inherent::AuthorNotingSproofBuilder;
 
@@ -201,6 +202,8 @@ pub struct BlockTests {
             ),
         >,
     >,
+    overriden_state_root: Option<H256>,
+    overriden_state_proof: Option<StorageProof>,
 }
 
 impl BlockTests {
@@ -232,6 +235,18 @@ impl BlockTests {
         self
     }
 
+    pub fn with_overriden_state_root(mut self, root: H256) -> Self
+where {
+        self.overriden_state_root = Some(root);
+        self
+    }
+
+    pub fn with_overriden_state_proof(mut self, proof: StorageProof) -> Self
+where {
+        self.overriden_state_proof = Some(proof);
+        self
+    }
+
     pub fn run(&mut self) {
         self.ran = true;
         wasm_ext().execute_with(|| {
@@ -251,8 +266,16 @@ impl BlockTests {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }
 
-                let (relay_parent_storage_root, relay_chain_state) =
+                let (mut relay_parent_storage_root, mut relay_chain_state) =
                     sproof_builder.into_state_root_and_proof();
+
+                if let Some(root) = self.overriden_state_root {
+                    relay_parent_storage_root = root;
+                }
+
+                if let Some(state) = &self.overriden_state_proof {
+                    relay_chain_state = state.clone();
+                }
 
                 let vfp = PersistedValidationData {
                     relay_parent_number: *n as RelayChainBlockNumber,

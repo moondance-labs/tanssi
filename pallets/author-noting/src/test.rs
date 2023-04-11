@@ -4,6 +4,7 @@ use hex_literal::hex;
 use parity_scale_codec::Encode;
 use sp_consensus_aura::inherents::InherentType;
 use sp_consensus_aura::AURA_ENGINE_ID;
+use sp_core::H256;
 use sp_runtime::generic::DigestItem;
 use sp_runtime::traits::BlakeTwo256;
 use tp_author_noting_inherent::AuthorNotingSproofBuilderItem;
@@ -138,5 +139,70 @@ fn test_author_id_insertion_many_paras() {
         .add(2, || {
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1002)), Some(14u64));
+        });
+}
+
+#[test]
+#[should_panic]
+fn test_should_panic_with_invalid_proof_root() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = AuthorNotingSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        // Insert an invalid root, not matching the proof generated
+        .with_overriden_state_root(H256::default())
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
+        });
+}
+
+#[test]
+#[should_panic]
+fn test_should_panic_with_invalid_proof_state() {
+    // Lets get the default for overriding
+    use tp_author_noting_inherent::AuthorNotingSproofBuilder;
+    let sproof_builder = AuthorNotingSproofBuilder::default();
+    let (_, relay_chain_state) = sproof_builder.into_state_root_and_proof();
+
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = AuthorNotingSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        // Insert an invalid root, not matching the proof generated
+        .with_overriden_state_proof(relay_chain_state)
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
         });
 }
