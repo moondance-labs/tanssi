@@ -21,39 +21,39 @@ pub type RpcExtension = jsonrpsee::RpcModule<()>;
 
 /// Full client dependencies
 pub struct FullDeps<C, P> {
-    /// The client instance to use.
-    pub client: Arc<C>,
-    /// Transaction pool instance.
-    pub pool: Arc<P>,
-    /// Whether to deny unsafe calls
-    pub deny_unsafe: DenyUnsafe,
+	/// The client instance to use.
+	pub client: Arc<C>,
+	/// Transaction pool instance.
+	pub pool: Arc<P>,
+	/// Whether to deny unsafe calls
+	pub deny_unsafe: DenyUnsafe,
 }
 
 /// Instantiate all RPC extensions.
 pub fn create_full<C, P>(
-    deps: FullDeps<C, P>,
+	deps: FullDeps<C, P>,
 ) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
 where
-    C: ProvideRuntimeApi<Block>
-        + HeaderBackend<Block>
-        + AuxStore
-        + HeaderMetadata<Block, Error = BlockChainError>
-        + Send
-        + Sync
-        + 'static,
-    C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
-    C::Api: BlockBuilder<Block>,
-    P: TransactionPool + Sync + Send + 'static,
+	C: ProvideRuntimeApi<Block>
+		+ HeaderBackend<Block>
+		+ AuxStore
+		+ HeaderMetadata<Block, Error = BlockChainError>
+		+ Send
+		+ Sync
+		+ 'static,
+	C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Nonce>,
+	C::Api: BlockBuilder<Block>,
+	P: TransactionPool + Sync + Send + 'static,
 {
-    use substrate_frame_rpc_system::{System, SystemApiServer};
+	use substrate_frame_rpc_system::{System, SystemApiServer};
 
-    let mut module = RpcExtension::new(());
-    let FullDeps {
-        client,
-        pool,
-        deny_unsafe,
-    } = deps;
+	let mut module = RpcExtension::new(());
+	let FullDeps {
+		client,
+		pool,
+		deny_unsafe,
+	} = deps;
 
-    module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
-    Ok(module)
+	module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
+	Ok(module)
 }

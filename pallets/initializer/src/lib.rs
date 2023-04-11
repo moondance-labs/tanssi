@@ -12,8 +12,10 @@
 use frame_support::traits::OneSessionHandler;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
-use sp_runtime::traits::{AtLeast32BitUnsigned, Zero};
-use sp_runtime::RuntimeAppPublic;
+use sp_runtime::{
+	traits::{AtLeast32BitUnsigned, Zero},
+	RuntimeAppPublic,
+};
 use sp_std::prelude::*;
 
 #[cfg(test)]
@@ -26,157 +28,157 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
+	use super::*;
+	use frame_support::pallet_prelude::*;
+	use frame_system::pallet_prelude::*;
 
-    #[derive(Encode, Decode, TypeInfo)]
-    #[scale_info(skip_type_params(T))]
-    pub struct BufferedSessionChange<T: Config> {
-        pub changed: bool,
-        pub validators: Vec<(T::AccountId, T::AuthorityId)>,
-        pub queued: Vec<(T::AccountId, T::AuthorityId)>,
-        pub session_index: T::SessionIndex,
-    }
+	#[derive(Encode, Decode, TypeInfo)]
+	#[scale_info(skip_type_params(T))]
+	pub struct BufferedSessionChange<T: Config> {
+		pub changed: bool,
+		pub validators: Vec<(T::AccountId, T::AuthorityId)>,
+		pub queued: Vec<(T::AccountId, T::AuthorityId)>,
+		pub session_index: T::SessionIndex,
+	}
 
-    // The apply_new_sseion trait. We need to comply with this
-    pub trait ApplyNewSession<T: Config> {
-        fn apply_new_session(
-            changed: bool,
-            session_index: T::SessionIndex,
-            all_validators: Vec<(T::AccountId, T::AuthorityId)>,
-            queued: Vec<(T::AccountId, T::AuthorityId)>,
-        );
-    }
+	// The apply_new_sseion trait. We need to comply with this
+	pub trait ApplyNewSession<T: Config> {
+		fn apply_new_session(
+			changed: bool,
+			session_index: T::SessionIndex,
+			all_validators: Vec<(T::AccountId, T::AuthorityId)>,
+			queued: Vec<(T::AccountId, T::AuthorityId)>,
+		);
+	}
 
-    #[pallet::pallet]
-    #[pallet::without_storage_info]
-    pub struct Pallet<T>(_);
+	#[pallet::pallet]
+	#[pallet::without_storage_info]
+	pub struct Pallet<T>(_);
 
-    #[pallet::config]
-    pub trait Config: frame_system::Config {
-        type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
+	#[pallet::config]
+	pub trait Config: frame_system::Config {
+		type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
-        /// The identifier type for an authority.
-        type AuthorityId: Member
-            + Parameter
-            + RuntimeAppPublic
-            + MaybeSerializeDeserialize
-            + MaxEncodedLen;
+		/// The identifier type for an authority.
+		type AuthorityId: Member
+			+ Parameter
+			+ RuntimeAppPublic
+			+ MaybeSerializeDeserialize
+			+ MaxEncodedLen;
 
-        type SessionHandler: ApplyNewSession<Self>;
-    }
+		type SessionHandler: ApplyNewSession<Self>;
+	}
 
-    /// Buffered session changes along with the block number at which they should be applied.
-    ///
-    /// Typically this will be empty or one element long. Apart from that this item never hits
-    /// the storage.
-    ///
-    /// However this is a `Vec` regardless to handle various edge cases that may occur at runtime
-    /// upgrade boundaries or if governance intervenes.
-    #[pallet::storage]
-    pub(super) type BufferedSessionChanges<T: Config> =
-        StorageValue<_, BufferedSessionChange<T>, OptionQuery>;
+	/// Buffered session changes along with the block number at which they should be applied.
+	///
+	/// Typically this will be empty or one element long. Apart from that this item never hits
+	/// the storage.
+	///
+	/// However this is a `Vec` regardless to handle various edge cases that may occur at runtime
+	/// upgrade boundaries or if governance intervenes.
+	#[pallet::storage]
+	pub(super) type BufferedSessionChanges<T: Config> =
+		StorageValue<_, BufferedSessionChange<T>, OptionQuery>;
 
-    #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn on_finalize(_now: T::BlockNumber) {
-            // Apply buffered session changes as the last thing. This way the runtime APIs and the
-            // next block will observe the next session.
-            //
-            // Note that we only apply the last session as all others lasted less than a block (weirdly).
-            if let Some(BufferedSessionChange {
-                changed,
-                session_index,
-                validators,
-                queued,
-            }) = BufferedSessionChanges::<T>::take()
-            {
-                // Changes to be applied on new session
-                T::SessionHandler::apply_new_session(changed, session_index, validators, queued);
-            }
-        }
-    }
+	#[pallet::hooks]
+	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+		fn on_finalize(_now: T::BlockNumber) {
+			// Apply buffered session changes as the last thing. This way the runtime APIs and the
+			// next block will observe the next session.
+			//
+			// Note that we only apply the last session as all others lasted less than a block (weirdly).
+			if let Some(BufferedSessionChange {
+				changed,
+				session_index,
+				validators,
+				queued,
+			}) = BufferedSessionChanges::<T>::take()
+			{
+				// Changes to be applied on new session
+				T::SessionHandler::apply_new_session(changed, session_index, validators, queued);
+			}
+		}
+	}
 }
 
 impl<T: Config> Pallet<T> {
-    /// Should be called when a new session occurs. Buffers the session notification to be applied
-    /// at the end of the block. If `queued` is `None`, the `validators` are considered queued.
-    fn on_new_session<'a, I: 'a>(
-        changed: bool,
-        session_index: T::SessionIndex,
-        validators: I,
-        queued: Option<I>,
-    ) where
-        I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
-    {
-        let validators: Vec<_> = validators.map(|(k, v)| (k.clone(), v)).collect();
-        let queued: Vec<_> = if let Some(queued) = queued {
-            queued.map(|(k, v)| (k.clone(), v)).collect()
-        } else {
-            validators.clone()
-        };
+	/// Should be called when a new session occurs. Buffers the session notification to be applied
+	/// at the end of the block. If `queued` is `None`, the `validators` are considered queued.
+	fn on_new_session<'a, I: 'a>(
+		changed: bool,
+		session_index: T::SessionIndex,
+		validators: I,
+		queued: Option<I>,
+	) where
+		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+	{
+		let validators: Vec<_> = validators.map(|(k, v)| (k.clone(), v)).collect();
+		let queued: Vec<_> = if let Some(queued) = queued {
+			queued.map(|(k, v)| (k.clone(), v)).collect()
+		} else {
+			validators.clone()
+		};
 
-        if session_index == T::SessionIndex::zero() {
-            // Genesis session should be immediately enacted.
-            T::SessionHandler::apply_new_session(false, 0u32.into(), validators, queued);
-        } else {
-            BufferedSessionChanges::<T>::mutate(|v| {
-                *v = Some(BufferedSessionChange {
-                    changed,
-                    validators,
-                    queued,
-                    session_index,
-                })
-            });
-        }
-    }
+		if session_index == T::SessionIndex::zero() {
+			// Genesis session should be immediately enacted.
+			T::SessionHandler::apply_new_session(false, 0u32.into(), validators, queued);
+		} else {
+			BufferedSessionChanges::<T>::mutate(|v| {
+				*v = Some(BufferedSessionChange {
+					changed,
+					validators,
+					queued,
+					session_index,
+				})
+			});
+		}
+	}
 
-    /// Should be called when a new session occurs. Buffers the session notification to be applied
-    /// at the end of the block. If `queued` is `None`, the `validators` are considered queued.
-    fn on_genesis_session<'a, I: 'a>(validators: I)
-    where
-        I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
-    {
-        <Pallet<T>>::on_new_session(false, 0u32.into(), validators, None);
-    }
+	/// Should be called when a new session occurs. Buffers the session notification to be applied
+	/// at the end of the block. If `queued` is `None`, the `validators` are considered queued.
+	fn on_genesis_session<'a, I: 'a>(validators: I)
+	where
+		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+	{
+		<Pallet<T>>::on_new_session(false, 0u32.into(), validators, None);
+	}
 
-    // Allow to trigger `on_new_session` in tests, this is needed as long as `pallet_session` is not
-    // implemented in mock.
-    #[cfg(any(test, feature = "runtime-benchmarks"))]
-    pub(crate) fn test_trigger_on_new_session<'a, I: 'a>(
-        changed: bool,
-        session_index: T::SessionIndex,
-        validators: I,
-        queued: Option<I>,
-    ) where
-        I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
-    {
-        Self::on_new_session(changed, session_index, validators, queued)
-    }
+	// Allow to trigger `on_new_session` in tests, this is needed as long as `pallet_session` is not
+	// implemented in mock.
+	#[cfg(any(test, feature = "runtime-benchmarks"))]
+	pub(crate) fn test_trigger_on_new_session<'a, I: 'a>(
+		changed: bool,
+		session_index: T::SessionIndex,
+		validators: I,
+		queued: Option<I>,
+	) where
+		I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
+	{
+		Self::on_new_session(changed, session_index, validators, queued)
+	}
 }
 
 impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
-    type Public = T::AuthorityId;
+	type Public = T::AuthorityId;
 }
 
 impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pallet<T> {
-    type Key = T::AuthorityId;
+	type Key = T::AuthorityId;
 
-    fn on_genesis_session<'a, I: 'a>(validators: I)
-    where
-        I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
-    {
-        <Pallet<T>>::on_genesis_session(validators);
-    }
+	fn on_genesis_session<'a, I: 'a>(validators: I)
+	where
+		I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
+	{
+		<Pallet<T>>::on_genesis_session(validators);
+	}
 
-    fn on_new_session<'a, I: 'a>(changed: bool, validators: I, queued: I)
-    where
-        I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
-    {
-        let session_index = <pallet_session::Pallet<T>>::current_index();
-        <Pallet<T>>::on_new_session(changed, session_index.into(), validators, Some(queued));
-    }
+	fn on_new_session<'a, I: 'a>(changed: bool, validators: I, queued: I)
+	where
+		I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
+	{
+		let session_index = <pallet_session::Pallet<T>>::current_index();
+		<Pallet<T>>::on_new_session(changed, session_index.into(), validators, Some(queued));
+	}
 
-    fn on_disabled(_i: u32) {}
+	fn on_disabled(_i: u32) {}
 }
