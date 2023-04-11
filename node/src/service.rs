@@ -4,9 +4,10 @@
 use std::{sync::Arc, time::Duration};
 
 use cumulus_client_cli::CollatorOptions;
+use polkadot_cli::ProvideRuntimeApi;
 // Local Runtime Types
+use pallet_registrar_runtime_api::RegistrarApi;
 use test_runtime::{opaque::Block, AccountId, Hash, RuntimeApi};
-
 // Cumulus Imports
 use cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion};
 use cumulus_client_consensus_common::{
@@ -20,7 +21,7 @@ use cumulus_client_service::{
 use futures::StreamExt;
 use sc_service::Error as ServiceError;
 
-use cumulus_primitives_core::ParaId;
+use cumulus_primitives_core::{relay_chain::BlockId, ParaId};
 use cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider;
 use cumulus_primitives_parachain_inherent::MockXcmConfig;
 use cumulus_relay_chain_interface::{RelayChainError, RelayChainInterface};
@@ -394,11 +395,13 @@ fn build_consensus(
         prometheus_registry,
         telemetry.clone(),
     );
+    let client_set_aside_for_cidp = client.clone();
 
     let params = BuildAuraConsensusParams {
         proposer_factory,
-        create_inherent_data_providers: move |_, (relay_parent, validation_data)| {
+        create_inherent_data_providers: move |block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
+            let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
             async move {
                 let parachain_inherent =
                     cumulus_primitives_parachain_inherent::ParachainInherentData::create_at(
@@ -409,12 +412,16 @@ fn build_consensus(
                     )
                     .await;
 
+                let para_ids = client_set_aside_for_cidp
+                    .runtime_api()
+                    .registered_paras(&BlockId::Hash(block_hash))?;
+                let para_ids: Vec<_> = para_ids.into_iter().map(|x| x.into()).collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(
                         relay_parent,
                         &relay_chain_interface,
                         &validation_data,
-                        para_id,
+                        &para_ids,
                     )
                     .await;
 
@@ -491,7 +498,6 @@ pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from
 pub fn new_dev(
     config: Configuration,
     _author_id: Option<AccountId>,
-    para_id: ParaId,
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<TaskManager, ServiceError> {
@@ -627,6 +633,11 @@ pub fn new_dev(
                         .expect("Header lookup should succeed")
                         .expect("Header passed in as parent should be present in backend.");
 
+                    let para_ids = client_set_aside_for_cidp
+                        .runtime_api()
+                        .registered_paras(&BlockId::Number(current_para_block))
+                        .expect("registered_paras runtime API should exist");
+
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {
                         //let time = sp_timestamp::InherentDataProvider::from_system_time();
@@ -653,8 +664,7 @@ pub fn new_dev(
                                 current_para_block,
                                 relay_offset: 1000,
                                 relay_blocks_per_para_block: 2,
-                                // TODO: Recheck
-                                para_id: para_id.into(),
+                                para_ids,
                                 slots_per_para_block: 1,
                             };
 

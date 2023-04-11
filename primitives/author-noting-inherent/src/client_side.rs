@@ -8,11 +8,13 @@ use cumulus_relay_chain_interface::RelayChainInterface;
 /// noting inherent.
 async fn collect_relay_storage_proof(
     relay_chain_interface: &impl RelayChainInterface,
-    para_id: ParaId,
+    para_ids: &[ParaId],
     relay_parent: PHash,
 ) -> Option<sp_state_machine::StorageProof> {
     let mut relevant_keys = Vec::new();
-    relevant_keys.push(para_id_head(para_id));
+    for para_id in para_ids {
+        relevant_keys.push(para_id_head(*para_id));
+    }
 
     relay_chain_interface
         .prove_read(relay_parent, &relevant_keys)
@@ -28,10 +30,10 @@ impl OwnParachainInherentData {
         relay_parent: PHash,
         relay_chain_interface: &impl RelayChainInterface,
         validation_data: &PersistedValidationData,
-        para_id: ParaId,
+        para_ids: &[ParaId],
     ) -> Option<OwnParachainInherentData> {
         let relay_chain_state =
-            collect_relay_storage_proof(relay_chain_interface, para_id, relay_parent).await?;
+            collect_relay_storage_proof(relay_chain_interface, para_ids, relay_parent).await?;
 
         Some(OwnParachainInherentData {
             validation_data: validation_data.clone(),
