@@ -11726,7 +11726,6 @@ dependencies = [
  "sp-std",
  "sp-storage",
  "sp-trie",
- "tracing",
 ]
 
 [[package]]
