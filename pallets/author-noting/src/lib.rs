@@ -13,7 +13,6 @@
 //! to that containerChain, by simply assigning the slot position.
 //!
 #![cfg_attr(not(feature = "std"), no_std)]
-use cumulus_pallet_parachain_system::RelayChainStateProof;
 use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
 use cumulus_primitives_core::relay_chain::HeadData;
@@ -28,6 +27,9 @@ use sp_runtime::DispatchResult;
 use sp_std::prelude::*;
 use tp_author_noting_inherent::INHERENT_IDENTIFIER;
 use tp_author_noting_inherent::PARAS_HEADS_INDEX;
+
+mod relay_state_snapshot;
+pub use relay_state_snapshot::*;
 
 #[cfg(test)]
 mod mock;
@@ -98,8 +100,7 @@ pub mod pallet {
             } = data;
 
             let para_ids = T::ContainerChains::container_chains();
-            let relay_state_proof = RelayChainStateProof::new(
-                T::SelfParaId::get(),
+            let relay_state_proof = AuthorNotingRelayChainStateProof::new(
                 vfp.relay_parent_storage_root,
                 relay_chain_state.clone(),
             )
@@ -177,7 +178,7 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     /// Fetch author slot from a proof of header
     fn fetch_author_slot_from_proof(
-        relay_state_proof: &RelayChainStateProof,
+        relay_state_proof: &AuthorNotingRelayChainStateProof,
         para_id: ParaId,
     ) -> Result<T::AccountId, Error<T>> {
         let bytes = para_id.twox_64_concat();
@@ -187,9 +188,14 @@ impl<T: Config> Pallet<T> {
         // We only note if we can decode
         // In this process several errors can occur, but we will only log if such errors happen
         // We first take the HeadData
+        // If the readError was that the key was not provided (identified by the Proof error),
+        // then panic
         let head_data = relay_state_proof
             .read_entry::<HeadData>(key.as_slice(), None)
-            .map_err(|_| Error::<T>::FailedReading)?;
+            .map_err(|e| match e {
+                ReadEntryErr::Proof => panic!("Invalid proof provided for para head key"),
+                _ => Error::<T>::FailedReading,
+            })?;
 
         // We later take the Header decoded
         let mut author_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(

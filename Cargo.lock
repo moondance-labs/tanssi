@@ -5306,6 +5306,7 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-std",
+ "sp-trie",
  "sp-version",
  "tp-author-noting-inherent",
 ]
@@ -11726,7 +11727,6 @@ dependencies = [
  "sp-std",
  "sp-storage",
  "sp-trie",
- "tracing",
 ]
 
 [[package]]
