@@ -4,17 +4,11 @@ import { WebSocketProvider, parseEther, formatEther } from "ethers";
 import { BN } from "@polkadot/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 
-function delay(ms: number) {
-  return new Promise( resolve => setTimeout(resolve, ms) );
-}
-
 describeSuite({
   id: "D01",
   title: "Dev test suite",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
-    let api: WebSocketProvider;
-    let w3;
     let polkadotJs: ApiPromise;
     const anotherLogger = setupLogger("anotherLogger");
     let alice, bob;
