@@ -23,23 +23,19 @@ jobs:
 
       - name: Test
         run: cargo test --release --all
-
-  typescript-tests:
-    runs-on: self-hosted
-    needs: ["build"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      
       - name: Pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 7
+      
       - name: Node  
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
           cache: "pnpm"
           cache-dependency-path: test/pnpm-lock.yaml
+      
       - name: "Install and run upgrade test"
         run: |
           cd test
