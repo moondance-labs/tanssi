@@ -503,6 +503,16 @@ fn build_consensus(
                         para_id,
                     )
                     .await;
+
+                let author_noting_inherent =
+                    tp_author_noting_inherent::OwnParachainInherentData::create_at(
+                        relay_parent,
+                        &relay_chain_interface,
+                        &validation_data,
+                        para_id,
+                    )
+                    .await;
+
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
                 let slot =
@@ -516,7 +526,14 @@ fn build_consensus(
                         "Failed to create parachain inherent",
                     )
                 })?;
-                Ok((slot, timestamp, parachain_inherent))
+
+                let author_noting_inherent = author_noting_inherent.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to create author noting inherent",
+                    )
+                })?;
+
+                Ok((slot, timestamp, parachain_inherent, author_noting_inherent))
             }
         },
         block_import,
@@ -569,6 +586,7 @@ pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from
 pub fn new_dev(
     config: Configuration,
     _author_id: Option<AccountId>,
+    para_id: ParaId,
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<TaskManager, ServiceError> {
@@ -727,7 +745,17 @@ pub fn new_dev(
                             raw_horizontal_messages: vec![],
                         };
 
-                        Ok((time, mocked_parachain))
+                        let mocked_author_noting =
+                            tp_author_noting_inherent::MockAuthorNotingInherentDataProvider {
+                                current_para_block,
+                                relay_offset: 1000,
+                                relay_blocks_per_para_block: 2,
+                                // TODO: Recheck
+                                para_id: para_id.into(),
+                                slots_per_para_block: 1,
+                            };
+
+                        Ok((time, mocked_parachain, mocked_author_noting))
                     }
                 },
             }),

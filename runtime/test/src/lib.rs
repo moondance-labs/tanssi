@@ -498,6 +498,32 @@ impl pallet_collator_assignment::Config for Runtime {
     type SessionIndex = u32;
 }
 
+pub struct AuthorFetcher;
+use sp_consensus_aura::inherents::InherentType;
+impl pallet_author_noting::GetAuthorFromSlot<Runtime> for AuthorFetcher {
+    fn author_from_inherent(inherent: InherentType) -> Option<AccountId> {
+        let collator_orchestrators =
+            CollatorAssignment::collator_container_chain().orchestrator_chain;
+        let author_index = u64::from(inherent) % collator_orchestrators.len() as u64;
+        collator_orchestrators.get(author_index as usize).cloned()
+    }
+}
+
+// TODO: change this to get the real container chains
+pub struct ContainerChainFetcher;
+impl pallet_author_noting::GetContainerChains for ContainerChainFetcher {
+    fn container_chains() -> Vec<ParaId> {
+        vec![parachain_info::Pallet::<Runtime>::get().into()]
+    }
+}
+
+impl pallet_author_noting::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ContainerChains = ContainerChainFetcher;
+    type SelfParaId = parachain_info::Pallet<Runtime>;
+    type AuthorFetcher = AuthorFetcher;
+}
+
 parameter_types! {
     pub const PotId: PalletId = PalletId(*b"PotStake");
     pub const MaxCandidates: u32 = 1000;
@@ -592,6 +618,7 @@ construct_runtime!(
         Configuration: pallet_configuration = 31,
         CollatorAssignment: pallet_collator_assignment = 32,
         Initializer: pallet_initializer = 33,
+        AuthorNoting: pallet_author_noting = 34,
 
         RootTesting: pallet_root_testing = 100,
     }
