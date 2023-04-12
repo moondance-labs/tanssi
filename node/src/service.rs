@@ -7,7 +7,7 @@ use cumulus_client_cli::CollatorOptions;
 use polkadot_cli::ProvideRuntimeApi;
 // Local Runtime Types
 use pallet_registrar_runtime_api::RegistrarApi;
-use test_runtime::{opaque::Block, AccountId, Hash, RuntimeApi};
+use test_runtime::{opaque::Block, AccountId, RuntimeApi};
 // Cumulus Imports
 use cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion};
 use cumulus_client_consensus_common::{
@@ -21,17 +21,17 @@ use cumulus_client_service::{
 use futures::StreamExt;
 use sc_service::Error as ServiceError;
 
-use cumulus_primitives_core::{relay_chain::BlockId, ParaId};
+use cumulus_primitives_core::{ParaId};
 use cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider;
 use cumulus_primitives_parachain_inherent::MockXcmConfig;
-use cumulus_relay_chain_interface::{RelayChainError, RelayChainInterface};
+use cumulus_relay_chain_interface::{RelayChainInterface};
 // Substrate Imports
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use sc_client_api::HeaderBackend;
 use sc_consensus::ImportQueue;
 use sc_executor::NativeElseWasmExecutor;
-use sc_network::NetworkService;
-use sc_network_common::service::NetworkBlock;
+use sc_network::NetworkBlock;
+use sc_network_sync::SyncingService;
 use sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager};
 use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
 use sp_keystore::SyncCryptoStorePtr;
@@ -271,10 +271,7 @@ async fn start_node_impl(
         hwbench.clone(),
     )
     .await
-    .map_err(|e| match e {
-        RelayChainError::ServiceError(polkadot_service::Error::Sub(x)) => x,
-        s => s.to_string().into(),
-    })?;
+    .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
     let block_announce_validator =
         BlockAnnounceValidator::new(relay_chain_interface.clone(), para_id);
@@ -285,7 +282,7 @@ async fn start_node_impl(
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
 
-    let (network, system_rpc_tx, tx_handler_controller, start_network) =
+	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &parachain_config,
             client: client.clone(),
@@ -295,7 +292,7 @@ async fn start_node_impl(
             block_announce_validator_builder: Some(Box::new(|_| {
                 Box::new(block_announce_validator)
             })),
-            warp_sync: None,
+            warp_sync_params: None,
         })?;
 
     if parachain_config.offchain_worker.enabled {
@@ -335,6 +332,7 @@ async fn start_node_impl(
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
+        sync_service: sync_service.clone(),
     })?;
 
     if let Some(hwbench) = hwbench {
@@ -358,12 +356,16 @@ async fn start_node_impl(
         }
     }
 
-    let announce_block = {
-        let network = network.clone();
-        Arc::new(move |hash, data| network.announce_block(hash, data))
-    };
+	let announce_block = {
+		let sync_service = sync_service.clone();
+		Arc::new(move |hash, data| sync_service.announce_block(hash, data))
+	};
 
     let relay_chain_slot_duration = Duration::from_secs(6);
+
+    let overseer_handle = relay_chain_interface
+    .overseer_handle()
+    .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     if validator {
         let parachain_consensus = build_consensus(
@@ -374,7 +376,7 @@ async fn start_node_impl(
             &task_manager,
             relay_chain_interface.clone(),
             transaction_pool,
-            network,
+            sync_service,
             params.keystore_container.sync_keystore(),
             force_authoring,
             para_id,
@@ -393,6 +395,7 @@ async fn start_node_impl(
             import_queue: import_queue_service,
             collator_key: collator_key.expect("Command line arguments do not allow this. qed"),
             relay_chain_slot_duration,
+            recovery_handle: Box::new(overseer_handle),
         };
 
         start_collator(params).await?;
@@ -405,6 +408,7 @@ async fn start_node_impl(
             relay_chain_interface,
             relay_chain_slot_duration,
             import_queue: import_queue_service,
+            recovery_handle: Box::new(overseer_handle),
         };
 
         start_full_node(params)?;
@@ -469,17 +473,17 @@ fn build_manual_seal_import_queue(
 }
 
 fn build_consensus(
-    client: Arc<ParachainClient>,
-    block_import: ParachainBlockImport,
-    prometheus_registry: Option<&Registry>,
-    telemetry: Option<TelemetryHandle>,
-    task_manager: &TaskManager,
-    relay_chain_interface: Arc<dyn RelayChainInterface>,
-    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
-    sync_oracle: Arc<NetworkService<Block, Hash>>,
-    keystore: SyncCryptoStorePtr,
-    force_authoring: bool,
-    para_id: ParaId,
+	client: Arc<ParachainClient>,
+	block_import: ParachainBlockImport,
+	prometheus_registry: Option<&Registry>,
+	telemetry: Option<TelemetryHandle>,
+	task_manager: &TaskManager,
+	relay_chain_interface: Arc<dyn RelayChainInterface>,
+	transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
+	sync_oracle: Arc<SyncingService<Block>>,
+	keystore: SyncCryptoStorePtr,
+	force_authoring: bool,
+	para_id: ParaId,
 ) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error> {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
@@ -509,7 +513,7 @@ fn build_consensus(
 
                 let para_ids = client_set_aside_for_cidp
                     .runtime_api()
-                    .registered_paras(&BlockId::Hash(block_hash))?;
+                    .registered_paras(block_hash)?;
                 let para_ids: Vec<_> = para_ids.into_iter().map(|x| x.into()).collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(
@@ -557,15 +561,7 @@ fn build_consensus(
         telemetry,
     };
 
-    Ok(AuraConsensus::build::<
-        sp_consensus_aura::sr25519::AuthorityPair,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >(params))
+	Ok(AuraConsensus::build::<sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _>(params))
 }
 
 /// Start a parachain node.
@@ -612,7 +608,7 @@ pub fn new_dev(
         other: (block_import, mut telemetry, _telemetry_worker_handle),
     } = new_partial_dev(&config)?;
 
-    let (network, system_rpc_tx, tx_handler_controller, network_starter) =
+	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
             client: client.clone(),
@@ -620,7 +616,7 @@ pub fn new_dev(
             spawn_handle: task_manager.spawn_handle(),
             import_queue,
             block_announce_validator_builder: None,
-            warp_sync: None,
+            warp_sync_params: None,
         })?;
 
     if config.offchain_worker.enabled {
@@ -732,7 +728,7 @@ pub fn new_dev(
 
                     let para_ids = client_set_aside_for_cidp
                         .runtime_api()
-                        .registered_paras(&BlockId::Number(current_para_block))
+                        .registered_paras(block)
                         .expect("registered_paras runtime API should exist");
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
@@ -800,6 +796,7 @@ pub fn new_dev(
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
+        sync_service,
     })?;
 
     if let Some(hwbench) = hwbench {
@@ -817,7 +814,7 @@ pub fn new_dev(
 
     log::info!("Development Service Ready");
 
-    network_starter.start_network();
+    start_network.start_network();
 
     Ok(task_manager)
 }
@@ -908,9 +905,8 @@ where
     async fn import_block(
         &mut self,
         params: sc_consensus::BlockImportParams<Block, Self::Transaction>,
-        cache: std::collections::HashMap<sp_consensus::CacheKeyId, Vec<u8>>,
     ) -> Result<sc_consensus::ImportResult, Self::Error> {
-        let res = self.inner.import_block(params, cache).await?;
+        let res = self.inner.import_block(params).await?;
 
         Ok(res)
     }
