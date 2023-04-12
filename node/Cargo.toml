@@ -19,6 +19,7 @@ serde = { workspace = true, features = [ "derive" ] }
 
 # Local
 pallet-collator-assignment-runtime-api = { workspace = true }
+pallet-registrar-runtime-api = { workspace = true }
 test-runtime = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 

@@ -64,7 +64,7 @@ pub mod pallet {
 
     pub trait GetAuthorFromSlot<T: Config> {
         /// Returns current session index.
-        fn author_from_inherent(inherent: InherentType) -> Option<T::AccountId>;
+        fn author_from_inherent(inherent: InherentType, para_id: ParaId) -> Option<T::AccountId>;
     }
 
     #[pallet::error]
@@ -223,8 +223,8 @@ impl<T: Config> Pallet<T> {
             let slot = InherentType::decode(&mut data).map_err(|_| Error::<T>::NonDecodableSlot)?;
 
             // Fetch Author
-            let author =
-                T::AuthorFetcher::author_from_inherent(slot).ok_or(Error::<T>::AuthorNotFound)?;
+            let author = T::AuthorFetcher::author_from_inherent(slot, para_id)
+                .ok_or(Error::<T>::AuthorNotFound)?;
 
             Ok(author)
         } else {

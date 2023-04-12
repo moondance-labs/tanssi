@@ -31,6 +31,8 @@ pub use mock::*;
 mod sproof_builder;
 #[cfg(feature = "std")]
 pub use sproof_builder::*;
+#[cfg(test)]
+mod tests;
 
 #[derive(Encode, Decode, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo)]
 pub struct OwnParachainInherentData {
