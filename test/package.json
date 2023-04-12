@@ -13,7 +13,7 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
-      "@moonwall/cli": "^0.4.3",
+      "@moonwall/cli": "^0.4.6",
       "@moonwall/util": "^0.4.2",
       "@polkadot/api": "^10.2.2",
       "@polkadot/api-augment": "^10.2.2",
