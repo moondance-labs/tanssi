@@ -61,6 +61,8 @@ type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 
 type ParachainBackend = TFullBackend<Block>;
 
+type DevParachainBlockImport = TanssiParachainBlockImport<Arc<ParachainClient>>;
+
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
 
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
@@ -75,7 +77,6 @@ struct MockTimestampInherentDataProvider;
 /// be able to perform chain operations.
 pub fn new_partial(
     config: &Configuration,
-    dev_service: bool,
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -135,7 +136,6 @@ pub fn new_partial(
     );
 
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
-
     let import_queue = build_import_queue(
         client.clone(),
         block_import.clone(),
@@ -144,12 +144,91 @@ pub fn new_partial(
         &task_manager,
     )?;
 
-    log::info!("dev service is {:?}", dev_service);
-    let maybe_select_chain = if dev_service {
-        Some(sc_consensus::LongestChain::new(backend.clone()))
-    } else {
-        None
-    };
+    let maybe_select_chain = None;
+
+    Ok(PartialComponents {
+        backend,
+        client,
+        import_queue,
+        keystore_container,
+        task_manager,
+        transaction_pool,
+        select_chain: maybe_select_chain,
+        other: (block_import, telemetry, telemetry_worker_handle),
+    })
+}
+
+/// Starts a `ServiceBuilder` for a dev service.
+pub fn new_partial_dev(
+    config: &Configuration,
+) -> Result<
+    PartialComponents<
+        ParachainClient,
+        ParachainBackend,
+        MaybeSelectChain,
+        sc_consensus::DefaultImportQueue<Block, ParachainClient>,
+        sc_transaction_pool::FullPool<Block, ParachainClient>,
+        (
+            DevParachainBlockImport,
+            Option<Telemetry>,
+            Option<TelemetryWorkerHandle>,
+        ),
+    >,
+    sc_service::Error,
+> {
+    let telemetry = config
+        .telemetry_endpoints
+        .clone()
+        .filter(|x| !x.is_empty())
+        .map(|endpoints| -> Result<_, sc_telemetry::Error> {
+            let worker = TelemetryWorker::new(16)?;
+            let telemetry = worker.handle().new_telemetry(endpoints);
+            Ok((worker, telemetry))
+        })
+        .transpose()?;
+
+    let executor = ParachainExecutor::new(
+        config.wasm_method,
+        config.default_heap_pages,
+        config.max_runtime_instances,
+        config.runtime_cache_size,
+    );
+
+    let (client, backend, keystore_container, task_manager) =
+        sc_service::new_full_parts::<Block, RuntimeApi, _>(
+            config,
+            telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+            executor,
+        )?;
+    let client = Arc::new(client);
+
+    let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
+
+    let telemetry = telemetry.map(|(worker, telemetry)| {
+        task_manager
+            .spawn_handle()
+            .spawn("telemetry", None, worker.run());
+        telemetry
+    });
+
+    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
+        config.transaction_pool.clone(),
+        config.role.is_authority().into(),
+        config.prometheus_registry(),
+        task_manager.spawn_essential_handle(),
+        client.clone(),
+    );
+
+    let block_import = DevParachainBlockImport::new(client.clone());
+    let import_queue = build_manual_seal_import_queue(
+        client.clone(),
+        block_import.clone(),
+        config,
+        telemetry.as_ref().map(|telemetry| telemetry.handle()),
+        &task_manager,
+    )?;
+
+    let maybe_select_chain = Some(sc_consensus::LongestChain::new(backend.clone()));
 
     Ok(PartialComponents {
         backend,
@@ -176,7 +255,7 @@ async fn start_node_impl(
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
 
-    let params = new_partial(&parachain_config, false)?;
+    let params = new_partial(&parachain_config)?;
     let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
     let client = params.client.clone();
@@ -237,6 +316,7 @@ async fn start_node_impl(
                 client: client.clone(),
                 pool: transaction_pool.clone(),
                 deny_unsafe,
+                command_sink: None,
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -371,6 +451,21 @@ fn build_import_queue(
         telemetry,
     })
     .map_err(Into::into)
+}
+
+/// Build the import queue for the parachain runtime (manual seal).
+fn build_manual_seal_import_queue(
+    _client: Arc<ParachainClient>,
+    block_import: DevParachainBlockImport,
+    config: &Configuration,
+    _telemetry: Option<TelemetryHandle>,
+    task_manager: &TaskManager,
+) -> Result<sc_consensus::DefaultImportQueue<Block, ParachainClient>, sc_service::Error> {
+    Ok(sc_consensus_manual_seal::import_queue(
+        Box::new(block_import.clone()),
+        &task_manager.spawn_essential_handle(),
+        config.prometheus_registry(),
+    ))
 }
 
 fn build_consensus(
@@ -515,7 +610,7 @@ pub fn new_dev(
         select_chain: maybe_select_chain,
         transaction_pool,
         other: (block_import, mut telemetry, _telemetry_worker_handle),
-    } = new_partial(&config, true)?;
+    } = new_partial_dev(&config)?;
 
     let (network, system_rpc_tx, tx_handler_controller, network_starter) =
         sc_service::build_network(sc_service::BuildNetworkParams {
@@ -539,6 +634,7 @@ pub fn new_dev(
 
     let prometheus_registry = config.prometheus_registry().cloned();
     let collator = config.role.is_authority();
+    let mut command_sink = None;
 
     if collator {
         let mut env = sc_basic_authorship::ProposerFactory::new(
@@ -560,22 +656,23 @@ pub fn new_dev(
                             .import_notification_stream()
                             .map(|_| EngineCommand::SealNewBlock {
                                 create_empty: false,
-                                finalize: true,
+                                finalize: false,
                                 parent_hash: None,
                                 sender: None,
                             }),
                     )
                 }
                 Sealing::Manual => {
-                    let (_, stream) = futures::channel::mpsc::channel(1000);
+                    let (sink, stream) = futures::channel::mpsc::channel(1000);
                     // Keep a reference to the other end of the channel. It goes to the RPC.
+                    command_sink = Some(sink);
                     Box::new(stream)
                 }
                 Sealing::Interval(millis) => Box::new(futures::StreamExt::map(
                     Timer::interval(Duration::from_millis(millis)),
                     |_| EngineCommand::SealNewBlock {
                         create_empty: true,
-                        finalize: true,
+                        finalize: false,
                         parent_hash: None,
                         sender: None,
                     },
@@ -684,6 +781,7 @@ pub fn new_dev(
                 client: client.clone(),
                 pool: transaction_pool.clone(),
                 deny_unsafe,
+                command_sink: command_sink.clone(),
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -766,3 +864,57 @@ impl FromStr for Sealing {
         })
     }
 }
+
+use cumulus_client_consensus_common::ParachainBlockImportMarker;
+use sc_consensus::BlockImport;
+
+/// Tanssi Parachain BLock IMport. We cannot use the one in cumulus as it overrides the best
+/// chain selection rule
+pub struct TanssiParachainBlockImport<BI> {
+    inner: BI,
+}
+
+impl<BI> TanssiParachainBlockImport<BI> {
+    /// Create a new instance.
+    pub fn new(inner: BI) -> Self {
+        Self { inner }
+    }
+}
+
+impl<I: Clone> Clone for TanssiParachainBlockImport<I> {
+    fn clone(&self) -> Self {
+        TanssiParachainBlockImport {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
+/// We simply rely on the inner
+#[async_trait::async_trait]
+impl<BI> BlockImport<Block> for TanssiParachainBlockImport<BI>
+where
+    BI: BlockImport<Block> + Send,
+{
+    type Error = BI::Error;
+    type Transaction = BI::Transaction;
+
+    async fn check_block(
+        &mut self,
+        block: sc_consensus::BlockCheckParams<Block>,
+    ) -> Result<sc_consensus::ImportResult, Self::Error> {
+        self.inner.check_block(block).await
+    }
+
+    async fn import_block(
+        &mut self,
+        params: sc_consensus::BlockImportParams<Block, Self::Transaction>,
+        cache: std::collections::HashMap<sp_consensus::CacheKeyId, Vec<u8>>,
+    ) -> Result<sc_consensus::ImportResult, Self::Error> {
+        let res = self.inner.import_block(params, cache).await?;
+
+        Ok(res)
+    }
+}
+
+/// But we need to implement the ParachainBlockImportMarker trait to fullfil
+impl<BI> ParachainBlockImportMarker for TanssiParachainBlockImport<BI> {}

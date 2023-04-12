@@ -593,6 +593,8 @@ impl pallet_sudo::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_root_testing::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -623,6 +625,8 @@ construct_runtime!(
         Session: pallet_session = 32,
         Aura: pallet_aura = 33,
         AuraExt: cumulus_pallet_aura_ext = 34,
+
+        RootTesting: pallet_root_testing = 100,
     }
 );
 

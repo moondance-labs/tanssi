@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/cli/config_schema.json",
+  "label": "MasterConfig 🌔",
+  "defaultTestTimeout": 30000,
+  "environments": [
+    {
+      "name": "dev_tanssi",
+      "testFileDir": ["suites/dev"],
+      "multiThreads": true,
+      "html": false,
+      "foundation": {
+        "type": "dev",
+        "launchSpec": [
+          {
+            "name": "tanssi",
+            "binPath": "../target/release/test-node",
+            "options": [
+                "--dev",
+                "--sealing=manual"
+            ]
+          }
+        ]
+      },
+      "connections": [
+        {
+          "name": "Tanssi",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:34002"]
+        }
+      ]
+    }
+  ]
+}
