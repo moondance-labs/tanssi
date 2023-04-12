@@ -319,7 +319,9 @@ pub mod pallet {
 
             // Fill orchestrator chain collators back up to max_num_orchestrator_chain,
             // but give preference to collators that were already there
-            let mut extra_collators_plus_new = extra_orchestrator_collators.by_ref().chain(&mut new_collators);
+            let mut extra_collators_plus_new = extra_orchestrator_collators
+                .by_ref()
+                .chain(&mut new_collators);
             new_assigned.fill_orchestrator_chain_collators(
                 max_num_orchestrator_chain,
                 &mut extra_collators_plus_new,

@@ -505,30 +505,30 @@ fn assign_collators_stay_constant_if_new_collators_can_take_new_chains() {
         assert_eq!(assigned_collators(), BTreeMap::new(),);
         run_to_block(11);
 
-        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![
-            (1, 999),
-            (2, 999),
-            (3, 999),
-            (4, 999),
-            (5, 999),
-        ]),);
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![(1, 999), (2, 999), (3, 999), (4, 999), (5, 999),]),
+        );
 
         MockData::mutate(|m| {
             m.container_chains = vec![1001, 1002];
         });
         run_to_block(21);
 
-        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![
-            (1, 999),
-            (2, 999),
-            (3, 999),
-            (4, 999),
-            (5, 999),
-            (6, 1001),
-            (7, 1001),
-            (8, 1002),
-            (9, 1002),
-        ]),);
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
     });
 }
 
@@ -548,12 +548,10 @@ fn assign_collators_move_extra_orchestrator_to_new_parachain_if_not_enough_colla
         assert_eq!(assigned_collators(), BTreeMap::new(),);
         run_to_block(11);
 
-        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![
-            (1, 999),
-            (2, 999),
-            (3, 999),
-            (4, 999),
-        ]),);
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![(1, 999), (2, 999), (3, 999), (4, 999),]),
+        );
 
         MockData::mutate(|m| {
             m.collators = vec![1, 2, 3, 4, 5];
@@ -561,12 +559,9 @@ fn assign_collators_move_extra_orchestrator_to_new_parachain_if_not_enough_colla
         });
         run_to_block(21);
 
-        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![
-            (1, 999),
-            (2, 999),
-            (5, 1001),
-            (3, 1001),
-            (4, 1002),
-        ]),);
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![(1, 999), (2, 999), (5, 1001), (3, 1001), (4, 1002),]),
+        );
     });
 }
