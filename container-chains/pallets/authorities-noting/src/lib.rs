@@ -17,16 +17,17 @@ use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
 use cumulus_primitives_core::relay_chain::HeadData;
 use cumulus_primitives_core::ParaId;
+use frame_support::traits::Get;
 use frame_support::Hashable;
 use parity_scale_codec::Decode;
 use sp_consensus_aura::inherents::InherentType;
 use sp_inherents::InherentIdentifier;
-use sp_runtime::traits::Header;
-use sp_runtime::DispatchResult;
+use sp_runtime::traits::Hash as HashT;
 use sp_std::prelude::*;
 use tp_authorities_noting_inherent::INHERENT_IDENTIFIER;
 use tp_authorities_noting_inherent::PARAS_HEADS_INDEX;
-use sp_runtime::traits::Hash as HashT;
+use tp_collator_assignment::AssignedCollators;
+use tp_collator_assignment::COLLATOR_ASSIGNMENT_INDEX;
 
 mod relay_state_snapshot;
 pub use relay_state_snapshot::*;
@@ -45,7 +46,7 @@ pub trait GetContainerChains {
 
 #[frame_support::pallet]
 pub mod pallet {
-    use super::{DispatchResult, *};
+    use super::*;
     use frame_support::dispatch::PostDispatchInfo;
     use frame_support::pallet_prelude::*;
     use frame_system::pallet_prelude::*;
@@ -74,6 +75,7 @@ pub mod pallet {
         NonDecodableSlot,
         AuthorNotFound,
         NonAuraDigest,
+        NoAuthoritiesFound,
     }
 
     #[pallet::pallet]
@@ -94,7 +96,7 @@ pub mod pallet {
             let tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
                 validation_data: vfp,
                 relay_chain_state,
-                orchestrator_chain_state
+                orchestrator_chain_state,
             } = data;
 
             let para_id = T::OrchestratorParaId::get();
@@ -104,7 +106,9 @@ pub mod pallet {
             )
             .expect("Invalid relay chain state proof");
 
-            let orchestrator_root = Self::fetch_orchestrator_header_from_relay_proof(&relay_state_proof, para_id).expect("qed");
+            let orchestrator_root =
+                Self::fetch_orchestrator_header_from_relay_proof(&relay_state_proof, para_id)
+                    .expect("qed");
 
             let orchestrator_state_proof = AuthoritiesNotingRelayChainStateProof::new(
                 orchestrator_root,
@@ -112,41 +116,50 @@ pub mod pallet {
             )
             .expect("Invalid orchestrator chain state proof");
 
-            match Self::fetch_authorities_from_orchestrator_proof(&orchestrator_state_proof, T::SelfParaId::get()) {
+            match Self::fetch_authorities_from_orchestrator_proof(
+                &orchestrator_state_proof,
+                T::SelfParaId::get(),
+            ) {
                 Ok(authorities) => Authorities::<T>::put(authorities),
                 Err(e) => log::warn!("Author-noting error {:?} found in para {:?}", e, para_id),
             }
-            
 
             Ok(PostDispatchInfo {
                 actual_weight: Some(total_weight),
                 pays_fee: Pays::No,
             })
         }
+
+        #[pallet::call_index(1)]
+        #[pallet::weight(0)]
+        pub fn set_authorities(
+            origin: OriginFor<T>,
+            authorities: Vec<T::AccountId>,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            Authorities::<T>::put(&authorities);
+            Self::deposit_event(Event::AuthoritiesInserted { authorities });
+            Ok(())
+        }
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Latest author changed
-        LatestAuthorChanged {
-            para_id: ParaId,
-            new_author: T::AccountId,
-        },
+        /// Auhtorities inserted
+        AuthoritiesInserted { authorities: Vec<T::AccountId> },
     }
 
     #[pallet::storage]
     #[pallet::getter(fn authorities)]
-    pub(super) type Authorities<T: Config> =
-        StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+    pub(super) type Authorities<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
 
     #[pallet::inherent]
     impl<T: Config> ProvideInherent for Pallet<T> {
         type Call = Call<T>;
         type Error = sp_inherents::MakeFatalError<()>;
         // TODO, what should we put here
-        const INHERENT_IDENTIFIER: InherentIdentifier =
-            INHERENT_IDENTIFIER;
+        const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
 
         fn create_inherent(data: &InherentData) -> Option<Self::Call> {
             let data: tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData = data
@@ -187,23 +200,34 @@ impl<T: Config> Pallet<T> {
             })?;
 
         // We later take the Header decoded
-        let mut orchestrator_chain_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
-            &mut head_data.0.as_slice(),
-        )
-        .map_err(|_| Error::<T>::FailedDecodingHeader)?
-        .clone();
+        let orchestrator_chain_header =
+            sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
+                &mut head_data.0.as_slice(),
+            )
+            .map_err(|_| Error::<T>::FailedDecodingHeader)?
+            .clone();
 
         let orchestrator_chain_storage_root = orchestrator_chain_header.state_root;
 
         Ok(orchestrator_chain_storage_root)
     }
 
-     /// Fetch author slot from a proof of header
-     fn fetch_authorities_from_orchestrator_proof(
+    /// Fetch author slot from a proof of header
+    fn fetch_authorities_from_orchestrator_proof(
         orchestrator_state_proof: &AuthoritiesNotingRelayChainStateProof,
         para_id: ParaId,
     ) -> Result<Vec<T::AccountId>, Error<T>> {
+        let assignmnet = orchestrator_state_proof
+            .read_entry::<AssignedCollators<T::AccountId>>(COLLATOR_ASSIGNMENT_INDEX, None)
+            .map_err(|e| match e {
+                ReadEntryErr::Proof => panic!("Invalid proof provided for para head key"),
+                _ => Error::<T>::FailedReading,
+            })?;
 
-        Ok(vec![])
+        let authorities = assignmnet
+            .container_chains
+            .get(&para_id.into())
+            .ok_or(Error::<T>::NoAuthoritiesFound)?;
+        Ok(authorities.clone())
     }
 }

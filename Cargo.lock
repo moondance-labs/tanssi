@@ -5337,6 +5337,7 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "tp-authorities-noting-inherent",
+ "tp-collator-assignment",
 ]
 
 [[package]]
@@ -5518,6 +5519,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-collator-assignment",
 ]
 
 [[package]]
@@ -11782,6 +11784,19 @@ dependencies = [
  "sp-std",
  "sp-storage",
  "sp-trie",
+]
+
+[[package]]
+name = "tp-collator-assignment"
+version = "0.1.1"
+dependencies = [
+ "hex-literal",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-std",
 ]
 
 [[package]]

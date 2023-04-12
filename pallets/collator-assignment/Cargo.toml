@@ -19,6 +19,7 @@ serde = { workspace = true, features = [ "derive" ], optional = true }
 log = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
+tp-collator-assignment = { workspace = true }
 
 [dev-dependencies]
 sp-io = { workspace = true, default-features = false }
@@ -31,5 +32,6 @@ std = [
 	"frame-system/std",
 	"scale-info/std",
     "serde",
+	"tp-collator-assignment/std",
 ]
 try-runtime = ["frame-support/try-runtime"]
