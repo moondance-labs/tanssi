@@ -443,7 +443,7 @@ async fn start_node_impl_moondance(
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
 
-    let params = new_partial(&parachain_config, false)?;
+    let params = new_partial(&parachain_config)?;
     let (_block_import, mut telemetry, _telemetry_worker_handle) = params.other;
 
     let client = params.client.clone();
@@ -456,7 +456,7 @@ async fn start_node_impl_moondance(
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
 
-    let (network, system_rpc_tx, tx_handler_controller, start_network) =
+    let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &parachain_config,
             client: client.clone(),
@@ -466,7 +466,7 @@ async fn start_node_impl_moondance(
             block_announce_validator_builder: Some(Box::new(|_| {
                 Box::new(block_announce_validator)
             })),
-            warp_sync: None,
+            warp_sync_params: None,
         })?;
 
     if parachain_config.offchain_worker.enabled {
@@ -487,6 +487,7 @@ async fn start_node_impl_moondance(
                 client: client.clone(),
                 pool: transaction_pool.clone(),
                 deny_unsafe,
+                command_sink: None,
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -505,14 +506,19 @@ async fn start_node_impl_moondance(
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
+        sync_service: sync_service.clone(),
     })?;
 
     let announce_block = {
-        let network = network.clone();
-        Arc::new(move |hash, data| network.announce_block(hash, data))
+        let sync_service = sync_service.clone();
+        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
     };
 
     let relay_chain_slot_duration = Duration::from_secs(6);
+
+    let overseer_handle = relay_chain_interface
+        .overseer_handle()
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     let params = StartFullNodeParams {
         client: client.clone(),
@@ -522,6 +528,7 @@ async fn start_node_impl_moondance(
         relay_chain_interface,
         relay_chain_slot_duration,
         import_queue: import_queue_service,
+        recovery_handle: Box::new(overseer_handle),
     };
 
     start_full_node(params)?;
