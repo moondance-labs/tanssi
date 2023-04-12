@@ -21,10 +21,10 @@ use cumulus_client_service::{
 use futures::StreamExt;
 use sc_service::Error as ServiceError;
 
-use cumulus_primitives_core::{ParaId};
+use cumulus_primitives_core::ParaId;
 use cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider;
 use cumulus_primitives_parachain_inherent::MockXcmConfig;
-use cumulus_relay_chain_interface::{RelayChainInterface};
+use cumulus_relay_chain_interface::RelayChainInterface;
 // Substrate Imports
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use sc_client_api::HeaderBackend;
@@ -282,7 +282,7 @@ async fn start_node_impl(
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
 
-	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
+    let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &parachain_config,
             client: client.clone(),
@@ -356,16 +356,16 @@ async fn start_node_impl(
         }
     }
 
-	let announce_block = {
-		let sync_service = sync_service.clone();
-		Arc::new(move |hash, data| sync_service.announce_block(hash, data))
-	};
+    let announce_block = {
+        let sync_service = sync_service.clone();
+        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
+    };
 
     let relay_chain_slot_duration = Duration::from_secs(6);
 
     let overseer_handle = relay_chain_interface
-    .overseer_handle()
-    .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+        .overseer_handle()
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     if validator {
         let parachain_consensus = build_consensus(
@@ -473,17 +473,17 @@ fn build_manual_seal_import_queue(
 }
 
 fn build_consensus(
-	client: Arc<ParachainClient>,
-	block_import: ParachainBlockImport,
-	prometheus_registry: Option<&Registry>,
-	telemetry: Option<TelemetryHandle>,
-	task_manager: &TaskManager,
-	relay_chain_interface: Arc<dyn RelayChainInterface>,
-	transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
-	sync_oracle: Arc<SyncingService<Block>>,
-	keystore: SyncCryptoStorePtr,
-	force_authoring: bool,
-	para_id: ParaId,
+    client: Arc<ParachainClient>,
+    block_import: ParachainBlockImport,
+    prometheus_registry: Option<&Registry>,
+    telemetry: Option<TelemetryHandle>,
+    task_manager: &TaskManager,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
+    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
+    sync_oracle: Arc<SyncingService<Block>>,
+    keystore: SyncCryptoStorePtr,
+    force_authoring: bool,
+    para_id: ParaId,
 ) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error> {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
@@ -561,7 +561,15 @@ fn build_consensus(
         telemetry,
     };
 
-	Ok(AuraConsensus::build::<sp_consensus_aura::sr25519::AuthorityPair, _, _, _, _, _, _>(params))
+    Ok(AuraConsensus::build::<
+        sp_consensus_aura::sr25519::AuthorityPair,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >(params))
 }
 
 /// Start a parachain node.
@@ -608,7 +616,7 @@ pub fn new_dev(
         other: (block_import, mut telemetry, _telemetry_worker_handle),
     } = new_partial_dev(&config)?;
 
-	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
+    let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
             client: client.clone(),
