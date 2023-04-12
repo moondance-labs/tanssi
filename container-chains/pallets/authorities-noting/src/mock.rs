@@ -1,4 +1,4 @@
-use crate::{self as author_noting_pallet, Config};
+use crate::{self as authorities_noting_pallet, Config};
 use cumulus_primitives_core::{ParaId, PersistedValidationData};
 use frame_support::inherent::{InherentData, ProvideInherent};
 use frame_support::parameter_types;
@@ -12,7 +12,7 @@ use sp_consensus_aura::inherents::InherentType;
 use sp_core::H256;
 use sp_state_machine::StorageProof;
 use sp_version::RuntimeVersion;
-use tp_author_noting_inherent::AuthorNotingSproofBuilder;
+use tp_authorities_noting_inherent::AuthorNotingSproofBuilder;
 
 use sp_io;
 use sp_runtime::{
@@ -31,7 +31,7 @@ frame_support::construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-        AuthorNoting: author_noting_pallet::{Pallet, Call, Storage, Event<T>},
+        AuthoritiesNoting: authorities_noting_pallet::{Pallet, Call, Storage, Event<T>},
         MockData: mock_data,
     }
 );
@@ -65,6 +65,7 @@ impl frame_system::Config for Test {
 
 parameter_types! {
     pub const ParachainId: ParaId = ParaId::new(200);
+    pub const OrchestratorParachainId: ParaId = ParaId::new(1000);
 }
 
 // Pallet to provide some mock data, used to test
@@ -136,9 +137,8 @@ impl crate::GetContainerChains for MockContainerChainGetter {
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type AuthorFetcher = MockAuthorFetcher;
     type SelfParaId = ParachainId;
-    type ContainerChains = MockContainerChainGetter;
+    type OrchestratorParaId = OrchestratorParachainId;
 }
 
 struct BlockTest {
@@ -198,12 +198,13 @@ pub struct BlockTests {
             dyn Fn(
                 &BlockTests,
                 RelayChainBlockNumber,
-                &mut tp_author_noting_inherent::OwnParachainInherentData,
+                &mut tp_authorities_noting_inherent::AuthorNotingSproofBuilder,
             ),
         >,
     >,
     overriden_state_root: Option<H256>,
     overriden_state_proof: Option<StorageProof>,
+    orchestrator_storage_proof: Option<StorageProof>,
 }
 
 impl BlockTests {
@@ -244,6 +245,12 @@ where {
     pub fn with_overriden_state_proof(mut self, proof: StorageProof) -> Self
 where {
         self.overriden_state_proof = Some(proof);
+        self
+    }
+
+    pub fn with_orchestrator_storage_proof(mut self, proof: StorageProof) -> Self
+where {
+        self.orchestrator_storage_proof = Some(proof);
         self
     }
 
@@ -288,16 +295,14 @@ where {
                 let inherent_data = {
                     let mut inherent_data = InherentData::default();
                     let mut system_inherent_data =
-                        tp_author_noting_inherent::OwnParachainInherentData {
+                        tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
                             validation_data: vfp.clone(),
                             relay_chain_state,
+                            orchestrator_chain_state: self.orchestrator_storage_proof.clone().unwrap()
                         };
-                    if let Some(ref hook) = self.inherent_data_hook {
-                        hook(self, *n as RelayChainBlockNumber, &mut system_inherent_data);
-                    }
                     inherent_data
                         .put_data(
-                            tp_author_noting_inherent::INHERENT_IDENTIFIER,
+                            tp_authorities_noting_inherent::INHERENT_IDENTIFIER,
                             &system_inherent_data,
                         )
                         .expect("failed to put VFP inherent");
@@ -305,13 +310,13 @@ where {
                 };
 
                 // execute the block
-                AuthorNoting::on_initialize(*n);
-                AuthorNoting::create_inherent(&inherent_data)
+                AuthoritiesNoting::on_initialize(*n);
+                AuthoritiesNoting::create_inherent(&inherent_data)
                     .expect("got an inherent")
                     .dispatch_bypass_filter(RawOrigin::None.into())
                     .expect("dispatch succeeded");
                 within_block();
-                AuthorNoting::on_finalize(*n);
+                AuthoritiesNoting::on_finalize(*n);
 
                 // clean up
                 System::finalize();

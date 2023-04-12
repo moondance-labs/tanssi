@@ -19,22 +19,13 @@ use sp_inherents::InherentIdentifier;
 use sp_io::hashing::twox_64;
 use sp_std::vec::Vec;
 
-/*
-#[cfg(feature = "std")]
-mod client_side;
-#[cfg(feature = "std")]
-pub use client_side::*;
-#[cfg(feature = "std")]
-mod mock;
-#[cfg(feature = "std")]
-pub use mock::*;
+
 #[cfg(feature = "std")]
 mod sproof_builder;
 #[cfg(feature = "std")]
 pub use sproof_builder::*;
 #[cfg(test)]
 mod tests;
-*/
 
 #[derive(Encode, Decode, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo)]
 pub struct ContainerChainAuthoritiesInherentData {

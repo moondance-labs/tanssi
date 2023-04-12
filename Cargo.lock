@@ -11790,13 +11790,19 @@ dependencies = [
 name = "tp-collator-assignment"
 version = "0.1.1"
 dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
  "hex-literal",
  "log",
  "parity-scale-codec",
+ "polkadot-primitives",
  "scale-info",
  "serde",
  "sp-core",
+ "sp-runtime",
+ "sp-state-machine",
  "sp-std",
+ "sp-trie",
 ]
 
 [[package]]

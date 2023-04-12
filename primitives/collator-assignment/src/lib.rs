@@ -4,6 +4,11 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::prelude::collections::BTreeMap;
 use sp_std::vec::Vec;
 
+#[cfg(feature = "std")]
+mod sproof_builder;
+#[cfg(feature = "std")]
+pub use sproof_builder::*;
+
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct AssignedCollators<AccountId> {

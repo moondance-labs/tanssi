@@ -52,6 +52,7 @@ std = [
     "tp-authorities-noting-inherent/std",
     "sp-state-machine/std",
     "sp-trie/std",
-    "tp-collator-assignment/std"
+    "tp-collator-assignment/std",
+    "tp-authorities-noting-inherent/std"
 ]
 try-runtime = ["frame-support/try-runtime"]

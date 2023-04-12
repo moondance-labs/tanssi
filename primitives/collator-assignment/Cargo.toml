@@ -19,6 +19,16 @@ parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 sp-core = { workspace = true }
 sp-std = { workspace = true }
+sp-runtime = { workspace = true, optional = true }
+sp-state-machine = { workspace = true, optional = true }
+frame-support = { workspace = true, optional = true }
+sp-trie = { workspace = true,  optional = true }
+
+# Cumulus
+cumulus-primitives-core = { workspace = true, optional = true }
+
+# Polkadot
+polkadot-primitives = {  workspace = true, optional = true }
 
 [features]
 default = [ "std" ]
@@ -26,5 +36,11 @@ std = [
 	"parity-scale-codec/std",
 	"serde/std",
 	"sp-core/std",
-	"sp-std/std"
+	"sp-std/std",
+	"sp-runtime/std",
+	"sp-state-machine/std",
+	"cumulus-primitives-core/std",
+	"frame-support/std",
+	"sp-trie/std",
+	"polkadot-primitives"
 ]
