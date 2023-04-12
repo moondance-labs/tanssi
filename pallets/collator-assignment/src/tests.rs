@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 
-use crate::{mock::*, Store};
+use crate::{mock::*, CollatorContainerChain};
 
 fn assigned_collators() -> BTreeMap<u64, u32> {
-    let assigned_collators = <CollatorAssignment as Store>::CollatorContainerChain::get();
+    let assigned_collators = CollatorContainerChain::<Test>::get();
 
     let mut h = BTreeMap::new();
 

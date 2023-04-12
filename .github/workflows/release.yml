@@ -7,13 +7,8 @@ jobs:
   ####### Building and Testing binaries #######
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-      - name: Install tooling
-        run: |
-          sudo apt-get install -y protobuf-compiler
-          protoc --version
-
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -28,3 +23,21 @@ jobs:
 
       - name: Test
         run: cargo test --release --all
+      
+      - name: Pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7
+      
+      - name: Node  
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+          cache: "pnpm"
+          cache-dependency-path: test/pnpm-lock.yaml
+      
+      - name: "Install and run upgrade test"
+        run: |
+          cd test
+          pnpm i
+          pnpm moonwall test dev_tanssi

@@ -8,12 +8,13 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
 use cumulus_primitives_core::BodyId;
+use cumulus_primitives_core::ParaId;
 use frame_support::traits::OneSessionHandler;
 use frame_support::weights::constants::RocksDbWeight;
 use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight};
 use smallvec::smallvec;
 use sp_api::impl_runtime_apis;
-use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
     traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
@@ -510,6 +511,38 @@ impl pallet_collator_assignment::Config for Runtime {
     type SessionIndex = u32;
 }
 
+pub struct AuthorFetcher;
+use sp_consensus_aura::inherents::InherentType;
+impl pallet_author_noting::GetAuthorFromSlot<Runtime> for AuthorFetcher {
+    fn author_from_inherent(inherent: InherentType, para_id: ParaId) -> Option<AccountId> {
+        let assigned_collators = CollatorAssignment::collator_container_chain();
+        let collators = assigned_collators.container_chains.get(&para_id.into())?;
+        if collators.is_empty() {
+            // Avoid division by zero below
+            return None;
+        }
+        let author_index = u64::from(inherent) % collators.len() as u64;
+        collators.get(author_index as usize).cloned()
+    }
+}
+
+pub struct ContainerChainFetcher;
+impl pallet_author_noting::GetContainerChains for ContainerChainFetcher {
+    fn container_chains() -> Vec<ParaId> {
+        Registrar::registered_para_ids()
+            .into_iter()
+            .map(|x| x.into())
+            .collect()
+    }
+}
+
+impl pallet_author_noting::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ContainerChains = ContainerChainFetcher;
+    type SelfParaId = parachain_info::Pallet<Runtime>;
+    type AuthorFetcher = AuthorFetcher;
+}
+
 parameter_types! {
     pub const PotId: PalletId = PalletId(*b"PotStake");
     pub const MaxCandidates: u32 = 1000;
@@ -573,6 +606,8 @@ impl pallet_sudo::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_root_testing::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -590,18 +625,21 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
 
-        // Collator support. The order of these 4 are important and shall not change.
-        Authorship: pallet_authorship = 20,
-        CollatorSelection: pallet_collator_selection = 21,
-        Session: pallet_session = 22,
-        Aura: pallet_aura = 23,
-        AuraExt: cumulus_pallet_aura_ext = 24,
+        // ContainerChain management. It should go before Session for Genesis
+        Registrar: pallet_registrar = 20,
+        Configuration: pallet_configuration = 21,
+        CollatorAssignment: pallet_collator_assignment = 22,
+        Initializer: pallet_initializer = 23,
+        AuthorNoting: pallet_author_noting = 24,
 
-        // ContainerChain management
-        Registrar: pallet_registrar = 30,
-        Configuration: pallet_configuration = 31,
-        CollatorAssignment: pallet_collator_assignment = 32,
-        Initializer: pallet_initializer = 33,
+        // Collator support. The order of these 4 are important and shall not change.
+        Authorship: pallet_authorship = 30,
+        CollatorSelection: pallet_collator_selection = 31,
+        Session: pallet_session = 32,
+        Aura: pallet_aura = 33,
+        AuraExt: cumulus_pallet_aura_ext = 34,
+
+        RootTesting: pallet_root_testing = 100,
     }
 );
 
@@ -713,6 +751,56 @@ impl_runtime_apis! {
             // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
             // have a backtrace here.
             Executive::try_execute_block(block, state_root_check, signature_check, select).unwrap()
+        }
+    }
+
+    impl pallet_collator_assignment_runtime_api::CollatorAssignmentApi<Block, AccountId, ParaId> for Runtime {
+        /// Return the parachain that the given `AccountId` is collating for.
+        /// Returns `None` if the `AccountId` is not collating.
+        fn current_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
+            let assigned_collators = CollatorAssignment::collator_container_chain();
+            let self_para_id = ParachainInfo::get().into();
+
+            assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
+        }
+
+        /// Return the parachain that the given `AccountId` will be collating for
+        /// in the next session change.
+        /// Returns `None` if the `AccountId` will not be collating.
+        fn future_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
+            let assigned_collators = CollatorAssignment::pending_collator_container_chain();
+
+            match assigned_collators {
+                Some(assigned_collators) => {
+                    let self_para_id = ParachainInfo::get().into();
+
+                    assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
+                }
+                None => {
+                    Self::current_collator_parachain_assignment(account)
+                }
+            }
+
+        }
+
+        /// Return the list of collators of the given `ParaId`.
+        /// Returns `None` if the `ParaId` is not in the registrar.
+        fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>> {
+            let assigned_collators = CollatorAssignment::collator_container_chain();
+            let self_para_id = ParachainInfo::get().into();
+
+            if para_id == self_para_id {
+                Some(assigned_collators.orchestrator_chain)
+            } else {
+                assigned_collators.container_chains.get(&para_id.into()).cloned()
+            }
+        }
+    }
+
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, u32> for Runtime {
+        /// Return the registered para ids
+        fn registered_paras() -> Vec<u32> {
+            Registrar::registered_para_ids().to_vec()
         }
     }
 }

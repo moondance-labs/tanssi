@@ -123,7 +123,6 @@ pub mod pallet {
     use super::*;
 
     #[pallet::pallet]
-    #[pallet::generate_store(pub(super) trait Store)]
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
@@ -265,7 +264,7 @@ pub mod pallet {
 		))]
         pub fn set_bypass_consistency_check(origin: OriginFor<T>, new: bool) -> DispatchResult {
             ensure_root(origin)?;
-            <Self as Store>::BypassConsistencyCheck::put(new);
+            BypassConsistencyCheck::<T>::put(new);
             Ok(())
         }
     }
@@ -398,7 +397,7 @@ pub mod pallet {
             updater(&mut base_config);
             let new_config = base_config;
 
-            if <Self as Store>::BypassConsistencyCheck::get() {
+            if BypassConsistencyCheck::<T>::get() {
                 // This will emit a warning each configuration update if the consistency check is
                 // bypassed. This is an attempt to make sure the bypass is not accidentally left on.
                 log::warn!(

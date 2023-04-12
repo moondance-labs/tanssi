@@ -1,5 +1,6 @@
-use crate::{mock::*, HostConfiguration, Store};
+use crate::{mock::*, HostConfiguration, PendingConfigs};
 use frame_support::assert_ok;
+use sp_std::vec;
 
 #[test]
 fn config_sets_values_from_genesis() {
@@ -46,7 +47,7 @@ fn config_set_value() {
         );
 
         assert_eq!(
-            <Configuration as Store>::PendingConfigs::get(),
+            PendingConfigs::<Test>::get(),
             vec![(
                 2,
                 HostConfiguration {
@@ -101,7 +102,7 @@ fn config_set_many_values_same_block() {
         );
 
         assert_eq!(
-            <Configuration as Store>::PendingConfigs::get(),
+            PendingConfigs::<Test>::get(),
             vec![(
                 2,
                 HostConfiguration {
@@ -156,7 +157,7 @@ fn config_set_many_values_different_blocks() {
         );
 
         assert_eq!(
-            <Configuration as Store>::PendingConfigs::get(),
+            PendingConfigs::<Test>::get(),
             vec![(
                 2,
                 HostConfiguration {
@@ -214,7 +215,7 @@ fn config_set_many_values_different_sessions() {
         );
 
         assert_eq!(
-            <Configuration as Store>::PendingConfigs::get(),
+            PendingConfigs::<Test>::get(),
             vec![
                 (
                     3,
