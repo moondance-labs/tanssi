@@ -100,15 +100,15 @@ pub struct Cli {
 
 impl Cli {
     pub fn relaychain_args(&self) -> &[String] {
-        let (relay_chain_args, _moondance_args) = self.split_extra_args_at_first_dashdash();
+        let (relay_chain_args, _tanssi_args) = self.split_extra_args_at_first_dashdash();
 
         relay_chain_args
     }
 
-    pub fn moondance_args(&self) -> &[String] {
-        let (_relay_chain_args, moondance_args) = self.split_extra_args_at_first_dashdash();
+    pub fn tanssi_args(&self) -> &[String] {
+        let (_relay_chain_args, tanssi_args) = self.split_extra_args_at_first_dashdash();
 
-        moondance_args
+        tanssi_args
     }
 
     fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
@@ -157,7 +157,7 @@ impl RelayChainCli {
 }
 
 #[derive(Debug)]
-pub struct MoondanceCli {
+pub struct TanssiCli {
     /// The actual relay chain cli object.
     pub base: polkadot_cli::RunCmd,
 
@@ -168,7 +168,7 @@ pub struct MoondanceCli {
     pub base_path: Option<PathBuf>,
 }
 
-impl MoondanceCli {
+impl TanssiCli {
     /// Parse the relay chain CLI parameters using the para chain `Configuration`.
     pub fn new<'a>(
         para_config: &sc_service::Configuration,

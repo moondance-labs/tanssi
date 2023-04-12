@@ -18,7 +18,7 @@ use test_runtime::Block;
 
 use crate::{
     chain_spec,
-    cli::{Cli, MoondanceCli, RelayChainCli, Subcommand},
+    cli::{Cli, RelayChainCli, Subcommand, TanssiCli},
     service::{new_partial, ParachainNativeExecutor},
 };
 
@@ -113,9 +113,9 @@ impl SubstrateCli for RelayChainCli {
     }
 }
 
-impl SubstrateCli for MoondanceCli {
+impl SubstrateCli for TanssiCli {
     fn impl_name() -> String {
-        "Moondance parachain".into()
+        "Tanssi parachain".into()
     }
 
     fn impl_version() -> String {
@@ -124,11 +124,11 @@ impl SubstrateCli for MoondanceCli {
 
     fn description() -> String {
         format!(
-            "Moondance parachain\n\nThe command-line arguments provided first will be \
+            "Tanssi parachain\n\nThe command-line arguments provided first will be \
 		passed to the parachain node, while the arguments provided after -- will be passed \
 		to the relay chain node, and the arguments provided after another -- will be passed \
-		to the moondance node\n\n\
-		{} [parachain-args] -- [relay_chain-args] -- [moondance-args]",
+		to the tanssi node\n\n\
+		{} [parachain-args] -- [relay_chain-args] -- [tanssi-args]",
             Self::executable_name()
         )
     }
@@ -149,7 +149,7 @@ impl SubstrateCli for MoondanceCli {
         // TODO: find a better way to set "" as the default value, as the default seems to be
         // "rococo-local", and that fails with error file not found inside load_spec
         //let id = "";
-        log::info!("MoondanceCli::load_spec {:?}", id);
+        log::info!("TanssiCli::load_spec {:?}", id);
         load_spec(id)
     }
 
@@ -373,26 +373,26 @@ pub fn run() -> Result<()> {
 					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 
-				let mut moondance_config = None;
-				if !cli.moondance_args().is_empty() {
-					let moondance_cli = MoondanceCli::new(
+				let mut tanssi_config = None;
+				if !cli.tanssi_args().is_empty() {
+					let tanssi_cli = TanssiCli::new(
 						&config,
-						[MoondanceCli::executable_name()].iter().chain(cli.moondance_args().iter()),
+						[TanssiCli::executable_name()].iter().chain(cli.tanssi_args().iter()),
 					);
 					let tokio_handle = config.tokio_handle.clone();
-					let moondance_cli_config =
-						SubstrateCli::create_configuration(&moondance_cli, &moondance_cli, tokio_handle)
-							.map_err(|err| format!("Moondance argument error: {}", err))?;
-					let moondance_para_id = chain_spec::Extensions::try_get(&*moondance_cli_config.chain_spec)
+					let tanssi_cli_config =
+						SubstrateCli::create_configuration(&tanssi_cli, &tanssi_cli, tokio_handle)
+							.map_err(|err| format!("Tanssi argument error: {}", err))?;
+					let tanssi_para_id = chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
 						.map(|e| e.para_id)
 						.ok_or_else(|| "Could not find parachain extension in chain-spec.")?;
-					moondance_config = Some((moondance_cli_config, ParaId::from(moondance_para_id)));
+					tanssi_config = Some((tanssi_cli_config, ParaId::from(tanssi_para_id)));
 				}
 
 				crate::service::start_parachain_node(
 					config,
 					polkadot_config,
-                    moondance_config,
+                    tanssi_config,
 					collator_options,
 					id,
 					hwbench,
@@ -548,7 +548,7 @@ impl CliConfiguration<Self> for RelayChainCli {
     }
 }
 
-impl DefaultConfigurationValues for MoondanceCli {
+impl DefaultConfigurationValues for TanssiCli {
     fn p2p_listen_port() -> u16 {
         17334
     }
@@ -566,7 +566,7 @@ impl DefaultConfigurationValues for MoondanceCli {
     }
 }
 
-impl CliConfiguration<Self> for MoondanceCli {
+impl CliConfiguration<Self> for TanssiCli {
     fn shared_params(&self) -> &SharedParams {
         self.base.base.shared_params()
     }

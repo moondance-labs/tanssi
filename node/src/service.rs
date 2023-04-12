@@ -249,7 +249,7 @@ pub fn new_partial_dev(
 async fn start_node_impl(
     parachain_config: Configuration,
     polkadot_config: Configuration,
-    moondance_config: Option<(Configuration, ParaId)>,
+    tanssi_config: Option<(Configuration, ParaId)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -368,16 +368,13 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
-    if let Some((moondance_config, moondance_para_id)) = moondance_config {
-        // Start moondance node
-        let (moondance_task_manager, _moondance_client) = start_node_impl_moondance(
-            moondance_config,
-            relay_chain_interface.clone(),
-            moondance_para_id,
-        )
-        .await?;
+    if let Some((tanssi_config, tanssi_para_id)) = tanssi_config {
+        // Start tanssi node
+        let (tanssi_task_manager, _tanssi_client) =
+            start_node_impl_tanssi(tanssi_config, relay_chain_interface.clone(), tanssi_para_id)
+                .await?;
 
-        task_manager.add_child(moondance_task_manager);
+        task_manager.add_child(tanssi_task_manager);
     }
 
     if validator {
@@ -435,8 +432,8 @@ async fn start_node_impl(
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
-#[sc_tracing::logging::prefix_logs_with("Moondance")]
-async fn start_node_impl_moondance(
+#[sc_tracing::logging::prefix_logs_with("Tanssi")]
+async fn start_node_impl_tanssi(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     para_id: ParaId,
@@ -695,7 +692,7 @@ fn build_consensus(
 pub async fn start_parachain_node(
     parachain_config: Configuration,
     polkadot_config: Configuration,
-    moondance_config: Option<(Configuration, ParaId)>,
+    tanssi_config: Option<(Configuration, ParaId)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -703,7 +700,7 @@ pub async fn start_parachain_node(
     start_node_impl(
         parachain_config,
         polkadot_config,
-        moondance_config,
+        tanssi_config,
         collator_options,
         para_id,
         hwbench,
@@ -949,7 +946,7 @@ pub fn new_dev(
 }
 
 /// Can be called for a `Configuration` to check if it is a configuration for
-/// the `Moondance` network.
+/// the `Tanssi` network.
 pub trait IdentifyVariant {
     /// Returns `true` if this is a configuration for a dev network.
     fn is_dev(&self) -> bool;
