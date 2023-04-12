@@ -162,7 +162,7 @@ macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		runner.async_run(|$config| {
-			let $components = new_partial(&$config, false)?;
+			let $components = new_partial(&$config)?;
 			let task_manager = $components.task_manager;
 			{ $( $code )* }.map(|v| (v, task_manager))
 		})
@@ -253,7 +253,7 @@ pub fn run() -> Result<()> {
                     }
                 }
                 BenchmarkCmd::Block(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config, false)?;
+                    let partials = new_partial(&config)?;
                     cmd.run(partials.client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -264,7 +264,7 @@ pub fn run() -> Result<()> {
                 )),
                 #[cfg(feature = "runtime-benchmarks")]
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config, false)?;
+                    let partials = new_partial(&config)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
                     cmd.run(config, partials.client.clone(), db, storage)
@@ -348,9 +348,6 @@ pub fn run() -> Result<()> {
 					let author_id = Some(crate::chain_spec::get_account_id_from_seed::<sr25519::Public>("Alice"));
 					return crate::service::new_dev(config, author_id, cli.run.sealing, hwbench).map_err(Into::into)
 				}
-
-				//let dev_service =
-					//config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
 
 				let id = ParaId::from(para_id);
 

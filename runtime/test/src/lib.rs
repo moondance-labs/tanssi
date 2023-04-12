@@ -498,6 +498,38 @@ impl pallet_collator_assignment::Config for Runtime {
     type SessionIndex = u32;
 }
 
+pub struct AuthorFetcher;
+use sp_consensus_aura::inherents::InherentType;
+impl pallet_author_noting::GetAuthorFromSlot<Runtime> for AuthorFetcher {
+    fn author_from_inherent(inherent: InherentType, para_id: ParaId) -> Option<AccountId> {
+        let assigned_collators = CollatorAssignment::collator_container_chain();
+        let collators = assigned_collators.container_chains.get(&para_id.into())?;
+        if collators.is_empty() {
+            // Avoid division by zero below
+            return None;
+        }
+        let author_index = u64::from(inherent) % collators.len() as u64;
+        collators.get(author_index as usize).cloned()
+    }
+}
+
+pub struct ContainerChainFetcher;
+impl pallet_author_noting::GetContainerChains for ContainerChainFetcher {
+    fn container_chains() -> Vec<ParaId> {
+        Registrar::registered_para_ids()
+            .into_iter()
+            .map(|x| x.into())
+            .collect()
+    }
+}
+
+impl pallet_author_noting::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ContainerChains = ContainerChainFetcher;
+    type SelfParaId = parachain_info::Pallet<Runtime>;
+    type AuthorFetcher = AuthorFetcher;
+}
+
 parameter_types! {
     pub const PotId: PalletId = PalletId(*b"PotStake");
     pub const MaxCandidates: u32 = 1000;
@@ -561,6 +593,8 @@ impl pallet_sudo::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_root_testing::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -578,18 +612,21 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
 
-        // Collator support. The order of these 4 are important and shall not change.
-        Authorship: pallet_authorship = 20,
-        CollatorSelection: pallet_collator_selection = 21,
-        Session: pallet_session = 22,
-        Aura: pallet_aura = 23,
-        AuraExt: cumulus_pallet_aura_ext = 24,
+        // ContainerChain management. It should go before Session for Genesis
+        Registrar: pallet_registrar = 20,
+        Configuration: pallet_configuration = 21,
+        CollatorAssignment: pallet_collator_assignment = 22,
+        Initializer: pallet_initializer = 23,
+        AuthorNoting: pallet_author_noting = 24,
 
-        // ContainerChain management
-        Registrar: pallet_registrar = 30,
-        Configuration: pallet_configuration = 31,
-        CollatorAssignment: pallet_collator_assignment = 32,
-        Initializer: pallet_initializer = 33,
+        // Collator support. The order of these 4 are important and shall not change.
+        Authorship: pallet_authorship = 30,
+        CollatorSelection: pallet_collator_selection = 31,
+        Session: pallet_session = 32,
+        Aura: pallet_aura = 33,
+        AuraExt: cumulus_pallet_aura_ext = 34,
+
+        RootTesting: pallet_root_testing = 100,
     }
 );
 
@@ -783,38 +820,3 @@ cumulus_pallet_parachain_system::register_validate_block! {
     BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
     CheckInherents = CheckInherents,
 }
-
-/// Holds the most recent relay-parent state root and block number of the current parachain block.
-#[derive(PartialEq, Eq, Clone, Default)]
-pub struct RelayChainState {
-    /// Current relay chain height.
-    pub number: BlockNumber,
-    /// State root for current relay chain height.
-    pub state_root: Hash,
-}
-
-/// This exposes the [`RelayChainState`] to other runtime modules.
-///
-/// Enables parachains to read relay chain state via state proofs.
-pub trait RelaychainStateProvider {
-    /// May be called by any runtime module to obtain the current state of the relay chain.
-    ///
-    /// **NOTE**: This is not guaranteed to return monotonically increasing relay parents.
-    fn current_relay_chain_state() -> RelayChainState;
-}
-
-impl RelaychainStateProvider for RelaychainDataProvider {
-    fn current_relay_chain_state() -> RelayChainState {
-        ParachainSystem::validation_data()
-            .map(|d| RelayChainState {
-                number: d.relay_parent_number,
-                state_root: d.relay_parent_storage_root,
-            })
-            .unwrap_or_default()
-    }
-}
-
-/// Implements [`RelaychainStateProvider`] that returns relevant relay data fetched from
-/// validation data.
-/// NOTE: When validation data is not available (e.g. within on_initialize), default values will be returned.
-pub struct RelaychainDataProvider;
