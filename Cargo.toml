@@ -6,6 +6,7 @@ members = [
 	"pallets/registrar/rpc/runtime-api",
 	"runtime/test",
 	"primitives/*",
+	"container-chains/pallets/*",
 ]
 resolver = "2"
 
@@ -21,6 +22,7 @@ pallet-author-noting = { path = "pallets/author-noting", default-features = fals
 
 test-runtime = { path = "runtime/test", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
+tp-authorities-noting-inherent = { path = "primitives/authorities-noting-inherent", default-features = false }
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }

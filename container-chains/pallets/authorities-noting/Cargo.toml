@@ -1,0 +1,55 @@
+[package]
+name = "pallet-authorities-noting"
+version = "0.1.0"
+description = "Author noting pallet"
+authors = []
+edition = "2021"
+publish = false
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[dependencies]
+parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
+scale-info = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+sp-core = { workspace = true }
+serde = { workspace = true, features = [ "derive" ], optional = true }
+log = { workspace = true }
+sp-std = { workspace = true }
+sp-runtime = { workspace = true }
+sp-consensus-aura = { workspace = true }
+sp-inherents = { workspace = true }
+sp-state-machine = { workspace = true }
+sp-trie = { workspace = true }
+
+cumulus-primitives-core = { workspace = true }
+cumulus-pallet-parachain-system = { workspace = true }
+tp-authorities-noting-inherent = { workspace = true }
+
+[dev-dependencies]
+sp-io = { workspace = true }
+sp-version = { workspace = true }
+sp-externalities = { workspace = true }
+sp-state-machine = { workspace = true }
+polkadot-parachain = { workspace = true }
+polkadot-primitives = { workspace = true }
+hex-literal = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+	"parity-scale-codec/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+    "serde",
+    "sp-consensus-aura/std",
+    "cumulus-primitives-core/std",
+    "cumulus-pallet-parachain-system/std",
+    "tp-authorities-noting-inherent/std",
+    "sp-state-machine/std",
+    "sp-trie/std"
+]
+try-runtime = ["frame-support/try-runtime"]
