@@ -11450,6 +11450,7 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "substrate-wasm-builder",
+ "test-relay-sproof-builder",
  "tp-author-noting-inherent",
 ]
 
@@ -11758,6 +11759,7 @@ dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "cumulus-relay-chain-interface",
+ "hex-literal",
  "parity-scale-codec",
  "scale-info",
  "sp-consensus-aura",
@@ -11814,6 +11816,8 @@ dependencies = [
  "hex-literal",
  "parity-scale-codec",
  "sp-core",
+ "sp-io",
+ "sp-std",
 ]
 
 [[package]]

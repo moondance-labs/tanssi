@@ -1,14 +1,11 @@
 use crate::mock::*;
-use cumulus_primitives_core::ParaId;
-use hex_literal::hex;
 use parity_scale_codec::Encode;
 use sp_consensus_aura::inherents::InherentType;
 use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_core::H256;
 use sp_runtime::generic::DigestItem;
 use sp_runtime::traits::BlakeTwo256;
 use test_relay_sproof_builder::{
-    CollatorAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem,
+    CollatorAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
 };
 
 #[test]

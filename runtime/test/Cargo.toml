@@ -72,6 +72,7 @@ substrate-wasm-builder = { workspace = true }
 
 [dev-dependencies]
 sp-io = { workspace = true }
+test-relay-sproof-builder = { workspace = true }
 
 [features]
 default = [

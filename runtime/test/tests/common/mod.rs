@@ -7,7 +7,7 @@ use parity_scale_codec::Encode;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_core::Pair;
 use sp_runtime::{Digest, DigestItem};
-use tp_author_noting_inherent::AuthorNotingSproofBuilder;
+use test_relay_sproof_builder::ParaHeaderSproofBuilder;
 
 pub use test_runtime::{
     AccountId, Aura, AuraId, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
@@ -204,7 +204,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
 }
 
 /// Mocks the author noting inherent to insert the data we
-pub fn set_author_noting_inherent_data(builder: AuthorNotingSproofBuilder) {
+pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
     use cumulus_primitives_core::PersistedValidationData;
     let (relay_parent_storage_root, relay_chain_state) = builder.into_state_root_and_proof();
 

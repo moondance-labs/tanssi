@@ -13,15 +13,19 @@ hex-literal = { workspace = true }
 
 # Substrate
 parity-scale-codec = { workspace = true }
+sp-io = { workspace = true }
 sp-core = { workspace = true }
+sp-std = { workspace = true }
 
 # Cumulus
-cumulus-primitives-core = { workspace = true, optional = true }
+cumulus-primitives-core = { workspace = true }
 
 [features]
 default = [ "std" ]
 std = [
 	"parity-scale-codec/std",
-	"sp-core/std",
+	"sp-io/std",
+    "sp-core/std",
 	"cumulus-primitives-core/std",
+    "sp-std/std"
 ]

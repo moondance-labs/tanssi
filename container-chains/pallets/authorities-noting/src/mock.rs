@@ -193,10 +193,6 @@ pub struct BlockTests {
     ran: bool,
     relay_sproof_builder_hook:
         Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder)>>,
-    inherent_data_hook:
-        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder)>>,
-    overriden_state_root: Option<H256>,
-    overriden_state_proof: Option<StorageProof>,
     orchestrator_storage_proof: Option<StorageProof>,
 }
 
@@ -229,18 +225,6 @@ impl BlockTests {
         self
     }
 
-    pub fn with_overriden_state_root(mut self, root: H256) -> Self
-where {
-        self.overriden_state_root = Some(root);
-        self
-    }
-
-    pub fn with_overriden_state_proof(mut self, proof: StorageProof) -> Self
-where {
-        self.overriden_state_proof = Some(proof);
-        self
-    }
-
     pub fn with_orchestrator_storage_proof(mut self, proof: StorageProof) -> Self
 where {
         self.orchestrator_storage_proof = Some(proof);
@@ -266,16 +250,8 @@ where {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }
 
-                let (mut relay_parent_storage_root, mut relay_chain_state) =
+                let (relay_parent_storage_root, relay_chain_state) =
                     sproof_builder.into_state_root_and_proof();
-
-                if let Some(root) = self.overriden_state_root {
-                    relay_parent_storage_root = root;
-                }
-
-                if let Some(state) = &self.overriden_state_proof {
-                    relay_chain_state = state.clone();
-                }
 
                 let vfp = PersistedValidationData {
                     relay_parent_number: *n as RelayChainBlockNumber,
@@ -287,7 +263,7 @@ where {
                 // to storage; they must also be included in the inherent data.
                 let inherent_data = {
                     let mut inherent_data = InherentData::default();
-                    let mut system_inherent_data =
+                    let system_inherent_data =
                         tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
                             validation_data: vfp.clone(),
                             relay_chain_state,

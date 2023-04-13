@@ -25,7 +25,11 @@ sp-trie = { workspace = true }
 # Cumulus
 cumulus-primitives-core = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true, optional = true }
-cumulus-pallet-parachain-system = { workspace = true, optional = true }
+
+[dev-dependencies]
+cumulus-pallet-parachain-system = { workspace = true }
+hex-literal = { workspace = true }
+
 
 [features]
 default = [ "std" ]
@@ -44,5 +48,5 @@ std = [
 	"sp-consensus-aura/std",
 	"sp-io/std",
 	"test-relay-sproof-builder/std",
-	"tp-core/std"
+	"tp-core/std",
 ]
