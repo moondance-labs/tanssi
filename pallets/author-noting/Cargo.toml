@@ -27,6 +27,7 @@ sp-trie = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
+tp-core = { workspace = true }
 
 [dev-dependencies]
 sp-io = { workspace = true }
@@ -36,6 +37,7 @@ sp-state-machine = { workspace = true }
 polkadot-parachain = { workspace = true }
 polkadot-primitives = { workspace = true }
 hex-literal = { workspace = true }
+test-relay-sproof-builder = { workspace = true }
 
 [features]
 default = ["std"]
@@ -50,6 +52,7 @@ std = [
     "cumulus-pallet-parachain-system/std",
     "tp-author-noting-inherent/std",
     "sp-state-machine/std",
-    "sp-trie/std"
+    "sp-trie/std",
+    "tp-core/std"
 ]
 try-runtime = ["frame-support/try-runtime"]

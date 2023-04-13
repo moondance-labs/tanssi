@@ -26,7 +26,7 @@ use sp_runtime::traits::Header;
 use sp_runtime::DispatchResult;
 use sp_std::prelude::*;
 use tp_author_noting_inherent::INHERENT_IDENTIFIER;
-use tp_author_noting_inherent::PARAS_HEADS_INDEX;
+use tp_core::well_known_keys::PARAS_HEADS_INDEX;
 
 mod relay_state_snapshot;
 pub use relay_state_snapshot::*;
