@@ -1,3 +1,5 @@
+use sc_cli::{CliConfiguration, NodeKeyParams, SharedParams};
+
 use crate::service::Sealing;
 use std::path::PathBuf;
 
@@ -5,7 +7,7 @@ use std::path::PathBuf;
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
     /// Build a chain specification.
-    BuildSpec(sc_cli::BuildSpecCmd),
+    BuildSpec(BuildSpecCmd),
 
     /// Validate blocks.
     CheckBlock(sc_cli::CheckBlockCmd),
@@ -26,10 +28,10 @@ pub enum Subcommand {
     PurgeChain(cumulus_client_cli::PurgeChainCmd),
 
     /// Export the genesis state of the parachain.
-    ExportGenesisState(cumulus_client_cli::ExportGenesisStateCommand),
+    ExportGenesisState(ExportGenesisStateCommand),
 
     /// Export the genesis wasm of the parachain.
-    ExportGenesisWasm(cumulus_client_cli::ExportGenesisWasmCommand),
+    ExportGenesisWasm(ExportGenesisWasmCommand),
 
     /// Sub-commands concerned with benchmarking.
     /// The pallet benchmarking moved to the `pallet` sub-command.
@@ -43,6 +45,63 @@ pub enum Subcommand {
     /// Errors since the binary was not build with `--features try-runtime`.
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
+}
+
+/// The `build-spec` command used to build a specification.
+#[derive(Debug, Clone, clap::Parser)]
+pub struct BuildSpecCmd {
+    #[clap(flatten)]
+    pub base: sc_cli::BuildSpecCmd,
+
+    /// Id of the parachain this spec is for.
+    #[clap(long)]
+    pub parachain_id: Option<u32>,
+}
+
+impl CliConfiguration for BuildSpecCmd {
+    fn shared_params(&self) -> &SharedParams {
+        &self.base.shared_params
+    }
+
+    fn node_key_params(&self) -> Option<&NodeKeyParams> {
+        Some(&self.base.node_key_params)
+    }
+}
+
+/// Command for exporting the genesis state of the parachain
+#[derive(Debug, clap::Parser)]
+pub struct ExportGenesisStateCommand {
+    /// Output file name or stdout if unspecified.
+    #[clap(value_parser)]
+    pub output: Option<PathBuf>,
+
+    /// Id of the parachain this state is for.
+    #[clap(long)]
+    pub parachain_id: Option<u32>,
+
+    /// Write output in binary. Default is to write in hex.
+    #[clap(short, long)]
+    pub raw: bool,
+
+    /// The name of the chain for that the genesis state should be exported.
+    #[clap(long)]
+    pub chain: Option<String>,
+}
+
+/// Command for exporting the genesis wasm file.
+#[derive(Debug, clap::Parser)]
+pub struct ExportGenesisWasmCommand {
+    /// Output file name or stdout if unspecified.
+    #[clap(value_parser)]
+    pub output: Option<PathBuf>,
+
+    /// Write output in binary. Default is to write in hex.
+    #[clap(short, long)]
+    pub raw: bool,
+
+    /// The name of the chain for that the genesis wasm file should be exported.
+    #[clap(long)]
+    pub chain: Option<String>,
 }
 
 #[derive(Debug, clap::Parser)]
@@ -60,6 +119,10 @@ pub struct RunCmd {
     /// Options are "instant", "manual", or timer interval in milliseconds
     #[clap(long, default_value = "instant")]
     pub sealing: Sealing,
+
+    /// Id of the parachain this collator collates for.
+    #[clap(long)]
+    pub parachain_id: Option<u32>,
 }
 
 impl std::ops::Deref for RunCmd {

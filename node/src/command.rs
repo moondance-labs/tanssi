@@ -1,6 +1,8 @@
 use std::net::SocketAddr;
 
+use crate::chain_spec::local_testnet_config;
 use crate::service::IdentifyVariant;
+use cumulus_client_cli::extract_genesis_wasm;
 use cumulus_client_cli::generate_genesis_block;
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
@@ -14,6 +16,7 @@ use sc_service::config::{BasePath, PrometheusConfig};
 use sp_core::hexdisplay::HexDisplay;
 use sp_core::sr25519;
 use sp_runtime::traits::{AccountIdConversion, Block as BlockT};
+use std::io::Write;
 use test_runtime::Block;
 
 use crate::{
@@ -172,7 +175,15 @@ pub fn run() -> Result<()> {
     match &cli.subcommand {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.sync_run(|config| cmd.run(config.chain_spec, config.network))
+            runner.sync_run(|config| {
+                let chain_spec = if let Some(para_id) = cmd.parachain_id {
+                    // TODO: add some flag to allow using development_config instead of local_testnet_config
+                    Box::new(local_testnet_config(para_id.into()))
+                } else {
+                    config.chain_spec
+                };
+                cmd.base.run(chain_spec, config.network)
+            })
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
@@ -220,20 +231,57 @@ pub fn run() -> Result<()> {
                 cmd.run(config, polkadot_config)
             })
         }
-        Some(Subcommand::ExportGenesisState(cmd)) => {
-            let runner = cli.create_runner(cmd)?;
-            runner.sync_run(|_config| {
-                let spec = cli.load_spec(&cmd.shared_params.chain.clone().unwrap_or_default())?;
-                let state_version = Cli::native_runtime_version(&spec).state_version();
-                cmd.run::<Block>(&*spec, state_version)
-            })
+        Some(Subcommand::ExportGenesisState(params)) => {
+            let mut builder = sc_cli::LoggerBuilder::new("");
+            builder.with_profiling(sc_tracing::TracingReceiver::Log, "");
+            let _ = builder.init();
+
+            // Cumulus approach here, we directly call the generic load_spec func
+            let chain_spec = load_spec(
+                &params.chain.clone().unwrap_or_default(),
+                params.parachain_id.unwrap_or(1000).into(),
+            )?;
+            let state_version = Cli::native_runtime_version(&chain_spec).state_version();
+
+            let output_buf = {
+                let block: Block = generate_genesis_block(&*chain_spec, state_version)?;
+                let raw_header = block.header().encode();
+                let output_buf = if params.raw {
+                    raw_header
+                } else {
+                    format!("0x{:?}", HexDisplay::from(&block.header().encode())).into_bytes()
+                };
+                output_buf
+            };
+
+            if let Some(output) = &params.output {
+                std::fs::write(output, output_buf)?;
+            } else {
+                std::io::stdout().write_all(&output_buf)?;
+            }
+
+            Ok(())
         }
-        Some(Subcommand::ExportGenesisWasm(cmd)) => {
-            let runner = cli.create_runner(cmd)?;
-            runner.sync_run(|_config| {
-                let spec = cli.load_spec(&cmd.shared_params.chain.clone().unwrap_or_default())?;
-                cmd.run(&*spec)
-            })
+        Some(Subcommand::ExportGenesisWasm(params)) => {
+            let mut builder = sc_cli::LoggerBuilder::new("");
+            builder.with_profiling(sc_tracing::TracingReceiver::Log, "");
+            let _ = builder.init();
+
+            let raw_wasm_blob =
+                extract_genesis_wasm(&*cli.load_spec(&params.chain.clone().unwrap_or_default())?)?;
+            let output_buf = if params.raw {
+                raw_wasm_blob
+            } else {
+                format!("0x{:?}", HexDisplay::from(&raw_wasm_blob)).into_bytes()
+            };
+
+            if let Some(output) = &params.output {
+                std::fs::write(output, output_buf)?;
+            } else {
+                std::io::stdout().write_all(&output_buf)?;
+            }
+
+            Ok(())
         }
         Some(Subcommand::Benchmark(cmd)) => {
             let runner = cli.create_runner(cmd)?;
