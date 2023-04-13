@@ -12,7 +12,7 @@ use sp_consensus_aura::inherents::InherentType;
 use sp_core::H256;
 use sp_state_machine::StorageProof;
 use sp_version::RuntimeVersion;
-use tp_authorities_noting_inherent::AuthorNotingSproofBuilder;
+use test_relay_sproof_builder::ParaHeaderSproofBuilder;
 
 use sp_io;
 use sp_runtime::{
@@ -192,16 +192,9 @@ pub struct BlockTests {
     tests: Vec<BlockTest>,
     ran: bool,
     relay_sproof_builder_hook:
-        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut AuthorNotingSproofBuilder)>>,
-    inherent_data_hook: Option<
-        Box<
-            dyn Fn(
-                &BlockTests,
-                RelayChainBlockNumber,
-                &mut tp_authorities_noting_inherent::AuthorNotingSproofBuilder,
-            ),
-        >,
-    >,
+        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder)>>,
+    inherent_data_hook:
+        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder)>>,
     overriden_state_root: Option<H256>,
     overriden_state_proof: Option<StorageProof>,
     orchestrator_storage_proof: Option<StorageProof>,
@@ -230,7 +223,7 @@ impl BlockTests {
 
     pub fn with_relay_sproof_builder<F>(mut self, f: F) -> Self
     where
-        F: 'static + Fn(&BlockTests, RelayChainBlockNumber, &mut AuthorNotingSproofBuilder),
+        F: 'static + Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder),
     {
         self.relay_sproof_builder_hook = Some(Box::new(f));
         self
@@ -268,7 +261,7 @@ where {
                 System::initialize(&n, &Default::default(), &Default::default());
 
                 // now mess with the storage the way validate_block does
-                let mut sproof_builder = AuthorNotingSproofBuilder::default();
+                let mut sproof_builder = ParaHeaderSproofBuilder::default();
                 if let Some(ref hook) = self.relay_sproof_builder_hook {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }
@@ -298,7 +291,10 @@ where {
                         tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
                             validation_data: vfp.clone(),
                             relay_chain_state,
-                            orchestrator_chain_state: self.orchestrator_storage_proof.clone().unwrap()
+                            orchestrator_chain_state: self
+                                .orchestrator_storage_proof
+                                .clone()
+                                .unwrap(),
                         };
                     inherent_data
                         .put_data(

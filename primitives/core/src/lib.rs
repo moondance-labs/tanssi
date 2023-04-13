@@ -11,17 +11,16 @@ pub mod well_known_keys {
 
     // Retrieves the full key representing the para->heads and the paraId
     pub fn para_id_head(para_id: ParaId) -> Vec<u8> {
-    para_id.using_encoded(|para_id: &[u8]| {
-        PARAS_HEADS_INDEX
-            .iter()
-            .chain(twox_64(para_id).iter())
-            .chain(para_id.iter())
-            .cloned()
-            .collect()
+        para_id.using_encoded(|para_id: &[u8]| {
+            PARAS_HEADS_INDEX
+                .iter()
+                .chain(twox_64(para_id).iter())
+                .chain(para_id.iter())
+                .cloned()
+                .collect()
         })
     }
-    
-    pub const COLLATOR_ASSIGNMENT_INDEX: &[u8] =
-    &hex_literal::hex!["4a97b7c32fd2bcd103026654b3408079170f16afec7d161bc6acec3964492a0c"];
 
+    pub const COLLATOR_ASSIGNMENT_INDEX: &[u8] =
+        &hex_literal::hex!["4a97b7c32fd2bcd103026654b3408079170f16afec7d161bc6acec3964492a0c"];
 }

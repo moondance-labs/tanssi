@@ -5482,8 +5482,10 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "sp-version",
+ "test-relay-sproof-builder",
  "tp-authorities-noting-inherent",
  "tp-collator-assignment",
+ "tp-core",
 ]
 
 [[package]]
@@ -11772,27 +11774,15 @@ dependencies = [
 name = "tp-authorities-noting-inherent"
 version = "0.1.0"
 dependencies = [
- "async-trait",
- "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
- "cumulus-relay-chain-interface",
- "frame-support",
- "hex-literal",
- "log",
  "parity-scale-codec",
- "polkadot-primitives",
- "sc-client-api",
  "scale-info",
- "sp-api",
- "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
  "sp-io",
- "sp-runtime",
- "sp-state-machine",
- "sp-std",
- "sp-storage",
  "sp-trie",
+ "test-relay-sproof-builder",
+ "tp-core",
 ]
 
 [[package]]

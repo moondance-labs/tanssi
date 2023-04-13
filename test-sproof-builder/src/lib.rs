@@ -1,12 +1,12 @@
 use cumulus_primitives_core::relay_chain::HeadData;
 use cumulus_primitives_core::ParaId;
 use frame_support::Hashable;
+use parity_scale_codec::Encode;
 use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::traits::HashFor;
 use sp_trie::MemoryDB;
-use tp_core::well_known_keys::{PARAS_HEADS_INDEX, COLLATOR_ASSIGNMENT_INDEX};
 use tp_collator_assignment::AssignedCollators;
-use parity_scale_codec::Encode;
+use tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX};
 // Enum representing how we want to insert the Header
 #[derive(Clone)]
 pub enum HeaderAs {
@@ -48,7 +48,8 @@ impl ParaHeaderSproofBuilder {
         cumulus_primitives_core::relay_chain::Hash,
         sp_state_machine::StorageProof,
     ) {
-        let (db, root) = MemoryDB::<HashFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
+        let (db, root) =
+            MemoryDB::<HashFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
         let state_version = Default::default(); // for test using default.
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
 
@@ -96,7 +97,8 @@ impl<AccountId: Encode> CollatorAssignmentSproofBuilder<AccountId> {
         cumulus_primitives_core::relay_chain::Hash,
         sp_state_machine::StorageProof,
     ) {
-        let (db, root) = MemoryDB::<HashFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
+        let (db, root) =
+            MemoryDB::<HashFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
         let state_version = Default::default();
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
         let mut relevant_keys = Vec::new();

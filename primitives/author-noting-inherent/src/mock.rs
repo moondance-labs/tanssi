@@ -19,7 +19,7 @@ use sp_inherents::InherentData;
 use sp_inherents::InherentDataProvider;
 use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::DigestItem;
-use test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilderItem, ParaHeaderSproofBuilder};
+use test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem};
 
 pub struct MockAuthorNotingInherentDataProvider {
     /// The current block number of the local block chain (the parachain)

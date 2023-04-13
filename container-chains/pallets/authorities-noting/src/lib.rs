@@ -25,9 +25,9 @@ use sp_inherents::InherentIdentifier;
 use sp_runtime::traits::Hash as HashT;
 use sp_std::prelude::*;
 use tp_authorities_noting_inherent::INHERENT_IDENTIFIER;
-use tp_authorities_noting_inherent::PARAS_HEADS_INDEX;
 use tp_collator_assignment::AssignedCollators;
-use tp_collator_assignment::COLLATOR_ASSIGNMENT_INDEX;
+use tp_core::well_known_keys::COLLATOR_ASSIGNMENT_INDEX;
+use tp_core::well_known_keys::PARAS_HEADS_INDEX;
 
 mod relay_state_snapshot;
 pub use relay_state_snapshot::*;
