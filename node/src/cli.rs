@@ -164,19 +164,19 @@ impl RelayChainCli {
 #[derive(Debug, clap::Parser)]
 #[group(skip)]
 pub struct TanssiRunCmd {
-	/// The cumulus RunCmd inherents from sc_cli's
-	#[command(flatten)]
-	pub base: sc_cli::RunCmd,
+    /// The cumulus RunCmd inherents from sc_cli's
+    #[command(flatten)]
+    pub base: sc_cli::RunCmd,
 
-	/// Run node as collator.
-	///
-	/// Note that this is the same as running with `--validator`.
-	#[arg(long, conflicts_with = "validator")]
-	pub collator: bool,
+    /// Run node as collator.
+    ///
+    /// Note that this is the same as running with `--validator`.
+    #[arg(long, conflicts_with = "validator")]
+    pub collator: bool,
 
     /// Optional parachain id that should be used to build chain spec.
     #[arg(long)]
-    pub para_id: Option<u32>,    
+    pub para_id: Option<u32>,
 }
 
 #[derive(Debug)]
