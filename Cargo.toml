@@ -26,6 +26,7 @@ tp-author-noting-inherent = { path = "primitives/author-noting-inherent", defaul
 tp-authorities-noting-inherent = { path = "primitives/authorities-noting-inherent", default-features = false }
 tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
 tp-core = { path = "primitives/core", default-features = false }
+test-relay-sproof-builder = { path = "test-sproof-builder" }
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }

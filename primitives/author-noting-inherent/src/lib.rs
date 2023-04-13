@@ -11,26 +11,21 @@
 //! - The sproof builder that generates a fake proof that mimics the relay chain sproof
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use cumulus_primitives_core::ParaId;
 use cumulus_primitives_core::PersistedValidationData;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_inherents::InherentIdentifier;
-use sp_io::hashing::twox_64;
-use sp_std::vec::Vec;
 
 #[cfg(feature = "std")]
 mod client_side;
 #[cfg(feature = "std")]
 pub use client_side::*;
+
 #[cfg(feature = "std")]
 mod mock;
 #[cfg(feature = "std")]
 pub use mock::*;
-#[cfg(feature = "std")]
-mod sproof_builder;
-#[cfg(feature = "std")]
-pub use sproof_builder::*;
+
 #[cfg(test)]
 mod tests;
 
