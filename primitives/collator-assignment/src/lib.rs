@@ -110,6 +110,3 @@ where
         }
     }
 }
-
-pub const COLLATOR_ASSIGNMENT_INDEX: &[u8] =
-    &hex_literal::hex!["4a97b7c32fd2bcd103026654b3408079170f16afec7d161bc6acec3964492a0c"];

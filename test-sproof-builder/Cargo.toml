@@ -1,0 +1,32 @@
+[package]
+name = "test-relay-sproof-builder"
+version = "0.1.0"
+authors = []
+edition = "2021"
+
+[dependencies]
+parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"], optional = true }
+tp-core = { workspace = true, optional = true }
+tp-collator-assignment = { workspace = true, optional = true }
+
+# Substrate
+sp-runtime = { workspace = true, optional = true }
+sp-trie = { workspace = true }
+frame-support = { workspace = true, optional = true }
+sp-state-machine = { workspace = true, optional = true }
+
+# Cumulus
+cumulus-primitives-core = { workspace = true, optional = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"sp-runtime/std",
+	"sp-trie/std",
+	"cumulus-primitives-core/std",
+	"frame-support/std",
+	"parity-scale-codec/std",
+	"sp-state-machine/std",
+	"tp-core/std",
+	"tp-collator-assignment/std"
+]

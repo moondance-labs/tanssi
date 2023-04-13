@@ -7,6 +7,7 @@ members = [
 	"runtime/test",
 	"primitives/*",
 	"container-chains/pallets/*",
+	"test-sproof-builder"
 ]
 resolver = "2"
 
@@ -24,6 +25,7 @@ test-runtime = { path = "runtime/test", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-authorities-noting-inherent = { path = "primitives/authorities-noting-inherent", default-features = false }
 tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
+tp-core = { path = "primitives/core", default-features = false }
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }

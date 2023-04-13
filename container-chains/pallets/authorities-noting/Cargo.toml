@@ -1,5 +1,5 @@
 [package]
-name = "pallet-authorities-noting"
+name = "pallet-cc-authorities-noting"
 version = "0.1.0"
 description = "Author noting pallet"
 authors = []
