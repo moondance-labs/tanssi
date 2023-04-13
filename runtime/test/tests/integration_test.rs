@@ -715,7 +715,8 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
         .with_para_ids(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            orchestrator_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
             collators_per_container: 2,
         })
         .build()
