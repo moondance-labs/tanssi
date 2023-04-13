@@ -93,6 +93,10 @@ pub struct Cli {
     #[arg(long)]
     pub no_hardware_benchmarks: bool,
 
+    /// Optional parachain id that should be used to build chain spec.
+    #[arg(long)]
+    pub para_id: Option<u32>,
+
     /// Relay chain arguments
     #[arg(raw = true)]
     pub extra_args: Vec<String>,
@@ -156,10 +160,29 @@ impl RelayChainCli {
     }
 }
 
+/// The `run` command used to run a node.
+#[derive(Debug, clap::Parser)]
+#[group(skip)]
+pub struct TanssiRunCmd {
+	/// The cumulus RunCmd inherents from sc_cli's
+	#[command(flatten)]
+	pub base: sc_cli::RunCmd,
+
+	/// Run node as collator.
+	///
+	/// Note that this is the same as running with `--validator`.
+	#[arg(long, conflicts_with = "validator")]
+	pub collator: bool,
+
+    /// Optional parachain id that should be used to build chain spec.
+    #[arg(long)]
+    pub para_id: Option<u32>,    
+}
+
 #[derive(Debug)]
 pub struct TanssiCli {
     /// The actual relay chain cli object.
-    pub base: polkadot_cli::RunCmd,
+    pub base: TanssiRunCmd,
 
     /// Optional chain id that should be passed to the relay chain.
     pub chain_id: Option<String>,
@@ -172,7 +195,7 @@ impl TanssiCli {
     /// Parse the relay chain CLI parameters using the para chain `Configuration`.
     pub fn new<'a>(
         para_config: &sc_service::Configuration,
-        relay_chain_args: impl Iterator<Item = &'a String>,
+        tanssi_args: impl Iterator<Item = &'a String>,
     ) -> Self {
         let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
         let chain_id = extension.map(|e| e.relay_chain.clone());
@@ -183,7 +206,7 @@ impl TanssiCli {
         Self {
             base_path,
             chain_id,
-            base: clap::Parser::parse_from(relay_chain_args),
+            base: clap::Parser::parse_from(tanssi_args),
         }
     }
 }
