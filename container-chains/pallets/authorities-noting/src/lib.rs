@@ -25,12 +25,10 @@ use sp_inherents::InherentIdentifier;
 use sp_runtime::traits::Hash as HashT;
 use sp_std::prelude::*;
 use tp_authorities_noting_inherent::INHERENT_IDENTIFIER;
+use tp_chain_state_snapshot::*;
 use tp_collator_assignment::AssignedCollators;
 use tp_core::well_known_keys::COLLATOR_ASSIGNMENT_INDEX;
 use tp_core::well_known_keys::PARAS_HEADS_INDEX;
-
-mod relay_state_snapshot;
-pub use relay_state_snapshot::*;
 
 #[cfg(test)]
 mod mock;
@@ -100,7 +98,7 @@ pub mod pallet {
             } = data;
 
             let para_id = T::OrchestratorParaId::get();
-            let relay_state_proof = AuthoritiesNotingRelayChainStateProof::new(
+            let relay_state_proof = RelayChainHeaderStateProof::new(
                 vfp.relay_parent_storage_root,
                 relay_chain_state.clone(),
             )
@@ -110,7 +108,7 @@ pub mod pallet {
                 Self::fetch_orchestrator_header_from_relay_proof(&relay_state_proof, para_id)
                     .expect("qed");
 
-            let orchestrator_state_proof = AuthoritiesNotingRelayChainStateProof::new(
+            let orchestrator_state_proof = RelayChainHeaderStateProof::new(
                 orchestrator_root,
                 orchestrator_chain_state.clone(),
             )
@@ -180,7 +178,7 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     /// Fetch author slot from a proof of header
     fn fetch_orchestrator_header_from_relay_proof(
-        relay_state_proof: &AuthoritiesNotingRelayChainStateProof,
+        relay_state_proof: &RelayChainHeaderStateProof,
         para_id: ParaId,
     ) -> Result<<BlakeTwo256 as HashT>::Output, Error<T>> {
         let bytes = para_id.twox_64_concat();
@@ -214,7 +212,7 @@ impl<T: Config> Pallet<T> {
 
     /// Fetch author slot from a proof of header
     fn fetch_authorities_from_orchestrator_proof(
-        orchestrator_state_proof: &AuthoritiesNotingRelayChainStateProof,
+        orchestrator_state_proof: &RelayChainHeaderStateProof,
         para_id: ParaId,
     ) -> Result<Vec<T::AccountId>, Error<T>> {
         let assignmnet = orchestrator_state_proof

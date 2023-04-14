@@ -28,8 +28,7 @@ use sp_std::prelude::*;
 use tp_author_noting_inherent::INHERENT_IDENTIFIER;
 use tp_core::well_known_keys::PARAS_HEADS_INDEX;
 
-mod relay_state_snapshot;
-pub use relay_state_snapshot::*;
+pub use tp_chain_state_snapshot::*;
 
 #[cfg(test)]
 mod mock;
@@ -100,7 +99,7 @@ pub mod pallet {
             } = data;
 
             let para_ids = T::ContainerChains::container_chains();
-            let relay_state_proof = AuthorNotingRelayChainStateProof::new(
+            let relay_state_proof = RelayChainHeaderStateProof::new(
                 vfp.relay_parent_storage_root,
                 relay_chain_state.clone(),
             )
@@ -178,7 +177,7 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     /// Fetch author slot from a proof of header
     fn fetch_author_slot_from_proof(
-        relay_state_proof: &AuthorNotingRelayChainStateProof,
+        relay_state_proof: &RelayChainHeaderStateProof,
         para_id: ParaId,
     ) -> Result<T::AccountId, Error<T>> {
         let bytes = para_id.twox_64_concat();

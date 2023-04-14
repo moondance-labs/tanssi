@@ -1,0 +1,30 @@
+[package]
+name = "tp-chain-state-snapshot"
+authors = []
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.1"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[dependencies]
+
+# Substrate
+parity-scale-codec = { workspace = true }
+sp-state-machine = { workspace = true }
+sp-trie = { workspace = true }
+sp-runtime = { workspace = true }
+
+# Cumulus
+cumulus-primitives-core = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"parity-scale-codec/std",
+	"sp-state-machine/std",
+	"cumulus-primitives-core/std",
+	"sp-trie/std",
+    "sp-runtime/std"
+]

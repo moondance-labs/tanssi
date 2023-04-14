@@ -5310,6 +5310,7 @@ dependencies = [
  "sp-version",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-chain-state-snapshot",
  "tp-core",
 ]
 
@@ -5486,6 +5487,7 @@ dependencies = [
  "sp-version",
  "test-relay-sproof-builder",
  "tp-authorities-noting-inherent",
+ "tp-chain-state-snapshot",
  "tp-collator-assignment",
  "tp-core",
 ]
@@ -11787,6 +11789,17 @@ dependencies = [
  "sp-trie",
  "test-relay-sproof-builder",
  "tp-core",
+]
+
+[[package]]
+name = "tp-chain-state-snapshot"
+version = "0.1.1"
+dependencies = [
+ "cumulus-primitives-core",
+ "parity-scale-codec",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-trie",
 ]
 
 [[package]]

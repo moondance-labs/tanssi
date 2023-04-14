@@ -29,6 +29,7 @@ cumulus-pallet-parachain-system = { workspace = true }
 tp-authorities-noting-inherent = { workspace = true }
 tp-collator-assignment = { workspace = true }
 tp-core = { workspace = true }
+tp-chain-state-snapshot = { workspace = true }
 
 [dev-dependencies]
 sp-io = { workspace = true }
@@ -56,6 +57,7 @@ std = [
     "sp-trie/std",
     "tp-collator-assignment/std",
     "tp-authorities-noting-inherent/std",
-    "tp-core/std"
+    "tp-core/std",
+    "tp-chain-state-snapshot/std"
 ]
 try-runtime = ["frame-support/try-runtime"]

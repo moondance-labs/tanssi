@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use cumulus_primitives_core::relay_chain;
 use parity_scale_codec::Decode;
 use sp_runtime::traits::HashFor;
@@ -56,11 +58,11 @@ where
 /// A state proof extracted from the relay chain.
 ///
 /// This state proof is extracted from the relay chain block we are building on top of.
-pub struct AuthorNotingRelayChainStateProof {
+pub struct RelayChainHeaderStateProof {
     trie_backend: TrieBackend<MemoryDB<HashFor<relay_chain::Block>>, HashFor<relay_chain::Block>>,
 }
 
-impl AuthorNotingRelayChainStateProof {
+impl RelayChainHeaderStateProof {
     /// Create a new instance of `Self`.
     ///
     /// Returns an error if the given `relay_parent_storage_root` is not the root of the given

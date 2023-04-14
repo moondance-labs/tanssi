@@ -28,6 +28,7 @@ cumulus-primitives-core = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-core = { workspace = true }
+tp-chain-state-snapshot = { workspace = true }
 
 [dev-dependencies]
 sp-io = { workspace = true }
@@ -53,6 +54,7 @@ std = [
     "tp-author-noting-inherent/std",
     "sp-state-machine/std",
     "sp-trie/std",
-    "tp-core/std"
+    "tp-core/std",
+    "tp-chain-state-snapshot/std"
 ]
 try-runtime = ["frame-support/try-runtime"]
