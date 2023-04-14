@@ -53,7 +53,7 @@ pub struct BuildSpecCmd {
     #[clap(flatten)]
     pub base: sc_cli::BuildSpecCmd,
 
-    /// Id of the parachain this spec is for.
+    /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
     #[clap(long)]
     pub parachain_id: Option<u32>,
 }
@@ -160,9 +160,9 @@ pub struct Cli {
     #[arg(long)]
     pub para_id: Option<u32>,
 
-    /// Relay chain arguments
+    /// Relay chain arguments, optionally followed by "--" and Tanssi arguments
     #[arg(raw = true)]
-    pub extra_args: Vec<String>,
+    extra_args: Vec<String>,
 }
 
 impl Cli {
@@ -227,7 +227,7 @@ impl RelayChainCli {
 #[derive(Debug, clap::Parser)]
 #[group(skip)]
 pub struct TanssiRunCmd {
-    /// The cumulus RunCmd inherents from sc_cli's
+    /// The cumulus RunCmd inherits from sc_cli's
     #[command(flatten)]
     pub base: sc_cli::RunCmd,
 
@@ -244,18 +244,18 @@ pub struct TanssiRunCmd {
 
 #[derive(Debug)]
 pub struct TanssiCli {
-    /// The actual relay chain cli object.
+    /// The actual Tanssi cli object.
     pub base: TanssiRunCmd,
 
-    /// Optional chain id that should be passed to the relay chain.
+    /// Optional chain id that should be passed to Tanssi.
     pub chain_id: Option<String>,
 
-    /// The base path that should be used by the relay chain.
+    /// The base path that should be used by Tanssi.
     pub base_path: Option<PathBuf>,
 }
 
 impl TanssiCli {
-    /// Parse the relay chain CLI parameters using the para chain `Configuration`.
+    /// Parse the Tanssi CLI parameters using the para chain `Configuration`.
     pub fn new<'a>(
         para_config: &sc_service::Configuration,
         tanssi_args: impl Iterator<Item = &'a String>,

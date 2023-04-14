@@ -1,9 +1,6 @@
 use std::net::SocketAddr;
 
-use crate::chain_spec::local_testnet_config;
-use crate::service::IdentifyVariant;
-use cumulus_client_cli::extract_genesis_wasm;
-use cumulus_client_cli::generate_genesis_block;
+use cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block};
 use cumulus_primitives_core::ParaId;
 use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
 use log::{info, warn};
@@ -22,7 +19,7 @@ use test_runtime::Block;
 use crate::{
     chain_spec,
     cli::{Cli, RelayChainCli, Subcommand, TanssiCli},
-    service::{new_partial, ParachainNativeExecutor},
+    service::{new_partial, IdentifyVariant, ParachainNativeExecutor},
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -149,7 +146,7 @@ impl SubstrateCli for TanssiCli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
-        load_spec(id, self.base.para_id.unwrap_or(1001).into())
+        load_spec(id, self.base.para_id.unwrap_or(2000).into())
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
@@ -177,8 +174,11 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.parachain_id {
-                    // TODO: add some flag to allow using development_config instead of local_testnet_config
-                    Box::new(local_testnet_config(para_id.into()))
+                    if cmd.base.shared_params.dev {
+                        Box::new(chain_spec::development_config(para_id.into()))
+                    } else {
+                        Box::new(chain_spec::local_testnet_config(para_id.into()))
+                    }
                 } else {
                     config.chain_spec
                 };
