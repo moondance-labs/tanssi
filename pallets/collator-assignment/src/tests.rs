@@ -561,7 +561,7 @@ fn assign_collators_move_extra_orchestrator_to_new_parachain_if_not_enough_colla
 
         assert_eq!(
             assigned_collators(),
-            BTreeMap::from_iter(vec![(1, 999), (2, 999), (5, 1001), (3, 1001), (4, 1002),]),
+            BTreeMap::from_iter(vec![(1, 999), (2, 999), (5, 1001), (3, 1001), (4, 999),]),
         );
     });
 }

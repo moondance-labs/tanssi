@@ -28,6 +28,7 @@ use frame_support::pallet_prelude::*;
 use scale_info::prelude::collections::BTreeMap;
 use sp_runtime::traits::{AtLeast32BitUnsigned, One, Zero};
 use sp_runtime::Saturating;
+use sp_std::mem;
 use sp_std::prelude::*;
 use sp_std::vec;
 
@@ -196,6 +197,66 @@ pub mod pallet {
                 self.container_chains.entry(*para_id).or_default();
             }
         }
+
+        fn remove_from_min_container_chain(
+            &mut self,
+            num_each_container_chain: usize,
+        ) -> Option<(Vec<AccountId>, u32)> {
+            let mut max_id = None;
+            for (id, cs) in self.container_chains.iter_mut() {
+                if cs.len() > 0 && cs.len() < num_each_container_chain {
+                    if max_id.is_none() {
+                        max_id = Some((*id, cs.len()));
+                    } else {
+                        if max_id.as_ref().unwrap().1 > cs.len() {
+                            max_id = Some((*id, cs.len()));
+                        }
+                    }
+                }
+            }
+
+            if max_id.is_none() {
+                return None;
+            }
+
+            Some((
+                mem::take(&mut self.container_chains.get_mut(&max_id.unwrap().0).unwrap()),
+                max_id.unwrap().0,
+            ))
+        }
+
+        fn add_to_max_container_chain(
+            &mut self,
+            collators: &mut Vec<AccountId>,
+            num_each_container_chain: usize,
+        ) -> u32 {
+            let mut max_id = None;
+            for (id, cs) in self.container_chains.iter_mut() {
+                if cs.len() < num_each_container_chain {
+                    if max_id.is_none() {
+                        max_id = Some((*id, cs.len()));
+                    } else {
+                        if max_id.as_ref().unwrap().1 < cs.len() {
+                            max_id = Some((*id, cs.len()));
+                        }
+                    }
+                }
+            }
+
+            // Invariant: add_to_max_container_chain must be called after remove_from_min_container_chain
+            // returned Some, so max_id cannot be None
+            while !collators.is_empty()
+                && self.container_chains.get(&max_id.unwrap().0).unwrap().len()
+                    < num_each_container_chain
+            {
+                self.container_chains
+                    .get_mut(&max_id.unwrap().0)
+                    .unwrap()
+                    .push(collators.pop().unwrap());
+            }
+
+            max_id.unwrap().0
+        }
     }
 
     /// A struct that holds the assignment that is active after the session change and optionally
@@ -326,6 +387,39 @@ pub mod pallet {
                 max_num_orchestrator_chain,
                 &mut extra_collators_plus_new,
             );
+
+            // Check container chains and remove all collators from container chains
+            // that do not reach the target number of collators. Reassign those to other
+            // container chains, and then to the orchestrator chain
+
+            // Remove all collators from the container chain with fewest collators,
+            // and add them to the container chains with most collators (< min).
+            // If there are no more container chains left, assign remaining to orchestrator chain.
+            'outer: while let Some((mut collators, container_chain_id)) =
+                new_assigned.remove_from_min_container_chain(num_each_container_chain)
+            {
+                while !collators.is_empty() {
+                    let container_chain_id2 = new_assigned
+                        .add_to_max_container_chain(&mut collators, num_each_container_chain);
+
+                    if container_chain_id == container_chain_id2 {
+                        assert!(collators.is_empty());
+                        break 'outer;
+                    }
+                }
+            }
+
+            // Assign remaining collators
+            // (from container chains that do not reach "num_each_container_chain")
+            // to orchestrator chain
+            while let Some((collators, _container_chain_id)) =
+                new_assigned.remove_from_min_container_chain(num_each_container_chain)
+            {
+                new_assigned.fill_orchestrator_chain_collators(
+                    max_num_orchestrator_chain,
+                    &mut collators.into_iter(),
+                );
+            }
 
             new_assigned
         }
