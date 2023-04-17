@@ -28,6 +28,7 @@ use frame_support::pallet_prelude::*;
 use scale_info::prelude::collections::BTreeMap;
 use sp_runtime::traits::{AtLeast32BitUnsigned, One, Zero};
 use sp_runtime::Saturating;
+use sp_std::collections::vec_deque::VecDeque;
 use sp_std::mem;
 use sp_std::prelude::*;
 use sp_std::vec;
@@ -198,64 +199,59 @@ pub mod pallet {
             }
         }
 
-        fn remove_from_min_container_chain(
+        /// Check container chains and remove all collators from container chains
+        /// that do not reach the target number of collators. Reassign those to other
+        /// container chains.
+        ///
+        /// Returns the collators that could not be assigned to any container chain,
+        /// those can be assigned to the orchestrator chain by the caller.
+        fn reorganize_incomplete_container_chains_collators(
             &mut self,
             num_each_container_chain: usize,
-        ) -> Option<(Vec<AccountId>, u32)> {
-            let mut max_id = None;
-            for (id, cs) in self.container_chains.iter_mut() {
-                if cs.len() > 0 && cs.len() < num_each_container_chain {
-                    if max_id.is_none() {
-                        max_id = Some((*id, cs.len()));
-                    } else {
-                        if max_id.as_ref().unwrap().1 > cs.len() {
-                            max_id = Some((*id, cs.len()));
-                        }
-                    }
+        ) -> Vec<AccountId> {
+            let mut incomplete_container_chains: VecDeque<_> = VecDeque::new();
+
+            for (para_id, collators) in self.container_chains.iter_mut() {
+                if collators.len() > 0 && collators.len() < num_each_container_chain {
+                    // Do not remove the para_id from the map, instead replace the list of
+                    // collators with an empty vec using mem::take.
+                    // This is to ensure that the UI shows "1001: []" when a container chain
+                    // has zero assigned collators.
+                    let removed_collators = mem::take(collators);
+                    incomplete_container_chains.push_back((*para_id, removed_collators));
                 }
             }
 
-            if max_id.is_none() {
-                return None;
-            }
+            incomplete_container_chains
+                .make_contiguous()
+                .sort_by_key(|(_para_id, collators)| collators.len());
 
-            Some((
-                mem::take(&mut self.container_chains.get_mut(&max_id.unwrap().0).unwrap()),
-                max_id.unwrap().0,
-            ))
-        }
-
-        fn add_to_max_container_chain(
-            &mut self,
-            collators: &mut Vec<AccountId>,
-            num_each_container_chain: usize,
-        ) -> u32 {
-            let mut max_id = None;
-            for (id, cs) in self.container_chains.iter_mut() {
-                if cs.len() < num_each_container_chain {
-                    if max_id.is_none() {
-                        max_id = Some((*id, cs.len()));
-                    } else {
-                        if max_id.as_ref().unwrap().1 < cs.len() {
-                            max_id = Some((*id, cs.len()));
-                        }
-                    }
-                }
-            }
-
-            // Invariant: add_to_max_container_chain must be called after remove_from_min_container_chain
-            // returned Some, so max_id cannot be None
-            while !collators.is_empty()
-                && self.container_chains.get(&max_id.unwrap().0).unwrap().len()
-                    < num_each_container_chain
+            // The first element in `incomplete_container_chains` will be the para_id with lowest
+            // non-zero number of collators, we want to move those collators to the para_id with
+            // most collators
+            while let Some((_para_id, mut collators_min_chain)) =
+                incomplete_container_chains.pop_front()
             {
-                self.container_chains
-                    .get_mut(&max_id.unwrap().0)
-                    .unwrap()
-                    .push(collators.pop().unwrap());
+                while collators_min_chain.len() > 0 {
+                    match incomplete_container_chains.back_mut() {
+                        Some(back) => {
+                            back.1.push(collators_min_chain.pop().unwrap());
+                            if back.1.len() == num_each_container_chain {
+                                // Container chain complete, remove from incomplete list and insert into self
+                                let (completed_para_id, completed_collators) =
+                                    incomplete_container_chains.pop_back().unwrap();
+                                self.container_chains
+                                    .insert(completed_para_id, completed_collators);
+                            }
+                        }
+                        None => {
+                            return collators_min_chain;
+                        }
+                    }
+                }
             }
 
-            max_id.unwrap().0
+            vec![]
         }
     }
 
@@ -388,38 +384,22 @@ pub mod pallet {
                 &mut extra_collators_plus_new,
             );
 
-            // Check container chains and remove all collators from container chains
-            // that do not reach the target number of collators. Reassign those to other
-            // container chains, and then to the orchestrator chain
+            // Reorganize container chain collators to fill the maximum number of container
+            // chains. For example, if num_each_container_chain == 2 and the number of collators
+            // in each container chain is
+            // [1, 1, 1, 1, 1]
+            // Then we can convert that into
+            // [2, 2, 0, 0, 0]
+            // and assign 1 extra collator to the orchestrator chain, if needed.
+            let incomplete_container_chains_collators = new_assigned
+                .reorganize_incomplete_container_chains_collators(num_each_container_chain);
 
-            // Remove all collators from the container chain with fewest collators,
-            // and add them to the container chains with most collators (< min).
-            // If there are no more container chains left, assign remaining to orchestrator chain.
-            'outer: while let Some((mut collators, container_chain_id)) =
-                new_assigned.remove_from_min_container_chain(num_each_container_chain)
-            {
-                while !collators.is_empty() {
-                    let container_chain_id2 = new_assigned
-                        .add_to_max_container_chain(&mut collators, num_each_container_chain);
-
-                    if container_chain_id == container_chain_id2 {
-                        assert!(collators.is_empty());
-                        break 'outer;
-                    }
-                }
-            }
-
-            // Assign remaining collators
-            // (from container chains that do not reach "num_each_container_chain")
-            // to orchestrator chain
-            while let Some((collators, _container_chain_id)) =
-                new_assigned.remove_from_min_container_chain(num_each_container_chain)
-            {
-                new_assigned.fill_orchestrator_chain_collators(
-                    max_num_orchestrator_chain,
-                    &mut collators.into_iter(),
-                );
-            }
+            // Assign collators from container chains that do not reach
+            // "num_each_container_chain" to orchestrator chain
+            new_assigned.fill_orchestrator_chain_collators(
+                max_num_orchestrator_chain,
+                &mut incomplete_container_chains_collators.into_iter(),
+            );
 
             new_assigned
         }
