@@ -249,6 +249,7 @@ pub fn new_partial_dev(
 async fn start_node_impl(
     parachain_config: Configuration,
     polkadot_config: Configuration,
+    tanssi_config: Option<(Configuration, ParaId)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -367,6 +368,15 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
+    if let Some((tanssi_config, tanssi_para_id)) = tanssi_config {
+        // Start tanssi node
+        let (tanssi_task_manager, _tanssi_client) =
+            start_node_impl_tanssi(tanssi_config, relay_chain_interface.clone(), tanssi_para_id)
+                .await?;
+
+        task_manager.add_child(tanssi_task_manager);
+    }
+
     if validator {
         let parachain_consensus = build_consensus(
             client.clone(),
@@ -413,6 +423,112 @@ async fn start_node_impl(
 
         start_full_node(params)?;
     }
+
+    start_network.start_network();
+
+    Ok((task_manager, client))
+}
+
+/// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
+///
+/// This is the actual implementation that is abstract over the executor and the runtime api.
+#[sc_tracing::logging::prefix_logs_with("Tanssi")]
+async fn start_node_impl_tanssi(
+    parachain_config: Configuration,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
+    para_id: ParaId,
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+    let parachain_config = prepare_node_config(parachain_config);
+
+    let params = new_partial(&parachain_config)?;
+    let (_block_import, mut telemetry, _telemetry_worker_handle) = params.other;
+
+    let client = params.client.clone();
+    let backend = params.backend.clone();
+    let mut task_manager = params.task_manager;
+
+    let block_announce_validator =
+        BlockAnnounceValidator::new(relay_chain_interface.clone(), para_id);
+
+    let transaction_pool = params.transaction_pool.clone();
+    let import_queue_service = params.import_queue.service();
+
+    let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
+        sc_service::build_network(sc_service::BuildNetworkParams {
+            config: &parachain_config,
+            client: client.clone(),
+            transaction_pool: transaction_pool.clone(),
+            spawn_handle: task_manager.spawn_handle(),
+            import_queue: params.import_queue,
+            block_announce_validator_builder: Some(Box::new(|_| {
+                Box::new(block_announce_validator)
+            })),
+            warp_sync_params: None,
+        })?;
+
+    if parachain_config.offchain_worker.enabled {
+        sc_service::build_offchain_workers(
+            &parachain_config,
+            task_manager.spawn_handle(),
+            client.clone(),
+            network.clone(),
+        );
+    }
+
+    let rpc_builder = {
+        let client = client.clone();
+        let transaction_pool = transaction_pool.clone();
+
+        Box::new(move |deny_unsafe, _| {
+            let deps = crate::rpc::FullDeps {
+                client: client.clone(),
+                pool: transaction_pool.clone(),
+                deny_unsafe,
+                command_sink: None,
+            };
+
+            crate::rpc::create_full(deps).map_err(Into::into)
+        })
+    };
+
+    sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+        rpc_builder,
+        client: client.clone(),
+        transaction_pool: transaction_pool.clone(),
+        task_manager: &mut task_manager,
+        config: parachain_config,
+        keystore: params.keystore_container.sync_keystore(),
+        backend,
+        network: network.clone(),
+        system_rpc_tx,
+        tx_handler_controller,
+        telemetry: telemetry.as_mut(),
+        sync_service: sync_service.clone(),
+    })?;
+
+    let announce_block = {
+        let sync_service = sync_service.clone();
+        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
+    };
+
+    let relay_chain_slot_duration = Duration::from_secs(6);
+
+    let overseer_handle = relay_chain_interface
+        .overseer_handle()
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    let params = StartFullNodeParams {
+        client: client.clone(),
+        announce_block,
+        task_manager: &mut task_manager,
+        para_id,
+        relay_chain_interface,
+        relay_chain_slot_duration,
+        import_queue: import_queue_service,
+        recovery_handle: Box::new(overseer_handle),
+    };
+
+    start_full_node(params)?;
 
     start_network.start_network();
 
@@ -576,6 +692,7 @@ fn build_consensus(
 pub async fn start_parachain_node(
     parachain_config: Configuration,
     polkadot_config: Configuration,
+    tanssi_config: Option<(Configuration, ParaId)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -583,6 +700,7 @@ pub async fn start_parachain_node(
     start_node_impl(
         parachain_config,
         polkadot_config,
+        tanssi_config,
         collator_options,
         para_id,
         hwbench,
@@ -828,7 +946,7 @@ pub fn new_dev(
 }
 
 /// Can be called for a `Configuration` to check if it is a configuration for
-/// the `Moondance` network.
+/// the `Tanssi` network.
 pub trait IdentifyVariant {
     /// Returns `true` if this is a configuration for a dev network.
     fn is_dev(&self) -> bool;

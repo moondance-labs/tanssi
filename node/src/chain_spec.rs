@@ -80,7 +80,7 @@ pub fn account_ids(names: &[&str]) -> Vec<AccountId> {
         .collect()
 }
 
-pub fn development_config() -> ChainSpec {
+pub fn development_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -111,7 +111,7 @@ pub fn development_config() -> ChainSpec {
                     "Eve//stash",
                     "Ferdie//stash",
                 ]),
-                1000.into(),
+                para_id,
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 vec![2000.into(), 2001.into()],
             )
@@ -123,12 +123,12 @@ pub fn development_config() -> ChainSpec {
         None,
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-            para_id: 1000,
+            para_id: para_id.into(),
         },
     )
 }
 
-pub fn local_testnet_config() -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -159,7 +159,7 @@ pub fn local_testnet_config() -> ChainSpec {
                     "Eve//stash",
                     "Ferdie//stash",
                 ]),
-                1000.into(),
+                para_id,
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 vec![2000.into(), 2001.into()],
             )
@@ -177,7 +177,7 @@ pub fn local_testnet_config() -> ChainSpec {
         // Extensions
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-            para_id: 1000,
+            para_id: para_id.into(),
         },
     )
 }

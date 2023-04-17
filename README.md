@@ -1,4 +1,4 @@
-# moondance
+# tanssi
 
 ## Running with Zombienet
 
