@@ -119,7 +119,7 @@ pub mod pallet {
                 T::SelfParaId::get(),
             ) {
                 Ok(authorities) => Authorities::<T>::put(authorities),
-                Err(e) => log::warn!("Author-noting error {:?} found in para {:?}", e, para_id),
+                Err(e) => Authorities::<T>::kill(),
             }
 
             Ok(PostDispatchInfo {
