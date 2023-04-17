@@ -7,7 +7,8 @@ members = [
 	"runtime/test",
 	"primitives/*",
 	"container-chains/pallets/*",
-	"test-sproof-builder"
+	"test-sproof-builder",
+	"container-chain-template/*"
 ]
 resolver = "2"
 
@@ -20,8 +21,10 @@ pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-author-noting = { path = "pallets/author-noting", default-features = false }
+pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
 
 test-runtime = { path = "runtime/test", default-features = false }
+container-chain-template-runtime = { path = "container-chain-template/runtime", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-authorities-noting-inherent = { path = "primitives/authorities-noting-inherent", default-features = false }
 tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
@@ -46,6 +49,7 @@ scale-info = { version = "2.1.1", default-features = false }
 sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
+sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38", version = "7.0.0", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.38", version = "7.0.0", default-features = false }
@@ -70,6 +74,7 @@ sc-consensus-manual-seal = { git = "https://github.com/paritytech/substrate", br
 sc-executor = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-network = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-network-common = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
+sc-network-sync = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-rpc = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-service = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
 sc-sysinfo = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.38" }
