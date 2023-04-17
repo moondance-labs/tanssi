@@ -593,6 +593,8 @@ impl pallet_sudo::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_root_testing::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -623,6 +625,8 @@ construct_runtime!(
         Session: pallet_session = 32,
         Aura: pallet_aura = 33,
         AuraExt: cumulus_pallet_aura_ext = 34,
+
+        RootTesting: pallet_root_testing = 100,
     }
 );
 
@@ -816,38 +820,3 @@ cumulus_pallet_parachain_system::register_validate_block! {
     BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
     CheckInherents = CheckInherents,
 }
-
-/// Holds the most recent relay-parent state root and block number of the current parachain block.
-#[derive(PartialEq, Eq, Clone, Default)]
-pub struct RelayChainState {
-    /// Current relay chain height.
-    pub number: BlockNumber,
-    /// State root for current relay chain height.
-    pub state_root: Hash,
-}
-
-/// This exposes the [`RelayChainState`] to other runtime modules.
-///
-/// Enables parachains to read relay chain state via state proofs.
-pub trait RelaychainStateProvider {
-    /// May be called by any runtime module to obtain the current state of the relay chain.
-    ///
-    /// **NOTE**: This is not guaranteed to return monotonically increasing relay parents.
-    fn current_relay_chain_state() -> RelayChainState;
-}
-
-impl RelaychainStateProvider for RelaychainDataProvider {
-    fn current_relay_chain_state() -> RelayChainState {
-        ParachainSystem::validation_data()
-            .map(|d| RelayChainState {
-                number: d.relay_parent_number,
-                state_root: d.relay_parent_storage_root,
-            })
-            .unwrap_or_default()
-    }
-}
-
-/// Implements [`RelaychainStateProvider`] that returns relevant relay data fetched from
-/// validation data.
-/// NOTE: When validation data is not available (e.g. within on_initialize), default values will be returned.
-pub struct RelaychainDataProvider;
