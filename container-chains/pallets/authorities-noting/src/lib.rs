@@ -20,17 +20,17 @@ use cumulus_primitives_core::ParaId;
 use frame_support::traits::Get;
 use frame_support::Hashable;
 use parity_scale_codec::Decode;
+use parity_scale_codec::Encode;
 use sp_consensus_aura::inherents::InherentType;
 use sp_inherents::{InherentIdentifier, IsFatalError};
 use sp_runtime::traits::Hash as HashT;
+use sp_runtime::RuntimeString;
 use sp_std::prelude::*;
 use tp_authorities_noting_inherent::INHERENT_IDENTIFIER;
 use tp_chain_state_snapshot::*;
 use tp_collator_assignment::AssignedCollators;
 use tp_core::well_known_keys::COLLATOR_ASSIGNMENT_INDEX;
 use tp_core::well_known_keys::PARAS_HEADS_INDEX;
-use sp_runtime::RuntimeString;
-use parity_scale_codec::Encode;
 
 #[cfg(test)]
 mod mock;
@@ -157,18 +157,16 @@ pub mod pallet {
     #[pallet::inherent]
     impl<T: Config> ProvideInherent for Pallet<T> {
         type Call = Call<T>;
-		type Error = InherentError;
+        type Error = InherentError;
         // TODO, what should we put here
         const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
 
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
-			// Return Ok(Some(_)) unconditionally because this inherent is required in every block
-			Ok(Some(InherentError::Other(
-				sp_runtime::RuntimeString::Borrowed(
-					"Inherent required",
-				),
-			)))
-		}
+            // Return Ok(Some(_)) unconditionally because this inherent is required in every block
+            Ok(Some(InherentError::Other(
+                sp_runtime::RuntimeString::Borrowed("Inherent required"),
+            )))
+        }
 
         fn create_inherent(data: &InherentData) -> Option<Self::Call> {
             let data: tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData = data
@@ -244,25 +242,25 @@ impl<T: Config> Pallet<T> {
 #[derive(Encode)]
 #[cfg_attr(feature = "std", derive(Debug, Decode))]
 pub enum InherentError {
-	Other(RuntimeString),
+    Other(RuntimeString),
 }
 
 impl IsFatalError for InherentError {
-	fn is_fatal_error(&self) -> bool {
-		match *self {
-			InherentError::Other(_) => true,
-		}
-	}
+    fn is_fatal_error(&self) -> bool {
+        match *self {
+            InherentError::Other(_) => true,
+        }
+    }
 }
 
 impl InherentError {
-	/// Try to create an instance ouf of the given identifier and data.
-	#[cfg(feature = "std")]
-	pub fn try_from(id: &InherentIdentifier, data: &[u8]) -> Option<Self> {
-		if id == &INHERENT_IDENTIFIER {
-			<InherentError as parity_scale_codec::Decode>::decode(&mut &data[..]).ok()
-		} else {
-			None
-		}
-	}
+    /// Try to create an instance ouf of the given identifier and data.
+    #[cfg(feature = "std")]
+    pub fn try_from(id: &InherentIdentifier, data: &[u8]) -> Option<Self> {
+        if id == &INHERENT_IDENTIFIER {
+            <InherentError as parity_scale_codec::Decode>::decode(&mut &data[..]).ok()
+        } else {
+            None
+        }
+    }
 }
