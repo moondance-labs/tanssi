@@ -1,3 +1,5 @@
+use sc_cli::{CliConfiguration, NodeKeyParams, SharedParams};
+
 use crate::service::Sealing;
 use std::path::PathBuf;
 
@@ -5,7 +7,7 @@ use std::path::PathBuf;
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
     /// Build a chain specification.
-    BuildSpec(sc_cli::BuildSpecCmd),
+    BuildSpec(BuildSpecCmd),
 
     /// Validate blocks.
     CheckBlock(sc_cli::CheckBlockCmd),
@@ -26,10 +28,10 @@ pub enum Subcommand {
     PurgeChain(cumulus_client_cli::PurgeChainCmd),
 
     /// Export the genesis state of the parachain.
-    ExportGenesisState(cumulus_client_cli::ExportGenesisStateCommand),
+    ExportGenesisState(ExportGenesisStateCommand),
 
     /// Export the genesis wasm of the parachain.
-    ExportGenesisWasm(cumulus_client_cli::ExportGenesisWasmCommand),
+    ExportGenesisWasm(ExportGenesisWasmCommand),
 
     /// Sub-commands concerned with benchmarking.
     /// The pallet benchmarking moved to the `pallet` sub-command.
@@ -43,6 +45,63 @@ pub enum Subcommand {
     /// Errors since the binary was not build with `--features try-runtime`.
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
+}
+
+/// The `build-spec` command used to build a specification.
+#[derive(Debug, Clone, clap::Parser)]
+pub struct BuildSpecCmd {
+    #[clap(flatten)]
+    pub base: sc_cli::BuildSpecCmd,
+
+    /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
+    #[clap(long)]
+    pub parachain_id: Option<u32>,
+}
+
+impl CliConfiguration for BuildSpecCmd {
+    fn shared_params(&self) -> &SharedParams {
+        &self.base.shared_params
+    }
+
+    fn node_key_params(&self) -> Option<&NodeKeyParams> {
+        Some(&self.base.node_key_params)
+    }
+}
+
+/// Command for exporting the genesis state of the parachain
+#[derive(Debug, clap::Parser)]
+pub struct ExportGenesisStateCommand {
+    /// Output file name or stdout if unspecified.
+    #[clap(value_parser)]
+    pub output: Option<PathBuf>,
+
+    /// Id of the parachain this state is for.
+    #[clap(long)]
+    pub parachain_id: Option<u32>,
+
+    /// Write output in binary. Default is to write in hex.
+    #[clap(short, long)]
+    pub raw: bool,
+
+    /// The name of the chain for that the genesis state should be exported.
+    #[clap(long)]
+    pub chain: Option<String>,
+}
+
+/// Command for exporting the genesis wasm file.
+#[derive(Debug, clap::Parser)]
+pub struct ExportGenesisWasmCommand {
+    /// Output file name or stdout if unspecified.
+    #[clap(value_parser)]
+    pub output: Option<PathBuf>,
+
+    /// Write output in binary. Default is to write in hex.
+    #[clap(short, long)]
+    pub raw: bool,
+
+    /// The name of the chain for that the genesis wasm file should be exported.
+    #[clap(long)]
+    pub chain: Option<String>,
 }
 
 #[derive(Debug, clap::Parser)]
@@ -60,6 +119,10 @@ pub struct RunCmd {
     /// Options are "instant", "manual", or timer interval in milliseconds
     #[clap(long, default_value = "instant")]
     pub sealing: Sealing,
+
+    /// Id of the parachain this collator collates for.
+    #[clap(long)]
+    pub parachain_id: Option<u32>,
 }
 
 impl std::ops::Deref for RunCmd {
@@ -93,9 +156,39 @@ pub struct Cli {
     #[arg(long)]
     pub no_hardware_benchmarks: bool,
 
-    /// Relay chain arguments
+    /// Optional parachain id that should be used to build chain spec.
+    #[arg(long)]
+    pub para_id: Option<u32>,
+
+    /// Relay chain arguments, optionally followed by "--" and Tanssi arguments
     #[arg(raw = true)]
-    pub relay_chain_args: Vec<String>,
+    extra_args: Vec<String>,
+}
+
+impl Cli {
+    pub fn relaychain_args(&self) -> &[String] {
+        let (relay_chain_args, _tanssi_args) = self.split_extra_args_at_first_dashdash();
+
+        relay_chain_args
+    }
+
+    pub fn tanssi_args(&self) -> &[String] {
+        let (_relay_chain_args, tanssi_args) = self.split_extra_args_at_first_dashdash();
+
+        tanssi_args
+    }
+
+    fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
+        let index_of_dashdash = self.extra_args.iter().position(|x| *x == "--");
+
+        if let Some(i) = index_of_dashdash {
+            let (relay_chain_args, extra_extra) = self.extra_args.split_at(i);
+            (relay_chain_args, &extra_extra[1..])
+        } else {
+            // Only relay chain args
+            (&self.extra_args, &[])
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -126,6 +219,57 @@ impl RelayChainCli {
             base_path,
             chain_id,
             base: clap::Parser::parse_from(relay_chain_args),
+        }
+    }
+}
+
+/// The `run` command used to run a node.
+#[derive(Debug, clap::Parser)]
+#[group(skip)]
+pub struct TanssiRunCmd {
+    /// The cumulus RunCmd inherits from sc_cli's
+    #[command(flatten)]
+    pub base: sc_cli::RunCmd,
+
+    /// Run node as collator.
+    ///
+    /// Note that this is the same as running with `--validator`.
+    #[arg(long, conflicts_with = "validator")]
+    pub collator: bool,
+
+    /// Optional parachain id that should be used to build chain spec.
+    #[arg(long)]
+    pub para_id: Option<u32>,
+}
+
+#[derive(Debug)]
+pub struct TanssiCli {
+    /// The actual Tanssi cli object.
+    pub base: TanssiRunCmd,
+
+    /// Optional chain id that should be passed to Tanssi.
+    pub chain_id: Option<String>,
+
+    /// The base path that should be used by Tanssi.
+    pub base_path: Option<PathBuf>,
+}
+
+impl TanssiCli {
+    /// Parse the Tanssi CLI parameters using the para chain `Configuration`.
+    pub fn new<'a>(
+        para_config: &sc_service::Configuration,
+        tanssi_args: impl Iterator<Item = &'a String>,
+    ) -> Self {
+        let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
+        let chain_id = extension.map(|e| e.relay_chain.clone());
+        let base_path = para_config
+            .base_path
+            .as_ref()
+            .map(|x| x.path().join("polkadot"));
+        Self {
+            base_path,
+            chain_id,
+            base: clap::Parser::parse_from(tanssi_args),
         }
     }
 }

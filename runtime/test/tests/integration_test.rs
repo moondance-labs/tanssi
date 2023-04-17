@@ -4,8 +4,8 @@ mod common;
 use common::*;
 use cumulus_primitives_core::ParaId;
 use frame_support::{assert_ok, BoundedVec};
-use pallet_collator_assignment_runtime_api::runtime_decl_for_CollatorAssignmentApi::CollatorAssignmentApi;
-use pallet_registrar_runtime_api::runtime_decl_for_RegistrarApi::RegistrarApi;
+use pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi;
+use pallet_registrar_runtime_api::runtime_decl_for_registrar_api::RegistrarApi;
 use parity_scale_codec::Encode;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_core::Get;
@@ -484,7 +484,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
 
             assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
 
-            // Set moondance collators to 1
+            // Set tanssi collators to 1
             assert_ok!(
                 Configuration::set_orchestrator_collators(root_origin(), 1),
                 ()
