@@ -31,22 +31,22 @@ id = 1000
   [[parachains.collators]]
   name = "collator2000-01"
   command = "test-node"
-  args = ["-- --tmp --chain container-chain-2000"]
+  args = ["-- --tmp --chain container-chain-2000.json"]
 
   [[parachains.collators]]
   name = "collator2000-02"
   command = "test-node"
-  args = ["-- --tmp --chain container-chain-2000"]
+  args = ["-- --tmp --chain container-chain-2000.json"]
 
   [[parachains.collators]]
   name = "collator2001-01"
   command = "test-node"
-  args = ["-- --tmp --chain container-chain-2001"]
+  args = ["-- --tmp --chain container-chain-2001.json"]
 
   [[parachains.collators]]
   name = "collator2001-02"
   command = "test-node"
-  args = ["-- --tmp --chain container-chain-2001"]
+  args = ["-- --tmp --chain container-chain-2001.json"]
 
 [[parachains]]
 id = 2000
