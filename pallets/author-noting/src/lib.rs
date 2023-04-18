@@ -52,7 +52,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
 
     #[pallet::config]
-    pub trait Config: frame_system::Config + cumulus_pallet_parachain_system::Config {
+    pub trait Config: frame_system::Config {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -61,6 +61,8 @@ pub mod pallet {
         type SelfParaId: Get<ParaId>;
 
         type AuthorFetcher: GetAuthorFromSlot<Self>;
+
+        type RelayChainStorageRootProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
     }
 
     pub trait GetAuthorFromSlot<T: Config> {
@@ -99,7 +101,8 @@ pub mod pallet {
                 relay_storage_proof,
             } = data;
 
-            let relay_storage_root = cumulus_pallet_parachain_system::RelaychainDataProvider::<T>::current_relay_chain_state().state_root;
+            let relay_storage_root =
+                T::RelayChainStorageRootProvider::current_relay_chain_state().state_root;
             let relay_storage_rooted_proof =
                 AuthorNotingRelayChainStateProof::new(relay_storage_root, relay_storage_proof)
                     .expect("Invalid relay chain state proof");
