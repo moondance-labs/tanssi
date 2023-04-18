@@ -5287,6 +5287,7 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "tp-author-noting-inherent",
+ "tp-traits",
 ]
 
 [[package]]
@@ -5472,6 +5473,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -5533,6 +5535,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -5987,6 +5990,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -11509,6 +11513,7 @@ dependencies = [
  "sp-version",
  "substrate-wasm-builder",
  "tp-author-noting-inherent",
+ "tp-traits",
 ]
 
 [[package]]
@@ -11833,6 +11838,14 @@ dependencies = [
  "sp-std",
  "sp-storage",
  "sp-trie",
+]
+
+[[package]]
+name = "tp-traits"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "sp-std",
 ]
 
 [[package]]

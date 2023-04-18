@@ -27,6 +27,7 @@ use sp_runtime::DispatchResult;
 use sp_std::prelude::*;
 use tp_author_noting_inherent::INHERENT_IDENTIFIER;
 use tp_author_noting_inherent::PARAS_HEADS_INDEX;
+use tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains};
 
 mod relay_state_snapshot;
 pub use relay_state_snapshot::*;
@@ -38,10 +39,6 @@ mod mock;
 mod test;
 
 pub use pallet::*;
-
-pub trait GetContainerChains {
-    fn container_chains() -> Vec<ParaId>;
-}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -55,16 +52,11 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        type ContainerChains: GetContainerChains;
+        type ContainerChains: GetCurrentContainerChains;
 
         type SelfParaId: Get<ParaId>;
 
-        type AuthorFetcher: GetAuthorFromSlot<Self>;
-    }
-
-    pub trait GetAuthorFromSlot<T: Config> {
-        /// Returns current session index.
-        fn author_from_inherent(inherent: InherentType, para_id: ParaId) -> Option<T::AccountId>;
+        type AuthorFetcher: GetContainerChainAuthor<Self::AccountId>;
     }
 
     #[pallet::error]
@@ -98,7 +90,7 @@ pub mod pallet {
                 relay_chain_state,
             } = data;
 
-            let para_ids = T::ContainerChains::container_chains();
+            let para_ids = T::ContainerChains::current_container_chains();
             let relay_state_proof = AuthorNotingRelayChainStateProof::new(
                 vfp.relay_parent_storage_root,
                 relay_chain_state.clone(),
@@ -222,7 +214,7 @@ impl<T: Config> Pallet<T> {
             let slot = InherentType::decode(&mut data).map_err(|_| Error::<T>::NonDecodableSlot)?;
 
             // Fetch Author
-            let author = T::AuthorFetcher::author_from_inherent(slot, para_id)
+            let author = T::AuthorFetcher::author_for_slot(slot, para_id)
                 .ok_or(Error::<T>::AuthorNotFound)?;
 
             Ok(author)
