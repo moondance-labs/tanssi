@@ -248,7 +248,7 @@ pub fn new_partial_dev(
 async fn start_node_impl(
     tanssi_config: Configuration,
     polkadot_config: Configuration,
-    container_chain_config: Option<(Configuration, ParaId)>,
+    container_chain_config: Option<(TanssiCli, tokio::runtime::Handle)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -374,24 +374,8 @@ async fn start_node_impl(
         overseer_handle: overseer_handle.clone(),
     };
 
-    let mut container_collator = false;
-    if let Some((container_chain_config, container_chain_para_id)) = container_chain_config {
-        container_collator = true;
-        // Start tanssi node
-        let (tanssi_task_manager, _tanssi_client) = start_node_impl_container(
-            container_chain_config,
-            relay_chain_interface.clone(),
-            tanssi_chain_interface_builder.build(),
-            collator_key.clone(),
-            &params.keystore_container,
-            container_chain_para_id,
-            para_id,
-            validator,
-        )
-        .await?;
-
-        task_manager.add_child(tanssi_task_manager);
-    }
+    let container_collator = container_chain_config.is_some();
+    let sync_keystore = params.keystore_container.sync_keystore();
 
     // TODO: Investigate why CollateOn cannot be sent for two chains
     // Last one has priority apparently
@@ -417,11 +401,13 @@ async fn start_node_impl(
             announce_block,
             client: client.clone(),
             task_manager: &mut task_manager,
-            relay_chain_interface,
+            relay_chain_interface: relay_chain_interface.clone(),
             spawner,
             parachain_consensus,
             import_queue: import_queue_service,
-            collator_key: collator_key.expect("Command line arguments do not allow this. qed"),
+            collator_key: collator_key
+                .clone()
+                .expect("Command line arguments do not allow this. qed"),
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle),
         };
@@ -433,7 +419,7 @@ async fn start_node_impl(
             announce_block,
             task_manager: &mut task_manager,
             para_id,
-            relay_chain_interface,
+            relay_chain_interface: relay_chain_interface.clone(),
             relay_chain_slot_duration,
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
@@ -443,6 +429,78 @@ async fn start_node_impl(
     }
 
     start_network.start_network();
+
+    if let Some((mut tanssi_cli, tokio_handle)) = container_chain_config {
+        let spawn_cc_as_child_handle = task_manager.spawn_essential_handle();
+
+        task_manager
+            .spawn_handle()
+            .spawn("container-chain-starter", None, async move {
+                let try_closure = || async {
+                    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+                    // Preload chain spec files for testing.
+                    // In the future we will only load the one container chain that this node needs to sync,
+                    // and we will load it from Tanssi storage.
+                    // The preload must finish before calling create_configuration, so any async operations
+                    // need to be awaited.
+
+                    // TODO: read genesis data from tanssi
+                    let tanssi_chain_interface = tanssi_chain_interface_builder.build();
+
+                    tanssi_cli
+                        .preload_chain_spec_file(2000, "./specs/template-container-2000.json")
+                        .map_err(|e| format!("Failed to preload chain spec json: {}", e))?;
+
+                    let tanssi_cli_config = sc_cli::SubstrateCli::create_configuration(
+                        &tanssi_cli,
+                        &tanssi_cli,
+                        tokio_handle,
+                    )
+                    .map_err(|err| format!("Tanssi argument error: {}", err))?;
+                    let container_chain_para_id =
+                        crate::chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
+                            .map(|e| e.para_id)
+                            .ok_or_else(|| "Could not find parachain extension in chain-spec.")?;
+
+                    // Start tanssi node
+                    let (mut tanssi_task_manager, _tanssi_client) = start_node_impl_container(
+                        tanssi_cli_config,
+                        relay_chain_interface.clone(),
+                        tanssi_chain_interface,
+                        collator_key.clone(),
+                        sync_keystore,
+                        container_chain_para_id.into(),
+                        para_id,
+                        validator,
+                    )
+                    .await?;
+
+                    // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
+                    // to make the parent task manager stop if the container chain task manager stops.
+                    // The reverse is also true, if the parent task manager stops, the container chain
+                    // task manager will also stop.
+                    spawn_cc_as_child_handle.spawn(
+                        "container-chain-task-manager",
+                        None,
+                        async move {
+                            tanssi_task_manager
+                                .future()
+                                .await
+                                .expect("tanssi_task_manager failed")
+                        },
+                    );
+
+                    sc_service::error::Result::Ok(())
+                };
+
+                match try_closure().await {
+                    Ok(()) => {}
+                    Err(e) => {
+                        panic!("Failed to start container chain node: {}", e);
+                    }
+                }
+            });
+    }
 
     Ok((task_manager, client))
 }
@@ -456,27 +514,41 @@ async fn start_node_impl_container(
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn TanssiChainInterface>,
     collator_key: Option<CollatorPair>,
-    collator_keystore_container: &KeystoreContainer,
+    keystore: SyncCryptoStorePtr,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
     collator: bool,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
-
-    let params = new_partial(&parachain_config)?;
-    let (block_import, mut telemetry, _telemetry_worker_handle) = params.other;
-
-    let client = params.client.clone();
-    let backend = params.backend.clone();
-    let mut task_manager = params.task_manager;
+    let block_import;
+    let mut telemetry;
+    let client;
+    let backend;
+    let mut task_manager;
+    let transaction_pool;
+    let import_queue_service;
+    let params_import_queue;
+    {
+        // Some fields of params are not `Send`, and that causes problems with async/await.
+        // We take all the needed fields here inside a block to ensure that params
+        // gets dropped before the first instance of `.await`.
+        let params = new_partial(&parachain_config)?;
+        let (l_block_import, l_telemetry, _telemetry_worker_handle) = params.other;
+        block_import = l_block_import;
+        telemetry = l_telemetry;
+        client = params.client.clone();
+        backend = params.backend.clone();
+        task_manager = params.task_manager;
+        transaction_pool = params.transaction_pool.clone();
+        import_queue_service = params.import_queue.service();
+        params_import_queue = params.import_queue;
+    }
 
     let block_announce_validator =
         BlockAnnounceValidator::new(relay_chain_interface.clone(), para_id);
 
     let force_authoring = parachain_config.force_authoring;
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
-    let transaction_pool = params.transaction_pool.clone();
-    let import_queue_service = params.import_queue.service();
 
     log::info!("are we collators? {:?}", collator);
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
@@ -485,7 +557,7 @@ async fn start_node_impl_container(
             client: client.clone(),
             transaction_pool: transaction_pool.clone(),
             spawn_handle: task_manager.spawn_handle(),
-            import_queue: params.import_queue,
+            import_queue: params_import_queue,
             block_announce_validator_builder: Some(Box::new(|_| {
                 Box::new(block_announce_validator)
             })),
@@ -523,7 +595,7 @@ async fn start_node_impl_container(
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         config: parachain_config,
-        keystore: collator_keystore_container.sync_keystore(),
+        keystore: keystore.clone(),
         backend,
         network: network.clone(),
         system_rpc_tx,
@@ -554,7 +626,7 @@ async fn start_node_impl_container(
             orchestrator_chain_interface.clone(),
             transaction_pool,
             sync_service,
-            collator_keystore_container.sync_keystore(),
+            keystore,
             force_authoring,
             para_id,
             orchestrator_para_id,
@@ -856,7 +928,7 @@ fn build_consensus_orchestrator(
 pub async fn start_parachain_node(
     parachain_config: Configuration,
     polkadot_config: Configuration,
-    tanssi_config: Option<(Configuration, ParaId)>,
+    tanssi_config: Option<(TanssiCli, tokio::runtime::Handle)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -1158,6 +1230,8 @@ use {
     cumulus_client_consensus_common::ParachainBlockImportMarker, sc_client_api::BlockchainEvents,
     sc_consensus::BlockImport, sp_api::StorageProof,
 };
+
+use crate::cli::TanssiCli;
 
 /// Tanssi Parachain BLock IMport. We cannot use the one in cumulus as it overrides the best
 /// chain selection rule

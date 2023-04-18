@@ -13,6 +13,41 @@ use {
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<test_runtime::GenesisConfig, Extensions>;
 
+/// Specialized `ChainSpec` for container chains that only allows raw genesis format.
+pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfigDummy, Extensions>;
+
+/// Dummy type that implements the traits needed to be used as a "GenesisConfig",
+/// but whose implementation panics because we never expect it to be used.
+/// This is because container chains must use raw chain spec files where the "genesis"
+/// field only has one field: "raw".
+pub struct RawGenesisConfigDummy;
+
+impl Serialize for RawGenesisConfigDummy {
+    fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        panic!("This type should never be serialized")
+    }
+}
+
+impl<'de> Deserialize<'de> for RawGenesisConfigDummy {
+    fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        // TODO: turn this into a user-friendly error, because this is called
+        // when passing a non-raw chain spec json file to the tanssi client
+        panic!("This type should never be deserialized")
+    }
+}
+
+impl sp_runtime::BuildStorage for RawGenesisConfigDummy {
+    fn assimilate_storage(&self, _storage: &mut sp_core::storage::Storage) -> Result<(), String> {
+        panic!("This type should never be used to assimilate_storage")
+    }
+}
+
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
     TPublic::Pair::from_string(&format!("//{}", seed), None)

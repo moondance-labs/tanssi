@@ -11617,6 +11617,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-tanssi-chain-interface",
  "test-runtime",
+ "tokio",
  "tp-author-noting-inherent",
  "tp-authorities-noting-inherent",
  "try-runtime-cli",

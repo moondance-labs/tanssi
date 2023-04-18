@@ -144,7 +144,15 @@ impl SubstrateCli for TanssiCli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
-        load_spec(id, self.base.para_id.unwrap_or(2000).into())
+        // ContainerChain ChainSpec must be preloaded beforehand because we need to call async
+        // functions to generate it, and this function is not async
+        log::info!("TanssiCli load_spec {:?}", id);
+        let specs = self.preloaded_chain_specs.read().unwrap();
+
+        match specs.get(id) {
+            Some(spec) => Ok(spec.cloned_box()),
+            None => Err(format!("ChainSpec for ContainerChain {} not found", id)),
+        }
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
@@ -424,13 +432,7 @@ pub fn run() -> Result<()> {
 						[TanssiCli::executable_name()].iter().chain(cli.tanssi_args().iter()),
 					);
 					let tokio_handle = config.tokio_handle.clone();
-					let tanssi_cli_config =
-						SubstrateCli::create_configuration(&tanssi_cli, &tanssi_cli, tokio_handle)
-							.map_err(|err| format!("Tanssi argument error: {}", err))?;
-					let tanssi_para_id = chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
-						.map(|e| e.para_id)
-						.ok_or_else(|| "Could not find parachain extension in chain-spec.")?;
-					tanssi_config = Some((tanssi_cli_config, ParaId::from(tanssi_para_id)));
+					tanssi_config = Some((tanssi_cli, tokio_handle));
 				}
 
 				crate::service::start_parachain_node(

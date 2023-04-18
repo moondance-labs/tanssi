@@ -1,7 +1,11 @@
 use {
     crate::service::Sealing,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
-    std::path::PathBuf,
+    std::{
+        collections::HashMap,
+        path::PathBuf,
+        sync::{Arc, RwLock},
+    },
 };
 
 /// Sub-commands supported by the collator.
@@ -225,7 +229,7 @@ impl RelayChainCli {
 }
 
 /// The `run` command used to run a node.
-#[derive(Debug, clap::Parser)]
+#[derive(Debug, clap::Parser, Clone)]
 #[group(skip)]
 pub struct TanssiRunCmd {
     /// The cumulus RunCmd inherits from sc_cli's
@@ -243,7 +247,7 @@ pub struct TanssiRunCmd {
     pub para_id: Option<u32>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TanssiCli {
     /// The actual Tanssi cli object.
     pub base: TanssiRunCmd,
@@ -253,6 +257,10 @@ pub struct TanssiCli {
 
     /// The base path that should be used by Tanssi.
     pub base_path: Option<PathBuf>,
+
+    /// The ChainSpecs that this struct can initialize. This starts empty and gets filled
+    /// by calling preload_chain_spec_file.
+    pub preloaded_chain_specs: Arc<RwLock<HashMap<String, Box<dyn sc_chain_spec::ChainSpec>>>>,
 }
 
 impl TanssiCli {
@@ -271,6 +279,20 @@ impl TanssiCli {
             base_path,
             chain_id,
             base: clap::Parser::parse_from(tanssi_args),
+            preloaded_chain_specs: Arc::new(RwLock::new(HashMap::new())),
         }
+    }
+
+    pub fn preload_chain_spec_file(&mut self, para_id: u32, path: &str) -> Result<(), String> {
+        let chain_spec = Box::new(crate::chain_spec::RawChainSpec::from_json_file(
+            std::path::PathBuf::from(path),
+        )?);
+
+        self.preloaded_chain_specs
+            .write()
+            .unwrap()
+            .insert(format!("container-chain-{}", para_id), chain_spec);
+
+        Ok(())
     }
 }

@@ -35,23 +35,23 @@ id = 1000
   [[parachains.collators]]
   name = "Collator2000-01"
   command = "test-node"
-  args = ["-- --tmp --ws-port 9949 --chain ./specs/template-container-2000.json"]
+  args = ["-- --tmp --ws-port 9949 --chain container-chain-2000"]
 
   [[parachains.collators]]
   name = "Collator2000-02"
   command = "test-node"
-  args = ["-- --tmp --chain ./specs/template-container-2000.json"]
+  args = ["-- --tmp --chain container-chain-2000"]
 
   # container chain collators are also orchestrator chain collators
   [[parachains.collators]]
   name = "Collator2001-01"
   command = "test-node"
-  args = ["-- --tmp --ws-port 9950 --chain ./specs/template-container-2001.json"]
+  args = ["-- --tmp --ws-port 9950 --chain container-chain-2001"]
 
   [[parachains.collators]]
   name = "Collator2001-02"
   command = "test-node"
-  args = ["-- --tmp --chain ./specs/template-container-2001.json"]
+  args = ["-- --tmp --chain container-chain-2001"]
 
 [[parachains]]
 id = 2000
