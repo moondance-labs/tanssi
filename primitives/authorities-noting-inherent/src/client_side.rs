@@ -105,7 +105,7 @@ impl ContainerChainAuthoritiesInherentData {
         // For now we keep it like this, but something that we should look
         let orchestrator_chain_state = collect_tanssi_storage_proof(
             orchestrator_chain_interface,
-            orchestrator_header.parent_hash,
+            orchestrator_header.hash(),
         )
         .await?;
 
