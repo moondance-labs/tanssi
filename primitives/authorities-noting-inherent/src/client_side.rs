@@ -103,11 +103,9 @@ impl ContainerChainAuthoritiesInherentData {
 
         // TODO: not sure if this is the hash we should use, it looks to me as if point to the previous block
         // For now we keep it like this, but something that we should look
-        let orchestrator_chain_state = collect_tanssi_storage_proof(
-            orchestrator_chain_interface,
-            orchestrator_header.hash(),
-        )
-        .await?;
+        let orchestrator_chain_state =
+            collect_tanssi_storage_proof(orchestrator_chain_interface, orchestrator_header.hash())
+                .await?;
 
         Some(ContainerChainAuthoritiesInherentData {
             validation_data: validation_data.clone(),
