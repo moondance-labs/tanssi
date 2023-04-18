@@ -13,7 +13,6 @@
 use crate::AuthorNotingSproofBuilder;
 use crate::HeaderAs;
 use crate::OwnParachainInherentData;
-use cumulus_primitives_core::PersistedValidationData;
 use parity_scale_codec::Encode;
 use sp_consensus_aura::inherents::InherentType;
 use sp_consensus_aura::AURA_ENGINE_ID;
@@ -45,10 +44,6 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
         inherent_data: &mut InherentData,
     ) -> Result<(), sp_inherents::Error> {
         // Calculate the mocked relay block based on the current para block
-        let relay_parent_number =
-            self.relay_offset + self.relay_blocks_per_para_block * self.current_para_block;
-
-        // Calculate the mocked relay block based on the current para block
         let slot_number =
             InherentType::from(self.slots_per_para_block as u64 * self.current_para_block as u64);
 
@@ -73,18 +68,12 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
             sproof_builder.items.push(sproof_builder_item);
         }
 
-        let (relay_parent_storage_root, proof) = sproof_builder.into_state_root_and_proof();
+        let (_root, proof) = sproof_builder.into_state_root_and_proof();
 
         inherent_data.put_data(
             crate::INHERENT_IDENTIFIER,
             &OwnParachainInherentData {
-                validation_data: PersistedValidationData {
-                    parent_head: Default::default(),
-                    relay_parent_storage_root,
-                    relay_parent_number,
-                    max_pov_size: Default::default(),
-                },
-                relay_chain_state: proof,
+                relay_storage_proof: proof,
             },
         )?;
 

@@ -13,6 +13,7 @@
 //! to that containerChain, by simply assigning the slot position.
 //!
 #![cfg_attr(not(feature = "std"), no_std)]
+use cumulus_pallet_parachain_system::RelaychainStateProvider;
 use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
 use cumulus_primitives_core::relay_chain::HeadData;
@@ -51,7 +52,7 @@ pub mod pallet {
     use frame_system::pallet_prelude::*;
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: frame_system::Config + cumulus_pallet_parachain_system::Config {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -93,20 +94,18 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
+
             let tp_author_noting_inherent::OwnParachainInherentData {
-                validation_data: vfp,
-                relay_chain_state,
+                relay_storage_proof,
             } = data;
 
-            let para_ids = T::ContainerChains::container_chains();
-            let relay_state_proof = AuthorNotingRelayChainStateProof::new(
-                vfp.relay_parent_storage_root,
-                relay_chain_state.clone(),
-            )
-            .expect("Invalid relay chain state proof");
+            let relay_storage_root = cumulus_pallet_parachain_system::RelaychainDataProvider::<T>::current_relay_chain_state().state_root;
+            let relay_storage_rooted_proof =
+                AuthorNotingRelayChainStateProof::new(relay_storage_root, relay_storage_proof)
+                    .expect("Invalid relay chain state proof");
 
-            for para_id in para_ids {
-                match Self::fetch_author_slot_from_proof(&relay_state_proof, para_id) {
+            for para_id in T::ContainerChains::container_chains() {
+                match Self::fetch_author_slot_from_proof(&relay_storage_rooted_proof, para_id) {
                     Ok(author) => LatestAuthor::<T>::insert(para_id, author),
                     Err(e) => log::warn!("Author-noting error {:?} found in para {:?}", e, para_id),
                 }
