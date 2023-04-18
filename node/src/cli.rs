@@ -182,8 +182,8 @@ impl Cli {
         let index_of_dashdash = self.extra_args.iter().position(|x| *x == "--");
 
         if let Some(i) = index_of_dashdash {
-            let (relay_chain_args, extra_extra) = self.extra_args.split_at(i);
-            (relay_chain_args, &extra_extra[1..])
+            let (container_chain_args, extra_extra) = self.extra_args.split_at(i);
+            (&extra_extra[1..], container_chain_args)
         } else {
             // Only relay chain args
             (&self.extra_args, &[])
