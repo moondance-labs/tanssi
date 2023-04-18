@@ -16,6 +16,11 @@ use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_inherents::InherentIdentifier;
 
+#[cfg(feature = "std")]
+mod client_side;
+#[cfg(feature = "std")]
+pub use client_side::*;
+
 #[derive(Encode, Decode, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo)]
 pub struct ContainerChainAuthoritiesInherentData {
     pub validation_data: PersistedValidationData,

@@ -119,7 +119,7 @@ pub mod pallet {
                 T::SelfParaId::get(),
             ) {
                 Ok(authorities) => Authorities::<T>::put(authorities),
-                Err(e) => Authorities::<T>::kill(),
+                Err(_e) => Authorities::<T>::kill(),
             }
 
             Ok(PostDispatchInfo {

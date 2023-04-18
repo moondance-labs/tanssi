@@ -7,7 +7,8 @@ members = [
 	"runtime/test",
 	"primitives/*",
 	"container-chains/pallets/*",
-	"test-sproof-builder"
+	"test-sproof-builder",
+	"client/*"
 ]
 resolver = "2"
 
@@ -28,6 +29,7 @@ tp-collator-assignment = { path = "primitives/collator-assignment", default-feat
 tp-core = { path = "primitives/core", default-features = false }
 tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-features = false }
 test-relay-sproof-builder = { path = "test-sproof-builder" }
+tc-tanssi-chain-interface = { path = "client/tanssi-chain-interface" }
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
@@ -99,6 +101,7 @@ polkadot-runtime-common = { git = "https://github.com/paritytech/polkadot", bran
 polkadot-cli = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
 polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
 polkadot-service = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
+polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
 
 # Cumulus (wasm)
 cumulus-pallet-aura-ext = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
@@ -131,6 +134,7 @@ async-trait = "0.1"
 clap = { version = "4.1.6", features = [ "derive" ] }
 futures = { version = "0.3.1" }
 jsonrpsee = { version = "0.16.2", features = [ "server" ] }
+tracing = { version = "0.1.37" }
 
 [profile.production]
 codegen-units = 1
