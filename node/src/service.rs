@@ -635,7 +635,6 @@ fn build_consensus(
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(
                         relay_parent,
                         &relay_chain_interface,
-                        &validation_data,
                         &para_ids,
                     )
                     .await;
