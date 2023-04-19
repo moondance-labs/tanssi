@@ -13,7 +13,6 @@ use cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, Slo
 use cumulus_client_consensus_common::{
     ParachainBlockImport as TParachainBlockImport, ParachainConsensus,
 };
-use sc_service::KeystoreContainer;
 use cumulus_client_network::BlockAnnounceValidator;
 use cumulus_client_service::{
     build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
@@ -21,6 +20,7 @@ use cumulus_client_service::{
 };
 use futures::StreamExt;
 use sc_service::Error as ServiceError;
+use sc_service::KeystoreContainer;
 
 use cumulus_primitives_core::ParaId;
 use cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider;
@@ -388,7 +388,7 @@ async fn start_node_impl(
             &params.keystore_container,
             container_chain_para_id,
             para_id,
-            validator
+            validator,
         )
         .await?;
 
@@ -461,7 +461,7 @@ async fn start_node_impl_container(
     collator_keystore_container: &KeystoreContainer,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
-    collator: bool
+    collator: bool,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
 
