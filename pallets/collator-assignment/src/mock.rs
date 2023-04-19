@@ -7,6 +7,7 @@ use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
 };
+use tp_traits::ParaId;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -130,9 +131,14 @@ impl GetCollators<u64, u32> for CollatorsGetter {
 
 pub struct ContainerChainsGetter;
 
-impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
-    fn container_chains(_session_index: u32) -> Vec<u32> {
-        MockData::mock().container_chains.clone()
+impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
+    fn session_container_chains(_session_index: u32) -> Vec<ParaId> {
+        MockData::mock()
+            .container_chains
+            .iter()
+            .cloned()
+            .map(|x| ParaId::from(x))
+            .collect()
     }
 }
 
