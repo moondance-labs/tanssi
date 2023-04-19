@@ -7,6 +7,7 @@ chain = "rococo-local"
 
   [[relaychain.nodes]]
   name = "alice"
+  ws_port = 9944
 
   [[relaychain.nodes]]
   name = "bob"
@@ -23,6 +24,7 @@ id = 1000
   [[parachains.collators]]
   name = "collator1000-01"
   command = "test-node"
+  ws_port = 9948
 
   [[parachains.collators]]
   name = "collator1000-02"
@@ -31,7 +33,7 @@ id = 1000
   [[parachains.collators]]
   name = "collator2000-01"
   command = "test-node"
-  args = ["-- --tmp --chain container-chain-2000.json"]
+  args = ["-- --tmp --ws-port 9949 --chain container-chain-2000.json"]
 
   [[parachains.collators]]
   name = "collator2000-02"
@@ -41,7 +43,7 @@ id = 1000
   [[parachains.collators]]
   name = "collator2001-01"
   command = "test-node"
-  args = ["-- --tmp --chain container-chain-2001.json"]
+  args = ["-- --tmp --ws-port 9950 --chain container-chain-2001.json"]
 
   [[parachains.collators]]
   name = "collator2001-02"
