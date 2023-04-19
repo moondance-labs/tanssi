@@ -42,6 +42,17 @@ id = 1000
   command = "test-node"
   args = ["-- --tmp --chain ./specs/template-container-2000.json"]
 
+  # container chain collators are also orchestrator chain collators
+  [[parachains.collators]]
+  name = "collator2001-01"
+  command = "test-node"
+  args = ["-- --tmp --ws-port 9950 --chain ./specs/template-container-2001.json"]
+
+  [[parachains.collators]]
+  name = "collator2001-02"
+  command = "test-node"
+  args = ["-- --tmp --chain ./specs/template-container-2001.json"]
+
 [[parachains]]
 id = 2000
 # We launch with a pre-defined chain-spec 
@@ -49,5 +60,15 @@ chain_spec_path = "./specs/template-container-2000.json"
 
   [[parachains.collators]]
   # This collator does not produce blocks, but we need to set something here so that zombienet works
-  name = "DummyCollator-01"
+  name = "DummyCollator-2000"
+  command = "container-chain-template-node"
+
+[[parachains]]
+id = 2001
+# We launch with a pre-defined chain-spec 
+chain_spec_path = "./specs/template-container-2001.json"
+
+  [[parachains.collators]]
+  # This collator does not produce blocks, but we need to set something here so that zombienet works
+  name = "DummyCollator-2001"
   command = "container-chain-template-node"

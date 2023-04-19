@@ -378,7 +378,7 @@ impl pallet_aura::Config for Runtime {
 }
 
 parameter_types! {
-    pub Orchestrator: ParaId = 2000u32.into();
+    pub Orchestrator: ParaId = 1000u32.into();
 }
 
 impl pallet_cc_authorities_noting::Config for Runtime {

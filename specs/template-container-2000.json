@@ -2,7 +2,9 @@
   "name": "Local Testnet",
   "id": "local_testnet",
   "chainType": "Local",
-  "bootNodes": [],
+  "bootNodes": [
+    "/ip4/127.0.0.1/tcp/37799/ws/p2p/12D3KooWSrkwrw7kA3q6omg7xB72CNMBaheMiS2B4oKd1sjG9D17"
+  ],
   "telemetryEndpoints": null,
   "protocolId": "template-local",
   "properties": {
