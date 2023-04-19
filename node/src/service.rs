@@ -13,6 +13,7 @@ use cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, Slo
 use cumulus_client_consensus_common::{
     ParachainBlockImport as TParachainBlockImport, ParachainConsensus,
 };
+use sc_service::KeystoreContainer;
 use cumulus_client_network::BlockAnnounceValidator;
 use cumulus_client_service::{
     build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
@@ -375,22 +376,28 @@ async fn start_node_impl(
         overseer_handle: overseer_handle.clone(),
     };
 
+    let mut container_collator = false;
     if let Some((container_chain_config, container_chain_para_id)) = container_chain_config {
+        container_collator = true;
         // Start tanssi node
         let (tanssi_task_manager, _tanssi_client) = start_node_impl_container(
             container_chain_config,
             relay_chain_interface.clone(),
             tanssi_chain_interface_builder.build(),
             collator_key.clone(),
+            &params.keystore_container,
             container_chain_para_id,
             para_id,
+            validator
         )
         .await?;
 
         task_manager.add_child(tanssi_task_manager);
     }
 
-    if validator {
+    // TODO: Investigate why CollateOn cannot be sent for two chains
+    // Last one has priority apparently
+    if validator && !container_collator {
         let parachain_consensus = build_consensus_orchestrator(
             client.clone(),
             block_import,
@@ -451,8 +458,10 @@ async fn start_node_impl_container(
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn TanssiChainInterface>,
     collator_key: Option<CollatorPair>,
+    collator_keystore_container: &KeystoreContainer,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
+    collator: bool
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
 
@@ -467,11 +476,11 @@ async fn start_node_impl_container(
         BlockAnnounceValidator::new(relay_chain_interface.clone(), para_id);
 
     let force_authoring = parachain_config.force_authoring;
-    let validator = parachain_config.role.is_authority();
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
 
+    log::info!("are we collators? {:?}", collator);
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &parachain_config,
@@ -516,7 +525,7 @@ async fn start_node_impl_container(
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         config: parachain_config,
-        keystore: params.keystore_container.sync_keystore(),
+        keystore: collator_keystore_container.sync_keystore(),
         backend,
         network: network.clone(),
         system_rpc_tx,
@@ -536,7 +545,7 @@ async fn start_node_impl_container(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
-    if validator {
+    if collator {
         let parachain_consensus = build_consensus_container(
             client.clone(),
             block_import,
@@ -547,7 +556,7 @@ async fn start_node_impl_container(
             orchestrator_chain_interface.clone(),
             transaction_pool,
             sync_service,
-            params.keystore_container.sync_keystore(),
+            collator_keystore_container.sync_keystore(),
             force_authoring,
             para_id,
             orchestrator_para_id,
