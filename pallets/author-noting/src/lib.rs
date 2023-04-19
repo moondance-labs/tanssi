@@ -108,7 +108,11 @@ pub mod pallet {
             for para_id in para_ids {
                 match Self::fetch_author_slot_from_proof(&relay_state_proof, para_id) {
                     Ok(author) => LatestAuthor::<T>::insert(para_id, author),
-                    Err(e) => log::warn!("Author-noting error {:?} found in para {:?}", e, u32::from(para_id)),
+                    Err(e) => log::warn!(
+                        "Author-noting error {:?} found in para {:?}",
+                        e,
+                        u32::from(para_id)
+                    ),
                 }
             }
 
