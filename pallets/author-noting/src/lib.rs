@@ -62,7 +62,7 @@ pub mod pallet {
 
         type AuthorFetcher: GetAuthorFromSlot<Self>;
 
-        type RelayChainStorageRootProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
+        type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
     }
 
     pub trait GetAuthorFromSlot<T: Config> {
@@ -102,7 +102,7 @@ pub mod pallet {
             } = data;
 
             let relay_storage_root =
-                T::RelayChainStorageRootProvider::current_relay_chain_state().state_root;
+                T::RelayChainStateProvider::current_relay_chain_state().state_root;
             let relay_storage_rooted_proof =
                 AuthorNotingRelayChainStateProof::new(relay_storage_root, relay_storage_proof)
                     .expect("Invalid relay chain state proof");
