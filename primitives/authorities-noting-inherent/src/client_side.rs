@@ -52,7 +52,6 @@ impl ContainerChainAuthoritiesInherentData {
         relay_parent: PHash,
         relay_chain_interface: &impl RelayChainInterface,
         orchestrator_chain_interface: &impl TanssiChainInterface,
-        validation_data: &PersistedValidationData,
         orchestrator_para_id: ParaId,
     ) -> Option<ContainerChainAuthoritiesInherentData> {
         let relay_chain_state = collect_relay_storage_proof(
@@ -108,7 +107,6 @@ impl ContainerChainAuthoritiesInherentData {
                 .await?;
 
         Some(ContainerChainAuthoritiesInherentData {
-            validation_data: validation_data.clone(),
             relay_chain_state: relay_chain_state.clone(),
             orchestrator_chain_state: orchestrator_chain_state,
         })

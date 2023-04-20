@@ -11,6 +11,7 @@
 //! are retrieved and stored
 //!
 #![cfg_attr(not(feature = "std"), no_std)]
+use cumulus_pallet_parachain_system::RelaychainStateProvider;
 use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
 use cumulus_primitives_core::relay_chain::HeadData;
@@ -53,7 +54,10 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         type OrchestratorParaId: Get<ParaId>;
+
         type SelfParaId: Get<ParaId>;
+
+        type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
     }
 
     pub trait GetAuthorFromSlot<T: Config> {
@@ -90,17 +94,17 @@ pub mod pallet {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
             let tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
-                validation_data: vfp,
                 relay_chain_state,
                 orchestrator_chain_state,
             } = data;
 
+            let relay_storage_root =
+                T::RelayChainStateProvider::current_relay_chain_state().state_root;
+
             let para_id = T::OrchestratorParaId::get();
-            let relay_state_proof = RelayChainHeaderStateProof::new(
-                vfp.relay_parent_storage_root,
-                relay_chain_state.clone(),
-            )
-            .expect("Invalid relay chain state proof");
+            let relay_state_proof =
+                RelayChainHeaderStateProof::new(relay_storage_root, relay_chain_state.clone())
+                    .expect("Invalid relay chain state proof");
 
             let orchestrator_root =
                 Self::fetch_orchestrator_header_from_relay_proof(&relay_state_proof, para_id)
