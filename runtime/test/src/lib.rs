@@ -454,7 +454,7 @@ impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
-    type AuthorFetcher = CollatorAssignment;
+    type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
 }
 

@@ -57,7 +57,7 @@ pub mod pallet {
 
         type SelfParaId: Get<ParaId>;
 
-        type AuthorFetcher: GetContainerChainAuthor<Self::AccountId>;
+        type ContainerChainAuthor: GetContainerChainAuthor<Self::AccountId>;
 
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
     }
@@ -220,7 +220,7 @@ impl<T: Config> Pallet<T> {
             let slot = InherentType::decode(&mut data).map_err(|_| Error::<T>::NonDecodableSlot)?;
 
             // Fetch Author
-            let author = T::AuthorFetcher::author_for_slot(slot, para_id)
+            let author = T::ContainerChainAuthor::author_for_slot(slot, para_id)
                 .ok_or(Error::<T>::AuthorNotFound)?;
 
             Ok(author)
