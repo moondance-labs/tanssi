@@ -60,21 +60,11 @@ pub mod pallet {
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
     }
 
-    pub trait GetAuthorFromSlot<T: Config> {
-        /// Returns current session index.
-        fn author_from_inherent(inherent: InherentType, para_id: ParaId) -> Option<T::AccountId>;
-    }
-
     #[pallet::error]
     pub enum Error<T> {
         /// The new value for a configuration parameter is invalid.
         FailedReading,
         FailedDecodingHeader,
-        AuraDigestFirstItem,
-        AsPreRuntimeError,
-        NonDecodableSlot,
-        AuthorNotFound,
-        NonAuraDigest,
         NoAuthoritiesFound,
     }
 
