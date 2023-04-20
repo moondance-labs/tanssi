@@ -19,6 +19,7 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-core = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
+tp-traits = { workspace = true }
 
 [dev-dependencies]
 sp-io = { workspace = true, default-features = false }
@@ -31,5 +32,6 @@ std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde",
+	"tp-traits/std",
 ]
 try-runtime = [ "frame-support/try-runtime" ]

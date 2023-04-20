@@ -9,7 +9,7 @@ use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use parity_scale_codec::{Decode, Encode};
 use polkadot_parachain::primitives::RelayChainBlockNumber;
-use sp_consensus_aura::inherents::InherentType;
+use polkadot_primitives::Slot;
 use sp_core::H256;
 use sp_state_machine::StorageProof;
 use sp_version::RuntimeVersion;
@@ -119,16 +119,16 @@ impl Default for Mocks {
 
 pub struct MockAuthorFetcher;
 
-impl crate::GetAuthorFromSlot<Test> for MockAuthorFetcher {
-    fn author_from_inherent(inherent: InherentType, _para_id: ParaId) -> Option<AccountId> {
-        return Some(inherent.into());
+impl tp_traits::GetContainerChainAuthor<AccountId> for MockAuthorFetcher {
+    fn author_for_slot(slot: Slot, _para_id: ParaId) -> Option<AccountId> {
+        return Some(slot.into());
     }
 }
 
 pub struct MockContainerChainGetter;
 
-impl crate::GetContainerChains for MockContainerChainGetter {
-    fn container_chains() -> Vec<ParaId> {
+impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
+    fn current_container_chains() -> Vec<ParaId> {
         MockData::mock().container_chains
     }
 }
@@ -152,7 +152,7 @@ impl RelaychainStateProvider for MockRelayStateProvider {
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type AuthorFetcher = MockAuthorFetcher;
+    type ContainerChainAuthor = MockAuthorFetcher;
     type SelfParaId = ParachainId;
     type ContainerChains = MockContainerChainGetter;
     type RelayChainStateProvider = MockRelayStateProvider;

@@ -444,90 +444,17 @@ impl pallet_aura::Config for Runtime {
     type MaxAuthorities = ConstU32<100_000>;
 }
 
-pub struct HostConfigurationGetter;
-
-impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
-    fn collators_per_container(session_index: u32) -> u32 {
-        let (past_and_present, _) = Configuration::pending_configs()
-            .into_iter()
-            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
-
-        let config = if let Some(last) = past_and_present.last() {
-            last.1.clone()
-        } else {
-            Configuration::config()
-        };
-        config.collators_per_container
-    }
-
-    fn orchestrator_chain_collators(session_index: u32) -> u32 {
-        let (past_and_present, _) = Configuration::pending_configs()
-            .into_iter()
-            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
-
-        let config = if let Some(last) = past_and_present.last() {
-            last.1.clone()
-        } else {
-            Configuration::config()
-        };
-        config.orchestrator_collators
-    }
-}
-
-pub struct ContainerChainsGetter;
-
-impl pallet_collator_assignment::GetContainerChains<u32> for ContainerChainsGetter {
-    fn container_chains(session_index: u32) -> Vec<u32> {
-        let (past_and_present, _) = Registrar::pending_registered_para_ids()
-            .into_iter()
-            .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
-
-        let paras = if let Some(last) = past_and_present.last() {
-            last.1.clone()
-        } else {
-            Registrar::registered_para_ids()
-        };
-
-        paras.into()
-    }
-}
-
 impl pallet_collator_assignment::Config for Runtime {
-    type HostConfiguration = HostConfigurationGetter;
-    type ContainerChains = ContainerChainsGetter;
+    type HostConfiguration = Configuration;
+    type ContainerChains = Registrar;
     type SessionIndex = u32;
-}
-
-pub struct AuthorFetcher;
-use sp_consensus_aura::inherents::InherentType;
-impl pallet_author_noting::GetAuthorFromSlot<Runtime> for AuthorFetcher {
-    fn author_from_inherent(inherent: InherentType, para_id: ParaId) -> Option<AccountId> {
-        let assigned_collators = CollatorAssignment::collator_container_chain();
-        let collators = assigned_collators.container_chains.get(&para_id.into())?;
-        if collators.is_empty() {
-            // Avoid division by zero below
-            return None;
-        }
-        let author_index = u64::from(inherent) % collators.len() as u64;
-        collators.get(author_index as usize).cloned()
-    }
-}
-
-pub struct ContainerChainFetcher;
-impl pallet_author_noting::GetContainerChains for ContainerChainFetcher {
-    fn container_chains() -> Vec<ParaId> {
-        Registrar::registered_para_ids()
-            .into_iter()
-            .map(|x| x.into())
-            .collect()
-    }
 }
 
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ContainerChains = ContainerChainFetcher;
+    type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
-    type AuthorFetcher = AuthorFetcher;
+    type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
 }
 
@@ -565,7 +492,7 @@ parameter_types! {
 
 pub struct CurrentSessionIndexGetter;
 
-impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     /// Returns current session index.
     fn session_index() -> u32 {
         Session::current_index()

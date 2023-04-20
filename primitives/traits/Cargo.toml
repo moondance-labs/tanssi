@@ -1,0 +1,17 @@
+[package]
+name = "tp-traits"
+authors = [ "Parity Technologies <admin@parity.io>" ]
+edition = "2021"
+version = "0.1.0"
+
+[dependencies]
+sp-std = { workspace = true }
+
+# Cumulus
+cumulus-primitives-core = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"cumulus-primitives-core/std",
+]
