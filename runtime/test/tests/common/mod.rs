@@ -206,7 +206,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
 }
 
 /// Mocks the author noting inherent to insert the data we
-pub fn set_author_noting_inherent_data(builder: AuthorNotingSproofBuilder) {
+pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
     let (relay_storage_root, relay_storage_proof) = builder.into_state_root_and_proof();
 
     // For now we directly touch parachain_system storage to set the relay state root.
