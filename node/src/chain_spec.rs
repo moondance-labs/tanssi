@@ -5,6 +5,7 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
+    std::collections::BTreeMap,
     test_runtime::{
         AccountId, AuraId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
     },
@@ -20,7 +21,9 @@ pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfigDummy, Exte
 /// but whose implementation panics because we never expect it to be used.
 /// This is because container chains must use raw chain spec files where the "genesis"
 /// field only has one field: "raw".
-pub struct RawGenesisConfigDummy;
+pub struct RawGenesisConfigDummy {
+    pub map: BTreeMap<Vec<u8>, Vec<u8>>,
+}
 
 impl Serialize for RawGenesisConfigDummy {
     fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
@@ -43,8 +46,12 @@ impl<'de> Deserialize<'de> for RawGenesisConfigDummy {
 }
 
 impl sp_runtime::BuildStorage for RawGenesisConfigDummy {
-    fn assimilate_storage(&self, _storage: &mut sp_core::storage::Storage) -> Result<(), String> {
-        panic!("This type should never be used to assimilate_storage")
+    fn assimilate_storage(&self, storage: &mut sp_core::storage::Storage) -> Result<(), String> {
+        storage
+            .top
+            .extend(self.map.iter().map(|(k, v)| (k.clone(), v.clone())));
+
+        Ok(())
     }
 }
 
@@ -264,10 +271,60 @@ fn testnet_genesis(
         parachain_system: Default::default(),
         configuration: Default::default(),
         registrar: RegistrarConfig {
-            para_ids: para_ids.into_iter().map(|x| x.into()).collect(),
+            para_ids: para_ids
+                .into_iter()
+                .map(|x| {
+                    (
+                        x.into(),
+                        build_para_genesis_data(x).unwrap_or_else(|e| {
+                            panic!(
+                                "Failed to build genesis data for container chain {}: {}",
+                                x, e
+                            )
+                        }),
+                    )
+                })
+                .collect(),
         },
         sudo: SudoConfig {
             key: Some(root_key),
         },
     }
+}
+
+fn build_para_genesis_data(para_id: ParaId) -> Result<Vec<(Vec<u8>, Vec<u8>)>, String> {
+    // TODO: we are manually parsing a json file here, maybe we can leverage the existing
+    // chainspec deserialization code.
+    // Read raw chainspec file
+    let path = format!("./specs/template-container-{}.json", para_id);
+    let raw_chainspec_str = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let raw_chainspec_json: serde_json::Value =
+        serde_json::from_str(&raw_chainspec_str).map_err(|e| e.to_string())?;
+    // TODO: this bound checking may panic, although maybe the error message is be good enough
+    let genesis_data = &raw_chainspec_json["genesis"]["raw"]["top"];
+    let genesis_data_map = genesis_data
+        .as_object()
+        .ok_or(format!("genesis.raw.top is not an object"))?;
+
+    let mut genesis_data_vec = Vec::with_capacity(genesis_data_map.len());
+
+    for (key, value) in genesis_data_map {
+        let key_hex = key
+            .strip_prefix("0x")
+            .ok_or(format!("key does not start with 0x"))?;
+        let value = value.as_str().ok_or(format!("value is not a string"))?;
+        let value_hex = value
+            .strip_prefix("0x")
+            .ok_or(format!("value does not start with 0x"))?;
+
+        let key_bytes = hex::decode(key_hex).map_err(|e| e.to_string())?;
+        let value_bytes = hex::decode(value_hex).map_err(|e| e.to_string())?;
+
+        genesis_data_vec.push((key_bytes, value_bytes));
+    }
+
+    // This was created by iterating over a map, so it won't have two equal keys
+    genesis_data_vec.sort_unstable();
+
+    Ok(genesis_data_vec)
 }

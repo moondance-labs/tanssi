@@ -12,10 +12,12 @@ async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
 futures = { workspace = true }
+hex = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
+serde_json = { workspace = true }
 tokio = { workspace = true }
 
 # Local

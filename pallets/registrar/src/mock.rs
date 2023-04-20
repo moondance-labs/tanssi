@@ -80,7 +80,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 // Build genesis storage according to the mock runtime.
-pub fn new_test_ext_with_genesis(para_ids: Vec<u32>) -> sp_io::TestExternalities {
+pub fn new_test_ext_with_genesis(
+    para_ids: Vec<(u32, Vec<(Vec<u8>, Vec<u8>)>)>,
+) -> sp_io::TestExternalities {
     GenesisConfig {
         system: Default::default(),
         para_registrar: pallet_registrar::GenesisConfig { para_ids },

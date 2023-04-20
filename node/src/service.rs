@@ -444,12 +444,80 @@ async fn start_node_impl(
                     // The preload must finish before calling create_configuration, so any async operations
                     // need to be awaited.
 
-                    // TODO: read genesis data from tanssi
+                    // Read genesis data from tanssi
                     let tanssi_chain_interface = tanssi_chain_interface_builder.build();
+                    // TODO: use runtime api here instead of reading raw storage keys?
+                    let relay_parent = relay_chain_interface
+                        .best_block_hash()
+                        .await
+                        .expect("failed to get relay block hash");
 
-                    tanssi_cli
-                        .preload_chain_spec_file(2000, "./specs/template-container-2000.json")
-                        .map_err(|e| format!("Failed to preload chain spec json: {}", e))?;
+                    let header_orchestrator = relay_chain_interface
+                        .get_storage_by_key(
+                            relay_parent,
+                            &tp_authorities_noting_inherent::para_id_head(para_id),
+                        )
+                        .await
+                        .unwrap();
+
+                    let header_data_orchestrator = header_orchestrator
+                        .map(|raw| <HeadData>::decode(&mut &raw[..]))
+                        .transpose()
+                        .unwrap_or_default()
+                        .unwrap_or_default();
+
+                    // We later take the Header decoded
+                    let orchestrator_header =
+                        sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
+                            &mut header_data_orchestrator.0.as_slice(),
+                        )
+                        .unwrap();
+
+                    let key = &hex::decode(
+                        "3fba98689ebed1138735e0e7a5a790ab6339d4183899cf4f5efccdad995b795c",
+                    )
+                    .unwrap();
+                    let para_ids_encoded = tanssi_chain_interface
+                        .get_storage_by_key(orchestrator_header.hash(), key)
+                        .await
+                        .unwrap()
+                        .unwrap();
+                    let para_ids = <Vec<u32>>::decode(&mut para_ids_encoded.as_slice()).unwrap();
+
+                    log::info!("Got these para_ids from tanssi!: {:?}", para_ids);
+
+                    // Retrieves the full key representing the para->heads and the paraId
+                    pub fn para_id_genesis_data(para_id: ParaId) -> Vec<u8> {
+                        para_id.using_encoded(|para_id: &[u8]| {
+                            hex::decode(
+                                "3fba98689ebed1138735e0e7a5a790ab60a1667ddcfed59bae1ce824c935132e",
+                            )
+                            .unwrap()
+                            .iter()
+                            .chain(blake2_128(para_id).iter())
+                            .chain(para_id.iter())
+                            .cloned()
+                            .collect()
+                        })
+                    }
+
+                    for para_id in para_ids {
+                        let key = para_id_genesis_data(para_id.into());
+                        let genesis_data_encoded = tanssi_chain_interface
+                            .get_storage_by_key(orchestrator_header.hash(), &key)
+                            .await
+                            .unwrap()
+                            .unwrap();
+                        let genesis_data =
+                            <Vec<(Vec<u8>, Vec<u8>)>>::decode(&mut genesis_data_encoded.as_slice())
+                                .unwrap();
+
+                        tanssi_cli
+                            .preload_chain_spec_from_genesis_data(para_id, genesis_data)
+                            .unwrap();
+
+                        log::info!("Loaded chain spec for container chain {}", para_id);
+                    }
 
                     let tanssi_cli_config = sc_cli::SubstrateCli::create_configuration(
                         &tanssi_cli,
@@ -457,6 +525,7 @@ async fn start_node_impl(
                         tokio_handle,
                     )
                     .map_err(|err| format!("Tanssi argument error: {}", err))?;
+
                     let container_chain_para_id =
                         crate::chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
                             .map(|e| e.para_id)

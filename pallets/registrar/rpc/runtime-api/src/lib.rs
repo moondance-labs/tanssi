@@ -10,5 +10,8 @@ sp_api::decl_runtime_apis! {
     {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId>;
+
+        /// Fetch genesis data for this para id
+        fn genesis_data(para_id: ParaId) -> Option<Vec<(Vec<u8>, Vec<u8>)>>;
     }
 }

@@ -719,6 +719,11 @@ impl_runtime_apis! {
         fn registered_paras() -> Vec<u32> {
             Registrar::registered_para_ids().to_vec()
         }
+
+        /// Fetch genesis data for this para id
+        fn genesis_data(para_id: u32) -> Option<Vec<(Vec<u8>, Vec<u8>)>> {
+            Registrar::para_genesis_data(para_id)
+        }
     }
 }
 

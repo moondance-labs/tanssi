@@ -39,7 +39,7 @@ pub mod pallet {
     #[derive(Default)]
     pub struct GenesisConfig {
         /// Para ids
-        pub para_ids: Vec<u32>,
+        pub para_ids: Vec<(u32, Vec<(Vec<u8>, Vec<u8>)>)>,
     }
 
     #[pallet::genesis_build]
@@ -48,17 +48,24 @@ pub mod pallet {
             let mut para_ids = self.para_ids.clone();
             para_ids.sort();
             para_ids.dedup_by(|a, b| {
-                if a == b {
-                    panic!("Duplicate para_id: {}", a);
+                if a.0 == b.0 {
+                    panic!("Duplicate para_id: {}", a.0);
                 } else {
                     false
                 }
             });
 
-            <RegisteredParaIds<T>>::put(
-                BoundedVec::<_, _>::try_from(para_ids)
-                    .expect("too many para ids in genesis: bounded vec full"),
-            );
+            let mut bounded_para_ids = BoundedVec::truncate_from(vec![]);
+
+            for (para_id, genesis_data) in para_ids {
+                bounded_para_ids
+                    .try_push(para_id)
+                    .expect("too many para ids in genesis: bounded vec full");
+
+                <ParaGenesisData<T>>::insert(para_id, genesis_data);
+            }
+
+            <RegisteredParaIds<T>>::put(bounded_para_ids);
         }
     }
 
@@ -92,6 +99,11 @@ pub mod pallet {
     pub type PendingParaIds<T: Config> =
         StorageValue<_, Vec<(T::SessionIndex, BoundedVec<u32, T::MaxLengthParaIds>)>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn para_genesis_data)]
+    pub type ParaGenesisData<T: Config> =
+        StorageMap<_, Blake2_128Concat, u32, Vec<(Vec<u8>, Vec<u8>)>, OptionQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -115,8 +127,12 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Register parachain
         #[pallet::call_index(0)]
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1).ref_time())]
-        pub fn register(origin: OriginFor<T>, para_id: u32) -> DispatchResult {
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,2).ref_time())]
+        pub fn register(
+            origin: OriginFor<T>,
+            para_id: u32,
+            genesis_data: Vec<(Vec<u8>, Vec<u8>)>,
+        ) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
             Self::schedule_parachain_change(|para_ids| {
                 // We don't want to add duplicate para ids, so we check whether the potential new
@@ -134,6 +150,11 @@ pub mod pallet {
                 };
                 result
             })?;
+
+            // TODO: while the registration takes place on the next session, the genesis data
+            // is inserted immediately
+            // TODO: implement size limits for this field
+            ParaGenesisData::<T>::insert(para_id, genesis_data);
 
             Self::deposit_event(Event::ParaIdRegistered { para_id });
             Ok(())

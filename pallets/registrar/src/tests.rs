@@ -8,7 +8,7 @@ use {
 fn register_para_id_42() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42));
+        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32]).unwrap())]
@@ -27,9 +27,9 @@ fn register_para_id_42() {
 fn register_para_id_42_twice() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42));
+        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
         assert_noop!(
-            ParaRegistrar::register(RuntimeOrigin::root(), 42),
+            ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]),
             Error::<Test>::ParaIdAlreadyRegistered
         );
     });
@@ -50,7 +50,7 @@ fn deregister_para_id_from_empty_list() {
 fn deregister_para_id_42() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42));
+        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32]).unwrap())]
@@ -74,7 +74,7 @@ fn deregister_para_id_42() {
 fn deregister_para_id_42_after_session_changes() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42));
+        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32]).unwrap())]
@@ -98,7 +98,7 @@ fn deregister_para_id_42_after_session_changes() {
 fn deregister_para_id_42_twice() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42));
+        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32]).unwrap())]
@@ -120,7 +120,7 @@ fn register_para_id_bad_origin() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_noop!(
-            ParaRegistrar::register(RuntimeOrigin::signed(1), 42),
+            ParaRegistrar::register(RuntimeOrigin::signed(1), 42, vec![]),
             DispatchError::BadOrigin
         );
     });
@@ -139,24 +139,27 @@ fn deregister_para_id_bad_origin() {
 
 #[test]
 fn genesis_loads_para_ids() {
-    new_test_ext_with_genesis(vec![1, 2, 3, 4]).execute_with(|| {
-        System::set_block_number(1);
-        assert_eq!(ParaRegistrar::registered_para_ids(), vec![1, 2, 3, 4]);
-    });
+    new_test_ext_with_genesis(vec![(1, vec![]), (2, vec![]), (3, vec![]), (4, vec![])])
+        .execute_with(|| {
+            System::set_block_number(1);
+            assert_eq!(ParaRegistrar::registered_para_ids(), vec![1, 2, 3, 4]);
+        });
 }
 
 #[test]
 fn genesis_sorts_para_ids() {
-    new_test_ext_with_genesis(vec![4, 2, 3, 1]).execute_with(|| {
-        System::set_block_number(1);
-        assert_eq!(ParaRegistrar::registered_para_ids(), vec![1, 2, 3, 4]);
-    });
+    new_test_ext_with_genesis(vec![(4, vec![]), (2, vec![]), (3, vec![]), (1, vec![])])
+        .execute_with(|| {
+            System::set_block_number(1);
+            assert_eq!(ParaRegistrar::registered_para_ids(), vec![1, 2, 3, 4]);
+        });
 }
 
 #[test]
 #[should_panic = "Duplicate para_id: 2"]
 fn genesis_error_on_duplicate() {
-    new_test_ext_with_genesis(vec![2, 3, 4, 2]).execute_with(|| {
-        System::set_block_number(1);
-    });
+    new_test_ext_with_genesis(vec![(2, vec![]), (3, vec![]), (4, vec![]), (2, vec![])])
+        .execute_with(|| {
+            System::set_block_number(1);
+        });
 }

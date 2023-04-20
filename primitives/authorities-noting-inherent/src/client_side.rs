@@ -14,7 +14,7 @@ const LOG_TARGET: &str = "parachain-inherent";
 
 /// Collect the relevant relay chain state in form of a proof
 /// for putting it into authorities noting inherent
-async fn collect_relay_storage_proof(
+pub async fn collect_relay_storage_proof(
     relay_chain_interface: &impl RelayChainInterface,
     orchestrator_para_id: ParaId,
     relay_parent: PHash,

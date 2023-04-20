@@ -68,7 +68,7 @@ pub struct ExtBuilder {
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
-    para_ids: Vec<u32>,
+    para_ids: Vec<(u32, Vec<(Vec<u8>, Vec<u8>)>)>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
 }
@@ -95,7 +95,7 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_para_ids(mut self, para_ids: Vec<u32>) -> Self {
+    pub fn with_para_ids(mut self, para_ids: Vec<(u32, Vec<(Vec<u8>, Vec<u8>)>)>) -> Self {
         self.para_ids = para_ids;
         self
     }

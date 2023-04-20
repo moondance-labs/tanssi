@@ -8,6 +8,15 @@ use {
     },
 };
 
+use {
+    crate::{chain_spec::RawGenesisConfigDummy, service::Sealing},
+    std::{
+        collections::{BTreeMap, HashMap},
+        path::PathBuf,
+        sync::{Arc, RwLock},
+    },
+};
+
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
@@ -283,10 +292,36 @@ impl TanssiCli {
         }
     }
 
-    pub fn preload_chain_spec_file(&mut self, para_id: u32, path: &str) -> Result<(), String> {
-        let chain_spec = Box::new(crate::chain_spec::RawChainSpec::from_json_file(
-            std::path::PathBuf::from(path),
-        )?);
+    pub fn preload_chain_spec_from_genesis_data(
+        &mut self,
+        para_id: u32,
+        genesis_data: Vec<(Vec<u8>, Vec<u8>)>,
+    ) -> Result<(), String> {
+        let name = format!("Local testnet");
+        let id = format!("local_testnet");
+        let map: BTreeMap<_, _> = genesis_data.into_iter().collect();
+        let boot_nodes = vec![];
+        let properties = Some(serde_json::Map::from_iter(vec![
+            ("ss58Format".to_string(), serde_json::Value::from(42)),
+            ("tokenDecimals".to_string(), serde_json::Value::from(12)),
+            ("tokenSymbol".to_string(), serde_json::Value::from("UNIT")),
+        ]));
+        let extensions = crate::chain_spec::Extensions {
+            relay_chain: "rococo_local_testnet".to_string(),
+            para_id,
+        };
+        let chain_spec = Box::new(crate::chain_spec::RawChainSpec::from_genesis(
+            &name,
+            &id,
+            sc_chain_spec::ChainType::Local,
+            move || RawGenesisConfigDummy { map: map.clone() },
+            boot_nodes,
+            None,
+            Some("template-local"),
+            None,
+            properties,
+            extensions,
+        ));
 
         self.preloaded_chain_specs
             .write()
