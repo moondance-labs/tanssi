@@ -8,7 +8,6 @@ version = "0.1.0"
 
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
-
 [dependencies]
 frame-support = { workspace = true }
 frame-system = { workspace = true }
@@ -27,38 +26,38 @@ sp-trie = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
-tp-core = { workspace = true }
 tp-chain-state-snapshot = { workspace = true }
+tp-core = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
 polkadot-parachain = { workspace = true }
 polkadot-primitives = { workspace = true }
-test-relay-sproof-builder = { workspace = true }
 sp-externalities = { workspace = true }
 sp-io = { workspace = true }
 sp-state-machine = { workspace = true }
 sp-version = { workspace = true }
+test-relay-sproof-builder = { workspace = true }
 
 [features]
 default = [ "std" ]
 std = [
 	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-primitives-core/std",
 	"cumulus-primitives-core/std",
 	"frame-support/std",
 	"frame-system/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
-    "serde",
-    "sp-consensus-aura/std",
-    "cumulus-primitives-core/std",
-    "cumulus-pallet-parachain-system/std",
-    "tp-author-noting-inherent/std",
-    "sp-state-machine/std",
-    "sp-trie/std",
-    "tp-core/std",
-    "tp-chain-state-snapshot/std",
+	"serde",
+	"sp-consensus-aura/std",
+	"sp-state-machine/std",
+	"sp-trie/std",
+	"tp-author-noting-inherent/std",
+	"tp-chain-state-snapshot/std",
+	"tp-core/std",
 	"tp-traits/std",
 ]
 try-runtime = [ "frame-support/try-runtime" ]

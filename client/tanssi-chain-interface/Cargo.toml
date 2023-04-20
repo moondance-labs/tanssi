@@ -1,20 +1,22 @@
 [package]
-authors = ["Anonymous"]
 name = "tc-tanssi-chain-interface"
-version = "0.1.0"
+authors = [ "Anonymous" ]
 edition = "2021"
-
+version = "0.1.0"
 [dependencies]
-
-cumulus-primitives-core = { workspace = true, features = ["std"] }
-polkadot-overseer = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+parity-scale-codec = { workspace = true }
 thiserror = { workspace = true }
 
-sp-api = { workspace = true, features = ["std"] }
-sp-blockchain = { workspace = true }
-sp-state-machine = { workspace = true, features = ["std"] }
+# Substrate
 sc-client-api = { workspace = true }
+sp-api = { workspace = true, features = [ "std" ] }
+sp-blockchain = { workspace = true }
+sp-state-machine = { workspace = true, features = [ "std" ] }
 
-futures = { workspace = true }
-async-trait = { workspace = true }
-parity-scale-codec = { workspace = true }
+# Polkadot
+polkadot-overseer = { workspace = true }
+
+# Cumulus
+cumulus-primitives-core = { workspace = true, features = [ "std" ] }

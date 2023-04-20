@@ -3,12 +3,13 @@
 use parity_scale_codec::{Decode, Encode};
 use scale_info::prelude::collections::BTreeMap;
 use sp_std::vec::Vec;
+use tp_traits::ParaId;
 
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct AssignedCollators<AccountId> {
     pub orchestrator_chain: Vec<AccountId>,
-    pub container_chains: BTreeMap<u32, Vec<AccountId>>,
+    pub container_chains: BTreeMap<ParaId, Vec<AccountId>>,
 }
 
 // Manual default impl that does not require AccountId: Default
@@ -25,7 +26,7 @@ impl<AccountId> AssignedCollators<AccountId>
 where
     AccountId: PartialEq,
 {
-    pub fn para_id_of(&self, x: &AccountId, orchestrator_chain_para_id: u32) -> Option<u32> {
+    pub fn para_id_of(&self, x: &AccountId, orchestrator_chain_para_id: ParaId) -> Option<ParaId> {
         for (id, cs) in self.container_chains.iter() {
             if cs.contains(x) {
                 return Some(*id);
@@ -40,10 +41,10 @@ where
     }
 
     pub fn find_collator(&self, x: &AccountId) -> bool {
-        self.para_id_of(x, 0).is_some()
+        self.para_id_of(x, ParaId::from(0)).is_some()
     }
 
-    pub fn remove_container_chains_not_in_list(&mut self, container_chains: &[u32]) {
+    pub fn remove_container_chains_not_in_list(&mut self, container_chains: &[ParaId]) {
         self.container_chains
             .retain(|id, _cs| container_chains.contains(id));
     }
@@ -99,7 +100,7 @@ where
         }
     }
 
-    pub fn add_new_container_chains(&mut self, container_chains: &[u32]) {
+    pub fn add_new_container_chains(&mut self, container_chains: &[ParaId]) {
         for para_id in container_chains {
             self.container_chains.entry(*para_id).or_default();
         }

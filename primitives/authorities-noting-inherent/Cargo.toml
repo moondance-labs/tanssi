@@ -1,26 +1,25 @@
 [package]
 name = "tp-authorities-noting-inherent"
-version = "0.1.0"
 authors = []
 edition = "2021"
-
+version = "0.1.0"
 [dependencies]
 async-trait = { workspace = true, optional = true }
-parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }
 tracing = { workspace = true, optional = true }
 
 
+tc-tanssi-chain-interface = { workspace = true, optional = true }
 test-relay-sproof-builder = { workspace = true, optional = true }
 tp-core = { workspace = true, optional = true }
-tc-tanssi-chain-interface = { workspace = true, optional = true  }
 
 # Substrate
 sp-core = { workspace = true }
 sp-inherents = { workspace = true }
 sp-io = { workspace = true }
-sp-trie = { workspace = true }
 sp-runtime = { workspace = true, optional = true }
+sp-trie = { workspace = true }
 
 sp-state-machine = { workspace = true, optional = true }
 
@@ -30,20 +29,4 @@ cumulus-relay-chain-interface = { workspace = true, optional = true }
 
 [features]
 default = [ "std" ]
-std = [
-	"async-trait",
-	"parity-scale-codec/std",
-	"scale-info/std",
-	"sp-core/std",
-	"sp-inherents/std",
-	"sp-trie/std",
-	"cumulus-primitives-core/std",
-	"sp-io/std",
-	"test-relay-sproof-builder/std",
-	"tp-core/std",
-	"cumulus-relay-chain-interface",
-	"sp-state-machine",
-	"tracing",
-	"sp-runtime",
-	"tc-tanssi-chain-interface"
-]
+std = [ "async-trait", "cumulus-primitives-core/std", "cumulus-relay-chain-interface", "parity-scale-codec/std", "scale-info/std", "sp-core/std", "sp-inherents/std", "sp-io/std", "sp-runtime", "sp-state-machine", "sp-trie/std", "tc-tanssi-chain-interface", "test-relay-sproof-builder/std", "tp-core/std", "tracing" ]
