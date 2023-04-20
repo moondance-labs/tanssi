@@ -8,6 +8,7 @@ edition = "2021"
 
 cumulus-primitives-core = { workspace = true, features = ["std"] }
 polkadot-overseer = { workspace = true }
+thiserror = { workspace = true }
 
 sp-api = { workspace = true, features = ["std"] }
 sp-blockchain = { workspace = true }

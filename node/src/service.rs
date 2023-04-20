@@ -1234,6 +1234,7 @@ impl TanssiChainInProcessInterfaceBuilder {
 
 use sc_client_api::AuxStore;
 use sc_client_api::UsageProvider;
+use tc_tanssi_chain_interface::TanssiChainError;
 use tc_tanssi_chain_interface::TanssiChainInterface;
 use tc_tanssi_chain_interface::TanssiChainResult;
 
@@ -1288,8 +1289,8 @@ where
         tanssi_parent: PHash,
         key: &[u8],
     ) -> TanssiChainResult<Option<StorageValue>> {
-        let state = self.backend.state_at(tanssi_parent).map_err(|_| ())?;
-        state.storage(key).map_err(|_| ())
+        let state = self.backend.state_at(tanssi_parent)?;
+        state.storage(key).map_err(TanssiChainError::GenericError)
     }
 
     async fn prove_read(
@@ -1297,9 +1298,10 @@ where
         tanssi_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
     ) -> TanssiChainResult<StorageProof> {
-        let state_backend = self.backend.state_at(tanssi_parent).map_err(|_| ())?;
+        let state_backend = self.backend.state_at(tanssi_parent)?;
 
-        sp_state_machine::prove_read(state_backend, relevant_keys).map_err(|_| ())
+        sp_state_machine::prove_read(state_backend, relevant_keys)
+            .map_err(TanssiChainError::StateMachineError)
     }
 
     fn overseer_handle(&self) -> TanssiChainResult<Handle> {

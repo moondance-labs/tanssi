@@ -135,6 +135,7 @@ clap = { version = "4.1.6", features = [ "derive" ] }
 futures = { version = "0.3.1" }
 jsonrpsee = { version = "0.16.2", features = [ "server" ] }
 tracing = { version = "0.1.37" }
+thiserror = { version = "1.0.40" }
 
 [profile.production]
 codegen-units = 1
