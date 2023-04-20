@@ -9,7 +9,7 @@ fn assigned_collators() -> BTreeMap<u64, u32> {
 
     for (para_id, collators) in assigned_collators.container_chains.iter() {
         for collator in collators.iter() {
-            h.insert(*collator, *para_id);
+            h.insert(*collator, u32::from(*para_id));
         }
     }
 

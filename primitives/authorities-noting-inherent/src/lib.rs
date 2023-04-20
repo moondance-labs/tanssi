@@ -23,7 +23,6 @@ pub use client_side::*;
 
 #[derive(Encode, Decode, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo)]
 pub struct ContainerChainAuthoritiesInherentData {
-    pub validation_data: PersistedValidationData,
     pub relay_chain_state: sp_trie::StorageProof,
     pub orchestrator_chain_state: sp_trie::StorageProof,
 }

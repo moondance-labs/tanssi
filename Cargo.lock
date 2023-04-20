@@ -5397,6 +5397,7 @@ dependencies = [
  "tp-author-noting-inherent",
  "tp-chain-state-snapshot",
  "tp-core",
+ "tp-traits",
 ]
 
 [[package]]
@@ -5615,6 +5616,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "tp-collator-assignment",
+ "tp-traits",
 ]
 
 [[package]]
@@ -5676,6 +5678,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -6130,6 +6133,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -11518,6 +11522,7 @@ dependencies = [
  "sp-api",
  "sp-blockchain",
  "sp-state-machine",
+ "thiserror",
 ]
 
 [[package]]
@@ -11685,26 +11690,27 @@ dependencies = [
  "substrate-wasm-builder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-traits",
 ]
 
 [[package]]
 name = "thiserror"
-version = "1.0.38"
+version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a9cd18aa97d5c45c6603caea1da6628790b37f7a34b6ca89522331c5180fed0"
+checksum = "978c9a314bd8dc99be594bc3c175faaa9794be04a5a5e153caba6915336cebac"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.38"
+version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fb327af4685e4d03fa8cbcf1716380da910eeb2bb8be417e7f9fd3fb164f36f"
+checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]
@@ -11992,9 +11998,14 @@ dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "cumulus-relay-chain-interface",
+ "frame-support",
  "hex-literal",
+ "log",
  "parity-scale-codec",
+ "polkadot-primitives",
+ "sc-client-api",
  "scale-info",
+ "sp-api",
  "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
@@ -12002,6 +12013,7 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-std",
+ "sp-storage",
  "sp-trie",
  "test-relay-sproof-builder",
  "tp-core",
@@ -12056,6 +12068,7 @@ dependencies = [
  "sp-state-machine",
  "sp-std",
  "sp-trie",
+ "tp-traits",
 ]
 
 [[package]]
@@ -12067,6 +12080,14 @@ dependencies = [
  "parity-scale-codec",
  "sp-core",
  "sp-io",
+ "sp-std",
+]
+
+[[package]]
+name = "tp-traits"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
  "sp-std",
 ]
 

@@ -1,18 +1,17 @@
-//! # Author Noting Pallet
+//! # Authorities Noting Pallet
 //!
-//! This pallet notes the author of the different containerChains that have registered:
+//! This pallet notes the authorities assigned to this container-chain in an orchestrator chain
 //!
-//! The set of container chains is retrieved thanks to the GetContainerChains trait
-//! For each containerChain, we inspect the Header stored in the relayChain as
-//! a generic header. This is the first requirement for containerChains.
-//!
-//! The second requirement is that an Aura digest with the slot number for the containerChains
-//! needs to exist
+//! First the pallet receives a storage proof of the header of the orchestrator chain
+//! Once the storage proof is verified against the relay, the storage root of the orchestrator
+//! chain is retrieved from the header
 //!  
-//! Using those two requirements we can select who the author was based on the collators assigned
-//! to that containerChain, by simply assigning the slot position.
+//! A second storage proof is verified against the storage root of the orchestrator chain. From
+//! this the collator-assignation is read, and the authorities assigned to these container-chain
+//! are retrieved and stored
 //!
 #![cfg_attr(not(feature = "std"), no_std)]
+use cumulus_pallet_parachain_system::RelaychainStateProvider;
 use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
 use cumulus_primitives_core::relay_chain::HeadData;
@@ -57,7 +56,10 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         type OrchestratorParaId: Get<ParaId>;
+
         type SelfParaId: Get<ParaId>;
+
+        type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
     }
 
     pub trait GetAuthorFromSlot<T: Config> {
@@ -94,17 +96,17 @@ pub mod pallet {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
             let tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
-                validation_data: vfp,
                 relay_chain_state,
                 orchestrator_chain_state,
             } = data;
 
+            let relay_storage_root =
+                T::RelayChainStateProvider::current_relay_chain_state().state_root;
+
             let para_id = T::OrchestratorParaId::get();
-            let relay_state_proof = RelayChainHeaderStateProof::new(
-                vfp.relay_parent_storage_root,
-                relay_chain_state.clone(),
-            )
-            .expect("Invalid relay chain state proof");
+            let relay_state_proof =
+                RelayChainHeaderStateProof::new(relay_storage_root, relay_chain_state.clone())
+                    .expect("Invalid relay chain state proof");
 
             let orchestrator_root =
                 Self::fetch_orchestrator_header_from_relay_proof(&relay_state_proof, para_id)
@@ -214,6 +216,7 @@ impl<T: Config> Pallet<T> {
             .map_err(|_| Error::<T>::FailedDecodingHeader)?
             .clone();
 
+        // Fetch the orchestrator chain storage root
         let orchestrator_chain_storage_root = orchestrator_chain_header.state_root;
 
         Ok(orchestrator_chain_storage_root)
@@ -224,6 +227,7 @@ impl<T: Config> Pallet<T> {
         orchestrator_state_proof: &RelayChainHeaderStateProof,
         para_id: ParaId,
     ) -> Result<Vec<T::AccountId>, Error<T>> {
+        // Read the assignment from the orchestrator
         let assignmnet = orchestrator_state_proof
             .read_entry::<AssignedCollators<T::AccountId>>(COLLATOR_ASSIGNMENT_INDEX, None)
             .map_err(|e| match e {
@@ -231,6 +235,7 @@ impl<T: Config> Pallet<T> {
                 _ => Error::<T>::FailedReading,
             })?;
 
+        // Read those authorities assigned to this chain
         let authorities = assignmnet
             .container_chains
             .get(&para_id.into())

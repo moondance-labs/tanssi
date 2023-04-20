@@ -1,21 +1,20 @@
 [package]
 name = "pallet-collator-assignment-runtime-api"
-version = "0.1.0"
-edition = "2021"
 authors = []
 description = "Runtime API definition of pallet-collator-assignment"
+edition = "2021"
+version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
-
+targets = [ "x86_64-unknown-linux-gnu" ]
 [dependencies]
+parity-scale-codec = { workspace = true, default-features = false }
 scale-info = { workspace = true, default-features = false }
 sp-api = { workspace = true, default-features = false }
-parity-scale-codec = { workspace = true, default-features = false }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
-	"sp-api/std",
 	"parity-scale-codec/std",
+	"sp-api/std",
 ]

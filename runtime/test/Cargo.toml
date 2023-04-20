@@ -18,13 +18,13 @@ scale-info = { workspace = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Own
+pallet-author-noting = { workspace = true }
 pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
+pallet-initializer = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
-pallet-initializer = { workspace = true }
-pallet-author-noting = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -53,6 +53,7 @@ sp-trie = { workspace = true }
 
 sp-version = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
+tp-traits = { workspace = true }
 
 # Polkadot
 polkadot-parachain = { workspace = true }
@@ -68,12 +69,11 @@ cumulus-primitives-utility = { workspace = true }
 pallet-collator-selection = { workspace = true }
 parachain-info = { workspace = true }
 
-[build-dependencies]
-substrate-wasm-builder = { workspace = true }
-
 [dev-dependencies]
 sp-io = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
+[build-dependencies]
+substrate-wasm-builder = { workspace = true }
 
 [features]
 default = [
@@ -91,10 +91,13 @@ std = [
 	"frame-system/std",
 	"log/std",
 	"pallet-aura/std",
+	"pallet-author-noting/std",
 	"pallet-authorship/std",
 	"pallet-balances/std",
+	"pallet-collator-assignment-runtime-api/std",
 	"pallet-collator-selection/std",
 	"pallet-configuration/std",
+	"pallet-initializer/std",
 	"pallet-registrar/std",
 	"pallet-session/std",
 	"pallet-sudo/std",
@@ -114,11 +117,9 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
-	"pallet-initializer/std",
-	"pallet-author-noting/std",
 	"tp-author-noting-inherent/std",
-	"pallet-collator-assignment-runtime-api/std"
-]
+	"tp-traits/std",
+ ]
 
 runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",

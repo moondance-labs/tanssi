@@ -289,7 +289,7 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             assert!(Aura::authorities() == vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32],
+                assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
         });
@@ -379,7 +379,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             // Charlie and Dave should be assigne dot para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32],
+                assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
         });
@@ -423,7 +423,7 @@ fn test_parachains_deregister_collators_re_assigned() {
             // Charlie and Dave to 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32],
+                assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
@@ -434,7 +434,7 @@ fn test_parachains_deregister_collators_re_assigned() {
 
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32],
+                assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
@@ -443,7 +443,7 @@ fn test_parachains_deregister_collators_re_assigned() {
             // Charlie and Dave should be assigne dot para 1002 this time
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1002u32],
+                assignment.container_chains[&1002u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
         });
@@ -499,7 +499,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             // Charlie and Dave to 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32],
+                assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
@@ -508,7 +508,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
 
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32],
+                assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
@@ -517,7 +517,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             // Charlie, Dave and BOB should be assigne dot para 1001 this time
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32],
+                assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into(), BOB.into()]
             );
 
@@ -712,7 +712,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             assert!(Aura::authorities() == vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32],
+                assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
@@ -839,7 +839,7 @@ fn test_author_noting_not_self_para() {
             // Charlie and Dave to 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32],
+                assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
 

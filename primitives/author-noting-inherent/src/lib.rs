@@ -11,7 +11,7 @@
 //! - The sproof builder that generates a fake proof that mimics the relay chain sproof
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use cumulus_primitives_core::PersistedValidationData;
+use cumulus_primitives_core::ParaId;
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_inherents::InherentIdentifier;
@@ -31,8 +31,7 @@ mod tests;
 
 #[derive(Encode, Decode, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo)]
 pub struct OwnParachainInherentData {
-    pub validation_data: PersistedValidationData,
-    pub relay_chain_state: sp_trie::StorageProof,
+    pub relay_storage_proof: sp_trie::StorageProof,
 }
 
 // Identifier of the author-noting inherent

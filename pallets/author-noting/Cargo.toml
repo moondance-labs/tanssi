@@ -1,60 +1,63 @@
 [package]
 name = "pallet-author-noting"
-version = "0.1.0"
-description = "Author noting pallet"
 authors = []
+description = "Author noting pallet"
 edition = "2021"
 publish = false
+version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
-
+targets = [ "x86_64-unknown-linux-gnu" ]
 [dependencies]
-parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
-scale-info = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
-sp-core = { workspace = true }
-serde = { workspace = true, features = [ "derive" ], optional = true }
 log = { workspace = true }
-sp-std = { workspace = true }
-sp-runtime = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+scale-info = { workspace = true }
+serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-consensus-aura = { workspace = true }
+sp-core = { workspace = true }
 sp-inherents = { workspace = true }
+sp-runtime = { workspace = true }
 sp-state-machine = { workspace = true }
+sp-std = { workspace = true }
 sp-trie = { workspace = true }
 
-cumulus-primitives-core = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
+cumulus-primitives-core = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
-tp-core = { workspace = true }
 tp-chain-state-snapshot = { workspace = true }
+tp-core = { workspace = true }
+tp-traits = { workspace = true }
 
 [dev-dependencies]
-sp-io = { workspace = true }
-sp-version = { workspace = true }
-sp-externalities = { workspace = true }
-sp-state-machine = { workspace = true }
+hex-literal = { workspace = true }
 polkadot-parachain = { workspace = true }
 polkadot-primitives = { workspace = true }
-hex-literal = { workspace = true }
+sp-externalities = { workspace = true }
+sp-io = { workspace = true }
+sp-state-machine = { workspace = true }
+sp-version = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
-	"parity-scale-codec/std",
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-primitives-core/std",
+	"cumulus-primitives-core/std",
 	"frame-support/std",
 	"frame-system/std",
+	"parity-scale-codec/std",
 	"scale-info/std",
-    "serde",
-    "sp-consensus-aura/std",
-    "cumulus-primitives-core/std",
-    "cumulus-pallet-parachain-system/std",
-    "tp-author-noting-inherent/std",
-    "sp-state-machine/std",
-    "sp-trie/std",
-    "tp-core/std",
-    "tp-chain-state-snapshot/std"
+	"serde",
+	"sp-consensus-aura/std",
+	"sp-state-machine/std",
+	"sp-trie/std",
+	"tp-author-noting-inherent/std",
+	"tp-chain-state-snapshot/std",
+	"tp-core/std",
+	"tp-traits/std",
 ]
-try-runtime = ["frame-support/try-runtime"]
+try-runtime = [ "frame-support/try-runtime" ]

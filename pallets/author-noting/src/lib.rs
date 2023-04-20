@@ -13,6 +13,7 @@
 //! to that containerChain, by simply assigning the slot position.
 //!
 #![cfg_attr(not(feature = "std"), no_std)]
+use cumulus_pallet_parachain_system::RelaychainStateProvider;
 use cumulus_primitives_core::relay_chain::BlakeTwo256;
 use cumulus_primitives_core::relay_chain::BlockNumber;
 use cumulus_primitives_core::relay_chain::HeadData;
@@ -29,6 +30,7 @@ use sp_runtime::RuntimeString;
 use sp_std::prelude::*;
 use tp_author_noting_inherent::INHERENT_IDENTIFIER;
 use tp_core::well_known_keys::PARAS_HEADS_INDEX;
+use tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains};
 
 pub use tp_chain_state_snapshot::*;
 
@@ -39,10 +41,6 @@ mod mock;
 mod test;
 
 pub use pallet::*;
-
-pub trait GetContainerChains {
-    fn container_chains() -> Vec<ParaId>;
-}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -56,16 +54,13 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        type ContainerChains: GetContainerChains;
+        type ContainerChains: GetCurrentContainerChains;
 
         type SelfParaId: Get<ParaId>;
 
-        type AuthorFetcher: GetAuthorFromSlot<Self>;
-    }
+        type ContainerChainAuthor: GetContainerChainAuthor<Self::AccountId>;
 
-    pub trait GetAuthorFromSlot<T: Config> {
-        /// Returns current session index.
-        fn author_from_inherent(inherent: InherentType, para_id: ParaId) -> Option<T::AccountId>;
+        type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
     }
 
     #[pallet::error]
@@ -94,22 +89,25 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
+
             let tp_author_noting_inherent::OwnParachainInherentData {
-                validation_data: vfp,
-                relay_chain_state,
+                relay_storage_proof,
             } = data;
 
-            let para_ids = T::ContainerChains::container_chains();
-            let relay_state_proof = RelayChainHeaderStateProof::new(
-                vfp.relay_parent_storage_root,
-                relay_chain_state.clone(),
-            )
-            .expect("Invalid relay chain state proof");
+            let relay_storage_root =
+                T::RelayChainStateProvider::current_relay_chain_state().state_root;
+            let relay_storage_rooted_proof =
+                RelayChainHeaderStateProof::new(relay_storage_root, relay_storage_proof)
+                    .expect("Invalid relay chain state proof");
 
-            for para_id in para_ids {
-                match Self::fetch_author_slot_from_proof(&relay_state_proof, para_id) {
+            for para_id in T::ContainerChains::current_container_chains() {
+                match Self::fetch_author_slot_from_proof(&relay_storage_rooted_proof, para_id) {
                     Ok(author) => LatestAuthor::<T>::insert(para_id, author),
-                    Err(e) => log::warn!("Author-noting error {:?} found in para {:?}", e, para_id),
+                    Err(e) => log::warn!(
+                        "Author-noting error {:?} found in para {:?}",
+                        e,
+                        u32::from(para_id)
+                    ),
                 }
             }
 
@@ -233,7 +231,7 @@ impl<T: Config> Pallet<T> {
             let slot = InherentType::decode(&mut data).map_err(|_| Error::<T>::NonDecodableSlot)?;
 
             // Fetch Author
-            let author = T::AuthorFetcher::author_from_inherent(slot, para_id)
+            let author = T::ContainerChainAuthor::author_for_slot(slot, para_id)
                 .ok_or(Error::<T>::AuthorNotFound)?;
 
             Ok(author)
