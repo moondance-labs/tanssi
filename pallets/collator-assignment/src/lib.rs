@@ -32,6 +32,7 @@ use sp_std::collections::vec_deque::VecDeque;
 use sp_std::mem;
 use sp_std::prelude::*;
 use sp_std::vec;
+use tp_traits::{GetHostConfiguration, GetSessionContainerChains};
 
 pub use pallet::*;
 
@@ -41,19 +42,10 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-pub trait GetHostConfiguration<SessionIndex> {
-    fn min_orchestrator_chain_collators(session_index: SessionIndex) -> u32;
-    fn max_orchestrator_chain_collators(session_index: SessionIndex) -> u32;
-    fn collators_per_container(session_index: SessionIndex) -> u32;
-}
-
-pub trait GetContainerChains<SessionIndex> {
-    // TODO: import ParaId type
-    fn container_chains(session_index: SessionIndex) -> Vec<u32>;
-}
-
 #[frame_support::pallet]
 pub mod pallet {
+    use tp_traits::{GetContainerChainAuthor, ParaId, Slot};
+
     use super::*;
 
     #[pallet::pallet]
@@ -68,7 +60,7 @@ pub mod pallet {
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
-        type ContainerChains: GetContainerChains<Self::SessionIndex>;
+        type ContainerChains: GetSessionContainerChains<Self::SessionIndex>;
     }
 
     #[pallet::storage]
@@ -95,7 +87,7 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
     pub struct AssignedCollators<AccountId> {
         pub orchestrator_chain: Vec<AccountId>,
-        pub container_chains: BTreeMap<u32, Vec<AccountId>>,
+        pub container_chains: BTreeMap<ParaId, Vec<AccountId>>,
     }
 
     // Manual default impl that does not require AccountId: Default
@@ -112,7 +104,11 @@ pub mod pallet {
     where
         AccountId: PartialEq,
     {
-        pub fn para_id_of(&self, x: &AccountId, orchestrator_chain_para_id: u32) -> Option<u32> {
+        pub fn para_id_of(
+            &self,
+            x: &AccountId,
+            orchestrator_chain_para_id: ParaId,
+        ) -> Option<ParaId> {
             for (id, cs) in self.container_chains.iter() {
                 if cs.contains(x) {
                     return Some(*id);
@@ -127,10 +123,10 @@ pub mod pallet {
         }
 
         pub fn find_collator(&self, x: &AccountId) -> bool {
-            self.para_id_of(x, 0).is_some()
+            self.para_id_of(x, ParaId::from(0)).is_some()
         }
 
-        fn remove_container_chains_not_in_list(&mut self, container_chains: &[u32]) {
+        fn remove_container_chains_not_in_list(&mut self, container_chains: &[ParaId]) {
             self.container_chains
                 .retain(|id, _cs| container_chains.contains(id));
         }
@@ -193,7 +189,7 @@ pub mod pallet {
             }
         }
 
-        fn add_new_container_chains(&mut self, container_chains: &[u32]) {
+        fn add_new_container_chains(&mut self, container_chains: &[ParaId]) {
             for para_id in container_chains {
                 self.container_chains.entry(*para_id).or_default();
             }
@@ -275,7 +271,8 @@ pub mod pallet {
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
             // We get the containerChains that we will have at the target session
-            let container_chain_ids = T::ContainerChains::container_chains(target_session_index);
+            let container_chain_ids =
+                T::ContainerChains::session_container_chains(target_session_index);
             // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
             // We assign new collators
@@ -283,10 +280,8 @@ pub mod pallet {
             let new_assigned = Self::assign_collators_always_keep_old(
                 collators,
                 &container_chain_ids,
-                T::HostConfiguration::min_orchestrator_chain_collators(target_session_index)
-                    as usize,
-                T::HostConfiguration::max_orchestrator_chain_collators(target_session_index)
-                    as usize,
+                T::HostConfiguration::min_collators_for_orchestrator(target_session_index) as usize,
+                T::HostConfiguration::max_collators_for_orchestrator(target_session_index) as usize,
                 T::HostConfiguration::collators_per_container(target_session_index) as usize,
                 old_assigned.clone(),
             );
@@ -328,7 +323,7 @@ pub mod pallet {
         /// If there are no missing collators, nothing is changed.
         fn assign_collators_always_keep_old(
             collators: Vec<T::AccountId>,
-            container_chain_ids: &[u32],
+            container_chain_ids: &[ParaId],
             min_num_orchestrator_chain: usize,
             max_num_orchestrator_chain: usize,
             num_each_container_chain: usize,
@@ -423,6 +418,19 @@ pub mod pallet {
             collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
             Self::assign_collators(session_index, collators)
+        }
+    }
+
+    impl<T: Config> GetContainerChainAuthor<T::AccountId> for Pallet<T> {
+        fn author_for_slot(slot: Slot, para_id: ParaId) -> Option<T::AccountId> {
+            let assigned_collators = Pallet::<T>::collator_container_chain();
+            let collators = assigned_collators.container_chains.get(&para_id.into())?;
+            if collators.is_empty() {
+                // Avoid division by zero below
+                return None;
+            }
+            let author_index = u64::from(slot) % collators.len() as u64;
+            collators.get(author_index as usize).cloned()
         }
     }
 }

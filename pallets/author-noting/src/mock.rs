@@ -1,5 +1,6 @@
 use crate::{self as author_noting_pallet, Config};
-use cumulus_primitives_core::{ParaId, PersistedValidationData};
+use cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider};
+use cumulus_primitives_core::ParaId;
 use frame_support::inherent::{InherentData, ProvideInherent};
 use frame_support::parameter_types;
 use frame_support::traits::{ConstU32, ConstU64};
@@ -8,7 +9,7 @@ use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
 use parity_scale_codec::{Decode, Encode};
 use polkadot_parachain::primitives::RelayChainBlockNumber;
-use sp_consensus_aura::inherents::InherentType;
+use polkadot_primitives::Slot;
 use sp_core::H256;
 use sp_state_machine::StorageProof;
 use sp_version::RuntimeVersion;
@@ -118,26 +119,43 @@ impl Default for Mocks {
 
 pub struct MockAuthorFetcher;
 
-impl crate::GetAuthorFromSlot<Test> for MockAuthorFetcher {
-    fn author_from_inherent(inherent: InherentType, _para_id: ParaId) -> Option<AccountId> {
-        return Some(inherent.into());
+impl tp_traits::GetContainerChainAuthor<AccountId> for MockAuthorFetcher {
+    fn author_for_slot(slot: Slot, _para_id: ParaId) -> Option<AccountId> {
+        return Some(slot.into());
     }
 }
 
 pub struct MockContainerChainGetter;
 
-impl crate::GetContainerChains for MockContainerChainGetter {
-    fn container_chains() -> Vec<ParaId> {
+impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
+    fn current_container_chains() -> Vec<ParaId> {
         MockData::mock().container_chains
+    }
+}
+
+const MOCK_RELAY_ROOT_KEY: &'static [u8] = b"MOCK_RELAY_ROOT_KEY";
+
+pub struct MockRelayStateProvider;
+
+impl RelaychainStateProvider for MockRelayStateProvider {
+    fn current_relay_chain_state() -> RelayChainState {
+        let root = frame_support::storage::unhashed::get(MOCK_RELAY_ROOT_KEY)
+            .expect("root should be set by mock");
+
+        RelayChainState {
+            state_root: root,
+            number: 0, // block number is not relevant here
+        }
     }
 }
 
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type AuthorFetcher = MockAuthorFetcher;
+    type ContainerChainAuthor = MockAuthorFetcher;
     type SelfParaId = ParachainId;
     type ContainerChains = MockContainerChainGetter;
+    type RelayChainStateProvider = MockRelayStateProvider;
 }
 
 struct BlockTest {
@@ -265,22 +283,19 @@ where {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }
 
-                let (mut relay_parent_storage_root, mut relay_chain_state) =
+                let (mut relay_storage_root, mut relay_storage_proof) =
                     sproof_builder.into_state_root_and_proof();
 
                 if let Some(root) = self.overriden_state_root {
-                    relay_parent_storage_root = root;
+                    relay_storage_root = root;
                 }
 
                 if let Some(state) = &self.overriden_state_proof {
-                    relay_chain_state = state.clone();
+                    relay_storage_proof = state.clone();
                 }
 
-                let vfp = PersistedValidationData {
-                    relay_parent_number: *n as RelayChainBlockNumber,
-                    relay_parent_storage_root,
-                    ..Default::default()
-                };
+                // We write relay storage root in mock storage.
+                frame_support::storage::unhashed::put(MOCK_RELAY_ROOT_KEY, &relay_storage_root);
 
                 // It is insufficient to push the author function params
                 // to storage; they must also be included in the inherent data.
@@ -288,8 +303,7 @@ where {
                     let mut inherent_data = InherentData::default();
                     let mut system_inherent_data =
                         tp_author_noting_inherent::OwnParachainInherentData {
-                            validation_data: vfp.clone(),
-                            relay_chain_state,
+                            relay_storage_proof,
                         };
                     if let Some(ref hook) = self.inherent_data_hook {
                         hook(self, *n as RelayChainBlockNumber, &mut system_inherent_data);

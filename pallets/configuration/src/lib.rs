@@ -19,6 +19,7 @@ use sp_runtime::traits::AtLeast32BitUnsigned;
 use sp_runtime::RuntimeAppPublic;
 use sp_runtime::Saturating;
 use sp_std::prelude::*;
+use tp_traits::GetSessionIndex;
 
 pub use pallet::*;
 
@@ -113,13 +114,10 @@ impl WeightInfo for () {
     }
 }
 
-pub trait GetSessionIndex<SessionIndex> {
-    /// Returns current session index.
-    fn session_index() -> SessionIndex;
-}
-
 #[frame_support::pallet]
 pub mod pallet {
+    use tp_traits::GetHostConfiguration;
+
     use super::*;
 
     #[pallet::pallet]
@@ -443,6 +441,47 @@ pub mod pallet {
             <PendingConfigs<T>>::put(pending_configs);
 
             Ok(())
+        }
+    }
+
+    impl<T: Config> GetHostConfiguration<T::SessionIndex> for Pallet<T> {
+        fn collators_per_container(session_index: T::SessionIndex) -> u32 {
+            let (past_and_present, _) = Pallet::<T>::pending_configs()
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+            let config = if let Some(last) = past_and_present.last() {
+                last.1.clone()
+            } else {
+                Pallet::<T>::config()
+            };
+            config.collators_per_container
+        }
+
+        fn min_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
+            let (past_and_present, _) = Pallet::<T>::pending_configs()
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+            let config = if let Some(last) = past_and_present.last() {
+                last.1.clone()
+            } else {
+                Pallet::<T>::config()
+            };
+            config.min_orchestrator_collators
+        }
+
+        fn max_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
+            let (past_and_present, _) = Pallet::<T>::pending_configs()
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+            let config = if let Some(last) = past_and_present.last() {
+                last.1.clone()
+            } else {
+                Pallet::<T>::config()
+            };
+            config.max_orchestrator_collators
         }
     }
 }

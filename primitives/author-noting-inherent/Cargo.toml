@@ -1,56 +1,37 @@
 [package]
 name = "tp-author-noting-inherent"
-version = "0.1.0"
-authors = ["Parity Technologies <admin@parity.io>"]
+authors = [ "Parity Technologies <admin@parity.io>" ]
 edition = "2021"
+version = "0.1.0"
 
 [dependencies]
-log = { workspace = true }
-hex-literal = { version = "0.3.4"}
-parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
 async-trait = { workspace = true, optional = true }
+hex-literal = { version = "0.3.4" }
+log = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }
 
 # Substrate
+frame-support = { workspace = true, optional = true }
 sc-client-api = { workspace = true, optional = true }
 sp-api = { workspace = true, optional = true }
+sp-consensus-aura = { workspace = true, optional = true }
 sp-core = { workspace = true }
 sp-inherents = { workspace = true }
+sp-io = { workspace = true }
 sp-runtime = { workspace = true, optional = true }
 sp-state-machine = { workspace = true, optional = true }
-sp-storage = { workspace = true, optional = true }
-sp-consensus-aura = { workspace = true, optional = true }
 sp-std = { workspace = true }
-sp-io = { workspace = true }
+sp-storage = { workspace = true, optional = true }
 sp-trie = { workspace = true }
-frame-support = { workspace = true, optional = true }
 
 # Cumulus
+cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true, optional = true }
-cumulus-pallet-parachain-system = { workspace = true }
 
-polkadot-primitives = {  workspace = true, optional = true }
+polkadot-primitives = { workspace = true, optional = true }
 
 [features]
 default = [ "std" ]
-std = [
-	"async-trait",
-	"parity-scale-codec/std",
-	"scale-info/std",
-	"sc-client-api",
-	"sp-api",
-	"sp-core/std",
-	"sp-inherents/std",
-	"sp-runtime/std",
-	"sp-state-machine/std",
-	"sp-std/std",
-	"sp-storage",
-	"sp-trie/std",
-	"cumulus-primitives-core/std",
-	"cumulus-relay-chain-interface",
-	"polkadot-primitives",
-	"frame-support",
-	"sp-consensus-aura",
-	"sp-io/std"
-]
+std = [ "async-trait", "cumulus-primitives-core/std", "cumulus-relay-chain-interface", "frame-support", "parity-scale-codec/std", "polkadot-primitives", "sc-client-api", "scale-info/std", "sp-api", "sp-consensus-aura", "sp-core/std", "sp-inherents/std", "sp-io/std", "sp-runtime/std", "sp-state-machine/std", "sp-std/std", "sp-storage", "sp-trie/std" ]
