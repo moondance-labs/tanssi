@@ -62,6 +62,15 @@ pub mod pallet {
                     .try_push(para_id)
                     .expect("too many para ids in genesis: bounded vec full");
 
+                let genesis_data_size = genesis_data.encoded_size();
+                if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
+                    panic!(
+                        "genesis data for para_id {:?} is too large: {} bytes (limit is {})",
+                        u32::from(para_id),
+                        genesis_data_size,
+                        T::MaxGenesisDataSize::get()
+                    );
+                }
                 <ParaGenesisData<T>>::insert(para_id, genesis_data);
             }
 
@@ -81,6 +90,10 @@ pub mod pallet {
         /// Max length of para id list
         #[pallet::constant]
         type MaxLengthParaIds: Get<u32>;
+
+        /// Max length of encoded genesis data
+        #[pallet::constant]
+        type MaxGenesisDataSize: Get<u32>;
 
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
@@ -121,6 +134,8 @@ pub mod pallet {
         ParaIdNotRegistered,
         /// The bounded list of ParaIds has reached its limit
         ParaIdListFull,
+        /// Attempted to register a ParaId with a genesis data size greater than the limit
+        GenesisDataTooBig,
     }
 
     #[pallet::call]
@@ -153,7 +168,10 @@ pub mod pallet {
 
             // TODO: while the registration takes place on the next session, the genesis data
             // is inserted immediately
-            // TODO: implement size limits for this field
+            let genesis_data_size = genesis_data.encoded_size();
+            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
+                return Err(Error::<T>::GenesisDataTooBig.into());
+            }
             ParaGenesisData::<T>::insert(para_id, genesis_data);
 
             Self::deposit_event(Event::ParaIdRegistered { para_id });
@@ -178,6 +196,11 @@ pub mod pallet {
                 result
             })?;
             Self::deposit_event(Event::ParaIdDeregistered { para_id });
+
+            // TODO: while the deregistration takes place on the next session, the genesis data
+            // is deleted immediately. This will cause problems since any new collators that want
+            // to join now will not be able to sync this parachain
+            ParaGenesisData::<T>::remove(para_id);
 
             Ok(())
         }

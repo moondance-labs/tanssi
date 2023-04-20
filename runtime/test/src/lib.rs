@@ -490,6 +490,7 @@ impl pallet_collator_selection::Config for Runtime {
 
 parameter_types! {
     pub const MaxLengthParaIds: u32 = 100u32;
+    pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
 }
 
 pub struct CurrentSessionIndexGetter;
@@ -513,6 +514,7 @@ impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
+    type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
