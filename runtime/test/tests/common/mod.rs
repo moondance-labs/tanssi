@@ -1,9 +1,11 @@
+use cumulus_primitives_core::PersistedValidationData;
 use frame_support::{
     assert_ok,
     dispatch::Dispatchable,
     traits::{GenesisBuild, OnFinalize, OnInitialize},
 };
 use parity_scale_codec::Encode;
+use polkadot_parachain::primitives::HeadData;
 use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_core::Pair;
 use sp_runtime::{Digest, DigestItem};
@@ -205,21 +207,26 @@ pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
 
 /// Mocks the author noting inherent to insert the data we
 pub fn set_author_noting_inherent_data(builder: AuthorNotingSproofBuilder) {
-    use cumulus_primitives_core::PersistedValidationData;
-    let (relay_parent_storage_root, relay_chain_state) = builder.into_state_root_and_proof();
+    let (relay_storage_root, relay_storage_proof) = builder.into_state_root_and_proof();
 
-    let vfp = PersistedValidationData {
-        relay_parent_number: 1u32,
-        relay_parent_storage_root,
-        ..Default::default()
-    };
-    let parachain_inherent_data = tp_author_noting_inherent::OwnParachainInherentData {
-        validation_data: vfp,
-        relay_chain_state: relay_chain_state,
-    };
+    // For now we directly touch parachain_system storage to set the relay state root.
+    // TODO: Properly set the parachain_system inherent, which require a sproof builder combining
+    // what is required by parachain_system and author_noting.
+    frame_support::storage::unhashed::put(
+        &frame_support::storage::storage_prefix(b"ParachainSystem", b"ValidationData"),
+        &PersistedValidationData {
+            parent_head: HeadData(Default::default()),
+            relay_parent_number: 0u32,
+            relay_parent_storage_root: relay_storage_root,
+            max_pov_size: 0u32,
+        },
+    );
+
     assert_ok!(RuntimeCall::AuthorNoting(
         pallet_author_noting::Call::<Runtime>::set_latest_author_data {
-            data: parachain_inherent_data
+            data: tp_author_noting_inherent::OwnParachainInherentData {
+                relay_storage_proof,
+            }
         }
     )
     .dispatch(inherent_origin()));

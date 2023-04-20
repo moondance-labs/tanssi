@@ -455,6 +455,7 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type AuthorFetcher = CollatorAssignment;
+    type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
 }
 
 parameter_types! {
