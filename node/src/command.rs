@@ -115,7 +115,7 @@ impl SubstrateCli for RelayChainCli {
 
 impl SubstrateCli for TanssiCli {
     fn impl_name() -> String {
-        "Tanssi parachain".into()
+        "Container chain".into()
     }
 
     fn impl_version() -> String {
@@ -124,11 +124,11 @@ impl SubstrateCli for TanssiCli {
 
     fn description() -> String {
         format!(
-            "Tanssi parachain\n\nThe command-line arguments provided first will be \
-		passed to the parachain node, while the arguments provided after -- will be passed \
-		to the relay chain node, and the arguments provided after another -- will be passed \
-		to the tanssi node\n\n\
-		{} [parachain-args] -- [relay_chain-args] -- [tanssi-args]",
+            "Container chain\n\nThe command-line arguments provided first will be \
+		passed to the tanssi node, while the arguments provided after -- will be passed \
+		to the container chain node, and the arguments provided after another -- will be passed \
+		to the relay chain node\n\n\
+		{} [tanssi-args] -- [container_chain-args] -- [relay_chain-args] -- ",
             Self::executable_name()
         )
     }

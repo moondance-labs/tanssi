@@ -23,11 +23,12 @@ pub mod pallet {
     use frame_support::pallet_prelude::*;
     use frame_support::LOG_TARGET;
     use frame_system::pallet_prelude::*;
-    // TODO: move this trait to a common primitives folder
-    use pallet_configuration::GetSessionIndex;
     use sp_runtime::traits::AtLeast32BitUnsigned;
     use sp_runtime::Saturating;
     use sp_std::prelude::*;
+    use tp_traits::{
+        GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
+    };
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -77,7 +78,7 @@ pub mod pallet {
 
         type SessionDelay: Get<Self::SessionIndex>;
 
-        type CurrentSessionIndex: pallet_configuration::GetSessionIndex<Self::SessionIndex>;
+        type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
     }
 
     #[pallet::storage]
@@ -251,6 +252,31 @@ pub mod pallet {
                 prev_paras,
                 new_paras,
             }
+        }
+    }
+
+    impl<T: Config> GetCurrentContainerChains for Pallet<T> {
+        fn current_container_chains() -> Vec<ParaId> {
+            Self::registered_para_ids()
+                .into_iter()
+                .map(|x| x.into())
+                .collect()
+        }
+    }
+
+    impl<T: Config> GetSessionContainerChains<T::SessionIndex> for Pallet<T> {
+        fn session_container_chains(session_index: T::SessionIndex) -> Vec<ParaId> {
+            let (past_and_present, _) = Pallet::<T>::pending_registered_para_ids()
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+            let paras = if let Some(last) = past_and_present.last() {
+                last.1.clone()
+            } else {
+                Pallet::<T>::registered_para_ids()
+            };
+
+            paras.into_iter().map(|x| ParaId::from(x)).collect()
         }
     }
 }

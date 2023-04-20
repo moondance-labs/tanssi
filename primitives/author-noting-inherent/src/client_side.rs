@@ -1,6 +1,5 @@
 use crate::OwnParachainInherentData;
 use cumulus_primitives_core::ParaId;
-use cumulus_primitives_core::PersistedValidationData;
 use cumulus_relay_chain_interface::PHash;
 use cumulus_relay_chain_interface::RelayChainInterface;
 use tp_core::well_known_keys::para_id_head;
@@ -30,15 +29,13 @@ impl OwnParachainInherentData {
     pub async fn create_at(
         relay_parent: PHash,
         relay_chain_interface: &impl RelayChainInterface,
-        validation_data: &PersistedValidationData,
         para_ids: &[ParaId],
     ) -> Option<OwnParachainInherentData> {
-        let relay_chain_state =
+        let relay_storage_proof =
             collect_relay_storage_proof(relay_chain_interface, para_ids, relay_parent).await?;
 
         Some(OwnParachainInherentData {
-            validation_data: validation_data.clone(),
-            relay_chain_state,
+            relay_storage_proof,
         })
     }
 }

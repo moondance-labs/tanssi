@@ -5290,6 +5290,7 @@ dependencies = [
  "tp-author-noting-inherent",
  "tp-chain-state-snapshot",
  "tp-core",
+ "tp-traits",
 ]
 
 [[package]]
@@ -5508,6 +5509,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "tp-collator-assignment",
+ "tp-traits",
 ]
 
 [[package]]
@@ -5569,6 +5571,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -6023,6 +6026,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -11579,6 +11583,7 @@ dependencies = [
  "substrate-wasm-builder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-traits",
 ]
 
 [[package]]
@@ -11886,9 +11891,14 @@ dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "cumulus-relay-chain-interface",
+ "frame-support",
  "hex-literal",
+ "log",
  "parity-scale-codec",
+ "polkadot-primitives",
+ "sc-client-api",
  "scale-info",
+ "sp-api",
  "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
@@ -11896,6 +11906,7 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-std",
+ "sp-storage",
  "sp-trie",
  "test-relay-sproof-builder",
  "tp-core",
@@ -11950,6 +11961,7 @@ dependencies = [
  "sp-state-machine",
  "sp-std",
  "sp-trie",
+ "tp-traits",
 ]
 
 [[package]]
@@ -11961,6 +11973,14 @@ dependencies = [
  "parity-scale-codec",
  "sp-core",
  "sp-io",
+ "sp-std",
+]
+
+[[package]]
+name = "tp-traits"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
  "sp-std",
 ]
 
