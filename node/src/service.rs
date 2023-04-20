@@ -689,7 +689,6 @@ fn build_consensus_container(
                         relay_parent,
                         &relay_chain_interface,
                         &orchestrator_chain_interface,
-                        &validation_data,
                         orchestrator_para_id,
                     )
                     .await;

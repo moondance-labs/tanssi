@@ -110,7 +110,7 @@ pub mod pallet {
                 Self::fetch_orchestrator_header_from_relay_proof(&relay_state_proof, para_id)
                     .expect("qed");
 
-            let orchestrator_state_proof = RelayChainHeaderStateProof::new(
+            let orchestrator_state_proof = OrchestratorChainHeaderStateProof::new(
                 orchestrator_root,
                 orchestrator_chain_state.clone(),
             )
@@ -214,7 +214,7 @@ impl<T: Config> Pallet<T> {
 
     /// Fetch author slot from a proof of header
     fn fetch_authorities_from_orchestrator_proof(
-        orchestrator_state_proof: &RelayChainHeaderStateProof,
+        orchestrator_state_proof: &OrchestratorChainHeaderStateProof,
         para_id: ParaId,
     ) -> Result<Vec<T::AccountId>, Error<T>> {
         // Read the assignment from the orchestrator
