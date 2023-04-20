@@ -1,6 +1,5 @@
 use crate::ContainerChainAuthoritiesInherentData;
 use cumulus_primitives_core::ParaId;
-use cumulus_primitives_core::PersistedValidationData;
 use cumulus_relay_chain_interface::PHash;
 use cumulus_relay_chain_interface::RelayChainInterface;
 use tc_tanssi_chain_interface::TanssiChainInterface;
@@ -15,8 +14,7 @@ use tp_core::well_known_keys::COLLATOR_ASSIGNMENT_INDEX;
 const LOG_TARGET: &str = "parachain-inherent";
 
 /// Collect the relevant relay chain state in form of a proof
-/// for putting it into the author
-/// noting inherent.
+/// for putting it into authorities noting inherent
 async fn collect_relay_storage_proof(
     relay_chain_interface: &impl RelayChainInterface,
     orchestrator_para_id: ParaId,
@@ -31,6 +29,8 @@ async fn collect_relay_storage_proof(
         .ok()
 }
 
+/// Collect the relevant orchestrator chain state in form of a proof
+/// for putting it into the authorities noting inherent
 async fn collect_tanssi_storage_proof(
     orchestrator_chain_interface: &impl TanssiChainInterface,
     tanssi_parent: PHash,
@@ -100,8 +100,6 @@ impl ContainerChainAuthoritiesInherentData {
         })
         .ok()?;
 
-        // TODO: not sure if this is the hash we should use, it looks to me as if point to the previous block
-        // For now we keep it like this, but something that we should look
         let orchestrator_chain_state =
             collect_tanssi_storage_proof(orchestrator_chain_interface, orchestrator_header.hash())
                 .await?;

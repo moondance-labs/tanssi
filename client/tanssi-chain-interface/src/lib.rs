@@ -16,24 +16,10 @@ use std::sync::Arc;
 
 #[derive(thiserror::Error, Debug)]
 pub enum TanssiChainError {
-    #[error("Error occured while calling relay chain runtime: {0}")]
-    ApiError(#[from] ApiError),
-    #[error("Timeout while waiting for relay-chain block `{0}` to be imported.")]
-    WaitTimeout(PHash),
-    #[error("Import listener closed while waiting for relay-chain block `{0}` to be imported.")]
-    ImportListenerClosed(PHash),
-    #[error(
-		"Blockchain returned an error while waiting for relay-chain block `{0}` to be imported: {1}"
-	)]
-    WaitBlockchainError(PHash, sp_blockchain::Error),
     #[error("Blockchain returned an error: {0}")]
     BlockchainError(#[from] sp_blockchain::Error),
     #[error("State machine error occured: {0}")]
     StateMachineError(Box<dyn sp_state_machine::Error>),
-    #[error("Unable to call RPC method '{0}'")]
-    RpcCallError(String),
-    #[error("Unable to communicate with RPC worker: {0}")]
-    WorkerCommunicationError(String),
     #[error(transparent)]
     Application(#[from] Box<dyn std::error::Error + Send + Sync + 'static>),
     #[error("Unspecified error occured: {0}")]
@@ -43,6 +29,12 @@ pub enum TanssiChainError {
 impl From<TanssiChainError> for ApiError {
     fn from(r: TanssiChainError) -> Self {
         sp_api::ApiError::Application(Box::new(r))
+    }
+}
+
+impl From<TanssiChainError> for sp_blockchain::Error {
+    fn from(r: TanssiChainError) -> Self {
+        sp_blockchain::Error::Application(Box::new(r))
     }
 }
 

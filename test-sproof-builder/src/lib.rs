@@ -83,7 +83,7 @@ impl ParaHeaderSproofBuilder {
     }
 }
 
-/// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
+/// Builds a sproof (portmanteau of 'spoof' and 'proof') of the orchestrator chain state.
 #[derive(Clone, Encode, Default)]
 pub struct CollatorAssignmentSproofBuilder<AccountId> {
     /// The para id of the current parachain.

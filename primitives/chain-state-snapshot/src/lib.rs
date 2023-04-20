@@ -1,3 +1,7 @@
+//! # Chain Snapshot Primitives
+//!
+//! This crate defines those primitives to retrieve keys from a defined Backend
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use cumulus_primitives_core::relay_chain;
@@ -76,6 +80,55 @@ impl RelayChainHeaderStateProof {
             return Err(ReadEntryErr::RootMismatch);
         }
         let trie_backend = TrieBackendBuilder::new(db, relay_parent_storage_root).build();
+
+        Ok(Self { trie_backend })
+    }
+
+    /// Read an entry given by the key and try to decode it. If the value specified by the key according
+    /// to the proof is empty, the `fallback` value will be returned.
+    ///
+    /// Returns `Err` in case the backend can't return the value under the specific key (likely due to
+    /// a malformed proof), in case the decoding fails, or in case where the value is empty in the relay
+    /// chain state and no fallback was provided.
+    pub fn read_entry<T>(&self, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr>
+    where
+        T: Decode,
+    {
+        read_entry(&self.trie_backend, key, fallback)
+    }
+
+    /// Read an optional entry given by the key and try to decode it.
+    ///
+    /// Returns `Err` in case the backend can't return the value under the specific key (likely due to
+    /// a malformed proof) or if the value couldn't be decoded.
+    pub fn read_optional_entry<T>(&self, key: &[u8]) -> Result<Option<T>, ReadEntryErr>
+    where
+        T: Decode,
+    {
+        read_optional_entry(&self.trie_backend, key)
+    }
+}
+
+/// A state proof extracted from the orchestrator chain.
+///
+pub struct OrchestratorChainHeaderStateProof {
+    trie_backend: TrieBackend<MemoryDB<HashFor<relay_chain::Block>>, HashFor<relay_chain::Block>>,
+}
+
+impl OrchestratorChainHeaderStateProof {
+    /// Create a new instance of `Self`.
+    ///
+    /// Returns an error if the given `relay_parent_storage_root` is not the root of the given
+    /// `proof`.
+    pub fn new(
+        orchestrator_parent_storage_root: relay_chain::Hash,
+        proof: StorageProof,
+    ) -> Result<Self, ReadEntryErr> {
+        let db = proof.into_memory_db::<HashFor<relay_chain::Block>>();
+        if !db.contains(&orchestrator_parent_storage_root, EMPTY_PREFIX) {
+            return Err(ReadEntryErr::RootMismatch);
+        }
+        let trie_backend = TrieBackendBuilder::new(db, orchestrator_parent_storage_root).build();
 
         Ok(Self { trie_backend })
     }
