@@ -112,7 +112,7 @@ impl mock_data::Config for Test {}
 pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
-    fn orchestrator_chain_collators(_session_index: u32) -> u32 {
+    fn collators_for_orchestrator(_session_index: u32) -> u32 {
         MockData::mock().orchestrator_chain_collators
     }
 

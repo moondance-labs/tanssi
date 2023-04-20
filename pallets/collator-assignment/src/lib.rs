@@ -216,7 +216,7 @@ pub mod pallet {
             let new_assigned = Self::assign_collators_always_keep_old(
                 collators,
                 &container_chain_ids,
-                T::HostConfiguration::orchestrator_chain_collators(target_session_index) as usize,
+                T::HostConfiguration::collators_for_orchestrator(target_session_index) as usize,
                 T::HostConfiguration::collators_per_container(target_session_index) as usize,
                 old_assigned.clone(),
             );
