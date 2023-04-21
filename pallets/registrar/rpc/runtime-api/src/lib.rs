@@ -2,6 +2,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub use pallet_registrar::ContainerChainGenesisData;
 use scale_info::prelude::vec::Vec;
 
 sp_api::decl_runtime_apis! {
@@ -12,6 +13,6 @@ sp_api::decl_runtime_apis! {
         fn registered_paras() -> Vec<ParaId>;
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: ParaId) -> Option<Vec<(Vec<u8>, Vec<u8>)>>;
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData>;
     }
 }

@@ -92,3 +92,10 @@ pub fn new_test_ext_with_genesis(
     .unwrap()
     .into()
 }
+
+pub fn empty_genesis_data() -> ContainerChainGenesisData {
+    ContainerChainGenesisData {
+        storage: Default::default(),
+        extensions: Default::default(),
+    }
+}

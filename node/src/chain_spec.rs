@@ -303,7 +303,7 @@ const BUNDLED_CONTAINER_CHAIN_CHAIN_SPECS: &[(u32, &'static str)] = &[
     ),
 ];
 
-fn build_para_genesis_data(para_id: ParaId) -> Result<Vec<(Vec<u8>, Vec<u8>)>, String> {
+fn build_para_genesis_data(para_id: ParaId) -> Result<ContainerChainGenesisData, String> {
     // TODO: we are manually parsing a json file here, maybe we can leverage the existing
     // chainspec deserialization code.
     // Read raw chainspec file
@@ -342,11 +342,18 @@ fn build_para_genesis_data(para_id: ParaId) -> Result<Vec<(Vec<u8>, Vec<u8>)>, S
         let key_bytes = hex::decode(key_hex).map_err(|e| e.to_string())?;
         let value_bytes = hex::decode(value_hex).map_err(|e| e.to_string())?;
 
-        genesis_data_vec.push((key_bytes, value_bytes));
+        genesis_data_vec.push((key_bytes, value_bytes).into());
     }
 
     // This was created by iterating over a map, so it won't have two equal keys
     genesis_data_vec.sort_unstable();
 
-    Ok(genesis_data_vec)
+    let properties = &raw_chainspec_json["properties"];
+    let properties_json_bytes = serde_json::to_vec(properties).unwrap();
+
+    Ok(ContainerChainGenesisData {
+        storage: genesis_data_vec,
+        extensions: vec![],
+        properties: properties_json_bytes,
+    })
 }

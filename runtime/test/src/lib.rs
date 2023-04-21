@@ -33,6 +33,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
+    pallet_registrar::ContainerChainGenesisData,
     polkadot_runtime_common::BlockHashCount,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
@@ -723,7 +724,7 @@ impl_runtime_apis! {
         }
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: u32) -> Option<Vec<(Vec<u8>, Vec<u8>)>> {
+        fn genesis_data(para_id: u32) -> Option<ContainerChainGenesisData> {
             Registrar::para_genesis_data(para_id)
         }
     }

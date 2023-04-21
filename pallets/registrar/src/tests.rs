@@ -8,7 +8,11 @@ use {
 fn register_para_id_42() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::root(),
+            42,
+            empty_genesis_data()
+        ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32]).unwrap())]
@@ -27,9 +31,13 @@ fn register_para_id_42() {
 fn register_para_id_42_twice() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::root(),
+            42,
+            empty_genesis_data()
+        ));
         assert_noop!(
-            ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]),
+            ParaRegistrar::register(RuntimeOrigin::root(), 42, empty_genesis_data()),
             Error::<Test>::ParaIdAlreadyRegistered
         );
     });
@@ -65,7 +73,11 @@ fn deregister_para_id_from_empty_list() {
 fn deregister_para_id_42() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::root(),
+            42,
+            empty_genesis_data()
+        ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32]).unwrap())]
@@ -89,7 +101,11 @@ fn deregister_para_id_42() {
 fn deregister_para_id_42_after_session_changes() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::root(),
+            42,
+            empty_genesis_data()
+        ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32]).unwrap())]
@@ -113,7 +129,11 @@ fn deregister_para_id_42_after_session_changes() {
 fn deregister_para_id_42_twice() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
-        assert_ok!(ParaRegistrar::register(RuntimeOrigin::root(), 42, vec![]));
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::root(),
+            42,
+            empty_genesis_data()
+        ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32]).unwrap())]
@@ -137,7 +157,10 @@ fn deregister_para_id_removes_genesis_data() {
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::root(),
             42,
-            vec![(b"key".to_vec(), b"value".to_vec())]
+            ContainerChainGenesisData {
+                storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+                extensions: Default::default(),
+            }
         ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
@@ -172,7 +195,7 @@ fn register_para_id_bad_origin() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_noop!(
-            ParaRegistrar::register(RuntimeOrigin::signed(1), 42, vec![]),
+            ParaRegistrar::register(RuntimeOrigin::signed(1), 42, empty_genesis_data()),
             DispatchError::BadOrigin
         );
     });

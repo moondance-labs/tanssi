@@ -1,5 +1,4 @@
 use {
-    crate::service::Sealing,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::{
         collections::HashMap,
@@ -295,17 +294,15 @@ impl TanssiCli {
     pub fn preload_chain_spec_from_genesis_data(
         &mut self,
         para_id: u32,
-        genesis_data: Vec<(Vec<u8>, Vec<u8>)>,
+        genesis_data: ContainerChainGenesisData,
     ) -> Result<(), String> {
         let name = format!("Local testnet");
         let id = format!("local_testnet");
-        let map: BTreeMap<_, _> = genesis_data.into_iter().collect();
+        let map: BTreeMap<_, _> = genesis_data.storage.into_iter().map(|x| x.into()).collect();
         let boot_nodes = vec![];
-        let properties = Some(serde_json::Map::from_iter(vec![
-            ("ss58Format".to_string(), serde_json::Value::from(42)),
-            ("tokenDecimals".to_string(), serde_json::Value::from(12)),
-            ("tokenSymbol".to_string(), serde_json::Value::from("UNIT")),
-        ]));
+        let properties_json_bytes = genesis_data.properties;
+        // TODO: definitely do not unwrap here, as this is reading on chain data that may not be valid json
+        let properties = Some(serde_json::from_slice(&properties_json_bytes).unwrap());
         let extensions = crate::chain_spec::Extensions {
             relay_chain: "rococo_local_testnet".to_string(),
             para_id,

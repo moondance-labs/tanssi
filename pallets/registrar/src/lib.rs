@@ -39,12 +39,51 @@ pub mod pallet {
     #[derive(Default)]
     pub struct GenesisConfig {
         /// Para ids
-        pub para_ids: Vec<(u32, Vec<(Vec<u8>, Vec<u8>)>)>,
+        pub para_ids: Vec<(u32, ContainerChainGenesisData)>,
+    }
+
+    #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
+    #[derive(
+        Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo,
+    )]
+    pub struct ContainerChainGenesisData {
+        pub storage: Vec<ContainerChainGenesisDataItem>,
+        #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
+        pub extensions: Vec<u8>,
+        #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
+        pub properties: Vec<u8>,
+    }
+
+    #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
+    #[derive(
+        Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo,
+    )]
+    pub struct ContainerChainGenesisDataItem {
+        #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
+        pub key: Vec<u8>,
+        #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
+        pub value: Vec<u8>,
+    }
+
+    impl From<(Vec<u8>, Vec<u8>)> for ContainerChainGenesisDataItem {
+        fn from(x: (Vec<u8>, Vec<u8>)) -> Self {
+            Self {
+                key: x.0,
+                value: x.1,
+            }
+        }
+    }
+
+    impl From<ContainerChainGenesisDataItem> for (Vec<u8>, Vec<u8>) {
+        fn from(x: ContainerChainGenesisDataItem) -> Self {
+            (x.key, x.value)
+        }
     }
 
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig {
         fn build(&self) {
+            // TODO: avoid this clone because it also clones genesis data
             let mut para_ids = self.para_ids.clone();
             para_ids.sort();
             para_ids.dedup_by(|a, b| {
@@ -115,7 +154,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn para_genesis_data)]
     pub type ParaGenesisData<T: Config> =
-        StorageMap<_, Blake2_128Concat, u32, Vec<(Vec<u8>, Vec<u8>)>, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, u32, ContainerChainGenesisData, OptionQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -146,7 +185,7 @@ pub mod pallet {
         pub fn register(
             origin: OriginFor<T>,
             para_id: u32,
-            genesis_data: Vec<(Vec<u8>, Vec<u8>)>,
+            genesis_data: ContainerChainGenesisData,
         ) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
             Self::schedule_parachain_change(|para_ids| {

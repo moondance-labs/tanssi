@@ -509,7 +509,7 @@ async fn start_node_impl(
                             .unwrap()
                             .unwrap();
                         let genesis_data =
-                            <Vec<(Vec<u8>, Vec<u8>)>>::decode(&mut genesis_data_encoded.as_slice())
+                            ContainerChainGenesisData::decode(&mut genesis_data_encoded.as_slice())
                                 .unwrap();
 
                         tanssi_cli

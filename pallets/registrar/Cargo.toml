@@ -34,5 +34,6 @@ std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"tp-traits/std",
+	"serde",
 ]
 try-runtime = [ "frame-support/try-runtime" ]
