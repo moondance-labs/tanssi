@@ -116,7 +116,10 @@ pub mod pallet {
 
             match authorities {
                 Ok(authorities) => Authorities::<T>::put(authorities),
-                Err(_e) => Authorities::<T>::kill(),
+                Err(e) => {
+                    log::warn!("Authorities-noting error {:?}", e);
+                    Authorities::<T>::kill();
+                }
             }
 
             Ok(PostDispatchInfo {
