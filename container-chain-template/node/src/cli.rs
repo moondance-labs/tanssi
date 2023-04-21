@@ -1,10 +1,11 @@
 use std::path::PathBuf;
+use sc_cli::{CliConfiguration, SharedParams, NodeKeyParams};
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
     /// Build a chain specification.
-    BuildSpec(sc_cli::BuildSpecCmd),
+    BuildSpec(BuildSpecCmd),
 
     /// Validate blocks.
     CheckBlock(sc_cli::CheckBlockCmd),
@@ -70,6 +71,10 @@ pub struct Cli {
     /// Relay chain arguments
     #[arg(raw = true)]
     pub relay_chain_args: Vec<String>,
+
+    /// Optional parachain id that should be used to build chain spec.
+    #[arg(long)]
+    pub para_id: Option<u32>,
 }
 
 #[derive(Debug)]
@@ -101,5 +106,26 @@ impl RelayChainCli {
             chain_id,
             base: clap::Parser::parse_from(relay_chain_args),
         }
+    }
+}
+
+/// The `build-spec` command used to build a specification.
+#[derive(Debug, Clone, clap::Parser)]
+pub struct BuildSpecCmd {
+    #[clap(flatten)]
+    pub base: sc_cli::BuildSpecCmd,
+
+    /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
+    #[clap(long)]
+    pub parachain_id: Option<u32>,
+}
+
+impl CliConfiguration for BuildSpecCmd {
+    fn shared_params(&self) -> &SharedParams {
+        &self.base.shared_params
+    }
+
+    fn node_key_params(&self) -> Option<&NodeKeyParams> {
+        Some(&self.base.node_key_params)
     }
 }

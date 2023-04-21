@@ -20,11 +20,11 @@ use crate::{
     service::{new_partial, ParachainNativeExecutor},
 };
 
-fn load_spec(id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
+fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::development_config()),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config()),
-        "" | "local" => Box::new(chain_spec::local_testnet_config()),
+        "dev" => Box::new(chain_spec::development_config(para_id)),
+        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id)),
+        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id)),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
@@ -63,7 +63,7 @@ impl SubstrateCli for Cli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        load_spec(id)
+        load_spec(id, self.para_id.unwrap_or(1000).into())
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
@@ -129,7 +129,18 @@ pub fn run() -> Result<()> {
     match &cli.subcommand {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.sync_run(|config| cmd.run(config.chain_spec, config.network))
+            runner.sync_run(|config| {
+                let chain_spec = if let Some(para_id) = cmd.parachain_id {
+                    if cmd.base.shared_params.dev {
+                        Box::new(chain_spec::development_config(para_id.into()))
+                    } else {
+                        Box::new(chain_spec::local_testnet_config(para_id.into()))
+                    }
+                } else {
+                    config.chain_spec
+                };
+                cmd.base.run(chain_spec, config.network)
+            })
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {

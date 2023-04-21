@@ -58,7 +58,7 @@ pub fn template_session_keys(keys: AuraId) -> container_chain_template_runtime::
     container_chain_template_runtime::SessionKeys { aura: keys }
 }
 
-pub fn development_config() -> ChainSpec {
+pub fn development_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -98,7 +98,7 @@ pub fn development_config() -> ChainSpec {
                     get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                     get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                 ],
-                1000.into(),
+                para_id.into(),
             )
         },
         Vec::new(),
@@ -108,12 +108,12 @@ pub fn development_config() -> ChainSpec {
         None,
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-            para_id: 1000,
+            para_id: para_id.into(),
         },
     )
 }
 
-pub fn local_testnet_config() -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -153,7 +153,7 @@ pub fn local_testnet_config() -> ChainSpec {
                     get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                     get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                 ],
-                1000.into(),
+                para_id.into(),
             )
         },
         // Bootnodes
@@ -169,7 +169,7 @@ pub fn local_testnet_config() -> ChainSpec {
         // Extensions
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-            para_id: 1000,
+            para_id: para_id.into(),
         },
     )
 }
