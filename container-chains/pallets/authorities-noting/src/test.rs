@@ -1,7 +1,4 @@
 use crate::mock::*;
-use parity_scale_codec::Encode;
-use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_runtime::generic::DigestItem;
 use sp_runtime::traits::BlakeTwo256;
 use test_relay_sproof_builder::{
     CollatorAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
@@ -21,7 +18,6 @@ fn test_authorities_insertion_right_para_id() {
     BlockTests::new()
         .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
             1 => {
-                let slot: InherentType = 13u64.into();
                 let mut s = ParaHeaderSproofBuilderItem::default();
                 s.para_id = OrchestratorParachainId::get().into();
                 s.author_id =
@@ -30,9 +26,7 @@ fn test_authorities_insertion_right_para_id() {
                         number: Default::default(),
                         state_root: orchestrator_chain_root.clone(),
                         extrinsics_root: Default::default(),
-                        digest: sp_runtime::generic::Digest {
-                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                        },
+                        digest: sp_runtime::generic::Digest { logs: vec![] },
                     });
                 sproof.items.push(s);
             }
@@ -58,7 +52,6 @@ fn test_authorities_insertion_wrong_para_id() {
     BlockTests::new()
         .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
             1 => {
-                let slot: InherentType = 13u64.into();
                 let mut s = ParaHeaderSproofBuilderItem::default();
                 s.para_id = OrchestratorParachainId::get().into();
                 s.author_id =
@@ -67,9 +60,7 @@ fn test_authorities_insertion_wrong_para_id() {
                         number: Default::default(),
                         state_root: orchestrator_chain_root.clone(),
                         extrinsics_root: Default::default(),
-                        digest: sp_runtime::generic::Digest {
-                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                        },
+                        digest: sp_runtime::generic::Digest { logs: vec![] },
                     });
                 sproof.items.push(s);
             }

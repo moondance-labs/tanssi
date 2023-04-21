@@ -19,7 +19,6 @@ use cumulus_primitives_core::ParaId;
 use frame_support::traits::Get;
 use frame_support::Hashable;
 use parity_scale_codec::Decode;
-use sp_consensus_aura::inherents::InherentType;
 use sp_inherents::InherentIdentifier;
 use sp_runtime::traits::Hash as HashT;
 use sp_std::prelude::*;
