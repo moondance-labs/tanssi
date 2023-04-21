@@ -20,7 +20,6 @@ use frame_support::traits::Get;
 use frame_support::Hashable;
 use parity_scale_codec::Decode;
 use parity_scale_codec::Encode;
-use sp_consensus_aura::inherents::InherentType;
 use sp_inherents::{InherentIdentifier, IsFatalError};
 use sp_runtime::traits::Hash as HashT;
 use sp_runtime::RuntimeString;
@@ -62,21 +61,11 @@ pub mod pallet {
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
     }
 
-    pub trait GetAuthorFromSlot<T: Config> {
-        /// Returns current session index.
-        fn author_from_inherent(inherent: InherentType, para_id: ParaId) -> Option<T::AccountId>;
-    }
-
     #[pallet::error]
     pub enum Error<T> {
         /// The new value for a configuration parameter is invalid.
         FailedReading,
         FailedDecodingHeader,
-        AuraDigestFirstItem,
-        AsPreRuntimeError,
-        NonDecodableSlot,
-        AuthorNotFound,
-        NonAuraDigest,
         NoAuthoritiesFound,
     }
 
@@ -108,22 +97,29 @@ pub mod pallet {
                 RelayChainHeaderStateProof::new(relay_storage_root, relay_chain_state.clone())
                     .expect("Invalid relay chain state proof");
 
-            let orchestrator_root =
-                Self::fetch_orchestrator_header_from_relay_proof(&relay_state_proof, para_id)
-                    .expect("qed");
+            // Fetch authorities
+            let authorities = {
+                let orchestrator_root =
+                    Self::fetch_orchestrator_header_from_relay_proof(&relay_state_proof, para_id)?;
 
-            let orchestrator_state_proof = OrchestratorChainHeaderStateProof::new(
-                orchestrator_root,
-                orchestrator_chain_state.clone(),
-            )
-            .expect("Invalid orchestrator chain state proof");
+                let orchestrator_state_proof = OrchestratorChainHeaderStateProof::new(
+                    orchestrator_root,
+                    orchestrator_chain_state.clone(),
+                )
+                .expect("Invalid orchestrator chain state proof");
 
-            match Self::fetch_authorities_from_orchestrator_proof(
-                &orchestrator_state_proof,
-                T::SelfParaId::get(),
-            ) {
+                Self::fetch_authorities_from_orchestrator_proof(
+                    &orchestrator_state_proof,
+                    T::SelfParaId::get(),
+                )
+            };
+
+            match authorities {
                 Ok(authorities) => Authorities::<T>::put(authorities),
-                Err(_e) => Authorities::<T>::kill(),
+                Err(e) => {
+                    log::warn!("Authorities-noting error {:?}", e);
+                    Authorities::<T>::kill();
+                }
             }
 
             Ok(PostDispatchInfo {
@@ -160,7 +156,6 @@ pub mod pallet {
     impl<T: Config> ProvideInherent for Pallet<T> {
         type Call = Call<T>;
         type Error = InherentError;
-        // TODO, what should we put here
         const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
 
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
