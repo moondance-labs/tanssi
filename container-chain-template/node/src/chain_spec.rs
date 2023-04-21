@@ -66,8 +66,14 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     properties.insert("ss58Format".into(), 42.into());
 
     let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
-    let collator_accounts: Vec<AccountId> = initial_collator_seeds.iter().map(|seed| get_account_id_from_seed::<sr25519::Public>(seed)).collect();
-    let collator_keys: Vec<AuraId> = initial_collator_seeds.iter().map(|seed| get_collator_keys_from_seed(seed)).collect();
+    let collator_accounts: Vec<AccountId> = initial_collator_seeds
+        .iter()
+        .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
+        .collect();
+    let collator_keys: Vec<AuraId> = initial_collator_seeds
+        .iter()
+        .map(|seed| get_collator_keys_from_seed(seed))
+        .collect();
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
@@ -81,7 +87,11 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
         ChainType::Development,
         move || {
             testnet_genesis(
-                collator_accounts.iter().zip(collator_keys.iter()).map(|(x, y)| (x.clone(), y.clone())).collect(),
+                collator_accounts
+                    .iter()
+                    .zip(collator_keys.iter())
+                    .map(|(x, y)| (x.clone(), y.clone()))
+                    .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
             )
@@ -106,10 +116,16 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
     properties.insert("ss58Format".into(), 42.into());
 
     let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
-    let collator_accounts: Vec<AccountId> = initial_collator_seeds.iter().map(|seed| get_account_id_from_seed::<sr25519::Public>(seed)).collect();
-    let collator_keys: Vec<AuraId> = initial_collator_seeds.iter().map(|seed| get_collator_keys_from_seed(seed)).collect();
+    let collator_accounts: Vec<AccountId> = initial_collator_seeds
+        .iter()
+        .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
+        .collect();
+    let collator_keys: Vec<AuraId> = initial_collator_seeds
+        .iter()
+        .map(|seed| get_collator_keys_from_seed(seed))
+        .collect();
     let mut default_funded_accounts = pre_funded_accounts();
-    default_funded_accounts.extend(collator_accounts.clone());    
+    default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
 
@@ -121,7 +137,11 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
         ChainType::Local,
         move || {
             testnet_genesis(
-                collator_accounts.iter().zip(collator_keys.iter()).map(|(x, y)| (x.clone(), y.clone())).collect(),
+                collator_accounts
+                    .iter()
+                    .zip(collator_keys.iter())
+                    .map(|(x, y)| (x.clone(), y.clone()))
+                    .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
             )
@@ -184,8 +204,7 @@ fn testnet_genesis(
 }
 
 /// Get pre-funded accounts
-pub fn pre_funded_accounts() -> Vec<AccountId>
-{
+pub fn pre_funded_accounts() -> Vec<AccountId> {
     vec![
         get_account_id_from_seed::<sr25519::Public>("Alice"),
         get_account_id_from_seed::<sr25519::Public>("Bob"),

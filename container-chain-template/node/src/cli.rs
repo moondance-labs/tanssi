@@ -1,5 +1,5 @@
+use sc_cli::{CliConfiguration, NodeKeyParams, SharedParams};
 use std::path::PathBuf;
-use sc_cli::{CliConfiguration, SharedParams, NodeKeyParams};
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
@@ -122,8 +122,8 @@ pub struct BuildSpecCmd {
 
     /// Seeds of collators that will start as authorities and will be funded
     #[clap(long, conflicts_with = "chain")]
-	#[clap(long, value_delimiter = ',')]
-	pub seeds: Option<Vec<String>>,
+    #[clap(long, value_delimiter = ',')]
+    pub seeds: Option<Vec<String>>,
 }
 
 impl CliConfiguration for BuildSpecCmd {

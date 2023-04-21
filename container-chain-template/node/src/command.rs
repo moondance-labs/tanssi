@@ -132,9 +132,15 @@ pub fn run() -> Result<()> {
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.parachain_id {
                     if cmd.base.shared_params.dev {
-                        Box::new(chain_spec::development_config(para_id.into(), cmd.seeds.clone()))
+                        Box::new(chain_spec::development_config(
+                            para_id.into(),
+                            cmd.seeds.clone(),
+                        ))
                     } else {
-                        Box::new(chain_spec::local_testnet_config(para_id.into(), cmd.seeds.clone()))
+                        Box::new(chain_spec::local_testnet_config(
+                            para_id.into(),
+                            cmd.seeds.clone(),
+                        ))
                     }
                 } else {
                     config.chain_spec
