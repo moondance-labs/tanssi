@@ -159,10 +159,9 @@ pub mod pallet {
 
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
             // Return Ok(Some(_)) unconditionally because this inherent is required in every block
-            // If it is not found, throw an AuthorInherentRequired error.
             Ok(Some(InherentError::Other(
                 sp_runtime::RuntimeString::Borrowed(
-                    "Inherent required to manually initiate author validation",
+                    "Pallet Author Noting Inherent required",
                 ),
             )))
         }
