@@ -292,12 +292,34 @@ fn testnet_genesis(
     }
 }
 
+const BUNDLED_CONTAINER_CHAIN_CHAIN_SPECS: &[(u32, &'static str)] = &[
+    (
+        2000,
+        include_str!("../../specs/template-container-2000.json"),
+    ),
+    (
+        2001,
+        include_str!("../../specs/template-container-2001.json"),
+    ),
+];
+
 fn build_para_genesis_data(para_id: ParaId) -> Result<Vec<(Vec<u8>, Vec<u8>)>, String> {
     // TODO: we are manually parsing a json file here, maybe we can leverage the existing
     // chainspec deserialization code.
     // Read raw chainspec file
-    let path = format!("./specs/template-container-{}.json", para_id);
-    let raw_chainspec_str = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let raw_chainspec_str = BUNDLED_CONTAINER_CHAIN_CHAIN_SPECS
+        .iter()
+        .find_map(|(id, raw_chainspec_str)| {
+            if *id == u32::from(para_id) {
+                Some(*raw_chainspec_str)
+            } else {
+                None
+            }
+        })
+        .ok_or(format!(
+            "ChainSpec for container chain {} not found",
+            para_id
+        ))?;
     let raw_chainspec_json: serde_json::Value =
         serde_json::from_str(&raw_chainspec_str).map_err(|e| e.to_string())?;
     // TODO: this bound checking may panic, although maybe the error message is be good enough
