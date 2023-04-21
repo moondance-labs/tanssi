@@ -20,11 +20,13 @@ use cumulus_primitives_core::relay_chain::HeadData;
 use cumulus_primitives_core::ParaId;
 use frame_support::Hashable;
 use parity_scale_codec::Decode;
+use parity_scale_codec::Encode;
 use sp_consensus_aura::inherents::InherentType;
 use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_inherents::InherentIdentifier;
+use sp_inherents::{InherentIdentifier, IsFatalError};
 use sp_runtime::traits::Header;
 use sp_runtime::DispatchResult;
+use sp_runtime::RuntimeString;
 use sp_std::prelude::*;
 use tp_author_noting_inherent::INHERENT_IDENTIFIER;
 use tp_core::well_known_keys::PARAS_HEADS_INDEX;
@@ -150,10 +152,20 @@ pub mod pallet {
     #[pallet::inherent]
     impl<T: Config> ProvideInherent for Pallet<T> {
         type Call = Call<T>;
-        type Error = sp_inherents::MakeFatalError<()>;
+        type Error = InherentError;
         // TODO, what should we put here
         const INHERENT_IDENTIFIER: InherentIdentifier =
             tp_author_noting_inherent::INHERENT_IDENTIFIER;
+
+        fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
+            // Return Ok(Some(_)) unconditionally because this inherent is required in every block
+            // If it is not found, throw an AuthorInherentRequired error.
+            Ok(Some(InherentError::Other(
+                sp_runtime::RuntimeString::Borrowed(
+                    "Inherent required to manually initiate author validation",
+                ),
+            )))
+        }
 
         fn create_inherent(data: &InherentData) -> Option<Self::Call> {
             let data: tp_author_noting_inherent::OwnParachainInherentData = data
@@ -225,6 +237,32 @@ impl<T: Config> Pallet<T> {
             Ok(author)
         } else {
             Err(Error::<T>::NonAuraDigest)
+        }
+    }
+}
+
+#[derive(Encode)]
+#[cfg_attr(feature = "std", derive(Debug, Decode))]
+pub enum InherentError {
+    Other(RuntimeString),
+}
+
+impl IsFatalError for InherentError {
+    fn is_fatal_error(&self) -> bool {
+        match *self {
+            InherentError::Other(_) => true,
+        }
+    }
+}
+
+impl InherentError {
+    /// Try to create an instance ouf of the given identifier and data.
+    #[cfg(feature = "std")]
+    pub fn try_from(id: &InherentIdentifier, data: &[u8]) -> Option<Self> {
+        if id == &INHERENT_IDENTIFIER {
+            <InherentError as parity_scale_codec::Decode>::decode(&mut &data[..]).ok()
+        } else {
+            None
         }
     }
 }
