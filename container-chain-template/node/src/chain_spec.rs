@@ -58,12 +58,20 @@ pub fn template_session_keys(keys: AuraId) -> container_chain_template_runtime::
     container_chain_template_runtime::SessionKeys { aura: keys }
 }
 
-pub fn development_config(para_id: ParaId) -> ChainSpec {
+pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
+
+    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
+    let collator_accounts: Vec<AccountId> = initial_collator_seeds.iter().map(|seed| get_account_id_from_seed::<sr25519::Public>(seed)).collect();
+    let collator_keys: Vec<AuraId> = initial_collator_seeds.iter().map(|seed| get_collator_keys_from_seed(seed)).collect();
+    let mut default_funded_accounts = pre_funded_accounts();
+    default_funded_accounts.extend(collator_accounts.clone());
+    default_funded_accounts.sort();
+    default_funded_accounts.dedup();
 
     ChainSpec::from_genesis(
         // Name
@@ -73,31 +81,8 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
         ChainType::Development,
         move || {
             testnet_genesis(
-                // initial collators.
-                vec![
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        get_collator_keys_from_seed("Alice"),
-                    ),
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Bob"),
-                        get_collator_keys_from_seed("Bob"),
-                    ),
-                ],
-                vec![
-                    get_account_id_from_seed::<sr25519::Public>("Alice"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-                    get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-                ],
+                collator_accounts.iter().zip(collator_keys.iter()).map(|(x, y)| (x.clone(), y.clone())).collect(),
+                default_funded_accounts.clone(),
                 para_id.into(),
             )
         },
@@ -113,12 +98,20 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
     )
 }
 
-pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
+
+    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
+    let collator_accounts: Vec<AccountId> = initial_collator_seeds.iter().map(|seed| get_account_id_from_seed::<sr25519::Public>(seed)).collect();
+    let collator_keys: Vec<AuraId> = initial_collator_seeds.iter().map(|seed| get_collator_keys_from_seed(seed)).collect();
+    let mut default_funded_accounts = pre_funded_accounts();
+    default_funded_accounts.extend(collator_accounts.clone());    
+    default_funded_accounts.sort();
+    default_funded_accounts.dedup();
 
     ChainSpec::from_genesis(
         // Name
@@ -128,31 +121,8 @@ pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
         ChainType::Local,
         move || {
             testnet_genesis(
-                // initial collators.
-                vec![
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Alice"),
-                        get_collator_keys_from_seed("Alice"),
-                    ),
-                    (
-                        get_account_id_from_seed::<sr25519::Public>("Bob"),
-                        get_collator_keys_from_seed("Bob"),
-                    ),
-                ],
-                vec![
-                    get_account_id_from_seed::<sr25519::Public>("Alice"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-                    get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-                    get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-                ],
+                collator_accounts.iter().zip(collator_keys.iter()).map(|(x, y)| (x.clone(), y.clone())).collect(),
+                default_funded_accounts.clone(),
                 para_id.into(),
             )
         },
@@ -211,4 +181,23 @@ fn testnet_genesis(
         aura_ext: Default::default(),
         parachain_system: Default::default(),
     }
+}
+
+/// Get pre-funded accounts
+pub fn pre_funded_accounts() -> Vec<AccountId>
+{
+    vec![
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        get_account_id_from_seed::<sr25519::Public>("Bob"),
+        get_account_id_from_seed::<sr25519::Public>("Charlie"),
+        get_account_id_from_seed::<sr25519::Public>("Dave"),
+        get_account_id_from_seed::<sr25519::Public>("Eve"),
+        get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+        get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+    ]
 }

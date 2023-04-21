@@ -22,34 +22,34 @@ chain = "rococo-local"
 id = 1000
 
   [[parachains.collators]]
-  name = "collator1000-01"
+  name = "Collator1000-01"
   command = "test-node"
   ws_port = 9948
 
   [[parachains.collators]]
-  name = "collator1000-02"
+  name = "Collator1000-02"
   command = "test-node"
 
   
   # container chain collators are also orchestrator chain collators
   [[parachains.collators]]
-  name = "collator2000-01"
+  name = "Collator2000-01"
   command = "test-node"
   args = ["-- --tmp --ws-port 9949 --chain ./specs/template-container-2000.json"]
 
   [[parachains.collators]]
-  name = "collator2000-02"
+  name = "Collator2000-02"
   command = "test-node"
   args = ["-- --tmp --chain ./specs/template-container-2000.json"]
 
   # container chain collators are also orchestrator chain collators
   [[parachains.collators]]
-  name = "collator2001-01"
+  name = "Collator2001-01"
   command = "test-node"
   args = ["-- --tmp --ws-port 9950 --chain ./specs/template-container-2001.json"]
 
   [[parachains.collators]]
-  name = "collator2001-02"
+  name = "Collator2001-02"
   command = "test-node"
   args = ["-- --tmp --chain ./specs/template-container-2001.json"]
 

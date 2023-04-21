@@ -22,9 +22,9 @@ use crate::{
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::development_config(para_id)),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id)),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id)),
+        "dev" => Box::new(chain_spec::development_config(para_id, None)),
+        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id, None)),
+        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id, None)),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
@@ -132,9 +132,9 @@ pub fn run() -> Result<()> {
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.parachain_id {
                     if cmd.base.shared_params.dev {
-                        Box::new(chain_spec::development_config(para_id.into()))
+                        Box::new(chain_spec::development_config(para_id.into(), cmd.seeds.clone()))
                     } else {
-                        Box::new(chain_spec::local_testnet_config(para_id.into()))
+                        Box::new(chain_spec::local_testnet_config(para_id.into(), cmd.seeds.clone()))
                     }
                 } else {
                     config.chain_spec
