@@ -85,31 +85,35 @@ pub mod pallet {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
             let tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
-                relay_chain_state,
-                orchestrator_chain_state,
+                relay_chain_state: relay_chain_state_proof,
+                orchestrator_chain_state: orchestrator_chain_state_proof,
             } = data;
 
             let relay_storage_root =
                 T::RelayChainStateProvider::current_relay_chain_state().state_root;
 
             let para_id = T::OrchestratorParaId::get();
-            let relay_state_proof =
-                RelayChainHeaderStateProof::new(relay_storage_root, relay_chain_state.clone())
-                    .expect("Invalid relay chain state proof");
+            let relay_chain_state_proof = RelayChainHeaderStateProof::new(
+                relay_storage_root,
+                relay_chain_state_proof.clone(),
+            )
+            .expect("Invalid relay chain state proof");
 
             // Fetch authorities
             let authorities = {
-                let orchestrator_root =
-                    Self::fetch_orchestrator_header_from_relay_proof(&relay_state_proof, para_id)?;
+                let orchestrator_root = Self::fetch_orchestrator_header_from_relay_proof(
+                    &relay_chain_state_proof,
+                    para_id,
+                )?;
 
-                let orchestrator_state_proof = OrchestratorChainHeaderStateProof::new(
+                let orchestrator_chain_state_proof = OrchestratorChainHeaderStateProof::new(
                     orchestrator_root,
-                    orchestrator_chain_state.clone(),
+                    orchestrator_chain_state_proof.clone(),
                 )
                 .expect("Invalid orchestrator chain state proof");
 
                 Self::fetch_authorities_from_orchestrator_proof(
-                    &orchestrator_state_proof,
+                    &orchestrator_chain_state_proof,
                     T::SelfParaId::get(),
                 )
             };
