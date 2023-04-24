@@ -98,7 +98,7 @@ jobs:
         uses: actions/download-artifact@v3.0.2
         with:
           name: runtimes
-          path: target/release
+          path: test/tmp
       
       - name: Retrieve polkadot binary from docker
         run: |
