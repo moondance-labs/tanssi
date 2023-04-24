@@ -11,10 +11,8 @@ use sp_consensus_aura::AURA_ENGINE_ID;
 use sp_core::Get;
 use sp_runtime::{traits::BlakeTwo256, DigestItem};
 use sp_std::vec;
+use test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem};
 use test_runtime::{AuthorNoting, CollatorAssignment, CollatorSelection, Configuration};
-use tp_author_noting_inherent::{
-    AuthorNotingSproofBuilder, AuthorNotingSproofBuilderItem, HeaderAs,
-};
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
 
@@ -793,10 +791,10 @@ fn test_author_noting_self_para_id_not_noting() {
         ])
         .build()
         .execute_with(|| {
-            let mut sproof = AuthorNotingSproofBuilder::default();
+            let mut sproof = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
             let self_para = parachain_info::Pallet::<Runtime>::get();
-            let mut s = AuthorNotingSproofBuilderItem::default();
+            let mut s = ParaHeaderSproofBuilderItem::default();
             s.para_id = self_para;
             s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                 parent_hash: Default::default(),
@@ -834,7 +832,7 @@ fn test_author_noting_not_self_para() {
         .with_para_ids(vec![1001])
         .build()
         .execute_with(|| {
-            let mut sproof = AuthorNotingSproofBuilder::default();
+            let mut sproof = ParaHeaderSproofBuilder::default();
             let slot: u64 = 5;
             let other_para: ParaId = 1001u32.into();
 
@@ -845,7 +843,7 @@ fn test_author_noting_not_self_para() {
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
-            let mut s = AuthorNotingSproofBuilderItem::default();
+            let mut s = ParaHeaderSproofBuilderItem::default();
             s.para_id = other_para;
             s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                 parent_hash: Default::default(),

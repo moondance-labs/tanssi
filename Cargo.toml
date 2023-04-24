@@ -1,11 +1,14 @@
 [workspace]
 members = [
+	"client/*",
+	"container-chains/pallets/*",
 	"node",
 	"pallets/*",
 	"pallets/collator-assignment/rpc/runtime-api",
 	"pallets/registrar/rpc/runtime-api",
 	"primitives/*",
 	"runtime/test",
+	"test-sproof-builder",
 ]
 resolver = "2"
 
@@ -19,8 +22,14 @@ pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 
+tc-tanssi-chain-interface = { path = "client/tanssi-chain-interface" }
+test-relay-sproof-builder = { path = "test-sproof-builder" }
 test-runtime = { path = "runtime/test", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
+tp-authorities-noting-inherent = { path = "primitives/authorities-noting-inherent", default-features = false }
+tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-features = false }
+tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
+tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
 # Substrate (wasm)
@@ -91,6 +100,7 @@ polkadot-runtime-common = { git = "https://github.com/paritytech/polkadot", bran
 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
+polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
 polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
 polkadot-service = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
 
@@ -125,7 +135,8 @@ async-trait = "0.1"
 clap = { version = "4.1.6", features = [ "derive" ] }
 futures = { version = "0.3.1" }
 jsonrpsee = { version = "0.16.2", features = [ "server" ] }
-
+thiserror = { version = "1.0.40" }
+tracing = { version = "0.1.37" }
 [profile.production]
 codegen-units = 1
 inherits = "release"

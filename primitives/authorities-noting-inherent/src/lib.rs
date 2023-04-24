@@ -1,7 +1,7 @@
-//! # Author Noting Inherent Primitives
+//! # Authorities Noting Inherent Primitives
 //!
 //! This crate defines those primitives that should be taken into account when building
-//! the author-noting pallet inherent
+//! the authorities-noting pallet inherent
 //!
 //! In particular this crate contains:
 //! - The Inherent identifier
@@ -19,18 +19,11 @@ mod client_side;
 #[cfg(feature = "std")]
 pub use client_side::*;
 
-#[cfg(feature = "std")]
-mod mock;
-#[cfg(feature = "std")]
-pub use mock::*;
-
-#[cfg(test)]
-mod tests;
-
 #[derive(Encode, Decode, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo)]
-pub struct OwnParachainInherentData {
-    pub relay_storage_proof: sp_trie::StorageProof,
+pub struct ContainerChainAuthoritiesInherentData {
+    pub relay_chain_state: sp_trie::StorageProof,
+    pub orchestrator_chain_state: sp_trie::StorageProof,
 }
 
 // Identifier of the author-noting inherent
-pub const INHERENT_IDENTIFIER: InherentIdentifier = *b"auno1337";
+pub const INHERENT_IDENTIFIER: InherentIdentifier = *b"ccno1337";

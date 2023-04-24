@@ -71,7 +71,7 @@ parachain-info = { workspace = true }
 
 [dev-dependencies]
 sp-io = { workspace = true }
-
+test-relay-sproof-builder = { workspace = true }
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 

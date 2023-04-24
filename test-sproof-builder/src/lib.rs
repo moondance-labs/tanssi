@@ -1,10 +1,12 @@
 use cumulus_primitives_core::relay_chain::HeadData;
 use cumulus_primitives_core::ParaId;
 use frame_support::Hashable;
+use parity_scale_codec::Encode;
 use sp_runtime::traits::BlakeTwo256;
 use sp_runtime::traits::HashFor;
 use sp_trie::MemoryDB;
-
+use tp_collator_assignment::AssignedCollators;
+use tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX};
 // Enum representing how we want to insert the Header
 #[derive(Clone)]
 pub enum HeaderAs {
@@ -14,7 +16,7 @@ pub enum HeaderAs {
 
 /// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
 #[derive(Clone)]
-pub struct AuthorNotingSproofBuilderItem {
+pub struct ParaHeaderSproofBuilderItem {
     /// The para id of the current parachain.
     pub para_id: ParaId,
 
@@ -22,7 +24,7 @@ pub struct AuthorNotingSproofBuilderItem {
     pub author_id: HeaderAs,
 }
 
-impl Default for AuthorNotingSproofBuilderItem {
+impl Default for ParaHeaderSproofBuilderItem {
     fn default() -> Self {
         Self {
             para_id: ParaId::from(200),
@@ -32,21 +34,22 @@ impl Default for AuthorNotingSproofBuilderItem {
 }
 
 /// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
-/// Receives a vec of individual AuthorNotingSproofBuilderItem items of which
+/// Receives a vec of individual ParaHeaderSproofBuilderItem items of which
 /// we need to insert the header
 #[derive(Clone, Default)]
-pub struct AuthorNotingSproofBuilder {
-    pub items: Vec<AuthorNotingSproofBuilderItem>,
+pub struct ParaHeaderSproofBuilder {
+    pub items: Vec<ParaHeaderSproofBuilderItem>,
 }
 
-impl AuthorNotingSproofBuilder {
+impl ParaHeaderSproofBuilder {
     pub fn into_state_root_and_proof(
         self,
     ) -> (
-        polkadot_primitives::v2::Hash,
+        cumulus_primitives_core::relay_chain::Hash,
         sp_state_machine::StorageProof,
     ) {
-        let (db, root) = MemoryDB::<HashFor<polkadot_primitives::v2::Block>>::default_with_root();
+        let (db, root) =
+            MemoryDB::<HashFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
         let state_version = Default::default(); // for test using default.
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
 
@@ -61,7 +64,7 @@ impl AuthorNotingSproofBuilder {
 
             for item in self.items {
                 let para_key = item.para_id.twox_64_concat();
-                let key = [crate::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+                let key = [PARAS_HEADS_INDEX, para_key.as_slice()].concat();
 
                 let encoded = match item.author_id {
                     HeaderAs::AlreadyEncoded(encoded) => encoded,
@@ -72,6 +75,40 @@ impl AuthorNotingSproofBuilder {
                 insert(key, head_data.encode());
             }
         }
+
+        let root = backend.root().clone();
+        let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
+
+        (root, proof)
+    }
+}
+
+/// Builds a sproof (portmanteau of 'spoof' and 'proof') of the orchestrator chain state.
+#[derive(Clone, Encode, Default)]
+pub struct CollatorAssignmentSproofBuilder<AccountId> {
+    /// The para id of the current parachain.
+    pub collator_assignment: AssignedCollators<AccountId>,
+}
+
+impl<AccountId: Encode> CollatorAssignmentSproofBuilder<AccountId> {
+    pub fn into_state_root_and_proof(
+        self,
+    ) -> (
+        cumulus_primitives_core::relay_chain::Hash,
+        sp_state_machine::StorageProof,
+    ) {
+        let (db, root) =
+            MemoryDB::<HashFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
+        let state_version = Default::default();
+        let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
+        let mut relevant_keys = Vec::new();
+
+        let mut insert = |key: Vec<u8>, value: Vec<u8>| {
+            relevant_keys.push(key.clone());
+            backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
+        };
+
+        insert(COLLATOR_ASSIGNMENT_INDEX.to_vec(), self.encode());
 
         let root = backend.root().clone();
         let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");

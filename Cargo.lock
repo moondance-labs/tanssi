@@ -5286,7 +5286,10 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "sp-version",
+ "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-chain-state-snapshot",
+ "tp-core",
  "tp-traits",
 ]
 
@@ -5441,6 +5444,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-cc-authorities-noting"
+version = "0.1.0"
+dependencies = [
+ "cumulus-pallet-parachain-system",
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "hex-literal",
+ "log",
+ "parity-scale-codec",
+ "polkadot-parachain",
+ "polkadot-primitives",
+ "scale-info",
+ "serde",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-externalities",
+ "sp-inherents",
+ "sp-io",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std",
+ "sp-trie",
+ "sp-version",
+ "test-relay-sproof-builder",
+ "tp-authorities-noting-inherent",
+ "tp-chain-state-snapshot",
+ "tp-collator-assignment",
+ "tp-core",
+]
+
+[[package]]
 name = "pallet-child-bounties"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.40#76fed9b9082daade5392663f25ed8968f8e8c11c"
@@ -5473,6 +5508,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-collator-assignment",
  "tp-traits",
 ]
 
@@ -11367,6 +11403,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ae9980cab1db3fceee2f6c6f643d5d8de2997c58ee8d25fb0cc8a9e9e7348e5"
 
 [[package]]
+name = "tc-tanssi-chain-interface"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cumulus-primitives-core",
+ "futures",
+ "parity-scale-codec",
+ "polkadot-overseer",
+ "sc-client-api",
+ "sp-api",
+ "sp-blockchain",
+ "sp-state-machine",
+ "thiserror",
+]
+
+[[package]]
 name = "tempfile"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11450,14 +11502,31 @@ dependencies = [
  "sp-offchain",
  "sp-runtime",
  "sp-session",
+ "sp-state-machine",
  "sp-timestamp",
  "sp-transaction-pool",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+ "tc-tanssi-chain-interface",
  "test-runtime",
  "tp-author-noting-inherent",
+ "tp-authorities-noting-inherent",
  "try-runtime-cli",
+]
+
+[[package]]
+name = "test-relay-sproof-builder"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "parity-scale-codec",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-trie",
+ "tp-collator-assignment",
+ "tp-core",
 ]
 
 [[package]]
@@ -11512,28 +11581,29 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "substrate-wasm-builder",
+ "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-traits",
 ]
 
 [[package]]
 name = "thiserror"
-version = "1.0.38"
+version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a9cd18aa97d5c45c6603caea1da6628790b37f7a34b6ca89522331c5180fed0"
+checksum = "978c9a314bd8dc99be594bc3c175faaa9794be04a5a5e153caba6915336cebac"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.38"
+version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fb327af4685e4d03fa8cbcf1716380da910eeb2bb8be417e7f9fd3fb164f36f"
+checksum = "f9456a42c5b0d803c8cd86e73dd7cc9edd429499f37a3550d286d5e86720569f"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.14",
 ]
 
 [[package]]
@@ -11838,6 +11908,72 @@ dependencies = [
  "sp-std",
  "sp-storage",
  "sp-trie",
+ "test-relay-sproof-builder",
+ "tp-core",
+]
+
+[[package]]
+name = "tp-authorities-noting-inherent"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cumulus-primitives-core",
+ "cumulus-relay-chain-interface",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-trie",
+ "tc-tanssi-chain-interface",
+ "test-relay-sproof-builder",
+ "tp-core",
+ "tracing",
+]
+
+[[package]]
+name = "tp-chain-state-snapshot"
+version = "0.1.1"
+dependencies = [
+ "cumulus-primitives-core",
+ "parity-scale-codec",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-trie",
+]
+
+[[package]]
+name = "tp-collator-assignment"
+version = "0.1.1"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "hex-literal",
+ "log",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std",
+ "sp-trie",
+ "tp-traits",
+]
+
+[[package]]
+name = "tp-core"
+version = "0.1.1"
+dependencies = [
+ "cumulus-primitives-core",
+ "hex-literal",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-std",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-use crate::{self as author_noting_pallet, Config};
+use crate::{self as authorities_noting_pallet, Config};
 use cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider};
 use cumulus_primitives_core::ParaId;
 use frame_support::inherent::{InherentData, ProvideInherent};
@@ -7,9 +7,8 @@ use frame_support::traits::{ConstU32, ConstU64};
 use frame_support::traits::{Everything, UnfilteredDispatchable};
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_system::RawOrigin;
-use parity_scale_codec::{Decode, Encode};
+use parity_scale_codec::Encode;
 use polkadot_parachain::primitives::RelayChainBlockNumber;
-use polkadot_primitives::Slot;
 use sp_core::H256;
 use sp_state_machine::StorageProof;
 use sp_version::RuntimeVersion;
@@ -32,8 +31,7 @@ frame_support::construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
-        AuthorNoting: author_noting_pallet::{Pallet, Call, Storage, Event<T>},
-        MockData: mock_data,
+        AuthoritiesNoting: authorities_noting_pallet::{Pallet, Call, Storage, Event<T>},
     }
 );
 
@@ -66,71 +64,7 @@ impl frame_system::Config for Test {
 
 parameter_types! {
     pub const ParachainId: ParaId = ParaId::new(200);
-}
-
-// Pallet to provide some mock data, used to test
-#[frame_support::pallet]
-pub mod mock_data {
-    use super::*;
-    use frame_support::pallet_prelude::*;
-
-    #[pallet::config]
-    pub trait Config: frame_system::Config {}
-
-    #[pallet::call]
-    impl<T: Config> Pallet<T> {}
-
-    #[pallet::pallet]
-    #[pallet::without_storage_info]
-    pub struct Pallet<T>(_);
-
-    #[pallet::storage]
-    #[pallet::getter(fn mock)]
-    pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
-
-    impl<T: Config> Pallet<T> {
-        pub fn get() -> Mocks {
-            Mock::<T>::get()
-        }
-        pub fn mutate<F, R>(f: F) -> R
-        where
-            F: FnOnce(&mut Mocks) -> R,
-        {
-            Mock::<T>::mutate(f)
-        }
-    }
-}
-
-impl mock_data::Config for Test {}
-
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
-#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
-pub struct Mocks {
-    pub container_chains: Vec<ParaId>,
-}
-
-impl Default for Mocks {
-    fn default() -> Self {
-        Self {
-            container_chains: vec![1001.into()],
-        }
-    }
-}
-
-pub struct MockAuthorFetcher;
-
-impl tp_traits::GetContainerChainAuthor<AccountId> for MockAuthorFetcher {
-    fn author_for_slot(slot: Slot, _para_id: ParaId) -> Option<AccountId> {
-        return Some(slot.into());
-    }
-}
-
-pub struct MockContainerChainGetter;
-
-impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
-    fn current_container_chains() -> Vec<ParaId> {
-        MockData::mock().container_chains
-    }
+    pub const OrchestratorParachainId: ParaId = ParaId::new(1000);
 }
 
 const MOCK_RELAY_ROOT_KEY: &'static [u8] = b"MOCK_RELAY_ROOT_KEY";
@@ -152,9 +86,8 @@ impl RelaychainStateProvider for MockRelayStateProvider {
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type ContainerChainAuthor = MockAuthorFetcher;
     type SelfParaId = ParachainId;
-    type ContainerChains = MockContainerChainGetter;
+    type OrchestratorParaId = OrchestratorParachainId;
     type RelayChainStateProvider = MockRelayStateProvider;
 }
 
@@ -210,17 +143,7 @@ pub struct BlockTests {
     ran: bool,
     relay_sproof_builder_hook:
         Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder)>>,
-    inherent_data_hook: Option<
-        Box<
-            dyn Fn(
-                &BlockTests,
-                RelayChainBlockNumber,
-                &mut tp_author_noting_inherent::OwnParachainInherentData,
-            ),
-        >,
-    >,
-    overriden_state_root: Option<H256>,
-    overriden_state_proof: Option<StorageProof>,
+    orchestrator_storage_proof: Option<StorageProof>,
 }
 
 impl BlockTests {
@@ -252,15 +175,9 @@ impl BlockTests {
         self
     }
 
-    pub fn with_overriden_state_root(mut self, root: H256) -> Self
+    pub fn with_orchestrator_storage_proof(mut self, proof: StorageProof) -> Self
 where {
-        self.overriden_state_root = Some(root);
-        self
-    }
-
-    pub fn with_overriden_state_proof(mut self, proof: StorageProof) -> Self
-where {
-        self.overriden_state_proof = Some(proof);
+        self.orchestrator_storage_proof = Some(proof);
         self
     }
 
@@ -283,34 +200,30 @@ where {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }
 
-                let (mut relay_storage_root, mut relay_storage_proof) =
+                let (relay_parent_storage_root, relay_chain_state) =
                     sproof_builder.into_state_root_and_proof();
 
-                if let Some(root) = self.overriden_state_root {
-                    relay_storage_root = root;
-                }
-
-                if let Some(state) = &self.overriden_state_proof {
-                    relay_storage_proof = state.clone();
-                }
-
                 // We write relay storage root in mock storage.
-                frame_support::storage::unhashed::put(MOCK_RELAY_ROOT_KEY, &relay_storage_root);
+                frame_support::storage::unhashed::put(
+                    MOCK_RELAY_ROOT_KEY,
+                    &relay_parent_storage_root,
+                );
 
                 // It is insufficient to push the author function params
                 // to storage; they must also be included in the inherent data.
                 let inherent_data = {
                     let mut inherent_data = InherentData::default();
-                    let mut system_inherent_data =
-                        tp_author_noting_inherent::OwnParachainInherentData {
-                            relay_storage_proof,
+                    let system_inherent_data =
+                        tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
+                            relay_chain_state,
+                            orchestrator_chain_state: self
+                                .orchestrator_storage_proof
+                                .clone()
+                                .unwrap(),
                         };
-                    if let Some(ref hook) = self.inherent_data_hook {
-                        hook(self, *n as RelayChainBlockNumber, &mut system_inherent_data);
-                    }
                     inherent_data
                         .put_data(
-                            tp_author_noting_inherent::INHERENT_IDENTIFIER,
+                            tp_authorities_noting_inherent::INHERENT_IDENTIFIER,
                             &system_inherent_data,
                         )
                         .expect("failed to put VFP inherent");
@@ -318,13 +231,13 @@ where {
                 };
 
                 // execute the block
-                AuthorNoting::on_initialize(*n);
-                AuthorNoting::create_inherent(&inherent_data)
+                AuthoritiesNoting::on_initialize(*n);
+                AuthoritiesNoting::create_inherent(&inherent_data)
                     .expect("got an inherent")
                     .dispatch_bypass_filter(RawOrigin::None.into())
                     .expect("dispatch succeeded");
                 within_block();
-                AuthorNoting::on_finalize(*n);
+                AuthoritiesNoting::on_finalize(*n);
 
                 // clean up
                 System::finalize();
