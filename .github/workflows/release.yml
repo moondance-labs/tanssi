@@ -102,7 +102,7 @@ jobs:
       
       - name: Retrieve polkadot binary from docker
         run: |
-          DOCKER_TAG="parity/polkadot_latest"
+          DOCKER_TAG="parity/polkadot:latest"
           docker rm -f dummy 2> /dev/null | true
           docker create -ti --name dummy $DOCKER_TAG bash
           docker cp dummy:/usr/local/bin/polkadot test/tmp/polkadot
