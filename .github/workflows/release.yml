@@ -3,11 +3,13 @@ name: CI
 on: ["pull_request"]
 
 jobs:
-
   ####### Building and Testing binaries #######
-
   build:
     runs-on: self-hosted
+    env:
+      RUSTFLAGS: "-C opt-level=3 -D warnings"
+      TMP_TARGET: "/tmp/target"
+      CARGO_TARGET_DIR: "target"
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -23,21 +25,55 @@ jobs:
 
       - name: Test
         run: cargo test --release --all
-      
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 7
-      
-      - name: Node  
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16.x
-          cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
-      
-      - name: "Install and run upgrade test"
+
+      - name: Save runtime wasm
         run: |
-          cd test
-          pnpm i
-          pnpm moonwall test dev_tanssi
+          mkdir -p runtimes
+          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-runtime/container_chain_template_runtime.compact.wasm runtimes/;
+          cp $CARGO_TARGET_DIR/release/wbuild/test-runtime/test_runtime.compact.compressed.wasm runtimes/;
+
+      - name: Upload runtimes
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: runtimes
+          path: runtimes
+
+      - name: Save tanssi and template binaries
+        run: |
+          mkdir -p binaries
+          cp $CARGO_TARGET_DIR/release/test-node binaries/test-node;
+          cp $CARGO_TARGET_DIR/release/container-chain-template-node binaries/container-chain-template-node;
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: binaries
+          path: binaries
+      
+  typescript-tests:
+      runs-on: self-hosted
+      needs: ["build"]
+      steps:
+        - name: Pnpm
+          uses: pnpm/action-setup@v2
+          with:
+            version: 7
+        
+        - name: Node  
+          uses: actions/setup-node@v3
+          with:
+            node-version: 16.x
+            cache: "pnpm"
+            cache-dependency-path: test/pnpm-lock.yaml
+
+        - name: "Download binaries"
+          uses: actions/download-artifact@v3.0.2
+          with:
+            name: runtimes
+            path: target/release
+      
+        - name: "Install and run upgrade test"
+          run: |
+            cd test
+            pnpm i
+            pnpm moonwall test dev_tanssi
