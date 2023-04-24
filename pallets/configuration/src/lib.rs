@@ -13,21 +13,20 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::pallet_prelude::*;
-use frame_system::pallet_prelude::*;
-use sp_runtime::traits::AtLeast32BitUnsigned;
-use sp_runtime::RuntimeAppPublic;
-use sp_runtime::Saturating;
-use sp_std::prelude::*;
-use tp_traits::GetSessionIndex;
-
-pub use pallet::*;
-
 #[cfg(test)]
 mod mock;
 
 #[cfg(test)]
 mod tests;
+
+pub use pallet::*;
+use {
+    frame_support::pallet_prelude::*,
+    frame_system::pallet_prelude::*,
+    sp_runtime::{traits::AtLeast32BitUnsigned, RuntimeAppPublic, Saturating},
+    sp_std::prelude::*,
+    tp_traits::GetSessionIndex,
+};
 
 const LOG_TARGET: &str = "pallet_configuration";
 

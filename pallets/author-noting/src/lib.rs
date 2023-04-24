@@ -11,28 +11,27 @@
 //!  
 //! Using those two requirements we can select who the author was based on the collators assigned
 //! to that containerChain, by simply assigning the slot position.
-//!
+
 #![cfg_attr(not(feature = "std"), no_std)]
-use cumulus_pallet_parachain_system::RelaychainStateProvider;
-use cumulus_primitives_core::relay_chain::BlakeTwo256;
-use cumulus_primitives_core::relay_chain::BlockNumber;
-use cumulus_primitives_core::relay_chain::HeadData;
-use cumulus_primitives_core::ParaId;
-use frame_support::Hashable;
-use parity_scale_codec::Decode;
-use parity_scale_codec::Encode;
-use sp_consensus_aura::inherents::InherentType;
-use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_inherents::{InherentIdentifier, IsFatalError};
-use sp_runtime::traits::Header;
-use sp_runtime::DispatchResult;
-use sp_runtime::RuntimeString;
-use sp_std::prelude::*;
-use tp_author_noting_inherent::INHERENT_IDENTIFIER;
-use tp_core::well_known_keys::PARAS_HEADS_INDEX;
-use tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains};
 
 pub use tp_chain_state_snapshot::*;
+use {
+    cumulus_pallet_parachain_system::RelaychainStateProvider,
+    cumulus_primitives_core::{
+        relay_chain::{BlakeTwo256, BlockNumber, HeadData},
+        ParaId,
+    },
+    frame_support::{dispatch::PostDispatchInfo, pallet_prelude::*, Hashable},
+    frame_system::pallet_prelude::*,
+    parity_scale_codec::{Decode, Encode},
+    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_inherents::{InherentIdentifier, IsFatalError},
+    sp_runtime::{traits::Header, DispatchResult, RuntimeString},
+    sp_std::prelude::*,
+    tp_author_noting_inherent::INHERENT_IDENTIFIER,
+    tp_core::well_known_keys::PARAS_HEADS_INDEX,
+    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
+};
 
 #[cfg(test)]
 mod mock;
@@ -44,10 +43,7 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use super::{DispatchResult, *};
-    use frame_support::dispatch::PostDispatchInfo;
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
+    use super::*;
 
     #[pallet::config]
     pub trait Config: frame_system::Config {

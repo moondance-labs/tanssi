@@ -1,7 +1,8 @@
-use sc_cli::{CliConfiguration, NodeKeyParams, SharedParams};
-
-use crate::service::Sealing;
-use std::path::PathBuf;
+use {
+    crate::service::Sealing,
+    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    std::path::PathBuf,
+};
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]

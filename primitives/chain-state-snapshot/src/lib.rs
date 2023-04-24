@@ -4,10 +4,12 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use parity_scale_codec::Decode;
-use sp_runtime::traits::HashFor;
-use sp_state_machine::{Backend, TrieBackend, TrieBackendBuilder};
-use sp_trie::{HashDBT, MemoryDB, StorageProof, EMPTY_PREFIX};
+use {
+    parity_scale_codec::Decode,
+    sp_runtime::traits::HashFor,
+    sp_state_machine::{Backend, TrieBackend, TrieBackendBuilder},
+    sp_trie::{HashDBT, MemoryDB, StorageProof, EMPTY_PREFIX},
+};
 
 #[derive(Debug)]
 pub enum ReadEntryErr {

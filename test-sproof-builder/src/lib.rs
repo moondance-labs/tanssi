@@ -1,13 +1,14 @@
-use cumulus_primitives_core::relay_chain::HeadData;
-use cumulus_primitives_core::ParaId;
-use frame_support::Hashable;
-use parity_scale_codec::Encode;
-use sp_runtime::traits::BlakeTwo256;
-use sp_runtime::traits::HashFor;
-use sp_trie::MemoryDB;
-use tp_collator_assignment::AssignedCollators;
-use tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX};
-// Enum representing how we want to insert the Header
+use {
+    cumulus_primitives_core::{relay_chain::HeadData, ParaId},
+    frame_support::Hashable,
+    parity_scale_codec::Encode,
+    sp_runtime::traits::{BlakeTwo256, HashFor},
+    sp_trie::MemoryDB,
+    tp_collator_assignment::AssignedCollators,
+    tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX},
+};
+
+/// Enum representing how we want to insert the Header
 #[derive(Clone)]
 pub enum HeaderAs {
     AlreadyEncoded(Vec<u8>),
