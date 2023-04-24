@@ -105,7 +105,7 @@ jobs:
           DOCKER_TAG="parity/polkadot:latest"
           docker rm -f dummy 2> /dev/null | true
           docker create -ti --name dummy $DOCKER_TAG bash
-          docker cp dummy:/usr/local/bin/polkadot test/tmp/polkadot
+          docker cp dummy:/usr/bin/polkadot test/tmp/polkadot
           docker rm -f dummy
       
       - name: "Install and run upgrade test"
