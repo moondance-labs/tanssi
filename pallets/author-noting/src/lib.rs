@@ -97,7 +97,7 @@ pub mod pallet {
             let relay_storage_root =
                 T::RelayChainStateProvider::current_relay_chain_state().state_root;
             let relay_storage_rooted_proof =
-                RelayChainHeaderStateProof::new(relay_storage_root, relay_storage_proof)
+                GenericStateProof::new(relay_storage_root, relay_storage_proof)
                     .expect("Invalid relay chain state proof");
 
             for para_id in T::ContainerChains::current_container_chains() {
@@ -159,11 +159,8 @@ pub mod pallet {
 
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
             // Return Ok(Some(_)) unconditionally because this inherent is required in every block
-            // If it is not found, throw an AuthorInherentRequired error.
             Ok(Some(InherentError::Other(
-                sp_runtime::RuntimeString::Borrowed(
-                    "Inherent required to manually initiate author validation",
-                ),
+                sp_runtime::RuntimeString::Borrowed("Pallet Author Noting Inherent required"),
             )))
         }
 
@@ -186,7 +183,7 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     /// Fetch author slot from a proof of header
     fn fetch_author_slot_from_proof(
-        relay_state_proof: &RelayChainHeaderStateProof,
+        relay_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
     ) -> Result<T::AccountId, Error<T>> {
         let bytes = para_id.twox_64_concat();
