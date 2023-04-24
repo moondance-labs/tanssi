@@ -93,7 +93,7 @@ pub mod pallet {
                 T::RelayChainStateProvider::current_relay_chain_state().state_root;
 
             let para_id = T::OrchestratorParaId::get();
-            let relay_chain_state_proof = RelayChainHeaderStateProof::new(
+            let relay_chain_state_proof = GenericStateProof::new(
                 relay_storage_root,
                 relay_chain_state_proof.clone(),
             )
@@ -106,7 +106,7 @@ pub mod pallet {
                     para_id,
                 )?;
 
-                let orchestrator_chain_state_proof = OrchestratorChainHeaderStateProof::new(
+                let orchestrator_chain_state_proof = GenericStateProof::new(
                     orchestrator_root,
                     orchestrator_chain_state_proof.clone(),
                 )
@@ -189,8 +189,9 @@ pub mod pallet {
 
 impl<T: Config> Pallet<T> {
     /// Fetch author slot from a proof of header
+    /// TODO: fix me once we have a proper Block type
     fn fetch_orchestrator_header_from_relay_proof(
-        relay_state_proof: &RelayChainHeaderStateProof,
+        relay_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
     ) -> Result<<BlakeTwo256 as HashT>::Output, Error<T>> {
         let bytes = para_id.twox_64_concat();
@@ -225,7 +226,7 @@ impl<T: Config> Pallet<T> {
 
     /// Fetch author slot from a proof of header
     fn fetch_authorities_from_orchestrator_proof(
-        orchestrator_state_proof: &OrchestratorChainHeaderStateProof,
+        orchestrator_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
     ) -> Result<Vec<T::AccountId>, Error<T>> {
         // Read the assignment from the orchestrator
