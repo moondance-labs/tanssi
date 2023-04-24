@@ -1,7 +1,6 @@
 use {
     super::*,
     crate::mock::{new_test_ext, session_change_validators, Initializer, System, Test},
-    frame_support::traits::{OnFinalize, OnInitialize},
 };
 
 #[test]
