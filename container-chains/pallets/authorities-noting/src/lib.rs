@@ -93,11 +93,9 @@ pub mod pallet {
                 T::RelayChainStateProvider::current_relay_chain_state().state_root;
 
             let para_id = T::OrchestratorParaId::get();
-            let relay_chain_state_proof = GenericStateProof::new(
-                relay_storage_root,
-                relay_chain_state_proof.clone(),
-            )
-            .expect("Invalid relay chain state proof");
+            let relay_chain_state_proof =
+                GenericStateProof::new(relay_storage_root, relay_chain_state_proof.clone())
+                    .expect("Invalid relay chain state proof");
 
             // Fetch authorities
             let authorities = {
