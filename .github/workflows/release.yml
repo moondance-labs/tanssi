@@ -80,7 +80,7 @@ jobs:
 
   zombienet-tests:
     runs-on: self-hosted
-      needs: ["build"]
+    needs: ["build"]
     steps:
       - name: Pnpm
         uses: pnpm/action-setup@v2
