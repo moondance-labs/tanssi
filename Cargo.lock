@@ -11623,6 +11623,7 @@ dependencies = [
  "tokio",
  "tp-author-noting-inherent",
  "tp-authorities-noting-inherent",
+ "tp-core",
  "try-runtime-cli",
 ]
 

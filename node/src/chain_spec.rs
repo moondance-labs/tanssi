@@ -1,5 +1,6 @@
 use {
     cumulus_primitives_core::ParaId,
+    pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},

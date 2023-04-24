@@ -1,5 +1,5 @@
 use {
-    crate::{mock::*, Error, Event},
+    crate::{mock::*, ContainerChainGenesisData, Error, Event},
     frame_support::{assert_noop, assert_ok, BoundedVec},
     sp_runtime::DispatchError,
 };

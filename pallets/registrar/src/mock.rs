@@ -1,5 +1,5 @@
 use {
-    crate as pallet_registrar,
+    crate::{self as pallet_registrar, ContainerChainGenesisData},
     frame_support::traits::{ConstU16, ConstU64},
     frame_system as system,
     sp_core::{ConstU32, H256},

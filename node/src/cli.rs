@@ -1,14 +1,7 @@
 use {
-    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
-    std::{
-        collections::HashMap,
-        path::PathBuf,
-        sync::{Arc, RwLock},
-    },
-};
-
-use {
     crate::{chain_spec::RawGenesisConfigDummy, service::Sealing},
+    pallet_registrar_runtime_api::ContainerChainGenesisData,
+    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::{
         collections::{BTreeMap, HashMap},
         path::PathBuf,

@@ -18,18 +18,22 @@ use {
     cumulus_relay_chain_interface::RelayChainInterface,
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
-    pallet_registrar_runtime_api::RegistrarApi,
+    pallet_registrar_runtime_api::{ContainerChainGenesisData, RegistrarApi},
+    parity_scale_codec::{Decode, Encode},
     polkadot_cli::ProvideRuntimeApi,
+    polkadot_primitives::HeadData,
+    polkadot_service::{BlakeTwo256, BlockNumber},
     sc_client_api::HeaderBackend,
     sc_consensus::ImportQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{
-        Configuration, Error as ServiceError, KeystoreContainer, PartialComponents, TFullBackend,
-        TFullClient, TaskManager,
+        Configuration, Error as ServiceError, PartialComponents, TFullBackend, TFullClient,
+        TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
+    sp_core::blake2_128,
     sp_keystore::SyncCryptoStorePtr,
     std::{sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
@@ -455,7 +459,7 @@ async fn start_node_impl(
                     let header_orchestrator = relay_chain_interface
                         .get_storage_by_key(
                             relay_parent,
-                            &tp_authorities_noting_inherent::para_id_head(para_id),
+                            &tp_core::well_known_keys::para_id_head(para_id),
                         )
                         .await
                         .unwrap();
