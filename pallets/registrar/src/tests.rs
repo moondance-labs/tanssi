@@ -47,12 +47,13 @@ fn register_para_id_42_twice() {
 fn register_para_id_42_genesis_data_size_too_big() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        let genesis_data = ContainerChainGenesisData {
+            storage: vec![(vec![], vec![0; 5_000_000]).into()],
+            extensions: Default::default(),
+            properties: Default::default(),
+        };
         assert_noop!(
-            ParaRegistrar::register(
-                RuntimeOrigin::root(),
-                42,
-                vec![(vec![], vec![0; 5_000_000])]
-            ),
+            ParaRegistrar::register(RuntimeOrigin::root(), 42, genesis_data,),
             Error::<Test>::GenesisDataTooBig,
         );
     });
@@ -154,22 +155,21 @@ fn deregister_para_id_42_twice() {
 fn deregister_para_id_removes_genesis_data() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
+        let genesis_data = ContainerChainGenesisData {
+            storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+            extensions: Default::default(),
+            properties: Default::default(),
+        };
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::root(),
             42,
-            ContainerChainGenesisData {
-                storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
-                extensions: Default::default(),
-            }
+            genesis_data.clone(),
         ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32]).unwrap())]
         );
-        assert_eq!(
-            ParaRegistrar::para_genesis_data(42),
-            Some(vec![(b"key".to_vec(), b"value".to_vec())])
-        );
+        assert_eq!(ParaRegistrar::para_genesis_data(42), Some(genesis_data),);
 
         // Assert after two sessions it goes to the non-pending
         ParaRegistrar::initializer_on_new_session(&2);
@@ -214,35 +214,55 @@ fn deregister_para_id_bad_origin() {
 
 #[test]
 fn genesis_loads_para_ids() {
-    new_test_ext_with_genesis(vec![(1, vec![]), (2, vec![]), (3, vec![]), (4, vec![])])
-        .execute_with(|| {
-            System::set_block_number(1);
-            assert_eq!(ParaRegistrar::registered_para_ids(), vec![1, 2, 3, 4]);
-        });
+    new_test_ext_with_genesis(vec![
+        (1, empty_genesis_data()),
+        (2, empty_genesis_data()),
+        (3, empty_genesis_data()),
+        (4, empty_genesis_data()),
+    ])
+    .execute_with(|| {
+        System::set_block_number(1);
+        assert_eq!(ParaRegistrar::registered_para_ids(), vec![1, 2, 3, 4]);
+    });
 }
 
 #[test]
 fn genesis_sorts_para_ids() {
-    new_test_ext_with_genesis(vec![(4, vec![]), (2, vec![]), (3, vec![]), (1, vec![])])
-        .execute_with(|| {
-            System::set_block_number(1);
-            assert_eq!(ParaRegistrar::registered_para_ids(), vec![1, 2, 3, 4]);
-        });
+    new_test_ext_with_genesis(vec![
+        (4, empty_genesis_data()),
+        (2, empty_genesis_data()),
+        (3, empty_genesis_data()),
+        (1, empty_genesis_data()),
+    ])
+    .execute_with(|| {
+        System::set_block_number(1);
+        assert_eq!(ParaRegistrar::registered_para_ids(), vec![1, 2, 3, 4]);
+    });
 }
 
 #[test]
 #[should_panic = "Duplicate para_id: 2"]
 fn genesis_error_on_duplicate() {
-    new_test_ext_with_genesis(vec![(2, vec![]), (3, vec![]), (4, vec![]), (2, vec![])])
-        .execute_with(|| {
-            System::set_block_number(1);
-        });
+    new_test_ext_with_genesis(vec![
+        (2, empty_genesis_data()),
+        (3, empty_genesis_data()),
+        (4, empty_genesis_data()),
+        (2, empty_genesis_data()),
+    ])
+    .execute_with(|| {
+        System::set_block_number(1);
+    });
 }
 
 #[test]
-#[should_panic = "genesis data for para_id 2 is too large: 5000006 bytes"]
+#[should_panic = "genesis data for para_id 2 is too large: 5000008 bytes"]
 fn genesis_error_genesis_data_size_too_big() {
-    new_test_ext_with_genesis(vec![(2, vec![(vec![], vec![0; 5_000_000])])]).execute_with(|| {
+    let genesis_data = ContainerChainGenesisData {
+        storage: vec![(vec![], vec![0; 5_000_000]).into()],
+        extensions: Default::default(),
+        properties: Default::default(),
+    };
+    new_test_ext_with_genesis(vec![(2, genesis_data)]).execute_with(|| {
         System::set_block_number(1);
     });
 }

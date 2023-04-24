@@ -5,6 +5,7 @@ use {
         dispatch::Dispatchable,
         traits::{GenesisBuild, OnFinalize, OnInitialize},
     },
+    pallet_registrar::ContainerChainGenesisData,
     parity_scale_codec::Encode,
     polkadot_parachain::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
@@ -68,7 +69,7 @@ pub struct ExtBuilder {
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
-    para_ids: Vec<(u32, Vec<(Vec<u8>, Vec<u8>)>)>,
+    para_ids: Vec<(u32, ContainerChainGenesisData)>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
 }
@@ -95,7 +96,7 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_para_ids(mut self, para_ids: Vec<(u32, Vec<(Vec<u8>, Vec<u8>)>)>) -> Self {
+    pub fn with_para_ids(mut self, para_ids: Vec<(u32, ContainerChainGenesisData)>) -> Self {
         self.para_ids = para_ids;
         self
     }
@@ -232,4 +233,12 @@ pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
         }
     )
     .dispatch(inherent_origin()));
+}
+
+pub fn empty_genesis_data() -> ContainerChainGenesisData {
+    ContainerChainGenesisData {
+        storage: Default::default(),
+        extensions: Default::default(),
+        properties: Default::default(),
+    }
 }
