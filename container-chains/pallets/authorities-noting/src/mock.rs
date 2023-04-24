@@ -1,23 +1,26 @@
-use crate::{self as authorities_noting_pallet, Config};
-use cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider};
-use cumulus_primitives_core::ParaId;
-use frame_support::inherent::{InherentData, ProvideInherent};
-use frame_support::parameter_types;
-use frame_support::traits::{ConstU32, ConstU64};
-use frame_support::traits::{Everything, UnfilteredDispatchable};
-use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_system::RawOrigin;
-use parity_scale_codec::Encode;
-use polkadot_parachain::primitives::RelayChainBlockNumber;
-use sp_core::H256;
-use sp_state_machine::StorageProof;
-use sp_version::RuntimeVersion;
-use test_relay_sproof_builder::ParaHeaderSproofBuilder;
-
-use sp_io;
-use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+use {
+    crate::{self as authorities_noting_pallet, Config},
+    cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider},
+    cumulus_primitives_core::ParaId,
+    frame_support::{
+        inherent::{InherentData, ProvideInherent},
+        parameter_types,
+        traits::{
+            ConstU32, ConstU64, Everything, OnFinalize, OnInitialize, UnfilteredDispatchable,
+        },
+    },
+    frame_system::RawOrigin,
+    parity_scale_codec::Encode,
+    polkadot_parachain::primitives::RelayChainBlockNumber,
+    sp_core::H256,
+    sp_io,
+    sp_runtime::{
+        testing::Header,
+        traits::{BlakeTwo256, IdentityLookup},
+    },
+    sp_state_machine::StorageProof,
+    sp_version::RuntimeVersion,
+    test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;

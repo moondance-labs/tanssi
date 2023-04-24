@@ -9,26 +9,8 @@
 //! A second storage proof is verified against the storage root of the orchestrator chain. From
 //! this the collator-assignation is read, and the authorities assigned to these container-chain
 //! are retrieved and stored
-//!
+
 #![cfg_attr(not(feature = "std"), no_std)]
-use cumulus_pallet_parachain_system::RelaychainStateProvider;
-use cumulus_primitives_core::relay_chain::BlakeTwo256;
-use cumulus_primitives_core::relay_chain::BlockNumber;
-use cumulus_primitives_core::relay_chain::HeadData;
-use cumulus_primitives_core::ParaId;
-use frame_support::traits::Get;
-use frame_support::Hashable;
-use parity_scale_codec::Decode;
-use parity_scale_codec::Encode;
-use sp_inherents::{InherentIdentifier, IsFatalError};
-use sp_runtime::traits::Hash as HashT;
-use sp_runtime::RuntimeString;
-use sp_std::prelude::*;
-use tp_authorities_noting_inherent::INHERENT_IDENTIFIER;
-use tp_chain_state_snapshot::*;
-use tp_collator_assignment::AssignedCollators;
-use tp_core::well_known_keys::COLLATOR_ASSIGNMENT_INDEX;
-use tp_core::well_known_keys::PARAS_HEADS_INDEX;
 
 #[cfg(test)]
 mod mock;
@@ -37,6 +19,23 @@ mod mock;
 mod test;
 
 pub use pallet::*;
+use {
+    cumulus_pallet_parachain_system::RelaychainStateProvider,
+    cumulus_primitives_core::{
+        relay_chain::{BlakeTwo256, BlockNumber, HeadData},
+        ParaId,
+    },
+    frame_support::{dispatch::PostDispatchInfo, pallet_prelude::*, traits::Get, Hashable},
+    frame_system::pallet_prelude::*,
+    parity_scale_codec::{Decode, Encode},
+    sp_inherents::{InherentIdentifier, IsFatalError},
+    sp_runtime::{traits::Hash as HashT, RuntimeString},
+    sp_std::prelude::*,
+    tp_authorities_noting_inherent::INHERENT_IDENTIFIER,
+    tp_chain_state_snapshot::*,
+    tp_collator_assignment::AssignedCollators,
+    tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX},
+};
 
 pub trait GetContainerChains {
     fn container_chains() -> Vec<ParaId>;
@@ -45,9 +44,6 @@ pub trait GetContainerChains {
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use frame_support::dispatch::PostDispatchInfo;
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
 
     #[pallet::config]
     pub trait Config: frame_system::Config {

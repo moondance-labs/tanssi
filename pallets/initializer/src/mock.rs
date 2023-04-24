@@ -1,12 +1,15 @@
-use crate as pallet_initializer;
-use frame_support::traits::{ConstU16, ConstU64};
-use frame_system as system;
-use sp_core::H256;
-use sp_runtime::{
-    testing::{Header, UintAuthorityId},
-    traits::{BlakeTwo256, IdentityLookup},
+use {
+    crate as pallet_initializer,
+    frame_support::traits::{ConstU16, ConstU64},
+    frame_system as system,
+    sp_core::H256,
+    sp_runtime::{
+        testing::{Header, UintAuthorityId},
+        traits::{BlakeTwo256, IdentityLookup},
+    },
+    sp_std::cell::RefCell,
 };
-use sp_std::cell::RefCell;
+
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 

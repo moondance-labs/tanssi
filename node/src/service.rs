@@ -1,42 +1,41 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-// std
-use std::{sync::Arc, time::Duration};
-
-use cumulus_client_cli::CollatorOptions;
-use polkadot_cli::ProvideRuntimeApi;
-// Local Runtime Types
-use pallet_registrar_runtime_api::RegistrarApi;
-use test_runtime::{opaque::Block, AccountId, RuntimeApi};
-// Cumulus Imports
-use cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion};
-use cumulus_client_consensus_common::{
-    ParachainBlockImport as TParachainBlockImport, ParachainConsensus,
+use {
+    cumulus_client_cli::CollatorOptions,
+    cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion},
+    cumulus_client_consensus_common::{
+        ParachainBlockImport as TParachainBlockImport, ParachainConsensus,
+    },
+    cumulus_client_network::BlockAnnounceValidator,
+    cumulus_client_service::{
+        build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
+        StartCollatorParams, StartFullNodeParams,
+    },
+    cumulus_primitives_core::{relay_chain::CollatorPair, ParaId},
+    cumulus_primitives_parachain_inherent::{
+        MockValidationDataInherentDataProvider, MockXcmConfig,
+    },
+    cumulus_relay_chain_interface::RelayChainInterface,
+    frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
+    futures::StreamExt,
+    pallet_registrar_runtime_api::RegistrarApi,
+    polkadot_cli::ProvideRuntimeApi,
+    sc_client_api::HeaderBackend,
+    sc_consensus::ImportQueue,
+    sc_executor::NativeElseWasmExecutor,
+    sc_network::NetworkBlock,
+    sc_network_sync::SyncingService,
+    sc_service::{
+        Configuration, Error as ServiceError, PartialComponents, TFullBackend, TFullClient,
+        TaskManager,
+    },
+    sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
+    sp_keystore::SyncCryptoStorePtr,
+    std::{sync::Arc, time::Duration},
+    substrate_prometheus_endpoint::Registry,
+    test_runtime::{opaque::Block, AccountId, RuntimeApi},
 };
-use cumulus_client_network::BlockAnnounceValidator;
-use cumulus_client_service::{
-    build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
-    StartCollatorParams, StartFullNodeParams,
-};
-use futures::StreamExt;
-use sc_service::Error as ServiceError;
 
-use cumulus_primitives_core::ParaId;
-use cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider;
-use cumulus_primitives_parachain_inherent::MockXcmConfig;
-use cumulus_relay_chain_interface::RelayChainInterface;
-// Substrate Imports
-use cumulus_primitives_core::relay_chain::CollatorPair;
-use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
-use sc_client_api::HeaderBackend;
-use sc_consensus::ImportQueue;
-use sc_executor::NativeElseWasmExecutor;
-use sc_network::NetworkBlock;
-use sc_network_sync::SyncingService;
-use sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager};
-use sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle};
-use sp_keystore::SyncCryptoStorePtr;
-use substrate_prometheus_endpoint::Registry;
 type FullBackend = TFullBackend<Block>;
 type MaybeSelectChain = Option<sc_consensus::LongestChain<FullBackend, Block>>;
 
@@ -875,10 +874,12 @@ pub fn new_dev(
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<TaskManager, ServiceError> {
-    use async_io::Timer;
-    use futures::Stream;
-    use sc_consensus_manual_seal::{run_manual_seal, EngineCommand, ManualSealParams};
-    use sp_core::H256;
+    use {
+        async_io::Timer,
+        futures::Stream,
+        sc_consensus_manual_seal::{run_manual_seal, EngineCommand, ManualSealParams},
+        sp_core::H256,
+    };
 
     let sc_service::PartialComponents {
         client,
@@ -1145,10 +1146,10 @@ impl FromStr for Sealing {
     }
 }
 
-use cumulus_client_consensus_common::ParachainBlockImportMarker;
-use sc_client_api::BlockchainEvents;
-use sc_consensus::BlockImport;
-use sp_api::StorageProof;
+use {
+    cumulus_client_consensus_common::ParachainBlockImportMarker, sc_client_api::BlockchainEvents,
+    sc_consensus::BlockImport, sp_api::StorageProof,
+};
 
 /// Tanssi Parachain BLock IMport. We cannot use the one in cumulus as it overrides the best
 /// chain selection rule
@@ -1200,11 +1201,13 @@ where
 /// But we need to implement the ParachainBlockImportMarker trait to fullfil
 impl<BI> ParachainBlockImportMarker for TanssiParachainBlockImport<BI> {}
 
-use cumulus_primitives_core::relay_chain::Hash as PHash;
-use polkadot_service::Handle;
-use sc_client_api::Backend;
-use sp_consensus::SyncOracle;
-use sp_state_machine::{Backend as StateBackend, StorageValue};
+use {
+    cumulus_primitives_core::relay_chain::Hash as PHash,
+    polkadot_service::Handle,
+    sc_client_api::Backend,
+    sp_consensus::SyncOracle,
+    sp_state_machine::{Backend as StateBackend, StorageValue},
+};
 
 /// Builder for a concrete relay chain interface, created from a full node. Builds
 /// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.
@@ -1230,11 +1233,10 @@ impl TanssiChainInProcessInterfaceBuilder {
     }
 }
 
-use sc_client_api::AuxStore;
-use sc_client_api::UsageProvider;
-use tc_tanssi_chain_interface::TanssiChainError;
-use tc_tanssi_chain_interface::TanssiChainInterface;
-use tc_tanssi_chain_interface::TanssiChainResult;
+use {
+    sc_client_api::{AuxStore, UsageProvider},
+    tc_tanssi_chain_interface::{TanssiChainError, TanssiChainInterface, TanssiChainResult},
+};
 
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
 pub struct TanssiChainInProcessInterface<Client> {

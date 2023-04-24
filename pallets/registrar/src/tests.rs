@@ -1,6 +1,8 @@
-use crate::{mock::*, Error, Event};
-use frame_support::{assert_noop, assert_ok, BoundedVec};
-use sp_runtime::DispatchError;
+use {
+    crate::{mock::*, Error, Event},
+    frame_support::{assert_noop, assert_ok, BoundedVec},
+    sp_runtime::DispatchError,
+};
 
 #[test]
 fn register_para_id_42() {

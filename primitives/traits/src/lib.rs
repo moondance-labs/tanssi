@@ -3,8 +3,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use cumulus_primitives_core::relay_chain::Slot;
-pub use cumulus_primitives_core::ParaId;
+pub use cumulus_primitives_core::{relay_chain::Slot, ParaId};
 use sp_std::vec::Vec;
 
 /// Get the current list of container chains parachain ids.

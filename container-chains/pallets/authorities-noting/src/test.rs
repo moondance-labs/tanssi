@@ -1,7 +1,9 @@
-use crate::mock::*;
-use sp_runtime::traits::BlakeTwo256;
-use test_relay_sproof_builder::{
-    CollatorAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
+use {
+    crate::mock::*,
+    sp_runtime::traits::BlakeTwo256,
+    test_relay_sproof_builder::{
+        CollatorAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
+    },
 };
 
 #[test]
