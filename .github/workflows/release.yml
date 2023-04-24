@@ -51,29 +51,67 @@ jobs:
           path: binaries
       
   typescript-tests:
-      runs-on: self-hosted
-      needs: ["build"]
-      steps:
-        - name: Pnpm
-          uses: pnpm/action-setup@v2
-          with:
-            version: 7
+    runs-on: self-hosted
+    needs: ["build"]
+    steps:
+      - name: Pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7
         
-        - name: Node  
-          uses: actions/setup-node@v3
-          with:
-            node-version: 16.x
-            cache: "pnpm"
-            cache-dependency-path: test/pnpm-lock.yaml
+      - name: Node  
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+          cache: "pnpm"
+          cache-dependency-path: test/pnpm-lock.yaml
 
-        - name: "Download binaries"
-          uses: actions/download-artifact@v3.0.2
-          with:
-            name: runtimes
-            path: target/release
+      - name: "Download binaries"
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: runtimes
+          path: target/release
       
-        - name: "Install and run upgrade test"
-          run: |
-            cd test
-            pnpm i
-            pnpm moonwall test dev_tanssi
+      - name: "Install and run upgrade test"
+        run: |
+          cd test
+          pnpm i
+          pnpm moonwall test dev_tanssi
+
+  zombienet-tests:
+    runs-on: self-hosted
+      needs: ["build"]
+    steps:
+      - name: Pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7
+        
+      - name: Node  
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+          cache: "pnpm"
+          cache-dependency-path: test/pnpm-lock.yaml
+
+      - name: "Download binaries"
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: runtimes
+          path: target/release
+      
+      - name: Retrieve polkadot binary from docker
+        run: |
+          DOCKER_TAG="parity/polkadot_latest"
+          docker rm -f dummy 2> /dev/null | true
+          docker create -ti --name dummy $DOCKER_TAG bash
+          docker cp dummy:/usr/local/bin/polkadot test/tmp/polkadot
+          docker rm -f dummy
+      
+      - name: "Install and run upgrade test"
+        run: |
+          cd test
+          pnpm i
+          pnpm moonwall test dev_tanssi
+
+      
