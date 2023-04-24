@@ -95,7 +95,11 @@ impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
     where
         T: Decode,
     {
-        read_entry::<T, TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>, Block>(&self.trie_backend, key, fallback)
+        read_entry::<T, TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>, Block>(
+            &self.trie_backend,
+            key,
+            fallback,
+        )
     }
 
     /// Read an optional entry given by the key and try to decode it.
@@ -106,6 +110,9 @@ impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
     where
         T: Decode,
     {
-        read_optional_entry::<T, TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>, Block>(&self.trie_backend, key)
+        read_optional_entry::<T, TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>, Block>(
+            &self.trie_backend,
+            key,
+        )
     }
 }
