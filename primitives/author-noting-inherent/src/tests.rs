@@ -1,12 +1,13 @@
-use cumulus_pallet_parachain_system::RelayChainStateProof;
-use cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber};
-use hex_literal::hex;
-use parity_scale_codec::Decode;
-use parity_scale_codec::Encode;
-use sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID};
-use sp_runtime::DigestItem;
-use test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem};
-use tp_core::well_known_keys::para_id_head;
+use {
+    cumulus_pallet_parachain_system::RelayChainStateProof,
+    cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber},
+    hex_literal::hex,
+    parity_scale_codec::{Decode, Encode},
+    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_runtime::DigestItem,
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    tp_core::well_known_keys::para_id_head,
+};
 
 #[test]
 fn header_decode_collisions() {

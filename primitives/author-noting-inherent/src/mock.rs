@@ -10,15 +10,14 @@
 ///
 /// para_id: the parachain of which we are gonna mock the headData
 /// slots_per_para_block: the number of slots to be applied per parachain block
-use crate::OwnParachainInherentData;
-use parity_scale_codec::Encode;
-use sp_consensus_aura::inherents::InherentType;
-use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_inherents::InherentData;
-use sp_inherents::InherentDataProvider;
-use sp_runtime::traits::BlakeTwo256;
-use sp_runtime::DigestItem;
-use test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem};
+use {
+    crate::OwnParachainInherentData,
+    parity_scale_codec::Encode,
+    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_inherents::{InherentData, InherentDataProvider},
+    sp_runtime::{traits::BlakeTwo256, DigestItem},
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+};
 
 pub struct MockAuthorNotingInherentDataProvider {
     /// The current block number of the local block chain (the parachain)

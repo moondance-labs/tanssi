@@ -1,18 +1,20 @@
 #![cfg(test)]
 
 mod common;
-use common::*;
-use cumulus_primitives_core::ParaId;
-use frame_support::{assert_ok, BoundedVec};
-use pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi;
-use pallet_registrar_runtime_api::runtime_decl_for_registrar_api::RegistrarApi;
-use parity_scale_codec::Encode;
-use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_core::Get;
-use sp_runtime::{traits::BlakeTwo256, DigestItem};
-use sp_std::vec;
-use test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem};
-use test_runtime::{AuthorNoting, CollatorAssignment, CollatorSelection, Configuration};
+use {
+    common::*,
+    cumulus_primitives_core::ParaId,
+    frame_support::{assert_ok, BoundedVec},
+    pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
+    pallet_registrar_runtime_api::runtime_decl_for_registrar_api::RegistrarApi,
+    parity_scale_codec::Encode,
+    sp_consensus_aura::AURA_ENGINE_ID,
+    sp_core::Get,
+    sp_runtime::{traits::BlakeTwo256, DigestItem},
+    sp_std::vec,
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    test_runtime::{AuthorNoting, CollatorAssignment, CollatorSelection, Configuration},
+};
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
 

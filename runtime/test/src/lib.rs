@@ -6,50 +6,50 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
-use cumulus_primitives_core::BodyId;
-use cumulus_primitives_core::ParaId;
-use frame_support::traits::OneSessionHandler;
-use frame_support::weights::constants::RocksDbWeight;
-use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight};
-use smallvec::smallvec;
-use sp_api::impl_runtime_apis;
-use sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata};
-use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys,
-    traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
-    transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult, MultiSignature,
-};
-
-use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-use sp_version::RuntimeVersion;
-
-use frame_support::{
-    construct_runtime,
-    dispatch::DispatchClass,
-    parameter_types,
-    traits::{ConstU32, ConstU64, Everything},
-    weights::{
-        constants::WEIGHT_REF_TIME_PER_SECOND, Weight, WeightToFeeCoefficient,
-        WeightToFeeCoefficients, WeightToFeePolynomial,
-    },
-    PalletId,
-};
-use frame_system::{
-    limits::{BlockLength, BlockWeights},
-    EnsureRoot,
-};
-pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-// Polkadot imports
-use polkadot_runtime_common::BlockHashCount;
+use {
+    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
+    cumulus_primitives_core::{BodyId, ParaId},
+    frame_support::{
+        construct_runtime,
+        dispatch::DispatchClass,
+        parameter_types,
+        traits::{ConstU32, ConstU64, Everything, OneSessionHandler},
+        weights::{
+            constants::{
+                BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
+                WEIGHT_REF_TIME_PER_SECOND,
+            },
+            Weight, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
+        },
+        PalletId,
+    },
+    frame_system::{
+        limits::{BlockLength, BlockWeights},
+        EnsureRoot,
+    },
+    polkadot_runtime_common::BlockHashCount,
+    smallvec::smallvec,
+    sp_api::impl_runtime_apis,
+    sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata},
+    sp_runtime::{
+        create_runtime_str, generic, impl_opaque_keys,
+        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
+        transaction_validity::{TransactionSource, TransactionValidity},
+        ApplyExtrinsicResult, MultiSignature,
+    },
+    sp_std::prelude::*,
+    sp_version::RuntimeVersion,
+};
+pub use {
+    sp_consensus_aura::sr25519::AuthorityId as AuraId,
+    sp_runtime::{MultiAddress, Perbill, Permill},
+};
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
@@ -144,8 +144,10 @@ impl WeightToFeePolynomial for WeightToFee {
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
 /// to even the core data structures.
 pub mod opaque {
-    use super::*;
-    use sp_runtime::{generic, traits::BlakeTwo256};
+    use {
+        super::*,
+        sp_runtime::{generic, traits::BlakeTwo256},
+    };
 
     pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
     /// Opaque block header type.

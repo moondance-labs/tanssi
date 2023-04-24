@@ -1,25 +1,23 @@
-use std::net::SocketAddr;
-
-use cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block};
-use cumulus_primitives_core::ParaId;
-use frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE};
-use log::{info, warn};
-use parity_scale_codec::Encode;
-use sc_cli::{
-    ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
-    NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
-};
-use sc_service::config::{BasePath, PrometheusConfig};
-use sp_core::hexdisplay::HexDisplay;
-use sp_core::sr25519;
-use sp_runtime::traits::{AccountIdConversion, Block as BlockT};
-use std::io::Write;
-use test_runtime::Block;
-
-use crate::{
-    chain_spec,
-    cli::{Cli, RelayChainCli, Subcommand, TanssiCli},
-    service::{new_partial, IdentifyVariant, ParachainNativeExecutor},
+use {
+    crate::{
+        chain_spec,
+        cli::{Cli, RelayChainCli, Subcommand, TanssiCli},
+        service::{new_partial, IdentifyVariant, ParachainNativeExecutor},
+    },
+    cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
+    cumulus_primitives_core::ParaId,
+    frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
+    log::{info, warn},
+    parity_scale_codec::Encode,
+    sc_cli::{
+        ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
+        NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
+    },
+    sc_service::config::{BasePath, PrometheusConfig},
+    sp_core::{hexdisplay::HexDisplay, sr25519},
+    sp_runtime::traits::{AccountIdConversion, Block as BlockT},
+    std::{io::Write, net::SocketAddr},
+    test_runtime::Block,
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -324,9 +322,11 @@ pub fn run() -> Result<()> {
         }
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
-            use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
-            use test_runtime::MILLISECS_PER_BLOCK;
-            use try_runtime_cli::block_building_info::timestamp_with_aura_info;
+            use {
+                sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch},
+                test_runtime::MILLISECS_PER_BLOCK,
+                try_runtime_cli::block_building_info::timestamp_with_aura_info,
+            };
 
             let runner = cli.create_runner(cmd)?;
 

@@ -8,9 +8,8 @@
 //! Registered container chains are stored in the PendingParaIds storage item until the session
 //! in which they can be onboarded arrives, in which case they are added to the RegisteredParaIds
 //! storage item.
-#![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet::*;
+#![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(test)]
 mod mock;
@@ -18,16 +17,18 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
-    use frame_support::pallet_prelude::*;
-    use frame_support::LOG_TARGET;
-    use frame_system::pallet_prelude::*;
-    use sp_runtime::traits::AtLeast32BitUnsigned;
-    use sp_runtime::Saturating;
-    use sp_std::prelude::*;
-    use tp_traits::{
-        GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
+    use {
+        frame_support::{pallet_prelude::*, LOG_TARGET},
+        frame_system::pallet_prelude::*,
+        sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
+        sp_std::prelude::*,
+        tp_traits::{
+            GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
+        },
     };
 
     #[pallet::pallet]
