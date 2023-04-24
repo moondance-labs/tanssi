@@ -7,7 +7,6 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
-use cumulus_primitives_core::BodyId;
 use cumulus_primitives_core::ParaId;
 use frame_support::weights::constants::RocksDbWeight;
 use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight};
@@ -35,7 +34,6 @@ use frame_support::{
         constants::WEIGHT_REF_TIME_PER_SECOND, Weight, WeightToFeeCoefficient,
         WeightToFeeCoefficients, WeightToFeePolynomial,
     },
-    PalletId,
 };
 use frame_system::limits::{BlockLength, BlockWeights};
 pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
@@ -386,19 +384,6 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-}
-
-parameter_types! {
-    pub const PotId: PalletId = PalletId(*b"PotStake");
-    pub const MaxCandidates: u32 = 1000;
-    pub const MinCandidates: u32 = 5;
-    pub const SessionLength: BlockNumber = 5;
-    pub const MaxInvulnerables: u32 = 100;
-    pub const ExecutiveBody: BodyId = BodyId::Executive;
-}
-
-parameter_types! {
-    pub const MaxLengthParaIds: u32 = 100u32;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
