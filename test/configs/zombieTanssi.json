@@ -14,6 +14,7 @@
       "nodes": [
         {
           "name": "alice",
+          "ws_port": "9947",
           "validator": true
         },
         {
@@ -36,6 +37,7 @@
         "collators":  [
           {
             "name": "Collator1000-01",
+            "ws_port": "9948",
             "command": "../target/release/test-node"
           },
           {

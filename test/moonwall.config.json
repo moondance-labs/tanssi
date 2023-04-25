@@ -38,7 +38,19 @@
         "zombieSpec": {
           "configPath": "./configs/zombieTanssiCI.json"
         }
-      }
+      },
+      "connections": [
+        {
+          "name": "Relay",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9947"]
+        },
+        {
+          "name": "Tanssi",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9948"]
+        }
+      ]
     },
     {
       "name": "zombie_tanssi",
@@ -48,7 +60,19 @@
         "zombieSpec": {
           "configPath": "./configs/zombieTanssi.json"
         }
-      }
+      },
+      "connections": [
+        {
+          "name": "Relay",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9947"]
+        },
+        {
+          "name": "Tanssi",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9948"]
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,57 @@
+{
+    "settings": {
+      "timeout": 1000,
+      "provider": "native"
+    },
+    "relaychain": {
+      "chain": "rococo-local",
+      "default_command": "tmp/polkadot",
+      "default_args": [
+        "--no-hardware-benchmarks",
+        "-lparachain=debug",
+        "--database=paritydb"
+      ],
+      "nodes": [
+        {
+          "name": "alice",
+          "ws_port": "9947",
+          "validator": true
+        },
+        {
+          "name": "bob",
+          "validator": true
+        },
+        {
+          "name": "charlie",
+          "validator": true
+        },
+        {
+          "name": "dave",
+          "validator": true
+        }
+      ]
+    },
+    "parachains": [
+      {
+        "id": 1000,
+        "collators":  [
+          {
+            "name": "Collator1000-01",
+            "ws_port": "9948",
+            "command": "tmp/test-node"
+          },
+          {
+            "name": "Collator1000-02",
+            "command": "tmp/test-node"
+          }
+        ]
+      }
+    ],
+    "types": {
+      "Header": {
+        "number": "u64",
+        "parent_hash": "Hash",
+        "post_state": "Hash"
+      }
+    }
+  }
