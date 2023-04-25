@@ -50,7 +50,10 @@ fn genesis_para_registrar() {
         .with_para_ids(vec![1001, 1002])
         .build()
         .execute_with(|| {
-            assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
+            assert_eq!(
+                Registrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
         });
 }
 
@@ -65,27 +68,33 @@ fn genesis_para_registrar_deregister() {
         .with_para_ids(vec![1001, 1002])
         .build()
         .execute_with(|| {
-            assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
+            assert_eq!(
+                Registrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
 
             run_to_block(2, false);
-            assert_ok!(Registrar::deregister(root_origin(), 1002), ());
+            assert_ok!(Registrar::deregister(root_origin(), 1002.into()), ());
 
             // Pending
             assert_eq!(
                 Registrar::pending_registered_para_ids(),
-                vec![(2u32, BoundedVec::try_from(vec![1001u32]).unwrap())]
+                vec![(2u32, BoundedVec::try_from(vec![1001u32.into()]).unwrap())]
             );
 
             run_to_session(1, false);
             assert_eq!(
                 Registrar::pending_registered_para_ids(),
-                vec![(2u32, BoundedVec::try_from(vec![1001u32]).unwrap())]
+                vec![(2u32, BoundedVec::try_from(vec![1001u32.into()]).unwrap())]
             );
-            assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
+            assert_eq!(
+                Registrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
 
             run_to_session(2, false);
             assert_eq!(Registrar::pending_registered_para_ids(), vec![]);
-            assert_eq!(Registrar::registered_para_ids(), vec![1001]);
+            assert_eq!(Registrar::registered_para_ids(), vec![1001.into()]);
         });
 }
 
@@ -100,20 +109,26 @@ fn genesis_para_registrar_runtime_api() {
         .with_para_ids(vec![1001, 1002])
         .build()
         .execute_with(|| {
-            assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
-            assert_eq!(Runtime::registered_paras(), vec![1001, 1002]);
+            assert_eq!(
+                Registrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
 
             run_to_block(2, false);
-            assert_ok!(Registrar::deregister(root_origin(), 1002), ());
-            assert_eq!(Runtime::registered_paras(), vec![1001, 1002]);
+            assert_ok!(Registrar::deregister(root_origin(), 1002.into()), ());
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
 
             run_to_session(1, false);
-            assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
-            assert_eq!(Runtime::registered_paras(), vec![1001, 1002]);
+            assert_eq!(
+                Registrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
 
             run_to_session(2, false);
-            assert_eq!(Registrar::registered_para_ids(), vec![1001]);
-            assert_eq!(Runtime::registered_paras(), vec![1001]);
+            assert_eq!(Registrar::registered_para_ids(), vec![1001.into()]);
+            assert_eq!(Runtime::registered_paras(), vec![1001.into()]);
         });
 }
 
@@ -369,8 +384,8 @@ fn test_authors_paras_inserted_a_posteriori() {
 
             assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(Registrar::register(root_origin(), 1001), ());
-            assert_ok!(Registrar::register(root_origin(), 1002), ());
+            assert_ok!(Registrar::register(root_origin(), 1001.into()), ());
+            assert_ok!(Registrar::register(root_origin(), 1002.into()), ());
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32, true);
@@ -429,7 +444,7 @@ fn test_parachains_deregister_collators_re_assigned() {
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
-            assert_ok!(Registrar::deregister(root_origin(), 1001), ());
+            assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32, true);

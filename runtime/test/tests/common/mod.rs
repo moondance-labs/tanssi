@@ -120,7 +120,7 @@ impl ExtBuilder {
         // these values will be taken into account for collator-assignment.
         <pallet_registrar::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
             &pallet_registrar::GenesisConfig {
-                para_ids: self.para_ids,
+                para_ids: self.para_ids.into_iter().map(|x| x.into()).collect(),
             },
             &mut t,
         )
