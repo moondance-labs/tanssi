@@ -1,8 +1,15 @@
-use cumulus_primitives_core::relay_chain;
-use parity_scale_codec::Decode;
-use sp_runtime::traits::HashFor;
-use sp_state_machine::{Backend, TrieBackend, TrieBackendBuilder};
-use sp_trie::{HashDBT, MemoryDB, StorageProof, EMPTY_PREFIX};
+//! # Chain Snapshot Primitives
+//!
+//! This crate defines those primitives to retrieve keys from a defined Backend
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
+use {
+    parity_scale_codec::Decode,
+    sp_runtime::traits::HashFor,
+    sp_state_machine::{Backend, TrieBackend, TrieBackendBuilder},
+    sp_trie::{HashDBT, MemoryDB, StorageProof, EMPTY_PREFIX},
+};
 
 #[derive(Debug)]
 pub enum ReadEntryErr {
@@ -22,10 +29,11 @@ pub enum ReadEntryErr {
 /// Returns `Err` in case the backend can't return the value under the specific key (likely due to
 /// a malformed proof), in case the decoding fails, or in case where the value is empty in the relay
 /// chain state and no fallback was provided.
-fn read_entry<T, B>(backend: &B, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr>
+fn read_entry<T, B, Block>(backend: &B, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr>
 where
     T: Decode,
-    B: Backend<HashFor<relay_chain::Block>>,
+    B: Backend<HashFor<Block>>,
+    Block: sp_runtime::traits::Block,
 {
     backend
         .storage(key)
@@ -41,12 +49,13 @@ where
 ///
 /// Returns `Err` in case the backend can't return the value under the specific key (likely due to
 /// a malformed proof) or if the value couldn't be decoded.
-fn read_optional_entry<T, B>(backend: &B, key: &[u8]) -> Result<Option<T>, ReadEntryErr>
+fn read_optional_entry<T, B, Block>(backend: &B, key: &[u8]) -> Result<Option<T>, ReadEntryErr>
 where
     T: Decode,
-    B: Backend<HashFor<relay_chain::Block>>,
+    B: Backend<HashFor<Block>>,
+    Block: sp_runtime::traits::Block,
 {
-    match read_entry(backend, key, None) {
+    match read_entry::<T, B, Block>(backend, key, None) {
         Ok(v) => Ok(Some(v)),
         Err(ReadEntryErr::Absent) => Ok(None),
         Err(err) => Err(err),
@@ -56,20 +65,20 @@ where
 /// A state proof extracted from the relay chain.
 ///
 /// This state proof is extracted from the relay chain block we are building on top of.
-pub struct AuthorNotingRelayChainStateProof {
-    trie_backend: TrieBackend<MemoryDB<HashFor<relay_chain::Block>>, HashFor<relay_chain::Block>>,
+pub struct GenericStateProof<Block: sp_runtime::traits::Block> {
+    trie_backend: TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>,
 }
 
-impl AuthorNotingRelayChainStateProof {
+impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
     /// Create a new instance of `Self`.
     ///
     /// Returns an error if the given `relay_parent_storage_root` is not the root of the given
     /// `proof`.
     pub fn new(
-        relay_parent_storage_root: relay_chain::Hash,
+        relay_parent_storage_root: Block::Hash,
         proof: StorageProof,
     ) -> Result<Self, ReadEntryErr> {
-        let db = proof.into_memory_db::<HashFor<relay_chain::Block>>();
+        let db = proof.into_memory_db::<HashFor<Block>>();
         if !db.contains(&relay_parent_storage_root, EMPTY_PREFIX) {
             return Err(ReadEntryErr::RootMismatch);
         }
@@ -88,7 +97,11 @@ impl AuthorNotingRelayChainStateProof {
     where
         T: Decode,
     {
-        read_entry(&self.trie_backend, key, fallback)
+        read_entry::<T, TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>, Block>(
+            &self.trie_backend,
+            key,
+            fallback,
+        )
     }
 
     /// Read an optional entry given by the key and try to decode it.
@@ -99,6 +112,9 @@ impl AuthorNotingRelayChainStateProof {
     where
         T: Decode,
     {
-        read_optional_entry(&self.trie_backend, key)
+        read_optional_entry::<T, TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>, Block>(
+            &self.trie_backend,
+            key,
+        )
     }
 }

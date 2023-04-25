@@ -11,27 +11,27 @@
 //!  
 //! Using those two requirements we can select who the author was based on the collators assigned
 //! to that containerChain, by simply assigning the slot position.
-//!
-#![cfg_attr(not(feature = "std"), no_std)]
-use cumulus_pallet_parachain_system::RelaychainStateProvider;
-use cumulus_primitives_core::relay_chain::BlakeTwo256;
-use cumulus_primitives_core::relay_chain::BlockNumber;
-use cumulus_primitives_core::relay_chain::HeadData;
-use cumulus_primitives_core::ParaId;
-use frame_support::Hashable;
-use parity_scale_codec::Decode;
-use sp_consensus_aura::inherents::InherentType;
-use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_inherents::InherentIdentifier;
-use sp_runtime::traits::Header;
-use sp_runtime::DispatchResult;
-use sp_std::prelude::*;
-use tp_author_noting_inherent::INHERENT_IDENTIFIER;
-use tp_author_noting_inherent::PARAS_HEADS_INDEX;
-use tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains};
 
-mod relay_state_snapshot;
-pub use relay_state_snapshot::*;
+#![cfg_attr(not(feature = "std"), no_std)]
+
+pub use tp_chain_state_snapshot::*;
+use {
+    cumulus_pallet_parachain_system::RelaychainStateProvider,
+    cumulus_primitives_core::{
+        relay_chain::{BlakeTwo256, BlockNumber, HeadData},
+        ParaId,
+    },
+    frame_support::{dispatch::PostDispatchInfo, pallet_prelude::*, Hashable},
+    frame_system::pallet_prelude::*,
+    parity_scale_codec::{Decode, Encode},
+    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_inherents::{InherentIdentifier, IsFatalError},
+    sp_runtime::{traits::Header, DispatchResult, RuntimeString},
+    sp_std::prelude::*,
+    tp_author_noting_inherent::INHERENT_IDENTIFIER,
+    tp_core::well_known_keys::PARAS_HEADS_INDEX,
+    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
+};
 
 #[cfg(test)]
 mod mock;
@@ -43,10 +43,7 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use super::{DispatchResult, *};
-    use frame_support::dispatch::PostDispatchInfo;
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
+    use super::*;
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
@@ -96,7 +93,7 @@ pub mod pallet {
             let relay_storage_root =
                 T::RelayChainStateProvider::current_relay_chain_state().state_root;
             let relay_storage_rooted_proof =
-                AuthorNotingRelayChainStateProof::new(relay_storage_root, relay_storage_proof)
+                GenericStateProof::new(relay_storage_root, relay_storage_proof)
                     .expect("Invalid relay chain state proof");
 
             for para_id in T::ContainerChains::current_container_chains() {
@@ -151,10 +148,17 @@ pub mod pallet {
     #[pallet::inherent]
     impl<T: Config> ProvideInherent for Pallet<T> {
         type Call = Call<T>;
-        type Error = sp_inherents::MakeFatalError<()>;
+        type Error = InherentError;
         // TODO, what should we put here
         const INHERENT_IDENTIFIER: InherentIdentifier =
             tp_author_noting_inherent::INHERENT_IDENTIFIER;
+
+        fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
+            // Return Ok(Some(_)) unconditionally because this inherent is required in every block
+            Ok(Some(InherentError::Other(
+                sp_runtime::RuntimeString::Borrowed("Pallet Author Noting Inherent required"),
+            )))
+        }
 
         fn create_inherent(data: &InherentData) -> Option<Self::Call> {
             let data: tp_author_noting_inherent::OwnParachainInherentData = data
@@ -175,7 +179,7 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     /// Fetch author slot from a proof of header
     fn fetch_author_slot_from_proof(
-        relay_state_proof: &AuthorNotingRelayChainStateProof,
+        relay_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
     ) -> Result<T::AccountId, Error<T>> {
         let bytes = para_id.twox_64_concat();
@@ -226,6 +230,32 @@ impl<T: Config> Pallet<T> {
             Ok(author)
         } else {
             Err(Error::<T>::NonAuraDigest)
+        }
+    }
+}
+
+#[derive(Encode)]
+#[cfg_attr(feature = "std", derive(Debug, Decode))]
+pub enum InherentError {
+    Other(RuntimeString),
+}
+
+impl IsFatalError for InherentError {
+    fn is_fatal_error(&self) -> bool {
+        match *self {
+            InherentError::Other(_) => true,
+        }
+    }
+}
+
+impl InherentError {
+    /// Try to create an instance ouf of the given identifier and data.
+    #[cfg(feature = "std")]
+    pub fn try_from(id: &InherentIdentifier, data: &[u8]) -> Option<Self> {
+        if id == &INHERENT_IDENTIFIER {
+            <InherentError as parity_scale_codec::Decode>::decode(&mut &data[..]).ok()
+        } else {
+            None
         }
     }
 }

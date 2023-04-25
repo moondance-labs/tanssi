@@ -1,7 +1,7 @@
-use super::*;
-use crate::mock::{new_test_ext, session_change_validators, Initializer, System, Test};
-
-use frame_support::traits::{OnFinalize, OnInitialize};
+use {
+    super::*,
+    crate::mock::{new_test_ext, session_change_validators, Initializer, System, Test},
+};
 
 #[test]
 fn session_0_is_instantly_applied() {

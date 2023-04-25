@@ -10,16 +10,14 @@
 ///
 /// para_id: the parachain of which we are gonna mock the headData
 /// slots_per_para_block: the number of slots to be applied per parachain block
-use crate::AuthorNotingSproofBuilder;
-use crate::HeaderAs;
-use crate::OwnParachainInherentData;
-use parity_scale_codec::Encode;
-use sp_consensus_aura::inherents::InherentType;
-use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_inherents::InherentData;
-use sp_inherents::InherentDataProvider;
-use sp_runtime::traits::BlakeTwo256;
-use sp_runtime::DigestItem;
+use {
+    crate::OwnParachainInherentData,
+    parity_scale_codec::Encode,
+    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_inherents::{InherentData, InherentDataProvider},
+    sp_runtime::{traits::BlakeTwo256, DigestItem},
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+};
 
 pub struct MockAuthorNotingInherentDataProvider {
     /// The current block number of the local block chain (the parachain)
@@ -47,11 +45,11 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
         let slot_number =
             InherentType::from(self.slots_per_para_block as u64 * self.current_para_block as u64);
 
-        let mut sproof_builder = AuthorNotingSproofBuilder::default();
+        let mut sproof_builder = ParaHeaderSproofBuilder::default();
 
         // Use the "sproof" (spoof proof) builder to build valid mock state root and proof.
         for para_id in self.para_ids.iter() {
-            let mut sproof_builder_item = crate::AuthorNotingSproofBuilderItem::default();
+            let mut sproof_builder_item = ParaHeaderSproofBuilderItem::default();
             sproof_builder_item.para_id = (*para_id).into();
 
             let header = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {

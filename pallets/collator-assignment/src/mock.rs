@@ -1,13 +1,15 @@
-use crate::{self as pallet_collator_assignment};
-use frame_support::traits::{ConstU16, ConstU64};
-use frame_system as system;
-use parity_scale_codec::{Decode, Encode};
-use sp_core::H256;
-use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+use {
+    crate::{self as pallet_collator_assignment},
+    frame_support::traits::{ConstU16, ConstU64},
+    frame_system as system,
+    parity_scale_codec::{Decode, Encode},
+    sp_core::H256,
+    sp_runtime::{
+        testing::Header,
+        traits::{BlakeTwo256, IdentityLookup},
+    },
+    tp_traits::ParaId,
 };
-use tp_traits::ParaId;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -55,8 +57,7 @@ impl system::Config for Test {
 // Pallet to provide some mock data, used to test
 #[frame_support::pallet]
 pub mod mock_data {
-    use super::*;
-    use frame_support::pallet_prelude::*;
+    use {super::*, frame_support::pallet_prelude::*};
 
     #[pallet::config]
     pub trait Config: frame_system::Config {}

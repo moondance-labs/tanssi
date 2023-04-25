@@ -9,13 +9,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::traits::OneSessionHandler;
-use parity_scale_codec::{Decode, Encode};
-use scale_info::TypeInfo;
-use sp_runtime::traits::{AtLeast32BitUnsigned, Zero};
-use sp_runtime::RuntimeAppPublic;
-use sp_std::prelude::*;
-
 #[cfg(test)]
 mod mock;
 
@@ -23,12 +16,21 @@ mod mock;
 mod tests;
 
 pub use pallet::*;
+use {
+    frame_support::{pallet_prelude::*, traits::OneSessionHandler},
+    frame_system::pallet_prelude::*,
+    parity_scale_codec::{Decode, Encode},
+    scale_info::TypeInfo,
+    sp_runtime::{
+        traits::{AtLeast32BitUnsigned, Zero},
+        RuntimeAppPublic,
+    },
+    sp_std::prelude::*,
+};
 
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
 
     #[derive(Encode, Decode, TypeInfo)]
     #[scale_info(skip_type_params(T))]

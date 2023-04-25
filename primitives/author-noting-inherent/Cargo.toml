@@ -1,15 +1,17 @@
 [package]
 name = "tp-author-noting-inherent"
-authors = [ "Parity Technologies <admin@parity.io>" ]
+authors = []
 edition = "2021"
 version = "0.1.0"
-
 [dependencies]
 async-trait = { workspace = true, optional = true }
 hex-literal = { version = "0.3.4" }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }
+
+test-relay-sproof-builder = { workspace = true, optional = true }
+tp-core = { workspace = true, optional = true }
 
 # Substrate
 frame-support = { workspace = true, optional = true }
@@ -34,4 +36,4 @@ polkadot-primitives = { workspace = true, optional = true }
 
 [features]
 default = [ "std" ]
-std = [ "async-trait", "cumulus-primitives-core/std", "cumulus-relay-chain-interface", "frame-support", "parity-scale-codec/std", "polkadot-primitives", "sc-client-api", "scale-info/std", "sp-api", "sp-consensus-aura", "sp-core/std", "sp-inherents/std", "sp-io/std", "sp-runtime/std", "sp-state-machine/std", "sp-std/std", "sp-storage", "sp-trie/std" ]
+std = [ "async-trait", "cumulus-pallet-parachain-system/std", "cumulus-primitives-core/std", "cumulus-relay-chain-interface", "cumulus-relay-chain-interface", "frame-support", "parity-scale-codec/std", "polkadot-primitives", "sc-client-api", "scale-info/std", "scale-info/std", "sp-api", "sp-consensus-aura", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-io/std", "sp-runtime/std", "sp-state-machine/std", "sp-std/std", "sp-storage", "sp-trie/std", "test-relay-sproof-builder/std", "tp-core/std" ]

@@ -18,10 +18,13 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
-pallet-collator-assignment-runtime-api = { workspace = true }
-pallet-registrar-runtime-api = { workspace = true }
-test-runtime = { workspace = true }
-tp-author-noting-inherent = { workspace = true }
+pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
+pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
+test-runtime = { workspace = true, features = [ "std" ] }
+tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
+tp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
+
+tc-tanssi-chain-interface = { workspace = true }
 
 # Substrate
 frame-benchmarking = { workspace = true }
@@ -43,20 +46,21 @@ sc-telemetry = { workspace = true }
 sc-tracing = { workspace = true }
 sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
-sp-api = { workspace = true }
+sp-api = { workspace = true, features = [ "std" ] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }
 
 sp-consensus-aura = { workspace = true }
-sp-core = { workspace = true }
-sp-inherents = { workspace = true }
-sp-io = { workspace = true }
-sp-keystore = { workspace = true }
-sp-offchain = { workspace = true }
-sp-runtime = { workspace = true }
-sp-session = { workspace = true }
-sp-timestamp = { workspace = true }
+sp-core = { workspace = true, features = [ "std" ] }
+sp-inherents = { workspace = true, features = [ "std" ] }
+sp-io = { workspace = true, features = [ "std" ] }
+sp-keystore = { workspace = true, features = [ "std" ] }
+sp-offchain = { workspace = true, features = [ "std" ] }
+sp-runtime = { workspace = true, features = [ "std" ] }
+sp-session = { workspace = true, features = [ "std" ] }
+sp-state-machine = { workspace = true, features = [ "std" ] }
+sp-timestamp = { workspace = true, features = [ "std" ] }
 
 sp-transaction-pool = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
@@ -77,7 +81,6 @@ cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
-
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 

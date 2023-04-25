@@ -1,30 +1,33 @@
-use crate::{self as author_noting_pallet, Config};
-use cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider};
-use cumulus_primitives_core::ParaId;
-use frame_support::inherent::{InherentData, ProvideInherent};
-use frame_support::parameter_types;
-use frame_support::traits::{ConstU32, ConstU64};
-use frame_support::traits::{Everything, UnfilteredDispatchable};
-use frame_support::traits::{OnFinalize, OnInitialize};
-use frame_system::RawOrigin;
-use parity_scale_codec::{Decode, Encode};
-use polkadot_parachain::primitives::RelayChainBlockNumber;
-use polkadot_primitives::Slot;
-use sp_core::H256;
-use sp_state_machine::StorageProof;
-use sp_version::RuntimeVersion;
-use tp_author_noting_inherent::AuthorNotingSproofBuilder;
-
-use sp_io;
-use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+use {
+    crate::{self as author_noting_pallet, Config},
+    cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider},
+    cumulus_primitives_core::ParaId,
+    frame_support::{
+        inherent::{InherentData, ProvideInherent},
+        parameter_types,
+        traits::{
+            ConstU32, ConstU64, Everything, OnFinalize, OnInitialize, UnfilteredDispatchable,
+        },
+    },
+    frame_system::RawOrigin,
+    parity_scale_codec::{Decode, Encode},
+    polkadot_parachain::primitives::RelayChainBlockNumber,
+    polkadot_primitives::Slot,
+    sp_core::H256,
+    sp_io,
+    sp_runtime::{
+        testing::Header,
+        traits::{BlakeTwo256, IdentityLookup},
+    },
+    sp_state_machine::StorageProof,
+    sp_version::RuntimeVersion,
+    test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
-
 type AccountId = u64;
+
 frame_support::construct_runtime!(
     pub enum Test where
         Block = Block,
@@ -71,8 +74,7 @@ parameter_types! {
 // Pallet to provide some mock data, used to test
 #[frame_support::pallet]
 pub mod mock_data {
-    use super::*;
-    use frame_support::pallet_prelude::*;
+    use {super::*, frame_support::pallet_prelude::*};
 
     #[pallet::config]
     pub trait Config: frame_system::Config {}
@@ -209,7 +211,7 @@ pub struct BlockTests {
     tests: Vec<BlockTest>,
     ran: bool,
     relay_sproof_builder_hook:
-        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut AuthorNotingSproofBuilder)>>,
+        Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder)>>,
     inherent_data_hook: Option<
         Box<
             dyn Fn(
@@ -246,20 +248,18 @@ impl BlockTests {
 
     pub fn with_relay_sproof_builder<F>(mut self, f: F) -> Self
     where
-        F: 'static + Fn(&BlockTests, RelayChainBlockNumber, &mut AuthorNotingSproofBuilder),
+        F: 'static + Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder),
     {
         self.relay_sproof_builder_hook = Some(Box::new(f));
         self
     }
 
-    pub fn with_overriden_state_root(mut self, root: H256) -> Self
-where {
+    pub fn with_overriden_state_root(mut self, root: H256) -> Self {
         self.overriden_state_root = Some(root);
         self
     }
 
-    pub fn with_overriden_state_proof(mut self, proof: StorageProof) -> Self
-where {
+    pub fn with_overriden_state_proof(mut self, proof: StorageProof) -> Self {
         self.overriden_state_proof = Some(proof);
         self
     }
@@ -278,7 +278,7 @@ where {
                 System::initialize(&n, &Default::default(), &Default::default());
 
                 // now mess with the storage the way validate_block does
-                let mut sproof_builder = AuthorNotingSproofBuilder::default();
+                let mut sproof_builder = ParaHeaderSproofBuilder::default();
                 if let Some(ref hook) = self.relay_sproof_builder_hook {
                     hook(self, *n as RelayChainBlockNumber, &mut sproof_builder);
                 }

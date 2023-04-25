@@ -1,6 +1,8 @@
-use crate::{mock::*, HostConfiguration, PendingConfigs};
-use frame_support::assert_ok;
-use sp_std::vec;
+use {
+    crate::{mock::*, HostConfiguration, PendingConfigs},
+    frame_support::assert_ok,
+    sp_std::vec,
+};
 
 #[test]
 fn config_sets_values_from_genesis() {

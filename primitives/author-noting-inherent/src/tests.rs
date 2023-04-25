@@ -1,12 +1,13 @@
-use cumulus_pallet_parachain_system::RelayChainStateProof;
-use hex_literal::hex;
-use parity_scale_codec::Decode;
-use parity_scale_codec::Encode;
-use polkadot_primitives::{BlakeTwo256, BlockNumber};
-use sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID};
-use sp_runtime::DigestItem;
-
-use crate::{AuthorNotingSproofBuilder, AuthorNotingSproofBuilderItem, HeaderAs};
+use {
+    cumulus_pallet_parachain_system::RelayChainStateProof,
+    cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber},
+    hex_literal::hex,
+    parity_scale_codec::{Decode, Encode},
+    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_runtime::DigestItem,
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    tp_core::well_known_keys::para_id_head,
+};
 
 #[test]
 fn header_decode_collisions() {
@@ -49,20 +50,20 @@ fn test_header() -> sp_runtime::generic::Header<u32, BlakeTwo256> {
 
 #[test]
 fn header_double_encode() {
-    // The AuthorNotingSproofBuilder should always encode as a Vec<u8>, and then encode that Vec<u8> again.
-    let mut s = AuthorNotingSproofBuilderItem::default();
+    // The ParaHeaderSproofBuilder should always encode as a Vec<u8>, and then encode that Vec<u8> again.
+    let mut s = ParaHeaderSproofBuilderItem::default();
     s.para_id = 1001.into();
     let header = test_header();
     let header_encoded = header.encode();
     s.author_id = HeaderAs::NonEncoded(header);
 
-    let mut sb = AuthorNotingSproofBuilder::default();
+    let mut sb = ParaHeaderSproofBuilder::default();
     sb.items.push(s);
     let (state_root, proof) = sb.into_state_root_and_proof();
 
     let relay_state_proof = RelayChainStateProof::new(1001.into(), state_root, proof)
         .expect("Invalid relay chain state proof");
-    let key = crate::para_id_head(1001.into());
+    let key = para_id_head(1001.into());
     // If the NonEncoded was not encoded once to Vec, and then again as a Vec, this would fail
     // because we are comparing the "decoded" entry with the encoded header
     let v: Vec<u8> = relay_state_proof.read_entry(&key, None).unwrap();
@@ -71,20 +72,20 @@ fn header_double_encode() {
 
 #[test]
 fn header_double_encode_even_if_already_encoded() {
-    // The AuthorNotingSproofBuilder should always encode as a Vec<u8>, and then encode that Vec<u8> again.
-    let mut s = AuthorNotingSproofBuilderItem::default();
+    // The ParaHeaderSproofBuilder should always encode as a Vec<u8>, and then encode that Vec<u8> again.
+    let mut s = ParaHeaderSproofBuilderItem::default();
     s.para_id = 1001.into();
     let header = test_header();
     let header_encoded = header.encode();
     s.author_id = HeaderAs::AlreadyEncoded(header_encoded.clone());
 
-    let mut sb = AuthorNotingSproofBuilder::default();
+    let mut sb = ParaHeaderSproofBuilder::default();
     sb.items.push(s);
     let (state_root, proof) = sb.into_state_root_and_proof();
 
     let relay_state_proof = RelayChainStateProof::new(1001.into(), state_root, proof)
         .expect("Invalid relay chain state proof");
-    let key = crate::para_id_head(1001.into());
+    let key = para_id_head(1001.into());
     // If the AlreadyEncoded was not encoded again as a Vec, this would fail
     let v: Vec<u8> = relay_state_proof.read_entry(&key, None).unwrap();
     assert_eq!(v, header_encoded);

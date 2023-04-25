@@ -1,14 +1,13 @@
-use crate::mock::*;
-use cumulus_primitives_core::ParaId;
-use hex_literal::hex;
-use parity_scale_codec::Encode;
-use sp_consensus_aura::inherents::InherentType;
-use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_core::H256;
-use sp_runtime::generic::DigestItem;
-use sp_runtime::traits::BlakeTwo256;
-use tp_author_noting_inherent::AuthorNotingSproofBuilderItem;
-use tp_author_noting_inherent::HeaderAs;
+use {
+    crate::mock::*,
+    cumulus_primitives_core::ParaId,
+    hex_literal::hex,
+    parity_scale_codec::Encode,
+    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_core::H256,
+    sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+};
 
 #[test]
 fn test_author_id_insertion() {
@@ -16,7 +15,7 @@ fn test_author_id_insertion() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = AuthorNotingSproofBuilderItem::default();
+                let mut s = ParaHeaderSproofBuilderItem::default();
                 s.para_id = 1001.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
@@ -55,7 +54,7 @@ fn test_author_id_insertion_real_data() {
 
             match relay_block_num {
                 1 => {
-                    let mut s = AuthorNotingSproofBuilderItem::default();
+                    let mut s = ParaHeaderSproofBuilderItem::default();
                     s.para_id = 1001.into();
                     s.author_id = HeaderAs::AlreadyEncoded(statemint_data.to_vec());
                     sproof.items.push(s);
@@ -80,7 +79,7 @@ fn test_author_id_insertion_many_paras() {
                 // Since the default parachain list is vec![1001],
                 // we must always include a sproof for this para_id
                 let slot: InherentType = 10u64.into();
-                let mut s = AuthorNotingSproofBuilderItem::default();
+                let mut s = ParaHeaderSproofBuilderItem::default();
                 s.para_id = 1001.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
@@ -96,7 +95,7 @@ fn test_author_id_insertion_many_paras() {
             }
             2 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = AuthorNotingSproofBuilderItem::default();
+                let mut s = ParaHeaderSproofBuilderItem::default();
                 s.para_id = 1001.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
@@ -111,7 +110,7 @@ fn test_author_id_insertion_many_paras() {
                 sproof.items.push(s);
 
                 let slot: InherentType = 14u64.into();
-                let mut s = AuthorNotingSproofBuilderItem::default();
+                let mut s = ParaHeaderSproofBuilderItem::default();
                 s.para_id = 1002.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
@@ -149,7 +148,7 @@ fn test_should_panic_with_invalid_proof_root() {
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = AuthorNotingSproofBuilderItem::default();
+                let mut s = ParaHeaderSproofBuilderItem::default();
                 s.para_id = 1001.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
@@ -175,16 +174,14 @@ fn test_should_panic_with_invalid_proof_root() {
 #[test]
 #[should_panic]
 fn test_should_panic_with_invalid_proof_state() {
-    // Lets get the default for overriding
-    use tp_author_noting_inherent::AuthorNotingSproofBuilder;
-    let sproof_builder = AuthorNotingSproofBuilder::default();
+    let sproof_builder = ParaHeaderSproofBuilder::default();
     let (_, relay_chain_state) = sproof_builder.into_state_root_and_proof();
 
     BlockTests::new()
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let slot: InherentType = 13u64.into();
-                let mut s = AuthorNotingSproofBuilderItem::default();
+                let mut s = ParaHeaderSproofBuilderItem::default();
                 s.para_id = 1001.into();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {

@@ -1,7 +1,10 @@
-use crate::{para_id_head, OwnParachainInherentData};
-use cumulus_primitives_core::ParaId;
-use cumulus_relay_chain_interface::PHash;
-use cumulus_relay_chain_interface::RelayChainInterface;
+use {
+    crate::OwnParachainInherentData,
+    cumulus_primitives_core::ParaId,
+    cumulus_relay_chain_interface::{PHash, RelayChainInterface},
+    tp_core::well_known_keys::para_id_head,
+};
+
 /// Collect the relevant relay chain state in form of a proof
 /// for putting it into the author
 /// noting inherent.

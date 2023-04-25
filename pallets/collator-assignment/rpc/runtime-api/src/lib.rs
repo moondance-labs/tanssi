@@ -1,7 +1,9 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 //! Runtime API for CollatorAssignment pallet. Can be used by collators to check
 //! which parachain will they be collating, as well as the current assignment of
 //! collators to parachains and parachains to collators.
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use scale_info::prelude::vec::Vec;
 
 sp_api::decl_runtime_apis! {

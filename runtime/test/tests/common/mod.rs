@@ -1,15 +1,17 @@
-use cumulus_primitives_core::PersistedValidationData;
-use frame_support::{
-    assert_ok,
-    dispatch::Dispatchable,
-    traits::{GenesisBuild, OnFinalize, OnInitialize},
+use {
+    cumulus_primitives_core::PersistedValidationData,
+    frame_support::{
+        assert_ok,
+        dispatch::Dispatchable,
+        traits::{GenesisBuild, OnFinalize, OnInitialize},
+    },
+    parity_scale_codec::Encode,
+    polkadot_parachain::primitives::HeadData,
+    sp_consensus_aura::AURA_ENGINE_ID,
+    sp_core::Pair,
+    sp_runtime::{Digest, DigestItem},
+    test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
-use parity_scale_codec::Encode;
-use polkadot_parachain::primitives::HeadData;
-use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_core::Pair;
-use sp_runtime::{Digest, DigestItem};
-use tp_author_noting_inherent::AuthorNotingSproofBuilder;
 
 pub use test_runtime::{
     AccountId, Aura, AuraId, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
@@ -206,7 +208,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
 }
 
 /// Mocks the author noting inherent to insert the data we
-pub fn set_author_noting_inherent_data(builder: AuthorNotingSproofBuilder) {
+pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
     let (relay_storage_root, relay_storage_proof) = builder.into_state_root_and_proof();
 
     // For now we directly touch parachain_system storage to set the relay state root.
