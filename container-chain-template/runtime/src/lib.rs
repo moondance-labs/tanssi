@@ -6,50 +6,44 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases;
+use cumulus_primitives_core::ParaId;
+use frame_support::weights::constants::RocksDbWeight;
+use frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight};
+use smallvec::smallvec;
+use sp_api::impl_runtime_apis;
+use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
+use sp_runtime::{
+    create_runtime_str, generic, impl_opaque_keys,
+    traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
+    transaction_validity::{TransactionSource, TransactionValidity},
+    ApplyExtrinsicResult, MultiSignature,
+};
+
+use sp_std::prelude::*;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+use sp_version::RuntimeVersion;
+
+use frame_support::{
+    construct_runtime,
+    dispatch::DispatchClass,
+    parameter_types,
+    traits::{ConstU32, ConstU64, Everything},
+    weights::{
+        constants::WEIGHT_REF_TIME_PER_SECOND, Weight, WeightToFeeCoefficient,
+        WeightToFeeCoefficients, WeightToFeePolynomial,
+    },
+};
+use frame_system::limits::{BlockLength, BlockWeights};
+pub use sp_consensus_aura::sr25519::AuthorityId as AuraId;
+pub use sp_runtime::{MultiAddress, Perbill, Permill};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-use {
-    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::{BodyId, ParaId},
-    frame_support::{
-        construct_runtime,
-        dispatch::DispatchClass,
-        parameter_types,
-        traits::{ConstU32, ConstU64, Everything, OneSessionHandler},
-        weights::{
-            constants::{
-                BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
-                WEIGHT_REF_TIME_PER_SECOND,
-            },
-            Weight, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
-        },
-        PalletId,
-    },
-    frame_system::{
-        limits::{BlockLength, BlockWeights},
-        EnsureRoot,
-    },
-    polkadot_runtime_common::BlockHashCount,
-    smallvec::smallvec,
-    sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata},
-    sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
-        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
-        transaction_validity::{TransactionSource, TransactionValidity},
-        ApplyExtrinsicResult, MultiSignature,
-    },
-    sp_std::prelude::*,
-    sp_version::RuntimeVersion,
-};
-pub use {
-    sp_consensus_aura::sr25519::AuthorityId as AuraId,
-    sp_runtime::{MultiAddress, Perbill, Permill},
-};
+// Polkadot imports
+use polkadot_runtime_common::BlockHashCount;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = MultiSignature;
@@ -144,10 +138,8 @@ impl WeightToFeePolynomial for WeightToFee {
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
 /// to even the core data structures.
 pub mod opaque {
-    use {
-        super::*,
-        sp_runtime::{generic, traits::BlakeTwo256},
-    };
+    use super::*;
+    use sp_runtime::{generic, traits::BlakeTwo256};
 
     pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
     /// Opaque block header type.
@@ -160,14 +152,14 @@ pub mod opaque {
 
 impl_opaque_keys! {
     pub struct SessionKeys {
-        pub aura: Initializer,
+        pub aura: Aura,
     }
 }
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("orchestrator-template-parachain"),
-    impl_name: create_runtime_str!("orchestrator-template-parachain"),
+    spec_name: create_runtime_str!("container-chain-template"),
+    impl_name: create_runtime_str!("container-chain-template"),
     authoring_version: 1,
     spec_version: 1,
     impl_version: 0,
@@ -316,7 +308,7 @@ impl pallet_timestamp::Config for Runtime {
 
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-    type EventHandler = (CollatorSelection,);
+    type EventHandler = ();
 }
 
 parameter_types! {
@@ -354,69 +346,6 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
-pub struct OwnApplySession;
-impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
-    fn apply_new_session(
-        changed: bool,
-        session_index: u32,
-        all_validators: Vec<(AccountId, AuraId)>,
-        queued: Vec<(AccountId, AuraId)>,
-    ) {
-        // We first initialize Configuration
-        Configuration::initializer_on_new_session(&session_index);
-        // Next: Registrar
-        Registrar::initializer_on_new_session(&session_index);
-
-        let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
-
-        // Next: CollatorAssignment
-        let assignments =
-            CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
-        let orchestrator_current_assignemnt = assignments.active_assignment.orchestrator_chain;
-        let orchestrator_queued_assignemnt = assignments.next_assignment.orchestrator_chain;
-
-        // We filter the accounts based on the collators assigned to the orchestrator chain (this chain)
-        // We insert these in Aura
-        let validators: Vec<_> = all_validators
-            .iter()
-            .filter_map(|(k, v)| {
-                if orchestrator_current_assignemnt.contains(k) {
-                    Some((k, v.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let queued: Vec<_> = queued
-            .iter()
-            .filter_map(|(k, v)| {
-                if orchestrator_queued_assignemnt.contains(k) {
-                    Some((k, v.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        // Then we apply Aura
-        if session_index == 0 {
-            Aura::on_genesis_session(validators.into_iter());
-        } else {
-            Aura::on_new_session(changed, validators.into_iter(), queued.into_iter());
-        }
-    }
-}
-
-impl pallet_initializer::Config for Runtime {
-    type SessionIndex = u32;
-
-    /// The identifier type for an authority.
-    type AuthorityId = AuraId;
-
-    type SessionHandler = OwnApplySession;
-}
-
 impl parachain_info::Config for Runtime {}
 
 impl cumulus_pallet_aura_ext::Config for Runtime {}
@@ -430,10 +359,10 @@ impl pallet_session::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     // we don't have stash and controller, thus we don't need the convert as well.
-    type ValidatorIdOf = pallet_collator_selection::IdentityCollator;
+    type ValidatorIdOf = ();
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-    type SessionManager = CollatorSelection;
+    type SessionManager = ();
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
@@ -446,84 +375,16 @@ impl pallet_aura::Config for Runtime {
     type MaxAuthorities = ConstU32<100_000>;
 }
 
-impl pallet_collator_assignment::Config for Runtime {
-    type HostConfiguration = Configuration;
-    type ContainerChains = Registrar;
-    type SessionIndex = u32;
+parameter_types! {
+    pub Orchestrator: ParaId = 1000u32.into();
 }
 
-impl pallet_author_noting::Config for Runtime {
+impl pallet_cc_authorities_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ContainerChains = Registrar;
+    type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
-    type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
 }
-
-parameter_types! {
-    pub const PotId: PalletId = PalletId(*b"PotStake");
-    pub const MaxCandidates: u32 = 1000;
-    pub const MinCandidates: u32 = 5;
-    pub const SessionLength: BlockNumber = 5;
-    pub const MaxInvulnerables: u32 = 100;
-    pub const ExecutiveBody: BodyId = BodyId::Executive;
-}
-
-// We allow root only to execute privileged collator selection operations.
-pub type CollatorSelectionUpdateOrigin = EnsureRoot<AccountId>;
-
-impl pallet_collator_selection::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type UpdateOrigin = CollatorSelectionUpdateOrigin;
-    type PotId = PotId;
-    type MaxCandidates = MaxCandidates;
-    type MinCandidates = MinCandidates;
-    type MaxInvulnerables = MaxInvulnerables;
-    // should be a multiple of session or things will get inconsistent
-    type KickThreshold = Period;
-    type ValidatorId = <Self as frame_system::Config>::AccountId;
-    type ValidatorIdOf = pallet_collator_selection::IdentityCollator;
-    type ValidatorRegistration = Session;
-    type WeightInfo = ();
-}
-
-parameter_types! {
-    pub const MaxLengthParaIds: u32 = 100u32;
-}
-
-pub struct CurrentSessionIndexGetter;
-
-impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
-    /// Returns current session index.
-    fn session_index() -> u32 {
-        Session::current_index()
-    }
-}
-
-impl pallet_configuration::Config for Runtime {
-    type WeightInfo = ();
-    type SessionDelay = ConstU32<2>;
-    type SessionIndex = u32;
-    type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type AuthorityId = AuraId;
-}
-
-impl pallet_registrar::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type RegistrarOrigin = EnsureRoot<AccountId>;
-    type MaxLengthParaIds = MaxLengthParaIds;
-    type SessionDelay = ConstU32<2>;
-    type SessionIndex = u32;
-    type CurrentSessionIndex = CurrentSessionIndexGetter;
-}
-
-impl pallet_sudo::Config for Runtime {
-    type RuntimeCall = RuntimeCall;
-    type RuntimeEvent = RuntimeEvent;
-}
-
-impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -537,26 +398,19 @@ construct_runtime!(
         ParachainSystem: cumulus_pallet_parachain_system = 1,
         Timestamp: pallet_timestamp = 2,
         ParachainInfo: parachain_info = 3,
-        Sudo: pallet_sudo = 4,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
 
-        // ContainerChain management. It should go before Session for Genesis
-        Registrar: pallet_registrar = 20,
-        Configuration: pallet_configuration = 21,
-        CollatorAssignment: pallet_collator_assignment = 22,
-        Initializer: pallet_initializer = 23,
-        AuthorNoting: pallet_author_noting = 24,
-
         // Collator support. The order of these 4 are important and shall not change.
         Authorship: pallet_authorship = 30,
-        CollatorSelection: pallet_collator_selection = 31,
         Session: pallet_session = 32,
         Aura: pallet_aura = 33,
         AuraExt: cumulus_pallet_aura_ext = 34,
 
-        RootTesting: pallet_root_testing = 100,
+        // ContainerChain
+        AuthoritiesNoting: pallet_cc_authorities_noting = 50,
+
     }
 );
 
@@ -668,56 +522,6 @@ impl_runtime_apis! {
             // NOTE: intentional unwrap: we don't want to propagate the error backwards, and want to
             // have a backtrace here.
             Executive::try_execute_block(block, state_root_check, signature_check, select).unwrap()
-        }
-    }
-
-    impl pallet_collator_assignment_runtime_api::CollatorAssignmentApi<Block, AccountId, ParaId> for Runtime {
-        /// Return the parachain that the given `AccountId` is collating for.
-        /// Returns `None` if the `AccountId` is not collating.
-        fn current_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
-            let assigned_collators = CollatorAssignment::collator_container_chain();
-            let self_para_id = ParachainInfo::get().into();
-
-            assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
-        }
-
-        /// Return the parachain that the given `AccountId` will be collating for
-        /// in the next session change.
-        /// Returns `None` if the `AccountId` will not be collating.
-        fn future_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
-            let assigned_collators = CollatorAssignment::pending_collator_container_chain();
-
-            match assigned_collators {
-                Some(assigned_collators) => {
-                    let self_para_id = ParachainInfo::get().into();
-
-                    assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
-                }
-                None => {
-                    Self::current_collator_parachain_assignment(account)
-                }
-            }
-
-        }
-
-        /// Return the list of collators of the given `ParaId`.
-        /// Returns `None` if the `ParaId` is not in the registrar.
-        fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>> {
-            let assigned_collators = CollatorAssignment::collator_container_chain();
-            let self_para_id = ParachainInfo::get().into();
-
-            if para_id == self_para_id {
-                Some(assigned_collators.orchestrator_chain)
-            } else {
-                assigned_collators.container_chains.get(&para_id.into()).cloned()
-            }
-        }
-    }
-
-    impl pallet_registrar_runtime_api::RegistrarApi<Block, u32> for Runtime {
-        /// Return the registered para ids
-        fn registered_paras() -> Vec<u32> {
-            Registrar::registered_para_ids().to_vec()
         }
     }
 }

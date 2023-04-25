@@ -1,5 +1,5 @@
 [package]
-name = "test-node"
+name = "container-chain-template-node"
 authors = [ "Anonymous" ]
 build = "build.rs"
 description = ""
@@ -18,13 +18,7 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
-pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
-pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
-test-runtime = { workspace = true, features = [ "std" ] }
-tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
-tp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
-
-tc-tanssi-chain-interface = { workspace = true }
+container-chain-template-runtime = { workspace = true, features = [ "std" ] }
 
 # Substrate
 frame-benchmarking = { workspace = true }
@@ -59,7 +53,6 @@ sp-keystore = { workspace = true, features = [ "std" ] }
 sp-offchain = { workspace = true, features = [ "std" ] }
 sp-runtime = { workspace = true, features = [ "std" ] }
 sp-session = { workspace = true, features = [ "std" ] }
-sp-state-machine = { workspace = true, features = [ "std" ] }
 sp-timestamp = { workspace = true, features = [ "std" ] }
 
 sp-transaction-pool = { workspace = true }
@@ -81,14 +74,15 @@ cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
+
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 
 [features]
 default = []
 runtime-benchmarks = [
+	"container-chain-template-runtime/runtime-benchmarks",
 	"polkadot-cli/runtime-benchmarks",
-	"test-runtime/runtime-benchmarks",
 	"try-runtime-cli/try-runtime",
 ]
-try-runtime = [ "test-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
+try-runtime = [ "container-chain-template-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
