@@ -114,7 +114,7 @@ jobs:
           pnpm i
 
           chmod uog+x tmp/test-node
-          chmod uog+x tmp/contaner-chain-template
+          chmod uog+x tmp/container-chain-template
           chmod uog+x tmp/polkadot
 
           ## Generate specs
