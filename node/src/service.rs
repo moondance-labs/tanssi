@@ -555,10 +555,17 @@ async fn start_node_impl(
     Ok((task_manager, client))
 }
 
+// Log string that will be shown for the container chain: `[Container-2000]`.
+// This needs to be a separate function because the `prefix_logs_with` macro
+// has trouble parsing expressions.
+fn container_log_str(para_id: ParaId) -> String {
+    format!("Container-{}", para_id)
+}
+
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
-#[sc_tracing::logging::prefix_logs_with("Container")]
+#[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 async fn start_node_impl_container(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
