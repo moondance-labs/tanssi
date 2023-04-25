@@ -1,5 +1,3 @@
-use std::net::SocketAddr;
-
 use {
     container_chain_template_runtime::Block,
     cumulus_client_cli::generate_genesis_block,
@@ -14,6 +12,7 @@ use {
     sc_service::config::{BasePath, PrometheusConfig},
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
+    std::net::SocketAddr,
 };
 
 use crate::{
