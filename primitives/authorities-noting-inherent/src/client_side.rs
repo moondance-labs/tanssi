@@ -30,15 +30,15 @@ async fn collect_relay_storage_proof(
 
 /// Collect the relevant orchestrator chain state in form of a proof
 /// for putting it into the authorities noting inherent
-async fn collect_tanssi_storage_proof(
+async fn collect_orchestrator_storage_proof(
     orchestrator_chain_interface: &impl OrchestratorChainInterface,
-    tanssi_parent: PHash,
+    orchestrator_parent: PHash,
 ) -> Option<sp_state_machine::StorageProof> {
     let mut relevant_keys = Vec::new();
     relevant_keys.push(COLLATOR_ASSIGNMENT_INDEX.to_vec());
 
     orchestrator_chain_interface
-        .prove_read(tanssi_parent, &relevant_keys)
+        .prove_read(orchestrator_parent, &relevant_keys)
         .await
         .ok()
 }
@@ -99,9 +99,11 @@ impl ContainerChainAuthoritiesInherentData {
         })
         .ok()?;
 
-        let orchestrator_chain_state =
-            collect_tanssi_storage_proof(orchestrator_chain_interface, orchestrator_header.hash())
-                .await?;
+        let orchestrator_chain_state = collect_orchestrator_storage_proof(
+            orchestrator_chain_interface,
+            orchestrator_header.hash(),
+        )
+        .await?;
 
         Some(ContainerChainAuthoritiesInherentData {
             relay_chain_state: relay_chain_state.clone(),

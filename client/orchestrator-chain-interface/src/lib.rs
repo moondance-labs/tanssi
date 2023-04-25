@@ -63,7 +63,7 @@ pub trait OrchestratorChainInterface: Send + Sync {
     /// Generate a storage read proof.
     async fn prove_read(
         &self,
-        relay_parent: PHash,
+        orchestrator_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof>;
 }
@@ -87,9 +87,9 @@ where
 
     async fn prove_read(
         &self,
-        tanssi_parent: PHash,
+        orchestrator_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
-        (**self).prove_read(tanssi_parent, relevant_keys).await
+        (**self).prove_read(orchestrator_parent, relevant_keys).await
     }
 }
