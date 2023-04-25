@@ -114,11 +114,11 @@ jobs:
           pnpm i
 
           chmod uog+x tmp/test-node
-          chmod uog+x tmp/container-chain-template
+          chmod uog+x tmp/container-chain-template-node
           chmod uog+x tmp/polkadot
 
           ## Generate specs
-          tmp/container-chain-template build-spec --parachain-id 2000 --seeds "Collator2000-01,Collator2000-02" --raw --> template-container-2000.json
-          tmp/container-chain-template build-spec --parachain-id 2001 --seeds "Collator2001-01,Collator2001-02" --raw --> template-container-2001.json
+          tmp/container-chain-template-node build-spec --parachain-id 2000 --seeds "Collator2000-01,Collator2000-02" --raw --> template-container-2000.json
+          tmp/container-chain-template-node build-spec --parachain-id 2001 --seeds "Collator2001-01,Collator2001-02" --raw --> template-container-2001.json
 
       
