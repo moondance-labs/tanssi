@@ -1,10 +1,12 @@
-use container_chain_template_runtime::{AccountId, AuraId, Signature};
-use cumulus_primitives_core::ParaId;
-use sc_chain_spec::{ChainSpecExtension, ChainSpecGroup};
-use sc_service::ChainType;
-use serde::{Deserialize, Serialize};
-use sp_core::{sr25519, Pair, Public};
-use sp_runtime::traits::{IdentifyAccount, Verify};
+use {
+    container_chain_template_runtime::{AccountId, AuraId, Signature},
+    cumulus_primitives_core::ParaId,
+    sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
+    sc_service::ChainType,
+    serde::{Deserialize, Serialize},
+    sp_core::{sr25519, Pair, Public},
+    sp_runtime::traits::{IdentifyAccount, Verify},
+};
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec =
