@@ -42,7 +42,6 @@ pub mod pallet {
         pub para_ids: Vec<(u32, ContainerChainGenesisData)>,
     }
 
-
     // TODO: move this to tanssi primitives
     // TODO: improve serialization of storage field
     // Currently it looks like this:

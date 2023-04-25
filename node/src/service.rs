@@ -18,8 +18,8 @@ use {
     cumulus_relay_chain_interface::RelayChainInterface,
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
-    pallet_registrar_runtime_api::{ContainerChainGenesisData, RegistrarApi},
-    parity_scale_codec::{Decode, Encode},
+    pallet_registrar_runtime_api::RegistrarApi,
+    parity_scale_codec::Decode,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_primitives::HeadData,
     polkadot_service::{BlakeTwo256, BlockNumber},
@@ -33,7 +33,6 @@ use {
         TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
-    sp_core::blake2_128,
     sp_keystore::SyncCryptoStorePtr,
     std::{sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
@@ -436,6 +435,7 @@ async fn start_node_impl(
 
     if let Some((mut tanssi_cli, tokio_handle)) = container_chain_config {
         let spawn_cc_as_child_handle = task_manager.spawn_essential_handle();
+        let tanssi_client = client.clone();
 
         task_manager
             .spawn_handle()
@@ -477,44 +477,21 @@ async fn start_node_impl(
                         )
                         .unwrap();
 
-                    let key = &hex::decode(
-                        "3fba98689ebed1138735e0e7a5a790ab6339d4183899cf4f5efccdad995b795c",
-                    )
-                    .unwrap();
-                    let para_ids_encoded = tanssi_chain_interface
-                        .get_storage_by_key(orchestrator_header.hash(), key)
-                        .await
-                        .unwrap()
-                        .unwrap();
-                    let para_ids = <Vec<u32>>::decode(&mut para_ids_encoded.as_slice()).unwrap();
+                    // Try to get the same ids using the runtime api
+                    let tanssi_runtime_api = tanssi_client.runtime_api();
+                    // TODO: we need the tanssi block hash to use the runtime api. I am using the
+                    // hash from the relay chain, which is guaranteed to be final, to avoid rollbacks.
+                    // Is there any better option? Also, move the above logic to a helper function.
+                    let tanssi_block = orchestrator_header.hash();
+                    let para_ids = tanssi_runtime_api.registered_paras(tanssi_block).unwrap();
 
                     log::info!("Got these para_ids from tanssi!: {:?}", para_ids);
 
-                    // Retrieves the full key representing the para->heads and the paraId
-                    pub fn para_id_genesis_data(para_id: ParaId) -> Vec<u8> {
-                        para_id.using_encoded(|para_id: &[u8]| {
-                            hex::decode(
-                                "3fba98689ebed1138735e0e7a5a790ab60a1667ddcfed59bae1ce824c935132e",
-                            )
-                            .unwrap()
-                            .iter()
-                            .chain(blake2_128(para_id).iter())
-                            .chain(para_id.iter())
-                            .cloned()
-                            .collect()
-                        })
-                    }
-
                     for para_id in para_ids {
-                        let key = para_id_genesis_data(para_id.into());
-                        let genesis_data_encoded = tanssi_chain_interface
-                            .get_storage_by_key(orchestrator_header.hash(), &key)
-                            .await
-                            .unwrap()
-                            .unwrap();
-                        let genesis_data =
-                            ContainerChainGenesisData::decode(&mut genesis_data_encoded.as_slice())
-                                .unwrap();
+                        let genesis_data = tanssi_runtime_api
+                            .genesis_data(tanssi_block, para_id.into())
+                            .expect("error")
+                            .expect("no genesis data for this para id");
 
                         tanssi_cli
                             .preload_chain_spec_from_genesis_data(para_id, genesis_data)

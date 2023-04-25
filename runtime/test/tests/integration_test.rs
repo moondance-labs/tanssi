@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+use pallet_registrar::ContainerChainGenesisData;
+
 mod common;
 use {
     common::*,
@@ -123,6 +125,69 @@ fn genesis_para_registrar_runtime_api() {
             run_to_session(2, false);
             assert_eq!(Registrar::registered_para_ids(), vec![1001]);
             assert_eq!(Runtime::registered_paras(), vec![1001]);
+        });
+}
+
+#[test]
+fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
+    let genesis_data_1001 = empty_genesis_data();
+    let genesis_data_1002 = ContainerChainGenesisData {
+        storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+        extensions: vec![],
+        properties: vec![],
+    };
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, genesis_data_1001.clone()),
+            (1002, genesis_data_1002.clone()),
+        ])
+        .build()
+        .execute_with(|| {
+            assert_eq!(Registrar::registered_para_ids(), vec![1001, 1002]);
+            assert_eq!(Runtime::registered_paras(), vec![1001, 1002]);
+
+            assert_eq!(
+                Runtime::genesis_data(1001).as_ref(),
+                Some(&genesis_data_1001)
+            );
+            assert_eq!(
+                Runtime::genesis_data(1002).as_ref(),
+                Some(&genesis_data_1002)
+            );
+            assert_eq!(Runtime::genesis_data(1003).as_ref(), None);
+
+            // This API cannot be used to get the genesis data of the orchestrator chain,
+            // with id 100
+            // TODO: where is that 100 defined?
+            assert_eq!(Runtime::genesis_data(100).as_ref(), None);
+
+            run_to_block(2, false);
+            assert_ok!(Registrar::deregister(root_origin(), 1002), ());
+
+            // Deregistered container chains are deleted immediately
+            // TODO: they should stay until session 2, just like the para id does
+            assert_eq!(Runtime::genesis_data(1002).as_ref(), None);
+
+            let genesis_data_1003 = ContainerChainGenesisData {
+                storage: vec![(b"key3".to_vec(), b"value3".to_vec()).into()],
+                extensions: vec![],
+                properties: vec![],
+            };
+            assert_ok!(
+                Registrar::register(root_origin(), 1003, genesis_data_1003.clone()),
+                ()
+            );
+
+            // Registered container chains are inserted immediately
+            assert_eq!(
+                Runtime::genesis_data(1003).as_ref(),
+                Some(&genesis_data_1003)
+            );
         });
 }
 
