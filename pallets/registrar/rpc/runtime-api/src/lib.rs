@@ -1,5 +1,7 @@
-#![cfg_attr(not(feature = "std"), no_std)]
 //! Runtime API for Registrar pallet
+
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use scale_info::prelude::vec::Vec;
 
 sp_api::decl_runtime_apis! {

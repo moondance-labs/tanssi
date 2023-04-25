@@ -65,39 +65,7 @@ substrate-wasm-builder = { workspace = true }
 default = [
 	"std",
 ]
-std = [
-	"cumulus-pallet-aura-ext/std",
-	"cumulus-pallet-parachain-system/std",
-	"cumulus-primitives-core/std",
-	"cumulus-primitives-timestamp/std",
-	"cumulus-primitives-utility/std",
-	"frame-executive/std",
-	"frame-support/std",
-	"frame-system-rpc-runtime-api/std",
-	"frame-system/std",
-	"log/std",
-	"pallet-aura/std",
-	"pallet-authorship/std",
-	"pallet-balances/std",
-	"pallet-session/std",
-	"pallet-timestamp/std",
-	"parachain-info/std",
-	"parity-scale-codec/std",
-	"polkadot-parachain/std",
-	"polkadot-runtime-common/std",
-	"scale-info/std",
-	"sp-api/std",
-	"sp-block-builder/std",
-	"sp-consensus-aura/std",
-	"sp-core/std",
-	"sp-inherents/std",
-	"sp-offchain/std",
-	"sp-runtime/std",
-	"sp-std/std",
-	"sp-transaction-pool/std",
-	"sp-version/std",
-	"pallet-cc-authorities-noting/std"
-]
+std = [ "cumulus-pallet-aura-ext/std", "cumulus-pallet-parachain-system/std", "cumulus-primitives-core/std", "cumulus-primitives-timestamp/std", "cumulus-primitives-utility/std", "frame-executive/std", "frame-support/std", "frame-system-rpc-runtime-api/std", "frame-system/std", "log/std", "pallet-aura/std", "pallet-authorship/std", "pallet-balances/std", "pallet-cc-authorities-noting/std", "pallet-session/std", "pallet-timestamp/std", "parachain-info/std", "parity-scale-codec/std", "polkadot-parachain/std", "polkadot-runtime-common/std", "scale-info/std", "sp-api/std", "sp-block-builder/std", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-offchain/std", "sp-runtime/std", "sp-std/std", "sp-transaction-pool/std", "sp-version/std" ]
 
 runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",

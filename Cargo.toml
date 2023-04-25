@@ -2,7 +2,6 @@
 members = [
 	"client/*",
 	"container-chain-template/*",
-
 	"container-chains/pallets/*",
 	"node",
 	"pallets/*",
@@ -25,10 +24,10 @@ pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 
+container-chain-template-runtime = { path = "container-chain-template/runtime", default-features = false }
 tc-tanssi-chain-interface = { path = "client/tanssi-chain-interface" }
 test-relay-sproof-builder = { path = "test-sproof-builder" }
 test-runtime = { path = "runtime/test", default-features = false }
-container-chain-template-runtime = { path = "container-chain-template/runtime", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-authorities-noting-inherent = { path = "primitives/authorities-noting-inherent", default-features = false }
 tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-features = false }

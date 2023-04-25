@@ -1,15 +1,14 @@
-use crate::ContainerChainAuthoritiesInherentData;
-use cumulus_primitives_core::ParaId;
-use cumulus_relay_chain_interface::PHash;
-use cumulus_relay_chain_interface::RelayChainInterface;
-use tc_tanssi_chain_interface::TanssiChainInterface;
-
-use cumulus_primitives_core::relay_chain::BlakeTwo256;
-use cumulus_primitives_core::relay_chain::BlockNumber;
-use cumulus_primitives_core::relay_chain::HeadData;
-use parity_scale_codec::Decode;
-use tp_core::well_known_keys::para_id_head;
-use tp_core::well_known_keys::COLLATOR_ASSIGNMENT_INDEX;
+use {
+    crate::ContainerChainAuthoritiesInherentData,
+    cumulus_primitives_core::{
+        relay_chain::{BlakeTwo256, BlockNumber, HeadData},
+        ParaId,
+    },
+    cumulus_relay_chain_interface::{PHash, RelayChainInterface},
+    parity_scale_codec::Decode,
+    tc_tanssi_chain_interface::TanssiChainInterface,
+    tp_core::well_known_keys::{para_id_head, COLLATOR_ASSIGNMENT_INDEX},
+};
 
 const LOG_TARGET: &str = "parachain-inherent";
 

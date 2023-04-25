@@ -5,20 +5,21 @@
 
 #![warn(missing_docs)]
 
-use std::sync::Arc;
-
-use test_runtime::{opaque::Block, AccountId, Index as Nonce};
-
-use polkadot_primitives::Hash;
-use sc_client_api::AuxStore;
-use sc_consensus_manual_seal::rpc::ManualSeal;
-use sc_consensus_manual_seal::rpc::ManualSealApiServer;
-use sc_consensus_manual_seal::EngineCommand;
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
-use sc_transaction_pool_api::TransactionPool;
-use sp_api::ProvideRuntimeApi;
-use sp_block_builder::BlockBuilder;
-use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
+use {
+    polkadot_primitives::Hash,
+    sc_client_api::AuxStore,
+    sc_consensus_manual_seal::{
+        rpc::{ManualSeal, ManualSealApiServer},
+        EngineCommand,
+    },
+    sc_transaction_pool_api::TransactionPool,
+    sp_api::ProvideRuntimeApi,
+    sp_block_builder::BlockBuilder,
+    sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
+    std::sync::Arc,
+    test_runtime::{opaque::Block, AccountId, Index as Nonce},
+};
 
 /// A type representing all RPC extensions.
 pub type RpcExtension = jsonrpsee::RpcModule<()>;

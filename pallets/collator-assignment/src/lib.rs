@@ -18,21 +18,26 @@
 //! storage, and assigns it as the current CollatorContainerChain. In addition, it takes the next
 //! queued set of parachains and collators and calculates the assignment for the next session, storing
 //! it in the PendingCollatorContainerChain storage item.
-
+//!
 //! The reason for the collator-assignment pallet to work with a one-session delay assignment is because
 //! we want collators to know at least one session in advance the container chain/orchestrator that they
 //! are assigned to.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::pallet_prelude::*;
-use sp_runtime::traits::{AtLeast32BitUnsigned, One, Zero};
-use sp_runtime::Saturating;
-use sp_std::prelude::*;
-use sp_std::vec;
-use tp_collator_assignment::AssignedCollators;
-use tp_traits::{GetHostConfiguration, GetSessionContainerChains};
-
 pub use pallet::*;
+use {
+    frame_support::pallet_prelude::*,
+    sp_runtime::{
+        traits::{AtLeast32BitUnsigned, One, Zero},
+        Saturating,
+    },
+    sp_std::{prelude::*, vec},
+    tp_collator_assignment::AssignedCollators,
+    tp_traits::{
+        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId, Slot,
+    },
+};
 
 #[cfg(test)]
 mod mock;
@@ -42,8 +47,6 @@ mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use tp_traits::{GetContainerChainAuthor, ParaId, Slot};
-
     use super::*;
 
     #[pallet::pallet]

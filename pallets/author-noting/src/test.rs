@@ -1,13 +1,13 @@
-use crate::mock::*;
-use cumulus_primitives_core::ParaId;
-use hex_literal::hex;
-use parity_scale_codec::Encode;
-use sp_consensus_aura::inherents::InherentType;
-use sp_consensus_aura::AURA_ENGINE_ID;
-use sp_core::H256;
-use sp_runtime::generic::DigestItem;
-use sp_runtime::traits::BlakeTwo256;
-use test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem};
+use {
+    crate::mock::*,
+    cumulus_primitives_core::ParaId,
+    hex_literal::hex,
+    parity_scale_codec::Encode,
+    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_core::H256,
+    sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+};
 
 #[test]
 fn test_author_id_insertion() {

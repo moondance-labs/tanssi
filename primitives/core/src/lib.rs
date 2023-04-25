@@ -3,10 +3,9 @@
 /// A declarations of storage keys where an external observer can find some interesting data.
 pub mod well_known_keys {
 
-    use cumulus_primitives_core::ParaId;
-    use sp_core::Encode;
-    use sp_io::hashing::twox_64;
-    use sp_std::vec::Vec;
+    use {
+        cumulus_primitives_core::ParaId, sp_core::Encode, sp_io::hashing::twox_64, sp_std::vec::Vec,
+    };
 
     // They key to retrieve the para heads
     pub const PARAS_HEADS_INDEX: &[u8] =

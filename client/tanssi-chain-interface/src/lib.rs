@@ -7,12 +7,12 @@
 //! tanssi parent
 //!
 //! prove_read: generates a storage proof of a given set of keys at a given tanssi parent
+
 pub use cumulus_primitives_core::relay_chain::Hash as PHash;
-use polkadot_overseer::Handle;
-use sc_client_api::StorageProof;
-use sp_api::ApiError;
-use sp_state_machine::StorageValue;
-use std::sync::Arc;
+use {
+    polkadot_overseer::Handle, sc_client_api::StorageProof, sp_api::ApiError,
+    sp_state_machine::StorageValue, std::sync::Arc,
+};
 
 #[derive(thiserror::Error, Debug)]
 pub enum TanssiChainError {

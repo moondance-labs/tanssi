@@ -1,9 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use parity_scale_codec::{Decode, Encode};
-use scale_info::prelude::collections::BTreeMap;
-use sp_std::vec::Vec;
-use tp_traits::ParaId;
+use {
+    parity_scale_codec::{Decode, Encode},
+    scale_info::prelude::collections::BTreeMap,
+    sp_std::vec::Vec,
+    tp_traits::ParaId,
+};
 
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
