@@ -69,7 +69,7 @@ jobs:
       - name: "Download binaries"
         uses: actions/download-artifact@v3.0.2
         with:
-          name: runtimes
+          name: binaries
           path: target/release
       
       - name: "Install and run upgrade test"
@@ -97,7 +97,7 @@ jobs:
       - name: "Download binaries"
         uses: actions/download-artifact@v3.0.2
         with:
-          name: runtimes
+          name: binaries
           path: test/tmp
       
       - name: Retrieve polkadot binary from docker
@@ -112,10 +112,6 @@ jobs:
         run: |
           cd test
           pnpm i
-
-          cd tmp
-          ls
-          cd ..
 
           chmod uog+x tmp/test-node
           chmod uog+x tmp/contaner-chain-template
