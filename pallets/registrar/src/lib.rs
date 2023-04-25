@@ -42,6 +42,33 @@ pub mod pallet {
         pub para_ids: Vec<(u32, ContainerChainGenesisData)>,
     }
 
+
+    // TODO: move this to tanssi primitives
+    // TODO: improve serialization of storage field
+    // Currently it looks like this:
+    /*
+    "storage": [
+        {
+          "key": "0x0d715f2646c8f85767b5d2764bb2782604a74d81251e398fd8a0a4d55023bb3f"
+          "value": "0xd1070000"
+        },
+        {
+          "key": "0x0d715f2646c8f85767b5d2764bb278264e7b9012096b41c4eb3aaf947f6ea429"
+          "value": "0x0000"
+        }
+    ]
+     */
+    // Ideally it would be:
+    /*
+    "storage": {
+        "0x0d715f2646c8f85767b5d2764bb2782604a74d81251e398fd8a0a4d55023bb3f": "0xd1070000",
+        "0x0d715f2646c8f85767b5d2764bb278264e7b9012096b41c4eb3aaf947f6ea429": "0x0000"
+    }
+     */
+    // This is just so it looks nicer on polkadot.js, the functionality is the same
+    // The original approach of using `storage: BTreeMap<Vec<u8>, Vec<u8>>` looks very bad
+    // in polkadot.js, because `Vec<u8>` is serialized as `[12, 51, 124]` instead of hex.
+    // That's why we use `serde(with = "sp_core::bytes")` everywhere, to convert it to hex.
     #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
     #[derive(
         Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo,
@@ -83,8 +110,9 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig {
         fn build(&self) {
-            // TODO: avoid this clone because it also clones genesis data
-            let mut para_ids = self.para_ids.clone();
+            // Sort para ids and detect duplicates, but do it using a vector of
+            // references to avoid cloning the genesis data, which may be big.
+            let mut para_ids: Vec<&_> = self.para_ids.iter().collect();
             para_ids.sort();
             para_ids.dedup_by(|a, b| {
                 if a.0 == b.0 {
@@ -98,14 +126,14 @@ pub mod pallet {
 
             for (para_id, genesis_data) in para_ids {
                 bounded_para_ids
-                    .try_push(para_id)
+                    .try_push(*para_id)
                     .expect("too many para ids in genesis: bounded vec full");
 
                 let genesis_data_size = genesis_data.encoded_size();
                 if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
                     panic!(
                         "genesis data for para_id {:?} is too large: {} bytes (limit is {})",
-                        u32::from(para_id),
+                        u32::from(*para_id),
                         genesis_data_size,
                         T::MaxGenesisDataSize::get()
                     );
@@ -206,7 +234,13 @@ pub mod pallet {
             })?;
 
             // TODO: while the registration takes place on the next session, the genesis data
-            // is inserted immediately
+            // is inserted immediately. This is because collators should be able to start syncing
+            // the new container chain before the first block is mined. However, we could store
+            // the genesis data in another key, like PendingParaGenesisData.
+            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
+            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
+            // won't detect that the size is too big until after iterating over all of them, so the
+            // limit in that case would be the transaction size.
             let genesis_data_size = genesis_data.encoded_size();
             if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
                 return Err(Error::<T>::GenesisDataTooBig.into());
