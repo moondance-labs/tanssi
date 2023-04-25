@@ -44,7 +44,6 @@ test-relay-sproof-builder = { workspace = true }
 default = [ "std" ]
 std = [
 	"cumulus-pallet-parachain-system/std",
-	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-core/std",
 	"frame-support/std",

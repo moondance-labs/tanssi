@@ -36,4 +36,4 @@ polkadot-primitives = { workspace = true, optional = true }
 
 [features]
 default = [ "std" ]
-std = [ "async-trait", "cumulus-primitives-core/std", "cumulus-relay-chain-interface", "cumulus-relay-chain-interface", "frame-support", "parity-scale-codec/std", "polkadot-primitives", "sc-client-api", "scale-info/std", "scale-info/std", "sp-api", "sp-consensus-aura", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-io/std", "sp-runtime/std", "sp-state-machine/std", "sp-std/std", "sp-storage", "sp-trie/std", "test-relay-sproof-builder/std", "tp-core/std" ]
+std = [ "async-trait", "cumulus-pallet-parachain-system/std", "cumulus-primitives-core/std", "cumulus-relay-chain-interface", "cumulus-relay-chain-interface", "frame-support", "parity-scale-codec/std", "polkadot-primitives", "sc-client-api", "scale-info/std", "scale-info/std", "sp-api", "sp-consensus-aura", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-io/std", "sp-runtime/std", "sp-state-machine/std", "sp-std/std", "sp-storage", "sp-trie/std", "test-relay-sproof-builder/std", "tp-core/std" ]
