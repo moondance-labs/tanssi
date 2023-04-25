@@ -6,7 +6,7 @@ use {
     },
     cumulus_relay_chain_interface::{PHash, RelayChainInterface},
     parity_scale_codec::Decode,
-    tc_tanssi_chain_interface::TanssiChainInterface,
+    tc_orchestrator_chain_interface::OrchestratorChainInterface,
     tp_core::well_known_keys::{para_id_head, COLLATOR_ASSIGNMENT_INDEX},
 };
 
@@ -31,7 +31,7 @@ async fn collect_relay_storage_proof(
 /// Collect the relevant orchestrator chain state in form of a proof
 /// for putting it into the authorities noting inherent
 async fn collect_tanssi_storage_proof(
-    orchestrator_chain_interface: &impl TanssiChainInterface,
+    orchestrator_chain_interface: &impl OrchestratorChainInterface,
     tanssi_parent: PHash,
 ) -> Option<sp_state_machine::StorageProof> {
     let mut relevant_keys = Vec::new();
@@ -50,7 +50,7 @@ impl ContainerChainAuthoritiesInherentData {
     pub async fn create_at(
         relay_parent: PHash,
         relay_chain_interface: &impl RelayChainInterface,
-        orchestrator_chain_interface: &impl TanssiChainInterface,
+        orchestrator_chain_interface: &impl OrchestratorChainInterface,
         orchestrator_para_id: ParaId,
     ) -> Option<ContainerChainAuthoritiesInherentData> {
         let relay_chain_state = collect_relay_storage_proof(

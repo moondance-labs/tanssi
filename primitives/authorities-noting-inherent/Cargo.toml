@@ -10,7 +10,7 @@ scale-info = { workspace = true }
 tracing = { workspace = true, optional = true }
 
 
-tc-tanssi-chain-interface = { workspace = true, optional = true }
+tc-orchestrator-chain-interface = { workspace = true, optional = true }
 test-relay-sproof-builder = { workspace = true, optional = true }
 tp-core = { workspace = true, optional = true }
 
@@ -29,4 +29,20 @@ cumulus-relay-chain-interface = { workspace = true, optional = true }
 
 [features]
 default = [ "std" ]
-std = [ "async-trait", "cumulus-primitives-core/std", "cumulus-relay-chain-interface", "parity-scale-codec/std", "scale-info/std", "sp-core/std", "sp-inherents/std", "sp-io/std", "sp-runtime", "sp-state-machine", "sp-trie/std", "tc-tanssi-chain-interface", "test-relay-sproof-builder/std", "tp-core/std", "tracing" ]
+std = [
+	"async-trait",
+	"cumulus-primitives-core/std",
+	"cumulus-relay-chain-interface",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"sp-core/std",
+	"sp-inherents/std",
+	"sp-io/std",
+	"sp-runtime",
+	"sp-state-machine",
+	"sp-trie/std",
+	"tc-orchestrator-chain-interface",
+	"test-relay-sproof-builder/std",
+	"tp-core/std",
+	"tracing",
+ ]

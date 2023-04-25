@@ -85,4 +85,7 @@ runtime-benchmarks = [
 	"polkadot-cli/runtime-benchmarks",
 	"try-runtime-cli/try-runtime",
 ]
-try-runtime = [ "container-chain-template-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
+try-runtime = [
+	"container-chain-template-runtime/try-runtime",
+	"try-runtime-cli/try-runtime",
+ ]

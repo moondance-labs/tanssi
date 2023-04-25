@@ -1,12 +1,12 @@
-//! # Tanssi chain interface client primitives
+//! # Orchestrator chain interface client primitives
 //!
-//! This file contains the TanssiChainInterface trait which serves to generate
+//! This file contains the OrchestratorChainInterface trait which serves to generate
 //! storage proofs to be provided to containerchains
 //!
-//! get_storage_by_key: retrieves a storage item from the tanssi interface at a given
-//! tanssi parent
+//! get_storage_by_key: retrieves a storage item from the Orchestrator interface at a given
+//! Orchestrator parent
 //!
-//! prove_read: generates a storage proof of a given set of keys at a given tanssi parent
+//! prove_read: generates a storage proof of a given set of keys at a given Orchestrator parent
 
 pub use cumulus_primitives_core::relay_chain::Hash as PHash;
 use {
@@ -15,7 +15,7 @@ use {
 };
 
 #[derive(thiserror::Error, Debug)]
-pub enum TanssiChainError {
+pub enum OrchestratorChainError {
     #[error("Blockchain returned an error: {0}")]
     BlockchainError(#[from] sp_blockchain::Error),
     #[error("State machine error occured: {0}")]
@@ -26,70 +26,70 @@ pub enum TanssiChainError {
     GenericError(String),
 }
 
-impl From<TanssiChainError> for ApiError {
-    fn from(r: TanssiChainError) -> Self {
+impl From<OrchestratorChainError> for ApiError {
+    fn from(r: OrchestratorChainError) -> Self {
         sp_api::ApiError::Application(Box::new(r))
     }
 }
 
-impl From<TanssiChainError> for sp_blockchain::Error {
-    fn from(r: TanssiChainError) -> Self {
+impl From<OrchestratorChainError> for sp_blockchain::Error {
+    fn from(r: OrchestratorChainError) -> Self {
         sp_blockchain::Error::Application(Box::new(r))
     }
 }
 
-impl<T: std::error::Error + Send + Sync + 'static> From<Box<T>> for TanssiChainError {
+impl<T: std::error::Error + Send + Sync + 'static> From<Box<T>> for OrchestratorChainError {
     fn from(r: Box<T>) -> Self {
-        TanssiChainError::Application(r)
+        OrchestratorChainError::Application(r)
     }
 }
 
 // TODO: proper errors
-pub type TanssiChainResult<T> = Result<T, TanssiChainError>;
+pub type OrchestratorChainResult<T> = Result<T, OrchestratorChainError>;
 
-/// Trait that provides all necessary methods for interaction between collator and tanssi chain.
+/// Trait that provides all necessary methods for interaction between collator and orchestrator chain.
 #[async_trait::async_trait]
-pub trait TanssiChainInterface: Send + Sync {
+pub trait OrchestratorChainInterface: Send + Sync {
     /// Fetch a storage item by key.
     async fn get_storage_by_key(
         &self,
-        tanssi_parent: PHash,
+        orchestrator_parent: PHash,
         key: &[u8],
-    ) -> TanssiChainResult<Option<StorageValue>>;
+    ) -> OrchestratorChainResult<Option<StorageValue>>;
 
     /// Get a handle to the overseer.
-    fn overseer_handle(&self) -> TanssiChainResult<Handle>;
+    fn overseer_handle(&self) -> OrchestratorChainResult<Handle>;
 
     /// Generate a storage read proof.
     async fn prove_read(
         &self,
         relay_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
-    ) -> TanssiChainResult<StorageProof>;
+    ) -> OrchestratorChainResult<StorageProof>;
 }
 
 #[async_trait::async_trait]
-impl<T> TanssiChainInterface for Arc<T>
+impl<T> OrchestratorChainInterface for Arc<T>
 where
-    T: TanssiChainInterface + ?Sized,
+    T: OrchestratorChainInterface + ?Sized,
 {
-    fn overseer_handle(&self) -> TanssiChainResult<Handle> {
+    fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
         (**self).overseer_handle()
     }
 
     async fn get_storage_by_key(
         &self,
-        tanssi_parent: PHash,
+        orchestrator_parent: PHash,
         key: &[u8],
-    ) -> TanssiChainResult<Option<StorageValue>> {
-        (**self).get_storage_by_key(tanssi_parent, key).await
+    ) -> OrchestratorChainResult<Option<StorageValue>> {
+        (**self).get_storage_by_key(orchestrator_parent, key).await
     }
 
     async fn prove_read(
         &self,
         tanssi_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
-    ) -> TanssiChainResult<StorageProof> {
+    ) -> OrchestratorChainResult<StorageProof> {
         (**self).prove_read(tanssi_parent, relevant_keys).await
     }
 }

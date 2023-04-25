@@ -11510,7 +11510,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ae9980cab1db3fceee2f6c6f643d5d8de2997c58ee8d25fb0cc8a9e9e7348e5"
 
 [[package]]
-name = "tc-tanssi-chain-interface"
+name = "tc-orchestrator-chain-interface"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -11615,7 +11615,7 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
- "tc-tanssi-chain-interface",
+ "tc-orchestrator-chain-interface",
  "test-runtime",
  "tp-author-noting-inherent",
  "tp-authorities-noting-inherent",
@@ -12034,7 +12034,7 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-trie",
- "tc-tanssi-chain-interface",
+ "tc-orchestrator-chain-interface",
  "test-relay-sproof-builder",
  "tp-core",
  "tracing",

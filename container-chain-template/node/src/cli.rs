@@ -1,5 +1,7 @@
-use sc_cli::{CliConfiguration, NodeKeyParams, SharedParams};
-use std::path::PathBuf;
+use {
+    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    std::path::PathBuf,
+};
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
