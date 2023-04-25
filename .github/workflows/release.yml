@@ -113,6 +113,10 @@ jobs:
           cd test
           pnpm i
 
+          cd tmp
+          ls
+          cd ..
+
           chmod uog+x tmp/test-node
           chmod uog+x tmp/contaner-chain-template
           chmod uog+x tmp/polkadot
