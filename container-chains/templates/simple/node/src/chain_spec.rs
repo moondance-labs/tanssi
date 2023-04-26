@@ -1,5 +1,5 @@
 use {
-    container_chain_template_runtime::{AccountId, AuraId, Signature},
+    container_chain_template_simple_runtime::{AccountId, AuraId, Signature},
     cumulus_primitives_core::ParaId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
@@ -9,8 +9,10 @@ use {
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec =
-    sc_service::GenericChainSpec<container_chain_template_runtime::GenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<
+    container_chain_template_simple_runtime::GenesisConfig,
+    Extensions,
+>;
 
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -56,8 +58,8 @@ where
 /// Generate the session keys from individual elements.
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(keys: AuraId) -> container_chain_template_runtime::SessionKeys {
-    container_chain_template_runtime::SessionKeys { aura: keys }
+pub fn template_session_keys(keys: AuraId) -> container_chain_template_simple_runtime::SessionKeys {
+    container_chain_template_simple_runtime::SessionKeys { aura: keys }
 }
 
 pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
@@ -170,22 +172,24 @@ fn testnet_genesis(
     invulnerables: Vec<(AccountId, AuraId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
-) -> container_chain_template_runtime::GenesisConfig {
-    container_chain_template_runtime::GenesisConfig {
-        system: container_chain_template_runtime::SystemConfig {
-            code: container_chain_template_runtime::WASM_BINARY
+) -> container_chain_template_simple_runtime::GenesisConfig {
+    container_chain_template_simple_runtime::GenesisConfig {
+        system: container_chain_template_simple_runtime::SystemConfig {
+            code: container_chain_template_simple_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
                 .to_vec(),
         },
-        balances: container_chain_template_runtime::BalancesConfig {
+        balances: container_chain_template_simple_runtime::BalancesConfig {
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
-        parachain_info: container_chain_template_runtime::ParachainInfoConfig { parachain_id: id },
-        session: container_chain_template_runtime::SessionConfig {
+        parachain_info: container_chain_template_simple_runtime::ParachainInfoConfig {
+            parachain_id: id,
+        },
+        session: container_chain_template_simple_runtime::SessionConfig {
             keys: invulnerables
                 .into_iter()
                 .map(|(acc, aura)| {

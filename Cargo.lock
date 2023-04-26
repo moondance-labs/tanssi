@@ -1004,13 +1004,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3ad85c1f65dc7b37604eb0e89748faf0b9653065f2a8ef69f96a687ec1e9279"
 
 [[package]]
-name = "container-chain-template-node"
+name = "container-chain-template-simple-node"
 version = "0.1.0"
 dependencies = [
  "async-io",
  "async-trait",
  "clap",
- "container-chain-template-runtime",
+ "container-chain-template-simple-runtime",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
  "cumulus-client-consensus-common",
@@ -1067,7 +1067,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "container-chain-template-runtime"
+name = "container-chain-template-simple-runtime"
 version = "0.1.0"
 dependencies = [
  "cumulus-pallet-aura-ext",
