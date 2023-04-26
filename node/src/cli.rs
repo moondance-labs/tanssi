@@ -173,10 +173,10 @@ impl Cli {
         relay_chain_args
     }
 
-    pub fn orchestrator_chain_args(&self) -> &[String] {
-        let (_, orchestrator_args) = self.split_extra_args_at_first_dashdash();
+    pub fn container_chain_args(&self) -> &[String] {
+        let (_, container_chain_args) = self.split_extra_args_at_first_dashdash();
 
-        orchestrator_args
+        container_chain_args
     }
 
     fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
@@ -224,10 +224,10 @@ impl RelayChainCli {
     }
 }
 
-/// The `run` command used to run a node.
+/// The `run` command used to run a container chain node.
 #[derive(Debug, clap::Parser)]
 #[group(skip)]
-pub struct OrchestratorRunCmd {
+pub struct ContainerChainRunCmd {
     /// The cumulus RunCmd inherits from sc_cli's
     #[command(flatten)]
     pub base: sc_cli::RunCmd,
@@ -244,22 +244,22 @@ pub struct OrchestratorRunCmd {
 }
 
 #[derive(Debug)]
-pub struct OrchestratorCli {
-    /// The actual orchestrator chain cli object.
-    pub base: OrchestratorRunCmd,
+pub struct ContainerChainCli {
+    /// The actual container chain cli object.
+    pub base: ContainerChainRunCmd,
 
-    /// Optional chain id that should be passed to the orchestrator chain.
+    /// Optional chain id that should be passed to the container chain.
     pub chain_id: Option<String>,
 
-    /// The base path that should be used by the orchestrator chain.
+    /// The base path that should be used by the container chain.
     pub base_path: Option<PathBuf>,
 }
 
-impl OrchestratorCli {
-    /// Parse the orchestrator CLI parameters using the para chain `Configuration`.
+impl ContainerChainCli {
+    /// Parse the container chain CLI parameters using the para chain `Configuration`.
     pub fn new<'a>(
         para_config: &sc_service::Configuration,
-        orchestrator_args: impl Iterator<Item = &'a String>,
+        container_chain_args: impl Iterator<Item = &'a String>,
     ) -> Self {
         let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
         let chain_id = extension.map(|e| e.relay_chain.clone());
@@ -270,7 +270,7 @@ impl OrchestratorCli {
         Self {
             base_path,
             chain_id,
-            base: clap::Parser::parse_from(orchestrator_args),
+            base: clap::Parser::parse_from(container_chain_args),
         }
     }
 }

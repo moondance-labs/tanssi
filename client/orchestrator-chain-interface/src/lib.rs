@@ -90,6 +90,8 @@ where
         orchestrator_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
-        (**self).prove_read(orchestrator_parent, relevant_keys).await
+        (**self)
+            .prove_read(orchestrator_parent, relevant_keys)
+            .await
     }
 }

@@ -1,7 +1,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, OrchestratorCli, RelayChainCli, Subcommand},
+        cli::{Cli, ContainerChainCli, RelayChainCli, Subcommand},
         service::{new_partial, IdentifyVariant, ParachainNativeExecutor},
     },
     cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
@@ -111,7 +111,7 @@ impl SubstrateCli for RelayChainCli {
     }
 }
 
-impl SubstrateCli for OrchestratorCli {
+impl SubstrateCli for ContainerChainCli {
     fn impl_name() -> String {
         "Container chain".into()
     }
@@ -418,10 +418,10 @@ pub fn run() -> Result<()> {
 				}
 
 				let mut orchestrator_config = None;
-				if !cli.orchestrator_chain_args().is_empty() {
-					let orchestrator_cli = OrchestratorCli::new(
+				if !cli.container_chain_args().is_empty() {
+					let orchestrator_cli = ContainerChainCli::new(
 						&config,
-						[OrchestratorCli::executable_name()].iter().chain(cli.orchestrator_chain_args().iter()),
+						[ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
 					);
 					let tokio_handle = config.tokio_handle.clone();
 					let config =
@@ -592,7 +592,7 @@ impl CliConfiguration<Self> for RelayChainCli {
     }
 }
 
-impl DefaultConfigurationValues for OrchestratorCli {
+impl DefaultConfigurationValues for ContainerChainCli {
     fn p2p_listen_port() -> u16 {
         17334
     }
@@ -610,7 +610,7 @@ impl DefaultConfigurationValues for OrchestratorCli {
     }
 }
 
-impl CliConfiguration<Self> for OrchestratorCli {
+impl CliConfiguration<Self> for ContainerChainCli {
     fn shared_params(&self) -> &SharedParams {
         self.base.base.shared_params()
     }
