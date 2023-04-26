@@ -29,7 +29,7 @@ jobs:
       - name: Save runtime wasm
         run: |
           mkdir -p runtimes
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-runtime/container_chain_template_runtime.compact.wasm runtimes/;
+          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.wasm runtimes/;
           cp $CARGO_TARGET_DIR/release/wbuild/test-runtime/test_runtime.compact.compressed.wasm runtimes/;
 
       - name: Upload runtimes
@@ -42,7 +42,7 @@ jobs:
         run: |
           mkdir -p binaries
           cp $CARGO_TARGET_DIR/release/test-node binaries/test-node;
-          cp $CARGO_TARGET_DIR/release/container-chain-template-node binaries/container-chain-template-node;
+          cp $CARGO_TARGET_DIR/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
 
       - name: Upload binary
         uses: actions/upload-artifact@v3.1.2
@@ -118,8 +118,8 @@ jobs:
           chmod uog+x tmp/polkadot
 
           ## Generate specs
-          tmp/container-chain-template-node build-spec --parachain-id 2000 --seeds "Collator2000-01,Collator2000-02" --raw --> tmp/template-container-2000.json
-          tmp/container-chain-template-node build-spec --parachain-id 2001 --seeds "Collator2001-01,Collator2001-02" --raw --> tmp/template-container-2001.json
+          tmp/container-chain-template-simple-node build-spec --parachain-id 2000 --seeds "Collator2000-01,Collator2000-02" --raw --> tmp/template-container-2000.json
+          tmp/container-chain-template-simple-node build-spec --parachain-id 2001 --seeds "Collator2001-01,Collator2001-02" --raw --> tmp/template-container-2001.json
 
           ## Run tests
 
