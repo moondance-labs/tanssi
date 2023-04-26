@@ -56,7 +56,7 @@
           },
           {
             "name": "Collator2001-01",
-            "command": ".tmp/test-node",
+            "command": "tmp/test-node",
             "args": ["-- --tmp --ws-port 9950 --chain tmp/template-container-2001.json"]
           },
           {
