@@ -7,7 +7,7 @@
 
 use std::sync::Arc;
 
-use container_chain_template_runtime::{opaque::Block, AccountId, Index as Nonce};
+use container_chain_template_simple_runtime::{opaque::Block, AccountId, Index as Nonce};
 
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 use {

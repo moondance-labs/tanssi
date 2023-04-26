@@ -5,7 +5,7 @@ use std::{sync::Arc, time::Duration};
 
 use cumulus_client_cli::CollatorOptions;
 // Local Runtime Types
-use container_chain_template_runtime::{opaque::Block, RuntimeApi};
+use container_chain_template_simple_runtime::{opaque::Block, RuntimeApi};
 
 // Cumulus Imports
 use {
@@ -42,11 +42,11 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        container_chain_template_runtime::api::dispatch(method, data)
+        container_chain_template_simple_runtime::api::dispatch(method, data)
     }
 
     fn native_version() -> sc_executor::NativeVersion {
-        container_chain_template_runtime::native_version()
+        container_chain_template_simple_runtime::native_version()
     }
 }
 

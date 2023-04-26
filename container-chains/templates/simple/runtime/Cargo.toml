@@ -1,5 +1,5 @@
 [package]
-name = "container-chain-template-runtime"
+name = "container-chain-template-simple-runtime"
 authors = [ "Anonymous" ]
 description = ""
 edition = "2021"
