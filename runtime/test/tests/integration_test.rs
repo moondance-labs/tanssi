@@ -464,7 +464,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
                 vec![alice_id, bob_id, charlie_id, dave_id]
             );
 
-            assert_ok!(Registrar::register(root_origin(), 1001), ());
+            assert_ok!(Registrar::register(root_origin(), 1001.into()), ());
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32, true);
