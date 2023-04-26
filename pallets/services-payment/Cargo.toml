@@ -1,0 +1,32 @@
+[package]
+name = "pallet-services-payment"
+authors = []
+description = "Services noting pallet"
+edition = "2021"
+publish = false
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[dependencies]
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+log = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+scale-info = { workspace = true }
+serde = { workspace = true, optional = true, features = [ "derive" ] }
+
+cumulus-primitives-core = { workspace = true }
+
+[dev-dependencies]
+
+[features]
+default = [ "std" ]
+std = [
+	"cumulus-primitives-core/std",
+	"frame-support/std",
+	"frame-system/std",
+	"scale-info/std",
+]
+try-runtime = [ "frame-support/try-runtime" ]
