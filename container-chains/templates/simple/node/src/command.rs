@@ -4,7 +4,7 @@ use {
         cli::{Cli, RelayChainCli, Subcommand},
         service::{new_partial, ParachainNativeExecutor},
     },
-    container_chain_template_runtime::Block,
+    container_chain_template_simple_runtime::Block,
     cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
@@ -67,7 +67,7 @@ impl SubstrateCli for Cli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &container_chain_template_runtime::VERSION
+        &container_chain_template_simple_runtime::VERSION
     }
 }
 

@@ -1,5 +1,5 @@
 [package]
-name = "container-chain-template-node"
+name = "container-chain-template-simple-node"
 authors = [ "Anonymous" ]
 build = "build.rs"
 description = ""
@@ -18,7 +18,7 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
-container-chain-template-runtime = { workspace = true, features = [ "std" ] }
+container-chain-template-simple-runtime = { path = "../runtime", default-features = false, features = [ "std" ] }
 
 # Substrate
 frame-benchmarking = { workspace = true }
@@ -81,11 +81,11 @@ substrate-build-script-utils = { workspace = true }
 [features]
 default = []
 runtime-benchmarks = [
-	"container-chain-template-runtime/runtime-benchmarks",
+	"container-chain-template-simple-runtime/runtime-benchmarks",
 	"polkadot-cli/runtime-benchmarks",
 	"try-runtime-cli/try-runtime",
 ]
 try-runtime = [
-	"container-chain-template-runtime/try-runtime",
+	"container-chain-template-simple-runtime/try-runtime",
 	"try-runtime-cli/try-runtime",
  ]
