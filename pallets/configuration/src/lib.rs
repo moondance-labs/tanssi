@@ -35,8 +35,8 @@ const LOG_TARGET: &str = "pallet_configuration";
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct HostConfiguration {
     pub max_collators: u32,
-    // TODO: rename this to orchestrator_chain_collators
-    pub orchestrator_collators: u32,
+    pub min_orchestrator_collators: u32,
+    pub max_orchestrator_collators: u32,
     pub collators_per_container: u32,
 }
 
@@ -44,7 +44,8 @@ impl Default for HostConfiguration {
     fn default() -> Self {
         Self {
             max_collators: 100u32,
-            orchestrator_collators: 2u32,
+            min_orchestrator_collators: 2u32,
+            max_orchestrator_collators: 2u32,
             collators_per_container: 2u32,
         }
     }
@@ -53,8 +54,8 @@ impl Default for HostConfiguration {
 /// Enumerates the possible inconsistencies of `HostConfiguration`.
 #[derive(Debug)]
 pub enum InconsistentError {
-    /// `group_rotation_frequency` is set to zero.
-    ZeroGroupRotationFrequency,
+    /// `max_orchestrator_collators` is lower than `min_orchestrator_collators`
+    MaxCollatorsLowerThanMinCollators,
 }
 
 impl HostConfiguration {
@@ -64,7 +65,9 @@ impl HostConfiguration {
     ///
     /// This function returns an error if the configuration is inconsistent.
     pub fn check_consistency(&self) -> Result<(), InconsistentError> {
-        // TODO: check for some rules such as values that cannot be zero
+        if self.max_orchestrator_collators < self.min_orchestrator_collators {
+            return Err(InconsistentError::MaxCollatorsLowerThanMinCollators);
+        }
         Ok(())
     }
 
@@ -212,14 +215,32 @@ pub mod pallet {
 			T::WeightInfo::set_config_with_u32(),
 			DispatchClass::Operational,
 		))]
-        pub fn set_orchestrator_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
+        pub fn set_min_orchestrator_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
-                config.orchestrator_collators = new;
+                if config.max_orchestrator_collators < new {
+                    config.max_orchestrator_collators = new;
+                }
+                config.min_orchestrator_collators = new;
             })
         }
 
         #[pallet::call_index(2)]
+        #[pallet::weight((
+			T::WeightInfo::set_config_with_u32(),
+			DispatchClass::Operational,
+		))]
+        pub fn set_max_orchestrator_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::schedule_config_update(|config| {
+                if config.min_orchestrator_collators > new {
+                    config.min_orchestrator_collators = new;
+                }
+                config.max_orchestrator_collators = new;
+            })
+        }
+
+        #[pallet::call_index(3)]
         #[pallet::weight((
 			T::WeightInfo::set_config_with_u32(),
 			DispatchClass::Operational,
@@ -436,7 +457,7 @@ pub mod pallet {
             config.collators_per_container
         }
 
-        fn collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
+        fn min_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
             let (past_and_present, _) = Pallet::<T>::pending_configs()
                 .into_iter()
                 .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
@@ -446,7 +467,20 @@ pub mod pallet {
             } else {
                 Pallet::<T>::config()
             };
-            config.orchestrator_collators
+            config.min_orchestrator_collators
+        }
+
+        fn max_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
+            let (past_and_present, _) = Pallet::<T>::pending_configs()
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+            let config = if let Some(last) = past_and_present.last() {
+                last.1.clone()
+            } else {
+                Pallet::<T>::config()
+            };
+            config.max_orchestrator_collators
         }
     }
 }
