@@ -149,7 +149,7 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
     let genesis_data_1002 = ContainerChainGenesisData {
         storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
         extensions: vec![],
-        properties: vec![],
+        properties: Default::default(),
     };
     ExtBuilder::default()
         .with_balances(vec![
@@ -194,7 +194,7 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             let genesis_data_1003 = ContainerChainGenesisData {
                 storage: vec![(b"key3".to_vec(), b"value3".to_vec()).into()],
                 extensions: vec![],
-                properties: vec![],
+                properties: Default::default(),
             };
             assert_ok!(
                 Registrar::register(root_origin(), 1003.into(), genesis_data_1003.clone()),

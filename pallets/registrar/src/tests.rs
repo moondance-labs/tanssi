@@ -266,7 +266,7 @@ fn genesis_error_on_duplicate() {
 }
 
 #[test]
-#[should_panic = "genesis data for para_id 2 is too large: 5000008 bytes"]
+#[should_panic = "genesis data for para_id 2 is too large: 5000020 bytes"]
 fn genesis_error_genesis_data_size_too_big() {
     let genesis_data = ContainerChainGenesisData {
         storage: vec![(vec![], vec![0; 5_000_000]).into()],

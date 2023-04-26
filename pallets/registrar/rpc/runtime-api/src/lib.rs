@@ -3,6 +3,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet_registrar::ContainerChainGenesisData;
+pub use pallet_registrar::TokenMetadata;
 use scale_info::prelude::vec::Vec;
 
 sp_api::decl_runtime_apis! {

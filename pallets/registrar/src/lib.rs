@@ -76,8 +76,42 @@ pub mod pallet {
         pub storage: Vec<ContainerChainGenesisDataItem>,
         #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
         pub extensions: Vec<u8>,
-        #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
-        pub properties: Vec<u8>,
+        pub properties: TokenMetadata,
+    }
+
+    // TODO: turn this into a Config type parameter
+    // The problem with that is that it forces ContainerChainGenesisData to be generic,
+    // and the automatically derived traits force the generic parameter to implement those traits.
+    // The errors are like "MaxLengthTokenSymbol does not implement Debug".
+    // The solution is to either implement all the traits manually, or use a helper crate like
+    // derivative, although that does not seem to support deriving the substrate traits.
+    pub struct MaxLengthTokenSymbol;
+
+    impl Get<u32> for MaxLengthTokenSymbol {
+        fn get() -> u32 {
+            255
+        }
+    }
+
+    #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
+    #[derive(
+        Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo,
+    )]
+    pub struct TokenMetadata {
+        pub token_symbol: BoundedVec<u8, MaxLengthTokenSymbol>,
+        pub ss58_format: u32,
+        pub token_decimals: u32,
+    }
+
+    impl Default for TokenMetadata {
+        fn default() -> Self {
+            // Default values from polkadot.js
+            Self {
+                token_symbol: BoundedVec::truncate_from(b"UNIT".to_vec()),
+                ss58_format: 42,
+                token_decimals: 12,
+            }
+        }
     }
 
     #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]

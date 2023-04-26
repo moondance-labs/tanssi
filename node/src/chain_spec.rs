@@ -1,6 +1,7 @@
 use {
     cumulus_primitives_core::ParaId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
+    pallet_registrar_runtime_api::TokenMetadata,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
@@ -325,15 +326,57 @@ fn build_para_genesis_data(path: &str) -> Result<(ParaId, ContainerChainGenesisD
     // This was created by iterating over a map, so it won't have two equal keys
     genesis_data_vec.sort_unstable();
 
-    let properties = &raw_chainspec_json["properties"];
-    let properties_json_bytes = serde_json::to_vec(properties).unwrap();
+    let properties_json = &raw_chainspec_json["properties"];
+    let mut properties = TokenMetadata::default();
+    if let Some(x) = properties_json
+        .get("ss58Format")
+        .and_then(|x| u32::try_from(x.as_u64()?).ok())
+        .or_else(|| {
+            log::warn!(
+                "Failed to read properties.ss58Format from container chain chain spec, using default value instead. Invalid value was: {:?}",
+                properties_json.get("ss58Format")
+            );
+
+            None
+        })
+    {
+        properties.ss58_format = x;
+    }
+    if let Some(x) = properties_json
+        .get("tokenDecimals")
+        .and_then(|x: &serde_json::Value| u32::try_from(x.as_u64()?).ok()).or_else(|| {
+            log::warn!(
+                "Failed to read properties.tokenDecimals from container chain chain spec, using default value instead. Invalid value was: {:?}",
+                properties_json.get("tokenDecimals")
+            );
+
+            None
+        })
+    {
+        properties.token_decimals = x;
+    }
+    if let Some(x) = properties_json.get("tokenSymbol").and_then(|x| {
+        let xs = x.as_str()?;
+        let xv: Vec<u8> = xs.to_string().into();
+
+        xv.try_into().ok()
+    }).or_else(|| {
+        log::warn!(
+            "Failed to read properties.tokenSymbol from container chain chain spec, using default value instead. Invalid value was: {:?}",
+            properties_json.get("tokenSymbol")
+        );
+
+        None
+    }) {
+        properties.token_symbol = x;
+    }
 
     Ok((
         para_id.into(),
         ContainerChainGenesisData {
             storage: genesis_data_vec,
             extensions: vec![],
-            properties: properties_json_bytes,
+            properties,
         },
     ))
 }

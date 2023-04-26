@@ -287,9 +287,30 @@ impl TanssiCli {
         let id = format!("container-chain-{}", para_id);
         let map: BTreeMap<_, _> = genesis_data.storage.into_iter().map(|x| x.into()).collect();
         let boot_nodes = vec![];
-        let properties_json_bytes = genesis_data.properties;
-        // TODO: definitely do not unwrap here, as this is reading on chain data that may not be valid json
-        let properties = Some(serde_json::from_slice(&properties_json_bytes).unwrap());
+        // TODO: we can just derive Serialize for genesis_data.properties instead of this hack,
+        // just ensure that the field names match
+        let properties = Some(
+            vec![
+                (
+                    "ss58Format",
+                    serde_json::Value::from(genesis_data.properties.ss58_format),
+                ),
+                (
+                    "tokenDecimals",
+                    serde_json::Value::from(genesis_data.properties.token_decimals),
+                ),
+                (
+                    "tokenSymbol",
+                    serde_json::Value::from(
+                        String::from_utf8(genesis_data.properties.token_symbol.to_vec())
+                            .map_err(|e| format!("tokenSymbol is not valid UTF8: {}", e))?,
+                    ),
+                ),
+            ]
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect(),
+        );
         let extensions = crate::chain_spec::Extensions {
             relay_chain: "rococo_local_testnet".to_string(),
             para_id,
