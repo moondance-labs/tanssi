@@ -23,10 +23,10 @@ describeSuite({
       expect(paraNetwork, "Para API incorrect").to.contain("orchestrator-template-parachain");
 
       const container2000Network = container2000Api.consts.system.version.specName.toString();
-      expect(container2000Network, "Container2000 API incorrect").to.contain("template-parachain");
+      expect(container2000Network, "Container2000 API incorrect").to.contain("container-chain-template");
 
       const container2001Network = container2001Api.consts.system.version.specName.toString();
-      expect(container2001Network, "Container2001 API incorrect").to.contain("template-parachain");
+      expect(container2001Network, "Container2001 API incorrect").to.contain("container-chain-template");
 
     }, 120000);
 
