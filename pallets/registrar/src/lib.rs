@@ -39,7 +39,7 @@ pub mod pallet {
     #[derive(Default)]
     pub struct GenesisConfig {
         /// Para ids
-        pub para_ids: Vec<u32>,
+        pub para_ids: Vec<ParaId>,
     }
 
     #[pallet::genesis_build]
@@ -85,20 +85,23 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn registered_para_ids)]
     pub type RegisteredParaIds<T: Config> =
-        StorageValue<_, BoundedVec<u32, T::MaxLengthParaIds>, ValueQuery>;
+        StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
     #[pallet::storage]
     #[pallet::getter(fn pending_registered_para_ids)]
-    pub type PendingParaIds<T: Config> =
-        StorageValue<_, Vec<(T::SessionIndex, BoundedVec<u32, T::MaxLengthParaIds>)>, ValueQuery>;
+    pub type PendingParaIds<T: Config> = StorageValue<
+        _,
+        Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
+        ValueQuery,
+    >;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// A new para id has been registered. [para_id]
-        ParaIdRegistered { para_id: u32 },
+        ParaIdRegistered { para_id: ParaId },
         /// A para id has been deregistered. [para_id]
-        ParaIdDeregistered { para_id: u32 },
+        ParaIdDeregistered { para_id: ParaId },
     }
 
     #[pallet::error]
@@ -116,7 +119,7 @@ pub mod pallet {
         /// Register parachain
         #[pallet::call_index(0)]
         #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1).ref_time())]
-        pub fn register(origin: OriginFor<T>, para_id: u32) -> DispatchResult {
+        pub fn register(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
             Self::schedule_parachain_change(|para_ids| {
                 // We don't want to add duplicate para ids, so we check whether the potential new
@@ -142,7 +145,7 @@ pub mod pallet {
         /// Deregister parachain
         #[pallet::call_index(1)]
         #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1).ref_time())]
-        pub fn deregister(origin: OriginFor<T>, para_id: u32) -> DispatchResult {
+        pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
             Self::schedule_parachain_change(|para_ids| {
@@ -164,15 +167,15 @@ pub mod pallet {
 
     pub struct SessionChangeOutcome<T: Config> {
         /// Previously active parachains.
-        pub prev_paras: BoundedVec<u32, T::MaxLengthParaIds>,
+        pub prev_paras: BoundedVec<ParaId, T::MaxLengthParaIds>,
         /// If new parachains have been applied in the new session, this is the new  list.
-        pub new_paras: Option<BoundedVec<u32, T::MaxLengthParaIds>>,
+        pub new_paras: Option<BoundedVec<ParaId, T::MaxLengthParaIds>>,
     }
 
     impl<T: Config> Pallet<T> {
         #[inline(never)]
         fn schedule_parachain_change(
-            updater: impl FnOnce(&mut BoundedVec<u32, T::MaxLengthParaIds>) -> DispatchResult,
+            updater: impl FnOnce(&mut BoundedVec<ParaId, T::MaxLengthParaIds>) -> DispatchResult,
         ) -> DispatchResult {
             let mut pending_paras = PendingParaIds::<T>::get();
             // First, we need to decide what we should use as the base paras.
