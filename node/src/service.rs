@@ -19,10 +19,7 @@ use {
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
     pallet_registrar_runtime_api::RegistrarApi,
-    parity_scale_codec::Decode,
     polkadot_cli::ProvideRuntimeApi,
-    polkadot_primitives::HeadData,
-    polkadot_service::{BlakeTwo256, BlockNumber},
     sc_client_api::HeaderBackend,
     sc_consensus::ImportQueue,
     sc_executor::NativeElseWasmExecutor,
@@ -450,39 +447,8 @@ async fn start_node_impl(
 
                     // Read genesis data from tanssi
                     let tanssi_chain_interface = tanssi_chain_interface_builder.build();
-                    // TODO: use runtime api here instead of reading raw storage keys?
-                    let relay_parent = relay_chain_interface
-                        .best_block_hash()
-                        .await
-                        .expect("failed to get relay block hash");
-
-                    let header_orchestrator = relay_chain_interface
-                        .get_storage_by_key(
-                            relay_parent,
-                            &tp_core::well_known_keys::para_id_head(para_id),
-                        )
-                        .await
-                        .unwrap();
-
-                    let header_data_orchestrator = header_orchestrator
-                        .map(|raw| <HeadData>::decode(&mut &raw[..]))
-                        .transpose()
-                        .unwrap_or_default()
-                        .unwrap_or_default();
-
-                    // We later take the Header decoded
-                    let orchestrator_header =
-                        sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
-                            &mut header_data_orchestrator.0.as_slice(),
-                        )
-                        .unwrap();
-
-                    // Try to get the same ids using the runtime api
+                    let tanssi_block = tanssi_client.chain_info().best_hash;
                     let tanssi_runtime_api = tanssi_client.runtime_api();
-                    // TODO: we need the tanssi block hash to use the runtime api. I am using the
-                    // hash from the relay chain, which is guaranteed to be final, to avoid rollbacks.
-                    // Is there any better option? Also, move the above logic to a helper function.
-                    let tanssi_block = orchestrator_header.hash();
 
                     let container_chain_para_id = tanssi_cli.base.para_id.unwrap();
 
