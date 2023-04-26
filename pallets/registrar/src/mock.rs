@@ -8,6 +8,7 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
+    tp_traits::ParaId,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -82,7 +83,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(
-    para_ids: Vec<(u32, ContainerChainGenesisData)>,
+    para_ids: Vec<(ParaId, ContainerChainGenesisData)>,
 ) -> sp_io::TestExternalities {
     GenesisConfig {
         system: Default::default(),

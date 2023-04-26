@@ -1152,7 +1152,10 @@ pub fn new_dev(
                     let para_ids = client_set_aside_for_cidp
                         .runtime_api()
                         .registered_paras(block)
-                        .expect("registered_paras runtime API should exist");
+                        .expect("registered_paras runtime API should exist")
+                        .into_iter()
+                        .map(|x| x.into())
+                        .collect();
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {

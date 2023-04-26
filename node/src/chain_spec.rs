@@ -290,7 +290,7 @@ fn testnet_genesis(
     }
 }
 
-fn build_para_genesis_data(path: &str) -> Result<(u32, ContainerChainGenesisData), String> {
+fn build_para_genesis_data(path: &str) -> Result<(ParaId, ContainerChainGenesisData), String> {
     // TODO: we are manually parsing a json file here, maybe we can leverage the existing
     // chainspec deserialization code.
     // Read raw chainspec file
@@ -329,7 +329,7 @@ fn build_para_genesis_data(path: &str) -> Result<(u32, ContainerChainGenesisData
     let properties_json_bytes = serde_json::to_vec(properties).unwrap();
 
     Ok((
-        para_id,
+        para_id.into(),
         ContainerChainGenesisData {
             storage: genesis_data_vec,
             extensions: vec![],

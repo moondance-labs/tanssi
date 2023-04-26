@@ -717,14 +717,14 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_registrar_runtime_api::RegistrarApi<Block, u32> for Runtime {
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId> for Runtime {
         /// Return the registered para ids
-        fn registered_paras() -> Vec<u32> {
+        fn registered_paras() -> Vec<ParaId> {
             Registrar::registered_para_ids().to_vec()
         }
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: u32) -> Option<ContainerChainGenesisData> {
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
             Registrar::para_genesis_data(para_id)
         }
     }
