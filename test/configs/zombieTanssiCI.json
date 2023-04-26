@@ -72,7 +72,7 @@
         "collators":  [
           {
             "name": "DummyCollator-2000",
-            "command": "tmp/container-chain-template-node"
+            "command": "tmp/container-chain-template-simple-node"
           }
         ]
       },
@@ -82,7 +82,7 @@
         "collators":  [
           {
             "name": "DummyCollator-2001",
-            "command": "tmp/container-chain-template-node"
+            "command": "tmp/container-chain-template-simple-node"
           }
         ]
       }
