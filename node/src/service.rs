@@ -255,6 +255,11 @@ async fn start_node_impl(
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(tanssi_config);
 
+    let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
+    let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
+        .map(|e| e.relay_chain.clone())
+        .ok_or_else(|| "Could not find relay_chain extension in chain-spec.")?;
+
     let params = new_partial(&parachain_config)?;
     let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
@@ -456,18 +461,24 @@ async fn start_node_impl(
 
                         let genesis_data = match tanssi_runtime_api
                             .genesis_data(tanssi_block, container_chain_para_id.into())
-                            .expect("error") {
-                                Some(x) => x,
-                                None => {
-                                    log::warn!("No genesis data for para id {}, will retry in 30 seconds", container_chain_para_id);
-                                    continue;
-                                }
-                            };
+                            .expect("error")
+                        {
+                            Some(x) => x,
+                            None => {
+                                log::warn!(
+                                    "No genesis data for para id {}, will retry in 30 seconds",
+                                    container_chain_para_id
+                                );
+                                continue;
+                            }
+                        };
 
                         tanssi_cli
                             .preload_chain_spec_from_genesis_data(
                                 container_chain_para_id,
                                 genesis_data,
+                                chain_type,
+                                relay_chain,
                             )
                             .unwrap();
 

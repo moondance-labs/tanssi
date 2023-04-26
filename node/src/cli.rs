@@ -282,6 +282,8 @@ impl TanssiCli {
         &mut self,
         para_id: u32,
         genesis_data: ContainerChainGenesisData,
+        chain_type: sc_chain_spec::ChainType,
+        relay_chain: String,
     ) -> Result<(), String> {
         let name = format!("ContainerChain {}", para_id);
         let id = format!("container-chain-{}", para_id);
@@ -312,19 +314,22 @@ impl TanssiCli {
             .collect(),
         );
         let extensions = crate::chain_spec::Extensions {
-            relay_chain: "rococo_local_testnet".to_string(),
+            relay_chain,
             para_id,
         };
         let chain_spec = Box::new(crate::chain_spec::RawChainSpec::from_genesis(
             &name,
             &id,
-            sc_chain_spec::ChainType::Local,
+            chain_type,
             move || RawGenesisConfigDummy { map: map.clone() },
             boot_nodes,
             None,
+            // TODO: add to struct: protocol_id fork_id
             Some("template-local"),
             None,
             properties,
+            // TODO: what to do with extensions? We are hardcoding the relay_chain and the para_id, any
+            // other extensions are being ignored
             extensions,
         ));
 
