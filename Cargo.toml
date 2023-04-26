@@ -1,8 +1,8 @@
 [workspace]
 members = [
 	"client/*",
-	"container-chain-template/*",
 	"container-chains/pallets/*",
+	"container-chains/templates/simple/*",
 	"node",
 	"pallets/*",
 	"pallets/collator-assignment/rpc/runtime-api",
@@ -16,7 +16,6 @@ resolver = "2"
 [workspace.dependencies]
 # Members
 pallet-author-noting = { path = "pallets/author-noting", default-features = false }
-pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
 pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/rpc/runtime-api", default-features = false }
 pallet-configuration = { path = "pallets/configuration", default-features = false }
@@ -24,7 +23,8 @@ pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 
-container-chain-template-runtime = { path = "container-chain-template/runtime", default-features = false }
+pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
+
 tc-tanssi-chain-interface = { path = "client/tanssi-chain-interface" }
 test-relay-sproof-builder = { path = "test-sproof-builder" }
 test-runtime = { path = "runtime/test", default-features = false }
@@ -34,6 +34,7 @@ tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-fe
 tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
 tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
+
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
