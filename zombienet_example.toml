@@ -20,6 +20,7 @@ chain = "rococo-local"
 
 [[parachains]]
 id = 1000
+chain_spec_path = "./specs/tanssi-1000.json"
 
   [[parachains.collators]]
   name = "Collator1000-01"

@@ -125,7 +125,7 @@ pub fn account_ids(names: &[&str]) -> Vec<AccountId> {
         .collect()
 }
 
-pub fn development_config(para_id: ParaId) -> ChainSpec {
+pub fn development_config(para_id: ParaId, container_chains: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -158,7 +158,7 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
                 ]),
                 para_id,
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                vec![2000.into(), 2001.into()],
+                &container_chains,
             )
         },
         Vec::new(),
@@ -173,7 +173,7 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
     )
 }
 
-pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId, container_chains: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -206,7 +206,7 @@ pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
                 ]),
                 para_id,
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                vec![2000.into(), 2001.into()],
+                &container_chains,
             )
         },
         // Bootnodes
@@ -232,7 +232,7 @@ fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-    para_ids: Vec<ParaId>,
+    container_chains: &[String],
 ) -> test_runtime::GenesisConfig {
     test_runtime::GenesisConfig {
         system: test_runtime::SystemConfig {
@@ -272,18 +272,15 @@ fn testnet_genesis(
         parachain_system: Default::default(),
         configuration: Default::default(),
         registrar: RegistrarConfig {
-            para_ids: para_ids
-                .into_iter()
+            para_ids: container_chains
+                .iter()
                 .map(|x| {
-                    (
-                        x.into(),
-                        build_para_genesis_data(x).unwrap_or_else(|e| {
-                            panic!(
-                                "Failed to build genesis data for container chain {}: {}",
-                                x, e
-                            )
-                        }),
-                    )
+                    build_para_genesis_data(x).unwrap_or_else(|e| {
+                        panic!(
+                            "Failed to build genesis data for container chain {:?}: {}",
+                            x, e
+                        )
+                    })
                 })
                 .collect(),
         },
@@ -293,37 +290,16 @@ fn testnet_genesis(
     }
 }
 
-const BUNDLED_CONTAINER_CHAIN_CHAIN_SPECS: &[(u32, &'static str)] = &[
-    (
-        2000,
-        include_str!("../../specs/template-container-2000.json"),
-    ),
-    (
-        2001,
-        include_str!("../../specs/template-container-2001.json"),
-    ),
-];
-
-fn build_para_genesis_data(para_id: ParaId) -> Result<ContainerChainGenesisData, String> {
+fn build_para_genesis_data(path: &str) -> Result<(u32, ContainerChainGenesisData), String> {
     // TODO: we are manually parsing a json file here, maybe we can leverage the existing
     // chainspec deserialization code.
     // Read raw chainspec file
-    let raw_chainspec_str = BUNDLED_CONTAINER_CHAIN_CHAIN_SPECS
-        .iter()
-        .find_map(|(id, raw_chainspec_str)| {
-            if *id == u32::from(para_id) {
-                Some(*raw_chainspec_str)
-            } else {
-                None
-            }
-        })
-        .ok_or(format!(
-            "ChainSpec for container chain {} not found",
-            para_id
-        ))?;
+    let raw_chainspec_str = std::fs::read_to_string(path)
+        .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))?;
     let raw_chainspec_json: serde_json::Value =
         serde_json::from_str(&raw_chainspec_str).map_err(|e| e.to_string())?;
-    // TODO: this bound checking may panic, although maybe the error message is be good enough
+    // TODO: this bound checking may panic
+    let para_id: u32 = u32::try_from(raw_chainspec_json["para_id"].as_u64().unwrap()).unwrap();
     let genesis_data = &raw_chainspec_json["genesis"]["raw"]["top"];
     let genesis_data_map = genesis_data
         .as_object()
@@ -352,9 +328,12 @@ fn build_para_genesis_data(para_id: ParaId) -> Result<ContainerChainGenesisData,
     let properties = &raw_chainspec_json["properties"];
     let properties_json_bytes = serde_json::to_vec(properties).unwrap();
 
-    Ok(ContainerChainGenesisData {
-        storage: genesis_data_vec,
-        extensions: vec![],
-        properties: properties_json_bytes,
-    })
+    Ok((
+        para_id,
+        ContainerChainGenesisData {
+            storage: genesis_data_vec,
+            extensions: vec![],
+            properties: properties_json_bytes,
+        },
+    ))
 }

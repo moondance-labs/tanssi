@@ -58,6 +58,10 @@ pub struct BuildSpecCmd {
     /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
     #[clap(long)]
     pub parachain_id: Option<u32>,
+
+    /// List of container chain chain spec paths to add to genesis.
+    #[clap(long)]
+    pub add_container_chain: Vec<String>,
 }
 
 impl CliConfiguration for BuildSpecCmd {
