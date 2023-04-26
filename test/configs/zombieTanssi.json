@@ -43,6 +43,46 @@
           {
             "name": "Collator1000-02",
             "command": "../target/release/test-node"
+          },
+          {
+            "name": "Collator2000-01",
+            "command": "../target/release/test-node",
+            "args": ["-- --tmp --ws-port 9949 --chain ../specs/template-container-2000.json"]
+          },
+          {
+            "name": "Collator2000-02",
+            "command": "../target/release/test-node",
+            "args": ["-- --tmp --chain ../specs/template-container-2000.json"]
+          },
+          {
+            "name": "Collator2001-01",
+            "command": "../target/release/test-node",
+            "args": ["-- --tmp --ws-port 9950 --chain ../specs/template-container-2001.json"]
+          },
+          {
+            "name": "Collator2001-02",
+            "command": "../target/release/test-node",
+            "args": ["-- --tmp --chain ../specs/template-container-2001.json"]
+          }
+        ]
+      },
+      {
+        "id": 2000,
+        "chain_spec_path": "../specs/template-container-2000.json",
+        "collators":  [
+          {
+            "name": "DummyCollator-2000",
+            "command": "../target/release/container-chain-template-node"
+          }
+        ]
+      },
+      {
+        "id": 2001,
+        "chain_spec_path": "../specs/template-container-2001.json",
+        "collators":  [
+          {
+            "name": "DummyCollator-2001",
+            "command": "../target/release/container-chain-template-node"
           }
         ]
       }
