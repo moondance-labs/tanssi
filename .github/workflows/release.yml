@@ -79,7 +79,7 @@ jobs:
           pnpm moonwall test dev_tanssi
 
   zombienet-tests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: ["build"]
     steps:
       - name: Pnpm
