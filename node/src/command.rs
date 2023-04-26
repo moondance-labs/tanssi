@@ -671,14 +671,11 @@ impl CliConfiguration<Self> for TanssiCli {
         unreachable!("PolkadotCli is never initialized; qed");
     }
 
-    fn chain_id(&self, is_dev: bool) -> Result<String> {
-        let chain_id = self.base.base.chain_id(is_dev)?;
-
-        Ok(if chain_id.is_empty() {
-            self.chain_id.clone().unwrap_or_default()
-        } else {
-            chain_id
-        })
+    fn chain_id(&self, _is_dev: bool) -> Result<String> {
+        self.base
+            .para_id
+            .map(|para_id| format!("container-chain-{}", para_id))
+            .ok_or("no para-id in container chain args".into())
     }
 
     fn role(&self, is_dev: bool) -> Result<sc_service::Role> {
