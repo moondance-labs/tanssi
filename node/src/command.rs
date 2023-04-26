@@ -147,11 +147,22 @@ impl SubstrateCli for TanssiCli {
         // ContainerChain ChainSpec must be preloaded beforehand because we need to call async
         // functions to generate it, and this function is not async
         log::info!("TanssiCli load_spec {:?}", id);
-        let specs = self.preloaded_chain_specs.read().unwrap();
 
-        match specs.get(id) {
-            Some(spec) => Ok(spec.cloned_box()),
-            None => Err(format!("ChainSpec for ContainerChain {} not found", id)),
+        match &self.preloaded_chain_spec {
+            Some(spec) => {
+                // TODO: this check forces the chain id to be "container-chain-2000"
+                // We could also try to get the para id from extensions
+                if spec.id() != id {
+                    Err(format!(
+                        "Expected ChainSpec for {}, found ChainSpec for {} instead",
+                        id,
+                        spec.id()
+                    ))
+                } else {
+                    Ok(spec.cloned_box())
+                }
+            }
+            None => Err(format!("ChainSpec for {} not found", id)),
         }
     }
 

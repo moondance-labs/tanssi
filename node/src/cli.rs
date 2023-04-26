@@ -2,11 +2,7 @@ use {
     crate::{chain_spec::RawGenesisConfigDummy, service::Sealing},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
-    std::{
-        collections::{BTreeMap, HashMap},
-        path::PathBuf,
-        sync::{Arc, RwLock},
-    },
+    std::{collections::BTreeMap, path::PathBuf},
 };
 
 /// Sub-commands supported by the collator.
@@ -248,7 +244,7 @@ pub struct TanssiRunCmd {
     pub para_id: Option<u32>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TanssiCli {
     /// The actual Tanssi cli object.
     pub base: TanssiRunCmd,
@@ -258,7 +254,7 @@ pub struct TanssiCli {
 
     /// The ChainSpecs that this struct can initialize. This starts empty and gets filled
     /// by calling preload_chain_spec_file.
-    pub preloaded_chain_specs: Arc<RwLock<HashMap<String, Box<dyn sc_chain_spec::ChainSpec>>>>,
+    pub preloaded_chain_spec: Option<Box<dyn sc_chain_spec::ChainSpec>>,
 }
 
 impl TanssiCli {
@@ -274,7 +270,7 @@ impl TanssiCli {
         Self {
             base_path,
             base: clap::Parser::parse_from(tanssi_args),
-            preloaded_chain_specs: Arc::new(RwLock::new(HashMap::new())),
+            preloaded_chain_spec: None,
         }
     }
 
@@ -283,8 +279,8 @@ impl TanssiCli {
         para_id: u32,
         genesis_data: ContainerChainGenesisData,
     ) -> Result<(), String> {
-        let name = format!("Local testnet");
-        let id = format!("local_testnet");
+        let name = format!("ContainerChain {}", para_id);
+        let id = format!("container-chain-{}", para_id);
         let map: BTreeMap<_, _> = genesis_data.storage.into_iter().map(|x| x.into()).collect();
         let boot_nodes = vec![];
         let properties_json_bytes = genesis_data.properties;
@@ -307,10 +303,7 @@ impl TanssiCli {
             extensions,
         ));
 
-        self.preloaded_chain_specs
-            .write()
-            .unwrap()
-            .insert(format!("container-chain-{}", para_id), chain_spec);
+        self.preloaded_chain_spec = Some(chain_spec);
 
         Ok(())
     }

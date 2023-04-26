@@ -483,22 +483,22 @@ async fn start_node_impl(
                     // hash from the relay chain, which is guaranteed to be final, to avoid rollbacks.
                     // Is there any better option? Also, move the above logic to a helper function.
                     let tanssi_block = orchestrator_header.hash();
-                    let para_ids = tanssi_runtime_api.registered_paras(tanssi_block).unwrap();
 
-                    log::info!("Got these para_ids from tanssi!: {:?}", para_ids);
+                    let container_chain_para_id = tanssi_cli.base.para_id.unwrap();
 
-                    for para_id in para_ids {
-                        let genesis_data = tanssi_runtime_api
-                            .genesis_data(tanssi_block, para_id.into())
-                            .expect("error")
-                            .expect("no genesis data for this para id");
+                    let genesis_data = tanssi_runtime_api
+                        .genesis_data(tanssi_block, container_chain_para_id.into())
+                        .expect("error")
+                        .expect("no genesis data for this para id");
 
-                        tanssi_cli
-                            .preload_chain_spec_from_genesis_data(para_id, genesis_data)
-                            .unwrap();
+                    tanssi_cli
+                        .preload_chain_spec_from_genesis_data(container_chain_para_id, genesis_data)
+                        .unwrap();
 
-                        log::info!("Loaded chain spec for container chain {}", para_id);
-                    }
+                    log::info!(
+                        "Loaded chain spec for container chain {}",
+                        container_chain_para_id
+                    );
 
                     let tanssi_cli_config = sc_cli::SubstrateCli::create_configuration(
                         &tanssi_cli,
@@ -507,10 +507,12 @@ async fn start_node_impl(
                     )
                     .map_err(|err| format!("Tanssi argument error: {}", err))?;
 
-                    let container_chain_para_id =
+                    let container_chain_para_id_check =
                         crate::chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
                             .map(|e| e.para_id)
                             .ok_or_else(|| "Could not find parachain extension in chain-spec.")?;
+
+                    assert_eq!(container_chain_para_id_check, container_chain_para_id);
 
                     // Start tanssi node
                     let (mut tanssi_task_manager, _tanssi_client) = start_node_impl_container(
