@@ -1,17 +1,19 @@
-/// Inherent data provider that supplies mocked author noting data.
-///
-/// This is useful when running a node that is not actually backed by any relay chain.
-/// For example when running a local node, or running integration tests.
-///
-/// We mock a relay chain block number as follows:
-/// relay_block_number = offset + relay_blocks_per_para_block * current_para_block
-/// To simulate a parachain that starts in relay block 1000 and gets a block in every other relay
-/// block, use 1000 and 2
-///
-/// para_id: the parachain of which we are gonna mock the headData
-/// slots_per_para_block: the number of slots to be applied per parachain block
+//! Inherent data provider that supplies mocked author noting data.
+//!
+//! This is useful when running a node that is not actually backed by any relay chain.
+//! For example when running a local node, or running integration tests.
+//!
+//! We mock a relay chain block number as follows:
+//! relay_block_number = offset + relay_blocks_per_para_block * current_para_block
+//! To simulate a parachain that starts in relay block 1000 and gets a block in every other relay
+//! block, use 1000 and 2
+//!
+//! para_id: the parachain of which we are gonna mock the headData
+//! slots_per_para_block: the number of slots to be applied per parachain block
+
 use {
     crate::OwnParachainInherentData,
+    cumulus_primitives_core::ParaId,
     parity_scale_codec::Encode,
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
     sp_inherents::{InherentData, InherentDataProvider},
@@ -29,7 +31,7 @@ pub struct MockAuthorNotingInherentDataProvider {
     /// to simulate optimistic or realistic relay chain behavior.
     pub relay_blocks_per_para_block: u32,
     /// List of para ids for which to include the header proof. They will all have the same slot number.
-    pub para_ids: Vec<u32>,
+    pub para_ids: Vec<ParaId>,
     /// Number of parachain blocks per relay chain epoch
     /// Mock epoch is computed by dividing `current_para_block` by this value.
     pub slots_per_para_block: u32,
