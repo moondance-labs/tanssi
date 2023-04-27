@@ -51,6 +51,9 @@ fn register_para_id_42_genesis_data_size_too_big() {
         System::set_block_number(1);
         let genesis_data = ContainerChainGenesisData {
             storage: vec![(vec![], vec![0; 5_000_000]).into()],
+            name: Default::default(),
+            id: Default::default(),
+            fork_id: Default::default(),
             extensions: Default::default(),
             properties: Default::default(),
         };
@@ -159,6 +162,9 @@ fn deregister_para_id_removes_genesis_data() {
         System::set_block_number(1);
         let genesis_data = ContainerChainGenesisData {
             storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+            name: Default::default(),
+            id: Default::default(),
+            fork_id: Default::default(),
             extensions: Default::default(),
             properties: Default::default(),
         };
@@ -266,10 +272,13 @@ fn genesis_error_on_duplicate() {
 }
 
 #[test]
-#[should_panic = "genesis data for para_id 2 is too large: 5000020 bytes"]
+#[should_panic = "genesis data for para_id 2 is too large: 5000023 bytes"]
 fn genesis_error_genesis_data_size_too_big() {
     let genesis_data = ContainerChainGenesisData {
         storage: vec![(vec![], vec![0; 5_000_000]).into()],
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
         extensions: Default::default(),
         properties: Default::default(),
     };

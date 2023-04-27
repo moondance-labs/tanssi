@@ -285,11 +285,17 @@ impl TanssiCli {
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
     ) -> Result<(), String> {
-        let name = format!("ContainerChain {}", para_id);
-        let id = format!("container-chain-{}", para_id);
+        let name = String::from_utf8(genesis_data.name).map_err(|_e| format!("Invalid name"))?;
+        let id: String = String::from_utf8(genesis_data.id).map_err(|_e| format!("Invalid id"))?;
         let storage_raw: BTreeMap<_, _> =
             genesis_data.storage.into_iter().map(|x| x.into()).collect();
         let boot_nodes = vec![];
+        let telemetry_endpoints = None;
+        let protocol_id = Some(format!("container-chain-{}", para_id));
+        let fork_id = genesis_data
+            .fork_id
+            .map(|fork_id| String::from_utf8(fork_id).map_err(|_e| format!("Invalid fork_id")))
+            .transpose()?;
         // TODO: we can just derive Serialize for genesis_data.properties instead of this hack,
         // just ensure that the field names match
         let properties = Some(
@@ -326,10 +332,9 @@ impl TanssiCli {
                 storage_raw: storage_raw.clone(),
             },
             boot_nodes,
-            None,
-            // TODO: add to struct: protocol_id fork_id
-            Some("template-local"),
-            None,
+            telemetry_endpoints,
+            protocol_id.as_deref(),
+            fork_id.as_deref(),
             properties,
             // TODO: what to do with extensions? We are hardcoding the relay_chain and the para_id, any
             // other extensions are being ignored

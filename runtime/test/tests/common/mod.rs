@@ -242,6 +242,9 @@ pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
 pub fn empty_genesis_data() -> ContainerChainGenesisData {
     ContainerChainGenesisData {
         storage: Default::default(),
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
         extensions: Default::default(),
         properties: Default::default(),
     }

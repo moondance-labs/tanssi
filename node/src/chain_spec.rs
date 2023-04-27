@@ -214,7 +214,7 @@ pub fn local_testnet_config(para_id: ParaId, container_chains: Vec<String>) -> C
         // Telemetry
         None,
         // Protocol ID
-        Some("template-local"),
+        Some("orchestrator"),
         // Fork ID
         None,
         // Properties
@@ -300,6 +300,9 @@ fn build_para_genesis_data(path: &str) -> Result<(ParaId, ContainerChainGenesisD
         serde_json::from_str(&raw_chainspec_str).map_err(|e| e.to_string())?;
     // TODO: this bound checking may panic
     let para_id: u32 = u32::try_from(raw_chainspec_json["para_id"].as_u64().unwrap()).unwrap();
+    let name: String = raw_chainspec_json["name"].as_str().unwrap().to_owned();
+    let id: String = raw_chainspec_json["id"].as_str().unwrap().to_owned();
+    let fork_id: Option<String> = raw_chainspec_json["fork_id"].as_str().map(|x| x.to_owned());
     let genesis_data = &raw_chainspec_json["genesis"]["raw"]["top"];
     let genesis_data_map = genesis_data
         .as_object()
@@ -374,6 +377,9 @@ fn build_para_genesis_data(path: &str) -> Result<(ParaId, ContainerChainGenesisD
         para_id.into(),
         ContainerChainGenesisData {
             storage: genesis_data_vec,
+            name: name.into(),
+            id: id.into(),
+            fork_id: fork_id.map(|x| x.into()),
             extensions: vec![],
             properties,
         },

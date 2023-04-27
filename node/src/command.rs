@@ -145,21 +145,36 @@ impl SubstrateCli for TanssiCli {
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
         // ContainerChain ChainSpec must be preloaded beforehand because we need to call async
-        // functions to generate it, and this function is not async
-        log::info!("TanssiCli load_spec {:?}", id);
+        // functions to generate it, and this function is not async.
+        // The id has been created using format!("container-chain-{}", para_id), so here we need
+        // to reverse that.
+        let para_id = id
+            .strip_prefix("container-chain-")
+            .and_then(|s| {
+                let id: u32 = s.parse().ok()?;
+
+                // `.parse()` ignores leading zeros, so convert the id back to string to check
+                // if we get the same string, this way we ensure a 1:1 mapping
+                if id.to_string() == s {
+                    Some(id)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| format!("load_spec called with invalid id: {:?}", id))?;
 
         match &self.preloaded_chain_spec {
             Some(spec) => {
-                // TODO: this check forces the chain id to be "container-chain-2000"
-                // We could also try to get the para id from extensions
-                if spec.id() != id {
-                    Err(format!(
-                        "Expected ChainSpec for {}, found ChainSpec for {} instead",
-                        id,
-                        spec.id()
-                    ))
-                } else {
+                let spec_para_id = crate::chain_spec::Extensions::try_get(&**spec)
+                    .map(|extension| extension.para_id);
+
+                if spec_para_id == Some(para_id) {
                     Ok(spec.cloned_box())
+                } else {
+                    Err(format!(
+                        "Expected ChainSpec for id {}, found ChainSpec for id {:?} instead",
+                        para_id, spec_para_id
+                    ))
                 }
             }
             None => Err(format!("ChainSpec for {} not found", id)),

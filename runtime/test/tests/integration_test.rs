@@ -148,6 +148,9 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
     let genesis_data_1001 = empty_genesis_data();
     let genesis_data_1002 = ContainerChainGenesisData {
         storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
         extensions: vec![],
         properties: Default::default(),
     };
@@ -193,6 +196,9 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
 
             let genesis_data_1003 = ContainerChainGenesisData {
                 storage: vec![(b"key3".to_vec(), b"value3".to_vec()).into()],
+                name: Default::default(),
+                id: Default::default(),
+                fork_id: Default::default(),
                 extensions: vec![],
                 properties: Default::default(),
             };
