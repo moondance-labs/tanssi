@@ -130,13 +130,11 @@ jobs:
 
       - name: Retrieve polkadot release
         run: |
-          POLKADOT_RELEASE=${{ needs.set-tags.outputs.polkadot_relase }}
+          POLKADOT_RELEASE=${{ needs.set-tags.outputs.polkadot_release }}
       
       - name: Retrieve polkadot binary from docker
         run: |
           DOCKER_TAG="parity/polkadot:$POLKADOT_RELEASE"
-          echo $DOCKER_TAG
-          echo $POLKADOT_RELEASE
           docker rm -f dummy 2> /dev/null | true
           docker create -ti --name dummy $DOCKER_TAG bash
           docker cp dummy:/usr/bin/polkadot test/tmp/polkadot
