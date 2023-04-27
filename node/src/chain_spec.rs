@@ -17,41 +17,40 @@ use {
 pub type ChainSpec = sc_service::GenericChainSpec<test_runtime::GenesisConfig, Extensions>;
 
 /// Specialized `ChainSpec` for container chains that only allows raw genesis format.
-pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfigDummy, Extensions>;
+pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfig, Extensions>;
 
-/// Dummy type that implements the traits needed to be used as a "GenesisConfig",
-/// but whose implementation panics because we never expect it to be used.
+/// Helper type that implements the traits needed to be used as a "GenesisConfig",
+/// but whose implementation panics because we only expect it to be used with raw ChainSpecs,
+/// so it will never be serialized or deserialized.
 /// This is because container chains must use raw chain spec files where the "genesis"
 /// field only has one field: "raw".
-pub struct RawGenesisConfigDummy {
-    pub map: BTreeMap<Vec<u8>, Vec<u8>>,
+pub struct RawGenesisConfig {
+    pub storage_raw: BTreeMap<Vec<u8>, Vec<u8>>,
 }
 
-impl Serialize for RawGenesisConfigDummy {
+impl Serialize for RawGenesisConfig {
     fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        panic!("This type should never be serialized")
+        panic!("RawGenesisConfigDummy should never be serialized")
     }
 }
 
-impl<'de> Deserialize<'de> for RawGenesisConfigDummy {
+impl<'de> Deserialize<'de> for RawGenesisConfig {
     fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        // TODO: turn this into a user-friendly error, because this is called
-        // when passing a non-raw chain spec json file to the tanssi client
-        panic!("This type should never be deserialized")
+        panic!("Attempted to read a non-raw ContainerChain ChainSpec.\nHelp: add `--raw` flag to `build-spec` command to generate a raw chain spec")
     }
 }
 
-impl sp_runtime::BuildStorage for RawGenesisConfigDummy {
+impl sp_runtime::BuildStorage for RawGenesisConfig {
     fn assimilate_storage(&self, storage: &mut sp_core::storage::Storage) -> Result<(), String> {
         storage
             .top
-            .extend(self.map.iter().map(|(k, v)| (k.clone(), v.clone())));
+            .extend(self.storage_raw.iter().map(|(k, v)| (k.clone(), v.clone())));
 
         Ok(())
     }

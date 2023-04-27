@@ -1,5 +1,5 @@
 use {
-    crate::{chain_spec::RawGenesisConfigDummy, service::Sealing},
+    crate::{chain_spec::RawGenesisConfig, service::Sealing},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::{collections::BTreeMap, path::PathBuf},
@@ -287,7 +287,8 @@ impl TanssiCli {
     ) -> Result<(), String> {
         let name = format!("ContainerChain {}", para_id);
         let id = format!("container-chain-{}", para_id);
-        let map: BTreeMap<_, _> = genesis_data.storage.into_iter().map(|x| x.into()).collect();
+        let storage_raw: BTreeMap<_, _> =
+            genesis_data.storage.into_iter().map(|x| x.into()).collect();
         let boot_nodes = vec![];
         // TODO: we can just derive Serialize for genesis_data.properties instead of this hack,
         // just ensure that the field names match
@@ -321,7 +322,9 @@ impl TanssiCli {
             &name,
             &id,
             chain_type,
-            move || RawGenesisConfigDummy { map: map.clone() },
+            move || RawGenesisConfig {
+                storage_raw: storage_raw.clone(),
+            },
             boot_nodes,
             None,
             // TODO: add to struct: protocol_id fork_id
