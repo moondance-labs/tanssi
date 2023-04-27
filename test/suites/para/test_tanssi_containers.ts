@@ -1,4 +1,5 @@
 import { expect, describeSuite, beforeAll, ApiPromise } from "@moonwall/cli";
+import { BN } from "@polkadot/util";
 describeSuite({
   id: "ZTN",
   title: "Zombie Tanssi Test",
@@ -56,8 +57,7 @@ describeSuite({
         expect(blockNum).to.be.greaterThan(0);
       },
     });
-
-   
+ 
     it({
       id: "T04",
       title: "Test assignation is correct",
@@ -84,5 +84,69 @@ describeSuite({
       },
     });
 
+    it({
+      id: "T05",
+      title: "Test container chain 2000 assignation is correct",
+      test: async function () {
+        let assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        let paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
+
+        let containerChainCollators = assignment.containerChains.toHuman()[paraId];
+
+        let writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toHuman();
+
+        for (let i = 0; i < containerChainCollators.length; i++) {
+          expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);
+        }
+      },
+    });
+
+    it({
+      id: "T06",
+      title: "Test container chain 2001 assignation is correct",
+      test: async function () {
+        let assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        let paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
+
+        let containerChainCollators = assignment.containerChains.toHuman()[paraId];
+
+        let writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toHuman();
+
+        for (let i = 0; i < containerChainCollators.length; i++) {
+          expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);
+        }
+      },
+    });
+
+    // Uncomment when waitBLock works
+    /*it({
+      id: "T07",
+      title: "Test author noting is correct for both containers",
+      test: async function () {
+        let assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        let paraId2000 = (await container2000Api.query.parachainInfo.parachainId());
+        let paraId2001 = (await container2001Api.query.parachainInfo.parachainId());
+
+        let containerChainCollators2000 = assignment.containerChains.toHuman()[paraId2000.toString()];
+        let containerChainCollators2001 = assignment.containerChains.toHuman()[paraId2001.toString()];
+
+        let author2000 = await paraApi.query.authorNoting.latestAuthor(paraId2000);
+
+        context.waitBlock(3, "Tanssi")
+
+        console.log("author", author2000.unwrap().toString())
+
+        expect(containerChainCollators2000.includes(author2000.toString())).to.be.true;
+
+        let author2001 = await paraApi.query.authorNoting.latestAuthor(paraId2001);
+        expect(containerChainCollators2001.includes(author2001.toString())).to.be.true;
+      },
+    });*/
+
   },
 });
+
+
+function delay(ms: number) {
+  return new Promise( resolve => setTimeout(resolve, ms) );
+}
