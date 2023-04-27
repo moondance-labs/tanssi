@@ -4,7 +4,7 @@ on: ["pull_request"]
 
 jobs:
   set-tags:
-  runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
     outputs:
       polkadot_release: ${{ steps.get-sha.outputs.polkadot_release }}
     steps:
@@ -12,11 +12,14 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.inputs.sha }}
-      - name: Get polkadot release
+      - name: Get polkadot release tag
+        id: get-polkadot-release-tag
         run:
           echo "polkadot_commit=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | \
           head -1 | sed 's/.*release-//#' )"  | sed 's/#.*//' >> $GITHUB_OUTPUT
-      - name: Display variable
+      - name: Display variables
+        run:
+          echo sha: ${{ steps.get_polkadot_release_tag.outputs.polkadot_release }}
   ####### Building and Testing binaries #######
   build:
     runs-on: self-hosted
