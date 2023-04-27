@@ -18,8 +18,8 @@ jobs:
           echo "polkadot_commit=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | \
           head -1 | sed 's/.*release-//#' )"  | sed 's/#.*//' >> $GITHUB_OUTPUT
       - name: Display variables
-        run:
-          echo sha: ${{ steps.get_polkadot_release_tag.outputs.polkadot_release }}
+        run: |
+          echo polkadot_release: ${{ steps.get_polkadot_release_tag.outputs.polkadot_release }}
   ####### Building and Testing binaries #######
   build:
     runs-on: self-hosted
