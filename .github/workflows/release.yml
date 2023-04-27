@@ -21,7 +21,7 @@ jobs:
           echo "polkadot_release=$(echo $branch | sed 's/#.*//')" >> $GITHUB_OUTPUT
       - name: Display variables
         run: |
-          echo polkadot_release: ${{ steps.get_polkadot_release_tag.outputs.polkadot_release }}
+          echo polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
   ####### Building and Testing binaries #######
   build:
     runs-on: self-hosted
