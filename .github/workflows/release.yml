@@ -6,7 +6,7 @@ jobs:
   set-tags:
     runs-on: ubuntu-latest
     outputs:
-      polkadot_release: ${{ steps.get-sha.outputs.polkadot_release }}
+      polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
