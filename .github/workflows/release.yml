@@ -128,12 +128,10 @@ jobs:
           name: binaries
           path: test/tmp
 
-      - name: Retrieve polkadot release
-        run: |
-          POLKADOT_RELEASE=${{ needs.set-tags.outputs.polkadot_release }}
       
       - name: Retrieve polkadot binary from docker
         run: |
+          POLKADOT_RELEASE=${{ needs.set-tags.outputs.polkadot_release }}
           DOCKER_TAG="parity/polkadot:$POLKADOT_RELEASE"
           echo $DOCKER_TAG
           echo $POLKADOT_RELEASE
