@@ -16,8 +16,6 @@ jobs:
         id: get-polkadot-release-tag
         run: |
           branch=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1 | sed 's/.*release-//#')
-          echo "branch is $branch"
-          echo "polkadot_release=$(echo $branch | sed 's/#.*//')"
           echo "polkadot_release=$(echo $branch | sed 's/#.*//')" >> $GITHUB_OUTPUT
       - name: Display variables
         run: |
@@ -105,7 +103,7 @@ jobs:
 
   zombienet-tests:
     runs-on: ubuntu-latest
-    needs: ["build"]
+    needs: ["set-tags", "build"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -129,10 +127,14 @@ jobs:
         with:
           name: binaries
           path: test/tmp
+
+      - name: Retrieve polkadot release
+        run: |
+          POLKADOT_RELEASE=${{ needs.set-tags.outputs.polkadot_relase }}
       
       - name: Retrieve polkadot binary from docker
         run: |
-          DOCKER_TAG="parity/polkadot:latest"
+          DOCKER_TAG="parity/polkadot:$POLKADOT_RELEASE"
           docker rm -f dummy 2> /dev/null | true
           docker create -ti --name dummy $DOCKER_TAG bash
           docker cp dummy:/usr/bin/polkadot test/tmp/polkadot
