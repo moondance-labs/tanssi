@@ -17,6 +17,8 @@ jobs:
         run:
           echo "polkadot_release=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | \
           head -1 | sed 's/.*release-//#' )"  | sed 's/#.*//' >> $GITHUB_OUTPUT
+
+          echo $GITHUB_OUTPUT
       - name: Display variables
         run: |
           echo polkadot_release: ${{ steps.get_polkadot_release_tag.outputs.polkadot_release }}
