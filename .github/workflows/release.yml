@@ -17,7 +17,7 @@ jobs:
         run: |
           branch=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1 | sed 's/.*release-//#')
           echo "branch is $branch"
-          echo "polkadot_release=$(echo $branch | sed 's/#.*//')"
+          echo "polkadot_release=$(echo $branch | sed 's/#.*//')" >> $GITHUB_OUTPUT
       - name: Display variables
         run: |
           echo polkadot_release: ${{ steps.get_polkadot_release_tag.outputs.polkadot_release }}
