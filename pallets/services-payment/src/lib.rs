@@ -7,7 +7,8 @@
 
 use {
     cumulus_primitives_core::ParaId,
-    frame_support::{pallet_prelude::*, traits::Currency},
+    frame_support::{pallet_prelude::*, sp_runtime::Saturating, traits::Currency},
+    frame_system::pallet_prelude::*,
 };
 
 /*
@@ -29,11 +30,11 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// Handler for fees
-        type OnChargeForServices: OnChargeForServices<Self>;
-        /// Produce an AccountId unique to a given ParaId (such as through hashing)
-        type ParaIdToAccountId: ParaIdToAccountId<Self>;
+        type OnChargeForBlockCredit: OnChargeForBlockCredit<Self>;
         /// Currency type for fee payment
         type Currency: Currency<Self::AccountId>;
+        /// Provider of a block cost which can adjust from block to block
+        type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
     }
 
     #[pallet::error]
@@ -49,28 +50,56 @@ pub mod pallet {
     pub enum Event<T: Config> {
         FeePaid {
             para_id: ParaId,
-            para_account_id: T::AccountId,
+            payer: T::AccountId,
             fee: BalanceOf<T>, 
+            credits: u64,
         }
     }
 
-    #[pallet::call]
-    impl<T: Config> Pallet<T> {
-    }
+    #[pallet::storage]
+    #[pallet::getter(fn collator_commission)]
+    type BlockProductionCredits<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        ParaId,
+        u64,
+        OptionQuery
+    >;
 
-    impl<T: Config> Pallet<T> {
-        pub fn charge_fee_for_para(para_id: ParaId, fee: BalanceOf<T>) -> Result<(), Error<T>> {
-            let para_account_id = T::ParaIdToAccountId::derive_account_id(para_id);
-            T::OnChargeForServices::withdraw_fee(&para_account_id, &para_id, fee)?;
+    #[pallet::call]
+    impl<T: Config> Pallet<T> 
+    where
+        BalanceOf<T>: From<u64>,
+    {
+        #[pallet::call_index(0)]
+        #[pallet::weight(0)] // TODO
+        pub fn purchase_credits(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            credits: u64
+        ) -> DispatchResultWithPostInfo {
+            let account = ensure_signed(origin)?;
+
+            // get the current per-credit cost of a block
+            let (block_cost, weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
+            let total_fee = block_cost.saturating_mul(credits.into());
+            
+            T::OnChargeForBlockCredit::withdraw_fee(&para_id, credits, total_fee)?;
 
             Self::deposit_event(Event::<T>::FeePaid {
                 para_id,
-                para_account_id,
-                fee,
+                payer: account,
+                fee: total_fee,
+                credits,
             });
 
-            Ok(())
+            Ok(().into())
         }
+    }
+
+    impl<T: Config> Pallet<T> {
+        // TODO:
+        pub fn burn_credit_for_para(para_id: &ParaId) { }
     }
 }
 
@@ -80,18 +109,16 @@ pub type BalanceOf<T> =
 
 /// Handler for fee charging. This will be invoked when fees need to be deducted from the fee
 /// account for a given paraId.
-pub trait OnChargeForServices<T: Config> {
+pub trait OnChargeForBlockCredit<T: Config> {
     fn withdraw_fee(
-        para_account: &T::AccountId,
         para_id: &ParaId,
+        credits: u64,
         fee: BalanceOf<T>,
     ) -> Result<(), Error<T>>;
 }
 
-/// Produce an AccountId from the given ParaId. This should have the following properties:
-/// * deterministic (always result in the same output for the same input)
-/// * collision-resistant (no two ParaIds should produce the same AccountId with any significant likelihood)
-/// * cryptographically secure (it should not be feasible to guess a matching private key)
-pub trait ParaIdToAccountId<T: Config> {
-    fn derive_account_id(para_id: ParaId) -> T::AccountId;
+/// Returns the cost for a given block credit at the current time. This can be a complex operation,
+/// so it also returns the weight it consumes. (TODO: or just rely on benchmarking)
+pub trait ProvideBlockProductionCost<T: Config> {
+    fn block_cost(para_id: &ParaId) -> (BalanceOf<T>, Weight);
 }
