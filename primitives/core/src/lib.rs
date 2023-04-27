@@ -25,10 +25,4 @@ pub mod well_known_keys {
 
     pub const COLLATOR_ASSIGNMENT_INDEX: &[u8] =
         &hex_literal::hex!["4a97b7c32fd2bcd103026654b3408079170f16afec7d161bc6acec3964492a0c"];
-
-    pub const REGISTRAR_PARAS_INDEX: &[u8] =
-        &hex_literal::hex!["3fba98689ebed1138735e0e7a5a790ab6339d4183899cf4f5efccdad995b795c"];
-
-    pub const REGISTRAR_GENESIS_DATA_INDEX: &[u8] =
-        &hex_literal::hex!["3fba98689ebed1138735e0e7a5a790ab60a1667ddcfed59bae1ce824c935132e"];
 }
