@@ -24,7 +24,7 @@ test-runtime = { workspace = true, features = [ "std" ] }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 tp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 
-tc-tanssi-chain-interface = { workspace = true }
+tc-orchestrator-chain-interface = { workspace = true }
 
 # Substrate
 frame-benchmarking = { workspace = true }
@@ -91,4 +91,7 @@ runtime-benchmarks = [
 	"test-runtime/runtime-benchmarks",
 	"try-runtime-cli/try-runtime",
 ]
-try-runtime = [ "test-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
+try-runtime = [
+	"test-runtime/try-runtime",
+	"try-runtime-cli/try-runtime",
+ ]

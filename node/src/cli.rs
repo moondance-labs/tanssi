@@ -161,22 +161,22 @@ pub struct Cli {
     #[arg(long)]
     pub para_id: Option<u32>,
 
-    /// Relay chain arguments, optionally followed by "--" and Tanssi arguments
+    /// Relay chain arguments, optionally followed by "--" and orchestrator chain arguments
     #[arg(raw = true)]
     extra_args: Vec<String>,
 }
 
 impl Cli {
     pub fn relaychain_args(&self) -> &[String] {
-        let (relay_chain_args, _tanssi_args) = self.split_extra_args_at_first_dashdash();
+        let (relay_chain_args, _) = self.split_extra_args_at_first_dashdash();
 
         relay_chain_args
     }
 
-    pub fn tanssi_args(&self) -> &[String] {
-        let (_relay_chain_args, tanssi_args) = self.split_extra_args_at_first_dashdash();
+    pub fn container_chain_args(&self) -> &[String] {
+        let (_, container_chain_args) = self.split_extra_args_at_first_dashdash();
 
-        tanssi_args
+        container_chain_args
     }
 
     fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
@@ -224,10 +224,10 @@ impl RelayChainCli {
     }
 }
 
-/// The `run` command used to run a node.
+/// The `run` command used to run a container chain node.
 #[derive(Debug, clap::Parser)]
 #[group(skip)]
-pub struct TanssiRunCmd {
+pub struct ContainerChainRunCmd {
     /// The cumulus RunCmd inherits from sc_cli's
     #[command(flatten)]
     pub base: sc_cli::RunCmd,
@@ -244,22 +244,22 @@ pub struct TanssiRunCmd {
 }
 
 #[derive(Debug)]
-pub struct TanssiCli {
-    /// The actual Tanssi cli object.
-    pub base: TanssiRunCmd,
+pub struct ContainerChainCli {
+    /// The actual container chain cli object.
+    pub base: ContainerChainRunCmd,
 
-    /// Optional chain id that should be passed to Tanssi.
+    /// Optional chain id that should be passed to the container chain.
     pub chain_id: Option<String>,
 
-    /// The base path that should be used by Tanssi.
+    /// The base path that should be used by the container chain.
     pub base_path: Option<PathBuf>,
 }
 
-impl TanssiCli {
-    /// Parse the Tanssi CLI parameters using the para chain `Configuration`.
+impl ContainerChainCli {
+    /// Parse the container chain CLI parameters using the para chain `Configuration`.
     pub fn new<'a>(
         para_config: &sc_service::Configuration,
-        tanssi_args: impl Iterator<Item = &'a String>,
+        container_chain_args: impl Iterator<Item = &'a String>,
     ) -> Self {
         let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
         let chain_id = extension.map(|e| e.relay_chain.clone());
@@ -270,7 +270,7 @@ impl TanssiCli {
         Self {
             base_path,
             chain_id,
-            base: clap::Parser::parse_from(tanssi_args),
+            base: clap::Parser::parse_from(container_chain_args),
         }
     }
 }
