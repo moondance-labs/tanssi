@@ -15,6 +15,11 @@ jobs:
       - name: Get polkadot release tag
         id: get-polkadot-release-tag
         run: |
+          egrep -o '/polkadot.*#([^\"]*)' Cargo.lock
+          egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1
+          egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1 | sed 's/.*#//'
+          egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1 | sed 's/.*#//' |  cut -c1-8
+          echo "going to $GITHUB_OUTPUT"
           echo "polkadot_commit=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | \
           head -1 | sed 's/.*#//' |  cut -c1-8)" >> $GITHUB_OUTPUT
       - name: Display variables
