@@ -82,6 +82,23 @@ impl ParaHeaderSproofBuilder {
 
         (root, proof)
     }
+
+    pub fn relevant_keys(
+        self,
+    ) -> 
+        Vec<Vec<u8>>
+    {
+        let mut relevant_keys = Vec::new();
+        {
+            for item in self.items {
+                let para_key = item.para_id.twox_64_concat();
+                let key = [PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+
+                relevant_keys.push(key.clone());
+            }
+        }
+        relevant_keys
+    }
 }
 
 /// Builds a sproof (portmanteau of 'spoof' and 'proof') of the orchestrator chain state.
