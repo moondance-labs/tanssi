@@ -14,21 +14,13 @@
           {
             "name": "tanssi",
             "binPath": "../target/release/test-node",
-            "ports": { "wsPort": 34002 },
             "options": [
                 "--dev",
                 "--sealing=manual"
             ]
           }
         ]
-      },
-      "connections": [
-        {
-          "name": "Tanssi",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:34002"]
-        }
-      ]
+      }
     }
   ]
 }
