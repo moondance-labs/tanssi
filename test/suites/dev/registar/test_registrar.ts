@@ -24,9 +24,10 @@ describeSuite({
         test: async function () {
             const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
-            // These are registered in genesis
-            expect(parasRegistered[0].toBigInt()).to.be.eq(BigInt(2000));
-            expect(parasRegistered[1].toBigInt()).to.be.eq(BigInt(2001));
+            // The default genesis start empty
+            // TODO: this does not work
+            //expect(parasRegistered).to.be.eq([]);
+            expect(parasRegistered[0]).to.be.eq(undefined);
         },
       });
 
@@ -39,9 +40,19 @@ describeSuite({
         const currentSesssion = await polkadotJs.query.session.currentIndex();
         const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
         const expectedScheduledOnboarding = BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
+        const emptyGenesisData = () => {
+            // TODO: fill with default value for all the entries of ContainerChainGenesisData
+            let g = {
+              "id": "",
+              "name": "",
+            };
+            return g;
+        };
+        const containerChainGenesisData = emptyGenesisData();
 
-        const tx = polkadotJs.tx.registrar.register(2002);
-        await polkadotJs.tx.sudo.sudo(tx).signAndSend(alice);
+        const tx = polkadotJs.tx.registrar.register(2002, containerChainGenesisData);
+        let txRes1 = await polkadotJs.tx.sudo.sudo(tx).signAndSend(alice);
+        console.log(txRes1);
 
         await context.createBlock();
 
