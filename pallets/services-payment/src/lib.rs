@@ -35,11 +35,13 @@ pub mod pallet {
         type Currency: Currency<Self::AccountId>;
         /// Provider of a block cost which can adjust from block to block
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
+        /// The maximum number of credits that can be accumulated
+        type MaxCreditsStored: Get<u64>;
     }
 
     #[pallet::error]
     pub enum Error<T> {
-        NoPaymentMade,
+        TooManyCredits,
     }
 
     #[pallet::pallet]
@@ -48,11 +50,12 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        FeePaid {
+        CreditsPurchased {
             para_id: ParaId,
             payer: T::AccountId,
             fee: BalanceOf<T>, 
-            credits: u64,
+            credits_purchased: u64,
+            credits_owned: u64,
         }
     }
 
@@ -80,17 +83,27 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
+            let existing_credits = BlockProductionCredits::<T>::get(para_id).unwrap_or(0u64);
+            let updated_credits = existing_credits.saturating_add(credits);
+            ensure!(
+                updated_credits <= T::MaxCreditsStored::get(),
+                Error::<T>::TooManyCredits,
+            );
+
             // get the current per-credit cost of a block
             let (block_cost, weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
             let total_fee = block_cost.saturating_mul(credits.into());
             
             T::OnChargeForBlockCredit::withdraw_fee(&para_id, credits, total_fee)?;
 
-            Self::deposit_event(Event::<T>::FeePaid {
+            BlockProductionCredits::<T>::insert(para_id, updated_credits);
+
+            Self::deposit_event(Event::<T>::CreditsPurchased {
                 para_id,
                 payer: account,
                 fee: total_fee,
-                credits,
+                credits_purchased: credits,
+                credits_owned: updated_credits,
             });
 
             Ok(().into())
