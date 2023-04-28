@@ -12,10 +12,10 @@ describeSuite({
 
     beforeAll(async () => {
       
-      paraApi = context.polkadotJs({ apiName: "Tanssi", type: "polkadotJs" });
-      relayApi = context.polkadotJs({ apiName: "Relay", type: "polkadotJs" });
-      container2000Api = context.polkadotJs({ apiName: "Container2000", type: "polkadotJs" });
-      container2001Api = context.polkadotJs({ apiName: "Container2001", type: "polkadotJs" });
+      paraApi = context.polkadotJs({ apiName: "Tanssi" });
+      relayApi = context.polkadotJs({ apiName: "Relay" });
+      container2000Api = context.polkadotJs({ apiName: "Container2000" });
+      container2001Api = context.polkadotJs({ apiName: "Container2001" });
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
       expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
@@ -88,12 +88,12 @@ describeSuite({
       id: "T05",
       title: "Test container chain 2000 assignation is correct",
       test: async function () {
-        let assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
-        let paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
+        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
 
-        let containerChainCollators = assignment.containerChains.toHuman()[paraId];
+        const containerChainCollators = assignment.containerChains.toHuman()[paraId];
 
-        let writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toHuman();
+        const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toHuman();
 
         for (let i = 0; i < containerChainCollators.length; i++) {
           expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);
@@ -105,12 +105,12 @@ describeSuite({
       id: "T06",
       title: "Test container chain 2001 assignation is correct",
       test: async function () {
-        let assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
-        let paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
+        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
 
-        let containerChainCollators = assignment.containerChains.toHuman()[paraId];
+        const containerChainCollators = assignment.containerChains.toHuman()[paraId];
 
-        let writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toHuman();
+        const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toHuman();
 
         for (let i = 0; i < containerChainCollators.length; i++) {
           expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);

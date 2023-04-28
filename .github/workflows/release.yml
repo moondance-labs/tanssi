@@ -84,7 +84,7 @@ jobs:
       - name: Node  
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 18.x
           cache: "pnpm"
           cache-dependency-path: test/pnpm-lock.yaml
 
@@ -118,7 +118,7 @@ jobs:
       - name: Node  
         uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 18.x
           cache: "pnpm"
           cache-dependency-path: test/pnpm-lock.yaml
 
