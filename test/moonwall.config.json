@@ -20,14 +20,7 @@
             ]
           }
         ]
-      },
-      "connections": [
-        {
-          "name": "Tanssi",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:34002"]
-        }
-      ]
+      }
     },
     {
       "name": "zombie_tanssi_ci",
