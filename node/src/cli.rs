@@ -298,8 +298,6 @@ impl ContainerChainCli {
             .fork_id
             .map(|fork_id| String::from_utf8(fork_id).map_err(|_e| format!("Invalid fork_id")))
             .transpose()?;
-        // TODO: we can just derive Serialize for genesis_data.properties instead of this hack,
-        // just ensure that the field names match
         let properties = Some(
             properties_to_map(&genesis_data.properties)
                 .map_err(|e| format!("Invalid properties: {}", e))?,
