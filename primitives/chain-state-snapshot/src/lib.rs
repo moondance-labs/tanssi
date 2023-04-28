@@ -78,10 +78,13 @@ impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
         relay_parent_storage_root: Block::Hash,
         proof: StorageProof,
     ) -> Result<Self, ReadEntryErr> {
-        let db = proof.clone().into_memory_db::<HashFor<Block>>();
+        // Retrieve whether the proof is empty
+        let proof_empty = proof.is_empty();
+
+        let db = proof.into_memory_db::<HashFor<Block>>();
         // If the proof is empty we should not compare against any root, but rather, expect that the pallet
         // will dot he job when looking for certain keys
-        if !db.contains(&relay_parent_storage_root, EMPTY_PREFIX) && !proof.is_empty() {
+        if !db.contains(&relay_parent_storage_root, EMPTY_PREFIX) && !proof_empty {
             return Err(ReadEntryErr::RootMismatch);
         }
         let trie_backend = TrieBackendBuilder::new(db, relay_parent_storage_root).build();
