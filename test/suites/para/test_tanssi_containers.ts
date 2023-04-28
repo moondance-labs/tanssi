@@ -119,9 +119,10 @@ describeSuite({
     });
 
     // Uncomment when waitBLock works
-    /*it({
+    it({
       id: "T07",
       title: "Test author noting is correct for both containers",
+      timeout: 60000,
       test: async function () {
         let assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
         let paraId2000 = (await container2000Api.query.parachainInfo.parachainId());
@@ -130,18 +131,15 @@ describeSuite({
         let containerChainCollators2000 = assignment.containerChains.toHuman()[paraId2000.toString()];
         let containerChainCollators2001 = assignment.containerChains.toHuman()[paraId2001.toString()];
 
+
+        await context.waitBlock(3, "Tanssi");
         let author2000 = await paraApi.query.authorNoting.latestAuthor(paraId2000);
-
-        context.waitBlock(3, "Tanssi")
-
-        console.log("author", author2000.unwrap().toString())
+        let author2001 = await paraApi.query.authorNoting.latestAuthor(paraId2001);
 
         expect(containerChainCollators2000.includes(author2000.toString())).to.be.true;
-
-        let author2001 = await paraApi.query.authorNoting.latestAuthor(paraId2001);
         expect(containerChainCollators2001.includes(author2001.toString())).to.be.true;
       },
-    });*/
+    });
 
   },
 });
