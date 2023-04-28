@@ -200,7 +200,7 @@ fn test_should_panic_with_invalid_proof_state() {
             }
             _ => unreachable!(),
         })
-        // Insert an proof root, not matching the proof generated
+        // Insert an proof, not matching the root generated
         .with_overriden_state_proof(relay_chain_state)
         .add(1, || {
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
@@ -260,7 +260,7 @@ fn test_should_panic_with_proof_for_not_including_required_para() {
     // re-generate the proof only for para 1002
     let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
 
-    // We nnow have a state containing 1001 and 1002 paras, but only 1002 is passed in the proof (when 1001 is required)
+    // We now have a state containing 1001 and 1002 paras, but only 1002 is passed in the proof (when 1001 is required)
     BlockTests::new()
         .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
             1 => {
