@@ -1,5 +1,5 @@
 [package]
-name = "tc-tanssi-chain-interface"
+name = "tc-orchestrator-chain-interface"
 authors = [ "Anonymous" ]
 edition = "2021"
 version = "0.1.0"

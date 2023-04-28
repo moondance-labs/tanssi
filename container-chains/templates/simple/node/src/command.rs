@@ -1,4 +1,9 @@
 use {
+    crate::{
+        chain_spec,
+        cli::{Cli, RelayChainCli, Subcommand},
+        service::{new_partial, ParachainNativeExecutor},
+    },
     container_chain_template_simple_runtime::Block,
     cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
@@ -13,12 +18,6 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
-};
-
-use crate::{
-    chain_spec,
-    cli::{Cli, RelayChainCli, Subcommand},
-    service::{new_partial, ParachainNativeExecutor},
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {

@@ -1,7 +1,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, RelayChainCli, Subcommand, TanssiCli},
+        cli::{Cli, ContainerChainCli, RelayChainCli, Subcommand},
         service::{new_partial, IdentifyVariant, ParachainNativeExecutor},
     },
     cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
@@ -111,7 +111,7 @@ impl SubstrateCli for RelayChainCli {
     }
 }
 
-impl SubstrateCli for TanssiCli {
+impl SubstrateCli for ContainerChainCli {
     fn impl_name() -> String {
         "Container chain".into()
     }
@@ -123,10 +123,10 @@ impl SubstrateCli for TanssiCli {
     fn description() -> String {
         format!(
             "Container chain\n\nThe command-line arguments provided first will be \
-		passed to the tanssi node, while the arguments provided after -- will be passed \
+		passed to the orchestrator chain node, while the arguments provided after -- will be passed \
 		to the container chain node, and the arguments provided after another -- will be passed \
 		to the relay chain node\n\n\
-		{} [tanssi-args] -- [container_chain-args] -- [relay_chain-args] -- ",
+		{} [orchestrator-args] -- [container-chain-args] -- [relay-chain-args] -- ",
             Self::executable_name()
         )
     }
@@ -457,20 +457,20 @@ pub fn run() -> Result<()> {
 					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 
-				let mut tanssi_config = None;
-				if !cli.tanssi_args().is_empty() {
-					let tanssi_cli = TanssiCli::new(
+				let mut container_chain_config = None;
+				if !cli.container_chain_args().is_empty() {
+					let container_chain_cli = ContainerChainCli::new(
 						&config,
-						[TanssiCli::executable_name()].iter().chain(cli.tanssi_args().iter()),
+						[ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
 					);
 					let tokio_handle = config.tokio_handle.clone();
-					tanssi_config = Some((tanssi_cli, tokio_handle));
+					container_chain_config = Some((container_chain_cli, tokio_handle));
 				}
 
 				crate::service::start_parachain_node(
 					config,
 					polkadot_config,
-                    tanssi_config,
+                    container_chain_config,
 					collator_options,
 					id,
 					hwbench,
@@ -626,7 +626,7 @@ impl CliConfiguration<Self> for RelayChainCli {
     }
 }
 
-impl DefaultConfigurationValues for TanssiCli {
+impl DefaultConfigurationValues for ContainerChainCli {
     fn p2p_listen_port() -> u16 {
         17334
     }
@@ -644,7 +644,7 @@ impl DefaultConfigurationValues for TanssiCli {
     }
 }
 
-impl CliConfiguration<Self> for TanssiCli {
+impl CliConfiguration<Self> for ContainerChainCli {
     fn shared_params(&self) -> &SharedParams {
         self.base.base.shared_params()
     }
