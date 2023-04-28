@@ -200,7 +200,7 @@ fn test_should_panic_with_invalid_proof_state() {
             }
             _ => unreachable!(),
         })
-        // Insert an proof, not matching the root generated
+        // Insert a proof, not matching the root generated
         .with_overriden_state_proof(relay_chain_state)
         .add(1, || {
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
