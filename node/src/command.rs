@@ -1,7 +1,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, RelayChainCli, Subcommand, TanssiCli},
+        cli::{Cli, ContainerChainCli, RelayChainCli, Subcommand},
         service::{new_partial, IdentifyVariant, ParachainNativeExecutor},
     },
     cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
@@ -111,7 +111,7 @@ impl SubstrateCli for RelayChainCli {
     }
 }
 
-impl SubstrateCli for TanssiCli {
+impl SubstrateCli for ContainerChainCli {
     fn impl_name() -> String {
         "Container chain".into()
     }
@@ -123,10 +123,10 @@ impl SubstrateCli for TanssiCli {
     fn description() -> String {
         format!(
             "Container chain\n\nThe command-line arguments provided first will be \
-		passed to the tanssi node, while the arguments provided after -- will be passed \
+		passed to the orchestrator chain node, while the arguments provided after -- will be passed \
 		to the container chain node, and the arguments provided after another -- will be passed \
 		to the relay chain node\n\n\
-		{} [tanssi-args] -- [container_chain-args] -- [relay_chain-args] -- ",
+		{} [orchestrator-args] -- [container-chain-args] -- [relay-chain-args] -- ",
             Self::executable_name()
         )
     }
@@ -417,26 +417,26 @@ pub fn run() -> Result<()> {
 					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 
-				let mut tanssi_config = None;
-				if !cli.tanssi_args().is_empty() {
-					let tanssi_cli = TanssiCli::new(
+				let mut orchestrator_config = None;
+				if !cli.container_chain_args().is_empty() {
+					let orchestrator_cli = ContainerChainCli::new(
 						&config,
-						[TanssiCli::executable_name()].iter().chain(cli.tanssi_args().iter()),
+						[ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
 					);
 					let tokio_handle = config.tokio_handle.clone();
-					let tanssi_cli_config =
-						SubstrateCli::create_configuration(&tanssi_cli, &tanssi_cli, tokio_handle)
-							.map_err(|err| format!("Tanssi argument error: {}", err))?;
-					let tanssi_para_id = chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
+					let config =
+						SubstrateCli::create_configuration(&orchestrator_cli, &orchestrator_cli, tokio_handle)
+							.map_err(|err| format!("Orchestrator chain argument error: {}", err))?;
+					let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
 						.map(|e| e.para_id)
 						.ok_or_else(|| "Could not find parachain extension in chain-spec.")?;
-					tanssi_config = Some((tanssi_cli_config, ParaId::from(tanssi_para_id)));
+					orchestrator_config = Some((config, ParaId::from(para_id)));
 				}
 
 				crate::service::start_parachain_node(
 					config,
 					polkadot_config,
-                    tanssi_config,
+                    orchestrator_config,
 					collator_options,
 					id,
 					hwbench,
@@ -592,7 +592,7 @@ impl CliConfiguration<Self> for RelayChainCli {
     }
 }
 
-impl DefaultConfigurationValues for TanssiCli {
+impl DefaultConfigurationValues for ContainerChainCli {
     fn p2p_listen_port() -> u16 {
         17334
     }
@@ -610,7 +610,7 @@ impl DefaultConfigurationValues for TanssiCli {
     }
 }
 
-impl CliConfiguration<Self> for TanssiCli {
+impl CliConfiguration<Self> for ContainerChainCli {
     fn shared_params(&self) -> &SharedParams {
         self.base.base.shared_params()
     }

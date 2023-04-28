@@ -4,14 +4,18 @@ use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion},
     cumulus_client_consensus_common::{
-        ParachainBlockImport as TParachainBlockImport, ParachainConsensus,
+        ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
+        ParachainConsensus,
     },
     cumulus_client_network::BlockAnnounceValidator,
     cumulus_client_service::{
         build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
         StartCollatorParams, StartFullNodeParams,
     },
-    cumulus_primitives_core::{relay_chain::CollatorPair, ParaId},
+    cumulus_primitives_core::{
+        relay_chain::{CollatorPair, Hash as PHash},
+        ParaId,
+    },
     cumulus_primitives_parachain_inherent::{
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
@@ -20,8 +24,9 @@ use {
     futures::StreamExt,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
-    sc_client_api::HeaderBackend,
-    sc_consensus::ImportQueue,
+    polkadot_service::Handle,
+    sc_client_api::{AuxStore, Backend, BlockchainEvents, HeaderBackend, UsageProvider},
+    sc_consensus::{BlockImport, ImportQueue},
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
@@ -30,9 +35,15 @@ use {
         TFullClient, TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
+    sp_api::StorageProof,
+    sp_consensus::SyncOracle,
     sp_keystore::SyncCryptoStorePtr,
-    std::{sync::Arc, time::Duration},
+    sp_state_machine::{Backend as StateBackend, StorageValue},
+    std::{str::FromStr, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
+    tc_orchestrator_chain_interface::{
+        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
+    },
     test_runtime::{opaque::Block, AccountId, RuntimeApi},
 };
 
@@ -60,7 +71,7 @@ type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 
 type ParachainBackend = TFullBackend<Block>;
 
-type DevParachainBlockImport = TanssiParachainBlockImport<Arc<ParachainClient>>;
+type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
 
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
 
@@ -244,16 +255,16 @@ pub fn new_partial_dev(
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
-#[sc_tracing::logging::prefix_logs_with("Tanssi")]
+#[sc_tracing::logging::prefix_logs_with("Orchestrator")]
 async fn start_node_impl(
-    tanssi_config: Configuration,
+    orchestrator_config: Configuration,
     polkadot_config: Configuration,
     container_chain_config: Option<(Configuration, ParaId)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
-    let parachain_config = prepare_node_config(tanssi_config);
+    let parachain_config = prepare_node_config(orchestrator_config);
 
     let params = new_partial(&parachain_config)?;
     let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
@@ -367,8 +378,8 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
-    let tanssi_chain_interface_builder = TanssiChainInProcessInterfaceBuilder {
-        tanssi_client: client.clone(),
+    let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
+        client: client.clone(),
         backend: backend.clone(),
         sync_oracle: sync_service.clone(),
         overseer_handle: overseer_handle.clone(),
@@ -377,11 +388,11 @@ async fn start_node_impl(
     let mut container_collator = false;
     if let Some((container_chain_config, container_chain_para_id)) = container_chain_config {
         container_collator = true;
-        // Start tanssi node
-        let (tanssi_task_manager, _tanssi_client) = start_node_impl_container(
+        // Start orchestrator node
+        let (node_task_manager, _) = start_node_impl_container(
             container_chain_config,
             relay_chain_interface.clone(),
-            tanssi_chain_interface_builder.build(),
+            orchestrator_chain_interface_builder.build(),
             collator_key.clone(),
             &params.keystore_container,
             container_chain_para_id,
@@ -390,7 +401,7 @@ async fn start_node_impl(
         )
         .await?;
 
-        task_manager.add_child(tanssi_task_manager);
+        task_manager.add_child(node_task_manager);
     }
 
     // TODO: Investigate why CollateOn cannot be sent for two chains
@@ -454,7 +465,7 @@ async fn start_node_impl(
 async fn start_node_impl_container(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    orchestrator_chain_interface: Arc<dyn TanssiChainInterface>,
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     collator_key: Option<CollatorPair>,
     collator_keystore_container: &KeystoreContainer,
     para_id: ParaId,
@@ -657,7 +668,7 @@ fn build_consensus_container(
     telemetry: Option<TelemetryHandle>,
     task_manager: &TaskManager,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    orchestrator_chain_interface: Arc<dyn TanssiChainInterface>,
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: SyncCryptoStorePtr,
@@ -856,7 +867,7 @@ fn build_consensus_orchestrator(
 pub async fn start_parachain_node(
     parachain_config: Configuration,
     polkadot_config: Configuration,
-    tanssi_config: Option<(Configuration, ParaId)>,
+    orchestrator_config: Option<(Configuration, ParaId)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
@@ -864,7 +875,7 @@ pub async fn start_parachain_node(
     start_node_impl(
         parachain_config,
         polkadot_config,
-        tanssi_config,
+        orchestrator_config,
         collator_options,
         para_id,
         hwbench,
@@ -1115,7 +1126,7 @@ pub fn new_dev(
 }
 
 /// Can be called for a `Configuration` to check if it is a configuration for
-/// the `Tanssi` network.
+/// the orchestrator network.
 pub trait IdentifyVariant {
     /// Returns `true` if this is a configuration for a dev network.
     fn is_dev(&self) -> bool;
@@ -1138,8 +1149,6 @@ pub enum Sealing {
     Interval(u64),
 }
 
-use std::str::FromStr;
-
 impl FromStr for Sealing {
     type Err = String;
 
@@ -1157,35 +1166,23 @@ impl FromStr for Sealing {
     }
 }
 
-use {
-    cumulus_client_consensus_common::ParachainBlockImportMarker, sc_client_api::BlockchainEvents,
-    sc_consensus::BlockImport, sp_api::StorageProof,
-};
-
-/// Tanssi Parachain BLock IMport. We cannot use the one in cumulus as it overrides the best
+/// Orchestrator Parachain Block import. We cannot use the one in cumulus as it overrides the best
 /// chain selection rule
-pub struct TanssiParachainBlockImport<BI> {
+#[derive(Clone)]
+pub struct OrchestratorParachainBlockImport<BI> {
     inner: BI,
 }
 
-impl<BI> TanssiParachainBlockImport<BI> {
+impl<BI> OrchestratorParachainBlockImport<BI> {
     /// Create a new instance.
     pub fn new(inner: BI) -> Self {
         Self { inner }
     }
 }
 
-impl<I: Clone> Clone for TanssiParachainBlockImport<I> {
-    fn clone(&self) -> Self {
-        TanssiParachainBlockImport {
-            inner: self.inner.clone(),
-        }
-    }
-}
-
 /// We simply rely on the inner
 #[async_trait::async_trait]
-impl<BI> BlockImport<Block> for TanssiParachainBlockImport<BI>
+impl<BI> BlockImport<Block> for OrchestratorParachainBlockImport<BI>
 where
     BI: BlockImport<Block> + Send,
 {
@@ -1210,15 +1207,7 @@ where
 }
 
 /// But we need to implement the ParachainBlockImportMarker trait to fullfil
-impl<BI> ParachainBlockImportMarker for TanssiParachainBlockImport<BI> {}
-
-use {
-    cumulus_primitives_core::relay_chain::Hash as PHash,
-    polkadot_service::Handle,
-    sc_client_api::Backend,
-    sp_consensus::SyncOracle,
-    sp_state_machine::{Backend as StateBackend, StorageValue},
-};
+impl<BI> ParachainBlockImportMarker for OrchestratorParachainBlockImport<BI> {}
 
 /// Builder for a concrete relay chain interface, created from a full node. Builds
 /// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.
@@ -1226,17 +1215,17 @@ use {
 /// The builder takes a [`polkadot_client::Client`]
 /// that wraps a concrete instance. By using [`polkadot_client::ExecuteWithClient`]
 /// the builder gets access to this concrete instance and instantiates a [`RelayChainInProcessInterface`] with it.
-struct TanssiChainInProcessInterfaceBuilder {
-    tanssi_client: Arc<ParachainClient>,
+struct OrchestratorChainInProcessInterfaceBuilder {
+    client: Arc<ParachainClient>,
     backend: Arc<FullBackend>,
     sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
     overseer_handle: Handle,
 }
 
-impl TanssiChainInProcessInterfaceBuilder {
-    pub fn build(self) -> Arc<dyn TanssiChainInterface> {
-        Arc::new(TanssiChainInProcessInterface::new(
-            self.tanssi_client,
+impl OrchestratorChainInProcessInterfaceBuilder {
+    pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
+        Arc::new(OrchestratorChainInProcessInterface::new(
+            self.client,
             self.backend,
             self.sync_oracle,
             self.overseer_handle,
@@ -1244,20 +1233,15 @@ impl TanssiChainInProcessInterfaceBuilder {
     }
 }
 
-use {
-    sc_client_api::{AuxStore, UsageProvider},
-    tc_tanssi_chain_interface::{TanssiChainError, TanssiChainInterface, TanssiChainResult},
-};
-
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
-pub struct TanssiChainInProcessInterface<Client> {
+pub struct OrchestratorChainInProcessInterface<Client> {
     full_client: Arc<Client>,
     backend: Arc<FullBackend>,
     sync_oracle: Arc<dyn SyncOracle + Send + Sync>,
     overseer_handle: Handle,
 }
 
-impl<Client> TanssiChainInProcessInterface<Client> {
+impl<Client> OrchestratorChainInProcessInterface<Client> {
     /// Create a new instance of [`RelayChainInProcessInterface`]
     pub fn new(
         full_client: Arc<Client>,
@@ -1274,7 +1258,7 @@ impl<Client> TanssiChainInProcessInterface<Client> {
     }
 }
 
-impl<T> Clone for TanssiChainInProcessInterface<T> {
+impl<T> Clone for OrchestratorChainInProcessInterface<T> {
     fn clone(&self) -> Self {
         Self {
             full_client: self.full_client.clone(),
@@ -1286,7 +1270,7 @@ impl<T> Clone for TanssiChainInProcessInterface<T> {
 }
 
 #[async_trait::async_trait]
-impl<Client> TanssiChainInterface for TanssiChainInProcessInterface<Client>
+impl<Client> OrchestratorChainInterface for OrchestratorChainInProcessInterface<Client>
 where
     Client: ProvideRuntimeApi<Block>
         + BlockchainEvents<Block>
@@ -1297,25 +1281,27 @@ where
 {
     async fn get_storage_by_key(
         &self,
-        tanssi_parent: PHash,
+        orchestrator_parent: PHash,
         key: &[u8],
-    ) -> TanssiChainResult<Option<StorageValue>> {
-        let state = self.backend.state_at(tanssi_parent)?;
-        state.storage(key).map_err(TanssiChainError::GenericError)
+    ) -> OrchestratorChainResult<Option<StorageValue>> {
+        let state = self.backend.state_at(orchestrator_parent)?;
+        state
+            .storage(key)
+            .map_err(OrchestratorChainError::GenericError)
     }
 
     async fn prove_read(
         &self,
-        tanssi_parent: PHash,
+        orchestrator_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
-    ) -> TanssiChainResult<StorageProof> {
-        let state_backend = self.backend.state_at(tanssi_parent)?;
+    ) -> OrchestratorChainResult<StorageProof> {
+        let state_backend = self.backend.state_at(orchestrator_parent)?;
 
         sp_state_machine::prove_read(state_backend, relevant_keys)
-            .map_err(TanssiChainError::StateMachineError)
+            .map_err(OrchestratorChainError::StateMachineError)
     }
 
-    fn overseer_handle(&self) -> TanssiChainResult<Handle> {
+    fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
         Ok(self.overseer_handle.clone())
     }
 }
