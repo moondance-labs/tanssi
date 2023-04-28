@@ -118,23 +118,21 @@ describeSuite({
       },
     });
 
-    // Uncomment when waitBLock works
     it({
       id: "T07",
       title: "Test author noting is correct for both containers",
       timeout: 60000,
       test: async function () {
-        let assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
-        let paraId2000 = (await container2000Api.query.parachainInfo.parachainId());
-        let paraId2001 = (await container2001Api.query.parachainInfo.parachainId());
+        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        const paraId2000 = (await container2000Api.query.parachainInfo.parachainId());
+        const paraId2001 = (await container2001Api.query.parachainInfo.parachainId());
 
-        let containerChainCollators2000 = assignment.containerChains.toHuman()[paraId2000.toString()];
-        let containerChainCollators2001 = assignment.containerChains.toHuman()[paraId2001.toString()];
-
+        const containerChainCollators2000 = assignment.containerChains.toHuman()[paraId2000.toString()];
+        const containerChainCollators2001 = assignment.containerChains.toHuman()[paraId2001.toString()];
 
         await context.waitBlock(3, "Tanssi");
-        let author2000 = await paraApi.query.authorNoting.latestAuthor(paraId2000);
-        let author2001 = await paraApi.query.authorNoting.latestAuthor(paraId2001);
+        const author2000 = await paraApi.query.authorNoting.latestAuthor(paraId2000);
+        const author2001 = await paraApi.query.authorNoting.latestAuthor(paraId2001);
 
         expect(containerChainCollators2000.includes(author2000.toString())).to.be.true;
         expect(containerChainCollators2001.includes(author2001.toString())).to.be.true;
