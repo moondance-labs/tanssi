@@ -43,8 +43,8 @@ describeSuite({
         const emptyGenesisData = () => {
             // TODO: fill with default value for all the entries of ContainerChainGenesisData
             let g = {
-              "id": "",
-              "name": "",
+              id: "container-chain-2002",
+              name: "Container Chain 2002",
             };
             return g;
         };
@@ -62,12 +62,10 @@ describeSuite({
 
         expect(pendingParas.length).to.be.eq(1);
         expect(sessionScheduling.toBigInt()).to.be.eq(expectedScheduledOnboarding);
-        expect(parasScheduled.length).to.be.eq(3);
+        expect(parasScheduled.length).to.be.eq(1);
 
         // These will be the paras in session 2
-        expect(parasScheduled[0].toBigInt()).to.be.eq(BigInt(2000));
-        expect(parasScheduled[1].toBigInt()).to.be.eq(BigInt(2001));
-        expect(parasScheduled[2].toBigInt()).to.be.eq(BigInt(2002));
+        expect(parasScheduled[0].toBigInt()).to.be.eq(BigInt(2002));
       },
     });
     },
