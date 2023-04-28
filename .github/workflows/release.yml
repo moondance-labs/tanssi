@@ -92,6 +92,7 @@ jobs:
         with:
           node-version: 18.x
           cache: "pnpm"
+          cache-dependency-path: test/pnpm-lock.yaml
 
       - name: "Download binaries"
         uses: actions/download-artifact@v3.0.2
