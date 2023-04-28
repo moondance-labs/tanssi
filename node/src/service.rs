@@ -457,94 +457,86 @@ async fn start_node_impl(
                 let try_closure = || async {
                     let tanssi_chain_interface = orchestrator_chain_interface_builder.build();
 
-                    loop {
-                        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-                        // Preload chain spec files for testing.
-                        // In the future we will only load the one container chain that this node needs to sync,
-                        // and we will load it from Tanssi storage.
-                        // The preload must finish before calling create_configuration, so any async operations
-                        // need to be awaited.
+                    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+                    // Preload chain spec files for testing.
+                    // In the future we will only load the one container chain that this node needs to sync,
+                    // and we will load it from Tanssi storage.
+                    // The preload must finish before calling create_configuration, so any async operations
+                    // need to be awaited.
 
-                        // Read genesis data from tanssi
-                        let tanssi_block = tanssi_client.chain_info().best_hash;
-                        let tanssi_runtime_api = tanssi_client.runtime_api();
+                    // Read genesis data from tanssi
+                    let tanssi_block = tanssi_client.chain_info().best_hash;
+                    let tanssi_runtime_api = tanssi_client.runtime_api();
 
-                        let container_chain_para_id = tanssi_cli.base.para_id.unwrap();
+                    let container_chain_para_id = tanssi_cli.base.para_id.unwrap();
 
-                        let genesis_data = match tanssi_runtime_api
-                            .genesis_data(tanssi_block, container_chain_para_id.into())
-                            .expect("error")
-                        {
-                            Some(x) => x,
-                            None => {
-                                log::warn!(
-                                    "No genesis data for para id {}, will retry in 30 seconds",
-                                    container_chain_para_id
-                                );
-                                continue;
-                            }
-                        };
-
-                        tanssi_cli
-                            .preload_chain_spec_from_genesis_data(
-                                container_chain_para_id,
-                                genesis_data,
-                                chain_type,
-                                relay_chain,
+                    let genesis_data = tanssi_runtime_api
+                        .genesis_data(tanssi_block, container_chain_para_id.into())
+                        .expect("error")
+                        .unwrap_or_else(|| {
+                            panic!(
+                                "No genesis data registered for container chain id {}",
+                                container_chain_para_id
                             )
-                            .unwrap();
+                        });
 
-                        log::info!(
-                            "Loaded chain spec for container chain {}",
-                            container_chain_para_id
-                        );
-
-                        let tanssi_cli_config = sc_cli::SubstrateCli::create_configuration(
-                            &tanssi_cli,
-                            &tanssi_cli,
-                            tokio_handle,
+                    tanssi_cli
+                        .preload_chain_spec_from_genesis_data(
+                            container_chain_para_id,
+                            genesis_data,
+                            chain_type,
+                            relay_chain,
                         )
-                        .map_err(|err| format!("Tanssi argument error: {}", err))?;
+                        .unwrap();
 
-                        let container_chain_para_id_check =
-                            crate::chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
-                                .map(|e| e.para_id)
-                                .ok_or_else(|| {
-                                    "Could not find parachain extension in chain-spec."
-                                })?;
+                    log::info!(
+                        "Loaded chain spec for container chain {}",
+                        container_chain_para_id
+                    );
 
-                        assert_eq!(container_chain_para_id_check, container_chain_para_id);
+                    let tanssi_cli_config = sc_cli::SubstrateCli::create_configuration(
+                        &tanssi_cli,
+                        &tanssi_cli,
+                        tokio_handle,
+                    )
+                    .map_err(|err| format!("Tanssi argument error: {}", err))?;
 
-                        // Start tanssi node
-                        let (mut tanssi_task_manager, _tanssi_client) = start_node_impl_container(
-                            tanssi_cli_config,
-                            relay_chain_interface.clone(),
-                            tanssi_chain_interface,
-                            collator_key.clone(),
-                            sync_keystore,
-                            container_chain_para_id.into(),
-                            para_id,
-                            validator,
-                        )
-                        .await?;
+                    let container_chain_para_id_check =
+                        crate::chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
+                            .map(|e| e.para_id)
+                            .ok_or_else(|| "Could not find parachain extension in chain-spec.")?;
 
-                        // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
-                        // to make the parent task manager stop if the container chain task manager stops.
-                        // The reverse is also true, if the parent task manager stops, the container chain
-                        // task manager will also stop.
-                        spawn_cc_as_child_handle.spawn(
-                            "container-chain-task-manager",
-                            None,
-                            async move {
-                                tanssi_task_manager
-                                    .future()
-                                    .await
-                                    .expect("tanssi_task_manager failed")
-                            },
-                        );
+                    assert_eq!(container_chain_para_id_check, container_chain_para_id);
 
-                        break sc_service::error::Result::Ok(());
-                    }
+                    // Start tanssi node
+                    let (mut tanssi_task_manager, _tanssi_client) = start_node_impl_container(
+                        tanssi_cli_config,
+                        relay_chain_interface.clone(),
+                        tanssi_chain_interface,
+                        collator_key.clone(),
+                        sync_keystore,
+                        container_chain_para_id.into(),
+                        para_id,
+                        validator,
+                    )
+                    .await?;
+
+                    // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
+                    // to make the parent task manager stop if the container chain task manager stops.
+                    // The reverse is also true, if the parent task manager stops, the container chain
+                    // task manager will also stop.
+                    spawn_cc_as_child_handle.spawn(
+                        "container-chain-task-manager",
+                        None,
+                        async move {
+                            tanssi_task_manager
+                                .future()
+                                .await
+                                .expect("tanssi_task_manager failed")
+                        },
+                    );
+
+                    sc_service::error::Result::Ok(())
                 };
 
                 match try_closure().await {
