@@ -146,22 +146,7 @@ impl SubstrateCli for ContainerChainCli {
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
         // ContainerChain ChainSpec must be preloaded beforehand because we need to call async
         // functions to generate it, and this function is not async.
-        // The id has been created using format!("container-chain-{}", para_id), so here we need
-        // to reverse that.
-        let para_id = id
-            .strip_prefix("container-chain-")
-            .and_then(|s| {
-                let id: u32 = s.parse().ok()?;
-
-                // `.parse()` ignores leading zeros, so convert the id back to string to check
-                // if we get the same string, this way we ensure a 1:1 mapping
-                if id.to_string() == s {
-                    Some(id)
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| format!("load_spec called with invalid id: {:?}", id))?;
+        let para_id = parse_container_chain_id_str(id)?;
 
         match &self.preloaded_chain_spec {
             Some(spec) => {
@@ -184,6 +169,25 @@ impl SubstrateCli for ContainerChainCli {
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
         &test_runtime::VERSION
     }
+}
+
+/// Parse ParaId(2000) from a string like "container-chain-2000"
+fn parse_container_chain_id_str(id: &str) -> std::result::Result<u32, String> {
+    // The id has been created using format!("container-chain-{}", para_id), so here we need
+    // to reverse that.
+    id.strip_prefix("container-chain-")
+        .and_then(|s| {
+            let id: u32 = s.parse().ok()?;
+
+            // `.parse()` ignores leading zeros, so convert the id back to string to check
+            // if we get the same string, this way we ensure a 1:1 mapping
+            if id.to_string() == s {
+                Some(id)
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| format!("load_spec called with invalid id: {:?}", id))
 }
 
 macro_rules! construct_async_run {
