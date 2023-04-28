@@ -83,11 +83,7 @@ impl ParaHeaderSproofBuilder {
         (root, proof)
     }
 
-    pub fn relevant_keys(
-        self,
-    ) -> 
-        Vec<Vec<u8>>
-    {
+    pub fn relevant_keys(self) -> Vec<Vec<u8>> {
         let mut relevant_keys = Vec::new();
         {
             for item in self.items {

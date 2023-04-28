@@ -78,8 +78,8 @@ impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
         relay_parent_storage_root: Block::Hash,
         proof: StorageProof,
     ) -> Result<Self, ReadEntryErr> {
-        let db = proof.into_memory_db::<HashFor<Block>>();
-        if !db.contains(&relay_parent_storage_root, EMPTY_PREFIX) {
+        let db = proof.clone().into_memory_db::<HashFor<Block>>();
+        if !db.contains(&relay_parent_storage_root, EMPTY_PREFIX) && !proof.is_empty() {
             return Err(ReadEntryErr::RootMismatch);
         }
         let trie_backend = TrieBackendBuilder::new(db, relay_parent_storage_root).build();
