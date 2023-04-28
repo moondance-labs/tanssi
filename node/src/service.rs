@@ -40,7 +40,7 @@ use {
     sp_consensus::SyncOracle,
     sp_keystore::SyncCryptoStorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{str::FromStr, sync::Arc, time::Duration},
+    std::{future::Future, str::FromStr, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
@@ -447,108 +447,155 @@ async fn start_node_impl(
 
     start_network.start_network();
 
-    if let Some((mut tanssi_cli, tokio_handle)) = container_chain_config {
-        let spawn_cc_as_child_handle = task_manager.spawn_essential_handle();
+    if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
         let tanssi_client = client.clone();
+        let container_chain_spawner = ContainerChainSpawner {
+            orchestrator_chain_interface_builder,
+            tanssi_client,
+            container_chain_cli,
+            tokio_handle,
+            chain_type,
+            relay_chain,
+            relay_chain_interface,
+            collator_key,
+            sync_keystore,
+            orchestrator_para_id: para_id,
+            validator,
+            task_manager: &task_manager,
+        };
 
-        task_manager
-            .spawn_handle()
-            .spawn("container-chain-starter", None, async move {
-                let try_closure = || async {
-                    let tanssi_chain_interface = orchestrator_chain_interface_builder.build();
-
-                    tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-                    // Preload chain spec files for testing.
-                    // In the future we will only load the one container chain that this node needs to sync,
-                    // and we will load it from Tanssi storage.
-                    // The preload must finish before calling create_configuration, so any async operations
-                    // need to be awaited.
-
-                    // Read genesis data from tanssi
-                    let tanssi_block = tanssi_client.chain_info().best_hash;
-                    let tanssi_runtime_api = tanssi_client.runtime_api();
-
-                    let container_chain_para_id = tanssi_cli.base.para_id.unwrap();
-
-                    let genesis_data = tanssi_runtime_api
-                        .genesis_data(tanssi_block, container_chain_para_id.into())
-                        .expect("error")
-                        .unwrap_or_else(|| {
-                            panic!(
-                                "No genesis data registered for container chain id {}",
-                                container_chain_para_id
-                            )
-                        });
-
-                    tanssi_cli
-                        .preload_chain_spec_from_genesis_data(
-                            container_chain_para_id,
-                            genesis_data,
-                            chain_type,
-                            relay_chain,
-                        )
-                        .unwrap();
-
-                    log::info!(
-                        "Loaded chain spec for container chain {}",
-                        container_chain_para_id
-                    );
-
-                    let tanssi_cli_config = sc_cli::SubstrateCli::create_configuration(
-                        &tanssi_cli,
-                        &tanssi_cli,
-                        tokio_handle,
-                    )
-                    .map_err(|err| format!("Tanssi argument error: {}", err))?;
-
-                    let container_chain_para_id_check =
-                        crate::chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
-                            .map(|e| e.para_id)
-                            .ok_or_else(|| "Could not find parachain extension in chain-spec.")?;
-
-                    assert_eq!(container_chain_para_id_check, container_chain_para_id);
-
-                    // Start tanssi node
-                    let (mut tanssi_task_manager, _tanssi_client) = start_node_impl_container(
-                        tanssi_cli_config,
-                        relay_chain_interface.clone(),
-                        tanssi_chain_interface,
-                        collator_key.clone(),
-                        sync_keystore,
-                        container_chain_para_id.into(),
-                        para_id,
-                        validator,
-                    )
-                    .await?;
-
-                    // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
-                    // to make the parent task manager stop if the container chain task manager stops.
-                    // The reverse is also true, if the parent task manager stops, the container chain
-                    // task manager will also stop.
-                    spawn_cc_as_child_handle.spawn(
-                        "container-chain-task-manager",
-                        None,
-                        async move {
-                            tanssi_task_manager
-                                .future()
-                                .await
-                                .expect("tanssi_task_manager failed")
-                        },
-                    );
-
-                    sc_service::error::Result::Ok(())
-                };
-
-                match try_closure().await {
-                    Ok(()) => {}
-                    Err(e) => {
-                        panic!("Failed to start container chain node: {}", e);
-                    }
-                }
-            });
+        task_manager.spawn_handle().spawn(
+            "container-chain-starter",
+            None,
+            container_chain_spawner.spawn(),
+        );
     }
 
     Ok((task_manager, client))
+}
+
+/// Struct with all the params needed to start a container chain node given the CLI arguments,
+/// and creating the ChainSpec from on-chain data from the orchestrator chain.
+struct ContainerChainSpawner<'a> {
+    orchestrator_chain_interface_builder: OrchestratorChainInProcessInterfaceBuilder,
+    tanssi_client: Arc<ParachainClient>,
+    container_chain_cli: ContainerChainCli,
+    tokio_handle: tokio::runtime::Handle,
+    chain_type: sc_chain_spec::ChainType,
+    relay_chain: String,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
+    collator_key: Option<CollatorPair>,
+    sync_keystore: SyncCryptoStorePtr,
+    orchestrator_para_id: ParaId,
+    validator: bool,
+    // TODO: this could be a `SpawnEssentialTaskHandle`, but that type is private
+    task_manager: &'a TaskManager,
+}
+
+impl<'a> ContainerChainSpawner<'a> {
+    /// Try to start the container chain node. In case of error, this panics and stops the node.
+    fn spawn(self) -> impl Future<Output = ()> {
+        let ContainerChainSpawner {
+            orchestrator_chain_interface_builder,
+            tanssi_client,
+            mut container_chain_cli,
+            tokio_handle,
+            chain_type,
+            relay_chain,
+            relay_chain_interface,
+            collator_key,
+            sync_keystore,
+            orchestrator_para_id,
+            validator,
+            task_manager,
+        } = self;
+        let spawn_cc_as_child_handle = task_manager.spawn_essential_handle();
+
+        // This closure is used to emulate a try block, it enables using the `?` operator inside
+        let try_closure = move || async move {
+            let tanssi_chain_interface = orchestrator_chain_interface_builder.build();
+            // Preload chain spec files for testing.
+            // In the future we will only load the one container chain that this node needs to sync,
+            // and we will load it from Tanssi storage.
+            // The preload must finish before calling create_configuration, so any async operations
+            // need to be awaited.
+
+            // Read genesis data from tanssi
+            let tanssi_block = tanssi_client.chain_info().best_hash;
+            let tanssi_runtime_api = tanssi_client.runtime_api();
+
+            let container_chain_para_id = container_chain_cli
+                .base
+                .para_id
+                .ok_or("missing --para-id CLI argument for container chain")?;
+
+            let genesis_data = tanssi_runtime_api
+                .genesis_data(tanssi_block, container_chain_para_id.into())
+                .expect("error")
+                .ok_or_else(|| {
+                    format!(
+                        "No genesis data registered for container chain id {}",
+                        container_chain_para_id
+                    )
+                })?;
+
+            container_chain_cli
+                .preload_chain_spec_from_genesis_data(
+                    container_chain_para_id,
+                    genesis_data,
+                    chain_type,
+                    relay_chain,
+                )
+                .map_err(|e| format!("failed to create container chain chain spec from on chain genesis data: {}", e))?;
+
+            log::info!(
+                "Loaded chain spec for container chain {}",
+                container_chain_para_id
+            );
+
+            let tanssi_cli_config = sc_cli::SubstrateCli::create_configuration(
+                &container_chain_cli,
+                &container_chain_cli,
+                tokio_handle,
+            )
+            .map_err(|err| format!("Tanssi argument error: {}", err))?;
+
+            // Start tanssi node
+            let (mut tanssi_task_manager, _tanssi_client) = start_node_impl_container(
+                tanssi_cli_config,
+                relay_chain_interface.clone(),
+                tanssi_chain_interface,
+                collator_key.clone(),
+                sync_keystore,
+                container_chain_para_id.into(),
+                orchestrator_para_id,
+                validator,
+            )
+            .await?;
+
+            // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
+            // to make the parent task manager stop if the container chain task manager stops.
+            // The reverse is also true, if the parent task manager stops, the container chain
+            // task manager will also stop.
+            spawn_cc_as_child_handle.spawn("container-chain-task-manager", None, async move {
+                tanssi_task_manager
+                    .future()
+                    .await
+                    .expect("tanssi_task_manager failed")
+            });
+
+            sc_service::error::Result::Ok(())
+        };
+
+        async {
+            match try_closure().await {
+                Ok(()) => {}
+                Err(e) => {
+                    panic!("Failed to start container chain node: {}", e);
+                }
+            }
+        }
+    }
 }
 
 // Log string that will be shown for the container chain: `[Container-2000]`.
