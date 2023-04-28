@@ -1,7 +1,7 @@
+use pallet_registrar_runtime_api::json::container_chain_genesis_data_from_path;
+
 use {
     cumulus_primitives_core::ParaId,
-    pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_registrar_runtime_api::TokenMetadata,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
@@ -275,7 +275,7 @@ fn testnet_genesis(
             para_ids: container_chains
                 .iter()
                 .map(|x| {
-                    build_para_genesis_data(x).unwrap_or_else(|e| {
+                    container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
                         panic!(
                             "Failed to build genesis data for container chain {:?}: {}",
                             x, e
@@ -288,100 +288,4 @@ fn testnet_genesis(
             key: Some(root_key),
         },
     }
-}
-
-fn build_para_genesis_data(path: &str) -> Result<(ParaId, ContainerChainGenesisData), String> {
-    // TODO: we are manually parsing a json file here, maybe we can leverage the existing
-    // chainspec deserialization code.
-    // Read raw chainspec file
-    let raw_chainspec_str = std::fs::read_to_string(path)
-        .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))?;
-    let raw_chainspec_json: serde_json::Value =
-        serde_json::from_str(&raw_chainspec_str).map_err(|e| e.to_string())?;
-    // TODO: this bound checking may panic
-    let para_id: u32 = u32::try_from(raw_chainspec_json["para_id"].as_u64().unwrap()).unwrap();
-    let name: String = raw_chainspec_json["name"].as_str().unwrap().to_owned();
-    let id: String = raw_chainspec_json["id"].as_str().unwrap().to_owned();
-    let fork_id: Option<String> = raw_chainspec_json["fork_id"].as_str().map(|x| x.to_owned());
-    let genesis_data = &raw_chainspec_json["genesis"]["raw"]["top"];
-    let genesis_data_map = genesis_data
-        .as_object()
-        .ok_or(format!("genesis.raw.top is not an object"))?;
-
-    let mut genesis_data_vec = Vec::with_capacity(genesis_data_map.len());
-
-    for (key, value) in genesis_data_map {
-        let key_hex = key
-            .strip_prefix("0x")
-            .ok_or(format!("key does not start with 0x"))?;
-        let value = value.as_str().ok_or(format!("value is not a string"))?;
-        let value_hex = value
-            .strip_prefix("0x")
-            .ok_or(format!("value does not start with 0x"))?;
-
-        let key_bytes = hex::decode(key_hex).map_err(|e| e.to_string())?;
-        let value_bytes = hex::decode(value_hex).map_err(|e| e.to_string())?;
-
-        genesis_data_vec.push((key_bytes, value_bytes).into());
-    }
-
-    // This was created by iterating over a map, so it won't have two equal keys
-    genesis_data_vec.sort_unstable();
-
-    let properties_json = &raw_chainspec_json["properties"];
-    let mut properties = TokenMetadata::default();
-    if let Some(x) = properties_json
-        .get("ss58Format")
-        .and_then(|x| u32::try_from(x.as_u64()?).ok())
-        .or_else(|| {
-            log::warn!(
-                "Failed to read properties.ss58Format from container chain chain spec, using default value instead. Invalid value was: {:?}",
-                properties_json.get("ss58Format")
-            );
-
-            None
-        })
-    {
-        properties.ss58_format = x;
-    }
-    if let Some(x) = properties_json
-        .get("tokenDecimals")
-        .and_then(|x: &serde_json::Value| u32::try_from(x.as_u64()?).ok()).or_else(|| {
-            log::warn!(
-                "Failed to read properties.tokenDecimals from container chain chain spec, using default value instead. Invalid value was: {:?}",
-                properties_json.get("tokenDecimals")
-            );
-
-            None
-        })
-    {
-        properties.token_decimals = x;
-    }
-    if let Some(x) = properties_json.get("tokenSymbol").and_then(|x| {
-        let xs = x.as_str()?;
-        let xv: Vec<u8> = xs.to_string().into();
-
-        xv.try_into().ok()
-    }).or_else(|| {
-        log::warn!(
-            "Failed to read properties.tokenSymbol from container chain chain spec, using default value instead. Invalid value was: {:?}",
-            properties_json.get("tokenSymbol")
-        );
-
-        None
-    }) {
-        properties.token_symbol = x;
-    }
-
-    Ok((
-        para_id.into(),
-        ContainerChainGenesisData {
-            storage: genesis_data_vec,
-            name: name.into(),
-            id: id.into(),
-            fork_id: fork_id.map(|x| x.into()),
-            extensions: vec![],
-            properties,
-        },
-    ))
 }

@@ -6133,6 +6133,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-container-chain-genesis-data",
  "tp-traits",
 ]
 
@@ -6144,6 +6145,7 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "sp-api",
+ "tp-container-chain-genesis-data",
 ]
 
 [[package]]
@@ -11623,6 +11625,7 @@ dependencies = [
  "tokio",
  "tp-author-noting-inherent",
  "tp-authorities-noting-inherent",
+ "tp-container-chain-genesis-data",
  "try-runtime-cli",
 ]
 
@@ -12067,6 +12070,28 @@ dependencies = [
  "polkadot-primitives",
  "scale-info",
  "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std",
+ "sp-trie",
+ "tp-traits",
+]
+
+[[package]]
+name = "tp-container-chain-genesis-data"
+version = "0.1.1"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "hex",
+ "hex-literal",
+ "log",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "scale-info",
+ "serde",
+ "serde_json",
  "sp-core",
  "sp-runtime",
  "sp-state-machine",

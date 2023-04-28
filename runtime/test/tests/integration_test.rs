@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use pallet_registrar::ContainerChainGenesisData;
+use pallet_registrar_runtime_api::ContainerChainGenesisData;
 
 mod common;
 use {

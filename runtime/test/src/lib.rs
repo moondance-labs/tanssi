@@ -33,7 +33,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    pallet_registrar::ContainerChainGenesisData,
+    pallet_registrar_runtime_api::ContainerChainGenesisData,
     polkadot_runtime_common::BlockHashCount,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,

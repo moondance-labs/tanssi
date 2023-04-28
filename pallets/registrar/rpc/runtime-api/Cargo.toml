@@ -12,10 +12,12 @@ pallet-registrar = { workspace = true }
 parity-scale-codec = { workspace = true, default-features = false }
 scale-info = { workspace = true, default-features = false }
 sp-api = { workspace = true, default-features = false }
+tp-container-chain-genesis-data = { workspace = true }
 
 [features]
 default = [ "std" ]
 std = [
+	"tp-container-chain-genesis-data/std",
 	"parity-scale-codec/std",
 	"sp-api/std",
 ]

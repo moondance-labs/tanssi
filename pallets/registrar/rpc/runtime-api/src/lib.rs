@@ -2,9 +2,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use pallet_registrar::ContainerChainGenesisData;
-pub use pallet_registrar::TokenMetadata;
 use scale_info::prelude::vec::Vec;
+pub use tp_container_chain_genesis_data::*;
 
 sp_api::decl_runtime_apis! {
     pub trait RegistrarApi<ParaId> where

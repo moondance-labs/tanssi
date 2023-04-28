@@ -19,6 +19,7 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-core = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
+tp-container-chain-genesis-data = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -33,6 +34,7 @@ std = [
 	"frame-system/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
+	"tp-container-chain-genesis-data/std",
 	"tp-traits/std",
 	"serde",
 ]

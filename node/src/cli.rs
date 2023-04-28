@@ -1,3 +1,5 @@
+use pallet_registrar_runtime_api::json::properties_to_map;
+
 use {
     crate::{chain_spec::RawGenesisConfig, service::Sealing},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
@@ -299,26 +301,8 @@ impl TanssiCli {
         // TODO: we can just derive Serialize for genesis_data.properties instead of this hack,
         // just ensure that the field names match
         let properties = Some(
-            vec![
-                (
-                    "ss58Format",
-                    serde_json::Value::from(genesis_data.properties.ss58_format),
-                ),
-                (
-                    "tokenDecimals",
-                    serde_json::Value::from(genesis_data.properties.token_decimals),
-                ),
-                (
-                    "tokenSymbol",
-                    serde_json::Value::from(
-                        String::from_utf8(genesis_data.properties.token_symbol.to_vec())
-                            .map_err(|e| format!("tokenSymbol is not valid UTF8: {}", e))?,
-                    ),
-                ),
-            ]
-            .into_iter()
-            .map(|(k, v)| (k.to_string(), v))
-            .collect(),
+            properties_to_map(&genesis_data.properties)
+                .map_err(|e| format!("Invalid properties: {}", e))?,
         );
         let extensions = crate::chain_spec::Extensions {
             relay_chain,

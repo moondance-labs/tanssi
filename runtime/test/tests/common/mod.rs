@@ -5,7 +5,7 @@ use {
         dispatch::Dispatchable,
         traits::{GenesisBuild, OnFinalize, OnInitialize},
     },
-    pallet_registrar::ContainerChainGenesisData,
+    pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::Encode,
     polkadot_parachain::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,

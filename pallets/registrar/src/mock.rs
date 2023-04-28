@@ -1,5 +1,7 @@
+use tp_container_chain_genesis_data::ContainerChainGenesisData;
+
 use {
-    crate::{self as pallet_registrar, ContainerChainGenesisData},
+    crate::{self as pallet_registrar},
     frame_support::traits::{ConstU16, ConstU64},
     frame_system as system,
     sp_core::{ConstU32, H256},
