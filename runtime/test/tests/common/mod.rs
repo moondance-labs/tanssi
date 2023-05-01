@@ -8,18 +8,18 @@ use {
     parity_scale_codec::Encode,
     polkadot_parachain::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_core::Pair,
+    sp_core::{Get, Pair},
     sp_runtime::{Digest, DigestItem},
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
 pub use test_runtime::{
-    AccountId, Aura, AuraId, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
-    RuntimeCall, RuntimeEvent, Session, System,
+    AccountId, Aura, AuraId, Authorship, Balance, Balances, BlockNumber, Initializer, Registrar,
+    Runtime, RuntimeCall, RuntimeEvent, Session, SessionInfo, System,
 };
 
 pub fn run_to_session(n: u32, add_author: bool) {
-    let block_number = test_runtime::Period::get() * n;
+    let block_number = SessionInfo::get() * n;
     run_to_block(block_number + 1, add_author);
 }
 
@@ -71,6 +71,8 @@ pub struct ExtBuilder {
     para_ids: Vec<u32>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
+    // duration of the session
+    session_duration: BlockNumber,
 }
 
 impl Default for ExtBuilder {
@@ -80,6 +82,7 @@ impl Default for ExtBuilder {
             collators: vec![],
             para_ids: vec![],
             config: Default::default(),
+            session_duration: 10u32.into(),
         }
     }
 }
@@ -102,6 +105,11 @@ impl ExtBuilder {
 
     pub fn with_config(mut self, config: pallet_configuration::HostConfiguration) -> Self {
         self.config = config;
+        self
+    }
+
+    pub fn with_session_duration(mut self, session_duration: BlockNumber) -> Self {
+        self.session_duration = session_duration;
         self
     }
 
@@ -172,6 +180,14 @@ impl ExtBuilder {
             )
             .unwrap();
         }
+
+        <pallet_session_info::GenesisConfig<Runtime> as GenesisBuild<Runtime>>::assimilate_storage(
+            &pallet_session_info::GenesisConfig {
+                duration: self.session_duration,
+            },
+            &mut t,
+        )
+        .unwrap();
 
         let mut ext = sp_io::TestExternalities::new(t);
 

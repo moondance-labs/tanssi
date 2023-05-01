@@ -6215,6 +6215,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-session-info"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-session",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-society"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.40#76fed9b9082daade5392663f25ed8968f8e8c11c"
@@ -11666,6 +11681,7 @@ dependencies = [
  "pallet-registrar-runtime-api",
  "pallet-root-testing",
  "pallet-session",
+ "pallet-session-info",
  "pallet-sudo",
  "pallet-timestamp",
  "parachain-info",

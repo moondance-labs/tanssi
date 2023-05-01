@@ -431,8 +431,8 @@ impl pallet_session::Config for Runtime {
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     // we don't have stash and controller, thus we don't need the convert as well.
     type ValidatorIdOf = pallet_collator_selection::IdentityCollator;
-    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type ShouldEndSession = pallet_session::PeriodicSessions<SessionInfo, Offset>;
+    type NextSessionRotation = pallet_session::PeriodicSessions<SessionInfo, Offset>;
     type SessionManager = CollatorSelection;
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
@@ -523,6 +523,10 @@ impl pallet_sudo::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_session_info::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
+
 impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -538,6 +542,7 @@ construct_runtime!(
         Timestamp: pallet_timestamp = 2,
         ParachainInfo: parachain_info = 3,
         Sudo: pallet_sudo = 4,
+        SessionInfo: pallet_session_info = 5,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,

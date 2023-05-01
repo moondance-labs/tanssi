@@ -6,7 +6,8 @@ use {
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
     test_runtime::{
-        AccountId, AuraId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
+        AccountId, AuraId, RegistrarConfig, SessionInfoConfig, Signature, SudoConfig,
+        EXISTENTIAL_DEPOSIT, HOURS,
     },
 };
 
@@ -233,6 +234,9 @@ fn testnet_genesis(
         },
         sudo: SudoConfig {
             key: Some(root_key),
+        },
+        session_info: SessionInfoConfig {
+            duration: 6 * HOURS,
         },
     }
 }
