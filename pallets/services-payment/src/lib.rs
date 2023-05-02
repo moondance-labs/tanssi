@@ -94,7 +94,7 @@ pub mod pallet {
             let (block_cost, weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
             let total_fee = block_cost.saturating_mul(credits.into());
             
-            T::OnChargeForBlockCredit::withdraw_fee(&para_id, credits, total_fee)?;
+            T::OnChargeForBlockCredit::charge_credits(&para_id, credits, total_fee)?;
 
             BlockProductionCredits::<T>::insert(para_id, updated_credits);
 
@@ -123,7 +123,7 @@ pub type BalanceOf<T> =
 /// Handler for fee charging. This will be invoked when fees need to be deducted from the fee
 /// account for a given paraId.
 pub trait OnChargeForBlockCredit<T: Config> {
-    fn withdraw_fee(
+    fn charge_credits(
         para_id: &ParaId,
         credits: u64,
         fee: BalanceOf<T>,
