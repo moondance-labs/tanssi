@@ -18,9 +18,35 @@ pub use test_runtime::{
     Runtime, RuntimeCall, RuntimeEvent, Session, SessionInfo, System,
 };
 
+// Run to session will depend on the session length
+// We first grab how many blocks till next session
+// Then we add as many sessions as we need
 pub fn run_to_session(n: u32, add_author: bool) {
-    let block_number = SessionInfo::get() * n;
-    run_to_block(block_number + 1, add_author);
+    let current_session = Session::current_index();
+
+    // Panic if you want to run to an already elapsed boundary session
+    if n <= current_session {
+        panic!("Session boundary already elapsed")
+    }
+
+    // Current block number
+    let current_block_number = System::block_number();
+
+    // Session length
+    let session_length = SessionInfo::get();
+
+    // Number of blocks to advance till next session
+    let number_of_blocks_remanining_this_session =
+        session_length - (current_block_number % session_length);
+    // Number of blocks to advance till the desired session
+    let number_of_blocks_to_advance =
+        number_of_blocks_remanining_this_session + ((n - current_session - 1) * session_length);
+
+    // Run to such block
+    run_to_block(
+        current_block_number + number_of_blocks_to_advance + 1,
+        add_author,
+    );
 }
 
 /// Utility function that advances the chain to the desired block number.
