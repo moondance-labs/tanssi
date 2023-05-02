@@ -422,7 +422,7 @@ impl parachain_info::Config for Runtime {}
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 parameter_types! {
-    pub const Period: u32 = 6 * HOURS;
+    pub const Period: u32 = prod_or_fast!(6 * HOURS, 2 * MINUTES);
     pub const Offset: u32 = 0;
 }
 
@@ -749,4 +749,25 @@ cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
     BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
     CheckInherents = CheckInherents,
+}
+
+#[macro_export]
+macro_rules! prod_or_fast {
+    ($prod:expr, $test:expr) => {
+        if cfg!(feature = "fast-runtime") {
+            $test
+        } else {
+            $prod
+        }
+    };
+    ($prod:expr, $test:expr, $env:expr) => {
+        if cfg!(feature = "fast-runtime") {
+            core::option_env!($env)
+                .map(|s| s.parse().ok())
+                .flatten()
+                .unwrap_or($test)
+        } else {
+            $prod
+        }
+    };
 }
