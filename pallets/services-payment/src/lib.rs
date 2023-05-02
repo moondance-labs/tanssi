@@ -7,7 +7,7 @@
 
 use {
     cumulus_primitives_core::ParaId,
-    frame_support::{pallet_prelude::*, sp_runtime::Saturating, traits::Currency},
+    frame_support::{pallet_prelude::*, sp_runtime::{Saturating, traits::Zero}, traits::Currency},
     frame_system::pallet_prelude::*,
 };
 
@@ -36,7 +36,7 @@ pub mod pallet {
         /// Provider of a block cost which can adjust from block to block
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
         /// The maximum number of credits that can be accumulated
-        type MaxCreditsStored: Get<u64>;
+        type MaxCreditsStored: Get<Self::BlockNumber>;
     }
 
     #[pallet::error]
@@ -54,8 +54,8 @@ pub mod pallet {
             para_id: ParaId,
             payer: T::AccountId,
             fee: BalanceOf<T>, 
-            credits_purchased: u64,
-            credits_owned: u64,
+            credits_purchased: T::BlockNumber,
+            credits_owned: T::BlockNumber,
         }
     }
 
@@ -65,25 +65,25 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         ParaId,
-        u64,
-        OptionQuery
+        T::BlockNumber,
+        OptionQuery,
     >;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> 
     where
-        BalanceOf<T>: From<u64>,
+        BalanceOf<T>: From<BlockNumberFor<T>>,
     {
         #[pallet::call_index(0)]
         #[pallet::weight(0)] // TODO
         pub fn purchase_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
-            credits: u64
+            credits: T::BlockNumber
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
-            let existing_credits = BlockProductionCredits::<T>::get(para_id).unwrap_or(0u64);
+            let existing_credits = BlockProductionCredits::<T>::get(para_id).unwrap_or(T::BlockNumber::zero());
             let updated_credits = existing_credits.saturating_add(credits);
             ensure!(
                 updated_credits <= T::MaxCreditsStored::get(),
@@ -125,7 +125,7 @@ pub type BalanceOf<T> =
 pub trait OnChargeForBlockCredit<T: Config> {
     fn charge_credits(
         para_id: &ParaId,
-        credits: u64,
+        credits: T::BlockNumber,
         fee: BalanceOf<T>,
     ) -> Result<(), Error<T>>;
 }
