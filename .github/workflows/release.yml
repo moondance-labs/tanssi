@@ -44,7 +44,7 @@ jobs:
         run: cargo fmt --all --check
 
       - name: Build
-        run: cargo build --release --all
+        run: cargo build --features=fast-runtime --release --all
 
       - name: Test
         run: cargo test --release --all

@@ -1,6 +1,8 @@
 import { describeSuite, expect, beforeAll} from "@moonwall/cli";
 import { setupLogger } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
+import { jumpSessions } from "../../../util/block";
+
 import "@polkadot/api-augment";
 
 describeSuite({
@@ -57,6 +59,15 @@ describeSuite({
         expect(parasScheduled[0].toBigInt()).to.be.eq(BigInt(2000));
         expect(parasScheduled[1].toBigInt()).to.be.eq(BigInt(2001));
         expect(parasScheduled[2].toBigInt()).to.be.eq(BigInt(2002));
+
+        // Checking that in session 2 paras are registered
+        await jumpSessions(context, 2)
+
+        // Expect now paraIds to be registered
+        const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
+        expect(parasRegistered[0].toBigInt()).to.be.eq(BigInt(2000));
+        expect(parasRegistered[1].toBigInt()).to.be.eq(BigInt(2001));
+        expect(parasRegistered[2].toBigInt()).to.be.eq(BigInt(2002));
       },
     });
     },
