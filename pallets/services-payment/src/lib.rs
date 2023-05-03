@@ -9,15 +9,14 @@ use {
     cumulus_primitives_core::ParaId,
     frame_support::{pallet_prelude::*, sp_runtime::{Saturating, traits::Zero}, traits::Currency},
     frame_system::pallet_prelude::*,
+    std::collections::BTreeMap,
 };
 
-/*
 #[cfg(test)]
 mod mock;
 
 #[cfg(test)]
 mod test;
-*/
 
 pub use pallet::*;
 
@@ -113,6 +112,27 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         // TODO:
         pub fn burn_credit_for_para(para_id: &ParaId) { }
+    }
+
+    #[pallet::genesis_config]
+    pub struct GenesisConfig<T: Config> {
+        initial_credits: BTreeMap<ParaId, T::BlockNumber>,
+    }
+
+    #[cfg(feature = "std")]
+    impl<T: Config> Default for GenesisConfig<T> {
+        fn default() -> Self {
+            Self {
+                initial_credits: Default::default(),
+            }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+        fn build(&self) {
+            todo!();
+        }
     }
 }
 

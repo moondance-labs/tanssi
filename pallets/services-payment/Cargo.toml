@@ -20,6 +20,10 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 cumulus-primitives-core = { workspace = true }
 
 [dev-dependencies]
+sp-runtime = { workspace = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+pallet-balances = { workspace = true }
 
 [features]
 default = [ "std" ]
@@ -27,6 +31,7 @@ std = [
 	"cumulus-primitives-core/std",
 	"frame-support/std",
 	"frame-system/std",
+	"pallet-balances/std",
 	"scale-info/std",
 ]
 try-runtime = [ "frame-support/try-runtime" ]
