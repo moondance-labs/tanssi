@@ -619,7 +619,7 @@ fn build_import_queue(
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
     cumulus_client_consensus_aura::import_queue::<
-        sp_consensus_aura::sr25519::AuthorityPair,
+        NimbusPair,
         _,
         _,
         _,
@@ -754,7 +754,7 @@ fn build_consensus_container(
     };
 
     Ok(AuraConsensus::build::<
-        sp_consensus_aura::sr25519::AuthorityPair,
+        NimbusPair,
         _,
         _,
         _,
@@ -853,7 +853,7 @@ fn build_consensus_orchestrator(
     };
 
     Ok(AuraConsensus::build::<
-        sp_consensus_aura::sr25519::AuthorityPair,
+        NimbusPair,
         _,
         _,
         _,
@@ -1019,7 +1019,7 @@ pub fn new_dev(
                 commands_stream,
                 select_chain,
                 consensus_data_provider: Some(Box::new(
-                    sc_consensus_manual_seal::consensus::aura::AuraConsensusDataProvider::new(
+                    AuraConsensusDataProvider::new(
                         client.clone(),
                     ),
                 )),
@@ -1304,4 +1304,87 @@ where
     fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
         Ok(self.overseer_handle.clone())
     }
+}
+
+
+use sp_consensus_aura::{
+	digests::CompatibleDigestItem,
+	sr25519::AuthoritySignature,
+	AuraApi, Slot, SlotDuration,
+};
+use sp_runtime::{traits::Block as BlockT, Digest, DigestItem};
+use nimbus_primitives::{NimbusId, NimbusPair};
+use std::{marker::PhantomData};
+use sc_consensus_manual_seal::ConsensusDataProvider;
+use sp_blockchain::HeaderMetadata;
+use sp_api::TransactionFor;
+use sp_inherents::InherentData;
+use sc_consensus_manual_seal::Error as ManualSealError;
+use sc_consensus::BlockImportParams;
+use sp_timestamp::TimestampInherentData;
+
+/// Consensus data provider for Aura.
+pub struct AuraConsensusDataProvider<B, C, P> {
+	// slot duration
+	slot_duration: SlotDuration,
+	// phantom data for required generics
+	_phantom: PhantomData<(B, C, P)>,
+}
+
+impl<B, C, P> AuraConsensusDataProvider<B, C, P>
+where
+	B: BlockT,
+	C: AuxStore + ProvideRuntimeApi<B> + UsageProvider<B>,
+	C::Api: AuraApi<B, NimbusId>,
+{
+	/// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
+	/// implements [`sp_consensus_aura::AuraApi`]
+	pub fn new(client: Arc<C>) -> Self {
+		let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
+			.expect("slot_duration is always present; qed.");
+
+		Self { slot_duration, _phantom: PhantomData }
+	}
+}
+
+impl<B, C, P> ConsensusDataProvider<B> for AuraConsensusDataProvider<B, C, P>
+where
+	B: BlockT,
+	C: AuxStore
+		+ HeaderBackend<B>
+		+ HeaderMetadata<B, Error = sp_blockchain::Error>
+		+ UsageProvider<B>
+		+ ProvideRuntimeApi<B>,
+	C::Api: AuraApi<B, NimbusId>,
+	P: Send + Sync,
+{
+	type Transaction = TransactionFor<C, B>;
+	type Proof = P;
+
+	fn create_digest(
+		&self,
+		_parent: &B::Header,
+		inherents: &InherentData,
+	) -> Result<Digest, ManualSealError> {
+		let timestamp =
+			inherents.timestamp_inherent_data()?.expect("Timestamp is always present; qed");
+
+		// we always calculate the new slot number based on the current time-stamp and the slot
+		// duration.
+		let digest_item = <DigestItem as CompatibleDigestItem<AuthoritySignature>>::aura_pre_digest(
+			Slot::from_timestamp(timestamp, self.slot_duration),
+		);
+
+		Ok(Digest { logs: vec![digest_item] })
+	}
+
+	fn append_block_import(
+		&self,
+		_parent: &B::Header,
+		_params: &mut BlockImportParams<B, Self::Transaction>,
+		_inherents: &InherentData,
+		_proof: Self::Proof,
+	) -> Result<(), ManualSealError> {
+		Ok(())
+	}
 }

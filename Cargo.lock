@@ -5105,6 +5105,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "nimbus-primitives"
+version = "0.9.0"
+source = "git+https://github.com/Purestake/nimbus?branch=girazoki-polkadot-v0.9.40#d737d74745be9c7eff878718b6c23b3702ec3e44"
+dependencies = [
+ "async-trait",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "nix"
 version = "0.24.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11573,6 +11590,7 @@ dependencies = [
  "futures",
  "jsonrpsee",
  "log",
+ "nimbus-primitives",
  "pallet-collator-assignment-runtime-api",
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
@@ -11653,6 +11671,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "log",
+ "nimbus-primitives",
  "pallet-aura",
  "pallet-author-noting",
  "pallet-authorship",
@@ -11675,6 +11694,7 @@ dependencies = [
  "scale-info",
  "smallvec",
  "sp-api",
+ "sp-application-crypto",
  "sp-block-builder",
  "sp-consensus-aura",
  "sp-core",

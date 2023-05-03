@@ -26,6 +26,9 @@ tp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 
 tc-orchestrator-chain-interface = { workspace = true }
 
+# Nimbus
+nimbus-primitives = { workspace = true, features = [ "std" ]}
+
 # Substrate
 frame-benchmarking = { workspace = true }
 frame-benchmarking-cli = { workspace = true }
