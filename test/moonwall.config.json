@@ -21,6 +21,70 @@
           }
         ]
       }
+    },
+    {
+      "name": "zombie_tanssi_ci",
+      "testFileDir": ["suites/para"],
+      "foundation": {
+        "type": "zombie",
+        "zombieSpec": {
+          "configPath": "./configs/zombieTanssiCI.json"
+        }
+      },
+      "connections": [
+        {
+          "name": "Relay",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9947"]
+        },
+        {
+          "name": "Tanssi",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9948"]
+        },
+        {
+          "name": "Container2000",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9949"]
+        },
+        {
+          "name": "Container2001",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9950"]
+        }
+      ]
+    },
+    {
+      "name": "zombie_tanssi",
+      "testFileDir": ["suites/para"],
+      "foundation": {
+        "type": "zombie",
+        "zombieSpec": {
+          "configPath": "./configs/zombieTanssi.json"
+        }
+      },
+      "connections": [
+        {
+          "name": "Relay",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9947"]
+        },
+        {
+          "name": "Tanssi",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9948"]
+        },
+        {
+          "name": "Container2000",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9949"]
+        },
+        {
+          "name": "Container2001",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9950"]
+        }
+      ]
     }
   ]
 }
