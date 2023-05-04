@@ -168,9 +168,16 @@ jobs:
           ## Run tests
 
           pnpm moonwall test zombie_tanssi_ci
+      - name: "Upload chain specs"
+        if: failure()
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: specs
+          path: "../specs"
       - name: "Gather zombie logs"
         if: failure()
         run: |
+          ls -ltr /tmp
           latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
           logs_dir="logs"
           mkdir -p "$logs_dir"
