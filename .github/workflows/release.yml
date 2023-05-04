@@ -163,7 +163,7 @@ jobs:
           chmod uog+x tmp/polkadot
 
           ## Generate specs
-          npm run build-spec
+          npm run build-spec-ci
 
           ## Run tests
 
