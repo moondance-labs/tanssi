@@ -123,8 +123,6 @@ describeSuite({
       title: "Test author noting is correct for both containers",
       timeout: 60000,
       test: async function () {
-	expect(false).to.be.true;
-
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
         const paraId2000 = (await container2000Api.query.parachainInfo.parachainId());
         const paraId2001 = (await container2001Api.query.parachainInfo.parachainId());
