@@ -111,7 +111,7 @@ jobs:
         run: |
           chmod uog+x target/release/test-node
           cd test
-          pnpm i
+          pnpm install --frozen-lockfile
           pnpm moonwall test dev_tanssi
 
   zombienet-tests:
@@ -156,7 +156,7 @@ jobs:
       - name: "Run zombie test"
         run: |
           cd test
-          pnpm i
+          pnpm install --frozen-lockfile
 
           chmod uog+x tmp/test-node
           chmod uog+x tmp/container-chain-template-simple-node
