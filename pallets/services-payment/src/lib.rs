@@ -9,7 +9,6 @@ use {
     cumulus_primitives_core::ParaId,
     frame_support::{pallet_prelude::*, sp_runtime::{Saturating, traits::Zero}, traits::Currency},
     frame_system::pallet_prelude::*,
-    std::collections::BTreeMap,
 };
 
 #[cfg(test)]
@@ -41,6 +40,7 @@ pub mod pallet {
     #[pallet::error]
     pub enum Error<T> {
         TooManyCredits,
+        InsufficientFunds,
     }
 
     #[pallet::pallet]
@@ -93,7 +93,7 @@ pub mod pallet {
             let (block_cost, weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
             let total_fee = block_cost.saturating_mul(credits.into());
             
-            T::OnChargeForBlockCredit::charge_credits(&para_id, credits, total_fee)?;
+            T::OnChargeForBlockCredit::charge_credits(&account, &para_id, credits, total_fee)?;
 
             BlockProductionCredits::<T>::insert(para_id, updated_credits);
 
@@ -116,7 +116,7 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        initial_credits: BTreeMap<ParaId, T::BlockNumber>,
+        pub initial_credits: Vec<(ParaId, T::BlockNumber)>,
     }
 
     #[cfg(feature = "std")]
@@ -144,6 +144,7 @@ pub type BalanceOf<T> =
 /// account for a given paraId.
 pub trait OnChargeForBlockCredit<T: Config> {
     fn charge_credits(
+        payer: &T::AccountId,
         para_id: &ParaId,
         credits: T::BlockNumber,
         fee: BalanceOf<T>,
