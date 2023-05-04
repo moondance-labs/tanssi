@@ -34,7 +34,7 @@
     "parachains": [
       {
         "id": 1000,
-        "chain_spec_path": "../specs/tanssi-1000.json",
+        "chain_spec_path": "specs/tanssi-1000.json",
         "collators":  [
           {
             "name": "Collator1000-01",
@@ -69,7 +69,7 @@
       },
       {
         "id": 2000,
-        "chain_spec_path": "tmp/template-container-2000.json",
+        "chain_spec_path": "specs/template-container-2000.json",
         "collators":  [
           {
             "name": "DummyCollator-2000",
@@ -79,7 +79,7 @@
       },
       {
         "id": 2001,
-        "chain_spec_path": "tmp/template-container-2001.json",
+        "chain_spec_path": "specs/template-container-2001.json",
         "collators":  [
           {
             "name": "DummyCollator-2001",
