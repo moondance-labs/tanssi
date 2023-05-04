@@ -3,6 +3,7 @@
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion},
+    tp_consensus::{TanssiAuraConsensus, BuildTanssiAuraConsensusParams},
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
         ParachainConsensus,
@@ -44,6 +45,7 @@ use {
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
     test_runtime::{opaque::Block, AccountId, RuntimeApi},
+    nimbus_consensus::NimbusManualSealConsensusDataProvider,
 };
 
 type FullBackend = TFullBackend<Block>;
@@ -779,7 +781,7 @@ fn build_consensus_orchestrator(
     );
     let client_set_aside_for_cidp = client.clone();
 
-    let params = BuildAuraConsensusParams {
+    let params = BuildTanssiAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
@@ -843,7 +845,7 @@ fn build_consensus_orchestrator(
         telemetry,
     };
 
-    Ok(AuraConsensus::build::<
+    Ok(TanssiAuraConsensus::build::<
         NimbusPair,
         _,
         _,
@@ -999,6 +1001,9 @@ pub fn new_dev(
             }
         }
 
+        let client_clone = client.clone();
+		let keystore_clone = keystore_container.sync_keystore().clone();
+
         task_manager.spawn_essential_handle().spawn_blocking(
             "authorship_task",
             Some("block-authoring"),
@@ -1010,7 +1015,7 @@ pub fn new_dev(
                 commands_stream,
                 select_chain,
                 consensus_data_provider: Some(Box::new(
-                    AuraConsensusDataProvider::new(
+                    tp_consensus::TanssiManualSealAuraConsensusDataProvider::new(
                         client.clone(),
                     ),
                 )),
