@@ -110,3 +110,5 @@ try-runtime = [
 	"pallet-timestamp/try-runtime",
 	"parachain-info/try-runtime",
 ]
+
+fast-runtime = []
