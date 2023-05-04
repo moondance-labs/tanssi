@@ -41,6 +41,7 @@ tp-consensus = { path = "primitives/consensus", default-features = false }
 # Nimbus (wasm)
 nimbus-primitives = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false }
 nimbus-consensus = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40" }
+pallet-author-inherent = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false  }
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }

@@ -404,6 +404,7 @@ where
 		// add it to a digest item.
 		let public_type_pair = public.to_public_crypto_pair();
 		let public = public.to_raw_vec();
+		log::info!("the ID is {:?}", <AuthorityId<P> as AppKey>::ID);
 		let signature = SyncCryptoStore::sign_with(
 			&*self.keystore,
 			<AuthorityId<P> as AppKey>::ID,
@@ -423,7 +424,7 @@ where
 			.map_err(|_| sp_consensus::Error::InvalidSignature(signature, public))?;
 
 		let signature_digest_item =
-			<DigestItem as CompatibleDigestItem<P::Signature>>::aura_seal(signature);
+			<DigestItem as NimbusCompatibleDigestItem>::nimbus_seal(signature);
 
 		let mut import_block = BlockImportParams::new(BlockOrigin::Own, header);
 		import_block.post_digests.push(signature_digest_item);

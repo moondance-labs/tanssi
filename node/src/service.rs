@@ -147,13 +147,20 @@ pub fn new_partial(
     );
 
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
-    let import_queue = build_import_queue(
-        client.clone(),
-        block_import.clone(),
-        config,
-        telemetry.as_ref().map(|telemetry| telemetry.handle()),
-        &task_manager,
-    )?;
+
+    // Depending whether we are
+	let import_queue = nimbus_consensus::import_queue(
+		client.clone(),
+		block_import.clone(),
+		move |_, _| async move {
+			let time = sp_timestamp::InherentDataProvider::from_system_time();
+
+			Ok((time,))
+		},
+		&task_manager.spawn_essential_handle(),
+		config.prometheus_registry(),
+	    false,
+	)?;
 
     let maybe_select_chain = None;
 
@@ -1309,7 +1316,7 @@ use sp_consensus_aura::{
 	AuraApi, Slot, SlotDuration,
 };
 use sp_runtime::{traits::Block as BlockT, Digest, DigestItem};
-use nimbus_primitives::{NimbusId, NimbusPair};
+use nimbus_primitives::{NimbusId, NimbusPair, NimbusSignature};
 use std::{marker::PhantomData};
 use sc_consensus_manual_seal::ConsensusDataProvider;
 use sp_blockchain::HeaderMetadata;
@@ -1367,7 +1374,7 @@ where
 
 		// we always calculate the new slot number based on the current time-stamp and the slot
 		// duration.
-		let digest_item = <DigestItem as CompatibleDigestItem<AuthoritySignature>>::aura_pre_digest(
+		let digest_item = <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest(
 			Slot::from_timestamp(timestamp, self.slot_duration),
 		);
 

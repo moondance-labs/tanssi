@@ -5,14 +5,13 @@ use sp_api::{ProvideRuntimeApi, TransactionFor};
 use sp_blockchain::{HeaderBackend, HeaderMetadata};
 use sp_consensus_aura::{
 	digests::CompatibleDigestItem,
-	sr25519::{AuthorityId, AuthoritySignature},
 	AuraApi, Slot, SlotDuration,
 };
 use sp_inherents::InherentData;
 use sp_runtime::{traits::Block as BlockT, Digest, DigestItem};
 use sp_timestamp::TimestampInherentData;
 use std::{marker::PhantomData, sync::Arc};
-
+use nimbus_primitives::NimbusSignature;
 
 /// Consensus data provider for Aura.
 pub struct TanssiManualSealAuraConsensusDataProvider<B, C, P> {
@@ -62,7 +61,7 @@ where
 
 		// we always calculate the new slot number based on the current time-stamp and the slot
 		// duration.
-		let digest_item = <DigestItem as CompatibleDigestItem<AuthoritySignature>>::aura_pre_digest(
+		let digest_item = <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest(
 			Slot::from_timestamp(timestamp, self.slot_duration),
 		);
 
