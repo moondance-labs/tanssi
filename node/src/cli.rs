@@ -248,6 +248,11 @@ pub struct ContainerChainRunCmd {
     /// Optional container chain para id that should be used to build chain spec.
     #[arg(long)]
     pub para_id: Option<u32>,
+
+    /// Wait until the selected container chain is registered.
+    /// The default behavior is to panic instead of waiting.
+    #[arg(long)]
+    pub wait_until_container_chain_exists: bool,
 }
 
 #[derive(Debug)]

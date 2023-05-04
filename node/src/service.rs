@@ -524,15 +524,37 @@ impl<'a> ContainerChainSpawner<'a> {
                 .para_id
                 .ok_or("missing --para-id CLI argument for container chain")?;
 
-            let genesis_data = tanssi_runtime_api
-                .genesis_data(tanssi_block, container_chain_para_id.into())
-                .expect("error")
-                .ok_or_else(|| {
-                    format!(
-                        "No genesis data registered for container chain id {}",
-                        container_chain_para_id
-                    )
-                })?;
+            let genesis_data = loop {
+                let genesis_data = tanssi_runtime_api
+                    .genesis_data(tanssi_block, container_chain_para_id.into())
+                    .expect("error")
+                    .ok_or_else(|| {
+                        format!(
+                            "No genesis data registered for container chain id {}",
+                            container_chain_para_id
+                        )
+                    });
+
+                match genesis_data {
+                    Ok(genesis_data) => break genesis_data,
+                    Err(e) => {
+                        // The genesis data does not exist, so we may want to wait for it to be created
+                        // (for example when running tests), or we may want to simply panic
+                        if container_chain_cli.base.wait_until_container_chain_exists {
+                            log::debug!("{}", e);
+                            log::debug!(
+                                "Waiting for container chain {} to be registered...",
+                                container_chain_para_id
+                            );
+                            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+                            continue;
+                        } else {
+                            // Return error
+                            return Err(e.into());
+                        }
+                    }
+                }
+            };
 
             container_chain_cli
                 .preload_chain_spec_from_genesis_data(
