@@ -148,3 +148,17 @@ impl ExtBuilder {
         t.into()
     }
 }
+
+pub(crate) fn events() -> Vec<payment_services_pallet::Event<Test>> {
+    System::events()
+        .into_iter()
+        .map(|r| r.event)
+        .filter_map(|e| {
+            if let RuntimeEvent::PaymentServices(inner) = e {
+                Some(inner)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+}
