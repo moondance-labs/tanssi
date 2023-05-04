@@ -94,4 +94,6 @@ runtime-benchmarks = [
 try-runtime = [
 	"test-runtime/try-runtime",
 	"try-runtime-cli/try-runtime",
- ]
+]
+
+fast-runtime = ["test-runtime/fast-runtime"]
