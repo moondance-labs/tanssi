@@ -90,7 +90,7 @@ pub mod pallet {
             );
 
             // get the current per-credit cost of a block
-            let (block_cost, weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
+            let (block_cost, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
             let total_fee = block_cost.saturating_mul(credits.into());
             
             T::OnChargeForBlockCredit::charge_credits(&account, &para_id, credits, total_fee)?;
@@ -111,7 +111,7 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         // TODO:
-        pub fn burn_credit_for_para(para_id: &ParaId) { }
+        pub fn burn_credit_for_para(_para_id: &ParaId) { }
     }
 
     #[pallet::genesis_config]

@@ -14,6 +14,11 @@ fn purchase_credits_fails_when_over_max() {
             assert_ok!(
                 PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), MaxCreditsStored::get()),
             );
+
+            assert_err!(
+                PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1),
+                payment_services_pallet::Error::<Test>::TooManyCredits,
+            );
             
         });
 }

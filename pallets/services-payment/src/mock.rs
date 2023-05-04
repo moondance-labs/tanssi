@@ -4,16 +4,13 @@ use {
     crate::{self as payment_services_pallet, OnChargeForBlockCredit, ProvideBlockProductionCost},
     cumulus_primitives_core::ParaId,
     frame_support::{
-        inherent::{InherentData, ProvideInherent},
         parameter_types,
         pallet_prelude::*,
         traits::{
-            ConstU32, ConstU64, Everything, OnFinalize, OnInitialize, UnfilteredDispatchable,
+            ConstU32, ConstU64, Everything,
             tokens::ExistenceRequirement,
         },
     },
-    frame_system::RawOrigin,
-    parity_scale_codec::{Decode, Encode},
     sp_core::H256,
     sp_runtime::{
         testing::Header,
@@ -97,8 +94,8 @@ pub struct ChargeForBlockCredit<Test>(PhantomData<Test>);
 impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
     fn charge_credits(
         payer: &u64,
-        para_id: &ParaId,
-        credits: u64,
+        _para_id: &ParaId,
+        _credits: u64,
         fee: u128,
     ) -> Result<(), payment_services_pallet::Error<Test>> {
         use frame_support::traits::tokens::imbalance::Imbalance;
@@ -121,7 +118,7 @@ impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
 
 pub struct BlockProductionCost<Test>(PhantomData<Test>);
 impl ProvideBlockProductionCost<Test> for BlockProductionCost<Test> {
-    fn block_cost(para_id: &ParaId) -> (u128, Weight) {
+    fn block_cost(_para_id: &ParaId) -> (u128, Weight) {
         (100, Weight::zero())
     }
 }
