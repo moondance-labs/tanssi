@@ -1,4 +1,5 @@
 use pallet_registrar_runtime_api::json::container_chain_genesis_data_from_path;
+use tp_container_chain_genesis_data::ContainerChainGenesisData;
 
 use {
     cumulus_primitives_core::ParaId,
@@ -125,7 +126,11 @@ pub fn account_ids(names: &[&str]) -> Vec<AccountId> {
         .collect()
 }
 
-pub fn development_config(para_id: ParaId, container_chains: Vec<String>) -> ChainSpec {
+pub fn development_config(
+    para_id: ParaId,
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -159,6 +164,7 @@ pub fn development_config(para_id: ParaId, container_chains: Vec<String>) -> Cha
                 para_id,
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 &container_chains,
+                &mock_container_chains,
             )
         },
         Vec::new(),
@@ -173,7 +179,11 @@ pub fn development_config(para_id: ParaId, container_chains: Vec<String>) -> Cha
     )
 }
 
-pub fn local_testnet_config(para_id: ParaId, container_chains: Vec<String>) -> ChainSpec {
+pub fn local_testnet_config(
+    para_id: ParaId,
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -207,6 +217,7 @@ pub fn local_testnet_config(para_id: ParaId, container_chains: Vec<String>) -> C
                 para_id,
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 &container_chains,
+                &mock_container_chains,
             )
         },
         // Bootnodes
@@ -233,6 +244,7 @@ fn testnet_genesis(
     id: ParaId,
     root_key: AccountId,
     container_chains: &[String],
+    mock_container_chains: &[ParaId],
 ) -> test_runtime::GenesisConfig {
     test_runtime::GenesisConfig {
         system: test_runtime::SystemConfig {
@@ -282,10 +294,26 @@ fn testnet_genesis(
                         )
                     })
                 })
+                .chain(
+                    mock_container_chains
+                        .iter()
+                        .map(|x| (*x, mock_container_chain_genesis_data(*x))),
+                )
                 .collect(),
         },
         sudo: SudoConfig {
             key: Some(root_key),
         },
+    }
+}
+
+fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
+    ContainerChainGenesisData {
+        storage: vec![],
+        name: format!("Container Chain {}", para_id).into(),
+        id: format!("container-chain-{}", para_id).into(),
+        fork_id: None,
+        extensions: vec![],
+        properties: Default::default(),
     }
 }

@@ -22,9 +22,21 @@ use {
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::development_config(para_id, vec![])),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id, vec![])),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id, vec![])),
+        "dev" => Box::new(chain_spec::development_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+        )),
+        "template-rococo" => Box::new(chain_spec::local_testnet_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+        )),
+        "" | "local" => Box::new(chain_spec::local_testnet_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+        )),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
@@ -214,11 +226,13 @@ pub fn run() -> Result<()> {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
+                            vec![],
                         ))
                     } else {
                         Box::new(chain_spec::local_testnet_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
+                            vec![],
                         ))
                     }
                 } else {
