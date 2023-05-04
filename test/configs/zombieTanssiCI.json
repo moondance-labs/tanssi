@@ -64,6 +64,16 @@
             "name": "Collator2001-02",
             "command": "tmp/test-node",
             "args": ["-- --tmp --para-id 2001"]
+          },
+          {
+            "name": "Collator2002-01",
+            "command": "tmp/test-node",
+            "args": ["-- --tmp --ws-port 9951 --para-id 2002 --wait-until-container-chain-exists"]
+          },
+          {
+            "name": "Collator2002-02",
+            "command": "tmp/test-node",
+            "args": ["-- --tmp --para-id 2002 --wait-until-container-chain-exists"]
           }
         ]
       },

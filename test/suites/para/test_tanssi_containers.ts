@@ -1,4 +1,5 @@
 import { expect, describeSuite, beforeAll, ApiPromise } from "@moonwall/cli";
+import { Keyring } from "@polkadot/api";
 import { BN } from "@polkadot/util";
 describeSuite({
   id: "ZTN",
@@ -136,6 +137,42 @@ describeSuite({
 
         expect(containerChainCollators2000.includes(author2000.toString())).to.be.true;
         expect(containerChainCollators2001.includes(author2001.toString())).to.be.true;
+      },
+    });
+
+
+    it({
+      id: "T08",
+      title: "Test live registration of container chain 2002",
+      timeout: 120000,
+      test: async function () {
+        const keyring = new Keyring({ type: 'sr25519' });
+        let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+        let container2002Api = context.polkadotJs({ apiName: "Container2002" });
+
+        const container2002Network = container2002Api.consts.system.version.specName.toString();
+        expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
+  
+        const emptyGenesisData = () => {
+            // TODO: fill with default value for all the entries of ContainerChainGenesisData
+            let g = {
+              id: "container-chain-2002",
+              name: "Container Chain 2002",
+            };
+            return g;
+        };
+        const containerChainGenesisData = emptyGenesisData();
+
+        const tx = paraApi.tx.registrar.register(2002, containerChainGenesisData);
+        await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
+        
+        // TODO: we need to manually register the parachain in the relay as well
+        await context.waitBlock(8, "Tanssi");
+
+        const registered = (await paraApi.query.registrar.registeredParaIds());
+        console.log("regitrar: ", registered);
+
+        expect(false).to.be.true;
       },
     });
 
