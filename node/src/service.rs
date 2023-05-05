@@ -400,7 +400,7 @@ async fn start_node_impl(
             &task_manager,
             relay_chain_interface.clone(),
             transaction_pool,
-            sync_service,
+            sync_service.clone(),
             params.keystore_container.sync_keystore(),
             force_authoring,
             para_id,
@@ -514,7 +514,15 @@ impl<'a> ContainerChainSpawner<'a> {
             // need to be awaited.
 
             // Read genesis data from tanssi
-            let tanssi_block = tanssi_client.chain_info().best_hash;
+            // TODO: the tanssi node may not be fully synced yet, in that case we will be reading
+            // an old state.
+            let tanssi_chain_info = tanssi_client.chain_info();
+            let tanssi_block = tanssi_chain_info.best_hash;
+            log::info!(
+                "Best tanssi block is #{} {}",
+                tanssi_chain_info.best_number,
+                tanssi_block
+            );
             let tanssi_runtime_api = tanssi_client.runtime_api();
 
             let container_chain_para_id = container_chain_cli
