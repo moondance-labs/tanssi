@@ -1,4 +1,4 @@
-use pallet_registrar_runtime_api::json::properties_to_map;
+use tp_container_chain_genesis_data::json::properties_to_map;
 
 use {
     crate::{chain_spec::RawGenesisConfig, service::Sealing},
