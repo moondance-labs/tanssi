@@ -75,7 +75,7 @@ fn burn_credit_fails_with_no_credits() {
 }
 
 #[test]
-fn burn_credit_fails_works() {
+fn burn_credit_works() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
