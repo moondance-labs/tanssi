@@ -161,12 +161,7 @@ jobs:
           ## Run tests
 
           pnpm moonwall test zombie_tanssi_ci
-      - name: "Upload chain specs"
-        if: failure()
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: specs
-          path: "../specs"
+
       - name: "Gather zombie logs"
         if: failure()
         run: |
@@ -182,4 +177,3 @@ jobs:
         with:
           name: logs
           path: logs
-
