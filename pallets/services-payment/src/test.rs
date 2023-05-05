@@ -97,3 +97,23 @@ fn burn_credit_works() {
             );
         });
 }
+
+#[test]
+fn burn_credit_fails_for_wrong_para() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            let para_id = 1.into();
+            assert_ok!(
+                PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), para_id, 1u64),
+            );
+
+            // fails for wrong para
+            let wrong_para_id = 2.into();
+            assert_err!(
+                PaymentServices::burn_credit_for_para(&wrong_para_id),
+                payment_services_pallet::Error::<Test>::InsufficientCredits,
+            );
+        });
+}
