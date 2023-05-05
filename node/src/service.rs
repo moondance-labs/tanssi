@@ -509,9 +509,7 @@ impl<'a> ContainerChainSpawner<'a> {
         // This closure is used to emulate a try block, it enables using the `?` operator inside
         let try_closure = move || async move {
             let tanssi_chain_interface = orchestrator_chain_interface_builder.build();
-            // Preload chain spec files for testing.
-            // In the future we will only load the one container chain that this node needs to sync,
-            // and we will load it from Tanssi storage.
+            // Preload chain spec file from Tanssi storage.
             // The preload must finish before calling create_configuration, so any async operations
             // need to be awaited.
 
