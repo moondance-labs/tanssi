@@ -106,7 +106,7 @@ impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
             WithdrawReasons::FEE, 
             ExistenceRequirement::AllowDeath
         );
-        let imbalance = result.map_err(|_| payment_services_pallet::Error::InsufficientFunds)?;
+        let imbalance = result.map_err(|_| payment_services_pallet::Error::InsufficientFundsToPurchaseCredits)?;
 
         if imbalance.peek() != fee {
             panic!("withdrawn balance incorrect");

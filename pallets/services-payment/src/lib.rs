@@ -40,7 +40,8 @@ pub mod pallet {
     #[pallet::error]
     pub enum Error<T> {
         TooManyCredits,
-        InsufficientFunds,
+        InsufficientFundsToPurchaseCredits,
+        InsufficientCredits,
     }
 
     #[pallet::pallet]
@@ -54,13 +55,17 @@ pub mod pallet {
             payer: T::AccountId,
             fee: BalanceOf<T>, 
             credits_purchased: T::BlockNumber,
-            credits_owned: T::BlockNumber,
-        }
+            credits_remaining: T::BlockNumber,
+        },
+        CreditBurned {
+            para_id: ParaId,
+            credits_remaining: T::BlockNumber,
+        },
     }
 
     #[pallet::storage]
     #[pallet::getter(fn collator_commission)]
-    type BlockProductionCredits<T: Config> = StorageMap<
+    pub type BlockProductionCredits<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
         ParaId,
@@ -102,7 +107,7 @@ pub mod pallet {
                 payer: account,
                 fee: total_fee,
                 credits_purchased: credits,
-                credits_owned: updated_credits,
+                credits_remaining: updated_credits,
             });
 
             Ok(().into())
@@ -110,8 +115,26 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        // TODO:
-        pub fn burn_credit_for_para(_para_id: &ParaId) { }
+        // TODO: make this a regular call? weight?
+        /// Burn a credit for the given para. Deducts one credit if possible, errors otherwise.
+        pub fn burn_credit_for_para(para_id: &ParaId) -> DispatchResultWithPostInfo {
+            let existing_credits = BlockProductionCredits::<T>::get(para_id).unwrap_or(T::BlockNumber::zero());
+
+            ensure!(
+                existing_credits >= 1u32.into(),
+                Error::<T>::InsufficientCredits,
+            );
+
+            let updated_credits = existing_credits.saturating_sub(1u32.into());
+            BlockProductionCredits::<T>::insert(para_id, updated_credits);
+
+            Self::deposit_event(Event::<T>::CreditBurned {
+                para_id: *para_id,
+                credits_remaining: updated_credits,
+            });
+
+            Ok(().into())
+        }
     }
 
     #[pallet::genesis_config]

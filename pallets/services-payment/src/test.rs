@@ -1,5 +1,5 @@
 use {
-    crate::{pallet as payment_services_pallet, mock::*},
+    crate::{BlockProductionCredits, pallet as payment_services_pallet, mock::*},
     frame_support::{assert_err, assert_ok},
 };
 
@@ -25,7 +25,7 @@ fn purchase_credits_works() {
                     payer: ALICE,
                     fee: 500,
                     credits_purchased: MaxCreditsStored::get(),
-                    credits_owned: MaxCreditsStored::get(),
+                    credits_remaining: MaxCreditsStored::get(),
                 }]
             );
         });
@@ -57,8 +57,43 @@ fn purchase_credits_fails_with_insufficient_balance() {
             // really what we're testing is that purchase_credits fails when OnChargeForBlockCredits does
             assert_err!(
                 PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1),
-                payment_services_pallet::Error::<Test>::InsufficientFunds,
+                payment_services_pallet::Error::<Test>::InsufficientFundsToPurchaseCredits,
             );
         });
+}
 
+#[test]
+fn burn_credit_fails_with_no_credits() {
+    ExtBuilder::default()
+        .build()
+        .execute_with(|| {
+            assert_err!(
+                PaymentServices::burn_credit_for_para(&1u32.into()),
+                payment_services_pallet::Error::<Test>::InsufficientCredits,
+            );
+        });
+}
+
+#[test]
+fn burn_credit_fails_works() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            let para_id = 1.into();
+            assert_ok!(
+                PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), para_id, 1u64),
+            );
+
+            // should succeed and burn one
+            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(1u64));
+            assert_ok!(PaymentServices::burn_credit_for_para(&para_id));
+            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(0u64));
+
+            // now should fail
+            assert_err!(
+                PaymentServices::burn_credit_for_para(&para_id),
+                payment_services_pallet::Error::<Test>::InsufficientCredits,
+            );
+        });
 }
