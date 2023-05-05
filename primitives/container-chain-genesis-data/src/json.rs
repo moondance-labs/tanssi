@@ -1,9 +1,9 @@
 //! Helper functions to convert from `ContainerChainGenesisData` to JSON values and back
 
-use crate::ContainerChainGenesisData;
-use crate::ContainerChainGenesisDataItem;
-use crate::TokenMetadata;
-use cumulus_primitives_core::ParaId;
+use {
+    crate::{ContainerChainGenesisData, ContainerChainGenesisDataItem, TokenMetadata},
+    cumulus_primitives_core::ParaId,
+};
 
 /// Reads a raw ChainSpec file stored in `path`, and returns its `ParaId` and
 /// a `ContainerChainGenesisData` that can be used to recreate the ChainSpec later.

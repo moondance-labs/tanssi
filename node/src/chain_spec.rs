@@ -1,5 +1,6 @@
-use tp_container_chain_genesis_data::json::container_chain_genesis_data_from_path;
-use tp_container_chain_genesis_data::ContainerChainGenesisData;
+use tp_container_chain_genesis_data::{
+    json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
+};
 
 use {
     cumulus_primitives_core::ParaId,
