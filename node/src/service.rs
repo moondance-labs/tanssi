@@ -460,7 +460,7 @@ async fn start_node_impl(
         };
 
         task_manager.spawn_handle().spawn(
-            "container-chain-starter",
+            "container-chain-spawner",
             None,
             container_chain_spawner.spawn(),
         );

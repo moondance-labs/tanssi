@@ -1,7 +1,3 @@
-use tp_container_chain_genesis_data::{
-    json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
-};
-
 use {
     cumulus_primitives_core::ParaId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
@@ -12,6 +8,9 @@ use {
     std::collections::BTreeMap,
     test_runtime::{
         AccountId, AuraId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
+    },
+    tp_container_chain_genesis_data::{
+        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
 };
 
