@@ -1,12 +1,13 @@
 #![cfg(test)]
 
-mod common;
 use {
     common::*,
     cumulus_primitives_core::ParaId,
     frame_support::{assert_ok, BoundedVec},
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
-    pallet_registrar_runtime_api::runtime_decl_for_registrar_api::RegistrarApi,
+    pallet_registrar_runtime_api::{
+        runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
+    },
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
@@ -15,6 +16,8 @@ use {
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     test_runtime::{AuthorNoting, CollatorAssignment, CollatorSelection, Configuration},
 };
+
+mod common;
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
 
@@ -47,7 +50,10 @@ fn genesis_para_registrar() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -65,7 +71,10 @@ fn genesis_para_registrar_deregister() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -106,7 +115,10 @@ fn genesis_para_registrar_runtime_api() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -133,6 +145,78 @@ fn genesis_para_registrar_runtime_api() {
 }
 
 #[test]
+fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
+    let genesis_data_1001 = empty_genesis_data();
+    let genesis_data_1002 = ContainerChainGenesisData {
+        storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
+        extensions: vec![],
+        properties: Default::default(),
+    };
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, genesis_data_1001.clone()),
+            (1002, genesis_data_1002.clone()),
+        ])
+        .build()
+        .execute_with(|| {
+            assert_eq!(
+                Registrar::registered_para_ids(),
+                vec![1001.into(), 1002.into()]
+            );
+            assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
+
+            assert_eq!(
+                Runtime::genesis_data(1001.into()).as_ref(),
+                Some(&genesis_data_1001)
+            );
+            assert_eq!(
+                Runtime::genesis_data(1002.into()).as_ref(),
+                Some(&genesis_data_1002)
+            );
+            assert_eq!(Runtime::genesis_data(1003.into()).as_ref(), None);
+
+            // This API cannot be used to get the genesis data of the orchestrator chain,
+            // with id 100
+            // TODO: where is that 100 defined?
+            assert_eq!(Runtime::genesis_data(100.into()).as_ref(), None);
+
+            run_to_block(2, false);
+            assert_ok!(Registrar::deregister(root_origin(), 1002.into()), ());
+
+            // Deregistered container chains are deleted immediately
+            // TODO: they should stay until session 2, just like the para id does
+            assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), None);
+
+            let genesis_data_1003 = ContainerChainGenesisData {
+                storage: vec![(b"key3".to_vec(), b"value3".to_vec()).into()],
+                name: Default::default(),
+                id: Default::default(),
+                fork_id: Default::default(),
+                extensions: vec![],
+                properties: Default::default(),
+            };
+            assert_ok!(
+                Registrar::register(root_origin(), 1003.into(), genesis_data_1003.clone()),
+                ()
+            );
+
+            // Registered container chains are inserted immediately
+            assert_eq!(
+                Runtime::genesis_data(1003.into()).as_ref(),
+                Some(&genesis_data_1003)
+            );
+        });
+}
+
+#[test]
 fn test_author_collation_aura() {
     ExtBuilder::default()
         .with_balances(vec![
@@ -144,7 +228,10 @@ fn test_author_collation_aura() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
             min_orchestrator_collators: 2,
@@ -181,7 +268,10 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
             min_orchestrator_collators: 2,
@@ -253,7 +343,10 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
             min_orchestrator_collators: 2,
@@ -406,8 +499,14 @@ fn test_authors_paras_inserted_a_posteriori() {
 
             assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(Registrar::register(root_origin(), 1001.into()), ());
-            assert_ok!(Registrar::register(root_origin(), 1002.into()), ());
+            assert_ok!(
+                Registrar::register(root_origin(), 1001.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::register(root_origin(), 1002.into(), empty_genesis_data()),
+                ()
+            );
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32, true);
@@ -464,7 +563,10 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
                 vec![alice_id, bob_id, charlie_id, dave_id]
             );
 
-            assert_ok!(Registrar::register(root_origin(), 1001.into()), ());
+            assert_ok!(
+                Registrar::register(root_origin(), 1001.into(), empty_genesis_data()),
+                ()
+            );
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32, true);
@@ -501,7 +603,10 @@ fn test_parachains_deregister_collators_re_assigned() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
             min_orchestrator_collators: 2,
@@ -566,7 +671,10 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
             min_orchestrator_collators: 2,
@@ -586,7 +694,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
 
             assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
 
-            // Set tanssi collators to 1
+            // Set orchestrator collators to 1
             assert_ok!(
                 Configuration::set_max_orchestrator_collators(root_origin(), 1),
                 ()
@@ -635,7 +743,10 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
             (AccountId::from(ALICE), 210_000 * UNIT),
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
             min_orchestrator_collators: 2,
@@ -727,7 +838,10 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_para_ids(vec![1001, 1002])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
             min_orchestrator_collators: 2,
@@ -934,7 +1048,10 @@ fn test_author_noting_not_self_para() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_para_ids(vec![1001])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
         .build()
         .execute_with(|| {
             let mut sproof = ParaHeaderSproofBuilder::default();

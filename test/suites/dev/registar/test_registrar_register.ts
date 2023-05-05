@@ -42,7 +42,17 @@ describeSuite({
         const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
         const expectedScheduledOnboarding = BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
-        const tx = polkadotJs.tx.registrar.register(2002);
+        const emptyGenesisData = () => {
+            // TODO: fill with default value for all the entries of ContainerChainGenesisData
+            let g = {
+              id: "container-chain-2002",
+              name: "Container Chain 2002",
+            };
+            return g;
+        };
+        const containerChainGenesisData = emptyGenesisData();
+
+        const tx = polkadotJs.tx.registrar.register(2002, containerChainGenesisData);
         await polkadotJs.tx.sudo.sudo(tx).signAndSend(alice);
 
         await context.createBlock();

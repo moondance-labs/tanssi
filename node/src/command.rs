@@ -22,9 +22,21 @@ use {
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::development_config(para_id)),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id)),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id)),
+        "dev" => Box::new(chain_spec::development_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+        )),
+        "template-rococo" => Box::new(chain_spec::local_testnet_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+        )),
+        "" | "local" => Box::new(chain_spec::local_testnet_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+        )),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
@@ -144,12 +156,50 @@ impl SubstrateCli for ContainerChainCli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
-        load_spec(id, self.base.para_id.unwrap_or(2000).into())
+        // ContainerChain ChainSpec must be preloaded beforehand because we need to call async
+        // functions to generate it, and this function is not async.
+        let para_id = parse_container_chain_id_str(id)?;
+
+        match &self.preloaded_chain_spec {
+            Some(spec) => {
+                let spec_para_id = crate::chain_spec::Extensions::try_get(&**spec)
+                    .map(|extension| extension.para_id);
+
+                if spec_para_id == Some(para_id) {
+                    Ok(spec.cloned_box())
+                } else {
+                    Err(format!(
+                        "Expected ChainSpec for id {}, found ChainSpec for id {:?} instead",
+                        para_id, spec_para_id
+                    ))
+                }
+            }
+            None => Err(format!("ChainSpec for {} not found", id)),
+        }
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
         &test_runtime::VERSION
     }
+}
+
+/// Parse ParaId(2000) from a string like "container-chain-2000"
+fn parse_container_chain_id_str(id: &str) -> std::result::Result<u32, String> {
+    // The id has been created using format!("container-chain-{}", para_id), so here we need
+    // to reverse that.
+    id.strip_prefix("container-chain-")
+        .and_then(|s| {
+            let id: u32 = s.parse().ok()?;
+
+            // `.parse()` ignores leading zeros, so convert the id back to string to check
+            // if we get the same string, this way we ensure a 1:1 mapping
+            if id.to_string() == s {
+                Some(id)
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| format!("load_spec called with invalid id: {:?}", id))
 }
 
 macro_rules! construct_async_run {
@@ -173,9 +223,17 @@ pub fn run() -> Result<()> {
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.parachain_id {
                     if cmd.base.shared_params.dev {
-                        Box::new(chain_spec::development_config(para_id.into()))
+                        Box::new(chain_spec::development_config(
+                            para_id.into(),
+                            cmd.add_container_chain.clone(),
+                            vec![],
+                        ))
                     } else {
-                        Box::new(chain_spec::local_testnet_config(para_id.into()))
+                        Box::new(chain_spec::local_testnet_config(
+                            para_id.into(),
+                            cmd.add_container_chain.clone(),
+                            vec![],
+                        ))
                     }
                 } else {
                     config.chain_spec
@@ -417,26 +475,20 @@ pub fn run() -> Result<()> {
 					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 
-				let mut orchestrator_config = None;
+				let mut container_chain_config = None;
 				if !cli.container_chain_args().is_empty() {
-					let orchestrator_cli = ContainerChainCli::new(
+					let container_chain_cli = ContainerChainCli::new(
 						&config,
 						[ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
 					);
 					let tokio_handle = config.tokio_handle.clone();
-					let config =
-						SubstrateCli::create_configuration(&orchestrator_cli, &orchestrator_cli, tokio_handle)
-							.map_err(|err| format!("Orchestrator chain argument error: {}", err))?;
-					let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
-						.map(|e| e.para_id)
-						.ok_or_else(|| "Could not find parachain extension in chain-spec.")?;
-					orchestrator_config = Some((config, ParaId::from(para_id)));
+					container_chain_config = Some((container_chain_cli, tokio_handle));
 				}
 
 				crate::service::start_parachain_node(
 					config,
 					polkadot_config,
-                    orchestrator_config,
+                    container_chain_config,
 					collator_options,
 					id,
 					hwbench,
@@ -669,14 +721,11 @@ impl CliConfiguration<Self> for ContainerChainCli {
         unreachable!("PolkadotCli is never initialized; qed");
     }
 
-    fn chain_id(&self, is_dev: bool) -> Result<String> {
-        let chain_id = self.base.base.chain_id(is_dev)?;
-
-        Ok(if chain_id.is_empty() {
-            self.chain_id.clone().unwrap_or_default()
-        } else {
-            chain_id
-        })
+    fn chain_id(&self, _is_dev: bool) -> Result<String> {
+        self.base
+            .para_id
+            .map(|para_id| format!("container-chain-{}", para_id))
+            .ok_or("no para-id in container chain args".into())
     }
 
     fn role(&self, is_dev: bool) -> Result<sc_service::Role> {
