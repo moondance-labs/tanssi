@@ -34,6 +34,7 @@ use {
         EnsureRoot,
     },
     polkadot_runtime_common::BlockHashCount,
+    sp_application_crypto::ByteArray,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata},
@@ -696,7 +697,7 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_collator_assignment_runtime_api::CollatorAssignmentApi<Block, AccountId, ParaId> for Runtime {
+    impl pallet_collator_assignment_runtime_api::CollatorAssignmentApi<Block, AccountId, ParaId, NimbusId> for Runtime {
         /// Return the parachain that the given `AccountId` is collating for.
         /// Returns `None` if the `AccountId` is not collating.
         fn current_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
@@ -704,6 +705,13 @@ impl_runtime_apis! {
             let self_para_id = ParachainInfo::get().into();
 
             assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
+        }
+        /// Return the parachain that the given `AccountId` is collating for.
+
+        /// Returns `None` if the `AccountId` is not collating.
+        fn current_authority_parachain_assignment(authority: NimbusId) -> Option<ParaId> {
+            let owner = Session::key_owner(NIMBUS_KEY_ID, authority.as_ref())?;
+            Self::current_collator_parachain_assignment(owner)
         }
 
         /// Return the parachain that the given `AccountId` will be collating for
@@ -736,6 +744,16 @@ impl_runtime_apis! {
             } else {
                 assigned_collators.container_chains.get(&para_id.into()).cloned()
             }
+        }
+
+        /// Return the parachain that the given `AccountId` is collating for.
+        /// Returns `None` if the `AccountId` is not collating.
+        fn parachain_authorities(para_id: ParaId) -> Option<Vec<NimbusId>>{
+            let assigned_collators = Self::parachain_collators(para_id)?;
+            let authorities = pallet_session::KeyOwner::<Runtime>::iter().filter(|((key_id, key), owner)| 
+                key_id == &NIMBUS_KEY_ID && assigned_collators.contains(owner)
+            ).map(|((key_id, key), owner)| NimbusId::from_slice(&key).unwrap()).collect();
+            Some(authorities)
         }
     }
 

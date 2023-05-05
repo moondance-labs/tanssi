@@ -7,9 +7,10 @@
 use scale_info::prelude::vec::Vec;
 
 sp_api::decl_runtime_apis! {
-    pub trait CollatorAssignmentApi<AccountId, ParaId> where
+    pub trait CollatorAssignmentApi<AccountId, ParaId, AuthorityId> where
         AccountId: parity_scale_codec::Codec,
         ParaId: parity_scale_codec::Codec,
+        AuthorityId: parity_scale_codec::Codec,
     {
         /// Return the parachain that the given `AccountId` is collating for.
         /// Returns `None` if the `AccountId` is not collating.
@@ -21,5 +22,14 @@ sp_api::decl_runtime_apis! {
         /// Return the list of collators of the given `ParaId`.
         /// Returns `None` if the `ParaId` is not in the registrar.
         fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>>;
+
+        /// Return the parachain that the given `AuthorityId` is collating for.
+        /// Returns `None` if the `AuthorityId` is not collating.
+        fn current_authority_parachain_assignment(authority: AuthorityId) -> Option<ParaId>;
+
+        /// Return the list of authorities of the given `ParaId`.
+        /// Returns `None` if the `ParaId` is not in the registrar.
+        fn parachain_authorities(para_id: ParaId) -> Option<Vec<AuthorityId>>;
+
     }
 }

@@ -32,13 +32,16 @@ use sc_client_api::{backend::AuxStore, BlockOf};
 use sc_consensus::{BlockImport, ForkChoiceStrategy, BlockImportParams, StateAction};
 use sc_consensus_slots::{BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, StorageChanges};
 use sc_consensus_aura::{CompatibilityMode, find_pre_digest};
+use nimbus_primitives::NIMBUS_KEY_ID;
+use nimbus_primitives::{NimbusId, NimbusApi};
 
 use sc_telemetry::TelemetryHandle;
 use sp_api::ProvideRuntimeApi;
-use sp_application_crypto::{AppKey, AppPublic};
+use sp_application_crypto::{CryptoTypePublicPair, AppKey, AppPublic};
 use sp_blockchain::HeaderBackend;
 use sp_consensus::{EnableProofRecording, Environment, ProofRecording, Proposer, SyncOracle, BlockOrigin, Error as ConsensusError};
 use sp_consensus_aura::{AuraApi, SlotDuration, digests::CompatibleDigestItem};
+use pallet_collator_assignment_runtime_api::CollatorAssignmentApi;
 use sp_core::crypto::{ByteArray, Pair, Public};
 use sp_inherents::CreateInherentDataProviders;
 use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
@@ -82,7 +85,7 @@ impl<B, CIDP, W> Clone for TanssiAuraConsensus<B, CIDP, W> {
 /// Build the aura worker.
 ///
 /// The caller is responsible for running this worker, otherwise it will do nothing.
-pub fn build_tanssi_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
+pub fn build_tanssi_aura_worker<P, B, C, PF, I, SO, L, BS, Error, AccountId, ParaId>(
 	BuildAuraWorkerParams {
 		client,
 		block_import,
@@ -110,6 +113,7 @@ where
 	B: BlockT,
 	C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
 	C::Api: AuraApi<B, AuthorityId<P>>,
+	C::Api: CollatorAssignmentApi<B, AccountId, ParaId, AuthorityId<P>>,
 	PF: Environment<B, Error = Error> + Send + Sync + 'static,
 	PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
 	P: Pair + Send + Sync,
@@ -120,6 +124,8 @@ where
 	SO: SyncOracle + Send + Sync + Clone,
 	L: sc_consensus::JustificationSyncLink<B>,
 	BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
+	AccountId: parity_scale_codec::Encode + parity_scale_codec::Decode,
+	ParaId: parity_scale_codec::Encode + parity_scale_codec::Decode,
 {
 	TanssiAuraWorker {
 		client,
@@ -161,7 +167,7 @@ where
 	CIDP::InherentDataProviders: InherentDataProviderExt,
 {
 	/// Create a new boxed instance of AURA consensus.
-	pub fn build<P, Client, BI, SO, PF, BS, Error>(
+	pub fn build<P, Client, BI, SO, PF, BS, Error, AccountId, ParaId>(
 		BuildTanssiAuraConsensusParams {
 			proposer_factory,
 			create_inherent_data_providers,
@@ -181,6 +187,7 @@ where
 		Client:
 			ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
 		Client::Api: AuraApi<B, P::Public>,
+		Client::Api: CollatorAssignmentApi<B, AccountId, ParaId, AuthorityId<P>>,
 		BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>>
 			+ ParachainBlockImportMarker
 			+ Send
@@ -200,8 +207,10 @@ where
 		P: Pair + Send + Sync,
 		P::Public: AppPublic + Hash + Member + Encode + Decode,
 		P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+		AccountId: Encode + Decode + 'static,
+		ParaId: Encode + Decode + 'static,
 	{
-		let worker = build_tanssi_aura_worker::<P, _, _, _, _, _, _, _, _>(
+		let worker = build_tanssi_aura_worker::<P, _, _, _, _, _, _, _, _, AccountId, ParaId>(
 			BuildAuraWorkerParams {
 				client: para_client,
 				block_import,
@@ -550,4 +559,62 @@ fn slot_author<P: Pair>(slot: Slot, authorities: &[AuthorityId<P>]) -> Option<&A
 	);
 
 	Some(current_author)
+}
+
+
+/// Grab the first eligible nimbus key from the keystore
+/// If multiple keys are eligible this function still only returns one
+/// and makes no guarantees which one as that depends on the keystore's iterator behavior.
+/// This is the standard way of determining which key to author with.
+pub(crate) fn first_eligible_key<B: BlockT, C, AccountId, ParaId, P>(
+	client: Arc<C>,
+	keystore: &dyn SyncCryptoStore,
+	parent_hash: &B::Hash,
+	slot_number: u32,
+) -> Option<CryptoTypePublicPair>
+where
+	C: ProvideRuntimeApi<B>,
+	C::Api: CollatorAssignmentApi<B, AccountId, ParaId, AuthorityId<P>>,
+	P: Pair + Send + Sync,
+	P::Public: AppPublic + Public + Member + Encode + Decode + Hash,
+	P::Signature: TryFrom<Vec<u8>> + Member + Encode + Decode + Hash + Debug,
+	AccountId: parity_scale_codec::Encode + parity_scale_codec::Decode,
+	ParaId: parity_scale_codec::Encode + parity_scale_codec::Decode,
+	C::Api: AuraApi<B, AuthorityId<P>>,
+{
+	// Get all the available keys
+	let available_keys = SyncCryptoStore::keys(keystore, NIMBUS_KEY_ID).ok()?;
+
+	// Print a more helpful message than "not eligible" when there are no keys at all.
+	if available_keys.is_empty() {
+		log::warn!(
+			target: LOG_TARGET,
+			"🔏 No Nimbus keys available. We will not be able to author."
+		);
+		return None;
+	}
+
+	let runtime_api = client.runtime_api();
+
+	// Iterate keys until we find an eligible one, or run out of candidates.
+	// If we are skipping prediction, then we author with the first key we find.
+	// prediction skipping only really makes sense when there is a single key in the keystore.
+	let maybe_authorities = available_keys.into_iter().find_map(|type_public_pair| {
+		// Have to convert to a typed NimbusId to pass to the runtime API. Maybe this is a clue
+		// That I should be passing Vec<u8> across the wasm boundary?
+		if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
+			// If we dont find any parachain that we are assigned to, return non
+
+			let authorities = runtime_api.authorities(parent_hash.clone());
+			let para_id = runtime_api.current_authority_parachain_assignment(parent_hash, nimbus_id)?;
+			
+			runtime_api
+				.parachain_authorities(parent_hash, para_id)
+			
+		} else {
+			None
+		}
+	});
+
+	maybe_authorities
 }

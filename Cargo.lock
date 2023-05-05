@@ -12161,6 +12161,7 @@ dependencies = [
  "log",
  "nimbus-consensus",
  "nimbus-primitives",
+ "pallet-collator-assignment-runtime-api",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "sc-client-api",

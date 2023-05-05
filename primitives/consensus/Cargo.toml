@@ -24,6 +24,7 @@ sp-keystore = { workspace = true }
 sp-runtime = { workspace = true }
 sp-timestamp = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
+pallet-collator-assignment-runtime-api = { workspace = true }
 
 # Cumulus dependencies
 cumulus-client-consensus-common = { workspace = true }
