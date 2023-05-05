@@ -693,7 +693,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
 
             assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
 
-            // Set tanssi collators to 1
+            // Set orchestrator collators to 1
             assert_ok!(
                 Configuration::set_max_orchestrator_collators(root_origin(), 1),
                 ()

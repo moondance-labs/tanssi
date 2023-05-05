@@ -27,7 +27,6 @@ container-chain-template-runtime = { path = "container-chain-template/runtime", 
 pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
 
 tc-orchestrator-chain-interface = { path = "client/orchestrator-chain-interface" }
-tc-tanssi-chain-interface = { path = "client/tanssi-chain-interface" }
 test-relay-sproof-builder = { path = "test-sproof-builder" }
 test-runtime = { path = "runtime/test", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
