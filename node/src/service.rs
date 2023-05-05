@@ -22,8 +22,10 @@ use {
     cumulus_relay_chain_interface::RelayChainInterface,
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
+    pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
+    polkadot_primitives::AccountPublic,
     polkadot_service::Handle,
     sc_client_api::{AuxStore, Backend, BlockchainEvents, HeaderBackend, UsageProvider},
     sc_consensus::{BlockImport, ImportQueue},
@@ -37,7 +39,8 @@ use {
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
-    sp_keystore::SyncCryptoStorePtr,
+    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_runtime::{key_types::AURA, traits::IdentifyAccount},
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, str::FromStr, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
@@ -523,10 +526,47 @@ impl<'a> ContainerChainSpawner<'a> {
             );
             let orchestrator_runtime_api = orchestrator_client.runtime_api();
 
+            // TODO: we are ignoring CLI argument, deprecate it or use it to force collation on this para id?
+            /*
             let container_chain_para_id = container_chain_cli
                 .base
                 .para_id
                 .ok_or("missing --para-id CLI argument for container chain")?;
+            */
+
+            // TODO: collator_key changes on node restart, so it is probably the wrong key
+            /*
+            let collator_account_id = AccountPublic::from(
+                <sp_core::sr25519::Public as CryptoType>::Pair::from(
+                    collator_key.as_ref().unwrap().clone(),
+                )
+                .public(),
+            );
+            */
+            // TODO: this is the correct key, but can we assume that
+            // ed25519_public_keys always returns a vec with exactly 1 element?
+            let collator_account_id =
+                AccountPublic::from(SyncCryptoStore::ed25519_public_keys(&*sync_keystore, AURA)[0]);
+            let container_chain_para_id = orchestrator_runtime_api
+                .current_collator_parachain_assignment(
+                    orchestrator_chain_info.best_hash,
+                    collator_account_id.clone().into_account(),
+                )
+                .expect("error");
+
+            log::info!("Key: {:?}", collator_account_id.into_account());
+
+            let container_chain_para_id: u32 = match container_chain_para_id {
+                Some(x) => x.into(),
+                None => {
+                    panic!("Collator not assigned to any container chain");
+                }
+            };
+
+            log::info!(
+                "Detected assignment for container chain {}",
+                container_chain_para_id
+            );
 
             let genesis_data = orchestrator_runtime_api
                 .genesis_data(
