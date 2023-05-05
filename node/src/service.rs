@@ -627,6 +627,9 @@ async fn start_node_impl_container(
         // Some fields of params are not `Send`, and that causes problems with async/await.
         // We take all the needed fields here inside a block to ensure that params
         // gets dropped before the first instance of `.await`.
+        // Change this to use the syntax `PartialComponents { client, backend, .. } = params;`
+        // when this issue is fixed:
+        // https://github.com/rust-lang/rust/issues/104883
         let params = new_partial(&parachain_config)?;
         let (l_block_import, l_telemetry, _telemetry_worker_handle) = params.other;
         block_import = l_block_import;
