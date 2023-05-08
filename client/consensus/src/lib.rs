@@ -36,7 +36,6 @@ use sc_consensus_slots::{
 };
 
 use futures::prelude::*;
-use log::{debug, trace};
 use nimbus_primitives::CompatibleDigestItem as NimbusCompatibleDigestItem;
 use sc_telemetry::TelemetryHandle;
 use sp_api::Core;
@@ -500,11 +499,6 @@ where
             self.logging_target(),
         )
     }
-}
-
-fn aura_err<B: BlockT>(error: sc_consensus_aura::Error<B>) -> sc_consensus_aura::Error<B> {
-    debug!(target: LOG_TARGET, "{}", error);
-    error
 }
 
 fn authorities<A, B, C>(
