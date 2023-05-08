@@ -118,6 +118,7 @@ where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
     C::Api: AuraApi<B, AuthorityId<P>>,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     PF: Environment<B, Error = Error> + Send + Sync + 'static,
     PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
@@ -191,7 +192,7 @@ where
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
         Client::Api: AuraApi<B, P::Public>,
         Client::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
-
+        AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
         BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>>
             + ParachainBlockImportMarker
             + Send
@@ -331,6 +332,7 @@ where
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
     C::Api: AuraApi<B, AuthorityId<P>>,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
     E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
@@ -364,11 +366,12 @@ where
         header: &B::Header,
         _slot: Slot,
     ) -> Result<Self::AuxData, sp_consensus::Error> {
-        authorities(
+        authorities::<P, B, C>(
             self.client.as_ref(),
             header.hash(),
             *header.number() + 1u32.into(),
             &self.compatibility_mode,
+            self.keystore.clone()
         )
     }
 
@@ -506,18 +509,22 @@ where
     }
 }
 
-fn authorities<A, B, C>(
+fn authorities<P, B, C>(
     client: &C,
     parent_hash: B::Hash,
     context_block_number: NumberFor<B>,
     compatibility_mode: &CompatibilityMode<NumberFor<B>>,
-) -> Result<Vec<A>, ConsensusError>
+    keystore: SyncCryptoStorePtr
+) -> Result<Vec<AuthorityId<P>>, ConsensusError>
 where
-    A: Codec + Debug,
+P: Pair + Send + Sync,
+	P::Public: AppPublic + Hash + Member + Encode + Decode,
+	P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
     B: BlockT,
     C: ProvideRuntimeApi<B>,
-    C::Api: AuraApi<B, A>,
-    C::Api: TanssiAuthorityAssignmentApi<B, A>,
+    C::Api: AuraApi<B, AuthorityId<P>>,
+    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>
 
 {
     let runtime_api = client.runtime_api();
@@ -542,12 +549,11 @@ where
             }
         }
     }
-
-    let authorities = runtime_api.para_id_authorities(parent_hash, 0u32.into());
-    runtime_api
-        .authorities(parent_hash)
-        .ok()
-        .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
+    first_eligible_key::<B, C, P>(
+        client.clone(),
+        keystore.clone(),
+        &parent_hash
+    ).ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
 }
 
 /// Get slot author for given block along with authorities.
@@ -567,4 +573,62 @@ fn slot_author<P: Pair>(slot: Slot, authorities: &[AuthorityId<P>]) -> Option<&A
     );
 
     Some(current_author)
+}
+
+
+use sp_application_crypto::CryptoTypePublicPair;
+use nimbus_primitives::{NimbusId, NIMBUS_KEY_ID, NimbusPair};
+/// Grab the first eligible nimbus key from the keystore
+/// If multiple keys are eligible this function still only returns one
+/// and makes no guarantees which one as that depends on the keystore's iterator behavior.
+/// This is the standard way of determining which key to author with.
+pub(crate) fn first_eligible_key<B: BlockT, C, P>(
+	client: &C,
+	keystore: SyncCryptoStorePtr,
+	parent_hash: &B::Hash
+) -> Option<Vec<AuthorityId<P>>>
+where
+	C: ProvideRuntimeApi<B>,
+	C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    P: Pair + Send + Sync,
+	P::Public: AppPublic + Hash + Member + Encode + Decode,
+	P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+	C::Api: AuraApi<B, AuthorityId<P>>,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>
+{
+	// Get all the available keys
+	let available_keys = SyncCryptoStore::keys(&*keystore, NIMBUS_KEY_ID).ok()?;
+
+	// Print a more helpful message than "not eligible" when there are no keys at all.
+	if available_keys.is_empty() {
+		log::warn!(
+			target: LOG_TARGET,
+			"🔏 No Nimbus keys available. We will not be able to author."
+		);
+		return None;
+	}
+
+	let runtime_api = client.runtime_api();
+
+	// Iterate keys until we find an eligible one, or run out of candidates.
+	// If we are skipping prediction, then we author with the first key we find.
+	// prediction skipping only really makes sense when there is a single key in the keystore.
+	let maybe_authorities = available_keys.into_iter().find_map(|type_public_pair| {
+		// Have to convert to a typed NimbusId to pass to the runtime API. Maybe this is a clue
+		// That I should be passing Vec<u8> across the wasm boundary?
+		if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
+			// If we dont find any parachain that we are assigned to, return non
+
+			if let Ok(Some(para_id)) =  runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.into()) {
+               runtime_api.para_id_authorities(parent_hash.clone(), para_id).ok()?
+            }
+            else {
+                None
+            }
+		} else {
+			None
+		}
+	});
+
+	maybe_authorities
 }
