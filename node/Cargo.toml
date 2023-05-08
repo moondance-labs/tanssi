@@ -31,7 +31,7 @@ tp-container-chain-genesis-data = { workspace = true, features = [ "std", "json"
 tc-consensus = { workspace = true }
 tc-orchestrator-chain-interface = { workspace = true }
 
-# Substrate
+# Nimbus
 nimbus-primitives = { workspace = true, features = [ "std" ]}
 nimbus-consensus = { workspace = true }
 

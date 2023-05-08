@@ -71,7 +71,7 @@ describeSuite({
 
         for (var authority of authorities) {
           const owner = (await paraApi.query.session.keyOwner([
-            "aura",
+            "nmbs",
              authority
           ]
           ));

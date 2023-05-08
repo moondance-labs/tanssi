@@ -1024,6 +1024,8 @@ dependencies = [
  "futures 0.3.26",
  "jsonrpsee",
  "log",
+ "nimbus-consensus",
+ "nimbus-primitives",
  "parity-scale-codec",
  "polkadot-cli",
  "polkadot-primitives",
@@ -1063,6 +1065,7 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+ "tc-consensus",
  "try-runtime-cli",
 ]
 
@@ -1083,7 +1086,9 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal",
  "log",
+ "nimbus-primitives",
  "pallet-aura",
+ "pallet-author-inherent",
  "pallet-authorship",
  "pallet-balances",
  "pallet-cc-authorities-noting",
@@ -5427,6 +5432,7 @@ name = "pallet-author-inherent"
 version = "0.9.0"
 source = "git+https://github.com/Purestake/nimbus?branch=girazoki-polkadot-v0.9.40#3085a95aa0cac372c81cdd35ed1c7d6e81cd5c50"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",

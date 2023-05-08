@@ -3,7 +3,7 @@
 use {
     crate::cli::ContainerChainCli,
     cumulus_client_cli::CollatorOptions,
-    cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion},
+    cumulus_client_consensus_aura::SlotProportion,
     tc_consensus::{TanssiAuraConsensus, BuildTanssiAuraConsensusParams},
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
@@ -46,7 +46,7 @@ use {
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
     test_runtime::{opaque::Block, AccountId, RuntimeApi},
-    nimbus_primitives::{NimbusPair, NimbusId}
+    nimbus_primitives::NimbusPair
 };
 
 type FullBackend = TFullBackend<Block>;
@@ -820,7 +820,7 @@ fn build_consensus_container(
         telemetry.clone(),
     );
 
-    let params = BuildAuraConsensusParams {
+    let params = BuildTanssiAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
@@ -887,7 +887,7 @@ fn build_consensus_container(
         telemetry,
     };
 
-    Ok(AuraConsensus::build::<
+    Ok(TanssiAuraConsensus::build::<
         NimbusPair,
         _,
         _,

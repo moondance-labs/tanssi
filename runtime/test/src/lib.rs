@@ -161,7 +161,7 @@ pub mod opaque {
 
 impl_opaque_keys! {
     pub struct SessionKeys {
-        pub nimbus: Initializer,
+        pub aura: Initializer,
     }
 }
 

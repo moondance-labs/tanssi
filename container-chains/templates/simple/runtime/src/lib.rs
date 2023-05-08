@@ -19,6 +19,7 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, MultiSignature,
     },
+    nimbus_primitives::NimbusId,
 };
 
 #[cfg(feature = "std")]
@@ -39,7 +40,6 @@ use {
     frame_system::limits::{BlockLength, BlockWeights},
 };
 pub use {
-    sp_consensus_aura::sr25519::AuthorityId as AuraId,
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
@@ -376,7 +376,7 @@ impl pallet_session::Config for Runtime {
 }
 
 impl pallet_aura::Config for Runtime {
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
     type DisabledValidators = ();
     type MaxAuthorities = ConstU32<100_000>;
 }
@@ -421,12 +421,12 @@ construct_runtime!(
 );
 
 impl_runtime_apis! {
-    impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
+    impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
             sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
         }
 
-        fn authorities() -> Vec<AuraId> {
+        fn authorities() -> Vec<NimbusId> {
             Aura::authorities().into_inner()
         }
     }
@@ -557,6 +557,6 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
 
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>
     CheckInherents = CheckInherents,
 }
