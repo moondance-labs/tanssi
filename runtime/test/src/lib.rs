@@ -726,6 +726,16 @@ impl_runtime_apis! {
             Registrar::para_genesis_data(para_id)
         }
     }
+
+    impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
+        /// Return the registered para ids
+        fn para_id_authorities(para_id: ParaId) -> Vec<NimbusId> {
+            vec![]
+        }
+        fn check_para_id_assignment(authority: NimbusId) -> ParaId {
+            0u32.into()
+        }
+    }
 }
 
 struct CheckInherents;

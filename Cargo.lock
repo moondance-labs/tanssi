@@ -11817,6 +11817,7 @@ dependencies = [
  "substrate-wasm-builder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-consensus",
  "tp-traits",
 ]
 
@@ -12196,6 +12197,17 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "tp-traits",
+]
+
+[[package]]
+name = "tp-consensus"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-std",
 ]
 
 [[package]]
