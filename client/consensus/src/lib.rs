@@ -68,7 +68,7 @@ pub use sc_consensus_slots::InherentDataProviderExt;
 
 const LOG_TARGET: &str = "aura::tanssi";
 
-/// The implementation of the AURA consensus for parachains.
+/// The implementation of the Tanssi AURA consensus for parachains.
 pub struct TanssiAuraConsensus<B, CIDP, W> {
     create_inherent_data_providers: Arc<CIDP>,
     aura_worker: Arc<Mutex<W>>,
@@ -87,7 +87,7 @@ impl<B, CIDP, W> Clone for TanssiAuraConsensus<B, CIDP, W> {
     }
 }
 
-/// Build the aura worker.
+/// Build the tanssi aura worker.
 ///
 /// The caller is responsible for running this worker, otherwise it will do nothing.
 pub fn build_tanssi_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
@@ -146,7 +146,7 @@ where
     }
 }
 
-/// Parameters of [`AuraConsensus::build`].
+/// Parameters of [`TanssiAuraConsensus::build`].
 pub struct BuildTanssiAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
     pub proposer_factory: PF,
     pub create_inherent_data_providers: CIDP,
@@ -348,7 +348,7 @@ where
     type AuxData = Vec<AuthorityId<P>>;
 
     fn logging_target(&self) -> &'static str {
-        "aura"
+        "tanssi_aura"
     }
 
     fn block_import(&mut self) -> &mut Self::BlockImport {
@@ -394,7 +394,9 @@ where
     fn pre_digest_data(&self, slot: Slot, claim: &Self::Claim) -> Vec<sp_runtime::DigestItem> {
         vec![
             <DigestItem as CompatibleDigestItem<P::Signature>>::aura_pre_digest(slot),
+            // We inject the nimbus digest as well. Crutial to be able to verify signatures
             <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(
+                // TODO remove this unwrap through trait reqs
                 nimbus_primitives::NimbusId::from_slice(claim.as_ref()).unwrap(),
             ),
         ]
