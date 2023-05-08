@@ -12,10 +12,11 @@ use {
     sp_core::Pair,
     sp_runtime::{Digest, DigestItem},
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
+    nimbus_primitives::NimbusId,
 };
 
 pub use test_runtime::{
-    AccountId, Aura, AuraId, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
+    AccountId, Aura, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
     RuntimeCall, RuntimeEvent, Session, System,
 };
 
@@ -205,7 +206,7 @@ pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
 }
 
 /// Helper function to generate a crypto pair from seed
-pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
+pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
     sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
