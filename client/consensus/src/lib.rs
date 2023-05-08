@@ -56,6 +56,7 @@ use sp_runtime::{
     DigestItem,
 };
 use std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc};
+use tp_consensus::TanssiAuthorityAssignmentApi;
 
 mod import_queue;
 mod manual_seal;
@@ -117,6 +118,7 @@ where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
     C::Api: AuraApi<B, AuthorityId<P>>,
+    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     PF: Environment<B, Error = Error> + Send + Sync + 'static,
     PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     P: Pair + Send + Sync,
@@ -188,6 +190,8 @@ where
         Client:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
         Client::Api: AuraApi<B, P::Public>,
+        Client::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
+
         BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>>
             + ParachainBlockImportMarker
             + Send
@@ -326,6 +330,7 @@ where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
     C::Api: AuraApi<B, AuthorityId<P>>,
+    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     E: Environment<B, Error = Error> + Send + Sync,
     E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
@@ -512,6 +517,8 @@ where
     B: BlockT,
     C: ProvideRuntimeApi<B>,
     C::Api: AuraApi<B, A>,
+    C::Api: TanssiAuthorityAssignmentApi<B, A>,
+
 {
     let runtime_api = client.runtime_api();
 
@@ -536,6 +543,7 @@ where
         }
     }
 
+    let authorities = runtime_api.para_id_authorities(parent_hash, 0u32.into());
     runtime_api
         .authorities(parent_hash)
         .ok()

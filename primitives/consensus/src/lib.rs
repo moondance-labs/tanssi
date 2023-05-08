@@ -9,9 +9,9 @@ sp_api::decl_runtime_apis! {
 		/// Returns the slot duration for Aura.
 		///
 		/// Currently, only the value provided by this type at genesis will be used.
-		fn para_id_authorities(para_id: ParaId) -> Vec<AuthorityId>;
+		fn para_id_authorities(para_id: ParaId) -> Option<Vec<AuthorityId>>;
 
 		/// Return the current set of authorities.
-		fn check_para_id_assignment(authority: AuthorityId) -> ParaId;
+		fn check_para_id_assignment(authority: AuthorityId) -> Option<ParaId>;
 	}
 }

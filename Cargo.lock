@@ -11623,6 +11623,7 @@ dependencies = [
  "sp-runtime",
  "sp-timestamp",
  "substrate-prometheus-endpoint",
+ "tp-consensus",
  "tracing",
 ]
 
