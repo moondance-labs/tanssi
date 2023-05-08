@@ -1,15 +1,13 @@
 use {
     cumulus_primitives_core::ParaId,
+    nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
     std::collections::BTreeMap,
-    test_runtime::{
-        AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
-    },
-    nimbus_primitives::NimbusId,
+    test_runtime::{AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT},
     tp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },

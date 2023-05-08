@@ -1,12 +1,12 @@
 use {
     container_chain_template_simple_runtime::{AccountId, Signature},
     cumulus_primitives_core::ParaId,
+    nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
-    nimbus_primitives::NimbusId
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -59,7 +59,9 @@ where
 /// Generate the session keys from individual elements.
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(keys: NimbusId) -> container_chain_template_simple_runtime::SessionKeys {
+pub fn template_session_keys(
+    keys: NimbusId,
+) -> container_chain_template_simple_runtime::SessionKeys {
     container_chain_template_simple_runtime::SessionKeys { aura: keys }
 }
 

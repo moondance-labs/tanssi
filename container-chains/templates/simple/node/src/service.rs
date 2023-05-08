@@ -19,8 +19,8 @@ use {
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
-    tc_consensus::{TanssiAuraConsensus, BuildTanssiAuraConsensusParams},
-    nimbus_primitives::NimbusPair
+    nimbus_primitives::NimbusPair,
+    tc_consensus::{BuildTanssiAuraConsensusParams, TanssiAuraConsensus},
 };
 
 // Substrate Imports
@@ -126,17 +126,17 @@ pub fn new_partial(
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
 
     let import_queue = nimbus_consensus::import_queue(
-		client.clone(),
-		block_import.clone(),
-		move |_, _| async move {
-			let time = sp_timestamp::InherentDataProvider::from_system_time();
+        client.clone(),
+        block_import.clone(),
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
 
-			Ok((time,))
-		},
-		&task_manager.spawn_essential_handle(),
-		config.prometheus_registry(),
-	    false,
-	)?;
+            Ok((time,))
+        },
+        &task_manager.spawn_essential_handle(),
+        config.prometheus_registry(),
+        false,
+    )?;
 
     Ok(PartialComponents {
         backend,
@@ -387,15 +387,9 @@ fn build_consensus(
         telemetry,
     };
 
-    Ok(TanssiAuraConsensus::build::<
-        NimbusPair,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >(params))
+    Ok(TanssiAuraConsensus::build::<NimbusPair, _, _, _, _, _, _>(
+        params,
+    ))
 }
 
 /// Start a parachain node.

@@ -12,6 +12,7 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{BodyId, ParaId},
@@ -33,6 +34,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
+    nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     polkadot_runtime_common::BlockHashCount,
     smallvec::smallvec,
@@ -46,10 +48,6 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    nimbus_primitives::NimbusId,
-};
-pub use {
-    sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.

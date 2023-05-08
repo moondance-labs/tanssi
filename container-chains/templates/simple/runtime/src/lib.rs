@@ -10,6 +10,7 @@ use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::ParaId,
     frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+    nimbus_primitives::NimbusId,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_core::{crypto::KeyTypeId, OpaqueMetadata},
@@ -19,13 +20,13 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, MultiSignature,
     },
-    nimbus_primitives::NimbusId,
 };
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use {sp_std::prelude::*, sp_version::RuntimeVersion};
 
+pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     frame_support::{
         construct_runtime,
@@ -38,9 +39,6 @@ use {
         },
     },
     frame_system::limits::{BlockLength, BlockWeights},
-};
-pub use {
-    sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
 #[cfg(any(feature = "std", test))]

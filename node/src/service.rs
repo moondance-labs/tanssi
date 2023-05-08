@@ -4,7 +4,6 @@ use {
     crate::cli::ContainerChainCli,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_aura::SlotProportion,
-    tc_consensus::{TanssiAuraConsensus, BuildTanssiAuraConsensusParams},
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
         ParachainConsensus,
@@ -23,6 +22,7 @@ use {
     cumulus_relay_chain_interface::RelayChainInterface,
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
+    nimbus_primitives::NimbusPair,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
@@ -42,11 +42,11 @@ use {
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, str::FromStr, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
+    tc_consensus::{BuildTanssiAuraConsensusParams, TanssiAuraConsensus},
     tc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
     test_runtime::{opaque::Block, AccountId, RuntimeApi},
-    nimbus_primitives::NimbusPair
 };
 
 type FullBackend = TFullBackend<Block>;
@@ -149,17 +149,17 @@ pub fn new_partial(
 
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
     let import_queue = nimbus_consensus::import_queue(
-		client.clone(),
-		block_import.clone(),
-		move |_, _| async move {
-			let time = sp_timestamp::InherentDataProvider::from_system_time();
+        client.clone(),
+        block_import.clone(),
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
 
-			Ok((time,))
-		},
-		&task_manager.spawn_essential_handle(),
-		config.prometheus_registry(),
-	    false,
-	)?;
+            Ok((time,))
+        },
+        &task_manager.spawn_essential_handle(),
+        config.prometheus_registry(),
+        false,
+    )?;
 
     let maybe_select_chain = None;
 
@@ -887,15 +887,9 @@ fn build_consensus_container(
         telemetry,
     };
 
-    Ok(TanssiAuraConsensus::build::<
-        NimbusPair,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >(params))
+    Ok(TanssiAuraConsensus::build::<NimbusPair, _, _, _, _, _, _>(
+        params,
+    ))
 }
 
 fn build_consensus_orchestrator(
@@ -986,15 +980,9 @@ fn build_consensus_orchestrator(
         telemetry,
     };
 
-    Ok(TanssiAuraConsensus::build::<
-        NimbusPair,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >(params))
+    Ok(TanssiAuraConsensus::build::<NimbusPair, _, _, _, _, _, _>(
+        params,
+    ))
 }
 
 /// Start a parachain node.
@@ -1153,9 +1141,7 @@ pub fn new_dev(
                 commands_stream,
                 select_chain,
                 consensus_data_provider: Some(Box::new(
-                    tc_consensus::TanssiManualSealAuraConsensusDataProvider::new(
-                        client.clone(),
-                    ),
+                    tc_consensus::TanssiManualSealAuraConsensusDataProvider::new(client.clone()),
                 )),
                 create_inherent_data_providers: move |block: H256, ()| {
                     let current_para_block = client_set_aside_for_cidp
