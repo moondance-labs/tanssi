@@ -6,8 +6,9 @@ use {
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
     test_runtime::{
-        AccountId, AuraId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
+        AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
     },
+    nimbus_primitives::NimbusId,
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -42,8 +43,8 @@ type AccountPublic = <Signature as Verify>::Signer;
 /// Generate collator keys from seed.
 ///
 /// This function's return type must always match the session keys of the chain in tuple format.
-pub fn get_collator_keys_from_seed(seed: &str) -> AuraId {
-    get_from_seed::<AuraId>(seed)
+pub fn get_collator_keys_from_seed(seed: &str) -> NimbusId {
+    get_from_seed::<NimbusId>(seed)
 }
 
 /// Helper function to generate an account ID from seed
@@ -57,12 +58,12 @@ where
 /// Generate the session keys from individual elements.
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(keys: AuraId) -> test_runtime::SessionKeys {
-    test_runtime::SessionKeys { aura: keys.clone() }
+pub fn template_session_keys(keys: NimbusId) -> test_runtime::SessionKeys {
+    test_runtime::SessionKeys { nimbus: keys.clone() }
 }
 
 /// Helper function to turn a list of names into a list of `(AccountId, AuraId)`
-pub fn invulnerables(names: &[&str]) -> Vec<(AccountId, AuraId)> {
+pub fn invulnerables(names: &[&str]) -> Vec<(AccountId, NimbusId)> {
     names
         .iter()
         .map(|name| {
@@ -185,7 +186,7 @@ pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
 }
 
 fn testnet_genesis(
-    invulnerables: Vec<(AccountId, AuraId)>,
+    invulnerables: Vec<(AccountId, NimbusId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,

@@ -36,7 +36,12 @@ tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-fe
 tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
 tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
+tc-consensus = { path = "client/consensus" }
 
+# Nimbus (wasm)
+nimbus-primitives = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false }
+nimbus-consensus = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40" }
+pallet-author-inherent = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false  }
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
@@ -54,9 +59,11 @@ pallet-timestamp = { git = "https://github.com/paritytech/substrate", branch = "
 parity-scale-codec = { version = "3.0.0", default-features = false, features = [ "derive", "max-encoded-len" ] }
 scale-info = { version = "2.1.1", default-features = false }
 sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
+sp-application-crypto = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
+sp-consensus-slots = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40", version = "7.0.0", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40", version = "7.0.0", default-features = false }
@@ -77,7 +84,9 @@ sc-chain-spec = { git = "https://github.com/paritytech/substrate", branch = "pol
 sc-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sc-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-consensus-manual-seal = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sc-consensus-slots = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-executor = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-network = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-network-common = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
@@ -143,10 +152,13 @@ futures = { version = "0.3.1" }
 jsonrpsee = { version = "0.16.2", features = [ "server" ] }
 thiserror = { version = "1.0.40" }
 tracing = { version = "0.1.37" }
+parking_lot = "0.12"
+
 [profile.production]
 codegen-units = 1
 inherits = "release"
 lto = true
+
 
 [profile.release]
 opt-level = 3

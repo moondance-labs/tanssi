@@ -3,6 +3,7 @@
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion},
+    tc_consensus::{TanssiAuraConsensus, BuildTanssiAuraConsensusParams},
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
         ParachainConsensus,
@@ -44,6 +45,7 @@ use {
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
     test_runtime::{opaque::Block, AccountId, RuntimeApi},
+    nimbus_primitives::{NimbusPair, NimbusId}
 };
 
 type FullBackend = TFullBackend<Block>;
@@ -145,13 +147,18 @@ pub fn new_partial(
     );
 
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
-    let import_queue = build_import_queue(
-        client.clone(),
-        block_import.clone(),
-        config,
-        telemetry.as_ref().map(|telemetry| telemetry.handle()),
-        &task_manager,
-    )?;
+    let import_queue = nimbus_consensus::import_queue(
+		client.clone(),
+		block_import.clone(),
+		move |_, _| async move {
+			let time = sp_timestamp::InherentDataProvider::from_system_time();
+
+			Ok((time,))
+		},
+		&task_manager.spawn_essential_handle(),
+		config.prometheus_registry(),
+	    false,
+	)?;
 
     let maybe_select_chain = None;
 
@@ -599,44 +606,6 @@ async fn start_node_impl_container(
     Ok((task_manager, client))
 }
 
-/// Build the import queue for the parachain runtime.
-fn build_import_queue(
-    client: Arc<ParachainClient>,
-    block_import: ParachainBlockImport,
-    config: &Configuration,
-    telemetry: Option<TelemetryHandle>,
-    task_manager: &TaskManager,
-) -> Result<sc_consensus::DefaultImportQueue<Block, ParachainClient>, sc_service::Error> {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
-
-    cumulus_client_consensus_aura::import_queue::<
-        sp_consensus_aura::sr25519::AuthorityPair,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >(cumulus_client_consensus_aura::ImportQueueParams {
-        block_import,
-        client,
-        create_inherent_data_providers: move |_, _| async move {
-            let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-
-            let slot =
-				sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-					*timestamp,
-					slot_duration,
-				);
-
-            Ok((slot, timestamp))
-        },
-        registry: config.prometheus_registry(),
-        spawner: &task_manager.spawn_essential_handle(),
-        telemetry,
-    })
-    .map_err(Into::into)
-}
-
 /// Build the import queue for the parachain runtime (manual seal).
 fn build_manual_seal_import_queue(
     _client: Arc<ParachainClient>,
@@ -745,7 +714,7 @@ fn build_consensus_container(
     };
 
     Ok(AuraConsensus::build::<
-        sp_consensus_aura::sr25519::AuthorityPair,
+        NimbusPair,
         _,
         _,
         _,
@@ -779,7 +748,7 @@ fn build_consensus_orchestrator(
     );
     let client_set_aside_for_cidp = client.clone();
 
-    let params = BuildAuraConsensusParams {
+    let params = BuildTanssiAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
@@ -843,8 +812,8 @@ fn build_consensus_orchestrator(
         telemetry,
     };
 
-    Ok(AuraConsensus::build::<
-        sp_consensus_aura::sr25519::AuthorityPair,
+    Ok(TanssiAuraConsensus::build::<
+        NimbusPair,
         _,
         _,
         _,
@@ -1010,7 +979,7 @@ pub fn new_dev(
                 commands_stream,
                 select_chain,
                 consensus_data_provider: Some(Box::new(
-                    sc_consensus_manual_seal::consensus::aura::AuraConsensusDataProvider::new(
+                    tc_consensus::TanssiManualSealAuraConsensusDataProvider::new(
                         client.clone(),
                     ),
                 )),

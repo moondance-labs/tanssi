@@ -45,9 +45,9 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
+    nimbus_primitives::NimbusId,
 };
 pub use {
-    sp_consensus_aura::sr25519::AuthorityId as AuraId,
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
@@ -160,7 +160,7 @@ pub mod opaque {
 
 impl_opaque_keys! {
     pub struct SessionKeys {
-        pub aura: Initializer,
+        pub nimbus: Initializer,
     }
 }
 
@@ -359,8 +359,8 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
         changed: bool,
         session_index: u32,
-        all_validators: Vec<(AccountId, AuraId)>,
-        queued: Vec<(AccountId, AuraId)>,
+        all_validators: Vec<(AccountId, NimbusId)>,
+        queued: Vec<(AccountId, NimbusId)>,
     ) {
         // We first initialize Configuration
         Configuration::initializer_on_new_session(&session_index);
@@ -412,7 +412,7 @@ impl pallet_initializer::Config for Runtime {
     type SessionIndex = u32;
 
     /// The identifier type for an authority.
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
 
     type SessionHandler = OwnApplySession;
 }
@@ -441,7 +441,7 @@ impl pallet_session::Config for Runtime {
 }
 
 impl pallet_aura::Config for Runtime {
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
     type DisabledValidators = ();
     type MaxAuthorities = ConstU32<100_000>;
 }
@@ -506,7 +506,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
 }
 
 impl pallet_registrar::Config for Runtime {
@@ -561,12 +561,12 @@ construct_runtime!(
 );
 
 impl_runtime_apis! {
-    impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
+    impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
             sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
         }
 
-        fn authorities() -> Vec<AuraId> {
+        fn authorities() -> Vec<NimbusId> {
             Aura::authorities().into_inner()
         }
     }
@@ -747,7 +747,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
 
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>
     CheckInherents = CheckInherents,
 }
 
