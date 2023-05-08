@@ -5,6 +5,7 @@ use {
         dispatch::Dispatchable,
         traits::{GenesisBuild, OnFinalize, OnInitialize},
     },
+    pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::Encode,
     polkadot_parachain::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
@@ -68,7 +69,7 @@ pub struct ExtBuilder {
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
-    para_ids: Vec<u32>,
+    para_ids: Vec<(u32, ContainerChainGenesisData)>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
 }
@@ -95,7 +96,7 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_para_ids(mut self, para_ids: Vec<u32>) -> Self {
+    pub fn with_para_ids(mut self, para_ids: Vec<(u32, ContainerChainGenesisData)>) -> Self {
         self.para_ids = para_ids;
         self
     }
@@ -120,7 +121,11 @@ impl ExtBuilder {
         // these values will be taken into account for collator-assignment.
         <pallet_registrar::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
             &pallet_registrar::GenesisConfig {
-                para_ids: self.para_ids.into_iter().map(|x| x.into()).collect(),
+                para_ids: self
+                    .para_ids
+                    .into_iter()
+                    .map(|(para_id, genesis_data)| (para_id.into(), genesis_data))
+                    .collect(),
             },
             &mut t,
         )
@@ -232,4 +237,15 @@ pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
         }
     )
     .dispatch(inherent_origin()));
+}
+
+pub fn empty_genesis_data() -> ContainerChainGenesisData {
+    ContainerChainGenesisData {
+        storage: Default::default(),
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
+        extensions: Default::default(),
+        properties: Default::default(),
+    }
 }

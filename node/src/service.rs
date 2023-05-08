@@ -1,6 +1,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
+    crate::cli::ContainerChainCli,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion},
     tc_consensus::{TanssiAuraConsensus, BuildTanssiAuraConsensusParams},
@@ -31,15 +32,15 @@ use {
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{
-        Configuration, Error as ServiceError, KeystoreContainer, PartialComponents, TFullBackend,
-        TFullClient, TaskManager,
+        Configuration, Error as ServiceError, PartialComponents, TFullBackend, TFullClient,
+        TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_keystore::SyncCryptoStorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{str::FromStr, sync::Arc, time::Duration},
+    std::{future::Future, str::FromStr, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
@@ -265,12 +266,17 @@ pub fn new_partial_dev(
 async fn start_node_impl(
     orchestrator_config: Configuration,
     polkadot_config: Configuration,
-    container_chain_config: Option<(Configuration, ParaId)>,
+    container_chain_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(orchestrator_config);
+
+    let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
+    let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
+        .map(|e| e.relay_chain.clone())
+        .ok_or_else(|| "Could not find relay_chain extension in chain-spec.")?;
 
     let params = new_partial(&parachain_config)?;
     let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
@@ -387,24 +393,8 @@ async fn start_node_impl(
         overseer_handle: overseer_handle.clone(),
     };
 
-    let mut container_collator = false;
-    if let Some((container_chain_config, container_chain_para_id)) = container_chain_config {
-        container_collator = true;
-        // Start orchestrator node
-        let (node_task_manager, _) = start_node_impl_container(
-            container_chain_config,
-            relay_chain_interface.clone(),
-            orchestrator_chain_interface_builder.build(),
-            collator_key.clone(),
-            &params.keystore_container,
-            container_chain_para_id,
-            para_id,
-            validator,
-        )
-        .await?;
-
-        task_manager.add_child(node_task_manager);
-    }
+    let container_collator = container_chain_config.is_some();
+    let sync_keystore = params.keystore_container.sync_keystore();
 
     // TODO: Investigate why CollateOn cannot be sent for two chains
     // Last one has priority apparently
@@ -417,7 +407,7 @@ async fn start_node_impl(
             &task_manager,
             relay_chain_interface.clone(),
             transaction_pool,
-            sync_service,
+            sync_service.clone(),
             params.keystore_container.sync_keystore(),
             force_authoring,
             para_id,
@@ -430,11 +420,13 @@ async fn start_node_impl(
             announce_block,
             client: client.clone(),
             task_manager: &mut task_manager,
-            relay_chain_interface,
+            relay_chain_interface: relay_chain_interface.clone(),
             spawner,
             parachain_consensus,
             import_queue: import_queue_service,
-            collator_key: collator_key.expect("Command line arguments do not allow this. qed"),
+            collator_key: collator_key
+                .clone()
+                .expect("Command line arguments do not allow this. qed"),
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle),
         };
@@ -446,7 +438,7 @@ async fn start_node_impl(
             announce_block,
             task_manager: &mut task_manager,
             para_id,
-            relay_chain_interface,
+            relay_chain_interface: relay_chain_interface.clone(),
             relay_chain_slot_duration,
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
@@ -457,36 +449,218 @@ async fn start_node_impl(
 
     start_network.start_network();
 
+    if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
+        let orchestrator_client = client.clone();
+        let container_chain_spawner = ContainerChainSpawner {
+            orchestrator_chain_interface_builder,
+            orchestrator_client,
+            container_chain_cli,
+            tokio_handle,
+            chain_type,
+            relay_chain,
+            relay_chain_interface,
+            collator_key,
+            sync_keystore,
+            orchestrator_para_id: para_id,
+            validator,
+            task_manager: &task_manager,
+        };
+
+        task_manager.spawn_handle().spawn(
+            "container-chain-spawner",
+            None,
+            container_chain_spawner.spawn(),
+        );
+    }
+
     Ok((task_manager, client))
+}
+
+/// Struct with all the params needed to start a container chain node given the CLI arguments,
+/// and creating the ChainSpec from on-chain data from the orchestrator chain.
+struct ContainerChainSpawner<'a> {
+    orchestrator_chain_interface_builder: OrchestratorChainInProcessInterfaceBuilder,
+    orchestrator_client: Arc<ParachainClient>,
+    container_chain_cli: ContainerChainCli,
+    tokio_handle: tokio::runtime::Handle,
+    chain_type: sc_chain_spec::ChainType,
+    relay_chain: String,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
+    collator_key: Option<CollatorPair>,
+    sync_keystore: SyncCryptoStorePtr,
+    orchestrator_para_id: ParaId,
+    validator: bool,
+    // TODO: this could be a `SpawnEssentialTaskHandle`, but that type is private
+    task_manager: &'a TaskManager,
+}
+
+impl<'a> ContainerChainSpawner<'a> {
+    /// Try to start the container chain node. In case of error, this panics and stops the node.
+    fn spawn(self) -> impl Future<Output = ()> {
+        let ContainerChainSpawner {
+            orchestrator_chain_interface_builder,
+            orchestrator_client,
+            mut container_chain_cli,
+            tokio_handle,
+            chain_type,
+            relay_chain,
+            relay_chain_interface,
+            collator_key,
+            sync_keystore,
+            orchestrator_para_id,
+            validator,
+            task_manager,
+        } = self;
+        let spawn_cc_as_child_handle = task_manager.spawn_essential_handle();
+
+        // This closure is used to emulate a try block, it enables using the `?` operator inside
+        let try_closure = move || async move {
+            let orchestrator_chain_interface = orchestrator_chain_interface_builder.build();
+            // Preload genesis data from orchestrator chain storage.
+            // The preload must finish before calling create_configuration, so any async operations
+            // need to be awaited.
+
+            // TODO: the orchestrator chain node may not be fully synced yet,
+            // in that case we will be reading an old state.
+            let orchestrator_chain_info = orchestrator_client.chain_info();
+            log::info!(
+                "Reading container chain genesis data from orchestrator chain at block #{} {}",
+                orchestrator_chain_info.best_number,
+                orchestrator_chain_info.best_hash,
+            );
+            let orchestrator_runtime_api = orchestrator_client.runtime_api();
+
+            let container_chain_para_id = container_chain_cli
+                .base
+                .para_id
+                .ok_or("missing --para-id CLI argument for container chain")?;
+
+            let genesis_data = orchestrator_runtime_api
+                .genesis_data(
+                    orchestrator_chain_info.best_hash,
+                    container_chain_para_id.into(),
+                )
+                .expect("error")
+                .ok_or_else(|| {
+                    format!(
+                        "No genesis data registered for container chain id {}",
+                        container_chain_para_id
+                    )
+                })?;
+
+            container_chain_cli
+                .preload_chain_spec_from_genesis_data(
+                    container_chain_para_id,
+                    genesis_data,
+                    chain_type,
+                    relay_chain,
+                )
+                .map_err(|e| format!("failed to create container chain chain spec from on chain genesis data: {}", e))?;
+
+            log::info!(
+                "Loaded chain spec for container chain {}",
+                container_chain_para_id
+            );
+
+            let container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+                &container_chain_cli,
+                &container_chain_cli,
+                tokio_handle,
+            )
+            .map_err(|err| format!("Container chain argument error: {}", err))?;
+
+            // Start container chain node
+            let (mut container_chain_task_manager, _container_chain_client) =
+                start_node_impl_container(
+                    container_chain_cli_config,
+                    relay_chain_interface.clone(),
+                    orchestrator_chain_interface,
+                    collator_key.clone(),
+                    sync_keystore,
+                    container_chain_para_id.into(),
+                    orchestrator_para_id,
+                    validator,
+                )
+                .await?;
+
+            // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
+            // to make the parent task manager stop if the container chain task manager stops.
+            // The reverse is also true, if the parent task manager stops, the container chain
+            // task manager will also stop.
+            spawn_cc_as_child_handle.spawn("container-chain-task-manager", None, async move {
+                container_chain_task_manager
+                    .future()
+                    .await
+                    .expect("container_chain_task_manager failed")
+            });
+
+            sc_service::error::Result::Ok(())
+        };
+
+        async {
+            match try_closure().await {
+                Ok(()) => {}
+                Err(e) => {
+                    panic!("Failed to start container chain node: {}", e);
+                }
+            }
+        }
+    }
+}
+
+// Log string that will be shown for the container chain: `[Container-2000]`.
+// This needs to be a separate function because the `prefix_logs_with` macro
+// has trouble parsing expressions.
+fn container_log_str(para_id: ParaId) -> String {
+    format!("Container-{}", para_id)
 }
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
-#[sc_tracing::logging::prefix_logs_with("Container")]
+#[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 async fn start_node_impl_container(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     collator_key: Option<CollatorPair>,
-    collator_keystore_container: &KeystoreContainer,
+    keystore: SyncCryptoStorePtr,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
     collator: bool,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
+    let block_import;
+    let mut telemetry;
+    let client;
+    let backend;
+    let mut task_manager;
+    let transaction_pool;
+    let import_queue_service;
+    let params_import_queue;
+    {
+        // Some fields of params are not `Send`, and that causes problems with async/await.
+        // We take all the needed fields here inside a block to ensure that params
+        // gets dropped before the first instance of `.await`.
+        // Change this to use the syntax `PartialComponents { client, backend, .. } = params;`
+        // when this issue is fixed:
+        // https://github.com/rust-lang/rust/issues/104883
+        let params = new_partial(&parachain_config)?;
+        let (l_block_import, l_telemetry, _telemetry_worker_handle) = params.other;
+        block_import = l_block_import;
+        telemetry = l_telemetry;
+        client = params.client.clone();
+        backend = params.backend.clone();
+        task_manager = params.task_manager;
+        transaction_pool = params.transaction_pool.clone();
+        import_queue_service = params.import_queue.service();
+        params_import_queue = params.import_queue;
+    }
 
-    let params = new_partial(&parachain_config)?;
-    let (block_import, mut telemetry, _telemetry_worker_handle) = params.other;
-
-    let client = params.client.clone();
-    let backend = params.backend.clone();
-    let mut task_manager = params.task_manager;
+    let spawn_handle = task_manager.spawn_handle();
 
     let force_authoring = parachain_config.force_authoring;
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
-    let transaction_pool = params.transaction_pool.clone();
-    let import_queue_service = params.import_queue.service();
 
     log::info!("are we collators? {:?}", collator);
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
@@ -494,8 +668,8 @@ async fn start_node_impl_container(
             parachain_config: &parachain_config,
             client: client.clone(),
             transaction_pool: transaction_pool.clone(),
-            spawn_handle: task_manager.spawn_handle(),
-            import_queue: params.import_queue,
+            spawn_handle,
+            import_queue: params_import_queue,
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
         })
@@ -532,7 +706,7 @@ async fn start_node_impl_container(
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         config: parachain_config,
-        keystore: collator_keystore_container.sync_keystore(),
+        keystore: keystore.clone(),
         backend,
         network: network.clone(),
         system_rpc_tx,
@@ -563,7 +737,7 @@ async fn start_node_impl_container(
             orchestrator_chain_interface.clone(),
             transaction_pool,
             sync_service,
-            collator_keystore_container.sync_keystore(),
+            keystore,
             force_authoring,
             para_id,
             orchestrator_para_id,
@@ -827,7 +1001,7 @@ fn build_consensus_orchestrator(
 pub async fn start_parachain_node(
     parachain_config: Configuration,
     polkadot_config: Configuration,
-    orchestrator_config: Option<(Configuration, ParaId)>,
+    orchestrator_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,

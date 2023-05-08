@@ -6205,6 +6205,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-container-chain-genesis-data",
  "tp-traits",
 ]
 
@@ -6212,9 +6213,11 @@ dependencies = [
 name = "pallet-registrar-runtime-api"
 version = "0.1.0"
 dependencies = [
+ "pallet-registrar",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
+ "tp-container-chain-genesis-data",
 ]
 
 [[package]]
@@ -10326,9 +10329,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.93"
+version = "1.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cad406b69c91885b5107daf2c29572f6c8cdb3c66826821e286c533490c0bc76"
+checksum = "057d394a50403bcac12672b2b18fb387ab6d289d957dab67dd201875391e52f1"
 dependencies = [
  "itoa",
  "ryu",
@@ -11679,6 +11682,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.26",
+ "hex",
  "jsonrpsee",
  "log",
  "nimbus-consensus",
@@ -11707,6 +11711,7 @@ dependencies = [
  "sc-transaction-pool",
  "sc-transaction-pool-api",
  "serde",
+ "serde_json",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
@@ -11728,8 +11733,10 @@ dependencies = [
  "tc-consensus",
  "tc-orchestrator-chain-interface",
  "test-runtime",
+ "tokio",
  "tp-author-noting-inherent",
  "tp-authorities-noting-inherent",
+ "tp-container-chain-genesis-data",
  "try-runtime-cli",
 ]
 
@@ -12177,6 +12184,28 @@ dependencies = [
  "polkadot-primitives",
  "scale-info",
  "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std",
+ "sp-trie",
+ "tp-traits",
+]
+
+[[package]]
+name = "tp-container-chain-genesis-data"
+version = "0.1.1"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "hex",
+ "hex-literal",
+ "log",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "scale-info",
+ "serde",
+ "serde_json",
  "sp-core",
  "sp-runtime",
  "sp-state-machine",
