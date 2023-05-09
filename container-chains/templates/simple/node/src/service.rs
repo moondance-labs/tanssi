@@ -182,7 +182,6 @@ async fn start_node_impl(
     .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
     let force_authoring = parachain_config.force_authoring;
-    let validator = parachain_config.role.is_authority();
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
@@ -243,7 +242,7 @@ async fn start_node_impl(
         // Here you can check whether the hardware meets your chains' requirements. Putting a link
         // in there and swapping out the requirements for your own are probably a good idea. The
         // requirements for a para-chain are dictated by its relay-chain.
-        if !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) && validator {
+        if !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
             log::warn!(
                 "⚠️  The hardware does not meet the minimal requirements for role 'Authority'."
             );
@@ -269,127 +268,23 @@ async fn start_node_impl(
 
     let relay_chain_slot_duration = Duration::from_secs(6);
 
-    if validator {
-        let parachain_consensus = build_consensus(
-            client.clone(),
-            block_import,
-            prometheus_registry.as_ref(),
-            telemetry.as_ref().map(|t| t.handle()),
-            &task_manager,
-            relay_chain_interface.clone(),
-            transaction_pool,
-            sync_service,
-            params.keystore_container.sync_keystore(),
-            force_authoring,
-            para_id,
-        )?;
+    
+    let params = StartFullNodeParams {
+        client: client.clone(),
+        announce_block,
+        task_manager: &mut task_manager,
+        para_id,
+        relay_chain_interface,
+        relay_chain_slot_duration,
+        import_queue: import_queue_service,
+        recovery_handle: Box::new(overseer_handle),
+    };
 
-        let spawner = task_manager.spawn_handle();
-        let params = StartCollatorParams {
-            para_id,
-            block_status: client.clone(),
-            announce_block,
-            client: client.clone(),
-            task_manager: &mut task_manager,
-            relay_chain_interface,
-            spawner,
-            parachain_consensus,
-            import_queue: import_queue_service,
-            collator_key: collator_key.expect("Command line arguments do not allow this. qed"),
-            relay_chain_slot_duration,
-            recovery_handle: Box::new(overseer_handle),
-        };
-
-        start_collator(params).await?;
-    } else {
-        let params = StartFullNodeParams {
-            client: client.clone(),
-            announce_block,
-            task_manager: &mut task_manager,
-            para_id,
-            relay_chain_interface,
-            relay_chain_slot_duration,
-            import_queue: import_queue_service,
-            recovery_handle: Box::new(overseer_handle),
-        };
-
-        start_full_node(params)?;
-    }
+    start_full_node(params)?;
 
     start_network.start_network();
 
     Ok((task_manager, client))
-}
-
-fn build_consensus(
-    client: Arc<ParachainClient>,
-    block_import: ParachainBlockImport,
-    prometheus_registry: Option<&Registry>,
-    telemetry: Option<TelemetryHandle>,
-    task_manager: &TaskManager,
-    relay_chain_interface: Arc<dyn RelayChainInterface>,
-    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
-    sync_oracle: Arc<SyncingService<Block>>,
-    keystore: SyncCryptoStorePtr,
-    force_authoring: bool,
-    para_id: ParaId,
-) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error> {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
-
-    let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
-        task_manager.spawn_handle(),
-        client.clone(),
-        transaction_pool,
-        prometheus_registry,
-        telemetry.clone(),
-    );
-
-    let params = BuildTanssiAuraConsensusParams {
-        proposer_factory,
-        create_inherent_data_providers: move |_, (relay_parent, validation_data)| {
-            let relay_chain_interface = relay_chain_interface.clone();
-            async move {
-                let parachain_inherent =
-                    cumulus_primitives_parachain_inherent::ParachainInherentData::create_at(
-                        relay_parent,
-                        &relay_chain_interface,
-                        &validation_data,
-                        para_id,
-                    )
-                    .await;
-                let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-
-                let slot =
-						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-							*timestamp,
-							slot_duration,
-						);
-
-                let parachain_inherent = parachain_inherent.ok_or_else(|| {
-                    Box::<dyn std::error::Error + Send + Sync>::from(
-                        "Failed to create parachain inherent",
-                    )
-                })?;
-                Ok((slot, timestamp, parachain_inherent))
-            }
-        },
-        block_import,
-        para_client: client,
-        backoff_authoring_blocks: Option::<()>::None,
-        sync_oracle,
-        keystore,
-        force_authoring,
-        slot_duration,
-        // We got around 500ms for proposing
-        block_proposal_slot_portion: SlotProportion::new(1f32 / 24f32),
-        // And a maximum of 750ms if slots are skipped
-        max_block_proposal_slot_portion: Some(SlotProportion::new(1f32 / 16f32)),
-        telemetry,
-    };
-
-    Ok(TanssiAuraConsensus::build::<NimbusPair, _, _, _, _, _, _>(
-        params,
-    ))
 }
 
 /// Start a parachain node.

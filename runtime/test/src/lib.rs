@@ -680,6 +680,7 @@ impl_runtime_apis! {
         /// Returns `None` if the `AccountId` is not collating.
         fn current_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
             let assigned_collators = CollatorAssignment::collator_container_chain();
+            log::error!("assigned collators {:?}", assigned_collators);
             let self_para_id = ParachainInfo::get().into();
 
             assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
@@ -734,6 +735,8 @@ impl_runtime_apis! {
         /// Return the registered para ids
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
             let assigned_collators = Self::parachain_collators(para_id)?;
+            log::error!("assigned_collators {:?}", assigned_collators);
+
             let authorities = pallet_session::KeyOwner::<Runtime>::iter().filter(|((key_id, key), owner)| 
                 key_id == &NIMBUS_KEY_ID && assigned_collators.contains(owner)
             ).map(|((key_id, key), owner)| NimbusId::from_slice(&key).unwrap()).collect();
@@ -741,6 +744,7 @@ impl_runtime_apis! {
         }
         fn check_para_id_assignment(authority: NimbusId) -> Option<ParaId> {
             let owner = Session::key_owner(NIMBUS_KEY_ID, authority.as_ref())?;
+            log::error!("Owner of authority is {:?}", owner);
             Self::current_collator_parachain_assignment(owner)
         }
     }

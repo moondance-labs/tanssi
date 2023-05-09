@@ -2,7 +2,7 @@
 members = [
 	"client/*",
 	"container-chains/pallets/*",
-#	"container-chains/templates/simple/*",
+	"container-chains/templates/simple/*",
 	"node",
 	"pallets/*",
 	"pallets/collator-assignment/rpc/runtime-api",

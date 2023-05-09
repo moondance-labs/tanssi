@@ -619,10 +619,15 @@ where
 		if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
 			// If we dont find any parachain that we are assigned to, return non
 
-			if let Ok(Some(para_id)) =  runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.into()) {
-               runtime_api.para_id_authorities(parent_hash.clone(), para_id).ok()?
+			if let Ok(Some(para_id)) =  runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into()) {
+                log::error!("Para id found for assignment {:?}", para_id);
+               let authorities = runtime_api.para_id_authorities(parent_hash.clone(), para_id).ok()?;
+               log::error!("Authorities found for para {:?} are {:?}", para_id, authorities);
+                authorities
             }
             else {
+                log::error!("nO Para id found for assignment {:?}", nimbus_id);
+
                 None
             }
 		} else {
