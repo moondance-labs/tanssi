@@ -28,8 +28,7 @@
       "foundation": {
         "type": "zombie",
         "zombieSpec": {
-          "configPath": "./configs/zombieTanssiCI.json",
-	  "skipBlockCheck": ["Container2002"]
+          "configPath": "./configs/zombieTanssiCI.json"
         }
       },
       "connections": [
