@@ -104,7 +104,7 @@ jobs:
         run: |
           chmod uog+x target/release/test-node
           cd test
-          pnpm i
+          pnpm install --frozen-lockfile
           pnpm moonwall test dev_tanssi
 
   zombienet-tests:
@@ -149,16 +149,31 @@ jobs:
       - name: "Run zombie test"
         run: |
           cd test
-          pnpm i
+          pnpm install --frozen-lockfile
 
           chmod uog+x tmp/test-node
           chmod uog+x tmp/container-chain-template-simple-node
           chmod uog+x tmp/polkadot
 
           ## Generate specs
-          tmp/container-chain-template-simple-node build-spec --parachain-id 2000 --seeds "Collator2000-01,Collator2000-02" --raw --> tmp/template-container-2000.json
-          tmp/container-chain-template-simple-node build-spec --parachain-id 2001 --seeds "Collator2001-01,Collator2001-02" --raw --> tmp/template-container-2001.json
+          npm run build-spec-ci
 
           ## Run tests
 
           pnpm moonwall test zombie_tanssi_ci
+
+      - name: "Gather zombie logs"
+        if: failure()
+        run: |
+          ls -ltr /tmp
+          latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
+          logs_dir="logs"
+          mkdir -p "$logs_dir"
+          find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
+
+      - name: "Upload zombie logs"
+        if: failure()
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: logs
+          path: logs

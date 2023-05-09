@@ -5,13 +5,57 @@ use {
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
+    std::collections::BTreeMap,
     test_runtime::{
         AccountId, AuraId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
+    },
+    tp_container_chain_genesis_data::{
+        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<test_runtime::GenesisConfig, Extensions>;
+
+/// Specialized `ChainSpec` for container chains that only allows raw genesis format.
+pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfig, Extensions>;
+
+/// Helper type that implements the traits needed to be used as a "GenesisConfig",
+/// but whose implementation panics because we only expect it to be used with raw ChainSpecs,
+/// so it will never be serialized or deserialized.
+/// This is because container chains must use raw chain spec files where the "genesis"
+/// field only has one field: "raw".
+pub struct RawGenesisConfig {
+    pub storage_raw: BTreeMap<Vec<u8>, Vec<u8>>,
+}
+
+impl Serialize for RawGenesisConfig {
+    fn serialize<S>(&self, _serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        panic!("RawGenesisConfigDummy should never be serialized")
+    }
+}
+
+impl<'de> Deserialize<'de> for RawGenesisConfig {
+    fn deserialize<D>(_deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        panic!("Attempted to read a non-raw ContainerChain ChainSpec.\nHelp: add `--raw` flag to `build-spec` command to generate a raw chain spec")
+    }
+}
+
+impl sp_runtime::BuildStorage for RawGenesisConfig {
+    fn assimilate_storage(&self, storage: &mut sp_core::storage::Storage) -> Result<(), String> {
+        storage
+            .top
+            .extend(self.storage_raw.iter().map(|(k, v)| (k.clone(), v.clone())));
+
+        Ok(())
+    }
+}
 
 /// Helper function to generate a crypto pair from seed
 pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
@@ -82,7 +126,11 @@ pub fn account_ids(names: &[&str]) -> Vec<AccountId> {
         .collect()
 }
 
-pub fn development_config(para_id: ParaId) -> ChainSpec {
+pub fn development_config(
+    para_id: ParaId,
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -115,7 +163,8 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
                 ]),
                 para_id,
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                vec![2000.into(), 2001.into()],
+                &container_chains,
+                &mock_container_chains,
             )
         },
         Vec::new(),
@@ -130,7 +179,11 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
     )
 }
 
-pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
+pub fn local_testnet_config(
+    para_id: ParaId,
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -163,7 +216,8 @@ pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
                 ]),
                 para_id,
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
-                vec![2000.into(), 2001.into()],
+                &container_chains,
+                &mock_container_chains,
             )
         },
         // Bootnodes
@@ -171,7 +225,7 @@ pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
         // Telemetry
         None,
         // Protocol ID
-        Some("template-local"),
+        Some("orchestrator"),
         // Fork ID
         None,
         // Properties
@@ -189,7 +243,8 @@ fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-    para_ids: Vec<ParaId>,
+    container_chains: &[String],
+    mock_container_chains: &[ParaId],
 ) -> test_runtime::GenesisConfig {
     test_runtime::GenesisConfig {
         system: test_runtime::SystemConfig {
@@ -229,10 +284,36 @@ fn testnet_genesis(
         parachain_system: Default::default(),
         configuration: Default::default(),
         registrar: RegistrarConfig {
-            para_ids: para_ids.into_iter().map(|x| x.into()).collect(),
+            para_ids: container_chains
+                .iter()
+                .map(|x| {
+                    container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+                        panic!(
+                            "Failed to build genesis data for container chain {:?}: {}",
+                            x, e
+                        )
+                    })
+                })
+                .chain(
+                    mock_container_chains
+                        .iter()
+                        .map(|x| (*x, mock_container_chain_genesis_data(*x))),
+                )
+                .collect(),
         },
         sudo: SudoConfig {
             key: Some(root_key),
         },
+    }
+}
+
+fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
+    ContainerChainGenesisData {
+        storage: vec![],
+        name: format!("Container Chain {}", para_id).into(),
+        id: format!("container-chain-{}", para_id).into(),
+        fork_id: None,
+        extensions: vec![],
+        properties: Default::default(),
     }
 }

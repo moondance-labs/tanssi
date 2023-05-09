@@ -33,6 +33,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
+    pallet_registrar_runtime_api::ContainerChainGenesisData,
     polkadot_runtime_common::BlockHashCount,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
@@ -490,6 +491,7 @@ impl pallet_collator_selection::Config for Runtime {
 
 parameter_types! {
     pub const MaxLengthParaIds: u32 = 100u32;
+    pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
 }
 
 pub struct CurrentSessionIndexGetter;
@@ -513,6 +515,7 @@ impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
+    type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
@@ -718,6 +721,11 @@ impl_runtime_apis! {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             Registrar::registered_para_ids().to_vec()
+        }
+
+        /// Fetch genesis data for this para id
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
+            Registrar::para_genesis_data(para_id)
         }
     }
 }
