@@ -96,6 +96,16 @@
             "command": "../target/release/container-chain-template-simple-node"
           }
         ]
+      },
+      {
+        "id": 2002,
+        "chain_spec_path": "../specs/template-container-2002.json",
+        "collators":  [
+          {
+            "name": "DummyCollator-2002",
+            "command": "../target/release/container-chain-template-simple-node"
+          }
+        ]
       }
     ],
     "types": {
