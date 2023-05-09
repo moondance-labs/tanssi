@@ -390,6 +390,7 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    type OrchestratorAccountId = AccountId;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
