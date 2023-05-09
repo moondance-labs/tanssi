@@ -1,10 +1,9 @@
-use pallet_registrar_runtime_api::json::properties_to_map;
-
 use {
     crate::{chain_spec::RawGenesisConfig, service::Sealing},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::{collections::BTreeMap, path::PathBuf},
+    tp_container_chain_genesis_data::json::properties_to_map,
 };
 
 /// Sub-commands supported by the collator.

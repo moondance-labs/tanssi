@@ -2,10 +2,12 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::BoundedVec;
-use parity_scale_codec::{Decode, Encode};
-use sp_core::Get;
-use sp_std::vec::Vec;
+use {
+    frame_support::BoundedVec,
+    parity_scale_codec::{Decode, Encode},
+    sp_core::Get,
+    sp_std::vec::Vec,
+};
 
 #[cfg(feature = "json")]
 pub mod json;

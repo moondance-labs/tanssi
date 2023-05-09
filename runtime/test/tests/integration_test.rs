@@ -1,14 +1,13 @@
 #![cfg(test)]
 
-use pallet_registrar_runtime_api::ContainerChainGenesisData;
-
-mod common;
 use {
     common::*,
     cumulus_primitives_core::ParaId,
     frame_support::{assert_ok, BoundedVec},
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
-    pallet_registrar_runtime_api::runtime_decl_for_registrar_api::RegistrarApi,
+    pallet_registrar_runtime_api::{
+        runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
+    },
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
@@ -17,6 +16,8 @@ use {
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     test_runtime::{AuthorNoting, CollatorAssignment, CollatorSelection, Configuration},
 };
+
+mod common;
 
 const UNIT: Balance = 1_000_000_000_000_000_000;
 
@@ -693,7 +694,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
 
             assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
 
-            // Set tanssi collators to 1
+            // Set orchestrator collators to 1
             assert_ok!(
                 Configuration::set_max_orchestrator_collators(root_origin(), 1),
                 ()

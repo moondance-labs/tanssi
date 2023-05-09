@@ -1,10 +1,9 @@
-use tp_traits::ParaId;
-
 use {
     crate::{mock::*, Error, Event},
     frame_support::{assert_noop, assert_ok, BoundedVec},
     sp_runtime::DispatchError,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
+    tp_traits::ParaId,
 };
 
 #[test]
