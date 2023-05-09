@@ -11,4 +11,3 @@ mkdir -p specs
 ./target/release/container-chain-template-simple-node build-spec --disable-default-bootnode --parachain-id 2001 --seeds "Collator2001-01,Collator2001-02" --raw > specs/template-container-2001.json
 ./target/release/container-chain-template-simple-node build-spec --disable-default-bootnode --parachain-id 2002 --seeds "Collator2002-01,Collator2002-02" --raw > specs/template-container-2002.json
 ./target/release/test-node build-spec --parachain-id 1000 --add-container-chain specs/template-container-2000.json --add-container-chain specs/template-container-2001.json > specs/tanssi-1000.json
-
