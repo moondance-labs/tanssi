@@ -530,7 +530,10 @@ impl<'a> ContainerChainSpawner<'a> {
 
             let genesis_data = loop {
                 let genesis_data = orchestrator_runtime_api
-                    .genesis_data(orchestrator_chain_info.best_hash, container_chain_para_id.into())
+                    .genesis_data(
+                        orchestrator_chain_info.best_hash,
+                        container_chain_para_id.into(),
+                    )
                     .expect("error")
                     .ok_or_else(|| {
                         format!(
