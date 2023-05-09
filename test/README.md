@@ -3,13 +3,27 @@ Setup: install node and pnpm:
 ```
 sudo npm i -g pnpm
 pnpm i
+```
+
+Before running tests: compile rust binaries and build ChainSpec files:
+
+```
+cargo build --release
+pnpm run build-spec
+```
+
+Run moonwall TUI interface:
+
+```
 pnpm moonwall
 ```
 
 Run tests:
 
 ```
+# manual-seal tests, only orchestrator chain runs, container chains are mocked
 pnpm moonwall test dev_tanssi
+# zombienet tests, all the chains run
 pnpm moonwall test zombie_tanssi
 ```
 
@@ -29,7 +43,7 @@ less -R Collator2000-01.log
 # or just open it in any other text editor
 ```
 
-To upgrade moonwall:
+To upgrade moonwall or other dependencies:
 
 ```
 pnpm up --latest
