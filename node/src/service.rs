@@ -515,20 +515,20 @@ impl<'a> ContainerChainSpawner<'a> {
 
             // TODO: the orchestrator chain node may not be fully synced yet,
             // in that case we will be reading an old state.
-            let orchestrator_chain_info = orchestrator_client.chain_info();
-            log::info!(
-                "Reading container chain genesis data from orchestrator chain at block #{} {}",
-                orchestrator_chain_info.best_number,
-                orchestrator_chain_info.best_hash,
-            );
-            let orchestrator_runtime_api = orchestrator_client.runtime_api();
-
             let container_chain_para_id = container_chain_cli
                 .base
                 .para_id
                 .ok_or("missing --para-id CLI argument for container chain")?;
 
             let genesis_data = loop {
+                let orchestrator_chain_info = orchestrator_client.chain_info();
+                log::info!(
+                    "Reading container chain genesis data from orchestrator chain at block #{} {}",
+                    orchestrator_chain_info.best_number,
+                    orchestrator_chain_info.best_hash,
+                );
+                let orchestrator_runtime_api = orchestrator_client.runtime_api();
+
                 let genesis_data = orchestrator_runtime_api
                     .genesis_data(
                         orchestrator_chain_info.best_hash,
@@ -549,7 +549,7 @@ impl<'a> ContainerChainSpawner<'a> {
                         // (for example when running tests), or we may want to simply panic
                         if container_chain_cli.base.wait_until_container_chain_exists {
                             log::debug!("{}", e);
-                            log::debug!(
+                            log::info!(
                                 "Waiting for container chain {} to be registered...",
                                 container_chain_para_id
                             );
