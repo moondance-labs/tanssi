@@ -144,7 +144,7 @@ describeSuite({
     it({
       id: "T08",
       title: "Test live registration of container chain 2002",
-      timeout: 1200000,
+      timeout: 120000,
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
