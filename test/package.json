@@ -32,7 +32,6 @@
     "prettier": "^2.8.8",
     "typescript": "^5.0.4",
     "web3": "4.0.1-rc.0",
-    "web3-eth": "1.9.0",
     "web3-providers-ws": "4.0.1-rc.0"
   },
   "pnpm": {
