@@ -1,5 +1,5 @@
-import { expect, describeSuite, beforeAll, ApiPromise } from "@moonwall/cli";
-import { Keyring } from "@polkadot/api";
+import { expect, describeSuite, beforeAll } from "@moonwall/cli";
+import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { BN } from "@polkadot/util";
 describeSuite({
   id: "ZTN",
@@ -144,15 +144,10 @@ describeSuite({
     it({
       id: "T08",
       title: "Test live registration of container chain 2002",
-      timeout: 120000,
+      timeout: 1200000,
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-        let container2002Api = context.polkadotJs({ apiName: "Container2002" });
-
-        const container2002Network = container2002Api.consts.system.version.specName.toString();
-        expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
-  
         const emptyGenesisData = () => {
             // TODO: fill with default value for all the entries of ContainerChainGenesisData
             let g = {
@@ -170,7 +165,15 @@ describeSuite({
         await context.waitBlock(8, "Tanssi");
 
         const registered = (await paraApi.query.registrar.registeredParaIds());
-        console.log("regitrar: ", registered);
+        //console.log("regitrar: ", registered);
+
+	// This ws api is only available after the node detects its assignment
+	const wsProvider = new WsProvider('ws://127.0.0.1:9951');
+        let container2002Api = await ApiPromise.create({ provider: wsProvider });
+        console.log(api.genesisHash.toHex());
+
+        const container2002Network = container2002Api.consts.system.version.specName.toString();
+        expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
 
         expect(false).to.be.true;
       },
