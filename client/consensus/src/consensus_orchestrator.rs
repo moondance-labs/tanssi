@@ -58,29 +58,20 @@ use sp_runtime::{
 use std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc};
 use tp_consensus::TanssiAuthorityAssignmentApi;
 
-mod import_queue;
-mod manual_seal;
-mod consensus_container;
-
-
-pub use consensus_container::*;
-
-pub use import_queue::{build_verifier, import_queue, BuildVerifierParams, ImportQueueParams};
-pub use manual_seal::TanssiManualSealAuraConsensusDataProvider;
 pub use sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion};
 pub use sc_consensus_slots::InherentDataProviderExt;
 
 const LOG_TARGET: &str = "aura::tanssi";
 
 /// The implementation of the Tanssi AURA consensus for parachains.
-pub struct TanssiAuraConsensus<B, CIDP, W> {
+pub struct OrchestratorAuraConsensus<B, CIDP, W> {
     create_inherent_data_providers: Arc<CIDP>,
     aura_worker: Arc<Mutex<W>>,
     slot_duration: SlotDuration,
     _phantom: PhantomData<B>,
 }
 
-impl<B, CIDP, W> Clone for TanssiAuraConsensus<B, CIDP, W> {
+impl<B, CIDP, W> Clone for OrchestratorAuraConsensus<B, CIDP, W> {
     fn clone(&self) -> Self {
         Self {
             create_inherent_data_providers: self.create_inherent_data_providers.clone(),
@@ -94,7 +85,7 @@ impl<B, CIDP, W> Clone for TanssiAuraConsensus<B, CIDP, W> {
 /// Build the tanssi aura worker.
 ///
 /// The caller is responsible for running this worker, otherwise it will do nothing.
-pub fn build_tanssi_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
+pub fn build_orchestrator_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
     BuildAuraWorkerParams {
         client,
         block_import,
@@ -135,7 +126,7 @@ where
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
 {
-    TanssiAuraWorker {
+    OrchestratorAuraWorker {
         client,
         block_import,
         env: proposer_factory,
@@ -153,7 +144,7 @@ where
 }
 
 /// Parameters of [`TanssiAuraConsensus::build`].
-pub struct BuildTanssiAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
+pub struct BuildOrchestratorAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
     pub proposer_factory: PF,
     pub create_inherent_data_providers: CIDP,
     pub block_import: BI,
@@ -168,7 +159,7 @@ pub struct BuildTanssiAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
     pub max_block_proposal_slot_portion: Option<SlotProportion>,
 }
 
-impl<B, CIDP> TanssiAuraConsensus<B, CIDP, ()>
+impl<B, CIDP> OrchestratorAuraConsensus<B, CIDP, ()>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + 'static,
@@ -176,7 +167,7 @@ where
 {
     /// Create a new boxed instance of AURA consensus.
     pub fn build<P, Client, BI, SO, PF, BS, Error>(
-        BuildTanssiAuraConsensusParams {
+        BuildOrchestratorAuraConsensusParams {
             proposer_factory,
             create_inherent_data_providers,
             block_import,
@@ -189,7 +180,7 @@ where
             telemetry,
             block_proposal_slot_portion,
             max_block_proposal_slot_portion,
-        }: BuildTanssiAuraConsensusParams<PF, BI, CIDP, Client, BS, SO>,
+        }: BuildOrchestratorAuraConsensusParams<PF, BI, CIDP, Client, BS, SO>,
     ) -> Box<dyn ParachainConsensus<B>>
     where
         Client:
@@ -217,7 +208,7 @@ where
         P::Public: AppPublic + Hash + Member + Encode + Decode,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
     {
-        let worker = build_tanssi_aura_worker::<P, _, _, _, _, _, _, _, _>(BuildAuraWorkerParams {
+        let worker = build_orchestrator_aura_worker::<P, _, _, _, _, _, _, _, _>(BuildAuraWorkerParams {
             client: para_client,
             block_import,
             justification_sync_link: (),
@@ -232,7 +223,7 @@ where
             compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
         });
 
-        Box::new(TanssiAuraConsensus {
+        Box::new(OrchestratorAuraConsensus {
             create_inherent_data_providers: Arc::new(create_inherent_data_providers),
             aura_worker: Arc::new(Mutex::new(worker)),
             slot_duration,
@@ -241,7 +232,7 @@ where
     }
 }
 
-impl<B, CIDP, W> TanssiAuraConsensus<B, CIDP, W>
+impl<B, CIDP, W> OrchestratorAuraConsensus<B, CIDP, W>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + 'static,
@@ -271,7 +262,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<B, CIDP, W> ParachainConsensus<B> for TanssiAuraConsensus<B, CIDP, W>
+impl<B, CIDP, W> ParachainConsensus<B> for OrchestratorAuraConsensus<B, CIDP, W>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + Send + Sync + 'static,
@@ -312,7 +303,7 @@ where
 
 type AuthorityId<P> = <P as Pair>::Public;
 
-struct TanssiAuraWorker<C, E, I, P, SO, L, BS, N> {
+struct OrchestratorAuraWorker<C, E, I, P, SO, L, BS, N> {
     client: Arc<C>,
     block_import: I,
     env: E,
@@ -330,7 +321,7 @@ struct TanssiAuraWorker<C, E, I, P, SO, L, BS, N> {
 
 #[async_trait::async_trait]
 impl<B, C, E, I, P, Error, SO, L, BS> sc_consensus_slots::SimpleSlotWorker<B>
-    for TanssiAuraWorker<C, E, I, P, SO, L, BS, NumberFor<B>>
+    for OrchestratorAuraWorker<C, E, I, P, SO, L, BS, NumberFor<B>>
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,

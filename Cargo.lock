@@ -12163,6 +12163,7 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-trie",
+ "tc-consensus",
  "tc-orchestrator-chain-interface",
  "test-relay-sproof-builder",
  "tp-core",

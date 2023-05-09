@@ -573,6 +573,7 @@ impl<'a> ContainerChainSpawner<'a> {
             let (mut container_chain_task_manager, _container_chain_client) =
                 start_node_impl_container(
                     container_chain_cli_config,
+                    orchestrator_client.clone(),
                     relay_chain_interface.clone(),
                     orchestrator_chain_interface,
                     collator_key.clone(),
@@ -621,6 +622,7 @@ fn container_log_str(para_id: ParaId) -> String {
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 async fn start_node_impl_container(
     parachain_config: Configuration,
+    orchestrator_client: Arc<ParachainClient>,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     collator_key: Option<CollatorPair>,
@@ -729,6 +731,7 @@ async fn start_node_impl_container(
     if collator {
         let parachain_consensus = build_consensus_container(
             client.clone(),
+            orchestrator_client.clone(),
             block_import,
             prometheus_registry.as_ref(),
             telemetry.as_ref().map(|t| t.handle()),
@@ -797,6 +800,7 @@ fn build_manual_seal_import_queue(
 
 fn build_consensus_container(
     client: Arc<ParachainClient>,
+    orchestrator_client: Arc<ParachainClient>,
     block_import: ParachainBlockImport,
     prometheus_registry: Option<&Registry>,
     telemetry: Option<TelemetryHandle>,
@@ -820,10 +824,11 @@ fn build_consensus_container(
         telemetry.clone(),
     );
 
-    let params = BuildTanssiAuraConsensusParams {
+    let relay_chain_interace_for_orch = relay_chain_interface.clone();
+    let params = tc_consensus::BuildContainerAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
-            let relay_chain_interface = relay_chain_interface.clone();
+            let relay_chain_interface= relay_chain_interface.clone();
             let orchestrator_chain_interface = orchestrator_chain_interface.clone();
 
             async move {
@@ -873,8 +878,29 @@ fn build_consensus_container(
                 ))
             }
         },
+        get_orchestrator_head: move |_block_hash, (relay_parent, validation_data)| {
+            let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
+            async move {
+                let latest_header =
+                    tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+                        relay_parent,
+                        &relay_chain_interace_for_orch,
+                        orchestrator_para_id,
+                    )
+                    .await;
+                
+                let latest_header = latest_header.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch latest header",
+                    )
+                })?;
+
+                Ok(latest_header)
+            }
+        },
         block_import,
         para_client: client,
+        orchestrator_client,
         backoff_authoring_blocks: Option::<()>::None,
         sync_oracle,
         keystore,
@@ -887,7 +913,7 @@ fn build_consensus_container(
         telemetry,
     };
 
-    Ok(TanssiAuraConsensus::build::<NimbusPair, _, _, _, _, _, _>(
+    Ok(tc_consensus::ContainerAuraConsensus::build::<NimbusPair, _, _, _, _, _, _, _>(
         params,
     ))
 }

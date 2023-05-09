@@ -110,6 +110,55 @@ impl ContainerChainAuthoritiesInherentData {
             orchestrator_chain_state: orchestrator_chain_state,
         })
     }
+
+    pub async fn get_latest_orchestrator_head_info(
+        relay_parent: PHash,
+        relay_chain_interface: &impl RelayChainInterface,
+        orchestrator_para_id: ParaId,
+    ) -> Option<sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>> {
+
+        let header_orchestrator = relay_chain_interface
+            .get_storage_by_key(relay_parent, &para_id_head(orchestrator_para_id))
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    relay_parent = ?relay_parent,
+                    error = ?e,
+                    "Cannot obtain the orchestrator para id header."
+                )
+            })
+            .ok()?;
+
+        let header_data_orchestrator = header_orchestrator
+            .map(|raw| <HeadData>::decode(&mut &raw[..]))
+            .transpose()
+            .map_err(|e| {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    error = ?e,
+                    "Cannot decode the head data",
+                )
+            })
+            .ok()?
+            .unwrap_or_default();
+
+        // We later take the Header decoded
+        let orchestrator_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
+            &mut header_data_orchestrator.0.as_slice(),
+        )
+        .map_err(|e| {
+            tracing::error!(
+                target: LOG_TARGET,
+                error = ?e,
+                "Cannot decode the head data",
+            )
+        })
+        .ok()?;
+
+
+        Some(orchestrator_header)
+    }
 }
 
 // Implementation of InherentDataProvider
