@@ -43,6 +43,8 @@ pub trait GetContainerChains {
 
 #[frame_support::pallet]
 pub mod pallet {
+    use parity_scale_codec::FullCodec;
+
     use super::*;
 
     #[pallet::config]
@@ -55,6 +57,8 @@ pub mod pallet {
         type SelfParaId: Get<ParaId>;
 
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
+
+        type OrchestratorAccountId: sp_std::fmt::Debug + PartialEq + Clone + FullCodec + TypeInfo;
     }
 
     #[pallet::error]
@@ -130,7 +134,7 @@ pub mod pallet {
         #[pallet::weight(0)]
         pub fn set_authorities(
             origin: OriginFor<T>,
-            authorities: Vec<T::AccountId>,
+            authorities: Vec<T::OrchestratorAccountId>,
         ) -> DispatchResult {
             ensure_root(origin)?;
             Authorities::<T>::put(&authorities);
@@ -143,12 +147,12 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Auhtorities inserted
-        AuthoritiesInserted { authorities: Vec<T::AccountId> },
+        AuthoritiesInserted { authorities: Vec<T::OrchestratorAccountId> },
     }
 
     #[pallet::storage]
     #[pallet::getter(fn authorities)]
-    pub(super) type Authorities<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+    pub(super) type Authorities<T: Config> = StorageValue<_, Vec<T::OrchestratorAccountId>, ValueQuery>;
 
     #[pallet::inherent]
     impl<T: Config> ProvideInherent for Pallet<T> {
@@ -222,10 +226,10 @@ impl<T: Config> Pallet<T> {
     fn fetch_authorities_from_orchestrator_proof(
         orchestrator_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
-    ) -> Result<Vec<T::AccountId>, Error<T>> {
+    ) -> Result<Vec<T::OrchestratorAccountId>, Error<T>> {
         // Read the assignment from the orchestrator
         let assignmnet = orchestrator_state_proof
-            .read_entry::<AssignedCollators<T::AccountId>>(COLLATOR_ASSIGNMENT_INDEX, None)
+            .read_entry::<AssignedCollators<T::OrchestratorAccountId>>(COLLATOR_ASSIGNMENT_INDEX, None)
             .map_err(|e| match e {
                 ReadEntryErr::Proof => panic!("Invalid proof provided for para head key"),
                 _ => Error::<T>::FailedReading,

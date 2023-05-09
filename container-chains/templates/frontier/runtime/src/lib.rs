@@ -487,6 +487,7 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    type OrchestratorAccountId = <<sp_runtime::MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
 }
 
 const BLOCK_GAS_LIMIT: u64 = 75_000_000;
