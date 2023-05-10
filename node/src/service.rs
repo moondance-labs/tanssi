@@ -148,6 +148,9 @@ pub fn new_partial(
     );
 
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
+    // The nimbus import queue ONLY checks the signature correctness
+    // Any other checks corresponding to the author-correctness should be done
+    // in the runtime
     let import_queue = nimbus_consensus::import_queue(
         client.clone(),
         block_import.clone(),
