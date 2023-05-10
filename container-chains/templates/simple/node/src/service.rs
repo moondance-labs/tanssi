@@ -20,7 +20,7 @@ use {
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     nimbus_primitives::NimbusPair,
-    tc_consensus::{BuildTanssiAuraConsensusParams, TanssiAuraConsensus},
+    tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
 };
 
 // Substrate Imports

@@ -37,6 +37,7 @@ use sc_consensus_slots::{
 
 use futures::prelude::*;
 use nimbus_primitives::CompatibleDigestItem as NimbusCompatibleDigestItem;
+use nimbus_primitives::NimbusId;
 use sc_telemetry::TelemetryHandle;
 use sp_api::Core;
 use sp_api::ProvideRuntimeApi;
@@ -58,29 +59,27 @@ use sp_runtime::{
 use std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc};
 use tp_consensus::TanssiAuthorityAssignmentApi;
 
-mod import_queue;
 mod manual_seal;
 mod consensus_container;
 
 
 pub use consensus_container::*;
 
-pub use import_queue::{build_verifier, import_queue, BuildVerifierParams, ImportQueueParams};
-pub use manual_seal::TanssiManualSealAuraConsensusDataProvider;
+pub use manual_seal::OrchestratorManualSealAuraConsensusDataProvider;
 pub use sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion};
 pub use sc_consensus_slots::InherentDataProviderExt;
 
-const LOG_TARGET: &str = "aura::tanssi";
+const LOG_TARGET: &str = "aura::orchestrator";
 
-/// The implementation of the Tanssi AURA consensus for parachains.
-pub struct TanssiAuraConsensus<B, CIDP, W> {
+/// The implementation of the Orchestrator AURA consensus for parachains.
+pub struct OrchestratorAuraConsensus<B, CIDP, W> {
     create_inherent_data_providers: Arc<CIDP>,
     aura_worker: Arc<Mutex<W>>,
     slot_duration: SlotDuration,
     _phantom: PhantomData<B>,
 }
 
-impl<B, CIDP, W> Clone for TanssiAuraConsensus<B, CIDP, W> {
+impl<B, CIDP, W> Clone for OrchestratorAuraConsensus<B, CIDP, W> {
     fn clone(&self) -> Self {
         Self {
             create_inherent_data_providers: self.create_inherent_data_providers.clone(),
@@ -91,10 +90,10 @@ impl<B, CIDP, W> Clone for TanssiAuraConsensus<B, CIDP, W> {
     }
 }
 
-/// Build the tanssi aura worker.
+/// Build the Orchestrator aura worker.
 ///
 /// The caller is responsible for running this worker, otherwise it will do nothing.
-pub fn build_tanssi_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
+pub fn build_orchestrator_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
     BuildAuraWorkerParams {
         client,
         block_import,
@@ -127,7 +126,7 @@ where
     PF: Environment<B, Error = Error> + Send + Sync + 'static,
     PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     P: Pair + Send + Sync,
-    P::Public: AppPublic + Hash + Member + Encode + Decode,
+    P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
     P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
     I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
@@ -135,7 +134,7 @@ where
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
 {
-    TanssiAuraWorker {
+    OrchestratorAuraWorker {
         client,
         block_import,
         env: proposer_factory,
@@ -152,8 +151,8 @@ where
     }
 }
 
-/// Parameters of [`TanssiAuraConsensus::build`].
-pub struct BuildTanssiAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
+/// Parameters of [`OrchestratorAuraConsensus::build`].
+pub struct BuildOrchestratorAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
     pub proposer_factory: PF,
     pub create_inherent_data_providers: CIDP,
     pub block_import: BI,
@@ -168,7 +167,7 @@ pub struct BuildTanssiAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
     pub max_block_proposal_slot_portion: Option<SlotProportion>,
 }
 
-impl<B, CIDP> TanssiAuraConsensus<B, CIDP, ()>
+impl<B, CIDP> OrchestratorAuraConsensus<B, CIDP, ()>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + 'static,
@@ -176,7 +175,7 @@ where
 {
     /// Create a new boxed instance of AURA consensus.
     pub fn build<P, Client, BI, SO, PF, BS, Error>(
-        BuildTanssiAuraConsensusParams {
+        BuildOrchestratorAuraConsensusParams {
             proposer_factory,
             create_inherent_data_providers,
             block_import,
@@ -189,7 +188,7 @@ where
             telemetry,
             block_proposal_slot_portion,
             max_block_proposal_slot_portion,
-        }: BuildTanssiAuraConsensusParams<PF, BI, CIDP, Client, BS, SO>,
+        }: BuildOrchestratorAuraConsensusParams<PF, BI, CIDP, Client, BS, SO>,
     ) -> Box<dyn ParachainConsensus<B>>
     where
         Client:
@@ -214,25 +213,26 @@ where
         >,
         Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
         P: Pair + Send + Sync,
-        P::Public: AppPublic + Hash + Member + Encode + Decode,
+        P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
     {
-        let worker = build_tanssi_aura_worker::<P, _, _, _, _, _, _, _, _>(BuildAuraWorkerParams {
-            client: para_client,
-            block_import,
-            justification_sync_link: (),
-            proposer_factory,
-            sync_oracle,
-            force_authoring,
-            backoff_authoring_blocks,
-            keystore,
-            telemetry,
-            block_proposal_slot_portion,
-            max_block_proposal_slot_portion,
-            compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
-        });
+        let worker =
+            build_orchestrator_aura_worker::<P, _, _, _, _, _, _, _, _>(BuildAuraWorkerParams {
+                client: para_client,
+                block_import,
+                justification_sync_link: (),
+                proposer_factory,
+                sync_oracle,
+                force_authoring,
+                backoff_authoring_blocks,
+                keystore,
+                telemetry,
+                block_proposal_slot_portion,
+                max_block_proposal_slot_portion,
+                compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
+            });
 
-        Box::new(TanssiAuraConsensus {
+        Box::new(OrchestratorAuraConsensus {
             create_inherent_data_providers: Arc::new(create_inherent_data_providers),
             aura_worker: Arc::new(Mutex::new(worker)),
             slot_duration,
@@ -241,7 +241,7 @@ where
     }
 }
 
-impl<B, CIDP, W> TanssiAuraConsensus<B, CIDP, W>
+impl<B, CIDP, W> OrchestratorAuraConsensus<B, CIDP, W>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + 'static,
@@ -271,7 +271,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<B, CIDP, W> ParachainConsensus<B> for TanssiAuraConsensus<B, CIDP, W>
+impl<B, CIDP, W> ParachainConsensus<B> for OrchestratorAuraConsensus<B, CIDP, W>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + Send + Sync + 'static,
@@ -312,7 +312,7 @@ where
 
 type AuthorityId<P> = <P as Pair>::Public;
 
-struct TanssiAuraWorker<C, E, I, P, SO, L, BS, N> {
+struct OrchestratorAuraWorker<C, E, I, P, SO, L, BS, N> {
     client: Arc<C>,
     block_import: I,
     env: E,
@@ -330,7 +330,7 @@ struct TanssiAuraWorker<C, E, I, P, SO, L, BS, N> {
 
 #[async_trait::async_trait]
 impl<B, C, E, I, P, Error, SO, L, BS> sc_consensus_slots::SimpleSlotWorker<B>
-    for TanssiAuraWorker<C, E, I, P, SO, L, BS, NumberFor<B>>
+    for OrchestratorAuraWorker<C, E, I, P, SO, L, BS, NumberFor<B>>
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
@@ -341,7 +341,7 @@ where
     E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
     P: Pair + Send + Sync,
-    P::Public: AppPublic + Public + Member + Encode + Decode + Hash,
+    P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
     P::Signature: TryFrom<Vec<u8>> + Member + Encode + Decode + Hash + Debug,
     SO: SyncOracle + Send + Clone + Sync,
     L: sc_consensus::JustificationSyncLink<B>,
@@ -358,7 +358,7 @@ where
     type AuxData = Vec<AuthorityId<P>>;
 
     fn logging_target(&self) -> &'static str {
-        "tanssi_aura"
+        "orchestrator_aura"
     }
 
     fn block_import(&mut self) -> &mut Self::BlockImport {
@@ -390,10 +390,11 @@ where
         epoch_data: &Self::AuxData,
     ) -> Option<Self::Claim> {
         let expected_author = slot_author::<P>(slot, epoch_data);
+
         expected_author.and_then(|p| {
             if SyncCryptoStore::has_keys(
                 &*self.keystore,
-                &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
+                &[(p.to_raw_vec(), nimbus_primitives::NIMBUS_KEY_ID)],
             ) {
                 Some(p.clone())
             } else {
@@ -406,10 +407,7 @@ where
         vec![
             <DigestItem as CompatibleDigestItem<P::Signature>>::aura_pre_digest(slot),
             // We inject the nimbus digest as well. Crutial to be able to verify signatures
-            <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(
-                // TODO remove this unwrap through trait reqs
-                nimbus_primitives::NimbusId::from_slice(claim.as_ref()).unwrap(),
-            ),
+            <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(claim.clone().into()),
         ]
     }
 
@@ -429,7 +427,6 @@ where
         // add it to a digest item.
         let public_type_pair = public.to_public_crypto_pair();
         let public = public.to_raw_vec();
-        log::info!("the ID is {:?}", <AuthorityId<P> as AppKey>::ID);
         let signature = SyncCryptoStore::sign_with(
             &*self.keystore,
             <AuthorityId<P> as AppKey>::ID,
@@ -561,7 +558,10 @@ P: Pair + Send + Sync,
 }
 
 /// Get slot author for given block along with authorities.
-fn slot_author<P: Pair>(slot: Slot, authorities: &[AuthorityId<P>]) -> Option<&AuthorityId<P>> {
+pub(crate) fn slot_author<P: Pair>(
+    slot: Slot,
+    authorities: &[AuthorityId<P>],
+) -> Option<&AuthorityId<P>> {
     if authorities.is_empty() {
         return None;
     }
