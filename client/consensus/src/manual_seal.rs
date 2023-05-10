@@ -87,25 +87,24 @@ where
 
         // TODO: this should always be included, but breaks manual seal tests. We should modify
         // once configuration on how manual seal changes
-        let digest = if let Some(author) = expected_author
-            .and_then(|p| {
-                if SyncCryptoStore::has_keys(&*self.keystore, &[(p.to_raw_vec(), NIMBUS_KEY_ID)]) {
-                    log::error!("key found");
-                    Some(p.clone())
-                } else {
-                    None
-                }
-            }) {
-                let nimbus_digest = <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(author);
-                Digest {
-                    logs: vec![aura_digest_item, nimbus_digest],
-                }
+        let digest = if let Some(author) = expected_author.and_then(|p| {
+            if SyncCryptoStore::has_keys(&*self.keystore, &[(p.to_raw_vec(), NIMBUS_KEY_ID)]) {
+                log::error!("key found");
+                Some(p.clone())
+            } else {
+                None
             }
-            else {
-                Digest {
-                    logs: vec![aura_digest_item],
-                }
-            };        
+        }) {
+            let nimbus_digest =
+                <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(author);
+            Digest {
+                logs: vec![aura_digest_item, nimbus_digest],
+            }
+        } else {
+            Digest {
+                logs: vec![aura_digest_item],
+            }
+        };
         Ok(digest)
     }
 
