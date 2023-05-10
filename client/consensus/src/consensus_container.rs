@@ -723,7 +723,7 @@ pub trait RetrieveOrchestratorHead<Block: BlockT, ExtraArgs>: Send + Sync {
         parent: Block::Hash,
         extra_args: ExtraArgs,
     ) -> Result<
-        sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+        Block::Header,
         Box<dyn std::error::Error + Send + Sync>,
     >;
 }
@@ -735,7 +735,7 @@ where
     F: Fn(Block::Hash, ExtraArgs) -> Fut + Sync + Send,
     Fut: std::future::Future<
             Output = Result<
-                sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+                Block::Header,
                 Box<dyn std::error::Error + Send + Sync>,
             >,
         > + Send
@@ -747,7 +747,7 @@ where
         parent: Block::Hash,
         extra_args: ExtraArgs,
     ) -> Result<
-        sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+        Block::Header,
         Box<dyn std::error::Error + Send + Sync>,
     > {
         (*self)(parent, extra_args).await
@@ -764,7 +764,7 @@ pub trait TanssiSlotWorker<B: BlockT>: SimpleSlotWorker<B> {
     async fn tanssi_on_slot(
         &mut self,
         slot_info: SlotInfo<B>,
-        orch_header: sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+        orch_header: B::Header,
     ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>;
 }
 
@@ -788,12 +788,13 @@ where
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
+    // TODO: change this
     B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
 {
     async fn tanssi_on_slot(
         &mut self,
         slot_info: SlotInfo<B>,
-        orch_header: sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+        orch_header: B::Header,
     ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>
     where
         Self: Sync,
