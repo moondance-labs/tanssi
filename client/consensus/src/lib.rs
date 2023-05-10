@@ -58,10 +58,8 @@ use sp_runtime::{
 };
 use std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc};
 
-mod import_queue;
 mod manual_seal;
 
-pub use import_queue::{build_verifier, import_queue, BuildVerifierParams, ImportQueueParams};
 pub use manual_seal::OrchestratorManualSealAuraConsensusDataProvider;
 pub use sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion};
 pub use sc_consensus_slots::InherentDataProviderExt;
