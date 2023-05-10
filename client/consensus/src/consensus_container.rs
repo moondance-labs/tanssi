@@ -130,9 +130,7 @@ pub fn build_container_aura_worker<P, B, C, OC, PF, I, SO, L, BS, Error>(
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
-    C::Api: AuraApi<B, AuthorityId<P>>,
     OC: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
-    OC::Api: AuraApi<B, AuthorityId<P>>,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     OC::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
@@ -225,8 +223,6 @@ where
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
         OrchestratorClient:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
-        OrchestratorClient::Api: AuraApi<B, P::Public>,
-        Client::Api: AuraApi<B, P::Public>,
         Client::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
         OrchestratorClient::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
         AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
@@ -392,10 +388,8 @@ impl<B, C, OC, E, I, P, Error, SO, L, BS> sc_consensus_slots::SimpleSlotWorker<B
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    C::Api: AuraApi<B, AuthorityId<P>>,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     OC: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    OC::Api: AuraApi<B, AuthorityId<P>>,
     OC::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
@@ -587,7 +581,6 @@ where
     P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
     B: BlockT,
     C: ProvideRuntimeApi<B>,
-    C::Api: AuraApi<B, AuthorityId<P>>,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
 {
@@ -636,7 +629,6 @@ where
     P: Pair + Send + Sync,
     P::Public: AppPublic + Hash + Member + Encode + Decode,
     P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
-    C::Api: AuraApi<B, AuthorityId<P>>,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
 {
     // Get all the available keys
@@ -785,10 +777,8 @@ impl<B, C, OC, E, I, P, Error, SO, L, BS> TanssiSlotWorker<B>
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    C::Api: AuraApi<B, AuthorityId<P>>,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     OC: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    OC::Api: AuraApi<B, AuthorityId<P>>,
     OC::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
