@@ -21,47 +21,7 @@
 //! and [`fn@import_queue`].
 //!
 //! For more information about AuRa, the Substrate crate should be checked.
-use {
-    cumulus_client_consensus_common::{
-        ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
-    },
-    cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
-    parity_scale_codec::{Codec, Decode, Encode},
-};
-
-use {
-    futures::lock::Mutex,
-    sc_client_api::{backend::AuxStore, BlockOf},
-    sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
-    sc_consensus_aura::{find_pre_digest, CompatibilityMode},
-    sc_consensus_slots::{
-        BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, StorageChanges,
-    },
-};
-
-use {
-    futures::prelude::*,
-    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusId},
-    sc_telemetry::TelemetryHandle,
-    sp_api::{Core, ProvideRuntimeApi},
-    sp_application_crypto::{AppKey, AppPublic},
-    sp_blockchain::HeaderBackend,
-    sp_consensus::{
-        BlockOrigin, EnableProofRecording, Environment, Error as ConsensusError, ProofRecording,
-        Proposer, SyncOracle,
-    },
-    sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, SlotDuration},
-    sp_consensus_slots::Slot,
-    sp_core::crypto::{ByteArray, Pair, Public},
-    sp_inherents::CreateInherentDataProviders,
-    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
-    sp_runtime::{
-        traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
-        DigestItem,
-    },
-    std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc},
-    tp_consensus::TanssiAuthorityAssignmentApi,
-};
+use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
 
 mod consensus_container;
 mod consensus_orchestrator;

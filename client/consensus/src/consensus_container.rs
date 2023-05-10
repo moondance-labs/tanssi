@@ -26,7 +26,7 @@ use {
         ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
     },
     cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
-    parity_scale_codec::{Codec, Decode, Encode},
+    parity_scale_codec::{Decode, Encode},
 };
 
 use {
@@ -51,7 +51,7 @@ use {
 use {
     crate::{slot_author, AuthorityId},
     log::{debug, info, warn},
-    sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, SlotDuration},
+    sp_consensus_aura::{digests::CompatibleDigestItem, SlotDuration},
     sp_consensus_slots::Slot,
     sp_core::crypto::{ByteArray, Pair, Public},
     sp_inherents::CreateInherentDataProviders,
@@ -610,10 +610,7 @@ where
         .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
 }
 
-use {
-    nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID},
-    sp_application_crypto::CryptoTypePublicPair,
-};
+use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
 /// Grab the first eligible nimbus key from the keystore
 /// If multiple keys are eligible this function still only returns one
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.

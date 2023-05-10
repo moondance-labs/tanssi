@@ -738,9 +738,9 @@ impl_runtime_apis! {
             let assigned_collators = Self::parachain_collators(para_id)?;
             log::error!("assigned_collators {:?}", assigned_collators);
 
-            let authorities = pallet_session::KeyOwner::<Runtime>::iter().filter(|((key_id, key), owner)|
+            let authorities = pallet_session::KeyOwner::<Runtime>::iter().filter(|((key_id, _key), owner)|
                 key_id == &NIMBUS_KEY_ID && assigned_collators.contains(owner)
-            ).map(|((key_id, key), owner)| NimbusId::from_slice(&key).unwrap()).collect();
+            ).map(|((_key_id, key), _owner)| NimbusId::from_slice(&key).unwrap()).collect();
             Some(authorities)
         }
         fn check_para_id_assignment(authority: NimbusId) -> Option<ParaId> {

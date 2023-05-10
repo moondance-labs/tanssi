@@ -881,7 +881,7 @@ fn build_consensus_container(
                 ))
             }
         },
-        get_orchestrator_head: move |_block_hash, (relay_parent, validation_data)| {
+        get_orchestrator_head: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
             async move {
                 let latest_header =

@@ -9,17 +9,12 @@ use container_chain_template_simple_runtime::{opaque::Block, RuntimeApi};
 
 // Cumulus Imports
 use {
-    cumulus_client_consensus_aura::SlotProportion,
-    cumulus_client_consensus_common::{
-        ParachainBlockImport as TParachainBlockImport, ParachainConsensus,
-    },
+    cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_service::{
-        build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
-        StartCollatorParams, StartFullNodeParams,
+        build_relay_chain_interface, prepare_node_config, start_full_node, StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
-    nimbus_primitives::NimbusPair,
 };
 
 // Substrate Imports
@@ -28,11 +23,8 @@ use {
     sc_consensus::ImportQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
-    sc_network_sync::SyncingService,
     sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager},
-    sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
-    sp_keystore::SyncCryptoStorePtr,
-    substrate_prometheus_endpoint::Registry,
+    sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
 };
 
 /// Native executor type.
@@ -163,13 +155,13 @@ async fn start_node_impl(
     let parachain_config = prepare_node_config(parachain_config);
 
     let params = new_partial(&parachain_config)?;
-    let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
+    let (_block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
     let client = params.client.clone();
     let backend = params.backend.clone();
     let mut task_manager = params.task_manager;
 
-    let (relay_chain_interface, collator_key) = build_relay_chain_interface(
+    let (relay_chain_interface, _collator_key) = build_relay_chain_interface(
         polkadot_config,
         &parachain_config,
         telemetry_worker_handle,
@@ -180,8 +172,6 @@ async fn start_node_impl(
     .await
     .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
-    let force_authoring = parachain_config.force_authoring;
-    let prometheus_registry = parachain_config.prometheus_registry().cloned();
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
 

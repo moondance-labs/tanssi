@@ -1,9 +1,5 @@
 #![cfg_attr(not(feature = "std"), no_std)]
-use {
-    cumulus_primitives_core::ParaId,
-    parity_scale_codec::{Codec, Decode, Encode},
-    sp_std::vec::Vec,
-};
+use {cumulus_primitives_core::ParaId, parity_scale_codec::Codec, sp_std::vec::Vec};
 
 sp_api::decl_runtime_apis! {
     /// API necessary for block authorship with aura.
