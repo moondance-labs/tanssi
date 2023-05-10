@@ -34,12 +34,16 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    nimbus_primitives::NimbusId,
+    nimbus_primitives::{NimbusId, NIMBUS_KEY_ID},
+    pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApiV1,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     polkadot_runtime_common::BlockHashCount,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata},
+    sp_core::{
+        crypto::{ByteArray, KeyTypeId},
+        Get, OpaqueMetadata,
+    },
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
@@ -48,9 +52,6 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    nimbus_primitives::NIMBUS_KEY_ID,
-    sp_core::crypto::ByteArray,
-    pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApiV1,
 };
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
@@ -737,7 +738,7 @@ impl_runtime_apis! {
             let assigned_collators = Self::parachain_collators(para_id)?;
             log::error!("assigned_collators {:?}", assigned_collators);
 
-            let authorities = pallet_session::KeyOwner::<Runtime>::iter().filter(|((key_id, key), owner)| 
+            let authorities = pallet_session::KeyOwner::<Runtime>::iter().filter(|((key_id, key), owner)|
                 key_id == &NIMBUS_KEY_ID && assigned_collators.contains(owner)
             ).map(|((key_id, key), owner)| NimbusId::from_slice(&key).unwrap()).collect();
             Some(authorities)

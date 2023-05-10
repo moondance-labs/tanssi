@@ -21,49 +21,55 @@
 //! and [`fn@import_queue`].
 //!
 //! For more information about AuRa, the Substrate crate should be checked.
-use cumulus_client_consensus_common::{
-    ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
-};
-use cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData};
-use parity_scale_codec::{Codec, Decode, Encode};
-
-use futures::lock::Mutex;
-use sc_client_api::{backend::AuxStore, BlockOf};
-use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};
-use sc_consensus_aura::{find_pre_digest, CompatibilityMode};
-use sc_consensus_slots::{
-    BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, StorageChanges,
+use {
+    cumulus_client_consensus_common::{
+        ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
+    },
+    cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
+    parity_scale_codec::{Codec, Decode, Encode},
 };
 
-use futures::prelude::*;
-use nimbus_primitives::CompatibleDigestItem as NimbusCompatibleDigestItem;
-use sc_telemetry::TelemetryHandle;
-use sp_api::Core;
-use sp_api::ProvideRuntimeApi;
-use sp_application_crypto::{AppKey, AppPublic};
-use sp_blockchain::HeaderBackend;
-use sp_consensus::{
-    BlockOrigin, EnableProofRecording, Environment, Error as ConsensusError, ProofRecording,
-    Proposer, SyncOracle,
+use {
+    futures::lock::Mutex,
+    sc_client_api::{backend::AuxStore, BlockOf},
+    sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
+    sc_consensus_aura::{find_pre_digest, CompatibilityMode},
+    sc_consensus_slots::{
+        BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, StorageChanges,
+    },
 };
-use sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, SlotDuration};
-use sp_consensus_slots::Slot;
-use sp_core::crypto::{ByteArray, Pair, Public};
-use sp_inherents::CreateInherentDataProviders;
-use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
-use sp_runtime::{
-    traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
-    DigestItem,
+
+use {
+    crate::{slot_author, AuthorityId},
+    futures::prelude::*,
+    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusId},
+    sc_telemetry::TelemetryHandle,
+    sp_api::{Core, ProvideRuntimeApi},
+    sp_application_crypto::{AppKey, AppPublic},
+    sp_blockchain::HeaderBackend,
+    sp_consensus::{
+        BlockOrigin, EnableProofRecording, Environment, Error as ConsensusError, ProofRecording,
+        Proposer, SyncOracle,
+    },
+    sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, SlotDuration},
+    sp_consensus_slots::Slot,
+    sp_core::crypto::{ByteArray, Pair, Public},
+    sp_inherents::CreateInherentDataProviders,
+    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_runtime::{
+        traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
+        DigestItem,
+    },
+    std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc},
 };
-use std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc};
-use tp_consensus::TanssiAuthorityAssignmentApi;
+pub use {
+    sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
+    sc_consensus_slots::InherentDataProviderExt,
+};
 
-pub use sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion};
-pub use sc_consensus_slots::InherentDataProviderExt;
+const LOG_TARGET: &str = "aura::orchestrator";
 
-const LOG_TARGET: &str = "aura::tanssi";
-
-/// The implementation of the Tanssi AURA consensus for parachains.
+/// The implementation of the Orchestrator AURA consensus for parachains.
 pub struct OrchestratorAuraConsensus<B, CIDP, W> {
     create_inherent_data_providers: Arc<CIDP>,
     aura_worker: Arc<Mutex<W>>,
@@ -82,7 +88,7 @@ impl<B, CIDP, W> Clone for OrchestratorAuraConsensus<B, CIDP, W> {
     }
 }
 
-/// Build the tanssi aura worker.
+/// Build the Orchestrator aura worker.
 ///
 /// The caller is responsible for running this worker, otherwise it will do nothing.
 pub fn build_orchestrator_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
@@ -113,12 +119,10 @@ where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
     C::Api: AuraApi<B, AuthorityId<P>>,
-    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     PF: Environment<B, Error = Error> + Send + Sync + 'static,
     PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     P: Pair + Send + Sync,
-    P::Public: AppPublic + Hash + Member + Encode + Decode,
+    P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
     P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
     I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
@@ -143,7 +147,7 @@ where
     }
 }
 
-/// Parameters of [`TanssiAuraConsensus::build`].
+/// Parameters of [`OrchestratorAuraConsensus::build`].
 pub struct BuildOrchestratorAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
     pub proposer_factory: PF,
     pub create_inherent_data_providers: CIDP,
@@ -186,8 +190,6 @@ where
         Client:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
         Client::Api: AuraApi<B, P::Public>,
-        Client::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
-        AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
         BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>>
             + ParachainBlockImportMarker
             + Send
@@ -205,23 +207,24 @@ where
         >,
         Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
         P: Pair + Send + Sync,
-        P::Public: AppPublic + Hash + Member + Encode + Decode,
+        P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
     {
-        let worker = build_orchestrator_aura_worker::<P, _, _, _, _, _, _, _, _>(BuildAuraWorkerParams {
-            client: para_client,
-            block_import,
-            justification_sync_link: (),
-            proposer_factory,
-            sync_oracle,
-            force_authoring,
-            backoff_authoring_blocks,
-            keystore,
-            telemetry,
-            block_proposal_slot_portion,
-            max_block_proposal_slot_portion,
-            compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
-        });
+        let worker =
+            build_orchestrator_aura_worker::<P, _, _, _, _, _, _, _, _>(BuildAuraWorkerParams {
+                client: para_client,
+                block_import,
+                justification_sync_link: (),
+                proposer_factory,
+                sync_oracle,
+                force_authoring,
+                backoff_authoring_blocks,
+                keystore,
+                telemetry,
+                block_proposal_slot_portion,
+                max_block_proposal_slot_portion,
+                compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
+            });
 
         Box::new(OrchestratorAuraConsensus {
             create_inherent_data_providers: Arc::new(create_inherent_data_providers),
@@ -301,8 +304,6 @@ where
     }
 }
 
-type AuthorityId<P> = <P as Pair>::Public;
-
 struct OrchestratorAuraWorker<C, E, I, P, SO, L, BS, N> {
     client: Arc<C>,
     block_import: I,
@@ -326,13 +327,11 @@ where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
     C::Api: AuraApi<B, AuthorityId<P>>,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
-    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
     E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
     P: Pair + Send + Sync,
-    P::Public: AppPublic + Public + Member + Encode + Decode + Hash,
+    P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
     P::Signature: TryFrom<Vec<u8>> + Member + Encode + Decode + Hash + Debug,
     SO: SyncOracle + Send + Clone + Sync,
     L: sc_consensus::JustificationSyncLink<B>,
@@ -349,7 +348,7 @@ where
     type AuxData = Vec<AuthorityId<P>>;
 
     fn logging_target(&self) -> &'static str {
-        "tanssi_aura"
+        "orchestrator_aura"
     }
 
     fn block_import(&mut self) -> &mut Self::BlockImport {
@@ -361,12 +360,11 @@ where
         header: &B::Header,
         _slot: Slot,
     ) -> Result<Self::AuxData, sp_consensus::Error> {
-        authorities::<P, B, C>(
+        authorities(
             self.client.as_ref(),
             header.hash(),
             *header.number() + 1u32.into(),
             &self.compatibility_mode,
-            self.keystore.clone()
         )
     }
 
@@ -381,10 +379,11 @@ where
         epoch_data: &Self::AuxData,
     ) -> Option<Self::Claim> {
         let expected_author = slot_author::<P>(slot, epoch_data);
+
         expected_author.and_then(|p| {
             if SyncCryptoStore::has_keys(
                 &*self.keystore,
-                &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
+                &[(p.to_raw_vec(), nimbus_primitives::NIMBUS_KEY_ID)],
             ) {
                 Some(p.clone())
             } else {
@@ -397,10 +396,7 @@ where
         vec![
             <DigestItem as CompatibleDigestItem<P::Signature>>::aura_pre_digest(slot),
             // We inject the nimbus digest as well. Crutial to be able to verify signatures
-            <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(
-                // TODO remove this unwrap through trait reqs
-                nimbus_primitives::NimbusId::from_slice(claim.as_ref()).unwrap(),
-            ),
+            <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(claim.clone().into()),
         ]
     }
 
@@ -420,7 +416,6 @@ where
         // add it to a digest item.
         let public_type_pair = public.to_public_crypto_pair();
         let public = public.to_raw_vec();
-        log::info!("the ID is {:?}", <AuthorityId<P> as AppKey>::ID);
         let signature = SyncCryptoStore::sign_with(
             &*self.keystore,
             <AuthorityId<P> as AppKey>::ID,
@@ -504,23 +499,17 @@ where
     }
 }
 
-fn authorities<P, B, C>(
+fn authorities<A, B, C>(
     client: &C,
     parent_hash: B::Hash,
     context_block_number: NumberFor<B>,
     compatibility_mode: &CompatibilityMode<NumberFor<B>>,
-    keystore: SyncCryptoStorePtr
-) -> Result<Vec<AuthorityId<P>>, ConsensusError>
+) -> Result<Vec<A>, ConsensusError>
 where
-P: Pair + Send + Sync,
-	P::Public: AppPublic + Hash + Member + Encode + Decode,
-	P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+    A: Codec + Debug,
     B: BlockT,
     C: ProvideRuntimeApi<B>,
-    C::Api: AuraApi<B, AuthorityId<P>>,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
-    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>
-
+    C::Api: AuraApi<B, A>,
 {
     let runtime_api = client.runtime_api();
 
@@ -544,91 +533,9 @@ P: Pair + Send + Sync,
             }
         }
     }
-    first_eligible_key::<B, C, P>(
-        client.clone(),
-        keystore.clone(),
-        &parent_hash
-    ).ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
-}
 
-/// Get slot author for given block along with authorities.
-fn slot_author<P: Pair>(slot: Slot, authorities: &[AuthorityId<P>]) -> Option<&AuthorityId<P>> {
-    if authorities.is_empty() {
-        return None;
-    }
-
-    let idx = *slot % (authorities.len() as u64);
-    assert!(
-        idx <= usize::MAX as u64,
-        "It is impossible to have a vector with length beyond the address space; qed",
-    );
-
-    let current_author = authorities.get(idx as usize).expect(
-        "authorities not empty; index constrained to list length;this is a valid index; qed",
-    );
-
-    Some(current_author)
-}
-
-
-use sp_application_crypto::CryptoTypePublicPair;
-use nimbus_primitives::{NimbusId, NIMBUS_KEY_ID, NimbusPair};
-/// Grab the first eligible nimbus key from the keystore
-/// If multiple keys are eligible this function still only returns one
-/// and makes no guarantees which one as that depends on the keystore's iterator behavior.
-/// This is the standard way of determining which key to author with.
-pub(crate) fn first_eligible_key<B: BlockT, C, P>(
-	client: &C,
-	keystore: SyncCryptoStorePtr,
-	parent_hash: &B::Hash
-) -> Option<Vec<AuthorityId<P>>>
-where
-	C: ProvideRuntimeApi<B>,
-	C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
-    P: Pair + Send + Sync,
-	P::Public: AppPublic + Hash + Member + Encode + Decode,
-	P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
-	C::Api: AuraApi<B, AuthorityId<P>>,
-    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>
-{
-	// Get all the available keys
-	let available_keys = SyncCryptoStore::keys(&*keystore, NIMBUS_KEY_ID).ok()?;
-
-	// Print a more helpful message than "not eligible" when there are no keys at all.
-	if available_keys.is_empty() {
-		log::warn!(
-			target: LOG_TARGET,
-			"🔏 No Nimbus keys available. We will not be able to author."
-		);
-		return None;
-	}
-
-	let runtime_api = client.runtime_api();
-
-	// Iterate keys until we find an eligible one, or run out of candidates.
-	// If we are skipping prediction, then we author with the first key we find.
-	// prediction skipping only really makes sense when there is a single key in the keystore.
-	let maybe_authorities = available_keys.into_iter().find_map(|type_public_pair| {
-		// Have to convert to a typed NimbusId to pass to the runtime API. Maybe this is a clue
-		// That I should be passing Vec<u8> across the wasm boundary?
-		if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
-			// If we dont find any parachain that we are assigned to, return non
-
-			if let Ok(Some(para_id)) =  runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into()) {
-                log::error!("Para id found for assignment {:?}", para_id);
-               let authorities = runtime_api.para_id_authorities(parent_hash.clone(), para_id).ok()?;
-               log::error!("Authorities found for para {:?} are {:?}", para_id, authorities);
-                authorities
-            }
-            else {
-                log::error!("nO Para id found for assignment {:?}", nimbus_id);
-
-                None
-            }
-		} else {
-			None
-		}
-	});
-
-	maybe_authorities
+    runtime_api
+        .authorities(parent_hash)
+        .ok()
+        .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
 }

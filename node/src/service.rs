@@ -831,7 +831,7 @@ fn build_consensus_container(
     let params = tc_consensus::BuildContainerAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
-            let relay_chain_interface= relay_chain_interface.clone();
+            let relay_chain_interface = relay_chain_interface.clone();
             let orchestrator_chain_interface = orchestrator_chain_interface.clone();
 
             async move {
@@ -891,10 +891,10 @@ fn build_consensus_container(
                         orchestrator_para_id,
                     )
                     .await;
-                
+
                 let latest_header = latest_header.ok_or_else(|| {
                     Box::<dyn std::error::Error + Send + Sync>::from(
-                            "Failed to fetch latest header",
+                        "Failed to fetch latest header",
                     )
                 })?;
 
@@ -916,9 +916,16 @@ fn build_consensus_container(
         telemetry,
     };
 
-    Ok(tc_consensus::ContainerAuraConsensus::build::<NimbusPair, _, _, _, _, _, _, _>(
-        params,
-    ))
+    Ok(tc_consensus::ContainerAuraConsensus::build::<
+        NimbusPair,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >(params))
 }
 
 fn build_consensus_orchestrator(

@@ -115,8 +115,7 @@ impl ContainerChainAuthoritiesInherentData {
         relay_parent: PHash,
         relay_chain_interface: &impl RelayChainInterface,
         orchestrator_para_id: ParaId,
-    ) -> Option<sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>> {
-
+    ) -> Option<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>> {
         let header_orchestrator = relay_chain_interface
             .get_storage_by_key(relay_parent, &para_id_head(orchestrator_para_id))
             .await
@@ -155,7 +154,6 @@ impl ContainerChainAuthoritiesInherentData {
             )
         })
         .ok()?;
-
 
         Some(orchestrator_header)
     }

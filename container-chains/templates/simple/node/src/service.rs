@@ -20,7 +20,6 @@ use {
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     nimbus_primitives::NimbusPair,
-    tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
 };
 
 // Substrate Imports
@@ -268,7 +267,6 @@ async fn start_node_impl(
 
     let relay_chain_slot_duration = Duration::from_secs(6);
 
-    
     let params = StartFullNodeParams {
         client: client.clone(),
         announce_block,

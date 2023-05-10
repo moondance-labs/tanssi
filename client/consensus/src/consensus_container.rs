@@ -21,46 +21,60 @@
 //! and [`fn@import_queue`].
 //!
 //! For more information about AuRa, the Substrate crate should be checked.
-use cumulus_client_consensus_common::{
-    ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
-};
-use cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData};
-use parity_scale_codec::{Codec, Decode, Encode};
-
-use futures::lock::Mutex;
-use sc_client_api::{backend::AuxStore, BlockOf};
-use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};
-use sc_consensus_aura::{find_pre_digest, CompatibilityMode};
-use sc_consensus_slots::{
-    BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, StorageChanges,
-};
-use sc_consensus_slots::SlotResult;
-use futures::prelude::*;
-use nimbus_primitives::CompatibleDigestItem as NimbusCompatibleDigestItem;
-use sc_telemetry::{telemetry, TelemetryHandle, CONSENSUS_DEBUG, CONSENSUS_INFO, CONSENSUS_WARN};
-use sp_api::Core;
-use sp_api::ProvideRuntimeApi;
-use sp_application_crypto::{AppKey, AppPublic};
-use sp_blockchain::HeaderBackend;
-use sp_consensus::{
-    BlockOrigin, EnableProofRecording, Environment, Error as ConsensusError, ProofRecording,
-    Proposer, SyncOracle,
+use {
+    cumulus_client_consensus_common::{
+        ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
+    },
+    cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
+    parity_scale_codec::{Codec, Decode, Encode},
 };
 
-use sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, SlotDuration};
-use sp_consensus_slots::Slot;
-use sp_core::crypto::{ByteArray, Pair, Public};
-use sp_inherents::CreateInherentDataProviders;
-use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
-use sp_runtime::{
-    traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
-    DigestItem,
+use {
+    futures::{lock::Mutex, prelude::*},
+    nimbus_primitives::CompatibleDigestItem as NimbusCompatibleDigestItem,
+    sc_client_api::{backend::AuxStore, BlockOf},
+    sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
+    sc_consensus_aura::{find_pre_digest, CompatibilityMode},
+    sc_consensus_slots::{
+        BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, SlotResult, StorageChanges,
+    },
+    sc_telemetry::{telemetry, TelemetryHandle, CONSENSUS_DEBUG, CONSENSUS_INFO, CONSENSUS_WARN},
+    sp_api::{Core, ProvideRuntimeApi},
+    sp_application_crypto::{AppKey, AppPublic},
+    sp_blockchain::HeaderBackend,
+    sp_consensus::{
+        BlockOrigin, EnableProofRecording, Environment, Error as ConsensusError, ProofRecording,
+        Proposer, SyncOracle,
+    },
 };
-use std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc, time::{Duration, Instant}};
-use tp_consensus::TanssiAuthorityAssignmentApi;
-use log::{debug, info, warn};
-pub use sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion};
-pub use sc_consensus_slots::InherentDataProviderExt;
+
+use {
+    crate::{slot_author, AuthorityId},
+    log::{debug, info, warn},
+    sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, SlotDuration},
+    sp_consensus_slots::Slot,
+    sp_core::crypto::{ByteArray, Pair, Public},
+    sp_inherents::CreateInherentDataProviders,
+    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_runtime::{
+        traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
+        DigestItem,
+    },
+    std::{
+        convert::TryFrom,
+        fmt::Debug,
+        hash::Hash,
+        marker::PhantomData,
+        pin::Pin,
+        sync::Arc,
+        time::{Duration, Instant},
+    },
+    tp_consensus::TanssiAuthorityAssignmentApi,
+};
+pub use {
+    sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
+    sc_consensus_slots::InherentDataProviderExt,
+};
 
 const LOG_TARGET: &str = "aura::tanssi";
 
@@ -132,8 +146,7 @@ where
     SO: SyncOracle + Send + Sync + Clone,
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
-    B::Header: From<sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>>
-
+    B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
 {
     ContainerAuraWorker {
         client,
@@ -154,7 +167,8 @@ where
 }
 
 /// Parameters of [`ContainerAuraConsensus::build`].
-pub struct BuildContainerAuraConsensusParams<PF, BI, GOH, CIDP, Client, OrchestratorClient, BS, SO> {
+pub struct BuildContainerAuraConsensusParams<PF, BI, GOH, CIDP, Client, OrchestratorClient, BS, SO>
+{
     pub proposer_factory: PF,
     pub create_inherent_data_providers: CIDP,
     pub get_orchestrator_head: GOH,
@@ -195,12 +209,22 @@ where
             telemetry,
             block_proposal_slot_portion,
             max_block_proposal_slot_portion,
-        }: BuildContainerAuraConsensusParams<PF, BI, GOH, CIDP, Client, OrchestratorClient, BS, SO>,
+        }: BuildContainerAuraConsensusParams<
+            PF,
+            BI,
+            GOH,
+            CIDP,
+            Client,
+            OrchestratorClient,
+            BS,
+            SO,
+        >,
     ) -> Box<dyn ParachainConsensus<B>>
     where
         Client:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
-        OrchestratorClient: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
+        OrchestratorClient:
+            ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
         OrchestratorClient::Api: AuraApi<B, P::Public>,
         Client::Api: AuraApi<B, P::Public>,
         Client::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
@@ -225,23 +249,25 @@ where
         P: Pair + Send + Sync,
         P::Public: AppPublic + Hash + Member + Encode + Decode,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
-        B::Header: From<sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>>
+        B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
     {
-        let worker = build_container_aura_worker::<P, _, _, _, _, _, _, _, _, _,>(BuildContainerAuraWorkerParams {
-            client: para_client,
-            orchestrator_client,
-            block_import,
-            justification_sync_link: (),
-            proposer_factory,
-            sync_oracle,
-            force_authoring,
-            backoff_authoring_blocks,
-            keystore,
-            telemetry,
-            block_proposal_slot_portion,
-            max_block_proposal_slot_portion,
-            compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
-        });
+        let worker = build_container_aura_worker::<P, _, _, _, _, _, _, _, _, _>(
+            BuildContainerAuraWorkerParams {
+                client: para_client,
+                orchestrator_client,
+                block_import,
+                justification_sync_link: (),
+                proposer_factory,
+                sync_oracle,
+                force_authoring,
+                backoff_authoring_blocks,
+                keystore,
+                telemetry,
+                block_proposal_slot_portion,
+                max_block_proposal_slot_portion,
+                compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
+            },
+        );
 
         Box::new(ContainerAuraConsensus {
             create_inherent_data_providers: Arc::new(create_inherent_data_providers),
@@ -290,9 +316,9 @@ where
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + Send + Sync + 'static,
     CIDP::InherentDataProviders: InherentDataProviderExt + Send,
     GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData)> + 'static,
-    W: TanssiSlotWorker<B>  + Send + Sync,
+    W: TanssiSlotWorker<B> + Send + Sync,
     W::Proposer: Proposer<B, Proof = <EnableProofRecording as ProofRecording>::Proof>,
-    B::Header: From<sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>>
+    B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
 {
     async fn produce_candidate(
         &mut self,
@@ -303,19 +329,20 @@ where
         let inherent_data_providers = self
             .inherent_data(parent.hash(), validation_data, relay_parent)
             .await?;
-        
-        let header = self.get_orchestrator_head
+
+        let header = self
+            .get_orchestrator_head
             .retrieve_orchestrator_head(parent.hash(), (relay_parent, validation_data.clone()))
             .await
             .map_err(|e| {
                 tracing::error!(
-                target: LOG_TARGET,
-                error = ?e,
-                "Failed to get orch head.",
-            )
+                    target: LOG_TARGET,
+                    error = ?e,
+                    "Failed to get orch head.",
+                )
             })
             .ok()?;
-        
+
         let info = SlotInfo::new(
             inherent_data_providers.slot(),
             Box::new(inherent_data_providers),
@@ -328,7 +355,12 @@ where
             Some((validation_data.max_pov_size / 2) as usize),
         );
 
-        let res = self.aura_worker.lock().await.tanssi_on_slot(info, header).await?;
+        let res = self
+            .aura_worker
+            .lock()
+            .await
+            .tanssi_on_slot(info, header)
+            .await?;
 
         Some(ParachainCandidate {
             block: res.block,
@@ -336,8 +368,6 @@ where
         })
     }
 }
-
-type AuthorityId<P> = <P as Pair>::Public;
 
 struct ContainerAuraWorker<C, OC, E, I, P, SO, L, BS, N> {
     client: Arc<C>,
@@ -406,7 +436,7 @@ where
             header.hash(),
             *header.number() + 1u32.into(),
             &self.compatibility_mode,
-            self.keystore.clone()
+            self.keystore.clone(),
         )
     }
 
@@ -549,18 +579,17 @@ fn authorities<P, B, C>(
     parent_hash: B::Hash,
     context_block_number: NumberFor<B>,
     compatibility_mode: &CompatibilityMode<NumberFor<B>>,
-    keystore: SyncCryptoStorePtr
+    keystore: SyncCryptoStorePtr,
 ) -> Result<Vec<AuthorityId<P>>, ConsensusError>
 where
-P: Pair + Send + Sync,
-	P::Public: AppPublic + Hash + Member + Encode + Decode,
-	P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+    P: Pair + Send + Sync,
+    P::Public: AppPublic + Hash + Member + Encode + Decode,
+    P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
     B: BlockT,
     C: ProvideRuntimeApi<B>,
     C::Api: AuraApi<B, AuthorityId<P>>,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
-    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>
-
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
 {
     let runtime_api = client.runtime_api();
 
@@ -584,173 +613,170 @@ P: Pair + Send + Sync,
             }
         }
     }
-    first_eligible_key::<B, C, P>(
-        client.clone(),
-        keystore.clone(),
-        &parent_hash
-    ).ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
+    first_eligible_key::<B, C, P>(client.clone(), keystore.clone(), &parent_hash)
+        .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
 }
 
-/// Get slot author for given block along with authorities.
-fn slot_author<P: Pair>(slot: Slot, authorities: &[AuthorityId<P>]) -> Option<&AuthorityId<P>> {
-    if authorities.is_empty() {
-        return None;
-    }
-
-    let idx = *slot % (authorities.len() as u64);
-    assert!(
-        idx <= usize::MAX as u64,
-        "It is impossible to have a vector with length beyond the address space; qed",
-    );
-
-    let current_author = authorities.get(idx as usize).expect(
-        "authorities not empty; index constrained to list length;this is a valid index; qed",
-    );
-
-    Some(current_author)
-}
-
-
-use sp_application_crypto::CryptoTypePublicPair;
-use nimbus_primitives::{NimbusId, NIMBUS_KEY_ID, NimbusPair};
+use {
+    nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID},
+    sp_application_crypto::CryptoTypePublicPair,
+};
 /// Grab the first eligible nimbus key from the keystore
 /// If multiple keys are eligible this function still only returns one
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.
 /// This is the standard way of determining which key to author with.
 pub(crate) fn first_eligible_key<B: BlockT, C, P>(
-	client: &C,
-	keystore: SyncCryptoStorePtr,
-	parent_hash: &B::Hash
+    client: &C,
+    keystore: SyncCryptoStorePtr,
+    parent_hash: &B::Hash,
 ) -> Option<Vec<AuthorityId<P>>>
 where
-	C: ProvideRuntimeApi<B>,
-	C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    C: ProvideRuntimeApi<B>,
+    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     P: Pair + Send + Sync,
-	P::Public: AppPublic + Hash + Member + Encode + Decode,
-	P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
-	C::Api: AuraApi<B, AuthorityId<P>>,
-    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>
+    P::Public: AppPublic + Hash + Member + Encode + Decode,
+    P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+    C::Api: AuraApi<B, AuthorityId<P>>,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
 {
-	// Get all the available keys
-	let available_keys = SyncCryptoStore::keys(&*keystore, NIMBUS_KEY_ID).ok()?;
+    // Get all the available keys
+    let available_keys = SyncCryptoStore::keys(&*keystore, NIMBUS_KEY_ID).ok()?;
 
-	// Print a more helpful message than "not eligible" when there are no keys at all.
-	if available_keys.is_empty() {
-		log::warn!(
-			target: LOG_TARGET,
-			"🔏 No Nimbus keys available. We will not be able to author."
-		);
-		return None;
-	}
+    // Print a more helpful message than "not eligible" when there are no keys at all.
+    if available_keys.is_empty() {
+        log::warn!(
+            target: LOG_TARGET,
+            "🔏 No Nimbus keys available. We will not be able to author."
+        );
+        return None;
+    }
 
-	let runtime_api = client.runtime_api();
+    let runtime_api = client.runtime_api();
 
-	// Iterate keys until we find an eligible one, or run out of candidates.
-	// If we are skipping prediction, then we author with the first key we find.
-	// prediction skipping only really makes sense when there is a single key in the keystore.
-	let maybe_authorities = available_keys.into_iter().find_map(|type_public_pair| {
-		// Have to convert to a typed NimbusId to pass to the runtime API. Maybe this is a clue
-		// That I should be passing Vec<u8> across the wasm boundary?
-		if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
-			// If we dont find any parachain that we are assigned to, return non
+    // Iterate keys until we find an eligible one, or run out of candidates.
+    // If we are skipping prediction, then we author with the first key we find.
+    // prediction skipping only really makes sense when there is a single key in the keystore.
+    let maybe_authorities = available_keys.into_iter().find_map(|type_public_pair| {
+        // Have to convert to a typed NimbusId to pass to the runtime API. Maybe this is a clue
+        // That I should be passing Vec<u8> across the wasm boundary?
+        if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
+            // If we dont find any parachain that we are assigned to, return non
 
-			if let Ok(Some(para_id)) =  runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into()) {
+            if let Ok(Some(para_id)) =
+                runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into())
+            {
                 log::error!("Para id found for assignment {:?}", para_id);
-               let authorities = runtime_api.para_id_authorities(parent_hash.clone(), para_id).ok()?;
-               log::error!("Authorities found for para {:?} are {:?}", para_id, authorities);
+                let authorities = runtime_api
+                    .para_id_authorities(parent_hash.clone(), para_id)
+                    .ok()?;
+                log::error!(
+                    "Authorities found for para {:?} are {:?}",
+                    para_id,
+                    authorities
+                );
                 authorities
-            }
-            else {
+            } else {
                 log::error!("nO Para id found for assignment {:?}", nimbus_id);
 
                 None
             }
-		} else {
-			None
-		}
-	});
+        } else {
+            None
+        }
+    });
 
-	maybe_authorities
+    maybe_authorities
 }
-
 
 /// Parameters of [`build_aura_worker`].
 pub struct BuildContainerAuraWorkerParams<C, OC, I, PF, SO, L, BS, N> {
-	/// The client to interact with the chain.
-	pub client: Arc<C>,
+    /// The client to interact with the chain.
+    pub client: Arc<C>,
     /// The orchestrator client to interact with the chain.
-	pub orchestrator_client: Arc<OC>,
-	/// The block import.
-	pub block_import: I,
-	/// The proposer factory to build proposer instances.
-	pub proposer_factory: PF,
-	/// The sync oracle that can give us the current sync status.
-	pub sync_oracle: SO,
-	/// Hook into the sync module to control the justification sync process.
-	pub justification_sync_link: L,
-	/// Should we force the authoring of blocks?
-	pub force_authoring: bool,
-	/// The backoff strategy when we miss slots.
-	pub backoff_authoring_blocks: Option<BS>,
-	/// The keystore used by the node.
-	pub keystore: SyncCryptoStorePtr,
-	/// The proportion of the slot dedicated to proposing.
-	///
-	/// The block proposing will be limited to this proportion of the slot from the starting of the
-	/// slot. However, the proposing can still take longer when there is some lenience factor
-	/// applied, because there were no blocks produced for some slots.
-	pub block_proposal_slot_portion: SlotProportion,
-	/// The maximum proportion of the slot dedicated to proposing with any lenience factor applied
-	/// due to no blocks being produced.
-	pub max_block_proposal_slot_portion: Option<SlotProportion>,
-	/// Telemetry instance used to report telemetry metrics.
-	pub telemetry: Option<TelemetryHandle>,
-	/// Compatibility mode that should be used.
-	///
-	/// If in doubt, use `Default::default()`.
-	pub compatibility_mode: CompatibilityMode<N>,
+    pub orchestrator_client: Arc<OC>,
+    /// The block import.
+    pub block_import: I,
+    /// The proposer factory to build proposer instances.
+    pub proposer_factory: PF,
+    /// The sync oracle that can give us the current sync status.
+    pub sync_oracle: SO,
+    /// Hook into the sync module to control the justification sync process.
+    pub justification_sync_link: L,
+    /// Should we force the authoring of blocks?
+    pub force_authoring: bool,
+    /// The backoff strategy when we miss slots.
+    pub backoff_authoring_blocks: Option<BS>,
+    /// The keystore used by the node.
+    pub keystore: SyncCryptoStorePtr,
+    /// The proportion of the slot dedicated to proposing.
+    ///
+    /// The block proposing will be limited to this proportion of the slot from the starting of the
+    /// slot. However, the proposing can still take longer when there is some lenience factor
+    /// applied, because there were no blocks produced for some slots.
+    pub block_proposal_slot_portion: SlotProportion,
+    /// The maximum proportion of the slot dedicated to proposing with any lenience factor applied
+    /// due to no blocks being produced.
+    pub max_block_proposal_slot_portion: Option<SlotProportion>,
+    /// Telemetry instance used to report telemetry metrics.
+    pub telemetry: Option<TelemetryHandle>,
+    /// Compatibility mode that should be used.
+    ///
+    /// If in doubt, use `Default::default()`.
+    pub compatibility_mode: CompatibilityMode<N>,
 }
 
-
-use cumulus_primitives_core::relay_chain::BlockNumber;
-use cumulus_primitives_core::relay_chain::BlakeTwo256;
+use cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber};
 #[async_trait::async_trait]
 pub trait RetrieveOrchestratorHead<Block: BlockT, ExtraArgs>: Send + Sync {
-
-	/// Create the inherent data providers at the given `parent` block using the given `extra_args`.
-	async fn retrieve_orchestrator_head(
-		&self,
+    /// Create the inherent data providers at the given `parent` block using the given `extra_args`.
+    async fn retrieve_orchestrator_head(
+        &self,
         parent: Block::Hash,
-		extra_args: ExtraArgs,
-	) -> Result<sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>, Box<dyn std::error::Error + Send + Sync>>;
+        extra_args: ExtraArgs,
+    ) -> Result<
+        sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+        Box<dyn std::error::Error + Send + Sync>,
+    >;
 }
 
 #[async_trait::async_trait]
 impl<F, Block, ExtraArgs, Fut> RetrieveOrchestratorHead<Block, ExtraArgs> for F
 where
-	Block: BlockT,
-	F: Fn(Block::Hash, ExtraArgs) -> Fut + Sync + Send,
-	Fut: std::future::Future<Output = Result<sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>, Box<dyn std::error::Error + Send + Sync>>>
-		+ Send
-		+ 'static,
-	ExtraArgs: Send + 'static,
+    Block: BlockT,
+    F: Fn(Block::Hash, ExtraArgs) -> Fut + Sync + Send,
+    Fut: std::future::Future<
+            Output = Result<
+                sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+                Box<dyn std::error::Error + Send + Sync>,
+            >,
+        > + Send
+        + 'static,
+    ExtraArgs: Send + 'static,
 {
-	async fn retrieve_orchestrator_head(
-		&self,
-		parent: Block::Hash,
-		extra_args: ExtraArgs,
-	) -> Result<sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>, Box<dyn std::error::Error + Send + Sync>> {
-		(*self)(parent, extra_args).await
-	}
+    async fn retrieve_orchestrator_head(
+        &self,
+        parent: Block::Hash,
+        extra_args: ExtraArgs,
+    ) -> Result<
+        sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+        Box<dyn std::error::Error + Send + Sync>,
+    > {
+        (*self)(parent, extra_args).await
+    }
 }
 
 #[async_trait::async_trait]
 pub trait TanssiSlotWorker<B: BlockT>: SimpleSlotWorker<B> {
-	/// Called when a new slot is triggered.
-	///
-	/// Returns a future that resolves to a [`SlotResult`] iff a block was successfully built in
-	/// the slot. Otherwise `None` is returned.
-	async fn tanssi_on_slot(&mut self, slot_info: SlotInfo<B>, orch_header: sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>;
+    /// Called when a new slot is triggered.
+    ///
+    /// Returns a future that resolves to a [`SlotResult`] iff a block was successfully built in
+    /// the slot. Otherwise `None` is returned.
+    /// Accepts the orchestrator header as an input
+    async fn tanssi_on_slot(
+        &mut self,
+        slot_info: SlotInfo<B>,
+        orch_header: sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+    ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>;
 }
 
 #[async_trait::async_trait]
@@ -775,171 +801,189 @@ where
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
-    B::Header: From<sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>>
+    B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
 {
     async fn tanssi_on_slot(
-		&mut self,
-		slot_info: SlotInfo<B>,
-        orch_header: sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>
-	) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>
-	where
-		Self: Sync,
-	{
-        
-		let slot = slot_info.slot;
-		let telemetry = self.telemetry();
-		let logging_target = self.logging_target();
+        &mut self,
+        slot_info: SlotInfo<B>,
+        orch_header: sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+    ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>
+    where
+        Self: Sync,
+    {
+        let slot = slot_info.slot;
+        let telemetry = self.telemetry();
+        let logging_target = self.logging_target();
 
-		let proposing_remaining_duration = self.proposing_remaining_duration(&slot_info);
+        let proposing_remaining_duration = self.proposing_remaining_duration(&slot_info);
 
-		let end_proposing_at = if proposing_remaining_duration == Duration::default() {
-			debug!(
-				target: logging_target,
-				"Skipping proposal slot {} since there's no time left to propose", slot,
-			);
+        let end_proposing_at = if proposing_remaining_duration == Duration::default() {
+            debug!(
+                target: logging_target,
+                "Skipping proposal slot {} since there's no time left to propose", slot,
+            );
 
-			return None
-		} else {
-			Instant::now() + proposing_remaining_duration
-		};
+            return None;
+        } else {
+            Instant::now() + proposing_remaining_duration
+        };
 
-		let aux_data = match self.aux_data(&orch_header.into(), slot) {
-			Ok(aux_data) => aux_data,
-			Err(err) => {
-				warn!(
-					target: logging_target,
-					"Unable to fetch auxiliary data for block {:?}: {}",
-					slot_info.chain_head.hash(),
-					err,
-				);
+        let aux_data = match self.aux_data(&orch_header.into(), slot) {
+            Ok(aux_data) => aux_data,
+            Err(err) => {
+                warn!(
+                    target: logging_target,
+                    "Unable to fetch auxiliary data for block {:?}: {}",
+                    slot_info.chain_head.hash(),
+                    err,
+                );
 
-				telemetry!(
-					telemetry;
-					CONSENSUS_WARN;
-					"slots.unable_fetching_authorities";
-					"slot" => ?slot_info.chain_head.hash(),
-					"err" => ?err,
-				);
+                telemetry!(
+                    telemetry;
+                    CONSENSUS_WARN;
+                    "slots.unable_fetching_authorities";
+                    "slot" => ?slot_info.chain_head.hash(),
+                    "err" => ?err,
+                );
 
-				return None
-			},
-		};
+                return None;
+            }
+        };
 
-		self.notify_slot(&slot_info.chain_head, slot, &aux_data);
+        self.notify_slot(&slot_info.chain_head, slot, &aux_data);
 
-		let authorities_len = self.authorities_len(&aux_data);
+        let authorities_len = self.authorities_len(&aux_data);
 
-		if !self.force_authoring() &&
-			self.sync_oracle().is_offline() &&
-			authorities_len.map(|a| a > 1).unwrap_or(false)
-		{
-			debug!(target: logging_target, "Skipping proposal slot. Waiting for the network.");
-			telemetry!(
-				telemetry;
-				CONSENSUS_DEBUG;
-				"slots.skipping_proposal_slot";
-				"authorities_len" => authorities_len,
-			);
+        if !self.force_authoring()
+            && self.sync_oracle().is_offline()
+            && authorities_len.map(|a| a > 1).unwrap_or(false)
+        {
+            debug!(
+                target: logging_target,
+                "Skipping proposal slot. Waiting for the network."
+            );
+            telemetry!(
+                telemetry;
+                CONSENSUS_DEBUG;
+                "slots.skipping_proposal_slot";
+                "authorities_len" => authorities_len,
+            );
 
-			return None
-		}
+            return None;
+        }
 
-		let claim = self.claim_slot(&slot_info.chain_head, slot, &aux_data).await?;
+        let claim = self
+            .claim_slot(&slot_info.chain_head, slot, &aux_data)
+            .await?;
 
-		if self.should_backoff(slot, &slot_info.chain_head) {
-			return None
-		}
+        if self.should_backoff(slot, &slot_info.chain_head) {
+            return None;
+        }
 
-		debug!(target: logging_target, "Starting authorship at slot: {slot}");
+        debug!(
+            target: logging_target,
+            "Starting authorship at slot: {slot}"
+        );
 
-		telemetry!(telemetry; CONSENSUS_DEBUG; "slots.starting_authorship"; "slot_num" => slot);
+        telemetry!(telemetry; CONSENSUS_DEBUG; "slots.starting_authorship"; "slot_num" => slot);
 
-		let proposer = match self.proposer(&slot_info.chain_head).await {
-			Ok(p) => p,
-			Err(err) => {
-				warn!(target: logging_target, "Unable to author block in slot {slot:?}: {err}");
+        let proposer = match self.proposer(&slot_info.chain_head).await {
+            Ok(p) => p,
+            Err(err) => {
+                warn!(
+                    target: logging_target,
+                    "Unable to author block in slot {slot:?}: {err}"
+                );
 
-				telemetry!(
-					telemetry;
-					CONSENSUS_WARN;
-					"slots.unable_authoring_block";
-					"slot" => *slot,
-					"err" => ?err
-				);
+                telemetry!(
+                    telemetry;
+                    CONSENSUS_WARN;
+                    "slots.unable_authoring_block";
+                    "slot" => *slot,
+                    "err" => ?err
+                );
 
-				return None
-			},
-		};
+                return None;
+            }
+        };
 
-		let proposal = self.propose(proposer, &claim, slot_info, end_proposing_at).await?;
+        let proposal = self
+            .propose(proposer, &claim, slot_info, end_proposing_at)
+            .await?;
 
-		let (block, storage_proof) = (proposal.block, proposal.proof);
-		let (header, body) = block.deconstruct();
-		let header_num = *header.number();
-		let header_hash = header.hash();
-		let parent_hash = *header.parent_hash();
+        let (block, storage_proof) = (proposal.block, proposal.proof);
+        let (header, body) = block.deconstruct();
+        let header_num = *header.number();
+        let header_hash = header.hash();
+        let parent_hash = *header.parent_hash();
 
-		let block_import_params = match self
-			.block_import_params(
-				header,
-				&header_hash,
-				body.clone(),
-				proposal.storage_changes,
-				claim,
-				aux_data,
-			)
-			.await
-		{
-			Ok(bi) => bi,
-			Err(err) => {
-				warn!(target: logging_target, "Failed to create block import params: {}", err);
+        let block_import_params = match self
+            .block_import_params(
+                header,
+                &header_hash,
+                body.clone(),
+                proposal.storage_changes,
+                claim,
+                aux_data,
+            )
+            .await
+        {
+            Ok(bi) => bi,
+            Err(err) => {
+                warn!(
+                    target: logging_target,
+                    "Failed to create block import params: {}", err
+                );
 
-				return None
-			},
-		};
+                return None;
+            }
+        };
 
-		info!(
-			target: logging_target,
-			"🔖 Pre-sealed block for proposal at {}. Hash now {:?}, previously {:?}.",
-			header_num,
-			block_import_params.post_hash(),
-			header_hash,
-		);
+        info!(
+            target: logging_target,
+            "🔖 Pre-sealed block for proposal at {}. Hash now {:?}, previously {:?}.",
+            header_num,
+            block_import_params.post_hash(),
+            header_hash,
+        );
 
-		telemetry!(
-			telemetry;
-			CONSENSUS_INFO;
-			"slots.pre_sealed_block";
-			"header_num" => ?header_num,
-			"hash_now" => ?block_import_params.post_hash(),
-			"hash_previously" => ?header_hash,
-		);
+        telemetry!(
+            telemetry;
+            CONSENSUS_INFO;
+            "slots.pre_sealed_block";
+            "header_num" => ?header_num,
+            "hash_now" => ?block_import_params.post_hash(),
+            "hash_previously" => ?header_hash,
+        );
 
-		let header = block_import_params.post_header();
-		match self.block_import().import_block(block_import_params).await {
-			Ok(res) => {
-				res.handle_justification(
-					&header.hash(),
-					*header.number(),
-					self.justification_sync_link(),
-				);
-			},
-			Err(err) => {
-				warn!(
-					target: logging_target,
-					"Error with block built on {:?}: {}", parent_hash, err,
-				);
+        let header = block_import_params.post_header();
+        match self.block_import().import_block(block_import_params).await {
+            Ok(res) => {
+                res.handle_justification(
+                    &header.hash(),
+                    *header.number(),
+                    self.justification_sync_link(),
+                );
+            }
+            Err(err) => {
+                warn!(
+                    target: logging_target,
+                    "Error with block built on {:?}: {}", parent_hash, err,
+                );
 
-				telemetry!(
-					telemetry;
-					CONSENSUS_WARN;
-					"slots.err_with_block_built_on";
-					"hash" => ?parent_hash,
-					"err" => ?err,
-				);
-			},
-		}
+                telemetry!(
+                    telemetry;
+                    CONSENSUS_WARN;
+                    "slots.err_with_block_built_on";
+                    "hash" => ?parent_hash,
+                    "err" => ?err,
+                );
+            }
+        }
 
-		Some(SlotResult { block: B::new(header, body), storage_proof })
-	}
+        Some(SlotResult {
+            block: B::new(header, body),
+            storage_proof,
+        })
+    }
 }
