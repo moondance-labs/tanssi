@@ -21,48 +21,54 @@
 //! and [`fn@import_queue`].
 //!
 //! For more information about AuRa, the Substrate crate should be checked.
-use cumulus_client_consensus_common::{
-    ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
-};
-use cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData};
-use parity_scale_codec::{Codec, Decode, Encode};
-
-use futures::lock::Mutex;
-use sc_client_api::{backend::AuxStore, BlockOf};
-use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};
-use sc_consensus_aura::{find_pre_digest, CompatibilityMode};
-use sc_consensus_slots::{
-    BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, StorageChanges,
+use {
+    cumulus_client_consensus_common::{
+        ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
+    },
+    cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
+    parity_scale_codec::{Codec, Decode, Encode},
 };
 
-use futures::prelude::*;
-use nimbus_primitives::CompatibleDigestItem as NimbusCompatibleDigestItem;
-use nimbus_primitives::NimbusId;
-use sc_telemetry::TelemetryHandle;
-use sp_api::Core;
-use sp_api::ProvideRuntimeApi;
-use sp_application_crypto::{AppKey, AppPublic};
-use sp_blockchain::HeaderBackend;
-use sp_consensus::{
-    BlockOrigin, EnableProofRecording, Environment, Error as ConsensusError, ProofRecording,
-    Proposer, SyncOracle,
+use {
+    futures::lock::Mutex,
+    sc_client_api::{backend::AuxStore, BlockOf},
+    sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
+    sc_consensus_aura::{find_pre_digest, CompatibilityMode},
+    sc_consensus_slots::{
+        BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, StorageChanges,
+    },
 };
-use sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, SlotDuration};
-use sp_consensus_slots::Slot;
-use sp_core::crypto::{ByteArray, Pair, Public};
-use sp_inherents::CreateInherentDataProviders;
-use sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr};
-use sp_runtime::{
-    traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
-    DigestItem,
+
+use {
+    futures::prelude::*,
+    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusId},
+    sc_telemetry::TelemetryHandle,
+    sp_api::{Core, ProvideRuntimeApi},
+    sp_application_crypto::{AppKey, AppPublic},
+    sp_blockchain::HeaderBackend,
+    sp_consensus::{
+        BlockOrigin, EnableProofRecording, Environment, Error as ConsensusError, ProofRecording,
+        Proposer, SyncOracle,
+    },
+    sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, SlotDuration},
+    sp_consensus_slots::Slot,
+    sp_core::crypto::{ByteArray, Pair, Public},
+    sp_inherents::CreateInherentDataProviders,
+    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_runtime::{
+        traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
+        DigestItem,
+    },
+    std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc},
 };
-use std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc};
 
 mod manual_seal;
 
-pub use manual_seal::OrchestratorManualSealAuraConsensusDataProvider;
-pub use sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion};
-pub use sc_consensus_slots::InherentDataProviderExt;
+pub use {
+    manual_seal::OrchestratorManualSealAuraConsensusDataProvider,
+    sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
+    sc_consensus_slots::InherentDataProviderExt,
+};
 
 const LOG_TARGET: &str = "aura::orchestrator";
 

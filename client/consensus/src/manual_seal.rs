@@ -1,20 +1,20 @@
-use nimbus_primitives::CompatibleDigestItem as NimbusCompatibleDigestItem;
-use nimbus_primitives::NimbusPair;
-use nimbus_primitives::NimbusSignature;
-use sc_client_api::{AuxStore, UsageProvider};
-use sc_consensus::BlockImportParams;
-use sc_consensus_manual_seal::{ConsensusDataProvider, Error};
-use sp_api::HeaderT;
-use sp_api::{ProvideRuntimeApi, TransactionFor};
-use sp_blockchain::{HeaderBackend, HeaderMetadata};
-use sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, Slot, SlotDuration};
-use sp_core::crypto::ByteArray;
-use sp_inherents::InherentData;
-use sp_keystore::SyncCryptoStore;
-use sp_keystore::SyncCryptoStorePtr;
-use sp_runtime::{traits::Block as BlockT, Digest, DigestItem};
-use sp_timestamp::TimestampInherentData;
-use std::{marker::PhantomData, sync::Arc};
+use {
+    nimbus_primitives::{
+        CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair, NimbusSignature,
+    },
+    sc_client_api::{AuxStore, UsageProvider},
+    sc_consensus::BlockImportParams,
+    sc_consensus_manual_seal::{ConsensusDataProvider, Error},
+    sp_api::{HeaderT, ProvideRuntimeApi, TransactionFor},
+    sp_blockchain::{HeaderBackend, HeaderMetadata},
+    sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, Slot, SlotDuration},
+    sp_core::crypto::ByteArray,
+    sp_inherents::InherentData,
+    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_runtime::{traits::Block as BlockT, Digest, DigestItem},
+    sp_timestamp::TimestampInherentData,
+    std::{marker::PhantomData, sync::Arc},
+};
 /// Consensus data provider for Orchestrator Manual Seal Aura.
 pub struct OrchestratorManualSealAuraConsensusDataProvider<B, C, P> {
     // slot duration
