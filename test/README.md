@@ -1,3 +1,5 @@
+# Moonwall integration tests for Tanssi
+
 Setup: install node and pnpm:
 
 ```
@@ -31,8 +33,8 @@ To see the logs of a failing zombienet node:
 
 ```
 cd /tmp
-ls -ltr zombie*
-# cd into the last folder, that's the most recent zombie network
+ls -ltr
+# cd into the last zombie folder, that's the most recent zombie network
 cd zombie-3aff699b8e6c41a7a0c296f056a750a0_-87975-Ow0nVobAGIPt
 # list all the logs
 ls *.log
