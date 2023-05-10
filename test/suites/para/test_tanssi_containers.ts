@@ -158,6 +158,9 @@ describeSuite({
         };
         const containerChainGenesisData = emptyGenesisData();
 
+        const containerChainGenesisDataFromRpc = await paraApi.rpc.utils.raw_chain_spec_into_container_chain_genesis_data("");
+        console.log("rpc? ", containerChainGenesisDataFromRpc);
+
         const tx = paraApi.tx.registrar.register(2002, containerChainGenesisData);
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
@@ -170,7 +173,7 @@ describeSuite({
 	// This ws api is only available after the node detects its assignment
 	const wsProvider = new WsProvider('ws://127.0.0.1:9951');
         let container2002Api = await ApiPromise.create({ provider: wsProvider });
-        console.log(api.genesisHash.toHex());
+        console.log(container2002Api.genesisHash.toHex());
 
         const container2002Network = container2002Api.consts.system.version.specName.toString();
         expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
