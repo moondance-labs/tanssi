@@ -5,6 +5,7 @@ use {
         dispatch::Dispatchable,
         traits::{GenesisBuild, OnFinalize, OnInitialize},
     },
+    nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::Encode,
     polkadot_parachain::primitives::HeadData,
@@ -12,12 +13,11 @@ use {
     sp_core::Pair,
     sp_runtime::{Digest, DigestItem},
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
-    nimbus_primitives::NimbusId,
 };
 
 pub use test_runtime::{
-    AccountId, Aura, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
-    RuntimeCall, RuntimeEvent, Session, System,
+    AccountId, Aura, Authorship, Balance, Balances, Initializer, Registrar, Runtime, RuntimeCall,
+    RuntimeEvent, Session, System,
 };
 
 pub fn run_to_session(n: u32, add_author: bool) {

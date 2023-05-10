@@ -20,7 +20,7 @@ use {
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     nimbus_primitives::NimbusPair,
-    tc_consensus::{BuildTanssiAuraConsensusParams, TanssiAuraConsensus},
+    tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
 };
 
 // Substrate Imports
@@ -344,7 +344,7 @@ fn build_consensus(
         telemetry.clone(),
     );
 
-    let params = BuildTanssiAuraConsensusParams {
+    let params = BuildOrchestratorAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
@@ -387,9 +387,15 @@ fn build_consensus(
         telemetry,
     };
 
-    Ok(TanssiAuraConsensus::build::<NimbusPair, _, _, _, _, _, _>(
-        params,
-    ))
+    Ok(OrchestratorAuraConsensus::build::<
+        NimbusPair,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >(params))
 }
 
 /// Start a parachain node.

@@ -11,14 +11,14 @@ use sp_timestamp::TimestampInherentData;
 use std::{marker::PhantomData, sync::Arc};
 
 /// Consensus data provider for Aura.
-pub struct TanssiManualSealAuraConsensusDataProvider<B, C, P> {
+pub struct OrchestratorManualSealAuraConsensusDataProvider<B, C, P> {
     // slot duration
     slot_duration: SlotDuration,
     // phantom data for required generics
     _phantom: PhantomData<(B, C, P)>,
 }
 
-impl<B, C, P> TanssiManualSealAuraConsensusDataProvider<B, C, P>
+impl<B, C, P> OrchestratorManualSealAuraConsensusDataProvider<B, C, P>
 where
     B: BlockT,
     C: AuxStore + ProvideRuntimeApi<B> + UsageProvider<B>,
@@ -37,7 +37,7 @@ where
     }
 }
 
-impl<B, C, P> ConsensusDataProvider<B> for TanssiManualSealAuraConsensusDataProvider<B, C, P>
+impl<B, C, P> ConsensusDataProvider<B> for OrchestratorManualSealAuraConsensusDataProvider<B, C, P>
 where
     B: BlockT,
     C: AuxStore

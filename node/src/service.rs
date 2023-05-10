@@ -42,7 +42,7 @@ use {
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, str::FromStr, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
-    tc_consensus::{BuildTanssiAuraConsensusParams, TanssiAuraConsensus},
+    tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
     tc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
@@ -820,7 +820,7 @@ fn build_consensus_container(
         telemetry.clone(),
     );
 
-    let params = BuildTanssiAuraConsensusParams {
+    let params = BuildOrchestratorAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
@@ -887,9 +887,15 @@ fn build_consensus_container(
         telemetry,
     };
 
-    Ok(TanssiAuraConsensus::build::<NimbusPair, _, _, _, _, _, _>(
-        params,
-    ))
+    Ok(OrchestratorAuraConsensus::build::<
+        NimbusPair,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >(params))
 }
 
 fn build_consensus_orchestrator(
@@ -916,7 +922,7 @@ fn build_consensus_orchestrator(
     );
     let client_set_aside_for_cidp = client.clone();
 
-    let params = BuildTanssiAuraConsensusParams {
+    let params = BuildOrchestratorAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
@@ -980,9 +986,15 @@ fn build_consensus_orchestrator(
         telemetry,
     };
 
-    Ok(TanssiAuraConsensus::build::<NimbusPair, _, _, _, _, _, _>(
-        params,
-    ))
+    Ok(OrchestratorAuraConsensus::build::<
+        NimbusPair,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    >(params))
 }
 
 /// Start a parachain node.
@@ -1141,7 +1153,9 @@ pub fn new_dev(
                 commands_stream,
                 select_chain,
                 consensus_data_provider: Some(Box::new(
-                    tc_consensus::TanssiManualSealAuraConsensusDataProvider::new(client.clone()),
+                    tc_consensus::OrchestratorManualSealAuraConsensusDataProvider::new(
+                        client.clone(),
+                    ),
                 )),
                 create_inherent_data_providers: move |block: H256, ()| {
                     let current_para_block = client_set_aside_for_cidp
