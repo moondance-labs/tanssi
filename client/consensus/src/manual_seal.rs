@@ -1,5 +1,5 @@
 use nimbus_primitives::CompatibleDigestItem as NimbusCompatibleDigestItem;
-use nimbus_primitives::NimbusId;
+use nimbus_primitives::NimbusPair;
 use nimbus_primitives::NimbusSignature;
 use sc_client_api::{AuxStore, UsageProvider};
 use sc_consensus::BlockImportParams;
@@ -8,14 +8,13 @@ use sp_api::HeaderT;
 use sp_api::{ProvideRuntimeApi, TransactionFor};
 use sp_blockchain::{HeaderBackend, HeaderMetadata};
 use sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, Slot, SlotDuration};
-use sp_core::crypto::{ByteArray, Pair};
+use sp_core::crypto::ByteArray;
 use sp_inherents::InherentData;
 use sp_keystore::SyncCryptoStore;
 use sp_keystore::SyncCryptoStorePtr;
 use sp_runtime::{traits::Block as BlockT, Digest, DigestItem};
 use sp_timestamp::TimestampInherentData;
 use std::{marker::PhantomData, sync::Arc};
-
 /// Consensus data provider for Orchestrator Manual Seal Aura.
 pub struct OrchestratorManualSealAuraConsensusDataProvider<B, C, P> {
     // slot duration
@@ -50,7 +49,7 @@ where
         }
     }
 }
-
+use nimbus_primitives::NIMBUS_KEY_ID;
 impl<B, C, P> ConsensusDataProvider<B> for OrchestratorManualSealAuraConsensusDataProvider<B, C, P>
 where
     B: BlockT,
@@ -60,8 +59,7 @@ where
         + UsageProvider<B>
         + ProvideRuntimeApi<B>,
     C::Api: AuraApi<B, nimbus_primitives::NimbusId>,
-    P: Pair + Send + Sync,
-    P::Public: Into<NimbusId> + From<NimbusId>,
+    P: Send + Sync,
 {
     type Transaction = TransactionFor<C, B>;
     type Proof = P;
@@ -78,23 +76,19 @@ where
         let digest_item =
             <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest(slot);
 
-        let authorities: Vec<P::Public> = self
+        let authorities = self
             .client
             .runtime_api()
             .authorities(parent.hash())
             .ok()
-            .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?
-            .iter()
-            .map(|nimbus| nimbus.clone().into())
-            .collect();
+            .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?;
 
-        let expected_author = crate::slot_author::<P>(slot, authorities.as_ref());
+        let expected_author = crate::slot_author::<NimbusPair>(slot, authorities.as_ref());
+
         let author = expected_author
             .and_then(|p| {
-                if SyncCryptoStore::has_keys(
-                    &*self.keystore,
-                    &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
-                ) {
+                if SyncCryptoStore::has_keys(&*self.keystore, &[(p.to_raw_vec(), NIMBUS_KEY_ID)]) {
+                    log::error!("key found");
                     Some(p.clone())
                 } else {
                     None
@@ -102,8 +96,9 @@ where
             })
             .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?;
 
-        let nimbus_digest =
-            <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(author.clone().into());
+        log::info!("passed author check {:?}", author);
+
+        let nimbus_digest = <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(author);
         Ok(Digest {
             logs: vec![digest_item, nimbus_digest],
         })

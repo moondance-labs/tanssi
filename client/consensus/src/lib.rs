@@ -378,10 +378,11 @@ where
         epoch_data: &Self::AuxData,
     ) -> Option<Self::Claim> {
         let expected_author = slot_author::<P>(slot, epoch_data);
+
         expected_author.and_then(|p| {
             if SyncCryptoStore::has_keys(
                 &*self.keystore,
-                &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
+                &[(p.to_raw_vec(), nimbus_primitives::NIMBUS_KEY_ID)],
             ) {
                 Some(p.clone())
             } else {
@@ -414,7 +415,6 @@ where
         // add it to a digest item.
         let public_type_pair = public.to_public_crypto_pair();
         let public = public.to_raw_vec();
-        log::info!("the ID is {:?}", <AuthorityId<P> as AppKey>::ID);
         let signature = SyncCryptoStore::sign_with(
             &*self.keystore,
             <AuthorityId<P> as AppKey>::ID,
