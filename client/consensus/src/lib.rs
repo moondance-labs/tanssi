@@ -540,7 +540,10 @@ where
 }
 
 /// Get slot author for given block along with authorities.
-fn slot_author<P: Pair>(slot: Slot, authorities: &[AuthorityId<P>]) -> Option<&AuthorityId<P>> {
+pub(crate) fn slot_author<P: Pair>(
+    slot: Slot,
+    authorities: &[AuthorityId<P>],
+) -> Option<&AuthorityId<P>> {
     if authorities.is_empty() {
         return None;
     }

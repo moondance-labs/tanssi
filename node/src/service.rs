@@ -1155,6 +1155,7 @@ pub fn new_dev(
                 consensus_data_provider: Some(Box::new(
                     tc_consensus::OrchestratorManualSealAuraConsensusDataProvider::new(
                         client.clone(),
+                        keystore_container.sync_keystore(),
                     ),
                 )),
                 create_inherent_data_providers: move |block: H256, ()| {
