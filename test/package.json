@@ -15,15 +15,15 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@moonwall/cli": "^0.5.5",
-    "@moonwall/util": "^0.5.5",
-    "@polkadot/api": "^10.5.1",
-    "@polkadot/api-augment": "^10.5.1",
-    "@polkadot/types": "^10.5.1",
-    "@polkadot/types-codec": "^10.5.1",
+    "@moonwall/cli": "^0.5.12",
+    "@moonwall/util": "^0.5.10",
+    "@polkadot/api": "^10.6.1",
+    "@polkadot/api-augment": "^10.6.1",
+    "@polkadot/types": "^10.6.1",
+    "@polkadot/types-codec": "^10.6.1",
     "@polkadot/util": "^12.1.2",
     "@types/debug": "^4.1.7",
-    "@types/node": "^18.16.3",
+    "@types/node": "^20.1.1",
     "bottleneck": "^2.19.5",
     "chalk": "^5.2.0",
     "debug": "^4.3.4",
@@ -31,9 +31,8 @@
     "pnpm": "^8.4.0",
     "prettier": "^2.8.8",
     "typescript": "^5.0.4",
-    "web3": "1.9.0",
-    "web3-eth": "1.9.0",
-    "web3-providers-ws": "1.9.0"
+    "web3": "4.0.1-rc.0",
+    "web3-providers-ws": "4.0.1-rc.0"
   },
   "pnpm": {
     "overrides": {
