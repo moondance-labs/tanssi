@@ -1,6 +1,9 @@
-//! # Collator Assignment Pallet
+//! # Authority Mapping Pallet
 //!
 //! This pallet stores the AuthorityId -> AccountID mapping for two sessions
+//! In particular it holds the mapping for the current and the past session
+//! Both are necessary to verify block-authorship with respect to current
+//! block proposals or blocks that have been proposed in the past-session
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -57,7 +60,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         pub fn initializer_on_new_session(
             session_index: &T::SessionIndex,
-            authorities: Vec<(T::AccountId, T::AuthorityId)>,
+            authorities: &Vec<(T::AccountId, T::AuthorityId)>,
         ) {
             // Remove only if the checked sub does not saturate
             if let Some(session_index_to_remove) =
@@ -66,10 +69,8 @@ pub mod pallet {
                 AuthorityIdMapping::<T>::remove(session_index_to_remove)
             }
 
-            let mut assignation = BTreeMap::new();
-            for (account, key) in authorities {
-                assignation.insert(key, account);
-            }
+            let assignation: BTreeMap<T::AuthorityId, T::AccountId> =
+                authorities.iter().cloned().map(|(a, b)| (b, a)).collect();
             AuthorityIdMapping::<T>::insert(session_index, assignation);
         }
     }

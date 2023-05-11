@@ -368,7 +368,7 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         // Next: Registrar
         Registrar::initializer_on_new_session(&session_index);
         // Next: AuthorityMapping
-        AuthorityMapping::initializer_on_new_session(&session_index, all_validators.clone());
+        AuthorityMapping::initializer_on_new_session(&session_index, &all_validators);
 
         let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
 
