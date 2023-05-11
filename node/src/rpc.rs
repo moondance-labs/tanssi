@@ -104,7 +104,9 @@ impl UtilsApiServer for Utils {
         &self,
         raw_chain_spec: String,
     ) -> RpcResult<(ParaId, ContainerChainGenesisData)> {
-        tp_container_chain_genesis_data::json::container_chain_genesis_data_from_str(&raw_chain_spec)
-            .map_err(|e| jsonrpsee::core::Error::Custom(e))
+        tp_container_chain_genesis_data::json::container_chain_genesis_data_from_str(
+            &raw_chain_spec,
+        )
+        .map_err(|e| jsonrpsee::core::Error::Custom(e))
     }
 }
