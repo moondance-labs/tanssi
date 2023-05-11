@@ -36,7 +36,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn collator_container_chain)]
-    pub(crate) type CollatorContainerChain<T: Config> = StorageMap<
+    pub type CollatorContainerChain<T: Config> = StorageMap<
         _,
         Blake2_128Concat,
         T::SessionIndex,
