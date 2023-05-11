@@ -1,6 +1,8 @@
 import { expect, describeSuite, beforeAll } from "@moonwall/cli";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { BN } from "@polkadot/util";
+const fs = require('fs/promises');
+
 describeSuite({
   id: "ZTN",
   title: "Zombie Tanssi Test",
@@ -148,37 +150,80 @@ describeSuite({
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-        const emptyGenesisData = () => {
-            // TODO: fill with default value for all the entries of ContainerChainGenesisData
-            let g = {
-              id: "container-chain-2002",
-              name: "Container Chain 2002",
-            };
-            return g;
-        };
-        const containerChainGenesisData = emptyGenesisData();
 
-        const containerChainGenesisDataFromRpc = await paraApi.rpc.utils.raw_chain_spec_into_container_chain_genesis_data("");
-        console.log("rpc? ", containerChainGenesisDataFromRpc);
+        // Read raw chain spec file
+        // Different path in CI: ./specs vs ../specs
+        let spec2002 = null;
+        try {
+            spec2002 = await fs.readFile("./specs/template-container-2002.json", 'utf8');
+        } catch {
+            spec2002 = await fs.readFile("../specs/template-container-2002.json", 'utf8');
+        }
 
-        const tx = paraApi.tx.registrar.register(2002, containerChainGenesisData);
+        // Augment paraApi with new RPC method
+        const wsProvider2 = new WsProvider('ws://127.0.0.1:9948');
+        let paraApi2 = await ApiPromise.create({ provider: wsProvider2,
+          types: {
+            ContainerChainGenesisData: {
+              storage: "Vec<ContainerChainGenesisDataItem>",
+              name: "Vec<u8>",
+              id: "Vec<u8>",
+              fork_id: "Option<Vec<u8>>",
+              extensions: "Vec<u8>",
+              properties: "TokenMetadata",
+            },
+            TokenMetadata: {
+              token_symbol: "Vec<u8>",
+              ss58_format: "u32",
+              token_decimals: "u32",
+            },
+            ContainerChainGenesisDataItem: {
+              key: "Vec<u8>",
+              value: "Vec<u8>",
+            }
+          },
+          rpc: {
+            utils: {
+              raw_chain_spec_into_container_chain_genesis_data: {
+                description: 'Convert a raw chain spec string into a ContainerChainGenesisData',
+                params: [
+                  {
+                    name: 'raw_chain_spec',
+                    type: 'Text'
+                  }
+                ],
+                type: '(u32, ContainerChainGenesisData)'
+              }
+            }
+          }
+        });
+        let spec2002text = paraApi2.createType('Text', spec2002);
+        const containerChainGenesisDataFromRpc = await paraApi2.rpc.utils.raw_chain_spec_into_container_chain_genesis_data(spec2002text);
+        expect(containerChainGenesisDataFromRpc[0]).to.be.equal(2002);
+
+        const tx = paraApi.tx.registrar.register(2002, containerChainGenesisDataFromRpc[1]);
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
-        // TODO: we need to manually register the parachain in the relay as well
-        await context.waitBlock(8, "Tanssi");
+        const tanssiBlockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+        await context.waitBlock(tanssiBlockNum+1+3, "Tanssi");
 
+        // TODO: check that pending para ids contains 2002
+        // And genesis data is not empty
         const registered = (await paraApi.query.registrar.registeredParaIds());
-        //console.log("regitrar: ", registered);
+        //console.log("registrar: ", registered);
 
-	// This ws api is only available after the node detects its assignment
-	const wsProvider = new WsProvider('ws://127.0.0.1:9951');
+        // This ws api is only available after the node detects its assignment
+        // TODO: wait up to 30 seconds after a new block is created to ensure this port is available
+        const wsProvider = new WsProvider('ws://127.0.0.1:9951');
         let container2002Api = await ApiPromise.create({ provider: wsProvider });
         console.log(container2002Api.genesisHash.toHex());
 
         const container2002Network = container2002Api.consts.system.version.specName.toString();
         expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
 
-        expect(false).to.be.true;
+        const blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
+        // TODO: maybe wait a bit instead of failing?
+        expect(blockNum).to.be.greaterThan(0);
       },
     });
 

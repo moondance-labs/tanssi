@@ -95,16 +95,16 @@ pub trait UtilsApi {
     #[method(name = "utils_raw_chain_spec_into_container_chain_genesis_data")]
     fn raw_chain_spec_into_container_chain_genesis_data(
         &self,
-        raw_chain_spec: &str,
+        raw_chain_spec: String,
     ) -> RpcResult<(ParaId, ContainerChainGenesisData)>;
 }
 
 impl UtilsApiServer for Utils {
     fn raw_chain_spec_into_container_chain_genesis_data(
         &self,
-        raw_chain_spec: &str,
+        raw_chain_spec: String,
     ) -> RpcResult<(ParaId, ContainerChainGenesisData)> {
-        tp_container_chain_genesis_data::json::container_chain_genesis_data_from_str(raw_chain_spec)
+        tp_container_chain_genesis_data::json::container_chain_genesis_data_from_str(&raw_chain_spec)
             .map_err(|e| jsonrpsee::core::Error::Custom(e))
     }
 }
