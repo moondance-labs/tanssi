@@ -14,7 +14,7 @@ use {
         traits::{AtLeast32BitUnsigned, CheckedSub},
         RuntimeAppPublic,
     },
-    sp_std::{collections::btree_map::BTreeMap, prelude::*, vec},
+    sp_std::{collections::btree_map::BTreeMap, vec},
 };
 
 #[cfg(test)]
@@ -60,7 +60,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         pub fn initializer_on_new_session(
             session_index: &T::SessionIndex,
-            authorities: &Vec<(T::AccountId, T::AuthorityId)>,
+            authorities: &[(T::AccountId, T::AuthorityId)],
         ) {
             // Remove only if the checked sub does not saturate
             if let Some(session_index_to_remove) =

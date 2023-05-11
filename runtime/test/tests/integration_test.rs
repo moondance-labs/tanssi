@@ -1127,7 +1127,7 @@ fn test_session_keys_with_authority_mapping() {
             assert_eq!(key_mapping_session_0.get(&bob_id), Some(&BOB.into()));
 
             // Everything should match to aura
-            assert!(Aura::authorities() == vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
 
             // Change Alice and Bob keys to something different
             // for now lets change it to alice_2 and bob_2
@@ -1158,7 +1158,7 @@ fn test_session_keys_with_authority_mapping() {
             assert_eq!(key_mapping_session_1.get(&bob_id), Some(&BOB.into()));
 
             // Everything should match to aura
-            assert!(Aura::authorities() == vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
             //
 
             run_to_session(2u32, true);
@@ -1175,6 +1175,6 @@ fn test_session_keys_with_authority_mapping() {
             assert_eq!(key_mapping_session_2.get(&bob_id_2), Some(&BOB.into()));
 
             // Everything should match to aura
-            assert!(Aura::authorities() == vec![alice_id_2, bob_id_2]);
+            assert_eq!(Aura::authorities(), vec![alice_id_2, bob_id_2]);
         });
 }
