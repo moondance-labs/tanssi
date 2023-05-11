@@ -1,7 +1,7 @@
 [package]
-name = "pallet-nimbus-collator-assignment"
+name = "pallet-authority-assignment"
 authors = []
-description = "Nimbus collator assignment pallet"
+description = "Authority collator assignment pallet"
 edition = "2021"
 publish = false
 version = "0.1.0"

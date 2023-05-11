@@ -1,7 +1,7 @@
 use tp_collator_assignment::AssignedCollators;
 
 use {
-    crate::{self as pallet_nimbus_collator_assignment},
+    crate::{self as pallet_authority_assignment},
     frame_support::traits::{ConstU16, ConstU64},
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
@@ -25,7 +25,7 @@ frame_support::construct_runtime!(
     {
         System: frame_system,
         MockData: mock_data,
-        NimbusCollatorAssignment: pallet_nimbus_collator_assignment,
+        AuthoritiesAssignment: pallet_authority_assignment,
     }
 );
 
@@ -108,7 +108,7 @@ impl mock_data::Config for Test {}
 
 // In tests, we ignore the session_index param, so changes to the configuration are instant
 
-impl pallet_nimbus_collator_assignment::Config for Test {
+impl pallet_authority_assignment::Config for Test {
     type SessionIndex = u32;
     type AuthorityId = String;
 }
@@ -142,7 +142,7 @@ pub fn run_to_block(n: u64) {
             let session_index = (x / SESSION_LEN) as u32;
             let nimbus_map = &MockData::mock().nimbus_map;
             let next_collator_assignment = &MockData::mock().next_collator_assignment;
-            NimbusCollatorAssignment::initializer_on_new_session(
+            AuthoritiesAssignment::initializer_on_new_session(
                 &session_index,
                 &nimbus_map,
                 &next_collator_assignment,

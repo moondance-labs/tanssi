@@ -52,11 +52,11 @@ pub mod pallet {
         /// collators should be queued collators
         pub fn assign_collators(
             current_session_index: &T::SessionIndex,
-            id_map: &BTreeMap<T::AccountId, T::AuthorityId>,
+            queued_id_to_nimbus_map: &BTreeMap<T::AccountId, T::AuthorityId>,
             next_collator_assignment: &AssignedCollators<T::AccountId>,
         ) {
-            let next_nimbus_assignment =
-                next_collator_assignment.map(|account_id| id_map[account_id].clone());
+            let next_nimbus_assignment = next_collator_assignment
+                .map(|account_id| queued_id_to_nimbus_map[account_id].clone());
 
             // Only applies to session index 0
             if current_session_index == &T::SessionIndex::zero() {
@@ -84,10 +84,14 @@ pub mod pallet {
 
         pub fn initializer_on_new_session(
             current_session_index: &T::SessionIndex,
-            id_map: &BTreeMap<T::AccountId, T::AuthorityId>,
+            queued_id_to_nimbus_map: &BTreeMap<T::AccountId, T::AuthorityId>,
             next_collator_assignment: &AssignedCollators<T::AccountId>,
         ) {
-            Self::assign_collators(current_session_index, id_map, next_collator_assignment)
+            Self::assign_collators(
+                current_session_index,
+                queued_id_to_nimbus_map,
+                next_collator_assignment,
+            )
         }
     }
 }
