@@ -374,7 +374,7 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         let assignments =
             CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
 
-        let id_to_nimbus_map = all_validators.iter().cloned().collect();
+        let id_to_nimbus_map = queued.iter().cloned().collect();
         NimbusCollatorAssignment::initializer_on_new_session(
             &session_index,
             &id_to_nimbus_map,
