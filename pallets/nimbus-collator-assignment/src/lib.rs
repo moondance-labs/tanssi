@@ -31,7 +31,7 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
-        type NimbusId: parity_scale_codec::FullCodec + TypeInfo + Clone;
+        type AuthorityId: parity_scale_codec::FullCodec + TypeInfo + Clone;
     }
 
     #[pallet::storage]
@@ -40,7 +40,7 @@ pub mod pallet {
         _,
         Blake2_128Concat,
         T::SessionIndex,
-        AssignedCollators<T::NimbusId>,
+        AssignedCollators<T::AuthorityId>,
         OptionQuery,
     >;
 
@@ -52,7 +52,7 @@ pub mod pallet {
         /// collators should be queued collators
         pub fn assign_collators(
             current_session_index: &T::SessionIndex,
-            id_map: &BTreeMap<T::AccountId, T::NimbusId>,
+            id_map: &BTreeMap<T::AccountId, T::AuthorityId>,
             next_collator_assignment: &AssignedCollators<T::AccountId>,
         ) {
             let next_nimbus_assignment =
@@ -84,7 +84,7 @@ pub mod pallet {
 
         pub fn initializer_on_new_session(
             current_session_index: &T::SessionIndex,
-            id_map: &BTreeMap<T::AccountId, T::NimbusId>,
+            id_map: &BTreeMap<T::AccountId, T::AuthorityId>,
             next_collator_assignment: &AssignedCollators<T::AccountId>,
         ) {
             Self::assign_collators(current_session_index, id_map, next_collator_assignment)

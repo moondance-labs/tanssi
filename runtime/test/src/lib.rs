@@ -463,7 +463,7 @@ impl pallet_collator_assignment::Config for Runtime {
 
 impl pallet_nimbus_collator_assignment::Config for Runtime {
     type SessionIndex = u32;
-    type NimbusId = AuraId;
+    type AuthorityId = AuraId;
 }
 
 impl pallet_author_noting::Config for Runtime {

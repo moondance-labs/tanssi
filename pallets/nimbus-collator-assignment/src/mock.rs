@@ -110,7 +110,7 @@ impl mock_data::Config for Test {}
 
 impl pallet_nimbus_collator_assignment::Config for Test {
     type SessionIndex = u32;
-    type NimbusId = String;
+    type AuthorityId = String;
 }
 
 // Build genesis storage according to the mock runtime.
