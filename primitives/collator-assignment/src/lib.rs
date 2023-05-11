@@ -177,7 +177,8 @@ where
     }
 
     pub fn map<T, F>(&self, mut f: F) -> AssignedCollators<T>
-        where F: FnMut(&AccountId) -> T
+    where
+        F: FnMut(&AccountId) -> T,
     {
         let mut a = AssignedCollators::default();
 

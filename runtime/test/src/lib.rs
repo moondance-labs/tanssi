@@ -375,8 +375,11 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
 
         let id_to_nimbus_map = all_validators.iter().cloned().collect();
-        let _nimbus_assignments =
-            NimbusCollatorAssignment::initializer_on_new_session(&session_index, &id_to_nimbus_map, &assignments.active_assignment, &assignments.next_assignment);
+        NimbusCollatorAssignment::initializer_on_new_session(
+            &session_index,
+            &id_to_nimbus_map,
+            &assignments.next_assignment,
+        );
 
         let orchestrator_current_assignemnt = assignments.active_assignment.orchestrator_chain;
         let orchestrator_queued_assignemnt = assignments.next_assignment.orchestrator_chain;
@@ -459,8 +462,6 @@ impl pallet_collator_assignment::Config for Runtime {
 }
 
 impl pallet_nimbus_collator_assignment::Config for Runtime {
-    type HostConfiguration = Configuration;
-    type ContainerChains = Registrar;
     type SessionIndex = u32;
     type NimbusId = AuraId;
 }

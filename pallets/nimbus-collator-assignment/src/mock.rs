@@ -1,5 +1,7 @@
+use tp_collator_assignment::AssignedCollators;
+
 use {
-    crate::{self as pallet_collator_assignment},
+    crate::{self as pallet_nimbus_collator_assignment},
     frame_support::traits::{ConstU16, ConstU64},
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
@@ -8,7 +10,7 @@ use {
         testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
     },
-    tp_traits::ParaId,
+    sp_std::collections::btree_map::BTreeMap,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -23,7 +25,7 @@ frame_support::construct_runtime!(
     {
         System: frame_system,
         MockData: mock_data,
-        CollatorAssignment: pallet_collator_assignment,
+        NimbusCollatorAssignment: pallet_nimbus_collator_assignment,
     }
 );
 
@@ -89,21 +91,15 @@ pub mod mock_data {
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub min_orchestrator_chain_collators: u32,
-    pub max_orchestrator_chain_collators: u32,
-    pub collators_per_container: u32,
-    pub collators: Vec<u64>,
-    pub container_chains: Vec<u32>,
+    pub nimbus_map: BTreeMap<u64, String>,
+    pub next_collator_assignment: AssignedCollators<u64>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            min_orchestrator_chain_collators: 0,
-            max_orchestrator_chain_collators: 0,
-            collators_per_container: 0,
-            collators: vec![],
-            container_chains: vec![],
+            nimbus_map: Default::default(),
+            next_collator_assignment: Default::default(),
         }
     }
 }
@@ -112,48 +108,9 @@ impl mock_data::Config for Test {}
 
 // In tests, we ignore the session_index param, so changes to the configuration are instant
 
-pub struct HostConfigurationGetter;
-
-impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
-    fn min_collators_for_orchestrator(_session_index: u32) -> u32 {
-        MockData::mock().min_orchestrator_chain_collators
-    }
-
-    fn max_collators_for_orchestrator(_session_index: u32) -> u32 {
-        MockData::mock().max_orchestrator_chain_collators
-    }
-
-    fn collators_per_container(_session_index: u32) -> u32 {
-        MockData::mock().collators_per_container
-    }
-}
-
-pub struct CollatorsGetter;
-
-impl GetCollators<u64, u32> for CollatorsGetter {
-    fn collators(_session_index: u32) -> Vec<u64> {
-        MockData::mock().collators.clone()
-    }
-}
-
-pub struct ContainerChainsGetter;
-
-impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
-    fn session_container_chains(_session_index: u32) -> Vec<ParaId> {
-        MockData::mock()
-            .container_chains
-            .iter()
-            .cloned()
-            .map(|x| ParaId::from(x))
-            .collect()
-    }
-}
-
-impl pallet_collator_assignment::Config for Test {
+impl pallet_nimbus_collator_assignment::Config for Test {
     type SessionIndex = u32;
-    type HostConfiguration = HostConfigurationGetter;
-    type ContainerChains = ContainerChainsGetter;
-    type NimbusId = u64;
+    type NimbusId = String;
 }
 
 // Build genesis storage according to the mock runtime.
@@ -168,18 +125,27 @@ pub trait GetCollators<AccountId, SessionIndex> {
     fn collators(session_index: SessionIndex) -> Vec<AccountId>;
 }
 
+pub const SESSION_LEN: u64 = 5;
+
+pub fn run_to_session(n: u32) {
+    let block_number = SESSION_LEN * (n as u64);
+    run_to_block(block_number + 1);
+}
+
 pub fn run_to_block(n: u64) {
     let old_block_number = System::block_number();
-    let session_len = 5;
 
     for x in (old_block_number + 1)..=n {
         System::set_block_number(x);
 
-        if x % session_len == 1 {
-            let session_index = (x / session_len) as u32;
-            CollatorAssignment::initializer_on_new_session(
+        if x % SESSION_LEN == 1 {
+            let session_index = (x / SESSION_LEN) as u32;
+            let nimbus_map = &MockData::mock().nimbus_map;
+            let next_collator_assignment = &MockData::mock().next_collator_assignment;
+            NimbusCollatorAssignment::initializer_on_new_session(
                 &session_index,
-                CollatorsGetter::collators(session_index),
+                &nimbus_map,
+                &next_collator_assignment,
             );
         }
     }
