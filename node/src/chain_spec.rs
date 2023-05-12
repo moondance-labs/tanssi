@@ -7,11 +7,12 @@ use {
     sp_runtime::traits::{IdentifyAccount, Verify},
     std::collections::BTreeMap,
     test_runtime::{
-        AccountId, AuraId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
+        AccountId, AuraId, ConfigurationConfig, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
     },
     tp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
+    pallet_configuration::HostConfiguration,
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -165,6 +166,7 @@ pub fn development_config(
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 &container_chains,
                 &mock_container_chains,
+                Default::default()
             )
         },
         Vec::new(),
@@ -218,6 +220,7 @@ pub fn local_testnet_config(
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 &container_chains,
                 &mock_container_chains,
+                Default::default()
             )
         },
         // Bootnodes
@@ -245,6 +248,7 @@ fn testnet_genesis(
     root_key: AccountId,
     container_chains: &[String],
     mock_container_chains: &[ParaId],
+    config: HostConfiguration
 ) -> test_runtime::GenesisConfig {
     test_runtime::GenesisConfig {
         system: test_runtime::SystemConfig {
@@ -282,7 +286,9 @@ fn testnet_genesis(
         aura: Default::default(),
         aura_ext: Default::default(),
         parachain_system: Default::default(),
-        configuration: Default::default(),
+        configuration: ConfigurationConfig {
+             config,
+        },
         registrar: RegistrarConfig {
             para_ids: container_chains
                 .iter()

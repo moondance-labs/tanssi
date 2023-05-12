@@ -11592,6 +11592,7 @@ dependencies = [
  "jsonrpsee",
  "log",
  "pallet-collator-assignment-runtime-api",
+ "pallet-configuration",
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
