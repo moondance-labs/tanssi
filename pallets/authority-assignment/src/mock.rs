@@ -25,7 +25,7 @@ frame_support::construct_runtime!(
     {
         System: frame_system,
         MockData: mock_data,
-        AuthoritiesAssignment: pallet_authority_assignment,
+        AuthorityAssignment: pallet_authority_assignment,
     }
 );
 
@@ -142,7 +142,7 @@ pub fn run_to_block(n: u64) {
             let session_index = (x / SESSION_LEN) as u32;
             let nimbus_map = &MockData::mock().nimbus_map;
             let next_collator_assignment = &MockData::mock().next_collator_assignment;
-            AuthoritiesAssignment::initializer_on_new_session(
+            AuthorityAssignment::initializer_on_new_session(
                 &session_index,
                 &nimbus_map,
                 &next_collator_assignment,

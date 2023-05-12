@@ -377,7 +377,7 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
 
         let queued_id_to_nimbus_map = queued.iter().cloned().collect();
-        AuthoritiesAssignment::initializer_on_new_session(
+        AuthorityAssignment::initializer_on_new_session(
             &session_index,
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
@@ -572,7 +572,7 @@ construct_runtime!(
         CollatorAssignment: pallet_collator_assignment = 22,
         Initializer: pallet_initializer = 23,
         AuthorNoting: pallet_author_noting = 24,
-        AuthoritiesAssignment: pallet_authority_assignment = 25,
+        AuthorityAssignment: pallet_authority_assignment = 25,
 
         // Collator support. The order of these 4 are important and shall not change.
         Authorship: pallet_authorship = 30,
