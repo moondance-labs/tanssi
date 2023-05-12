@@ -14,7 +14,9 @@ use {
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    test_runtime::{AuthorNoting, CollatorAssignment, CollatorSelection, Configuration},
+    test_runtime::{
+        AuthorNoting, AuthorityMapping, CollatorAssignment, CollatorSelection, Configuration,
+    },
 };
 
 mod common;
@@ -1084,5 +1086,95 @@ fn test_author_noting_not_self_para() {
                 AuthorNoting::latest_author(other_para),
                 Some(AccountId::from(DAVE))
             );
+        });
+}
+
+#[test]
+fn test_session_keys_with_authority_mapping() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2, true);
+            let key_mapping_session_0 = AuthorityMapping::authority_id_mapping(0).unwrap();
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+            let alice_id_2 = get_aura_id_from_seed("ALICE2");
+            let bob_id_2 = get_aura_id_from_seed("BOB2");
+
+            assert_eq!(key_mapping_session_0.len(), 2);
+            assert_eq!(key_mapping_session_0.get(&alice_id), Some(&ALICE.into()));
+            assert_eq!(key_mapping_session_0.get(&bob_id), Some(&BOB.into()));
+
+            // Everything should match to aura
+            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+
+            // Change Alice and Bob keys to something different
+            // for now lets change it to alice_2 and bob_2
+            assert_ok!(Session::set_keys(
+                origin_of(ALICE.into()),
+                test_runtime::SessionKeys {
+                    aura: alice_id_2.clone(),
+                },
+                vec![]
+            ));
+            assert_ok!(Session::set_keys(
+                origin_of(BOB.into()),
+                test_runtime::SessionKeys {
+                    aura: bob_id_2.clone(),
+                },
+                vec![]
+            ));
+
+            run_to_session(1u32, true);
+            let key_mapping_session_0 = AuthorityMapping::authority_id_mapping(0).unwrap();
+            assert_eq!(key_mapping_session_0.len(), 2);
+            assert_eq!(key_mapping_session_0.get(&alice_id), Some(&ALICE.into()));
+            assert_eq!(key_mapping_session_0.get(&bob_id), Some(&BOB.into()));
+
+            let key_mapping_session_1 = AuthorityMapping::authority_id_mapping(1).unwrap();
+            assert_eq!(key_mapping_session_1.len(), 2);
+            assert_eq!(key_mapping_session_1.get(&alice_id), Some(&ALICE.into()));
+            assert_eq!(key_mapping_session_1.get(&bob_id), Some(&BOB.into()));
+
+            // Everything should match to aura
+            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+            //
+
+            run_to_session(2u32, true);
+            assert!(AuthorityMapping::authority_id_mapping(0).is_none());
+
+            let key_mapping_session_1 = AuthorityMapping::authority_id_mapping(1).unwrap();
+            assert_eq!(key_mapping_session_1.len(), 2);
+            assert_eq!(key_mapping_session_1.get(&alice_id), Some(&ALICE.into()));
+            assert_eq!(key_mapping_session_1.get(&bob_id), Some(&BOB.into()));
+
+            let key_mapping_session_2 = AuthorityMapping::authority_id_mapping(2).unwrap();
+            assert_eq!(key_mapping_session_2.len(), 2);
+            assert_eq!(key_mapping_session_2.get(&alice_id_2), Some(&ALICE.into()));
+            assert_eq!(key_mapping_session_2.get(&bob_id_2), Some(&BOB.into()));
+
+            // Everything should match to aura
+            assert_eq!(Aura::authorities(), vec![alice_id_2, bob_id_2]);
         });
 }

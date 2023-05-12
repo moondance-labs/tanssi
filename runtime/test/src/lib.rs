@@ -367,6 +367,8 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         Configuration::initializer_on_new_session(&session_index);
         // Next: Registrar
         Registrar::initializer_on_new_session(&session_index);
+        // Next: AuthorityMapping
+        AuthorityMapping::initializer_on_new_session(&session_index, &all_validators);
 
         let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
 
@@ -534,6 +536,12 @@ impl pallet_registrar::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 
+impl pallet_authority_mapping::Config for Runtime {
+    type SessionIndex = u32;
+    type SessionRemovalBoundary = ConstU32<2>;
+    type AuthorityId = AuraId;
+}
+
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
@@ -572,6 +580,7 @@ construct_runtime!(
         Session: pallet_session = 32,
         Aura: pallet_aura = 33,
         AuraExt: cumulus_pallet_aura_ext = 34,
+        AuthorityMapping: pallet_authority_mapping = 35,
 
         RootTesting: pallet_root_testing = 100,
     }
