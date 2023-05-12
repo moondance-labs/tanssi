@@ -223,6 +223,7 @@ pub struct BlockTests {
     >,
     overriden_state_root: Option<H256>,
     overriden_state_proof: Option<StorageProof>,
+    skip_inherent_insertion: bool,
 }
 
 impl BlockTests {
@@ -261,6 +262,11 @@ impl BlockTests {
 
     pub fn with_overriden_state_proof(mut self, proof: StorageProof) -> Self {
         self.overriden_state_proof = Some(proof);
+        self
+    }
+
+    pub fn skip_inherent_insertion(mut self) -> Self {
+        self.skip_inherent_insertion = true;
         self
     }
 
@@ -319,10 +325,12 @@ impl BlockTests {
 
                 // execute the block
                 AuthorNoting::on_initialize(*n);
-                AuthorNoting::create_inherent(&inherent_data)
-                    .expect("got an inherent")
-                    .dispatch_bypass_filter(RawOrigin::None.into())
-                    .expect("dispatch succeeded");
+                if !self.skip_inherent_insertion {
+                    AuthorNoting::create_inherent(&inherent_data)
+                        .expect("got an inherent")
+                        .dispatch_bypass_filter(RawOrigin::None.into())
+                        .expect("dispatch succeeded");
+                }
                 within_block();
                 AuthorNoting::on_finalize(*n);
 
