@@ -156,7 +156,6 @@ jsonrpsee = { version = "0.16.2", features = [ "server" ] }
 thiserror = { version = "1.0.40" }
 serde_json = { version = "1.0.96", default-features = false }
 tracing = { version = "0.1.37" }
-parking_lot = "0.12"
 tokio = { version = "1.26.0", default-features = false }
 
 [profile.production]
