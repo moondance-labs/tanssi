@@ -147,6 +147,7 @@ pub struct BlockTests {
     relay_sproof_builder_hook:
         Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder)>>,
     orchestrator_storage_proof: Option<StorageProof>,
+    skip_inherent_insertion: bool,
 }
 
 impl BlockTests {
@@ -181,6 +182,11 @@ impl BlockTests {
     pub fn with_orchestrator_storage_proof(mut self, proof: StorageProof) -> Self
 where {
         self.orchestrator_storage_proof = Some(proof);
+        self
+    }
+
+    pub fn skip_inherent_insertion(mut self) -> Self {
+        self.skip_inherent_insertion = true;
         self
     }
 
@@ -235,10 +241,12 @@ where {
 
                 // execute the block
                 AuthoritiesNoting::on_initialize(*n);
-                AuthoritiesNoting::create_inherent(&inherent_data)
-                    .expect("got an inherent")
-                    .dispatch_bypass_filter(RawOrigin::None.into())
-                    .expect("dispatch succeeded");
+                if !self.skip_inherent_insertion {
+                    AuthoritiesNoting::create_inherent(&inherent_data)
+                        .expect("got an inherent")
+                        .dispatch_bypass_filter(RawOrigin::None.into())
+                        .expect("dispatch succeeded");
+                }
                 within_block();
                 AuthoritiesNoting::on_finalize(*n);
 

@@ -16,6 +16,8 @@ resolver = "2"
 [workspace.dependencies]
 # Members
 pallet-author-noting = { path = "pallets/author-noting", default-features = false }
+pallet-authority-mapping = { path = "pallets/authority-mapping", default-features = false }
+
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
 pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/rpc/runtime-api", default-features = false }
 pallet-configuration = { path = "pallets/configuration", default-features = false }
@@ -156,7 +158,6 @@ jsonrpsee = { version = "0.16.2", features = [ "server" ] }
 thiserror = { version = "1.0.40" }
 serde_json = { version = "1.0.96", default-features = false }
 tracing = { version = "0.1.37" }
-parking_lot = "0.12"
 tokio = { version = "1.26.0", default-features = false }
 
 [profile.production]

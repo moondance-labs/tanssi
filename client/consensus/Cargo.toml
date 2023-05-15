@@ -42,5 +42,4 @@ async-trait = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 futures = { workspace = true }
 log = { workspace = true }
-parking_lot = { workspace = true }
 tracing = { workspace = true }
