@@ -105,10 +105,16 @@ impl ParaHeaderSproofBuilder {
         cumulus_primitives_core::relay_chain::Hash,
         sp_state_machine::StorageProof,
     ) {
-        let db = state.clone().into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
+        let db = state
+            .clone()
+            .into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
         let state_version = Default::default(); // for test using default.
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
-        let mut relevant_keys = backend.keys(Default::default()).unwrap().map(|result| result.unwrap()).collect::<Vec<_>>();
+        let mut relevant_keys = backend
+            .keys(Default::default())
+            .unwrap()
+            .map(|result| result.unwrap())
+            .collect::<Vec<_>>();
 
         {
             use parity_scale_codec::Encode as _;

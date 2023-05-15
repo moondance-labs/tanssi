@@ -14,12 +14,14 @@
 use {
     crate::OwnParachainInherentData,
     cumulus_primitives_core::ParaId,
+    cumulus_primitives_parachain_inherent::{
+        ParachainInherentData, INHERENT_IDENTIFIER as PARACHAIN_SYSTEM_INHERENT_IDENTIFIER,
+    },
     parity_scale_codec::Encode,
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
     sp_inherents::{InherentData, InherentDataProvider},
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    cumulus_primitives_parachain_inherent::{INHERENT_IDENTIFIER as PARACHAIN_SYSTEM_INHERENT_IDENTIFIER, ParachainInherentData}
 };
 
 pub struct MockAuthorNotingInherentDataProvider {
@@ -38,9 +40,10 @@ pub struct MockAuthorNotingInherentDataProvider {
     pub slots_per_para_block: u32,
 }
 
-use sp_state_machine::TrieBackendBuilder;
-use sp_runtime::traits::HashFor;
-use sp_state_machine::Backend;
+use {
+    sp_runtime::traits::HashFor,
+    sp_state_machine::{Backend, TrieBackendBuilder},
+};
 #[async_trait::async_trait]
 impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
     async fn provide_inherent_data(
@@ -71,11 +74,18 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
             sproof_builder.items.push(sproof_builder_item);
         }
 
-        if let Ok(Some(validation_system_inherent_data)) = inherent_data.get_data::<ParachainInherentData>(&PARACHAIN_SYSTEM_INHERENT_IDENTIFIER) {
+        if let Ok(Some(validation_system_inherent_data)) =
+            inherent_data.get_data::<ParachainInherentData>(&PARACHAIN_SYSTEM_INHERENT_IDENTIFIER)
+        {
             let mut previous_validation_data = validation_system_inherent_data.clone();
 
             // We need to construct a new proof, based on previously inserted backend data
-            let (root, proof) = sproof_builder.from_existing_state(validation_system_inherent_data.validation_data.relay_parent_storage_root, validation_system_inherent_data.relay_chain_state);
+            let (root, proof) = sproof_builder.from_existing_state(
+                validation_system_inherent_data
+                    .validation_data
+                    .relay_parent_storage_root,
+                validation_system_inherent_data.relay_chain_state,
+            );
             // But we also need to override the previous one
             inherent_data.put_data(
                 crate::INHERENT_IDENTIFIER,
@@ -84,16 +94,16 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
                 },
             )?;
 
-            previous_validation_data.validation_data.relay_parent_storage_root = root;
+            previous_validation_data
+                .validation_data
+                .relay_parent_storage_root = root;
             previous_validation_data.relay_chain_state = proof;
 
             inherent_data.replace_data(
                 PARACHAIN_SYSTEM_INHERENT_IDENTIFIER,
-                &previous_validation_data
+                &previous_validation_data,
             );
-
-        }
-        else {
+        } else {
             let (_root, proof) = sproof_builder.into_state_root_and_proof();
             inherent_data.put_data(
                 crate::INHERENT_IDENTIFIER,
