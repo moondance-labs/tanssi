@@ -86,7 +86,8 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
                     .relay_parent_storage_root,
                 validation_system_inherent_data.relay_chain_state,
             );
-            // But we also need to override the previous one
+
+            // We push the new computed proof
             inherent_data.put_data(
                 crate::INHERENT_IDENTIFIER,
                 &OwnParachainInherentData {
@@ -94,6 +95,7 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
                 },
             )?;
 
+            // But we also need to override the previous one for parachain-system-validation-data
             previous_validation_data
                 .validation_data
                 .relay_parent_storage_root = root;

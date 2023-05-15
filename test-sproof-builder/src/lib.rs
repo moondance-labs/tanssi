@@ -97,6 +97,7 @@ impl ParaHeaderSproofBuilder {
         relevant_keys
     }
 
+    // Construct the proof from an existing state and proof
     pub fn from_existing_state(
         self,
         root: cumulus_primitives_core::relay_chain::Hash,
@@ -105,17 +106,21 @@ impl ParaHeaderSproofBuilder {
         cumulus_primitives_core::relay_chain::Hash,
         sp_state_machine::StorageProof,
     ) {
+        // Recover the db
         let db = state
             .clone()
             .into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
         let state_version = Default::default(); // for test using default.
+        // Construct the backend
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
+        // Fetch all existing keys
         let mut relevant_keys = backend
             .keys(Default::default())
-            .unwrap()
+            .expect("we should have keys if entering this func")
             .map(|result| result.unwrap())
             .collect::<Vec<_>>();
 
+        // Insert new keys and add them to relevant keys
         {
             use parity_scale_codec::Encode as _;
 
@@ -138,6 +143,7 @@ impl ParaHeaderSproofBuilder {
             }
         }
 
+        // Construct proof again
         let root = backend.root().clone();
         let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
 
