@@ -3,7 +3,7 @@ use {
     frame_support::Hashable,
     parity_scale_codec::Encode,
     sp_runtime::traits::{BlakeTwo256, HashFor},
-    sp_state_machine::Backend;
+    sp_state_machine::Backend,
     sp_trie::{MemoryDB, StorageProof},
     tp_collator_assignment::AssignedCollators,
     tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX},
