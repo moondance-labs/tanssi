@@ -3,6 +3,7 @@ use {
     frame_support::Hashable,
     parity_scale_codec::Encode,
     sp_runtime::traits::{BlakeTwo256, HashFor},
+    sp_state_machine::Backend;
     sp_trie::{MemoryDB, StorageProof},
     tp_collator_assignment::AssignedCollators,
     tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX},
@@ -34,7 +35,6 @@ impl Default for ParaHeaderSproofBuilderItem {
     }
 }
 
-use sp_state_machine::Backend;
 /// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
 /// Receives a vec of individual ParaHeaderSproofBuilderItem items of which
 /// we need to insert the header
