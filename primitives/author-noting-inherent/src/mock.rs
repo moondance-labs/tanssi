@@ -40,10 +40,6 @@ pub struct MockAuthorNotingInherentDataProvider {
     pub slots_per_para_block: u32,
 }
 
-use {
-    sp_runtime::traits::HashFor,
-    sp_state_machine::{Backend, TrieBackendBuilder},
-};
 #[async_trait::async_trait]
 impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
     async fn provide_inherent_data(
