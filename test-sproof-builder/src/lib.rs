@@ -3,7 +3,8 @@ use {
     frame_support::Hashable,
     parity_scale_codec::Encode,
     sp_runtime::traits::{BlakeTwo256, HashFor},
-    sp_trie::MemoryDB,
+    sp_state_machine::Backend,
+    sp_trie::{MemoryDB, StorageProof},
     tp_collator_assignment::AssignedCollators,
     tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX},
 };
@@ -94,6 +95,59 @@ impl ParaHeaderSproofBuilder {
             }
         }
         relevant_keys
+    }
+
+    // Construct the proof from an existing state and proof
+    pub fn from_existing_state(
+        self,
+        root: cumulus_primitives_core::relay_chain::Hash,
+        state: StorageProof,
+    ) -> (
+        cumulus_primitives_core::relay_chain::Hash,
+        sp_state_machine::StorageProof,
+    ) {
+        // Recover the db
+        let db = state
+            .clone()
+            .into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
+        let state_version = Default::default(); // for test using default.
+                                                // Construct the backend
+        let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
+        // Fetch all existing keys
+        let mut relevant_keys = backend
+            .keys(Default::default())
+            .expect("we should have keys if entering this func")
+            .map(|result| result.unwrap())
+            .collect::<Vec<_>>();
+
+        // Insert new keys and add them to relevant keys
+        {
+            use parity_scale_codec::Encode as _;
+
+            let mut insert = |key: Vec<u8>, value: Vec<u8>| {
+                relevant_keys.push(key.clone());
+                backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
+            };
+
+            for item in self.items {
+                let para_key = item.para_id.twox_64_concat();
+                let key = [PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+
+                let encoded = match item.author_id {
+                    HeaderAs::AlreadyEncoded(encoded) => encoded,
+                    HeaderAs::NonEncoded(header) => header.encode(),
+                };
+
+                let head_data: HeadData = encoded.into();
+                insert(key, head_data.encode());
+            }
+        }
+
+        // Construct proof again
+        let root = backend.root().clone();
+        let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
+
+        (root, proof)
     }
 }
 
