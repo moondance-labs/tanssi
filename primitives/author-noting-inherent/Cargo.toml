@@ -31,7 +31,7 @@ sp-trie = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true, optional = true }
-
+cumulus-primitives-parachain-inherent = { workspace = true }
 polkadot-primitives = { workspace = true, optional = true }
 
 [features]

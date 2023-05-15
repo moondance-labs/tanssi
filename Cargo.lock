@@ -12138,6 +12138,7 @@ dependencies = [
  "async-trait",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
  "frame-support",
  "hex-literal",
