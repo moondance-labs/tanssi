@@ -722,10 +722,7 @@ pub trait RetrieveOrchestratorHead<Block: BlockT, ExtraArgs>: Send + Sync {
         &self,
         parent: Block::Hash,
         extra_args: ExtraArgs,
-    ) -> Result<
-        Block::Header,
-        Box<dyn std::error::Error + Send + Sync>,
-    >;
+    ) -> Result<Block::Header, Box<dyn std::error::Error + Send + Sync>>;
 }
 
 #[async_trait::async_trait]
@@ -734,10 +731,7 @@ where
     Block: BlockT,
     F: Fn(Block::Hash, ExtraArgs) -> Fut + Sync + Send,
     Fut: std::future::Future<
-            Output = Result<
-                Block::Header,
-                Box<dyn std::error::Error + Send + Sync>,
-            >,
+            Output = Result<Block::Header, Box<dyn std::error::Error + Send + Sync>>,
         > + Send
         + 'static,
     ExtraArgs: Send + 'static,
@@ -746,10 +740,7 @@ where
         &self,
         parent: Block::Hash,
         extra_args: ExtraArgs,
-    ) -> Result<
-        Block::Header,
-        Box<dyn std::error::Error + Send + Sync>,
-    > {
+    ) -> Result<Block::Header, Box<dyn std::error::Error + Send + Sync>> {
         (*self)(parent, extra_args).await
     }
 }
