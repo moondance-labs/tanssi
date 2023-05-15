@@ -19,6 +19,7 @@ use {
     sp_inherents::{InherentData, InherentDataProvider},
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    cumulus_primitives_parachain_inherent::{INHERENT_IDENTIFIER as PARACHAIN_SYSTEM_INHERENT_IDENTIFIER, ParachainInherentData}
 };
 
 pub struct MockAuthorNotingInherentDataProvider {
@@ -37,13 +38,15 @@ pub struct MockAuthorNotingInherentDataProvider {
     pub slots_per_para_block: u32,
 }
 
+use sp_state_machine::TrieBackendBuilder;
+use sp_runtime::traits::HashFor;
+use sp_state_machine::Backend;
 #[async_trait::async_trait]
 impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
     async fn provide_inherent_data(
         &self,
         inherent_data: &mut InherentData,
     ) -> Result<(), sp_inherents::Error> {
-        // Calculate the mocked relay block based on the current para block
         let slot_number =
             InherentType::from(self.slots_per_para_block as u64 * self.current_para_block as u64);
 
@@ -68,14 +71,37 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
             sproof_builder.items.push(sproof_builder_item);
         }
 
-        let (_root, proof) = sproof_builder.into_state_root_and_proof();
+        if let Ok(Some(validation_system_inherent_data)) = inherent_data.get_data::<ParachainInherentData>(&PARACHAIN_SYSTEM_INHERENT_IDENTIFIER) {
+            let mut previous_validation_data = validation_system_inherent_data.clone();
 
-        inherent_data.put_data(
-            crate::INHERENT_IDENTIFIER,
-            &OwnParachainInherentData {
-                relay_storage_proof: proof,
-            },
-        )?;
+            // We need to construct a new proof, based on previously inserted backend data
+            let (root, proof) = sproof_builder.from_existing_state(validation_system_inherent_data.validation_data.relay_parent_storage_root, validation_system_inherent_data.relay_chain_state);
+            // But we also need to override the previous one
+            inherent_data.put_data(
+                crate::INHERENT_IDENTIFIER,
+                &OwnParachainInherentData {
+                    relay_storage_proof: proof.clone(),
+                },
+            )?;
+
+            previous_validation_data.validation_data.relay_parent_storage_root = root;
+            previous_validation_data.relay_chain_state = proof;
+
+            inherent_data.replace_data(
+                PARACHAIN_SYSTEM_INHERENT_IDENTIFIER,
+                &previous_validation_data
+            );
+
+        }
+        else {
+            let (_root, proof) = sproof_builder.into_state_root_and_proof();
+            inherent_data.put_data(
+                crate::INHERENT_IDENTIFIER,
+                &OwnParachainInherentData {
+                    relay_storage_proof: proof,
+                },
+            )?;
+        }
 
         Ok(())
     }
