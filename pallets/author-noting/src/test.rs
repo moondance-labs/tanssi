@@ -318,3 +318,32 @@ fn test_should_panic_with_empty_proof() {
         .with_overriden_state_proof(proof)
         .add(1, || {});
 }
+
+#[test]
+#[should_panic(expected = "Container chain author data needs to be present in every block!")]
+fn test_not_inserting_inherent() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .skip_inherent_insertion()
+        .add(1, || {
+            assert!(AuthorNoting::latest_author(ParaId::from(1001)).is_none());
+        });
+}

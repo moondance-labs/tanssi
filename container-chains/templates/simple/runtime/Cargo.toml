@@ -20,6 +20,10 @@ smallvec = { workspace = true }
 # Local
 pallet-cc-authorities-noting = { workspace = true }
 
+# Nimbus
+nimbus-primitives = { workspace = true }
+pallet-author-inherent = { workspace = true }
+
 # Substrate
 frame-executive = { workspace = true }
 frame-support = { workspace = true }
@@ -97,6 +101,8 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+	"nimbus-primitives/std",
+	"pallet-author-inherent/std",
 ]
 
 runtime-benchmarks = [

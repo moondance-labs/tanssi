@@ -69,6 +69,30 @@ pub mod pallet {
     #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
 
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(_n: T::BlockNumber) -> Weight {
+            let mut weight = Weight::zero();
+
+            // We clear this storage item to make sure its always included
+            DidSetOrchestratorAuthorityData::<T>::kill();
+
+            weight += T::DbWeight::get().writes(1);
+
+            // The read onfinalizes
+            weight += T::DbWeight::get().reads(1);
+
+            weight
+        }
+
+        fn on_finalize(_: T::BlockNumber) {
+            assert!(
+                <DidSetOrchestratorAuthorityData<T>>::exists(),
+                "Orchestrator chain authorities data needs to be present in every block!"
+            );
+        }
+    }
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -80,6 +104,12 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
+
+            assert!(
+                !<DidSetOrchestratorAuthorityData<T>>::exists(),
+                "DidSetOrchestratorAuthorityData must be updated only once in a block",
+            );
+
             let tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
                 relay_chain_state: relay_chain_state_proof,
                 orchestrator_chain_state: orchestrator_chain_state_proof,
@@ -120,6 +150,8 @@ pub mod pallet {
                 }
             }
 
+            DidSetOrchestratorAuthorityData::<T>::put(true);
+
             Ok(PostDispatchInfo {
                 actual_weight: Some(total_weight),
                 pays_fee: Pays::No,
@@ -149,6 +181,10 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn authorities)]
     pub(super) type Authorities<T: Config> = StorageValue<_, Vec<T::AccountId>, ValueQuery>;
+
+    /// Was the containerAuthorData set?
+    #[pallet::storage]
+    pub(super) type DidSetOrchestratorAuthorityData<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     #[pallet::inherent]
     impl<T: Config> ProvideInherent for Pallet<T> {
