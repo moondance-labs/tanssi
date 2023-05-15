@@ -111,7 +111,7 @@ impl ParaHeaderSproofBuilder {
             .clone()
             .into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
         let state_version = Default::default(); // for test using default.
-        // Construct the backend
+                                                // Construct the backend
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
         // Fetch all existing keys
         let mut relevant_keys = backend
