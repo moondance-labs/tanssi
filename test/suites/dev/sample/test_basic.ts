@@ -3,7 +3,6 @@ import { CHARLETH_ADDRESS, BALTATHAR_ADDRESS, alith, setupLogger,generateKeyring
 import { WebSocketProvider, parseEther, formatEther } from "ethers";
 import { BN } from "@polkadot/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block";
 
 describeSuite({
   id: "D01",
@@ -67,15 +66,5 @@ describeSuite({
         expect(blockFill.normal.refTime.unwrap().gt(new BN(0))).to.be.true;
       },
     });
-
-    it({
-      id: "E04",
-      title: "Checking that the node was compiled with --features=fast-runtime",
-      test: async function () {
-        // Let's jump one session
-        await jumpSessions(context, 2);
-      },
-    });
-
   },
 });
