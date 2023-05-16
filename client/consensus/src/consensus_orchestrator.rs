@@ -26,10 +26,11 @@ use {
         ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
     },
     cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
-    parity_scale_codec::{Codec, Decode, Encode},
+    parity_scale_codec::{Decode, Encode},
 };
 
 use {
+    crate::authorities,
     futures::lock::Mutex,
     sc_client_api::{backend::AuxStore, BlockOf},
     sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
@@ -37,21 +38,21 @@ use {
     sc_consensus_slots::{
         BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, StorageChanges,
     },
+    tp_consensus::TanssiAuthorityAssignmentApi,
 };
 
 use {
     crate::{slot_author, AuthorityId},
     futures::prelude::*,
-    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusId},
+    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusId, NimbusPair},
     sc_telemetry::TelemetryHandle,
-    sp_api::{Core, ProvideRuntimeApi},
+    sp_api::ProvideRuntimeApi,
     sp_application_crypto::{AppKey, AppPublic},
     sp_blockchain::HeaderBackend,
     sp_consensus::{
-        BlockOrigin, EnableProofRecording, Environment, Error as ConsensusError, ProofRecording,
-        Proposer, SyncOracle,
+        BlockOrigin, EnableProofRecording, Environment, ProofRecording, Proposer, SyncOracle,
     },
-    sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, SlotDuration},
+    sp_consensus_aura::{digests::CompatibleDigestItem, SlotDuration},
     sp_consensus_slots::Slot,
     sp_core::crypto::{ByteArray, Pair, Public},
     sp_inherents::CreateInherentDataProviders,
@@ -118,7 +119,7 @@ pub fn build_orchestrator_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
-    C::Api: AuraApi<B, AuthorityId<P>>,
+    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     PF: Environment<B, Error = Error> + Send + Sync + 'static,
     PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     P: Pair + Send + Sync,
@@ -129,6 +130,7 @@ where
     SO: SyncOracle + Send + Sync + Clone,
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
 {
     OrchestratorAuraWorker {
         client,
@@ -189,7 +191,7 @@ where
     where
         Client:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
-        Client::Api: AuraApi<B, P::Public>,
+        Client::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
         BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>>
             + ParachainBlockImportMarker
             + Send
@@ -209,6 +211,7 @@ where
         P: Pair + Send + Sync,
         P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+        AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     {
         let worker =
             build_orchestrator_aura_worker::<P, _, _, _, _, _, _, _, _>(BuildAuraWorkerParams {
@@ -326,7 +329,7 @@ impl<B, C, E, I, P, Error, SO, L, BS> sc_consensus_slots::SimpleSlotWorker<B>
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    C::Api: AuraApi<B, AuthorityId<P>>,
+    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     E: Environment<B, Error = Error> + Send + Sync,
     E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
@@ -337,6 +340,7 @@ where
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
 {
     type BlockImport = I;
     type SyncOracle = SO;
@@ -360,11 +364,12 @@ where
         header: &B::Header,
         _slot: Slot,
     ) -> Result<Self::AuxData, sp_consensus::Error> {
-        authorities(
+        authorities::<P, B, C>(
             self.client.as_ref(),
             header.hash(),
             *header.number() + 1u32.into(),
             &self.compatibility_mode,
+            self.keystore.clone(),
         )
     }
 
@@ -497,45 +502,4 @@ where
             self.logging_target(),
         )
     }
-}
-
-fn authorities<A, B, C>(
-    client: &C,
-    parent_hash: B::Hash,
-    context_block_number: NumberFor<B>,
-    compatibility_mode: &CompatibilityMode<NumberFor<B>>,
-) -> Result<Vec<A>, ConsensusError>
-where
-    A: Codec + Debug,
-    B: BlockT,
-    C: ProvideRuntimeApi<B>,
-    C::Api: AuraApi<B, A>,
-{
-    let runtime_api = client.runtime_api();
-
-    match compatibility_mode {
-        CompatibilityMode::None => {}
-        // Use `initialize_block` until we hit the block that should disable the mode.
-        CompatibilityMode::UseInitializeBlock { until } => {
-            if *until > context_block_number {
-                runtime_api
-                    .initialize_block(
-                        parent_hash,
-                        &B::Header::new(
-                            context_block_number,
-                            Default::default(),
-                            Default::default(),
-                            parent_hash,
-                            Default::default(),
-                        ),
-                    )
-                    .map_err(|_| sp_consensus::Error::InvalidAuthoritiesSet)?;
-            }
-        }
-    }
-
-    runtime_api
-        .authorities(parent_hash)
-        .ok()
-        .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
 }

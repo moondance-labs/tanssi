@@ -753,6 +753,7 @@ impl_runtime_apis! {
             Some(authorities)
         }
         fn check_para_id_assignment(authority: NimbusId) -> Option<ParaId> {
+            log::error!("Looking for owner of {:?}", authority);
             let owner = Session::key_owner(NIMBUS_KEY_ID, authority.as_ref())?;
             log::error!("Owner of authority is {:?}", owner);
             Self::current_collator_parachain_assignment(owner)
