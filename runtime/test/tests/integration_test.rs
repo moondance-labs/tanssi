@@ -4,6 +4,7 @@ use {
     common::*,
     cumulus_primitives_core::ParaId,
     frame_support::{assert_ok, BoundedVec},
+    nimbus_primitives::NIMBUS_KEY_ID,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -11,7 +12,10 @@ use {
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
-    sp_runtime::{traits::BlakeTwo256, DigestItem},
+    sp_runtime::{
+        traits::{BlakeTwo256, OpaqueKeys},
+        DigestItem,
+    },
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     test_runtime::{
@@ -1088,6 +1092,11 @@ fn test_author_noting_not_self_para() {
                 Some(AccountId::from(DAVE))
             );
         });
+}
+
+#[test]
+fn session_keys_key_type_id() {
+    assert_eq!(test_runtime::SessionKeys::key_ids(), vec![NIMBUS_KEY_ID]);
 }
 
 #[test]

@@ -12,6 +12,7 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{BodyId, ParaId},
@@ -33,6 +34,7 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
+    nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     polkadot_runtime_common::BlockHashCount,
     smallvec::smallvec,
@@ -46,10 +48,6 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-};
-pub use {
-    sp_consensus_aura::sr25519::AuthorityId as AuraId,
-    sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
@@ -360,8 +358,8 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
         changed: bool,
         session_index: u32,
-        all_validators: Vec<(AccountId, AuraId)>,
-        queued: Vec<(AccountId, AuraId)>,
+        all_validators: Vec<(AccountId, NimbusId)>,
+        queued: Vec<(AccountId, NimbusId)>,
     ) {
         // We first initialize Configuration
         Configuration::initializer_on_new_session(&session_index);
@@ -423,7 +421,7 @@ impl pallet_initializer::Config for Runtime {
     type SessionIndex = u32;
 
     /// The identifier type for an authority.
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
 
     type SessionHandler = OwnApplySession;
 }
@@ -452,7 +450,7 @@ impl pallet_session::Config for Runtime {
 }
 
 impl pallet_aura::Config for Runtime {
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
     type DisabledValidators = ();
     type MaxAuthorities = ConstU32<100_000>;
 }
@@ -465,7 +463,7 @@ impl pallet_collator_assignment::Config for Runtime {
 
 impl pallet_authority_assignment::Config for Runtime {
     type SessionIndex = u32;
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
 }
 
 impl pallet_author_noting::Config for Runtime {
@@ -523,7 +521,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
 }
 
 impl pallet_registrar::Config for Runtime {
@@ -539,7 +537,7 @@ impl pallet_registrar::Config for Runtime {
 impl pallet_authority_mapping::Config for Runtime {
     type SessionIndex = u32;
     type SessionRemovalBoundary = ConstU32<2>;
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -587,12 +585,12 @@ construct_runtime!(
 );
 
 impl_runtime_apis! {
-    impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
+    impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
             sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
         }
 
-        fn authorities() -> Vec<AuraId> {
+        fn authorities() -> Vec<NimbusId> {
             Aura::authorities().into_inner()
         }
     }
@@ -778,7 +776,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
 
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>
     CheckInherents = CheckInherents,
 }
 
