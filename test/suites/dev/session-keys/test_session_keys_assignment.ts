@@ -7,28 +7,46 @@ import { u8aToHex } from '@polkadot/util';
 import "@polkadot/api-augment";
 
 describeSuite({
-  id: "D04",
-  title: "Session keys test suite",
+  id: "D05",
+  title: "Session keys assignment test suite",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
     const anotherLogger = setupLogger("anotherLogger");
-    let alice, bob;
+    let alice, bob, charlie, dave;
     beforeAll(() => {
       const keyring = new Keyring({ type: 'sr25519' });
       alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
       bob = keyring.addFromUri('//Bob', { name: 'Bob default' });
+      charlie = keyring.addFromUri('//Charlie', { name: 'Charlie default' });
+      dave = keyring.addFromUri('//Dave', { name: 'Dave default' });
       polkadotJs = context.polkadotJs();
     });
 
     it({
         id: "E01",
-        title: "Checking that session keys are correct on genesis",
+        title: "Checking that authority assignment is correct on genesis",
         test: async function () {
             // for session 0
-            const keys = await polkadotJs.query.authorityMapping.authorityIdMapping(0);
-            expect(keys.toHuman()[u8aToHex(alice.publicKey).toString()]).to.be.eq(alice.address.toString());
-            expect(keys.toHuman()[u8aToHex(bob.publicKey).toString()]).to.be.eq(bob.address.toString());
+            const assignment0 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).unwrap().toHuman();
+            const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toHuman();
+
+            expect(assignment0.orchestratorChain).to.deep.equal([
+                u8aToHex(alice.publicKey).toString(),
+                u8aToHex(bob.publicKey).toString(),
+            ]);
+            expect(assignment0.containerChains).to.deep.equal({
+                2000: [
+                    u8aToHex(charlie.publicKey).toString(),
+                    u8aToHex(dave.publicKey).toString(),
+                ],
+                2001: [],
+            });
+
+            // Session 1 is the same as session 0
+            expect(assignment0).to.deep.equal(assignment1);
+            // Session 2 is empty
+            expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(2)).isNone).to.be.true;
 
             // Check authorities are correct
             const authorities = (await polkadotJs.query.aura.authorities());
@@ -55,6 +73,8 @@ describeSuite({
             const nextKey = await polkadotJs.query.session.nextKeys(alice.address);
             expect(u8aToHex(nextKey.unwrap().aura)).to.be.eq(u8aToHex(newKey));
 
+            const initial_assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toHuman();
+
             // Let's jump one session
             await jumpSessions(context, 1);
 
@@ -66,6 +86,29 @@ describeSuite({
             );
             expect(result1.length).to.be.eq(1);
 
+            expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).isNone).to.be.true;
+            const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toHuman();
+            const assignment2 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(2)).unwrap().toHuman();
+            expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(3)).isNone).to.be.true;
+
+            // Assignment for session 1 did not change
+            expect(assignment1).to.deep.equal(initial_assignment1);
+
+            // Assignment for session 2 uses the new keys
+            expect(assignment2.orchestratorChain).to.deep.equal([
+                // This is alice's new key
+                u8aToHex(newKey).toString(),
+                u8aToHex(bob.publicKey).toString(),
+            ]);
+            expect(assignment2.containerChains).to.deep.equal({
+                2000: [
+                    u8aToHex(charlie.publicKey).toString(),
+                    u8aToHex(dave.publicKey).toString(),
+                ],
+                2001: [],
+            });
+
+
             // Let's jump one more session
             await jumpSessions(context, 1);
 
@@ -76,8 +119,8 @@ describeSuite({
             const authorities = (await polkadotJs.query.aura.authorities());
             expect(u8aToHex(authorities[0])).to.be.eq(u8aToHex(newKey));
 
-            // AuthorityMapping should no-longer contain the session 0 keys
-            expect((await polkadotJs.query.authorityMapping.authorityIdMapping(0)).isNone).to.be.true;
+            // AuthorityMapping should no-longer contain the session 1
+            expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).isNone).to.be.true;
         },
     });
     },

@@ -175,4 +175,20 @@ where
 
         vec![]
     }
+
+    pub fn map<T, F>(&self, mut f: F) -> AssignedCollators<T>
+    where
+        F: FnMut(&AccountId) -> T,
+    {
+        let mut a = AssignedCollators::default();
+
+        a.orchestrator_chain = self.orchestrator_chain.iter().map(|x| f(x)).collect();
+
+        for (para_id, collators) in self.container_chains.iter() {
+            let a_collators = collators.iter().map(|x| f(x)).collect();
+            a.container_chains.insert(*para_id, a_collators);
+        }
+
+        a
+    }
 }
