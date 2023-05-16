@@ -30,7 +30,6 @@ use {
 };
 
 use {
-    crate::authorities,
     futures::{lock::Mutex, prelude::*},
     nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair},
     sc_client_api::{backend::AuxStore, BlockOf},
@@ -69,7 +68,6 @@ use {
         sync::Arc,
         time::{Duration, Instant},
     },
-    tp_consensus::TanssiAuthorityAssignmentApi,
 };
 pub use {
     sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
@@ -102,10 +100,9 @@ impl<B, CIDP, GOH, W> Clone for ContainerAuraConsensus<B, CIDP, GOH, W> {
 /// Build the tanssi aura worker.
 ///
 /// The caller is responsible for running this worker, otherwise it will do nothing.
-pub fn build_container_aura_worker<P, B, C, OC, PF, I, SO, L, BS, Error>(
+pub fn build_container_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
     BuildContainerAuraWorkerParams {
         client,
-        orchestrator_client,
         block_import,
         proposer_factory,
         sync_oracle,
@@ -117,7 +114,7 @@ pub fn build_container_aura_worker<P, B, C, OC, PF, I, SO, L, BS, Error>(
         telemetry,
         force_authoring,
         compatibility_mode,
-    }: BuildContainerAuraWorkerParams<C, OC, I, PF, SO, L, BS, NumberFor<B>>,
+    }: BuildContainerAuraWorkerParams<C, I, PF, SO, L, BS, NumberFor<B>>,
 ) -> impl TanssiSlotWorker<
     B,
     Proposer = PF::Proposer,
@@ -130,10 +127,7 @@ pub fn build_container_aura_worker<P, B, C, OC, PF, I, SO, L, BS, Error>(
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
-    OC: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
-    OC::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     PF: Environment<B, Error = Error> + Send + Sync + 'static,
     PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     P: Pair + Send + Sync,
@@ -148,7 +142,6 @@ where
 {
     ContainerAuraWorker {
         client,
-        orchestrator_client,
         block_import,
         env: proposer_factory,
         keystore,
@@ -165,14 +158,13 @@ where
 }
 
 /// Parameters of [`ContainerAuraConsensus::build`].
-pub struct BuildContainerAuraConsensusParams<PF, BI, GOH, CIDP, Client, OrchestratorClient, BS, SO>
+pub struct BuildContainerAuraConsensusParams<PF, BI, GOH, CIDP, Client, BS, SO>
 {
     pub proposer_factory: PF,
     pub create_inherent_data_providers: CIDP,
     pub get_orchestrator_head: GOH,
     pub block_import: BI,
     pub para_client: Arc<Client>,
-    pub orchestrator_client: Arc<OrchestratorClient>,
     pub backoff_authoring_blocks: Option<BS>,
     pub sync_oracle: SO,
     pub keystore: SyncCryptoStorePtr,
@@ -191,14 +183,13 @@ where
     CIDP::InherentDataProviders: InherentDataProviderExt,
 {
     /// Create a new boxed instance of AURA consensus.
-    pub fn build<P, Client, OrchestratorClient, BI, SO, PF, BS, Error>(
+    pub fn build<P, Client, BI, SO, PF, BS, Error>(
         BuildContainerAuraConsensusParams {
             proposer_factory,
             create_inherent_data_providers,
             get_orchestrator_head,
             block_import,
             para_client,
-            orchestrator_client,
             backoff_authoring_blocks,
             sync_oracle,
             keystore,
@@ -213,7 +204,6 @@ where
             GOH,
             CIDP,
             Client,
-            OrchestratorClient,
             BS,
             SO,
         >,
@@ -221,10 +211,6 @@ where
     where
         Client:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
-        OrchestratorClient:
-            ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
-        Client::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
-        OrchestratorClient::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
         AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
         BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>>
             + ParachainBlockImportMarker
@@ -248,10 +234,9 @@ where
         B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
         GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), Vec<AuthorityId<P>>> + 'static,
     {
-        let worker = build_container_aura_worker::<P, _, _, _, _, _, _, _, _, _>(
+        let worker = build_container_aura_worker::<P, _, _, _, _, _, _, _, _>(
             BuildContainerAuraWorkerParams {
                 client: para_client,
-                orchestrator_client,
                 block_import,
                 justification_sync_link: (),
                 proposer_factory,
@@ -367,9 +352,8 @@ where
     }
 }
 
-struct ContainerAuraWorker<C, OC, E, I, P, SO, L, BS, N> {
+struct ContainerAuraWorker<C, E, I, P, SO, L, BS, N> {
     client: Arc<C>,
-    orchestrator_client: Arc<OC>,
     block_import: I,
     env: E,
     keystore: SyncCryptoStorePtr,
@@ -385,14 +369,11 @@ struct ContainerAuraWorker<C, OC, E, I, P, SO, L, BS, N> {
 }
 
 #[async_trait::async_trait]
-impl<B, C, OC, E, I, P, Error, SO, L, BS> sc_consensus_slots::SimpleSlotWorker<B>
-    for ContainerAuraWorker<C, OC, E, I, P, SO, L, BS, NumberFor<B>>
+impl<B, C, E, I, P, Error, SO, L, BS> sc_consensus_slots::SimpleSlotWorker<B>
+    for ContainerAuraWorker<C, E, I, P, SO, L, BS, NumberFor<B>>
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
-    OC: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    OC::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
     E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
@@ -424,16 +405,10 @@ where
 
     fn aux_data(
         &self,
-        header: &B::Header,
+        _header: &B::Header,
         _slot: Slot,
     ) -> Result<Self::AuxData, sp_consensus::Error> {
-        authorities::<P, B, OC>(
-            self.orchestrator_client.as_ref(),
-            header.hash(),
-            *header.number() + 1u32.into(),
-            &self.compatibility_mode,
-            self.keystore.clone(),
-        )
+        Ok(Default::default())
     }
 
     fn authorities_len(&self, epoch_data: &Self::AuxData) -> Option<usize> {
@@ -571,11 +546,9 @@ where
 }
 
 /// Parameters of [`build_aura_worker`].
-pub struct BuildContainerAuraWorkerParams<C, OC, I, PF, SO, L, BS, N> {
+pub struct BuildContainerAuraWorkerParams<C, I, PF, SO, L, BS, N> {
     /// The client to interact with the chain.
     pub client: Arc<C>,
-    /// The orchestrator client to interact with the chain.
-    pub orchestrator_client: Arc<OC>,
     /// The block import.
     pub block_import: I,
     /// The proposer factory to build proposer instances.
@@ -653,14 +626,11 @@ pub trait TanssiSlotWorker<B: BlockT>: SimpleSlotWorker<B> {
 }
 
 #[async_trait::async_trait]
-impl<B, C, OC, E, I, P, Error, SO, L, BS> TanssiSlotWorker<B>
-    for ContainerAuraWorker<C, OC, E, I, P, SO, L, BS, NumberFor<B>>
+impl<B, C, E, I, P, Error, SO, L, BS> TanssiSlotWorker<B>
+    for ContainerAuraWorker<C, E, I, P, SO, L, BS, NumberFor<B>>
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
-    OC: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    OC::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
     E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,

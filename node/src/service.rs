@@ -919,7 +919,7 @@ fn build_consensus_container(
                         "Failed to fetch authorities with error",
                     )
                 })?;
-                
+
                 log::info!("Authorities {:?} found for header {:?}", aux_data,  latest_header);
 
                 Ok(aux_data)
@@ -927,7 +927,6 @@ fn build_consensus_container(
         },
         block_import,
         para_client: client,
-        orchestrator_client,
         backoff_authoring_blocks: Option::<()>::None,
         sync_oracle,
         keystore,
@@ -942,7 +941,6 @@ fn build_consensus_container(
 
     Ok(tc_consensus::ContainerAuraConsensus::build::<
         NimbusPair,
-        _,
         _,
         _,
         _,
