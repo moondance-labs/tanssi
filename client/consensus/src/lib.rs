@@ -111,8 +111,13 @@ where
             }
         }
     }
-    first_eligible_key::<B, C, P>(client.clone(), keystore.clone(), &parent_hash)
-        .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
+    first_eligible_key::<B, C, P>(
+        client.clone(),
+        keystore.clone(),
+        &parent_hash,
+        &context_block_number,
+    )
+    .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
 }
 
 use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
@@ -124,6 +129,7 @@ pub(crate) fn first_eligible_key<B: BlockT, C, P>(
     client: &C,
     keystore: SyncCryptoStorePtr,
     parent_hash: &B::Hash,
+    parent_number: &NumberFor<B>,
 ) -> Option<Vec<AuthorityId<P>>>
 where
     C: ProvideRuntimeApi<B>,
@@ -156,12 +162,14 @@ where
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
             // If we dont find any parachain that we are assigned to, return non
 
-            if let Ok(Some(para_id)) =
-                runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into())
-            {
+            if let Ok(Some(para_id)) = runtime_api.check_para_id_assignment(
+                parent_hash.clone(),
+                nimbus_id.clone().into(),
+                parent_number,
+            ) {
                 log::info!("Para id found for assignment {:?}", para_id);
                 let authorities = runtime_api
-                    .para_id_authorities(parent_hash.clone(), para_id)
+                    .para_id_authorities(parent_hash.clone(), para_id, parent_number)
                     .ok()?;
                 log::info!(
                     "Authorities found for para {:?} are {:?}",

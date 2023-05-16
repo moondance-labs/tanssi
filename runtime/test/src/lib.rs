@@ -36,6 +36,7 @@ use {
     },
     nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
+    pallet_session::ShouldEndSession,
     polkadot_runtime_common::BlockHashCount,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
@@ -752,8 +753,16 @@ impl_runtime_apis! {
 
     impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
-        fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
-            let session_index = Session::current_index();
+        fn para_id_authorities(para_id: ParaId, parent_number: &sp_api::NumberFor<Block>) -> Option<Vec<NimbusId>> {
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+
+            let session_index = if should_end_session {
+                Session::current_index() +1
+            }
+            else {
+                Session::current_index()
+            };
+
             let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
             let self_para_id = ParachainInfo::get().into();
 
@@ -765,8 +774,15 @@ impl_runtime_apis! {
         }
 
         /// Return the paraId assigned to a given authority
-        fn check_para_id_assignment(authority: NimbusId) -> Option<ParaId> {
-            let session_index = Session::current_index();
+        fn check_para_id_assignment(authority: NimbusId, parent_number: &sp_api::NumberFor<Block>) -> Option<ParaId> {
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+
+            let session_index = if should_end_session {
+                Session::current_index() +1
+            }
+            else {
+                Session::current_index()
+            };
             let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
             let self_para_id = ParachainInfo::get().into();
 
