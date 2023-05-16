@@ -34,16 +34,12 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    nimbus_primitives::{NimbusId, NIMBUS_KEY_ID},
-    pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApiV1,
+    nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     polkadot_runtime_common::BlockHashCount,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{
-        crypto::{ByteArray, KeyTypeId},
-        Get, OpaqueMetadata,
-    },
+    sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
@@ -755,18 +751,26 @@ impl_runtime_apis! {
     }
 
     impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
-        /// Return the registered para ids
+        /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
-            let assigned_collators = Self::parachain_collators(para_id)?;
+            let session_index = Session::current_index();
+            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+            let self_para_id = ParachainInfo::get().into();
 
-            let authorities = pallet_session::KeyOwner::<Runtime>::iter().filter(|((key_id, _key), owner)|
-                key_id == &NIMBUS_KEY_ID && assigned_collators.contains(owner)
-            ).map(|((_key_id, key), _owner)| NimbusId::from_slice(&key).unwrap()).collect();
-            Some(authorities)
+            if para_id == self_para_id {
+                Some(assigned_authorities.orchestrator_chain)
+            } else {
+                assigned_authorities.container_chains.get(&para_id.into()).cloned()
+            }
         }
+
+        /// Return the paraId assigned to a given authority
         fn check_para_id_assignment(authority: NimbusId) -> Option<ParaId> {
-            let owner = Session::key_owner(NIMBUS_KEY_ID, authority.as_ref())?;
-            Self::current_collator_parachain_assignment(owner)
+            let session_index = Session::current_index();
+            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+            let self_para_id = ParachainInfo::get().into();
+
+            assigned_authorities.para_id_of(&authority, self_para_id).map(|id| id.into())
         }
     }
 }
