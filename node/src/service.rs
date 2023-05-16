@@ -1,5 +1,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
-
+use sp_core::traits::SpawnEssentialNamed;
+use std::collections::HashMap;
+use tokio::sync::mpsc::unbounded_channel;
 use {
     crate::cli::ContainerChainCli,
     cumulus_client_cli::CollatorOptions,
@@ -43,7 +45,7 @@ use {
     sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
     sp_runtime::{key_types::AURA, traits::IdentifyAccount},
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{future::Future, str::FromStr, sync::Arc, time::Duration},
+    std::{future::Future, str::FromStr, sync::Arc, sync::Mutex, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
     tc_orchestrator_chain_interface::{
@@ -457,8 +459,9 @@ async fn start_node_impl(
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
         let orchestrator_client = client.clone();
+        let spawn_essential_handle = Arc::new(task_manager.spawn_essential_handle());
         let container_chain_spawner = ContainerChainSpawner {
-            orchestrator_chain_interface_builder,
+            orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
             orchestrator_client,
             container_chain_cli,
             tokio_handle,
@@ -469,14 +472,38 @@ async fn start_node_impl(
             sync_keystore,
             orchestrator_para_id: para_id,
             validator,
-            task_manager: &task_manager,
+            spawn_essential_handle: spawn_essential_handle.clone(),
+            spawned_para_ids: Default::default(),
         };
 
-        task_manager.spawn_handle().spawn(
-            "container-chain-spawner",
+        let container_chain_spawner = Box::leak(Box::new(container_chain_spawner));
+
+        let (tx, mut rx) = unbounded_channel();
+        task_manager.spawn_essential_handle().spawn(
+            "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.spawn(),
+            async move {
+                while let Some(msg) = rx.recv().await {
+                    match msg {
+                        CcSpawnMsg::Spawn(para_id) => {
+                            // Spawn new container chain node
+                            spawn_essential_handle.spawn(
+                                "container-chain-spawner",
+                                None,
+                                container_chain_spawner.spawn(para_id),
+                            );
+                        }
+                        CcSpawnMsg::Stop(para_id) => {
+                            container_chain_spawner.stop(para_id);
+                        }
+                    }
+                }
+            },
         );
+
+        unsafe {
+            CCSPAWN = Some(tx);
+        }
     }
 
     Ok((task_manager, client))
@@ -484,8 +511,8 @@ async fn start_node_impl(
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
 /// and creating the ChainSpec from on-chain data from the orchestrator chain.
-struct ContainerChainSpawner<'a> {
-    orchestrator_chain_interface_builder: OrchestratorChainInProcessInterfaceBuilder,
+struct ContainerChainSpawner {
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     orchestrator_client: Arc<ParachainClient>,
     container_chain_cli: ContainerChainCli,
     tokio_handle: tokio::runtime::Handle,
@@ -497,16 +524,31 @@ struct ContainerChainSpawner<'a> {
     orchestrator_para_id: ParaId,
     validator: bool,
     // TODO: this could be a `SpawnEssentialTaskHandle`, but that type is private
-    task_manager: &'a TaskManager,
+    spawn_essential_handle: Arc<dyn SpawnEssentialNamed>,
+
+    // State
+    spawned_para_ids: Arc<Mutex<HashMap<ParaId, CcKillHandle>>>,
 }
 
-impl<'a> ContainerChainSpawner<'a> {
+// TODO: this should allow us to stop a container chain client
+struct CcKillHandle;
+
+#[derive(Debug)]
+enum CcSpawnMsg {
+    Spawn(ParaId),
+    Stop(ParaId),
+}
+
+// TODO: import lazy_static or figure out a way to pass this where it is needed
+static mut CCSPAWN: Option<tokio::sync::mpsc::UnboundedSender<CcSpawnMsg>> = None;
+
+impl ContainerChainSpawner {
     /// Try to start the container chain node. In case of error, this panics and stops the node.
-    fn spawn(self) -> impl Future<Output = ()> {
+    fn spawn(&self, container_chain_para_id: ParaId) -> impl Future<Output = ()> + '_ {
         let ContainerChainSpawner {
-            orchestrator_chain_interface_builder,
+            orchestrator_chain_interface,
             orchestrator_client,
-            mut container_chain_cli,
+            container_chain_cli,
             tokio_handle,
             chain_type,
             relay_chain,
@@ -515,13 +557,14 @@ impl<'a> ContainerChainSpawner<'a> {
             sync_keystore,
             orchestrator_para_id,
             validator,
-            task_manager,
+            spawn_essential_handle,
+            spawned_para_ids,
         } = self;
-        let spawn_cc_as_child_handle = task_manager.spawn_essential_handle();
+        let spawn_cc_as_child_handle = spawn_essential_handle;
+        let mut container_chain_cli: ContainerChainCli = container_chain_cli.clone();
 
         // This closure is used to emulate a try block, it enables using the `?` operator inside
         let try_closure = move || async move {
-            let orchestrator_chain_interface = orchestrator_chain_interface_builder.build();
             // Preload genesis data from orchestrator chain storage.
             // The preload must finish before calling create_configuration, so any async operations
             // need to be awaited.
@@ -535,43 +578,6 @@ impl<'a> ContainerChainSpawner<'a> {
                 orchestrator_chain_info.best_hash,
             );
             let orchestrator_runtime_api = orchestrator_client.runtime_api();
-
-            // TODO: we are ignoring CLI argument, deprecate it or use it to force collation on this para id?
-            /*
-            let container_chain_para_id = container_chain_cli
-                .base
-                .para_id
-                .ok_or("missing --para-id CLI argument for container chain")?;
-            */
-
-            // TODO: collator_key changes on node restart, so it is probably the wrong key
-            /*
-            let collator_account_id = AccountPublic::from(
-                <sp_core::sr25519::Public as CryptoType>::Pair::from(
-                    collator_key.as_ref().unwrap().clone(),
-                )
-                .public(),
-            );
-            */
-            // TODO: this is the correct key, but can we assume that
-            // ed25519_public_keys always returns a vec with exactly 1 element?
-            let collator_account_id =
-                AccountPublic::from(SyncCryptoStore::ed25519_public_keys(&*sync_keystore, AURA)[0]);
-            let container_chain_para_id = orchestrator_runtime_api
-                .current_collator_parachain_assignment(
-                    orchestrator_chain_info.best_hash,
-                    collator_account_id.clone().into_account(),
-                )
-                .expect("error");
-
-            log::info!("Key: {:?}", collator_account_id.into_account());
-
-            let container_chain_para_id: u32 = match container_chain_para_id {
-                Some(x) => x.into(),
-                None => {
-                    panic!("Collator not assigned to any container chain");
-                }
-            };
 
             log::info!(
                 "Detected assignment for container chain {}",
@@ -593,10 +599,10 @@ impl<'a> ContainerChainSpawner<'a> {
 
             container_chain_cli
                 .preload_chain_spec_from_genesis_data(
-                    container_chain_para_id,
+                    container_chain_para_id.into(),
                     genesis_data,
-                    chain_type,
-                    relay_chain,
+                    chain_type.clone(),
+                    relay_chain.clone(),
                 )
                 .map_err(|e| format!("failed to create container chain chain spec from on chain genesis data: {}", e))?;
 
@@ -608,7 +614,7 @@ impl<'a> ContainerChainSpawner<'a> {
             let container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
                 &container_chain_cli,
                 &container_chain_cli,
-                tokio_handle,
+                tokio_handle.clone(),
             )
             .map_err(|err| format!("Container chain argument error: {}", err))?;
 
@@ -617,12 +623,12 @@ impl<'a> ContainerChainSpawner<'a> {
                 start_node_impl_container(
                     container_chain_cli_config,
                     relay_chain_interface.clone(),
-                    orchestrator_chain_interface,
+                    orchestrator_chain_interface.clone(),
                     collator_key.clone(),
-                    sync_keystore,
+                    sync_keystore.clone(),
                     container_chain_para_id.into(),
-                    orchestrator_para_id,
-                    validator,
+                    *orchestrator_para_id,
+                    *validator,
                 )
                 .await?;
 
@@ -630,12 +636,23 @@ impl<'a> ContainerChainSpawner<'a> {
             // to make the parent task manager stop if the container chain task manager stops.
             // The reverse is also true, if the parent task manager stops, the container chain
             // task manager will also stop.
-            spawn_cc_as_child_handle.spawn("container-chain-task-manager", None, async move {
-                container_chain_task_manager
-                    .future()
-                    .await
-                    .expect("container_chain_task_manager failed")
-            });
+            spawn_cc_as_child_handle.spawn_essential(
+                "container-chain-task-manager",
+                None,
+                Box::pin(async move {
+                    container_chain_task_manager
+                        .future()
+                        .await
+                        .expect("container_chain_task_manager failed")
+                }),
+            );
+
+            {
+                spawned_para_ids
+                    .lock()
+                    .expect("poison error")
+                    .insert(container_chain_para_id.into(), CcKillHandle);
+            }
 
             sc_service::error::Result::Ok(())
         };
@@ -648,6 +665,15 @@ impl<'a> ContainerChainSpawner<'a> {
                 }
             }
         }
+    }
+
+    fn stop(&self, container_chain_para_id: ParaId) {
+        // TODO: implement the kill handle
+        let _kill_handle = self
+            .spawned_para_ids
+            .lock()
+            .expect("poison error")
+            .remove(&container_chain_para_id);
     }
 }
 
@@ -964,12 +990,17 @@ fn build_consensus_orchestrator(
         telemetry.clone(),
     );
     let client_set_aside_for_cidp = client.clone();
+    let initial_assigned_para_id = Arc::new(Mutex::new(None));
+    let collator_account_id =
+        AccountPublic::from(SyncCryptoStore::ed25519_public_keys(&*keystore, AURA)[0]);
 
     let params = BuildOrchestratorAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
+            let initial_assigned_para_id = initial_assigned_para_id.clone();
+            let collator_account_id = collator_account_id.clone();
             async move {
                 let parachain_inherent =
                     cumulus_primitives_parachain_inherent::ParachainInherentData::create_at(
@@ -991,6 +1022,44 @@ fn build_consensus_orchestrator(
                         &para_ids,
                     )
                     .await;
+
+                // TODO: this is great, but it only works if the node is a tanssi collator,
+                // and it is producing blocks! So we must move this to block import
+                if unsafe { CCSPAWN.is_some() } {
+                    let container_chain_para_id = client_set_aside_for_cidp
+                        .runtime_api()
+                        .current_collator_parachain_assignment(
+                            block_hash,
+                            collator_account_id.clone().into_account(),
+                        )?;
+
+                    let mut initial_assigned_para_id =
+                        initial_assigned_para_id.lock().expect("poison error");
+                    log::info!(
+                        "cc assignment: old {:?} new {:?}",
+                        initial_assigned_para_id,
+                        container_chain_para_id
+                    );
+                    if container_chain_para_id != *initial_assigned_para_id {
+                        if let Some(new_para_id) = container_chain_para_id {
+                            // Spawn new container chain node
+                            unsafe { CCSPAWN.as_ref().unwrap() }
+                                .send(CcSpawnMsg::Spawn(new_para_id))?;
+                        }
+
+                        if let Some(prev_para_id) = *initial_assigned_para_id {
+                            // Stop old container chain node
+                            unsafe { CCSPAWN.as_ref().unwrap() }
+                                .send(CcSpawnMsg::Stop(prev_para_id))?;
+                        }
+
+                        *initial_assigned_para_id = container_chain_para_id;
+                    }
+                    drop(initial_assigned_para_id);
+                } else {
+                    // CCSPAWN.is_none(), so we must be running a 1000 collator
+                    log::info!("CCSPAWN, this must be a 1000 collator");
+                }
 
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
