@@ -17,6 +17,8 @@ resolver = "2"
 [workspace.dependencies]
 # Members
 pallet-author-noting = { path = "pallets/author-noting", default-features = false }
+pallet-authority-assignment = { path = "pallets/authority-assignment", default-features = false }
+pallet-authority-mapping = { path = "pallets/authority-mapping", default-features = false }
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
 pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/rpc/runtime-api", default-features = false }
 pallet-configuration = { path = "pallets/configuration", default-features = false }
@@ -37,6 +39,12 @@ tp-collator-assignment = { path = "primitives/collator-assignment", default-feat
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
+tc-consensus = { path = "client/consensus" }
+
+# Nimbus (wasm)
+nimbus-primitives = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false }
+nimbus-consensus = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40" }
+pallet-author-inherent = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false  }
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
@@ -55,9 +63,11 @@ pallet-transaction-payment = { git = "https://github.com/paritytech/substrate", 
 parity-scale-codec = { version = "3.0.0", default-features = false, features = [ "derive", "max-encoded-len" ] }
 scale-info = { version = "2.1.1", default-features = false }
 sp-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
+sp-application-crypto = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-block-builder = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
+sp-consensus-slots = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40", version = "7.0.0", default-features = false }
 sp-inherents = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
 sp-io = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.40", version = "7.0.0", default-features = false }
@@ -78,7 +88,9 @@ sc-chain-spec = { git = "https://github.com/paritytech/substrate", branch = "pol
 sc-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-client-api = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-consensus = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sc-consensus-aura = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-consensus-manual-seal = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
+sc-consensus-slots = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-executor = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-network = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 sc-network-common = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
@@ -167,6 +179,7 @@ tokio = { version = "1.26.0", default-features = false }
 codegen-units = 1
 inherits = "release"
 lto = true
+
 
 [profile.release]
 opt-level = 3

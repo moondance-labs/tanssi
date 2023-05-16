@@ -10,6 +10,7 @@ use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::ParaId,
     frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+    nimbus_primitives::NimbusId,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_core::{crypto::KeyTypeId, OpaqueMetadata},
@@ -25,6 +26,7 @@ use {
 use sp_version::NativeVersion;
 use {sp_std::prelude::*, sp_version::RuntimeVersion};
 
+pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     frame_support::{
         construct_runtime,
@@ -37,10 +39,6 @@ use {
         },
     },
     frame_system::limits::{BlockLength, BlockWeights},
-};
-pub use {
-    sp_consensus_aura::sr25519::AuthorityId as AuraId,
-    sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
 #[cfg(any(feature = "std", test))]
@@ -376,7 +374,7 @@ impl pallet_session::Config for Runtime {
 }
 
 impl pallet_aura::Config for Runtime {
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
     type DisabledValidators = ();
     type MaxAuthorities = ConstU32<100_000>;
 }
@@ -422,12 +420,12 @@ construct_runtime!(
 );
 
 impl_runtime_apis! {
-    impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
+    impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
             sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
         }
 
-        fn authorities() -> Vec<AuraId> {
+        fn authorities() -> Vec<NimbusId> {
             Aura::authorities().into_inner()
         }
     }
@@ -558,6 +556,6 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
 
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>
     CheckInherents = CheckInherents,
 }
