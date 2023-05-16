@@ -5479,6 +5479,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-authority-assignment"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "tp-collator-assignment",
+ "tp-traits",
+]
+
+[[package]]
 name = "pallet-authority-discovery"
 version = "4.0.0-dev"
 source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.40#76fed9b9082daade5392663f25ed8968f8e8c11c"
@@ -11794,6 +11812,7 @@ dependencies = [
  "pallet-aura",
  "pallet-author-inherent",
  "pallet-author-noting",
+ "pallet-authority-assignment",
  "pallet-authority-mapping",
  "pallet-authorship",
  "pallet-balances",

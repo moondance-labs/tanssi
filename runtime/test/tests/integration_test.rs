@@ -19,7 +19,8 @@ use {
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     test_runtime::{
-        AuthorNoting, AuthorityMapping, CollatorAssignment, CollatorSelection, Configuration,
+        AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
+        Configuration,
     },
 };
 
@@ -1182,6 +1183,142 @@ fn test_session_keys_with_authority_mapping() {
             assert_eq!(key_mapping_session_2.len(), 2);
             assert_eq!(key_mapping_session_2.get(&alice_id_2), Some(&ALICE.into()));
             assert_eq!(key_mapping_session_2.get(&bob_id_2), Some(&BOB.into()));
+
+            // Everything should match to aura
+            assert_eq!(Aura::authorities(), vec![alice_id_2, bob_id_2]);
+        });
+}
+
+#[test]
+fn test_session_keys_with_authority_assignment() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2, true);
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+            let alice_id_2 = get_aura_id_from_seed("ALICE2");
+            let bob_id_2 = get_aura_id_from_seed("BOB2");
+
+            let key_mapping_session_0 = AuthorityAssignment::collator_container_chain(0).unwrap();
+            assert_eq!(
+                key_mapping_session_0.orchestrator_chain,
+                vec![alice_id.clone(), bob_id.clone()],
+            );
+            assert_eq!(
+                CollatorAssignment::collator_container_chain().orchestrator_chain,
+                vec![AccountId::from(ALICE), AccountId::from(BOB)],
+            );
+
+            let key_mapping_session_1 = AuthorityAssignment::collator_container_chain(1).unwrap();
+            assert_eq!(key_mapping_session_1, key_mapping_session_0,);
+            let old_assignment_session_1 =
+                CollatorAssignment::pending_collator_container_chain().unwrap();
+            assert_eq!(
+                old_assignment_session_1,
+                CollatorAssignment::collator_container_chain(),
+            );
+
+            let key_mapping_session_2 = AuthorityAssignment::collator_container_chain(2);
+            assert!(key_mapping_session_2.is_none());
+
+            // Everything should match to aura
+            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+
+            // Change Alice and Bob keys to something different
+            // for now lets change it to alice_2 and bob_2
+            assert_ok!(Session::set_keys(
+                origin_of(ALICE.into()),
+                test_runtime::SessionKeys {
+                    aura: alice_id_2.clone(),
+                },
+                vec![]
+            ));
+            assert_ok!(Session::set_keys(
+                origin_of(BOB.into()),
+                test_runtime::SessionKeys {
+                    aura: bob_id_2.clone(),
+                },
+                vec![]
+            ));
+
+            run_to_session(1u32, true);
+            let old_key_mapping_session_1 = key_mapping_session_1;
+
+            // Session 0 got removed
+            let key_mapping_session_0 = AuthorityAssignment::collator_container_chain(0);
+            assert!(key_mapping_session_0.is_none());
+
+            // The values at session 1 did not change
+            let key_mapping_session_1 = AuthorityAssignment::collator_container_chain(1).unwrap();
+            assert_eq!(key_mapping_session_1, old_key_mapping_session_1,);
+            assert_eq!(
+                CollatorAssignment::collator_container_chain(),
+                old_assignment_session_1,
+            );
+
+            // Session 2 uses the new keys
+            let key_mapping_session_2 = AuthorityAssignment::collator_container_chain(2).unwrap();
+            assert_eq!(
+                key_mapping_session_2.orchestrator_chain,
+                vec![alice_id_2.clone(), bob_id_2.clone()],
+            );
+            assert_eq!(CollatorAssignment::pending_collator_container_chain(), None);
+
+            let key_mapping_session_3 = AuthorityAssignment::collator_container_chain(3);
+            assert!(key_mapping_session_3.is_none());
+
+            // Everything should match to aura
+            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+
+            run_to_session(2u32, true);
+
+            // Session 1 got removed
+            let key_mapping_session_1 = AuthorityAssignment::collator_container_chain(1);
+            assert!(key_mapping_session_1.is_none());
+
+            // Session 2 uses the new keys
+            let key_mapping_session_2 = AuthorityAssignment::collator_container_chain(2).unwrap();
+            assert_eq!(
+                key_mapping_session_2.orchestrator_chain,
+                vec![alice_id_2.clone(), bob_id_2.clone()],
+            );
+            assert_eq!(
+                old_assignment_session_1,
+                CollatorAssignment::collator_container_chain(),
+            );
+
+            // Session 3 uses the new keys
+            let key_mapping_session_3 = AuthorityAssignment::collator_container_chain(3).unwrap();
+            assert_eq!(
+                key_mapping_session_3.orchestrator_chain,
+                vec![alice_id_2.clone(), bob_id_2.clone()],
+            );
+            assert_eq!(CollatorAssignment::pending_collator_container_chain(), None);
+
+            let key_mapping_session_4 = AuthorityAssignment::collator_container_chain(4);
+            assert!(key_mapping_session_4.is_none());
 
             // Everything should match to aura
             assert_eq!(Aura::authorities(), vec![alice_id_2, bob_id_2]);
