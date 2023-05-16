@@ -159,18 +159,18 @@ where
             if let Ok(Some(para_id)) =
                 runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into())
             {
-                log::error!("Para id found for assignment {:?}", para_id);
+                log::info!("Para id found for assignment {:?}", para_id);
                 let authorities = runtime_api
                     .para_id_authorities(parent_hash.clone(), para_id)
                     .ok()?;
-                log::error!(
+                log::info!(
                     "Authorities found for para {:?} are {:?}",
                     para_id,
                     authorities
                 );
                 authorities
             } else {
-                log::error!("nO Para id found for assignment {:?}", nimbus_id);
+                log::info!("No Para id found for assignment {:?}", nimbus_id);
 
                 None
             }
