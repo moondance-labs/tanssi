@@ -94,7 +94,7 @@ describeSuite({
             // Assignment for session 1 did not change
             expect(assignment1).to.deep.equal(initial_assignment1);
 
-            // Assignemnt for session 2 uses the new keys
+            // Assignment for session 2 uses the new keys
             expect(assignment2.orchestratorChain).to.deep.equal([
                 // This is alice's new key
                 u8aToHex(newKey).toString(),
