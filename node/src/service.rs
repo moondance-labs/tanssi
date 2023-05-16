@@ -801,6 +801,8 @@ fn build_manual_seal_import_queue(
     ))
 }
 
+use sp_api::HeaderT;
+
 fn build_consensus_container(
     client: Arc<ParachainClient>,
     orchestrator_client: Arc<ParachainClient>,
@@ -828,6 +830,9 @@ fn build_consensus_container(
     );
 
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
+    let orchestrator_client_for_cidp = orchestrator_client.clone();
+    let keystore_for_cidp = keystore.clone();
+
     let params = tc_consensus::BuildContainerAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
@@ -883,6 +888,9 @@ fn build_consensus_container(
         },
         get_orchestrator_head: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
+            let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
+            let keystore_for_cidp = keystore_for_cidp.clone();
+
             async move {
                 let latest_header =
                     tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
@@ -898,7 +906,23 @@ fn build_consensus_container(
                     )
                 })?;
 
-                Ok(latest_header)
+                let authorities = tc_consensus::authorities::<NimbusPair, Block, ParachainClient>(
+                    orchestrator_client_for_cidp.as_ref(),
+                    latest_header.hash(),
+                    latest_header.number().clone().saturating_add(1),
+                    &sc_consensus_aura::CompatibilityMode::None,
+                    keystore_for_cidp,
+                );
+
+                let aux_data = authorities.map_err(|_e| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to fetch authorities with error",
+                    )
+                })?;
+                
+                log::info!("Authorities {:?} found for header {:?}", aux_data,  latest_header);
+
+                Ok(aux_data)
             }
         },
         block_import,

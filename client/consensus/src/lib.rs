@@ -73,7 +73,7 @@ pub(crate) fn slot_author<P: Pair>(
     Some(current_author)
 }
 
-pub(crate) fn authorities<P, B, C>(
+pub fn authorities<P, B, C>(
     client: &C,
     parent_hash: B::Hash,
     context_block_number: NumberFor<B>,

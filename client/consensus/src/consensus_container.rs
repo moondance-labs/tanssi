@@ -187,7 +187,7 @@ impl<B, CIDP, GOH> ContainerAuraConsensus<B, CIDP, GOH, ()>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + 'static,
-    GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData)> + 'static,
+    GOH: 'static + Sync + Send,
     CIDP::InherentDataProviders: InherentDataProviderExt,
 {
     /// Create a new boxed instance of AURA consensus.
@@ -246,6 +246,7 @@ where
         P::Public: AppPublic + Hash + Member + Encode + Decode,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
         B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
+        GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), Vec<AuthorityId<P>>> + 'static,
     {
         let worker = build_container_aura_worker::<P, _, _, _, _, _, _, _, _, _>(
             BuildContainerAuraWorkerParams {
@@ -280,7 +281,8 @@ where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + 'static,
     CIDP::InherentDataProviders: InherentDataProviderExt,
-    GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData)> + 'static,
+    GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), W::AuxData> + 'static,
+    W: TanssiSlotWorker<B> + Send + Sync,
 {
     /// Create the inherent data.
     ///
@@ -311,7 +313,7 @@ where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + Send + Sync + 'static,
     CIDP::InherentDataProviders: InherentDataProviderExt + Send,
-    GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData)> + 'static,
+    GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), W::AuxData> + 'static,
     W: TanssiSlotWorker<B> + Send + Sync,
     W::Proposer: Proposer<B, Proof = <EnableProofRecording as ProofRecording>::Proof>,
     B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
@@ -607,22 +609,22 @@ pub struct BuildContainerAuraWorkerParams<C, OC, I, PF, SO, L, BS, N> {
 
 use cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber};
 #[async_trait::async_trait]
-pub trait RetrieveOrchestratorHead<Block: BlockT, ExtraArgs>: Send + Sync {
+pub trait RetrieveOrchestratorHead<Block: BlockT, ExtraArgs, A>: Send + Sync {
     /// Create the inherent data providers at the given `parent` block using the given `extra_args`.
     async fn retrieve_orchestrator_head(
         &self,
         parent: Block::Hash,
         extra_args: ExtraArgs,
-    ) -> Result<Block::Header, Box<dyn std::error::Error + Send + Sync>>;
+    ) -> Result<A, Box<dyn std::error::Error + Send + Sync>>;
 }
 
 #[async_trait::async_trait]
-impl<F, Block, ExtraArgs, Fut> RetrieveOrchestratorHead<Block, ExtraArgs> for F
+impl<F, Block, ExtraArgs, Fut, A> RetrieveOrchestratorHead<Block, ExtraArgs, A> for F
 where
     Block: BlockT,
     F: Fn(Block::Hash, ExtraArgs) -> Fut + Sync + Send,
     Fut: std::future::Future<
-            Output = Result<Block::Header, Box<dyn std::error::Error + Send + Sync>>,
+            Output = Result<A, Box<dyn std::error::Error + Send + Sync>>,
         > + Send
         + 'static,
     ExtraArgs: Send + 'static,
@@ -631,7 +633,7 @@ where
         &self,
         parent: Block::Hash,
         extra_args: ExtraArgs,
-    ) -> Result<Block::Header, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<A, Box<dyn std::error::Error + Send + Sync>> {
         (*self)(parent, extra_args).await
     }
 }
@@ -646,7 +648,7 @@ pub trait TanssiSlotWorker<B: BlockT>: SimpleSlotWorker<B> {
     async fn tanssi_on_slot(
         &mut self,
         slot_info: SlotInfo<B>,
-        orch_header: B::Header,
+        orch_header: Self::AuxData,
     ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>;
 }
 
@@ -676,7 +678,7 @@ where
     async fn tanssi_on_slot(
         &mut self,
         slot_info: SlotInfo<B>,
-        orch_header: B::Header,
+        orch_header: Self::AuxData,
     ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>
     where
         Self: Sync,
@@ -698,27 +700,7 @@ where
             Instant::now() + proposing_remaining_duration
         };
 
-        let aux_data = match self.aux_data(&orch_header.into(), slot) {
-            Ok(aux_data) => aux_data,
-            Err(err) => {
-                warn!(
-                    target: logging_target,
-                    "Unable to fetch auxiliary data for block {:?}: {}",
-                    slot_info.chain_head.hash(),
-                    err,
-                );
-
-                telemetry!(
-                    telemetry;
-                    CONSENSUS_WARN;
-                    "slots.unable_fetching_authorities";
-                    "slot" => ?slot_info.chain_head.hash(),
-                    "err" => ?err,
-                );
-
-                return None;
-            }
-        };
+        let aux_data = orch_header.clone();
 
         self.notify_slot(&slot_info.chain_head, slot, &aux_data);
 
