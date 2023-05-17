@@ -185,11 +185,7 @@ pub fn new_partial(
                         SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
                     let global_key;
                     let collator_account_id = if nimbus_keys.is_empty() {
-                        log::warn!("Race condition, nimbus keys empty");
-
-                        global_key = unsafe { NMBS_KEY.clone() };
-
-                        global_key.as_ref().expect("nimbus keys empty")
+                        panic!("Race condition, nimbus keys empty");
                     } else {
                         global_key = Some(AccountId::from(
                             <[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap(),
@@ -197,11 +193,6 @@ pub fn new_partial(
 
                         global_key.as_ref().unwrap()
                     };
-                    unsafe {
-                        if NMBS_KEY.is_none() {
-                            NMBS_KEY = Some(collator_account_id.clone());
-                        }
-                    }
 
                     let container_chain_para_id = client_set_aside_for_cidp
                         .runtime_api()
@@ -641,9 +632,6 @@ enum CcSpawnMsg {
 
 // TODO: import lazy_static or figure out a way to pass this where it is needed
 static mut CCSPAWN: Option<tokio::sync::mpsc::UnboundedSender<CcSpawnMsg>> = None;
-// TODO: SyncCryptoStore doesn't seem to be working properly on block import, so we store the
-// nimbus key here
-static mut NMBS_KEY: Option<AccountId> = None;
 
 impl ContainerChainSpawner {
     /// Try to start the container chain node. In case of error, this panics and stops the node.
