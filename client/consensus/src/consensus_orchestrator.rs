@@ -1,26 +1,9 @@
-// Copyright 2021 Parity Technologies (UK) Ltd.
-// This file is part of Cumulus.
-
-// Cumulus is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Cumulus is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Cumulus.  If not, see <http://www.gnu.org/licenses/>.
-
-//! The AuRa consensus algorithm for parachains.    
+//! The Tanssi AuRa consensus algorithm for orchestrator chain and container chain collators.    
 //!
-//! This extends the Substrate provided AuRa consensus implementation to make it compatible for
-//! parachains. The main entry points for of this consensus algorithm are [`AuraConsensus::build`]
-//! and [`fn@import_queue`].
-//!
-//! For more information about AuRa, the Substrate crate should be checked.
+//! It calculates based on the orchestrator-state dictated authorities
+//! It is identical to AuraWorker and AuraConsensus, except for the fact that we re-implement
+//! the ParachainConsensus trait to access the orchestrator-dicated authorities, and further
+//! it implements the TanssiWorker to TanssiOnSlot trait. This trait is
 use {
     cumulus_client_consensus_common::{
         ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
@@ -223,8 +206,11 @@ where
         P::Public: AppPublic + Hash + Member + Encode + Decode,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
         B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
-        GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), Vec<AuthorityId<P>>>
-            + 'static,
+        GOH: RetrieveAuthoritiesFromOrchestrator<
+                B,
+                (PHash, PersistedValidationData),
+                Vec<AuthorityId<P>>,
+            > + 'static,
     {
         let worker = build_orchestrator_aura_worker::<P, _, _, _, _, _, _, _, _>(
             BuildOrchestratorAuraWorkerParams {
@@ -258,7 +244,8 @@ where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + 'static,
     CIDP::InherentDataProviders: InherentDataProviderExt,
-    GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), W::AuxData> + 'static,
+    GOH: RetrieveAuthoritiesFromOrchestrator<B, (PHash, PersistedValidationData), W::AuxData>
+        + 'static,
     W: TanssiSlotWorker<B> + Send + Sync,
 {
     /// Create the inherent data.
@@ -290,7 +277,8 @@ where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + Send + Sync + 'static,
     CIDP::InherentDataProviders: InherentDataProviderExt + Send,
-    GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), W::AuxData> + 'static,
+    GOH: RetrieveAuthoritiesFromOrchestrator<B, (PHash, PersistedValidationData), W::AuxData>
+        + 'static,
     W: TanssiSlotWorker<B> + Send + Sync,
     W::Proposer: Proposer<B, Proof = <EnableProofRecording as ProofRecording>::Proof>,
     B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
@@ -307,7 +295,10 @@ where
 
         let header = self
             .get_authorities_from_orchestrator
-            .retrieve_orchestrator_head(parent.hash(), (relay_parent, validation_data.clone()))
+            .retrieve_authorities_from_orchestrator(
+                parent.hash(),
+                (relay_parent, validation_data.clone()),
+            )
             .await
             .map_err(|e| {
                 tracing::error!(
@@ -575,9 +566,9 @@ pub struct BuildOrchestratorAuraWorkerParams<C, I, PF, SO, L, BS, N> {
 
 use cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber};
 #[async_trait::async_trait]
-pub trait RetrieveOrchestratorHead<Block: BlockT, ExtraArgs, A>: Send + Sync {
+pub trait RetrieveAuthoritiesFromOrchestrator<Block: BlockT, ExtraArgs, A>: Send + Sync {
     /// Create the inherent data providers at the given `parent` block using the given `extra_args`.
-    async fn retrieve_orchestrator_head(
+    async fn retrieve_authorities_from_orchestrator(
         &self,
         parent: Block::Hash,
         extra_args: ExtraArgs,
@@ -585,7 +576,7 @@ pub trait RetrieveOrchestratorHead<Block: BlockT, ExtraArgs, A>: Send + Sync {
 }
 
 #[async_trait::async_trait]
-impl<F, Block, ExtraArgs, Fut, A> RetrieveOrchestratorHead<Block, ExtraArgs, A> for F
+impl<F, Block, ExtraArgs, Fut, A> RetrieveAuthoritiesFromOrchestrator<Block, ExtraArgs, A> for F
 where
     Block: BlockT,
     F: Fn(Block::Hash, ExtraArgs) -> Fut + Sync + Send,
@@ -594,7 +585,7 @@ where
         + 'static,
     ExtraArgs: Send + 'static,
 {
-    async fn retrieve_orchestrator_head(
+    async fn retrieve_authorities_from_orchestrator(
         &self,
         parent: Block::Hash,
         extra_args: ExtraArgs,

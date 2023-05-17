@@ -1,3 +1,4 @@
+//! The Manual Seal implementation for the OrchestratorAuraConsensus
 use {
     nimbus_primitives::{
         CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair, NimbusSignature,

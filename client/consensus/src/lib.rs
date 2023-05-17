@@ -1,26 +1,10 @@
-// Copyright 2021 Parity Technologies (UK) Ltd.
-// This file is part of Cumulus.
-
-// Cumulus is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// Cumulus is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with Cumulus.  If not, see <http://www.gnu.org/licenses/>.
-
-//! The AuRa consensus algorithm for parachains.    
+//! The Tanssi AuRa consensus algorithm for orchestrator chain and container chain collators.    
 //!
-//! This extends the Substrate provided AuRa consensus implementation to make it compatible for
-//! parachains. The main entry points for of this consensus algorithm are [`AuraConsensus::build`]
-//! and [`fn@import_queue`].
-//!
-//! For more information about AuRa, the Substrate crate should be checked.
+//! This file contains those functions that are used by consensus_orchestrator.rs structs and
+//! and traits
+//! slot_author returns the author based on the slot number and authorities provided (aura-like)
+//! authorities retrieves the current set of authorities based on the first eligible key found in the keystore
+
 use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
 
 mod consensus_orchestrator;
