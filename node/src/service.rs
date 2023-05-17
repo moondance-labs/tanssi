@@ -1,7 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 use sp_core::traits::SpawnEssentialNamed;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use tokio::sync::mpsc::unbounded_channel;
 use {
     crate::cli::ContainerChainCli,
@@ -30,7 +29,6 @@ use {
     pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
-    polkadot_primitives::AccountPublic,
     polkadot_service::Handle,
     sc_client_api::{AuxStore, Backend, BlockchainEvents, HeaderBackend, UsageProvider},
     sc_consensus::{BlockImport, ImportQueue},
@@ -45,7 +43,6 @@ use {
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
-    sp_runtime::traits::IdentifyAccount,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, str::FromStr, sync::Arc, sync::Mutex, time::Duration},
     substrate_prometheus_endpoint::Registry,
@@ -137,11 +134,6 @@ pub fn new_partial(
         )?;
     let client = Arc::new(client);
     let client_set_aside_for_cidp = client.clone();
-    // This doesn't work because the keys are not set yet
-    /*
-    let collator_account_id =
-        AccountPublic::from(SyncCryptoStore::ed25519_public_keys(&*keystore_container.sync_keystore(), AURA)[0]);
-    */
     let sync_keystore = keystore_container.sync_keystore();
     let initial_assigned_para_id = Arc::new(Mutex::new(None));
 
@@ -165,6 +157,7 @@ pub fn new_partial(
     let spec_para_id = crate::chain_spec::Extensions::try_get(&*config.chain_spec)
         .map(|extension| extension.para_id)
         .unwrap();
+    // TODO: how can we get the OrchestratorParaId?
     let is_orchestrator_chain = spec_para_id == 1000;
 
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
@@ -184,17 +177,9 @@ pub fn new_partial(
                     if let Some(cc_spawn_tx) = CCSPAWN.lock().expect("poison error").as_ref() {
                         let nimbus_keys =
                             SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
-                        let global_key;
-                        let collator_account_id = if nimbus_keys.is_empty() {
-                            panic!("Race condition, nimbus keys empty");
-                        } else {
-                            global_key = Some(AccountId::from(
-                                <[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap(),
-                            ));
-
-                            global_key.as_ref().unwrap()
-                        };
-
+                        let collator_account_id = AccountId::from(
+                            <[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap(),
+                        );
                         let container_chain_para_id = client_set_aside_for_cidp
                             .runtime_api()
                             .current_collator_parachain_assignment(
@@ -205,7 +190,7 @@ pub fn new_partial(
                         let mut initial_assigned_para_id =
                             initial_assigned_para_id.lock().expect("poison error");
                         log::info!(
-                            "cc assignment: old {:?} new {:?}",
+                            "ContainerChain assignment: old {:?} new {:?}",
                             initial_assigned_para_id,
                             container_chain_para_id
                         );
@@ -222,10 +207,9 @@ pub fn new_partial(
 
                             *initial_assigned_para_id = container_chain_para_id;
                         }
-                        drop(initial_assigned_para_id);
                     } else {
                         // CCSPAWN.is_none(), so we must be running a 1000 collator
-                        log::info!("CCSPAWN, this must be a 1000 collator");
+                        log::info!("CCSPAWN.is_none(), this must be a 1000 collator");
                     }
                 }
 
@@ -528,7 +512,7 @@ async fn start_node_impl(
     start_network.start_network();
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
-        let cc_para_id = container_chain_cli.base.para_id;
+        //let cc_para_id = container_chain_cli.base.para_id;
         let orchestrator_client = client.clone();
         let spawn_essential_handle = Arc::new(task_manager.spawn_essential_handle());
         let container_chain_spawner = ContainerChainSpawner {
