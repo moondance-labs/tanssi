@@ -1013,12 +1013,12 @@ dependencies = [
  "container-chain-template-simple-runtime",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
- "cumulus-client-consensus-common",
+ "cumulus-client-consensus-common 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-client-network",
  "cumulus-client-service",
- "cumulus-primitives-core",
- "cumulus-primitives-parachain-inherent",
- "cumulus-relay-chain-interface",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-primitives-parachain-inherent 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.26",
@@ -1028,7 +1028,7 @@ dependencies = [
  "nimbus-primitives",
  "parity-scale-codec",
  "polkadot-cli",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-service",
  "sc-basic-authorship",
  "sc-chain-spec",
@@ -1076,7 +1076,7 @@ dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "frame-executive",
@@ -1096,7 +1096,7 @@ dependencies = [
  "pallet-timestamp",
  "parachain-info",
  "parity-scale-codec",
- "polkadot-parachain",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "scale-info",
  "smallvec",
@@ -1420,7 +1420,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-cli"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "clap",
  "parity-scale-codec",
@@ -1435,18 +1435,18 @@ dependencies = [
 [[package]]
 name = "cumulus-client-collator"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
- "cumulus-client-consensus-common",
+ "cumulus-client-consensus-common 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-client-network",
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "futures 0.3.26",
  "parity-scale-codec",
  "parking_lot 0.12.1",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
- "polkadot-overseer",
- "polkadot-primitives",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-client-api",
  "sp-api",
  "sp-consensus",
@@ -1458,11 +1458,11 @@ dependencies = [
 [[package]]
 name = "cumulus-client-consensus-aura"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "async-trait",
- "cumulus-client-consensus-common",
- "cumulus-primitives-core",
+ "cumulus-client-consensus-common 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "futures 0.3.26",
  "parity-scale-codec",
  "sc-client-api",
@@ -1490,14 +1490,38 @@ version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
 dependencies = [
  "async-trait",
- "cumulus-client-pov-recovery",
- "cumulus-primitives-core",
- "cumulus-relay-chain-interface",
+ "cumulus-client-pov-recovery 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
  "dyn-clone",
  "futures 0.3.26",
  "log",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "sc-client-api",
+ "sc-consensus",
+ "schnellru",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-runtime",
+ "sp-trie",
+ "tracing",
+]
+
+[[package]]
+name = "cumulus-client-consensus-common"
+version = "0.1.0"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
+dependencies = [
+ "async-trait",
+ "cumulus-client-pov-recovery 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "dyn-clone",
+ "futures 0.3.26",
+ "log",
+ "parity-scale-codec",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-client-api",
  "sc-consensus",
  "schnellru",
@@ -1511,17 +1535,17 @@ dependencies = [
 [[package]]
 name = "cumulus-client-network"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "async-trait",
- "cumulus-relay-chain-interface",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "futures 0.3.26",
  "futures-timer",
  "parity-scale-codec",
  "parking_lot 0.12.1",
- "polkadot-node-primitives",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-client-api",
  "sp-blockchain",
  "sp-consensus",
@@ -1537,15 +1561,39 @@ version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
 dependencies = [
  "async-trait",
- "cumulus-primitives-core",
- "cumulus-relay-chain-interface",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
  "futures 0.3.26",
  "futures-timer",
  "parity-scale-codec",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
- "polkadot-overseer",
- "polkadot-primitives",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-overseer 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "rand 0.8.5",
+ "sc-client-api",
+ "sc-consensus",
+ "sp-consensus",
+ "sp-maybe-compressed-blob",
+ "sp-runtime",
+ "tracing",
+]
+
+[[package]]
+name = "cumulus-client-pov-recovery"
+version = "0.1.0"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
+dependencies = [
+ "async-trait",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "futures 0.3.26",
+ "futures-timer",
+ "parity-scale-codec",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "rand 0.8.5",
  "sc-client-api",
  "sc-consensus",
@@ -1558,19 +1606,19 @@ dependencies = [
 [[package]]
 name = "cumulus-client-service"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "cumulus-client-cli",
  "cumulus-client-collator",
- "cumulus-client-consensus-common",
+ "cumulus-client-consensus-common 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-client-network",
- "cumulus-client-pov-recovery",
- "cumulus-primitives-core",
+ "cumulus-client-pov-recovery 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-relay-chain-inprocess-interface",
- "cumulus-relay-chain-interface",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-relay-chain-minimal-node",
  "futures 0.3.26",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-client-api",
  "sc-consensus",
  "sc-network",
@@ -1593,7 +1641,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-aura-ext"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -1609,19 +1657,19 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "bytes",
  "cumulus-pallet-parachain-system-proc-macro",
- "cumulus-primitives-core",
- "cumulus-primitives-parachain-inherent",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-primitives-parachain-inherent 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "environmental",
  "frame-support",
  "frame-system",
  "impl-trait-for-tuples",
  "log",
  "parity-scale-codec",
- "polkadot-parachain",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "scale-info",
  "sp-core",
  "sp-externalities",
@@ -1632,13 +1680,13 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "sp-version",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "cumulus-pallet-parachain-system-proc-macro"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -1649,7 +1697,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-session-benchmarking"
 version = "3.0.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -1666,14 +1714,30 @@ version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
 dependencies = [
  "parity-scale-codec",
- "polkadot-core-primitives",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-core-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-parachain 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
  "sp-api",
  "sp-runtime",
  "sp-std",
  "sp-trie",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+]
+
+[[package]]
+name = "cumulus-primitives-core"
+version = "0.1.0"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
+dependencies = [
+ "parity-scale-codec",
+ "polkadot-core-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "sp-api",
+ "sp-runtime",
+ "sp-std",
+ "sp-trie",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
@@ -1682,9 +1746,32 @@ version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
 dependencies = [
  "async-trait",
- "cumulus-primitives-core",
- "cumulus-relay-chain-interface",
- "cumulus-test-relay-sproof-builder",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
+ "cumulus-test-relay-sproof-builder 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
+ "parity-scale-codec",
+ "sc-client-api",
+ "scale-info",
+ "sp-api",
+ "sp-core",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std",
+ "sp-storage",
+ "sp-trie",
+ "tracing",
+]
+
+[[package]]
+name = "cumulus-primitives-parachain-inherent"
+version = "0.1.0"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
+dependencies = [
+ "async-trait",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-test-relay-sproof-builder 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "parity-scale-codec",
  "sc-client-api",
  "scale-info",
@@ -1702,9 +1789,9 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-timestamp"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "futures 0.3.26",
  "parity-scale-codec",
  "sp-inherents",
@@ -1715,9 +1802,9 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-utility"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-support",
  "log",
  "parity-scale-codec",
@@ -1725,7 +1812,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "xcm-builder",
  "xcm-executor",
 ]
@@ -1733,11 +1820,11 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-inprocess-interface"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "async-trait",
- "cumulus-primitives-core",
- "cumulus-relay-chain-interface",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "futures 0.3.26",
  "futures-timer",
  "polkadot-cli",
@@ -1761,11 +1848,29 @@ version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
 dependencies = [
  "async-trait",
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
  "futures 0.3.26",
  "jsonrpsee-core",
  "parity-scale-codec",
- "polkadot-overseer",
+ "polkadot-overseer 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "sc-client-api",
+ "sp-api",
+ "sp-blockchain",
+ "sp-state-machine",
+ "thiserror",
+]
+
+[[package]]
+name = "cumulus-relay-chain-interface"
+version = "0.1.0"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
+dependencies = [
+ "async-trait",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "futures 0.3.26",
+ "jsonrpsee-core",
+ "parity-scale-codec",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-client-api",
  "sp-api",
  "sp-blockchain",
@@ -1776,21 +1881,21 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-minimal-node"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "array-bytes 6.0.0",
  "async-trait",
- "cumulus-primitives-core",
- "cumulus-relay-chain-interface",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-relay-chain-rpc-interface",
  "futures 0.3.26",
  "lru 0.9.0",
- "polkadot-core-primitives",
+ "polkadot-core-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-network-bridge",
- "polkadot-node-network-protocol",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-overseer",
- "polkadot-primitives",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-service",
  "sc-authority-discovery",
  "sc-client-api",
@@ -1810,17 +1915,17 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-rpc-interface"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "async-trait",
- "cumulus-primitives-core",
- "cumulus-relay-chain-interface",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "futures 0.3.26",
  "futures-timer",
  "jsonrpsee",
  "lru 0.9.0",
  "parity-scale-codec",
- "polkadot-overseer",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-client-api",
  "sc-rpc-api",
  "sc-service",
@@ -1842,9 +1947,22 @@ name = "cumulus-test-relay-sproof-builder"
 version = "0.1.0"
 source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std",
+]
+
+[[package]]
+name = "cumulus-test-relay-sproof-builder"
+version = "0.1.0"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
+dependencies = [
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "parity-scale-codec",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-runtime",
  "sp-state-machine",
  "sp-std",
@@ -3850,7 +3968,7 @@ dependencies = [
 [[package]]
 name = "kusama-runtime"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bitvec",
  "frame-benchmarking",
@@ -3912,7 +4030,7 @@ dependencies = [
  "pallet-xcm",
  "pallet-xcm-benchmarks",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "rustc-hex",
@@ -3940,7 +4058,7 @@ dependencies = [
  "sp-version",
  "static_assertions",
  "substrate-wasm-builder",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "xcm-builder",
  "xcm-executor",
 ]
@@ -3948,10 +4066,10 @@ dependencies = [
 [[package]]
 name = "kusama-runtime-constants"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "frame-support",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "smallvec",
  "sp-core",
@@ -5122,9 +5240,9 @@ version = "0.9.0"
 source = "git+https://github.com/Purestake/nimbus?branch=girazoki-polkadot-v0.9.40#3085a95aa0cac372c81cdd35ed1c7d6e81cd5c50"
 dependencies = [
  "async-trait",
- "cumulus-client-consensus-common",
- "cumulus-primitives-core",
- "cumulus-primitives-parachain-inherent",
+ "cumulus-client-consensus-common 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
+ "cumulus-primitives-parachain-inherent 0.1.0 (git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40)",
  "futures 0.3.26",
  "log",
  "nimbus-primitives",
@@ -5451,14 +5569,14 @@ name = "pallet-author-noting"
 version = "0.1.0"
 dependencies = [
  "cumulus-pallet-parachain-system",
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-support",
  "frame-system",
  "hex-literal",
  "log",
  "parity-scale-codec",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "scale-info",
  "serde",
  "sp-consensus-aura",
@@ -5665,14 +5783,14 @@ name = "pallet-cc-authorities-noting"
 version = "0.1.0"
 dependencies = [
  "cumulus-pallet-parachain-system",
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-support",
  "frame-system",
  "hex-literal",
  "log",
  "parity-scale-codec",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "scale-info",
  "serde",
  "sp-consensus-aura",
@@ -5741,7 +5859,7 @@ dependencies = [
 [[package]]
 name = "pallet-collator-selection"
 version = "3.0.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6571,7 +6689,7 @@ dependencies = [
 [[package]]
 name = "pallet-xcm"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bounded-collections",
  "frame-benchmarking",
@@ -6585,14 +6703,14 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "xcm-executor",
 ]
 
 [[package]]
 name = "pallet-xcm-benchmarks"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6603,7 +6721,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "xcm-builder",
  "xcm-executor",
 ]
@@ -6611,9 +6729,9 @@ dependencies = [
 [[package]]
 name = "parachain-info"
 version = "0.1.0"
-source = "git+https://github.com/paritytech/cumulus?branch=polkadot-v0.9.40#e05c8d7f71734ed71188337c6cb0d30715f6320f"
+source = "git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40#588a629dccf1cd1ffdf959a67856798b074bcfe8"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -6910,36 +7028,36 @@ checksum = "e3d7ddaed09e0eb771a79ab0fd64609ba0afb0a8366421957936ad14cbd13630"
 [[package]]
 name = "polkadot-approval-distribution"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "futures 0.3.26",
- "polkadot-node-metrics",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
- "polkadot-primitives",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "rand 0.8.5",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-availability-bitfield-distribution"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "futures 0.3.26",
- "polkadot-node-network-protocol",
- "polkadot-node-subsystem",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "rand 0.8.5",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-availability-distribution"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "derive_more",
  "fatality",
@@ -6947,43 +7065,43 @@ dependencies = [
  "lru 0.9.0",
  "parity-scale-codec",
  "polkadot-erasure-coding",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "rand 0.8.5",
  "sp-core",
  "sp-keystore",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-availability-recovery"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "fatality",
  "futures 0.3.26",
  "lru 0.9.0",
  "parity-scale-codec",
  "polkadot-erasure-coding",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "rand 0.8.5",
  "sc-network",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-cli"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "clap",
  "frame-benchmarking-cli",
@@ -6991,7 +7109,7 @@ dependencies = [
  "log",
  "polkadot-client",
  "polkadot-node-core-pvf",
- "polkadot-node-metrics",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-performance-test",
  "polkadot-service",
  "sc-cli",
@@ -7011,7 +7129,7 @@ dependencies = [
 [[package]]
 name = "polkadot-client"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "async-trait",
  "frame-benchmarking",
@@ -7021,9 +7139,9 @@ dependencies = [
  "futures 0.3.26",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
- "polkadot-core-primitives",
+ "polkadot-core-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-core-parachains-inherent",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime",
  "polkadot-runtime-common",
  "sc-client-api",
@@ -7053,23 +7171,23 @@ dependencies = [
 [[package]]
 name = "polkadot-collator-protocol"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "always-assert",
  "bitvec",
  "fatality",
  "futures 0.3.26",
  "futures-timer",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-core",
  "sp-keystore",
  "sp-runtime",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
@@ -7085,9 +7203,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "polkadot-core-primitives"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "polkadot-dispute-distribution"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "derive_more",
  "fatality",
@@ -7097,26 +7227,26 @@ dependencies = [
  "lru 0.9.0",
  "parity-scale-codec",
  "polkadot-erasure-coding",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-network",
  "sp-application-crypto",
  "sp-keystore",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-erasure-coding"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "parity-scale-codec",
- "polkadot-node-primitives",
- "polkadot-primitives",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "reed-solomon-novelpoly",
  "sp-core",
  "sp-trie",
@@ -7126,27 +7256,27 @@ dependencies = [
 [[package]]
 name = "polkadot-gossip-support"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "futures 0.3.26",
  "futures-timer",
- "polkadot-node-network-protocol",
- "polkadot-node-subsystem",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
  "sc-network",
  "sp-application-crypto",
  "sp-core",
  "sp-keystore",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-network-bridge"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "always-assert",
  "async-trait",
@@ -7155,39 +7285,39 @@ dependencies = [
  "futures 0.3.26",
  "parity-scale-codec",
  "parking_lot 0.12.1",
- "polkadot-node-metrics",
- "polkadot-node-network-protocol",
- "polkadot-node-subsystem",
- "polkadot-overseer",
- "polkadot-primitives",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-network",
  "sp-consensus",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-collation-generation"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "futures 0.3.26",
  "parity-scale-codec",
  "polkadot-erasure-coding",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-core",
  "sp-maybe-compressed-blob",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-approval-voting"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bitvec",
  "derive_more",
@@ -7197,12 +7327,12 @@ dependencies = [
  "lru 0.9.0",
  "merlin",
  "parity-scale-codec",
- "polkadot-node-jaeger",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-overseer",
- "polkadot-primitives",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-keystore",
  "schnorrkel",
  "sp-application-crypto",
@@ -7210,13 +7340,13 @@ dependencies = [
  "sp-consensus-slots",
  "sp-runtime",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-av-store"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bitvec",
  "futures 0.3.26",
@@ -7224,160 +7354,160 @@ dependencies = [
  "kvdb",
  "parity-scale-codec",
  "polkadot-erasure-coding",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-overseer",
- "polkadot-primitives",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-consensus",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-backing"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bitvec",
  "fatality",
  "futures 0.3.26",
  "polkadot-erasure-coding",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
- "polkadot-statement-table",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-statement-table 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-keystore",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-bitfield-signing"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "futures 0.3.26",
- "polkadot-node-subsystem",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-keystore",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "wasm-timer",
 ]
 
 [[package]]
 name = "polkadot-node-core-candidate-validation"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "async-trait",
  "futures 0.3.26",
  "futures-timer",
  "parity-scale-codec",
  "polkadot-node-core-pvf",
- "polkadot-node-metrics",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-maybe-compressed-blob",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-chain-api"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "futures 0.3.26",
- "polkadot-node-metrics",
- "polkadot-node-subsystem",
- "polkadot-primitives",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-client-api",
  "sc-consensus-babe",
  "sp-blockchain",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-chain-selection"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "futures 0.3.26",
  "futures-timer",
  "kvdb",
  "parity-scale-codec",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-dispute-coordinator"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "fatality",
  "futures 0.3.26",
  "kvdb",
  "lru 0.9.0",
  "parity-scale-codec",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-keystore",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-parachains-inherent"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "async-trait",
  "futures 0.3.26",
  "futures-timer",
- "polkadot-node-subsystem",
- "polkadot-overseer",
- "polkadot-primitives",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-blockchain",
  "sp-inherents",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-provisioner"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bitvec",
  "fatality",
  "futures 0.3.26",
  "futures-timer",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "rand 0.8.5",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-pvf"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "always-assert",
  "assert_matches",
@@ -7387,11 +7517,11 @@ dependencies = [
  "libc",
  "parity-scale-codec",
  "pin-project",
- "polkadot-core-primitives",
- "polkadot-node-metrics",
- "polkadot-node-primitives",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-core-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "rand 0.8.5",
  "rayon",
  "sc-executor",
@@ -7407,38 +7537,38 @@ dependencies = [
  "tempfile",
  "tikv-jemalloc-ctl",
  "tokio",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-pvf-checker"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "futures 0.3.26",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-overseer",
- "polkadot-primitives",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-keystore",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-node-core-runtime-api"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "futures 0.3.26",
  "lru 0.9.0",
- "polkadot-node-metrics",
- "polkadot-node-subsystem",
- "polkadot-node-subsystem-types",
- "polkadot-primitives",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem-types 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-consensus-babe",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
@@ -7451,8 +7581,26 @@ dependencies = [
  "mick-jaeger",
  "parity-scale-codec",
  "parking_lot 0.12.1",
- "polkadot-node-primitives",
- "polkadot-primitives",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "sc-network",
+ "sp-core",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "polkadot-node-jaeger"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "lazy_static",
+ "log",
+ "mick-jaeger",
+ "parity-scale-codec",
+ "parking_lot 0.12.1",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-network",
  "sp-core",
  "thiserror",
@@ -7469,13 +7617,32 @@ dependencies = [
  "futures-timer",
  "log",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
  "prioritized-metered-channel",
  "sc-cli",
  "sc-service",
  "sc-tracing",
  "substrate-prometheus-endpoint",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+]
+
+[[package]]
+name = "polkadot-node-metrics"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "bs58",
+ "futures 0.3.26",
+ "futures-timer",
+ "log",
+ "parity-scale-codec",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "prioritized-metered-channel",
+ "sc-cli",
+ "sc-service",
+ "sc-tracing",
+ "substrate-prometheus-endpoint",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
@@ -7489,15 +7656,37 @@ dependencies = [
  "futures 0.3.26",
  "hex",
  "parity-scale-codec",
- "polkadot-node-jaeger",
- "polkadot-node-primitives",
- "polkadot-primitives",
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
  "rand 0.8.5",
  "sc-authority-discovery",
  "sc-network",
  "strum",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+]
+
+[[package]]
+name = "polkadot-node-network-protocol"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "async-trait",
+ "derive_more",
+ "fatality",
+ "futures 0.3.26",
+ "hex",
+ "parity-scale-codec",
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "rand 0.8.5",
+ "sc-authority-discovery",
+ "sc-network",
+ "strum",
+ "thiserror",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
@@ -7508,8 +7697,31 @@ dependencies = [
  "bounded-vec",
  "futures 0.3.26",
  "parity-scale-codec",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-parachain 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "schnorrkel",
+ "serde",
+ "sp-application-crypto",
+ "sp-consensus-babe",
+ "sp-consensus-vrf",
+ "sp-core",
+ "sp-keystore",
+ "sp-maybe-compressed-blob",
+ "sp-runtime",
+ "thiserror",
+ "zstd",
+]
+
+[[package]]
+name = "polkadot-node-primitives"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "bounded-vec",
+ "futures 0.3.26",
+ "parity-scale-codec",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "schnorrkel",
  "serde",
  "sp-application-crypto",
@@ -7528,9 +7740,19 @@ name = "polkadot-node-subsystem"
 version = "0.9.40"
 source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
 dependencies = [
- "polkadot-node-jaeger",
- "polkadot-node-subsystem-types",
- "polkadot-overseer",
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-node-subsystem-types 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-overseer 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+]
+
+[[package]]
+name = "polkadot-node-subsystem"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem-types 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
@@ -7542,11 +7764,34 @@ dependencies = [
  "derive_more",
  "futures 0.3.26",
  "orchestra",
- "polkadot-node-jaeger",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-primitives",
- "polkadot-statement-table",
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-statement-table 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "sc-network",
+ "smallvec",
+ "sp-api",
+ "sp-authority-discovery",
+ "sp-consensus-babe",
+ "substrate-prometheus-endpoint",
+ "thiserror",
+]
+
+[[package]]
+name = "polkadot-node-subsystem-types"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "async-trait",
+ "derive_more",
+ "futures 0.3.26",
+ "orchestra",
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-statement-table 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-network",
  "smallvec",
  "sp-api",
@@ -7559,7 +7804,7 @@ dependencies = [
 [[package]]
 name = "polkadot-node-subsystem-util"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "async-trait",
  "derive_more",
@@ -7573,20 +7818,20 @@ dependencies = [
  "parity-scale-codec",
  "parking_lot 0.11.2",
  "pin-project",
- "polkadot-node-jaeger",
- "polkadot-node-metrics",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
- "polkadot-overseer",
- "polkadot-primitives",
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "prioritized-metered-channel",
  "rand 0.8.5",
  "sp-application-crypto",
  "sp-core",
  "sp-keystore",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
@@ -7600,16 +7845,39 @@ dependencies = [
  "lru 0.9.0",
  "orchestra",
  "parking_lot 0.12.1",
- "polkadot-node-metrics",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-node-subsystem-types",
- "polkadot-primitives",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-node-subsystem-types 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
  "sc-client-api",
  "sp-api",
  "sp-core",
  "tikv-jemalloc-ctl",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+]
+
+[[package]]
+name = "polkadot-overseer"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "async-trait",
+ "futures 0.3.26",
+ "futures-timer",
+ "lru 0.9.0",
+ "orchestra",
+ "parking_lot 0.12.1",
+ "polkadot-node-metrics 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem-types 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "sc-client-api",
+ "sp-api",
+ "sp-core",
+ "tikv-jemalloc-ctl",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
@@ -7621,7 +7889,24 @@ dependencies = [
  "derive_more",
  "frame-support",
  "parity-scale-codec",
- "polkadot-core-primitives",
+ "polkadot-core-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "polkadot-parachain"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "bounded-collections",
+ "derive_more",
+ "frame-support",
+ "parity-scale-codec",
+ "polkadot-core-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "scale-info",
  "serde",
  "sp-core",
@@ -7632,15 +7917,15 @@ dependencies = [
 [[package]]
 name = "polkadot-performance-test"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "env_logger 0.9.3",
  "kusama-runtime",
  "log",
  "polkadot-erasure-coding",
  "polkadot-node-core-pvf",
- "polkadot-node-primitives",
- "polkadot-primitives",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "quote",
  "thiserror",
 ]
@@ -7653,8 +7938,34 @@ dependencies = [
  "bitvec",
  "hex-literal",
  "parity-scale-codec",
- "polkadot-core-primitives",
- "polkadot-parachain",
+ "polkadot-core-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-parachain 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "scale-info",
+ "serde",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-authority-discovery",
+ "sp-consensus-slots",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
+name = "polkadot-primitives"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "bitvec",
+ "hex-literal",
+ "parity-scale-codec",
+ "polkadot-core-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "scale-info",
  "serde",
  "sp-api",
@@ -7674,12 +7985,12 @@ dependencies = [
 [[package]]
 name = "polkadot-rpc"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "jsonrpsee",
  "mmr-rpc",
  "pallet-transaction-payment-rpc",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-chain-spec",
  "sc-client-api",
  "sc-consensus-babe",
@@ -7706,7 +8017,7 @@ dependencies = [
 [[package]]
 name = "polkadot-runtime"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bitvec",
  "frame-benchmarking",
@@ -7760,7 +8071,7 @@ dependencies = [
  "pallet-vesting",
  "pallet-xcm",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "polkadot-runtime-constants",
  "polkadot-runtime-parachains",
@@ -7788,7 +8099,7 @@ dependencies = [
  "sp-version",
  "static_assertions",
  "substrate-wasm-builder",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "xcm-builder",
  "xcm-executor",
 ]
@@ -7796,7 +8107,7 @@ dependencies = [
 [[package]]
 name = "polkadot-runtime-common"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bitvec",
  "frame-benchmarking",
@@ -7819,7 +8130,7 @@ dependencies = [
  "pallet-treasury",
  "pallet-vesting",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-parachains",
  "rustc-hex",
  "scale-info",
@@ -7836,16 +8147,16 @@ dependencies = [
  "sp-staking",
  "sp-std",
  "static_assertions",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "polkadot-runtime-constants"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "frame-support",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "smallvec",
  "sp-core",
@@ -7856,11 +8167,11 @@ dependencies = [
 [[package]]
 name = "polkadot-runtime-metrics"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bs58",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-std",
  "sp-tracing",
 ]
@@ -7868,7 +8179,7 @@ dependencies = [
 [[package]]
 name = "polkadot-runtime-parachains"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bitflags",
  "bitvec",
@@ -7886,8 +8197,8 @@ dependencies = [
  "pallet-timestamp",
  "pallet-vesting",
  "parity-scale-codec",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-metrics",
  "rand 0.8.5",
  "rand_chacha 0.3.1",
@@ -7905,14 +8216,14 @@ dependencies = [
  "sp-staking",
  "sp-std",
  "static_assertions",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "xcm-executor",
 ]
 
 [[package]]
 name = "polkadot-service"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "async-trait",
  "frame-benchmarking-cli",
@@ -7953,14 +8264,14 @@ dependencies = [
  "polkadot-node-core-provisioner",
  "polkadot-node-core-pvf-checker",
  "polkadot-node-core-runtime-api",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
- "polkadot-node-subsystem-types",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem-types 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-overseer",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-rpc",
  "polkadot-runtime",
  "polkadot-runtime-constants",
@@ -8014,29 +8325,29 @@ dependencies = [
  "sp-trie",
  "substrate-prometheus-endpoint",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "westend-runtime",
 ]
 
 [[package]]
 name = "polkadot-statement-distribution"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "arrayvec 0.5.2",
  "fatality",
  "futures 0.3.26",
  "indexmap",
  "parity-scale-codec",
- "polkadot-node-network-protocol",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
+ "polkadot-node-network-protocol 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-node-subsystem 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-node-subsystem-util",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-keystore",
  "sp-staking",
  "thiserror",
- "tracing-gum",
+ "tracing-gum 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
@@ -8045,7 +8356,17 @@ version = "0.9.40"
 source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
 dependencies = [
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "sp-core",
+]
+
+[[package]]
+name = "polkadot-statement-table"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "parity-scale-codec",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sp-core",
 ]
 
@@ -8665,7 +8986,7 @@ dependencies = [
 [[package]]
 name = "rococo-runtime"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "binary-merkle-tree",
  "frame-benchmarking",
@@ -8716,8 +9037,8 @@ dependencies = [
  "pallet-xcm",
  "pallet-xcm-benchmarks",
  "parity-scale-codec",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "rococo-runtime-constants",
@@ -8743,7 +9064,7 @@ dependencies = [
  "sp-version",
  "static_assertions",
  "substrate-wasm-builder",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "xcm-builder",
  "xcm-executor",
 ]
@@ -8751,10 +9072,10 @@ dependencies = [
 [[package]]
 name = "rococo-runtime-constants"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "frame-support",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "smallvec",
  "sp-core",
@@ -10517,7 +10838,7 @@ checksum = "03b634d87b960ab1a38c4fe143b508576f075e7c978bfad18217645ebfdfa2ec"
 [[package]]
 name = "slot-range-helper"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "enumn",
  "parity-scale-codec",
@@ -11627,9 +11948,9 @@ name = "tc-consensus"
 version = "0.9.0"
 dependencies = [
  "async-trait",
- "cumulus-client-consensus-common",
- "cumulus-primitives-core",
- "cumulus-primitives-parachain-inherent",
+ "cumulus-client-consensus-common 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-primitives-parachain-inherent 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "futures 0.3.26",
  "log",
  "nimbus-consensus",
@@ -11662,10 +11983,10 @@ name = "tc-orchestrator-chain-interface"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "futures 0.3.26",
  "parity-scale-codec",
- "polkadot-overseer",
+ "polkadot-overseer 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-client-api",
  "sp-api",
  "sp-blockchain",
@@ -11710,12 +12031,12 @@ dependencies = [
  "clap",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
- "cumulus-client-consensus-common",
+ "cumulus-client-consensus-common 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-client-network",
  "cumulus-client-service",
- "cumulus-primitives-core",
- "cumulus-primitives-parachain-inherent",
- "cumulus-relay-chain-interface",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-primitives-parachain-inherent 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.26",
@@ -11728,7 +12049,7 @@ dependencies = [
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-service",
  "sc-basic-authorship",
  "sc-chain-spec",
@@ -11782,7 +12103,7 @@ dependencies = [
 name = "test-relay-sproof-builder"
 version = "0.1.0"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-support",
  "parity-scale-codec",
  "sp-runtime",
@@ -11799,7 +12120,7 @@ dependencies = [
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "frame-executive",
@@ -11830,7 +12151,7 @@ dependencies = [
  "pallet-timestamp",
  "parachain-info",
  "parity-scale-codec",
- "polkadot-parachain",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "scale-info",
  "smallvec",
@@ -12157,14 +12478,14 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "cumulus-pallet-parachain-system",
- "cumulus-primitives-core",
- "cumulus-primitives-parachain-inherent",
- "cumulus-relay-chain-interface",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-primitives-parachain-inherent 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-support",
  "hex-literal",
  "log",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "sc-client-api",
  "scale-info",
  "sp-api",
@@ -12186,8 +12507,8 @@ name = "tp-authorities-noting-inherent"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "cumulus-primitives-core",
- "cumulus-relay-chain-interface",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -12206,7 +12527,7 @@ dependencies = [
 name = "tp-chain-state-snapshot"
 version = "0.1.1"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "parity-scale-codec",
  "sp-runtime",
  "sp-state-machine",
@@ -12217,12 +12538,12 @@ dependencies = [
 name = "tp-collator-assignment"
 version = "0.1.1"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-support",
  "hex-literal",
  "log",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "scale-info",
  "serde",
  "sp-core",
@@ -12237,13 +12558,13 @@ dependencies = [
 name = "tp-container-chain-genesis-data"
 version = "0.1.1"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "frame-support",
  "hex",
  "hex-literal",
  "log",
  "parity-scale-codec",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "scale-info",
  "serde",
  "serde_json",
@@ -12259,7 +12580,7 @@ dependencies = [
 name = "tp-core"
 version = "0.1.1"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "hex-literal",
  "parity-scale-codec",
  "sp-core",
@@ -12271,7 +12592,7 @@ dependencies = [
 name = "tp-traits"
 version = "0.1.0"
 dependencies = [
- "cumulus-primitives-core",
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "sp-std",
 ]
 
@@ -12324,16 +12645,39 @@ name = "tracing-gum"
 version = "0.9.40"
 source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
 dependencies = [
- "polkadot-node-jaeger",
- "polkadot-primitives",
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
  "tracing",
- "tracing-gum-proc-macro",
+ "tracing-gum-proc-macro 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+]
+
+[[package]]
+name = "tracing-gum"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "polkadot-node-jaeger 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "tracing",
+ "tracing-gum-proc-macro 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "tracing-gum-proc-macro"
 version = "0.9.40"
 source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+dependencies = [
+ "expander 0.0.6",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "tracing-gum-proc-macro"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "expander 0.0.6",
  "proc-macro-crate",
@@ -13344,7 +13688,7 @@ dependencies = [
 [[package]]
 name = "westend-runtime"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "bitvec",
  "frame-benchmarking",
@@ -13400,8 +13744,8 @@ dependencies = [
  "pallet-xcm",
  "pallet-xcm-benchmarks",
  "parity-scale-codec",
- "polkadot-parachain",
- "polkadot-primitives",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "rustc-hex",
@@ -13428,7 +13772,7 @@ dependencies = [
  "sp-version",
  "substrate-wasm-builder",
  "westend-runtime-constants",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "xcm-builder",
  "xcm-executor",
 ]
@@ -13436,10 +13780,10 @@ dependencies = [
 [[package]]
 name = "westend-runtime-constants"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "frame-support",
- "polkadot-primitives",
+ "polkadot-primitives 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "polkadot-runtime-common",
  "smallvec",
  "sp-core",
@@ -13726,15 +14070,30 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "scale-info",
+ "sp-weights",
+ "xcm-procedural 0.9.40 (git+https://github.com/paritytech/polkadot?branch=release-v0.9.40)",
+]
+
+[[package]]
+name = "xcm"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
+dependencies = [
+ "bounded-collections",
+ "derivative",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
  "serde",
  "sp-weights",
- "xcm-procedural",
+ "xcm-procedural 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "xcm-builder"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -13742,20 +14101,20 @@ dependencies = [
  "log",
  "pallet-transaction-payment",
  "parity-scale-codec",
- "polkadot-parachain",
+ "polkadot-parachain 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "scale-info",
  "sp-arithmetic",
  "sp-io",
  "sp-runtime",
  "sp-std",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
  "xcm-executor",
 ]
 
 [[package]]
 name = "xcm-executor"
 version = "0.9.40"
-source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "environmental",
  "frame-benchmarking",
@@ -13769,13 +14128,24 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-weights",
- "xcm",
+ "xcm 0.9.40 (git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40)",
 ]
 
 [[package]]
 name = "xcm-procedural"
 version = "0.9.40"
 source = "git+https://github.com/paritytech/polkadot?branch=release-v0.9.40#95fe4c8862810bffd68343231a517e62689c05c0"
+dependencies = [
+ "Inflector",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "xcm-procedural"
+version = "0.9.40"
+source = "git+https://github.com/tmpolaczyk/polkadot?branch=tomasz-reinitialize-9-40#b846264326795c7e9b1da295bcb250e589dc1f4c"
 dependencies = [
  "Inflector",
  "proc-macro2",

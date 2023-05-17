@@ -112,33 +112,33 @@ substrate-wasm-builder = { git = "https://github.com/paritytech/substrate", bran
 try-runtime-cli = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40" }
 
 # Polkadot (wasm)
-polkadot-parachain = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40", default-features = false }
-polkadot-runtime-common = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40", default-features = false }
+polkadot-parachain = { git = "https://github.com/tmpolaczyk/polkadot", branch = "tomasz-reinitialize-9-40", default-features = false }
+polkadot-runtime-common = { git = "https://github.com/tmpolaczyk/polkadot", branch = "tomasz-reinitialize-9-40", default-features = false }
 
 # Polkadot (client)
-polkadot-cli = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
-polkadot-overseer = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
-polkadot-primitives = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
-polkadot-service = { git = "https://github.com/paritytech/polkadot", branch = "release-v0.9.40" }
+polkadot-cli = { git = "https://github.com/tmpolaczyk/polkadot", branch = "tomasz-reinitialize-9-40" }
+polkadot-overseer = { git = "https://github.com/tmpolaczyk/polkadot", branch = "tomasz-reinitialize-9-40" }
+polkadot-primitives = { git = "https://github.com/tmpolaczyk/polkadot", branch = "tomasz-reinitialize-9-40" }
+polkadot-service = { git = "https://github.com/tmpolaczyk/polkadot", branch = "tomasz-reinitialize-9-40" }
 
 # Cumulus (wasm)
-cumulus-pallet-aura-ext = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-pallet-parachain-system = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-pallet-session-benchmarking = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-primitives-core = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-primitives-timestamp = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-primitives-utility = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-pallet-collator-selection = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-parachain-info = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
+cumulus-pallet-aura-ext = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-pallet-parachain-system = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-pallet-session-benchmarking = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-primitives-core = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-primitives-timestamp = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-primitives-utility = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+pallet-collator-selection = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+parachain-info = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
 
 # Cumulus (client)
-cumulus-client-cli = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-client-consensus-aura = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-client-consensus-common = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-client-network = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-client-service = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-primitives-parachain-inherent = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
-cumulus-relay-chain-interface = { git = "https://github.com/paritytech/cumulus", branch = "polkadot-v0.9.40", default-features = false }
+cumulus-client-cli = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-client-consensus-aura = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-client-consensus-common = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-client-network = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-client-service = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-primitives-parachain-inherent = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-relay-chain-interface = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
 
 # General (wasm)
 hex-literal = { version = "0.3.4" }
