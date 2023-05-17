@@ -1,4 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
+use exit_future::Signal;
+use futures::FutureExt;
 use sp_core::traits::SpawnEssentialNamed;
 use std::collections::HashMap;
 use tokio::sync::mpsc::unbounded_channel;
@@ -538,6 +540,7 @@ async fn start_node_impl(
         // For testing, spawn a 2000 client for 2001 collators
         /*
         let tx2 = tx.clone();
+        let tx3 = tx.clone();
         if cc_para_id == Some(2001) {
             spawn_handle.spawn("testing-spawn-2000-client", None, async move {
                 //tokio::time::sleep(Duration::from_secs(60)).await;
@@ -558,6 +561,7 @@ async fn start_node_impl(
                             /*
                             if para_id == 2001.into() {
                                 tokio::time::sleep(Duration::from_secs(120)).await;
+                                tx3.send(CcSpawnMsg::Stop(2000.into())).unwrap();
                             }
                             */
                             // Spawn new container chain node
@@ -603,7 +607,7 @@ struct ContainerChainSpawner {
 }
 
 // TODO: this should allow us to stop a container chain client
-struct CcKillHandle;
+struct CcKillHandle(Signal);
 
 /// Messages used to control the `ContainerChainSpawner`. This is needed because one of the fields
 /// of `ContainerChainSpawner` is not `Sync`, so we cannot simply pass an
@@ -742,27 +746,43 @@ impl ContainerChainSpawner {
                 )
                 .await?;
 
-            // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
-            // to make the parent task manager stop if the container chain task manager stops.
-            // The reverse is also true, if the parent task manager stops, the container chain
-            // task manager will also stop.
-            spawn_cc_as_child_handle.spawn_essential(
-                "container-chain-task-manager",
-                None,
-                Box::pin(async move {
-                    container_chain_task_manager
-                        .future()
-                        .await
-                        .expect("container_chain_task_manager failed")
-                }),
-            );
+            let (signal, on_exit) = exit_future::signal();
 
             {
                 spawned_para_ids
                     .lock()
                     .expect("poison error")
-                    .insert(container_chain_para_id.into(), CcKillHandle);
+                    .insert(container_chain_para_id.into(), CcKillHandle(signal));
             }
+
+            // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
+            // to make the parent task manager stop if the container chain task manager stops.
+            // The reverse is also true, if the parent task manager stops, the container chain
+            // task manager will also stop.
+            // But add an additional on_exit future to allow graceful shutdown of container chains.
+            spawn_cc_as_child_handle.spawn_essential(
+                "container-chain-task-manager",
+                None,
+                Box::pin(async move {
+                    let mut t1 = container_chain_task_manager.future().fuse();
+
+                    let mut t2 = on_exit.fuse();
+
+                    futures::select! {
+                        res1 = t1 => {
+                            res1.expect("container_chain_task_manager failed");
+                        }
+                        _ = t2 => {
+                            // Hack: kill task manager and sleep forever
+                            // This is because spawn_essential will stop the node if this task finishes
+                            // So we need to use spawn (non essential), and handle panics manually...
+                            drop(t1);
+                            drop(container_chain_task_manager);
+                            std::future::pending::<()>().await;
+                        }
+                    }
+                }),
+            );
 
             sc_service::error::Result::Ok(())
         };
@@ -778,12 +798,23 @@ impl ContainerChainSpawner {
     }
 
     fn stop(&self, container_chain_para_id: ParaId) {
-        // TODO: implement the kill handle
-        let _kill_handle = self
+        let kill_handle = self
             .spawned_para_ids
             .lock()
             .expect("poison error")
             .remove(&container_chain_para_id);
+
+        match kill_handle {
+            Some(_signal) => {
+                log::info!("Stopping container chain {}", container_chain_para_id);
+            }
+            None => {
+                log::warn!(
+                    "Tried to stop a container chain that is not running: {}",
+                    container_chain_para_id
+                );
+            }
+        }
     }
 }
 
