@@ -79,7 +79,7 @@ const LOG_TARGET: &str = "aura::tanssi";
 /// The implementation of the Tanssi AURA consensus for parachains.
 pub struct OrchestratorAuraConsensus<B, CIDP, GOH, W> {
     create_inherent_data_providers: Arc<CIDP>,
-    get_orchestrator_head: Arc<GOH>,
+    get_authorities_from_orchestrator: Arc<GOH>,
     aura_worker: Arc<Mutex<W>>,
     slot_duration: SlotDuration,
     _phantom: PhantomData<B>,
@@ -89,7 +89,7 @@ impl<B, CIDP, GOH, W> Clone for OrchestratorAuraConsensus<B, CIDP, GOH, W> {
     fn clone(&self) -> Self {
         Self {
             create_inherent_data_providers: self.create_inherent_data_providers.clone(),
-            get_orchestrator_head: self.get_orchestrator_head.clone(),
+            get_authorities_from_orchestrator: self.get_authorities_from_orchestrator.clone(),
             aura_worker: self.aura_worker.clone(),
             slot_duration: self.slot_duration,
             _phantom: PhantomData,
@@ -161,7 +161,7 @@ where
 pub struct BuildOrchestratorAuraConsensusParams<PF, BI, GOH, CIDP, Client, BS, SO> {
     pub proposer_factory: PF,
     pub create_inherent_data_providers: CIDP,
-    pub get_orchestrator_head: GOH,
+    pub get_authorities_from_orchestrator: GOH,
     pub block_import: BI,
     pub para_client: Arc<Client>,
     pub backoff_authoring_blocks: Option<BS>,
@@ -186,7 +186,7 @@ where
         BuildOrchestratorAuraConsensusParams {
             proposer_factory,
             create_inherent_data_providers,
-            get_orchestrator_head,
+            get_authorities_from_orchestrator,
             block_import,
             para_client,
             backoff_authoring_blocks,
@@ -245,7 +245,7 @@ where
 
         Box::new(OrchestratorAuraConsensus {
             create_inherent_data_providers: Arc::new(create_inherent_data_providers),
-            get_orchestrator_head: Arc::new(get_orchestrator_head),
+            get_authorities_from_orchestrator: Arc::new(get_authorities_from_orchestrator),
             aura_worker: Arc::new(Mutex::new(worker)),
             slot_duration,
             _phantom: PhantomData,
@@ -306,7 +306,7 @@ where
             .await?;
 
         let header = self
-            .get_orchestrator_head
+            .get_authorities_from_orchestrator
             .retrieve_orchestrator_head(parent.hash(), (relay_parent, validation_data.clone()))
             .await
             .map_err(|e| {
@@ -344,6 +344,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 struct OrchestratorAuraWorker<C, E, I, P, SO, L, BS, N> {
     client: Arc<C>,
     block_import: I,
@@ -612,7 +613,7 @@ pub trait TanssiSlotWorker<B: BlockT>: SimpleSlotWorker<B> {
     async fn tanssi_on_slot(
         &mut self,
         slot_info: SlotInfo<B>,
-        orch_header: Self::AuxData,
+        aux_data: Self::AuxData,
     ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>;
 }
 
@@ -639,7 +640,7 @@ where
     async fn tanssi_on_slot(
         &mut self,
         slot_info: SlotInfo<B>,
-        orch_header: Self::AuxData,
+        aux_data: Self::AuxData,
     ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>
     where
         Self: Sync,
@@ -660,8 +661,6 @@ where
         } else {
             Instant::now() + proposing_remaining_duration
         };
-
-        let aux_data = orch_header.clone();
 
         self.notify_slot(&slot_info.chain_head, slot, &aux_data);
 
