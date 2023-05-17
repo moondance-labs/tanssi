@@ -1,6 +1,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 use sp_core::traits::SpawnEssentialNamed;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use tokio::sync::mpsc::unbounded_channel;
 use {
     crate::cli::ContainerChainCli,
@@ -25,6 +26,7 @@ use {
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
+    nimbus_primitives::NIMBUS_KEY_ID,
     pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
@@ -43,7 +45,7 @@ use {
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
-    sp_runtime::{key_types::AURA, traits::IdentifyAccount},
+    sp_runtime::traits::IdentifyAccount,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, str::FromStr, sync::Arc, sync::Mutex, time::Duration},
     substrate_prometheus_endpoint::Registry,
@@ -134,6 +136,14 @@ pub fn new_partial(
             executor,
         )?;
     let client = Arc::new(client);
+    let client_set_aside_for_cidp = client.clone();
+    // This doesn't work because the keys are not set yet
+    /*
+    let collator_account_id =
+        AccountPublic::from(SyncCryptoStore::ed25519_public_keys(&*keystore_container.sync_keystore(), AURA)[0]);
+    */
+    let sync_keystore = keystore_container.sync_keystore();
+    let initial_assigned_para_id = Arc::new(Mutex::new(None));
 
     let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
 
@@ -152,6 +162,11 @@ pub fn new_partial(
         client.clone(),
     );
 
+    let spec_para_id = crate::chain_spec::Extensions::try_get(&*config.chain_spec)
+        .map(|extension| extension.para_id)
+        .unwrap();
+    let is_orchestrator_chain = spec_para_id == 1000;
+
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
     // The nimbus import queue ONLY checks the signature correctness
     // Any other checks corresponding to the author-correctness should be done
@@ -159,10 +174,75 @@ pub fn new_partial(
     let import_queue = nimbus_consensus::import_queue(
         client.clone(),
         block_import.clone(),
-        move |_, _| async move {
-            let time = sp_timestamp::InherentDataProvider::from_system_time();
+        move |block_hash, ()| {
+            let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
+            let sync_keystore = sync_keystore.clone();
+            let initial_assigned_para_id = initial_assigned_para_id.clone();
 
-            Ok((time,))
+            async move {
+                if is_orchestrator_chain && unsafe { CCSPAWN.is_some() } {
+                    let nimbus_keys =
+                        SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
+                    let global_key;
+                    let collator_account_id = if nimbus_keys.is_empty() {
+                        log::warn!("Race condition, nimbus keys empty");
+
+                        global_key = unsafe { NMBS_KEY.clone() };
+
+                        global_key.as_ref().expect("nimbus keys empty")
+                    } else {
+                        global_key = Some(AccountId::from(
+                            <[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap(),
+                        ));
+
+                        global_key.as_ref().unwrap()
+                    };
+                    unsafe {
+                        if NMBS_KEY.is_none() {
+                            NMBS_KEY = Some(collator_account_id.clone());
+                        }
+                    }
+
+                    let container_chain_para_id = client_set_aside_for_cidp
+                        .runtime_api()
+                        .current_collator_parachain_assignment(
+                            block_hash,
+                            collator_account_id.clone(),
+                        )?;
+
+                    let mut initial_assigned_para_id =
+                        initial_assigned_para_id.lock().expect("poison error");
+                    log::info!(
+                        "cc assignment: old {:?} new {:?}",
+                        initial_assigned_para_id,
+                        container_chain_para_id
+                    );
+                    if container_chain_para_id != *initial_assigned_para_id {
+                        if let Some(new_para_id) = container_chain_para_id {
+                            // Spawn new container chain node
+
+                            unsafe { CCSPAWN.as_ref().unwrap() }
+                                .send(CcSpawnMsg::Spawn(new_para_id))?;
+                        }
+
+                        if let Some(prev_para_id) = *initial_assigned_para_id {
+                            // Stop old container chain node
+                            unsafe { CCSPAWN.as_ref().unwrap() }
+                                .send(CcSpawnMsg::Stop(prev_para_id))?;
+                        }
+
+                        *initial_assigned_para_id = container_chain_para_id;
+                    }
+                    drop(initial_assigned_para_id);
+                } else if is_orchestrator_chain {
+                    // CCSPAWN.is_none(), so we must be running a 1000 collator
+                    log::info!("CCSPAWN, this must be a 1000 collator");
+                }
+
+                let time = sp_timestamp::InherentDataProvider::from_system_time();
+
+                Ok((time,))
+            }
         },
         &task_manager.spawn_essential_handle(),
         config.prometheus_registry(),
@@ -458,6 +538,7 @@ async fn start_node_impl(
     start_network.start_network();
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
+        let cc_para_id = container_chain_cli.base.para_id;
         let orchestrator_client = client.clone();
         let spawn_essential_handle = Arc::new(task_manager.spawn_essential_handle());
         let container_chain_spawner = ContainerChainSpawner {
@@ -478,7 +559,20 @@ async fn start_node_impl(
 
         let container_chain_spawner = Box::leak(Box::new(container_chain_spawner));
 
+        let spawn_handle = task_manager.spawn_handle();
         let (tx, mut rx) = unbounded_channel();
+        // For testing, spawn a 2000 client for 2001 collators
+        /*
+        let tx2 = tx.clone();
+        if cc_para_id == Some(2001) {
+            spawn_handle.spawn("testing-spawn-2000-client", None, async move {
+                //tokio::time::sleep(Duration::from_secs(60)).await;
+
+                tx2.send(CcSpawnMsg::Spawn(2000.into())).unwrap();
+            });
+        }
+        */
+
         task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
@@ -486,8 +580,14 @@ async fn start_node_impl(
                 while let Some(msg) = rx.recv().await {
                     match msg {
                         CcSpawnMsg::Spawn(para_id) => {
+                            // For testing
+                            /*
+                            if para_id == 2001.into() {
+                                tokio::time::sleep(Duration::from_secs(120)).await;
+                            }
+                            */
                             // Spawn new container chain node
-                            spawn_essential_handle.spawn(
+                            spawn_handle.spawn(
                                 "container-chain-spawner",
                                 None,
                                 container_chain_spawner.spawn(para_id),
@@ -541,6 +641,9 @@ enum CcSpawnMsg {
 
 // TODO: import lazy_static or figure out a way to pass this where it is needed
 static mut CCSPAWN: Option<tokio::sync::mpsc::UnboundedSender<CcSpawnMsg>> = None;
+// TODO: SyncCryptoStore doesn't seem to be working properly on block import, so we store the
+// nimbus key here
+static mut NMBS_KEY: Option<AccountId> = None;
 
 impl ContainerChainSpawner {
     /// Try to start the container chain node. In case of error, this panics and stops the node.
@@ -611,12 +714,45 @@ impl ContainerChainSpawner {
                 container_chain_para_id
             );
 
-            let container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+            // Update CLI params
+            container_chain_cli.base.para_id = Some(container_chain_para_id.into());
+            // New base path
+            /*
+            if container_chain_cli.base.base.tmp {
+                // The temporary folder created when the `--tmp` flag is present is fixed
+                // over the entire process lifetime, so here we replicate the logic to create
+                // a new tmp folder.
+                let temp_dir: tempfile::TempDir = tempfile::Builder::new().prefix("substrate").tempdir()?;
+                let path = PathBuf::from(temp_dir.path());
+                container_chain_cli.base_path = Some(path);
+                container_chain_cli.base.base.tmp = false;
+            }
+            */
+
+            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
                 &container_chain_cli,
                 &container_chain_cli,
                 tokio_handle.clone(),
             )
             .map_err(|err| format!("Container chain argument error: {}", err))?;
+
+            // This path should be absolute
+            //let base_path = container_chain_cli_config.base_path.as_ref().unwrap().path();
+            //let mut db_path = base_path.clone();
+            //db_path.push("db");
+
+            // The database path is something like
+            // /tmp/zombie-6368e3e070dcee9722a19fb5fa479f21_-4023642-W9VgHHslcbzB/Collator2001-01/data/polkadot/chains/local_testnet/db/full
+            // We want to change the last "db/full" into "db/full-container-{}"
+            let mut db_path = container_chain_cli_config
+                .database
+                .path()
+                .unwrap()
+                .to_owned();
+            log::info!("DB PATH IS {:?}", db_path);
+            db_path.pop();
+            db_path.push(format!("full-container-{}", container_chain_para_id));
+            container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
             let (mut container_chain_task_manager, _container_chain_client) =
@@ -990,17 +1126,12 @@ fn build_consensus_orchestrator(
         telemetry.clone(),
     );
     let client_set_aside_for_cidp = client.clone();
-    let initial_assigned_para_id = Arc::new(Mutex::new(None));
-    let collator_account_id =
-        AccountPublic::from(SyncCryptoStore::ed25519_public_keys(&*keystore, AURA)[0]);
 
     let params = BuildOrchestratorAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
-            let initial_assigned_para_id = initial_assigned_para_id.clone();
-            let collator_account_id = collator_account_id.clone();
             async move {
                 let parachain_inherent =
                     cumulus_primitives_parachain_inherent::ParachainInherentData::create_at(
@@ -1022,44 +1153,6 @@ fn build_consensus_orchestrator(
                         &para_ids,
                     )
                     .await;
-
-                // TODO: this is great, but it only works if the node is a tanssi collator,
-                // and it is producing blocks! So we must move this to block import
-                if unsafe { CCSPAWN.is_some() } {
-                    let container_chain_para_id = client_set_aside_for_cidp
-                        .runtime_api()
-                        .current_collator_parachain_assignment(
-                            block_hash,
-                            collator_account_id.clone().into_account(),
-                        )?;
-
-                    let mut initial_assigned_para_id =
-                        initial_assigned_para_id.lock().expect("poison error");
-                    log::info!(
-                        "cc assignment: old {:?} new {:?}",
-                        initial_assigned_para_id,
-                        container_chain_para_id
-                    );
-                    if container_chain_para_id != *initial_assigned_para_id {
-                        if let Some(new_para_id) = container_chain_para_id {
-                            // Spawn new container chain node
-                            unsafe { CCSPAWN.as_ref().unwrap() }
-                                .send(CcSpawnMsg::Spawn(new_para_id))?;
-                        }
-
-                        if let Some(prev_para_id) = *initial_assigned_para_id {
-                            // Stop old container chain node
-                            unsafe { CCSPAWN.as_ref().unwrap() }
-                                .send(CcSpawnMsg::Stop(prev_para_id))?;
-                        }
-
-                        *initial_assigned_para_id = container_chain_para_id;
-                    }
-                    drop(initial_assigned_para_id);
-                } else {
-                    // CCSPAWN.is_none(), so we must be running a 1000 collator
-                    log::info!("CCSPAWN, this must be a 1000 collator");
-                }
 
                 let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
 
