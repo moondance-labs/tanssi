@@ -180,54 +180,53 @@ pub fn new_partial(
             let initial_assigned_para_id = initial_assigned_para_id.clone();
 
             async move {
-                if is_orchestrator_chain && unsafe { CCSPAWN.is_some() } {
-                    let nimbus_keys =
-                        SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
-                    let global_key;
-                    let collator_account_id = if nimbus_keys.is_empty() {
-                        panic!("Race condition, nimbus keys empty");
+                if is_orchestrator_chain {
+                    if let Some(cc_spawn_tx) = CCSPAWN.lock().expect("poison error").as_ref() {
+                        let nimbus_keys =
+                            SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
+                        let global_key;
+                        let collator_account_id = if nimbus_keys.is_empty() {
+                            panic!("Race condition, nimbus keys empty");
+                        } else {
+                            global_key = Some(AccountId::from(
+                                <[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap(),
+                            ));
+
+                            global_key.as_ref().unwrap()
+                        };
+
+                        let container_chain_para_id = client_set_aside_for_cidp
+                            .runtime_api()
+                            .current_collator_parachain_assignment(
+                                block_hash,
+                                collator_account_id.clone(),
+                            )?;
+
+                        let mut initial_assigned_para_id =
+                            initial_assigned_para_id.lock().expect("poison error");
+                        log::info!(
+                            "cc assignment: old {:?} new {:?}",
+                            initial_assigned_para_id,
+                            container_chain_para_id
+                        );
+                        if container_chain_para_id != *initial_assigned_para_id {
+                            if let Some(new_para_id) = container_chain_para_id {
+                                // Spawn new container chain node
+                                cc_spawn_tx.send(CcSpawnMsg::Spawn(new_para_id))?;
+                            }
+
+                            if let Some(prev_para_id) = *initial_assigned_para_id {
+                                // Stop old container chain node
+                                cc_spawn_tx.send(CcSpawnMsg::Stop(prev_para_id))?;
+                            }
+
+                            *initial_assigned_para_id = container_chain_para_id;
+                        }
+                        drop(initial_assigned_para_id);
                     } else {
-                        global_key = Some(AccountId::from(
-                            <[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap(),
-                        ));
-
-                        global_key.as_ref().unwrap()
-                    };
-
-                    let container_chain_para_id = client_set_aside_for_cidp
-                        .runtime_api()
-                        .current_collator_parachain_assignment(
-                            block_hash,
-                            collator_account_id.clone(),
-                        )?;
-
-                    let mut initial_assigned_para_id =
-                        initial_assigned_para_id.lock().expect("poison error");
-                    log::info!(
-                        "cc assignment: old {:?} new {:?}",
-                        initial_assigned_para_id,
-                        container_chain_para_id
-                    );
-                    if container_chain_para_id != *initial_assigned_para_id {
-                        if let Some(new_para_id) = container_chain_para_id {
-                            // Spawn new container chain node
-
-                            unsafe { CCSPAWN.as_ref().unwrap() }
-                                .send(CcSpawnMsg::Spawn(new_para_id))?;
-                        }
-
-                        if let Some(prev_para_id) = *initial_assigned_para_id {
-                            // Stop old container chain node
-                            unsafe { CCSPAWN.as_ref().unwrap() }
-                                .send(CcSpawnMsg::Stop(prev_para_id))?;
-                        }
-
-                        *initial_assigned_para_id = container_chain_para_id;
+                        // CCSPAWN.is_none(), so we must be running a 1000 collator
+                        log::info!("CCSPAWN, this must be a 1000 collator");
                     }
-                    drop(initial_assigned_para_id);
-                } else if is_orchestrator_chain {
-                    // CCSPAWN.is_none(), so we must be running a 1000 collator
-                    log::info!("CCSPAWN, this must be a 1000 collator");
                 }
 
                 let time = sp_timestamp::InherentDataProvider::from_system_time();
@@ -592,9 +591,7 @@ async fn start_node_impl(
             },
         );
 
-        unsafe {
-            CCSPAWN = Some(tx);
-        }
+        *CCSPAWN.lock().expect("poison error") = Some(tx);
     }
 
     Ok((task_manager, client))
@@ -624,14 +621,19 @@ struct ContainerChainSpawner {
 // TODO: this should allow us to stop a container chain client
 struct CcKillHandle;
 
+/// Messages used to control the `ContainerChainSpawner`. This is needed because one of the fields
+/// of `ContainerChainSpawner` is not `Sync`, so we cannot simply pass an
+/// `Arc<ContainerChainSpawner>` to other threads.
 #[derive(Debug)]
 enum CcSpawnMsg {
     Spawn(ParaId),
     Stop(ParaId),
 }
 
-// TODO: import lazy_static or figure out a way to pass this where it is needed
-static mut CCSPAWN: Option<tokio::sync::mpsc::UnboundedSender<CcSpawnMsg>> = None;
+// Figure out a way to pass this where it is needed instead of using a global variable
+lazy_static::lazy_static! {
+    static ref CCSPAWN: Mutex<Option<tokio::sync::mpsc::UnboundedSender<CcSpawnMsg>>> = Mutex::new(None);
+}
 
 impl ContainerChainSpawner {
     /// Try to start the container chain node. In case of error, this panics and stops the node.

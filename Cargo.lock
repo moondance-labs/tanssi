@@ -12042,6 +12042,7 @@ dependencies = [
  "futures 0.3.26",
  "hex",
  "jsonrpsee",
+ "lazy_static",
  "log",
  "nimbus-consensus",
  "nimbus-primitives",
