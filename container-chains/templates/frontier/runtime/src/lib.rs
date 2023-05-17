@@ -6,7 +6,6 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use sp_runtime::transaction_validity::TransactionValidityError;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -38,10 +37,9 @@ use {
         ConsensusEngineId,
     },
     frame_system::limits::{BlockLength, BlockWeights},
-    pallet_ethereum::{PostLogContent},
-    pallet_evm::{
-        EnsureAccountId20, IdentityAddressMapping,
-    },
+    nimbus_primitives::NimbusId,
+    pallet_ethereum::PostLogContent,
+    pallet_evm::{EnsureAccountId20, IdentityAddressMapping},
     pallet_transaction_payment::CurrencyAdapter,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
@@ -55,7 +53,7 @@ use {
             AccountIdLookup, BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable,
             IdentifyAccount, PostDispatchInfoOf, Verify,
         },
-        transaction_validity::{TransactionSource, TransactionValidity},
+        transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
         ApplyExtrinsicResult,
     },
     sp_std::prelude::*,
@@ -245,8 +243,8 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("container-chain-template"),
-    impl_name: create_runtime_str!("container-chain-template"),
+    spec_name: create_runtime_str!("frontier-template"),
+    impl_name: create_runtime_str!("frontier-template"),
     authoring_version: 1,
     spec_version: 1,
     impl_version: 0,
@@ -451,8 +449,6 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 
 impl parachain_info::Config for Runtime {}
 
-impl cumulus_pallet_aura_ext::Config for Runtime {}
-
 parameter_types! {
     pub const Period: u32 = 6 * HOURS;
     pub const Offset: u32 = 0;
@@ -473,7 +469,7 @@ impl pallet_session::Config for Runtime {
 }
 
 impl pallet_aura::Config for Runtime {
-    type AuthorityId = AuraId;
+    type AuthorityId = NimbusId;
     type DisabledValidators = ();
     type MaxAuthorities = ConstU32<100_000>;
 }
@@ -487,7 +483,8 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type OrchestratorAccountId = <<sp_runtime::MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
+    type OrchestratorAccountId =
+        <<sp_runtime::MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
 }
 
 const BLOCK_GAS_LIMIT: u64 = 75_000_000;
@@ -599,11 +596,10 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
 
-        // Collator support. The order of these 4 are important and shall not change.
+        // Collator support. The order of these 3 is important and shall not change.
         Authorship: pallet_authorship = 30,
         Session: pallet_session = 32,
         Aura: pallet_aura = 33,
-        AuraExt: cumulus_pallet_aura_ext = 34,
 
         // ContainerChain
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
@@ -621,12 +617,12 @@ construct_runtime!(
 );
 
 impl_runtime_apis! {
-    impl sp_consensus_aura::AuraApi<Block, AuraId> for Runtime {
+    impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
             sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
         }
 
-        fn authorities() -> Vec<AuraId> {
+        fn authorities() -> Vec<NimbusId> {
             Aura::authorities().into_inner()
         }
     }
@@ -757,6 +753,6 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
 
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    BlockExecutor = cumulus_pallet_aura_ext::BlockExecutor::<Runtime, Executive>,
+    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>
     CheckInherents = CheckInherents,
 }

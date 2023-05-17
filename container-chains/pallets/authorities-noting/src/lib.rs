@@ -179,12 +179,15 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Auhtorities inserted
-        AuthoritiesInserted { authorities: Vec<T::OrchestratorAccountId> },
+        AuthoritiesInserted {
+            authorities: Vec<T::OrchestratorAccountId>,
+        },
     }
 
     #[pallet::storage]
     #[pallet::getter(fn authorities)]
-    pub(super) type Authorities<T: Config> = StorageValue<_, Vec<T::OrchestratorAccountId>, ValueQuery>;
+    pub(super) type Authorities<T: Config> =
+        StorageValue<_, Vec<T::OrchestratorAccountId>, ValueQuery>;
 
     /// Was the containerAuthorData set?
     #[pallet::storage]
@@ -265,7 +268,10 @@ impl<T: Config> Pallet<T> {
     ) -> Result<Vec<T::OrchestratorAccountId>, Error<T>> {
         // Read the assignment from the orchestrator
         let assignmnet = orchestrator_state_proof
-            .read_entry::<AssignedCollators<T::OrchestratorAccountId>>(COLLATOR_ASSIGNMENT_INDEX, None)
+            .read_entry::<AssignedCollators<T::OrchestratorAccountId>>(
+                COLLATOR_ASSIGNMENT_INDEX,
+                None,
+            )
             .map_err(|e| match e {
                 ReadEntryErr::Proof => panic!("Invalid proof provided for para head key"),
                 _ => Error::<T>::FailedReading,

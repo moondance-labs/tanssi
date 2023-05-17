@@ -1,16 +1,15 @@
-use std::collections::BTreeMap;
-
-use container_chain_template_frontier_runtime::EVMConfig;
-
 use {
-    container_chain_template_frontier_runtime::{AccountId, AuraId, EVMChainIdConfig, Signature},
+    container_chain_template_frontier_runtime::{
+        AccountId, EVMChainIdConfig, EVMConfig, Signature,
+    },
     cumulus_primitives_core::ParaId,
+    nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
-    sp_core::{Pair, Public, H160, U256},
+    sp_core::{ecdsa, Pair, Public, H160, U256},
     sp_runtime::traits::{IdentifyAccount, Verify},
-    std::str::FromStr,
+    std::{collections::BTreeMap, str::FromStr},
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -48,8 +47,8 @@ type AccountPublic = <Signature as Verify>::Signer;
 /// Generate collator keys from seed.
 ///
 /// This function's return type must always match the session keys of the chain in tuple format.
-pub fn get_collator_keys_from_seed(seed: &str) -> AuraId {
-    get_from_seed::<AuraId>(seed)
+pub fn get_collator_keys_from_seed(seed: &str) -> NimbusId {
+    get_from_seed::<NimbusId>(seed)
 }
 
 /// Helper function to generate an account ID from seed
@@ -64,7 +63,7 @@ where
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
 pub fn template_session_keys(
-    keys: AuraId,
+    keys: NimbusId,
 ) -> container_chain_template_frontier_runtime::SessionKeys {
     container_chain_template_frontier_runtime::SessionKeys { aura: keys }
 }
@@ -79,9 +78,9 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
     let collator_accounts: Vec<AccountId> = initial_collator_seeds
         .iter()
-        .map(|seed| get_account_id_from_seed::<sp_core::ecdsa::Public>(seed))
+        .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
         .collect();
-    let collator_keys: Vec<AuraId> = initial_collator_seeds
+    let collator_keys: Vec<NimbusId> = initial_collator_seeds
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
@@ -125,13 +124,14 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
     properties.insert("tokenSymbol".into(), "UNIT".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
+    let protocol_id = Some(format!("container-chain-{}", para_id));
 
     let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
     let collator_accounts: Vec<AccountId> = initial_collator_seeds
         .iter()
-        .map(|seed| get_account_id_from_seed::<sp_core::ecdsa::Public>(seed))
+        .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
         .collect();
-    let collator_keys: Vec<AuraId> = initial_collator_seeds
+    let collator_keys: Vec<NimbusId> = initial_collator_seeds
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
@@ -162,7 +162,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
         // Telemetry
         None,
         // Protocol ID
-        Some("template-local"),
+        protocol_id.as_deref(),
         // Fork ID
         None,
         // Properties
@@ -176,12 +176,10 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
 }
 
 fn testnet_genesis(
-    invulnerables: Vec<(AccountId, AuraId)>,
+    invulnerables: Vec<(AccountId, NimbusId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
 ) -> container_chain_template_frontier_runtime::GenesisConfig {
-    let chain_id: u32 = id.into();
-    let chain_id = chain_id as u64;
     container_chain_template_frontier_runtime::GenesisConfig {
         system: container_chain_template_frontier_runtime::SystemConfig {
             code: container_chain_template_frontier_runtime::WASM_BINARY
@@ -213,9 +211,11 @@ fn testnet_genesis(
         // no need to pass anything to aura, in fact it will panic if we do. Session will take care
         // of this.
         aura: Default::default(),
-        aura_ext: Default::default(),
         parachain_system: Default::default(),
-        evm_chain_id: EVMChainIdConfig { chain_id },
+        // EVM compatibility
+        evm_chain_id: EVMChainIdConfig {
+            chain_id: u32::from(id) as u64,
+        },
         evm: EVMConfig {
             accounts: {
                 let mut map = BTreeMap::new();
@@ -271,17 +271,17 @@ fn testnet_genesis(
 /// Get pre-funded accounts
 pub fn pre_funded_accounts() -> Vec<AccountId> {
     vec![
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Alice"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Bob"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Charlie"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Dave"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Eve"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Ferdie"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Alice//stash"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Bob//stash"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Charlie//stash"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Dave//stash"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Eve//stash"),
-        get_account_id_from_seed::<sp_core::ecdsa::Public>("Ferdie//stash"),
+        get_account_id_from_seed::<ecdsa::Public>("Alice"),
+        get_account_id_from_seed::<ecdsa::Public>("Bob"),
+        get_account_id_from_seed::<ecdsa::Public>("Charlie"),
+        get_account_id_from_seed::<ecdsa::Public>("Dave"),
+        get_account_id_from_seed::<ecdsa::Public>("Eve"),
+        get_account_id_from_seed::<ecdsa::Public>("Ferdie"),
+        get_account_id_from_seed::<ecdsa::Public>("Alice//stash"),
+        get_account_id_from_seed::<ecdsa::Public>("Bob//stash"),
+        get_account_id_from_seed::<ecdsa::Public>("Charlie//stash"),
+        get_account_id_from_seed::<ecdsa::Public>("Dave//stash"),
+        get_account_id_from_seed::<ecdsa::Public>("Eve//stash"),
+        get_account_id_from_seed::<ecdsa::Public>("Ferdie//stash"),
     ]
 }

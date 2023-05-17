@@ -9,17 +9,18 @@ use container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi};
 
 // Cumulus Imports
 use {
-    cumulus_client_consensus_aura::{AuraConsensus, BuildAuraConsensusParams, SlotProportion},
+    cumulus_client_consensus_aura::SlotProportion,
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainConsensus,
     },
-    cumulus_client_network::BlockAnnounceValidator,
     cumulus_client_service::{
         build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
         StartCollatorParams, StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
+    nimbus_primitives::NimbusPair,
+    tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
 };
 
 // Substrate Imports
@@ -124,12 +125,17 @@ pub fn new_partial(
 
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
 
-    let import_queue = build_import_queue(
+    let import_queue = nimbus_consensus::import_queue(
         client.clone(),
         block_import.clone(),
-        config,
-        telemetry.as_ref().map(|telemetry| telemetry.handle()),
-        &task_manager,
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
+
+            Ok((time,))
+        },
+        &task_manager.spawn_essential_handle(),
+        config.prometheus_registry(),
+        false,
     )?;
 
     Ok(PartialComponents {
@@ -175,9 +181,6 @@ async fn start_node_impl(
     .await
     .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
-    let block_announce_validator =
-        BlockAnnounceValidator::new(relay_chain_interface.clone(), para_id);
-
     let force_authoring = parachain_config.force_authoring;
     let validator = parachain_config.role.is_authority();
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
@@ -185,17 +188,16 @@ async fn start_node_impl(
     let import_queue_service = params.import_queue.service();
 
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
-        sc_service::build_network(sc_service::BuildNetworkParams {
-            config: &parachain_config,
+        cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
+            parachain_config: &parachain_config,
             client: client.clone(),
             transaction_pool: transaction_pool.clone(),
             spawn_handle: task_manager.spawn_handle(),
             import_queue: params.import_queue,
-            block_announce_validator_builder: Some(Box::new(|_| {
-                Box::new(block_announce_validator)
-            })),
-            warp_sync_params: None,
-        })?;
+            para_id,
+            relay_chain_interface: relay_chain_interface.clone(),
+        })
+        .await?;
 
     if parachain_config.offchain_worker.enabled {
         sc_service::build_offchain_workers(
@@ -319,44 +321,6 @@ async fn start_node_impl(
     Ok((task_manager, client))
 }
 
-/// Build the import queue for the parachain runtime.
-fn build_import_queue(
-    client: Arc<ParachainClient>,
-    block_import: ParachainBlockImport,
-    config: &Configuration,
-    telemetry: Option<TelemetryHandle>,
-    task_manager: &TaskManager,
-) -> Result<sc_consensus::DefaultImportQueue<Block, ParachainClient>, sc_service::Error> {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
-
-    cumulus_client_consensus_aura::import_queue::<
-        sp_consensus_aura::sr25519::AuthorityPair,
-        _,
-        _,
-        _,
-        _,
-        _,
-    >(cumulus_client_consensus_aura::ImportQueueParams {
-        block_import,
-        client,
-        create_inherent_data_providers: move |_, _| async move {
-            let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-
-            let slot =
-				sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-					*timestamp,
-					slot_duration,
-				);
-
-            Ok((slot, timestamp))
-        },
-        registry: config.prometheus_registry(),
-        spawner: &task_manager.spawn_essential_handle(),
-        telemetry,
-    })
-    .map_err(Into::into)
-}
-
 fn build_consensus(
     client: Arc<ParachainClient>,
     block_import: ParachainBlockImport,
@@ -380,7 +344,7 @@ fn build_consensus(
         telemetry.clone(),
     );
 
-    let params = BuildAuraConsensusParams {
+    let params = BuildOrchestratorAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
@@ -423,8 +387,8 @@ fn build_consensus(
         telemetry,
     };
 
-    Ok(AuraConsensus::build::<
-        sp_consensus_aura::sr25519::AuthorityPair,
+    Ok(OrchestratorAuraConsensus::build::<
+        NimbusPair,
         _,
         _,
         _,

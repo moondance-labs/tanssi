@@ -5,17 +5,16 @@
 
 #![warn(missing_docs)]
 
-use std::sync::Arc;
-
-use container_chain_template_frontier_runtime::{opaque::Block, AccountId, Index as Nonce};
-
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
+
 use {
+    container_chain_template_frontier_runtime::{opaque::Block, AccountId, Index as Nonce},
     sc_client_api::AuxStore,
     sc_transaction_pool_api::TransactionPool,
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
+    std::sync::Arc,
 };
 
 /// A type representing all RPC extensions.
