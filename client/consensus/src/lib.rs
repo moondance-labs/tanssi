@@ -23,12 +23,10 @@
 //! For more information about AuRa, the Substrate crate should be checked.
 use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
 
-mod consensus_container;
 mod consensus_orchestrator;
 mod manual_seal;
 
 pub use {
-    consensus_container::*,
     consensus_orchestrator::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
     sc_consensus_aura::CompatibilityMode,
 };
@@ -111,13 +109,8 @@ where
             }
         }
     }
-    first_eligible_key::<B, C, P>(
-        client.clone(),
-        keystore.clone(),
-        &parent_hash,
-        &context_block_number,
-    )
-    .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
+    first_eligible_key::<B, C, P>(client.clone(), keystore.clone(), &parent_hash)
+        .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
 }
 
 use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
@@ -125,11 +118,10 @@ use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
 /// If multiple keys are eligible this function still only returns one
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.
 /// This is the standard way of determining which key to author with.
-pub(crate) fn first_eligible_key<B: BlockT, C, P>(
+pub fn first_eligible_key<B: BlockT, C, P>(
     client: &C,
     keystore: SyncCryptoStorePtr,
     parent_hash: &B::Hash,
-    parent_number: &NumberFor<B>,
 ) -> Option<Vec<AuthorityId<P>>>
 where
     C: ProvideRuntimeApi<B>,
@@ -162,14 +154,12 @@ where
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
             // If we dont find any parachain that we are assigned to, return non
 
-            if let Ok(Some(para_id)) = runtime_api.check_para_id_assignment(
-                parent_hash.clone(),
-                nimbus_id.clone().into(),
-                parent_number,
-            ) {
+            if let Ok(Some(para_id)) =
+                runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into())
+            {
                 log::info!("Para id found for assignment {:?}", para_id);
                 let authorities = runtime_api
-                    .para_id_authorities(parent_hash.clone(), para_id, parent_number)
+                    .para_id_authorities(parent_hash.clone(), para_id)
                     .ok()?;
                 log::info!(
                     "Authorities found for para {:?} are {:?}",

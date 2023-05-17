@@ -38,6 +38,7 @@ use {
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
+    sp_core::H256,
     sp_keystore::SyncCryptoStorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, str::FromStr, sync::Arc, time::Duration},
@@ -801,8 +802,6 @@ fn build_manual_seal_import_queue(
     ))
 }
 
-use sp_api::HeaderT;
-
 fn build_consensus_container(
     client: Arc<ParachainClient>,
     orchestrator_client: Arc<ParachainClient>,
@@ -833,7 +832,7 @@ fn build_consensus_container(
     let orchestrator_client_for_cidp = orchestrator_client.clone();
     let keystore_for_cidp = keystore.clone();
 
-    let params = tc_consensus::BuildContainerAuraConsensusParams {
+    let params = tc_consensus::BuildOrchestratorAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
@@ -886,7 +885,7 @@ fn build_consensus_container(
                 ))
             }
         },
-        get_orchestrator_head: move |_block_hash, (relay_parent, _validation_data)| {
+        get_authorities_from_orchestrator: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
             let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
             let keystore_for_cidp = keystore_for_cidp.clone();
@@ -906,21 +905,24 @@ fn build_consensus_container(
                     )
                 })?;
 
-                let authorities = tc_consensus::authorities::<NimbusPair, Block, ParachainClient>(
-                    orchestrator_client_for_cidp.as_ref(),
-                    latest_header.hash(),
-                    latest_header.number().clone().saturating_add(1),
-                    &sc_consensus_aura::CompatibilityMode::None,
-                    keystore_for_cidp,
-                );
+                let authorities =
+                    tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
+                        orchestrator_client_for_cidp.as_ref(),
+                        keystore_for_cidp,
+                        &latest_header.hash(),
+                    );
 
-                let aux_data = authorities.map_err(|_e| {
+                let aux_data = authorities.ok_or_else(|| {
                     Box::<dyn std::error::Error + Send + Sync>::from(
                         "Failed to fetch authorities with error",
                     )
                 })?;
 
-                log::info!("Authorities {:?} found for header {:?}", aux_data,  latest_header);
+                log::info!(
+                    "Authorities {:?} found for header {:?}",
+                    aux_data,
+                    latest_header
+                );
 
                 Ok(aux_data)
             }
@@ -939,7 +941,7 @@ fn build_consensus_container(
         telemetry,
     };
 
-    Ok(tc_consensus::ContainerAuraConsensus::build::<
+    Ok(tc_consensus::OrchestratorAuraConsensus::build::<
         NimbusPair,
         _,
         _,
@@ -972,7 +974,10 @@ fn build_consensus_orchestrator(
         prometheus_registry,
         telemetry.clone(),
     );
+
     let client_set_aside_for_cidp = client.clone();
+    let keystore_for_cidp = keystore.clone();
+    let client_set_aside_for_orch = client.clone();
 
     let params = BuildOrchestratorAuraConsensusParams {
         proposer_factory,
@@ -1024,6 +1029,34 @@ fn build_consensus_orchestrator(
                 Ok((slot, timestamp, parachain_inherent, author_noting_inherent))
             }
         },
+        get_authorities_from_orchestrator:
+            move |block_hash: H256, (_relay_parent, _validation_data)| {
+                let client_set_aside_for_orch = client_set_aside_for_orch.clone();
+                let keystore_for_cidp = keystore_for_cidp.clone();
+
+                async move {
+                    let authorities =
+                        tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
+                            client_set_aside_for_orch.as_ref(),
+                            keystore_for_cidp,
+                            &block_hash,
+                        );
+
+                    let aux_data = authorities.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch authorities with error",
+                        )
+                    })?;
+
+                    log::info!(
+                        "Authorities {:?} found for header {:?}",
+                        aux_data,
+                        block_hash
+                    );
+
+                    Ok(aux_data)
+                }
+            },
         block_import,
         para_client: client,
         backoff_authoring_blocks: Option::<()>::None,
@@ -1083,7 +1116,6 @@ pub fn new_dev(
         async_io::Timer,
         futures::Stream,
         sc_consensus_manual_seal::{run_manual_seal, EngineCommand, ManualSealParams},
-        sp_core::H256,
     };
 
     let sc_service::PartialComponents {

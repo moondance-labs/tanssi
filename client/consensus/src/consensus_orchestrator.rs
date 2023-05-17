@@ -30,28 +30,26 @@ use {
 };
 
 use {
-    crate::authorities,
-    futures::lock::Mutex,
+    futures::{lock::Mutex, prelude::*},
+    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair},
     sc_client_api::{backend::AuxStore, BlockOf},
     sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
     sc_consensus_aura::{find_pre_digest, CompatibilityMode},
     sc_consensus_slots::{
-        BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, StorageChanges,
+        BackoffAuthoringBlocksStrategy, SimpleSlotWorker, SlotInfo, SlotResult, StorageChanges,
     },
-    tp_consensus::TanssiAuthorityAssignmentApi,
-};
-
-use {
-    crate::{slot_author, AuthorityId},
-    futures::prelude::*,
-    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusId, NimbusPair},
-    sc_telemetry::TelemetryHandle,
+    sc_telemetry::{telemetry, TelemetryHandle, CONSENSUS_DEBUG, CONSENSUS_INFO, CONSENSUS_WARN},
     sp_api::ProvideRuntimeApi,
     sp_application_crypto::{AppKey, AppPublic},
     sp_blockchain::HeaderBackend,
     sp_consensus::{
         BlockOrigin, EnableProofRecording, Environment, ProofRecording, Proposer, SyncOracle,
     },
+};
+
+use {
+    crate::{slot_author, AuthorityId},
+    log::{debug, info, warn},
     sp_consensus_aura::{digests::CompatibleDigestItem, SlotDuration},
     sp_consensus_slots::Slot,
     sp_core::crypto::{ByteArray, Pair, Public},
@@ -61,27 +59,37 @@ use {
         traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
         DigestItem,
     },
-    std::{convert::TryFrom, fmt::Debug, hash::Hash, marker::PhantomData, pin::Pin, sync::Arc},
+    std::{
+        convert::TryFrom,
+        fmt::Debug,
+        hash::Hash,
+        marker::PhantomData,
+        pin::Pin,
+        sync::Arc,
+        time::{Duration, Instant},
+    },
 };
 pub use {
     sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
     sc_consensus_slots::InherentDataProviderExt,
 };
 
-const LOG_TARGET: &str = "aura::orchestrator";
+const LOG_TARGET: &str = "aura::tanssi";
 
-/// The implementation of the Orchestrator AURA consensus for parachains.
-pub struct OrchestratorAuraConsensus<B, CIDP, W> {
+/// The implementation of the Tanssi AURA consensus for parachains.
+pub struct OrchestratorAuraConsensus<B, CIDP, GOH, W> {
     create_inherent_data_providers: Arc<CIDP>,
+    get_orchestrator_head: Arc<GOH>,
     aura_worker: Arc<Mutex<W>>,
     slot_duration: SlotDuration,
     _phantom: PhantomData<B>,
 }
 
-impl<B, CIDP, W> Clone for OrchestratorAuraConsensus<B, CIDP, W> {
+impl<B, CIDP, GOH, W> Clone for OrchestratorAuraConsensus<B, CIDP, GOH, W> {
     fn clone(&self) -> Self {
         Self {
             create_inherent_data_providers: self.create_inherent_data_providers.clone(),
+            get_orchestrator_head: self.get_orchestrator_head.clone(),
             aura_worker: self.aura_worker.clone(),
             slot_duration: self.slot_duration,
             _phantom: PhantomData,
@@ -89,11 +97,11 @@ impl<B, CIDP, W> Clone for OrchestratorAuraConsensus<B, CIDP, W> {
     }
 }
 
-/// Build the Orchestrator aura worker.
+/// Build the tanssi aura worker.
 ///
 /// The caller is responsible for running this worker, otherwise it will do nothing.
 pub fn build_orchestrator_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
-    BuildAuraWorkerParams {
+    BuildOrchestratorAuraWorkerParams {
         client,
         block_import,
         proposer_factory,
@@ -106,8 +114,8 @@ pub fn build_orchestrator_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
         telemetry,
         force_authoring,
         compatibility_mode,
-    }: BuildAuraWorkerParams<C, I, PF, SO, L, BS, NumberFor<B>>,
-) -> impl sc_consensus_slots::SimpleSlotWorker<
+    }: BuildOrchestratorAuraWorkerParams<C, I, PF, SO, L, BS, NumberFor<B>>,
+) -> impl TanssiSlotWorker<
     B,
     Proposer = PF::Proposer,
     BlockImport = I,
@@ -119,18 +127,18 @@ pub fn build_orchestrator_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     PF: Environment<B, Error = Error> + Send + Sync + 'static,
     PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     P: Pair + Send + Sync,
-    P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
+    P::Public: AppPublic + Hash + Member + Encode + Decode,
     P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
     I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
     SO: SyncOracle + Send + Sync + Clone,
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
-    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
+    B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
 {
     OrchestratorAuraWorker {
         client,
@@ -150,9 +158,10 @@ where
 }
 
 /// Parameters of [`OrchestratorAuraConsensus::build`].
-pub struct BuildOrchestratorAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
+pub struct BuildOrchestratorAuraConsensusParams<PF, BI, GOH, CIDP, Client, BS, SO> {
     pub proposer_factory: PF,
     pub create_inherent_data_providers: CIDP,
+    pub get_orchestrator_head: GOH,
     pub block_import: BI,
     pub para_client: Arc<Client>,
     pub backoff_authoring_blocks: Option<BS>,
@@ -165,10 +174,11 @@ pub struct BuildOrchestratorAuraConsensusParams<PF, BI, CIDP, Client, BS, SO> {
     pub max_block_proposal_slot_portion: Option<SlotProportion>,
 }
 
-impl<B, CIDP> OrchestratorAuraConsensus<B, CIDP, ()>
+impl<B, CIDP, GOH> OrchestratorAuraConsensus<B, CIDP, GOH, ()>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + 'static,
+    GOH: 'static + Sync + Send,
     CIDP::InherentDataProviders: InherentDataProviderExt,
 {
     /// Create a new boxed instance of AURA consensus.
@@ -176,6 +186,7 @@ where
         BuildOrchestratorAuraConsensusParams {
             proposer_factory,
             create_inherent_data_providers,
+            get_orchestrator_head,
             block_import,
             para_client,
             backoff_authoring_blocks,
@@ -186,12 +197,12 @@ where
             telemetry,
             block_proposal_slot_portion,
             max_block_proposal_slot_portion,
-        }: BuildOrchestratorAuraConsensusParams<PF, BI, CIDP, Client, BS, SO>,
+        }: BuildOrchestratorAuraConsensusParams<PF, BI, GOH, CIDP, Client, BS, SO>,
     ) -> Box<dyn ParachainConsensus<B>>
     where
         Client:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
-        Client::Api: TanssiAuthorityAssignmentApi<B, P::Public>,
+        AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
         BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>>
             + ParachainBlockImportMarker
             + Send
@@ -209,12 +220,14 @@ where
         >,
         Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
         P: Pair + Send + Sync,
-        P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
+        P::Public: AppPublic + Hash + Member + Encode + Decode,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
-        AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
+        B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
+        GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), Vec<AuthorityId<P>>>
+            + 'static,
     {
-        let worker =
-            build_orchestrator_aura_worker::<P, _, _, _, _, _, _, _, _>(BuildAuraWorkerParams {
+        let worker = build_orchestrator_aura_worker::<P, _, _, _, _, _, _, _, _>(
+            BuildOrchestratorAuraWorkerParams {
                 client: para_client,
                 block_import,
                 justification_sync_link: (),
@@ -227,10 +240,12 @@ where
                 block_proposal_slot_portion,
                 max_block_proposal_slot_portion,
                 compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
-            });
+            },
+        );
 
         Box::new(OrchestratorAuraConsensus {
             create_inherent_data_providers: Arc::new(create_inherent_data_providers),
+            get_orchestrator_head: Arc::new(get_orchestrator_head),
             aura_worker: Arc::new(Mutex::new(worker)),
             slot_duration,
             _phantom: PhantomData,
@@ -238,11 +253,13 @@ where
     }
 }
 
-impl<B, CIDP, W> OrchestratorAuraConsensus<B, CIDP, W>
+impl<B, CIDP, GOH, W> OrchestratorAuraConsensus<B, CIDP, GOH, W>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + 'static,
     CIDP::InherentDataProviders: InherentDataProviderExt,
+    GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), W::AuxData> + 'static,
+    W: TanssiSlotWorker<B> + Send + Sync,
 {
     /// Create the inherent data.
     ///
@@ -268,13 +285,15 @@ where
 }
 
 #[async_trait::async_trait]
-impl<B, CIDP, W> ParachainConsensus<B> for OrchestratorAuraConsensus<B, CIDP, W>
+impl<B, CIDP, GOH, W> ParachainConsensus<B> for OrchestratorAuraConsensus<B, CIDP, GOH, W>
 where
     B: BlockT,
     CIDP: CreateInherentDataProviders<B, (PHash, PersistedValidationData)> + Send + Sync + 'static,
     CIDP::InherentDataProviders: InherentDataProviderExt + Send,
-    W: SimpleSlotWorker<B> + Send + Sync,
+    GOH: RetrieveOrchestratorHead<B, (PHash, PersistedValidationData), W::AuxData> + 'static,
+    W: TanssiSlotWorker<B> + Send + Sync,
     W::Proposer: Proposer<B, Proof = <EnableProofRecording as ProofRecording>::Proof>,
+    B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
 {
     async fn produce_candidate(
         &mut self,
@@ -285,6 +304,19 @@ where
         let inherent_data_providers = self
             .inherent_data(parent.hash(), validation_data, relay_parent)
             .await?;
+
+        let header = self
+            .get_orchestrator_head
+            .retrieve_orchestrator_head(parent.hash(), (relay_parent, validation_data.clone()))
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    error = ?e,
+                    "Failed to get orch head.",
+                )
+            })
+            .ok()?;
 
         let info = SlotInfo::new(
             inherent_data_providers.slot(),
@@ -298,7 +330,12 @@ where
             Some((validation_data.max_pov_size / 2) as usize),
         );
 
-        let res = self.aura_worker.lock().await.on_slot(info).await?;
+        let res = self
+            .aura_worker
+            .lock()
+            .await
+            .tanssi_on_slot(info, header)
+            .await?;
 
         Some(ParachainCandidate {
             block: res.block,
@@ -329,18 +366,17 @@ impl<B, C, E, I, P, Error, SO, L, BS> sc_consensus_slots::SimpleSlotWorker<B>
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
-    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
     E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
     I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
     P: Pair + Send + Sync,
-    P::Public: AppPublic + Public + Member + Encode + Decode + Hash + Into<NimbusId>,
+    P::Public: AppPublic + Public + Member + Encode + Decode + Hash,
     P::Signature: TryFrom<Vec<u8>> + Member + Encode + Decode + Hash + Debug,
     SO: SyncOracle + Send + Clone + Sync,
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
-    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
 {
     type BlockImport = I;
     type SyncOracle = SO;
@@ -352,7 +388,7 @@ where
     type AuxData = Vec<AuthorityId<P>>;
 
     fn logging_target(&self) -> &'static str {
-        "orchestrator_aura"
+        "tanssi_aura"
     }
 
     fn block_import(&mut self) -> &mut Self::BlockImport {
@@ -361,16 +397,10 @@ where
 
     fn aux_data(
         &self,
-        header: &B::Header,
+        _header: &B::Header,
         _slot: Slot,
     ) -> Result<Self::AuxData, sp_consensus::Error> {
-        authorities::<P, B, C>(
-            self.client.as_ref(),
-            header.hash(),
-            *header.number() + 1u32.into(),
-            &self.compatibility_mode,
-            self.keystore.clone(),
-        )
+        Ok(Default::default())
     }
 
     fn authorities_len(&self, epoch_data: &Self::AuxData) -> Option<usize> {
@@ -384,11 +414,10 @@ where
         epoch_data: &Self::AuxData,
     ) -> Option<Self::Claim> {
         let expected_author = slot_author::<P>(slot, epoch_data);
-
         expected_author.and_then(|p| {
             if SyncCryptoStore::has_keys(
                 &*self.keystore,
-                &[(p.to_raw_vec(), nimbus_primitives::NIMBUS_KEY_ID)],
+                &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
             ) {
                 Some(p.clone())
             } else {
@@ -401,7 +430,10 @@ where
         vec![
             <DigestItem as CompatibleDigestItem<P::Signature>>::aura_pre_digest(slot),
             // We inject the nimbus digest as well. Crutial to be able to verify signatures
-            <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(claim.clone().into()),
+            <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(
+                // TODO remove this unwrap through trait reqs
+                nimbus_primitives::NimbusId::from_slice(claim.as_ref()).unwrap(),
+            ),
         ]
     }
 
@@ -421,6 +453,7 @@ where
         // add it to a digest item.
         let public_type_pair = public.to_public_crypto_pair();
         let public = public.to_raw_vec();
+        log::info!("the ID is {:?}", <AuthorityId<P> as AppKey>::ID);
         let signature = SyncCryptoStore::sign_with(
             &*self.keystore,
             <AuthorityId<P> as AppKey>::ID,
@@ -501,5 +534,269 @@ where
             sc_consensus_slots::SlotLenienceType::Exponential,
             self.logging_target(),
         )
+    }
+}
+
+/// Parameters of [`build_aura_worker`].
+pub struct BuildOrchestratorAuraWorkerParams<C, I, PF, SO, L, BS, N> {
+    /// The client to interact with the chain.
+    pub client: Arc<C>,
+    /// The block import.
+    pub block_import: I,
+    /// The proposer factory to build proposer instances.
+    pub proposer_factory: PF,
+    /// The sync oracle that can give us the current sync status.
+    pub sync_oracle: SO,
+    /// Hook into the sync module to control the justification sync process.
+    pub justification_sync_link: L,
+    /// Should we force the authoring of blocks?
+    pub force_authoring: bool,
+    /// The backoff strategy when we miss slots.
+    pub backoff_authoring_blocks: Option<BS>,
+    /// The keystore used by the node.
+    pub keystore: SyncCryptoStorePtr,
+    /// The proportion of the slot dedicated to proposing.
+    ///
+    /// The block proposing will be limited to this proportion of the slot from the starting of the
+    /// slot. However, the proposing can still take longer when there is some lenience factor
+    /// applied, because there were no blocks produced for some slots.
+    pub block_proposal_slot_portion: SlotProportion,
+    /// The maximum proportion of the slot dedicated to proposing with any lenience factor applied
+    /// due to no blocks being produced.
+    pub max_block_proposal_slot_portion: Option<SlotProportion>,
+    /// Telemetry instance used to report telemetry metrics.
+    pub telemetry: Option<TelemetryHandle>,
+    /// Compatibility mode that should be used.
+    ///
+    /// If in doubt, use `Default::default()`.
+    pub compatibility_mode: CompatibilityMode<N>,
+}
+
+use cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber};
+#[async_trait::async_trait]
+pub trait RetrieveOrchestratorHead<Block: BlockT, ExtraArgs, A>: Send + Sync {
+    /// Create the inherent data providers at the given `parent` block using the given `extra_args`.
+    async fn retrieve_orchestrator_head(
+        &self,
+        parent: Block::Hash,
+        extra_args: ExtraArgs,
+    ) -> Result<A, Box<dyn std::error::Error + Send + Sync>>;
+}
+
+#[async_trait::async_trait]
+impl<F, Block, ExtraArgs, Fut, A> RetrieveOrchestratorHead<Block, ExtraArgs, A> for F
+where
+    Block: BlockT,
+    F: Fn(Block::Hash, ExtraArgs) -> Fut + Sync + Send,
+    Fut: std::future::Future<Output = Result<A, Box<dyn std::error::Error + Send + Sync>>>
+        + Send
+        + 'static,
+    ExtraArgs: Send + 'static,
+{
+    async fn retrieve_orchestrator_head(
+        &self,
+        parent: Block::Hash,
+        extra_args: ExtraArgs,
+    ) -> Result<A, Box<dyn std::error::Error + Send + Sync>> {
+        (*self)(parent, extra_args).await
+    }
+}
+
+#[async_trait::async_trait]
+pub trait TanssiSlotWorker<B: BlockT>: SimpleSlotWorker<B> {
+    /// Called when a new slot is triggered.
+    ///
+    /// Returns a future that resolves to a [`SlotResult`] iff a block was successfully built in
+    /// the slot. Otherwise `None` is returned.
+    /// Accepts the orchestrator header as an input
+    async fn tanssi_on_slot(
+        &mut self,
+        slot_info: SlotInfo<B>,
+        orch_header: Self::AuxData,
+    ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>;
+}
+
+#[async_trait::async_trait]
+impl<B, C, E, I, P, Error, SO, L, BS> TanssiSlotWorker<B>
+    for OrchestratorAuraWorker<C, E, I, P, SO, L, BS, NumberFor<B>>
+where
+    B: BlockT,
+    C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
+    E: Environment<B, Error = Error> + Send + Sync,
+    E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
+    I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
+    P: Pair + Send + Sync,
+    P::Public: AppPublic + Public + Member + Encode + Decode + Hash,
+    P::Signature: TryFrom<Vec<u8>> + Member + Encode + Decode + Hash + Debug,
+    SO: SyncOracle + Send + Clone + Sync,
+    L: sc_consensus::JustificationSyncLink<B>,
+    BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
+    Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
+    // TODO: change this
+    B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
+{
+    async fn tanssi_on_slot(
+        &mut self,
+        slot_info: SlotInfo<B>,
+        orch_header: Self::AuxData,
+    ) -> Option<SlotResult<B, <Self::Proposer as Proposer<B>>::Proof>>
+    where
+        Self: Sync,
+    {
+        let slot = slot_info.slot;
+        let telemetry = self.telemetry();
+        let logging_target = self.logging_target();
+
+        let proposing_remaining_duration = self.proposing_remaining_duration(&slot_info);
+
+        let end_proposing_at = if proposing_remaining_duration == Duration::default() {
+            debug!(
+                target: logging_target,
+                "Skipping proposal slot {} since there's no time left to propose", slot,
+            );
+
+            return None;
+        } else {
+            Instant::now() + proposing_remaining_duration
+        };
+
+        let aux_data = orch_header.clone();
+
+        self.notify_slot(&slot_info.chain_head, slot, &aux_data);
+
+        let authorities_len = self.authorities_len(&aux_data);
+
+        if !self.force_authoring()
+            && self.sync_oracle().is_offline()
+            && authorities_len.map(|a| a > 1).unwrap_or(false)
+        {
+            debug!(
+                target: logging_target,
+                "Skipping proposal slot. Waiting for the network."
+            );
+            telemetry!(
+                telemetry;
+                CONSENSUS_DEBUG;
+                "slots.skipping_proposal_slot";
+                "authorities_len" => authorities_len,
+            );
+
+            return None;
+        }
+
+        let claim = self
+            .claim_slot(&slot_info.chain_head, slot, &aux_data)
+            .await?;
+
+        if self.should_backoff(slot, &slot_info.chain_head) {
+            return None;
+        }
+
+        debug!(
+            target: logging_target,
+            "Starting authorship at slot: {slot}"
+        );
+
+        telemetry!(telemetry; CONSENSUS_DEBUG; "slots.starting_authorship"; "slot_num" => slot);
+
+        let proposer = match self.proposer(&slot_info.chain_head).await {
+            Ok(p) => p,
+            Err(err) => {
+                warn!(
+                    target: logging_target,
+                    "Unable to author block in slot {slot:?}: {err}"
+                );
+
+                telemetry!(
+                    telemetry;
+                    CONSENSUS_WARN;
+                    "slots.unable_authoring_block";
+                    "slot" => *slot,
+                    "err" => ?err
+                );
+
+                return None;
+            }
+        };
+
+        let proposal = self
+            .propose(proposer, &claim, slot_info, end_proposing_at)
+            .await?;
+
+        let (block, storage_proof) = (proposal.block, proposal.proof);
+        let (header, body) = block.deconstruct();
+        let header_num = *header.number();
+        let header_hash = header.hash();
+        let parent_hash = *header.parent_hash();
+
+        let block_import_params = match self
+            .block_import_params(
+                header,
+                &header_hash,
+                body.clone(),
+                proposal.storage_changes,
+                claim,
+                aux_data,
+            )
+            .await
+        {
+            Ok(bi) => bi,
+            Err(err) => {
+                warn!(
+                    target: logging_target,
+                    "Failed to create block import params: {}", err
+                );
+
+                return None;
+            }
+        };
+
+        info!(
+            target: logging_target,
+            "🔖 Pre-sealed block for proposal at {}. Hash now {:?}, previously {:?}.",
+            header_num,
+            block_import_params.post_hash(),
+            header_hash,
+        );
+
+        telemetry!(
+            telemetry;
+            CONSENSUS_INFO;
+            "slots.pre_sealed_block";
+            "header_num" => ?header_num,
+            "hash_now" => ?block_import_params.post_hash(),
+            "hash_previously" => ?header_hash,
+        );
+
+        let header = block_import_params.post_header();
+        match self.block_import().import_block(block_import_params).await {
+            Ok(res) => {
+                res.handle_justification(
+                    &header.hash(),
+                    *header.number(),
+                    self.justification_sync_link(),
+                );
+            }
+            Err(err) => {
+                warn!(
+                    target: logging_target,
+                    "Error with block built on {:?}: {}", parent_hash, err,
+                );
+
+                telemetry!(
+                    telemetry;
+                    CONSENSUS_WARN;
+                    "slots.err_with_block_built_on";
+                    "hash" => ?parent_hash,
+                    "err" => ?err,
+                );
+            }
+        }
+
+        Some(SlotResult {
+            block: B::new(header, body),
+            storage_proof,
+        })
     }
 }
