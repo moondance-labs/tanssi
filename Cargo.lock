@@ -11850,6 +11850,7 @@ dependencies = [
  "substrate-wasm-builder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-core",
  "tp-traits",
 ]
 
@@ -12263,6 +12264,7 @@ dependencies = [
  "parity-scale-codec",
  "sp-core",
  "sp-io",
+ "sp-runtime",
  "sp-std",
 ]
 

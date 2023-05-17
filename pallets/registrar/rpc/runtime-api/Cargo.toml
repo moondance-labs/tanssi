@@ -17,7 +17,7 @@ tp-container-chain-genesis-data = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
-	"tp-container-chain-genesis-data/std",
 	"parity-scale-codec/std",
 	"sp-api/std",
+	"tp-container-chain-genesis-data/std",
 ]

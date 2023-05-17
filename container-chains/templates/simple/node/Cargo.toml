@@ -22,8 +22,8 @@ container-chain-template-simple-runtime = { path = "../runtime", default-feature
 tc-consensus = { workspace = true }
 
 # Nimbus
-nimbus-primitives = { workspace = true, features = [ "std" ]}
 nimbus-consensus = { workspace = true }
+nimbus-primitives = { workspace = true, features = [ "std" ] }
 
 # Substrate
 frame-benchmarking = { workspace = true }

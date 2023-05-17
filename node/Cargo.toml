@@ -26,14 +26,14 @@ pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
 test-runtime = { workspace = true, features = [ "std" ] }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 tp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
-tp-container-chain-genesis-data = { workspace = true, features = [ "std", "json" ] }
+tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
 
 tc-consensus = { workspace = true }
 tc-orchestrator-chain-interface = { workspace = true }
 
 # Nimbus
-nimbus-primitives = { workspace = true, features = [ "std" ]}
 nimbus-consensus = { workspace = true }
+nimbus-primitives = { workspace = true, features = [ "std" ] }
 
 # Substrate
 frame-benchmarking = { workspace = true }
@@ -105,4 +105,4 @@ try-runtime = [
 	"try-runtime-cli/try-runtime",
 ]
 
-fast-runtime = ["test-runtime/fast-runtime"]
+fast-runtime = [ "test-runtime/fast-runtime" ]
