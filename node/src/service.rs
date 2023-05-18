@@ -4,7 +4,7 @@ use futures::FutureExt;
 use sc_service::SpawnTaskHandle;
 use std::collections::HashMap;
 use std::pin::Pin;
-use tokio::sync::mpsc::unbounded_channel;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use {
     crate::cli::ContainerChainCli,
     cumulus_client_cli::CollatorOptions,
@@ -96,6 +96,8 @@ struct MockTimestampInherentDataProvider;
 /// be able to perform chain operations.
 pub fn new_partial(
     config: &Configuration,
+    orchestrator_para_id: ParaId,
+    cc_spawn_tx: Option<UnboundedSender<CcSpawnMsg>>,
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -160,8 +162,7 @@ pub fn new_partial(
     let spec_para_id = crate::chain_spec::Extensions::try_get(&*config.chain_spec)
         .map(|extension| extension.para_id)
         .unwrap();
-    // TODO: how can we get the OrchestratorParaId?
-    let is_orchestrator_chain = spec_para_id == 1000;
+    let is_orchestrator_chain = ParaId::from(spec_para_id) == orchestrator_para_id;
 
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
     // The nimbus import queue ONLY checks the signature correctness
@@ -174,10 +175,10 @@ pub fn new_partial(
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
             let sync_keystore = sync_keystore.clone();
             let initial_assigned_para_id = initial_assigned_para_id.clone();
+            let cc_spawn_tx = cc_spawn_tx.clone();
 
             async move {
                 if is_orchestrator_chain {
-                    let cc_spawn_tx = CCSPAWN.lock().expect("poison error").as_ref().cloned();
                     if let Some(cc_spawn_tx) = cc_spawn_tx {
                         let nimbus_keys =
                             SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
@@ -212,8 +213,8 @@ pub fn new_partial(
                             *initial_assigned_para_id = container_chain_para_id;
                         }
                     } else {
-                        // CCSPAWN.is_none(), so we must be running a 1000 collator
-                        log::info!("CCSPAWN.is_none(), this must be a 1000 collator");
+                        // cc_spawn_tx.is_none(), so we must be running a 1000 collator
+                        log::info!("cc_spawn_tx.is_none(), this must be a 1000 collator");
                     }
                 }
 
@@ -344,7 +345,13 @@ async fn start_node_impl(
         .map(|e| e.relay_chain.clone())
         .ok_or_else(|| "Could not find relay_chain extension in chain-spec.")?;
 
-    let params = new_partial(&parachain_config)?;
+    let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
+    let tx_for_new_partial = if container_chain_config.is_some() {
+        Some(cc_spawn_tx.clone())
+    } else {
+        None
+    };
+    let params = new_partial(&parachain_config, para_id, tx_for_new_partial)?;
     let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
     let client = params.client.clone();
@@ -554,9 +561,8 @@ async fn start_node_impl(
             spawned_para_ids: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
-        let (tx, rx) = unbounded_channel();
         // For testing, spawn a 2000 client for 2001 collators
-        let tx2 = tx.clone();
+        let tx2 = cc_spawn_tx.clone();
         if cc_para_id == Some(2001) {
             spawn_handle.spawn("testing-spawn-2000-client", None, async move {
                 //tokio::time::sleep(Duration::from_secs(60)).await;
@@ -568,10 +574,10 @@ async fn start_node_impl(
         task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.rx_loop(rx),
+            container_chain_spawner.rx_loop(cc_spawn_rx),
         );
 
-        *CCSPAWN.lock().expect("poison error") = Some(tx);
+        *CCSPAWN.lock().expect("poison error") = Some(cc_spawn_tx);
     }
 
     Ok((task_manager, client))
@@ -608,7 +614,7 @@ struct StopContainerChain(Signal);
 /// of `ContainerChainSpawner` is not `Sync`, so we cannot simply pass an
 /// `Arc<ContainerChainSpawner>` to other threads.
 #[derive(Debug)]
-enum CcSpawnMsg {
+pub enum CcSpawnMsg {
     /// Start a container chain client for this ParaId. If the ParaId is the orchestrator chain id,
     /// start collating there.
     Spawn(ParaId),
@@ -617,9 +623,9 @@ enum CcSpawnMsg {
     Stop(ParaId),
 }
 
-// Figure out a way to pass this where it is needed instead of using a global variable
+// TODO: this is for testing, remove when not needed and remove lazy_static dependency
 lazy_static::lazy_static! {
-    static ref CCSPAWN: Mutex<Option<tokio::sync::mpsc::UnboundedSender<CcSpawnMsg>>> = Mutex::new(None);
+    static ref CCSPAWN: Mutex<Option<UnboundedSender<CcSpawnMsg>>> = Mutex::new(None);
 }
 
 impl ContainerChainSpawner {
@@ -889,7 +895,7 @@ async fn start_node_impl_container(
         // Change this to use the syntax `PartialComponents { client, backend, .. } = params;`
         // when this issue is fixed:
         // https://github.com/rust-lang/rust/issues/104883
-        let params = new_partial(&parachain_config)?;
+        let params = new_partial(&parachain_config, orchestrator_para_id, None)?;
         let (l_block_import, l_telemetry, _telemetry_worker_handle) = params.other;
         block_import = l_block_import;
         telemetry = l_telemetry;
