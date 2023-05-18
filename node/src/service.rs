@@ -2,6 +2,7 @@
 use crate::container_chain_spawner::CcSpawnMsg;
 use crate::container_chain_spawner::ContainerChainSpawner;
 use crate::container_chain_spawner::CCSPAWN;
+use sp_core::H256;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use {
     crate::cli::ContainerChainCli,
@@ -177,43 +178,13 @@ pub fn new_partial(
 
             async move {
                 if is_orchestrator_chain {
-                    if let Some(cc_spawn_tx) = cc_spawn_tx {
-                        let nimbus_keys =
-                            SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
-                        let collator_account_id = AccountId::from(
-                            <[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap(),
-                        );
-                        let container_chain_para_id = client_set_aside_for_cidp
-                            .runtime_api()
-                            .current_collator_parachain_assignment(
-                                block_hash,
-                                collator_account_id.clone(),
-                            )?;
-
-                        let mut initial_assigned_para_id =
-                            initial_assigned_para_id.lock().expect("poison error");
-                        log::info!(
-                            "ContainerChain assignment: old {:?} new {:?}",
-                            initial_assigned_para_id,
-                            container_chain_para_id
-                        );
-                        if container_chain_para_id != *initial_assigned_para_id {
-                            if let Some(new_para_id) = container_chain_para_id {
-                                // Spawn new container chain node
-                                cc_spawn_tx.send(CcSpawnMsg::Spawn(new_para_id))?;
-                            }
-
-                            if let Some(prev_para_id) = *initial_assigned_para_id {
-                                // Stop old container chain node
-                                cc_spawn_tx.send(CcSpawnMsg::Stop(prev_para_id))?;
-                            }
-
-                            *initial_assigned_para_id = container_chain_para_id;
-                        }
-                    } else {
-                        // cc_spawn_tx.is_none(), so we must be running a 1000 collator
-                        log::info!("cc_spawn_tx.is_none(), this must be a 1000 collator");
-                    }
+                    check_assigned_para_id(
+                        cc_spawn_tx,
+                        &*sync_keystore,
+                        initial_assigned_para_id,
+                        client_set_aside_for_cidp,
+                        block_hash,
+                    )?;
                 }
 
                 let time = sp_timestamp::InherentDataProvider::from_system_time();
@@ -238,6 +209,54 @@ pub fn new_partial(
         select_chain: maybe_select_chain,
         other: (block_import, telemetry, telemetry_worker_handle),
     })
+}
+
+/// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` if
+/// the para id has changed since the last call to this function.
+fn check_assigned_para_id<Client>(
+    cc_spawn_tx: Option<UnboundedSender<CcSpawnMsg>>,
+    sync_keystore: &dyn SyncCryptoStore,
+    initial_assigned_para_id: Arc<Mutex<Option<ParaId>>>,
+    client_set_aside_for_cidp: Arc<Client>,
+    block_hash: H256,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
+where
+    Client: ProvideRuntimeApi<Block>,
+    <Client as ProvideRuntimeApi<Block>>::Api: CollatorAssignmentApi<Block, AccountId, ParaId>,
+{
+    if let Some(cc_spawn_tx) = cc_spawn_tx {
+        let nimbus_keys = SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
+        let collator_account_id =
+            AccountId::from(<[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap());
+        let container_chain_para_id = client_set_aside_for_cidp
+            .runtime_api()
+            .current_collator_parachain_assignment(block_hash, collator_account_id.clone())?;
+
+        let mut initial_assigned_para_id = initial_assigned_para_id.lock().expect("poison error");
+        log::info!(
+            "ContainerChain assignment: old {:?} new {:?}",
+            initial_assigned_para_id,
+            container_chain_para_id
+        );
+        if container_chain_para_id != *initial_assigned_para_id {
+            if let Some(new_para_id) = container_chain_para_id {
+                // Spawn new container chain node
+                cc_spawn_tx.send(CcSpawnMsg::Spawn(new_para_id))?;
+            }
+
+            if let Some(prev_para_id) = *initial_assigned_para_id {
+                // Stop old container chain node
+                cc_spawn_tx.send(CcSpawnMsg::Stop(prev_para_id))?;
+            }
+
+            *initial_assigned_para_id = container_chain_para_id;
+        }
+    } else {
+        // cc_spawn_tx.is_none(), so we must be running a 1000 collator
+        log::info!("cc_spawn_tx.is_none(), this must be a 1000 collator");
+    }
+
+    Ok(())
 }
 
 /// Starts a `ServiceBuilder` for a dev service.
@@ -467,8 +486,6 @@ async fn start_node_impl(
     let sync_keystore = params.keystore_container.sync_keystore();
     let mut collate_on_tanssi = None;
 
-    // TODO: Investigate why CollateOn cannot be sent for two chains
-    // Last one has priority apparently
     if validator {
         let parachain_consensus = build_consensus_orchestrator(
             client.clone(),
@@ -502,17 +519,17 @@ async fn start_node_impl(
             recovery_handle: Box::new(overseer_handle.clone()),
         };
 
-        let client2 = client.clone();
-        let collator_key2 = collator_key.clone();
+        let client = client.clone();
+        let collator_key = collator_key.clone();
         collate_on_tanssi = Some(move || async move {
             cumulus_client_collator::start_collator(cumulus_client_collator::StartCollatorParams {
-                runtime_api: client2.clone(),
-                block_status: client2.clone(),
+                runtime_api: client.clone(),
+                block_status: client.clone(),
                 announce_block,
                 overseer_handle,
                 spawner,
                 para_id,
-                key: collator_key2
+                key: collator_key
                     .clone()
                     .expect("Command line arguments do not allow this. qed"),
 
@@ -1004,7 +1021,6 @@ pub fn new_dev(
         async_io::Timer,
         futures::Stream,
         sc_consensus_manual_seal::{run_manual_seal, EngineCommand, ManualSealParams},
-        sp_core::H256,
     };
 
     let sc_service::PartialComponents {

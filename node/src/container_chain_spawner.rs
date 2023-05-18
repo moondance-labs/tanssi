@@ -38,7 +38,7 @@ pub struct ContainerChainSpawner {
     // State
     pub spawned_para_ids: Arc<Mutex<HashMap<ParaId, StopContainerChain>>>,
 
-    // Collate on Tanssi
+    // Async callback that enables collation on the orchestrator chain
     pub collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
 }
 
@@ -64,7 +64,7 @@ lazy_static::lazy_static! {
 }
 
 impl ContainerChainSpawner {
-    /// Try to start the container chain node. In case of error, this panics and stops the node.
+    /// Try to start a new container chain. In case of error, this panics and stops the node.
     fn spawn(&self, container_chain_para_id: ParaId) -> impl Future<Output = ()> {
         let ContainerChainSpawner {
             orchestrator_chain_interface,
@@ -150,8 +150,7 @@ impl ContainerChainSpawner {
                 .path()
                 .unwrap()
                 .to_owned();
-            db_path.pop();
-            db_path.push(format!("full-container-{}", container_chain_para_id));
+            db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
             log::info!("DB PATH IS {:?}", db_path);
             container_chain_cli_config.database.set_path(&db_path);
 
@@ -169,6 +168,7 @@ impl ContainerChainSpawner {
                 )
                 .await?;
 
+            // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = exit_future::signal();
 
             {
