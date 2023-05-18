@@ -19,7 +19,6 @@ use {
 
 // Substrate Imports
 use {
-    frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     sc_consensus::ImportQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
