@@ -16,6 +16,7 @@ pub use {
 };
 
 pub use {
+    cumulus_primitives_core::ParaId,
     manual_seal::OrchestratorManualSealAuraConsensusDataProvider,
     parity_scale_codec::{Decode, Encode},
     sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
@@ -55,13 +56,13 @@ pub(crate) fn slot_author<P: Pair>(
     Some(current_author)
 }
 
-pub fn authorities<P, B, C>(
+/// Return the set of authorities assigned to the paraId where
+/// the first eligible key from the keystore is collating
+pub fn authorities<B, C, P>(
     client: &C,
-    parent_hash: B::Hash,
-    context_block_number: NumberFor<B>,
-    compatibility_mode: &CompatibilityMode<NumberFor<B>>,
+    parent_hash: &B::Hash,
     keystore: SyncCryptoStorePtr,
-) -> Result<Vec<AuthorityId<P>>, ConsensusError>
+) -> Option<Vec<AuthorityId<P>>>
 where
     P: Pair + Send + Sync,
     P::Public: AppPublic + Hash + Member + Encode + Decode,
@@ -73,28 +74,17 @@ where
 {
     let runtime_api = client.runtime_api();
 
-    match compatibility_mode {
-        CompatibilityMode::None => {}
-        // Use `initialize_block` until we hit the block that should disable the mode.
-        CompatibilityMode::UseInitializeBlock { until } => {
-            if *until > context_block_number {
-                runtime_api
-                    .initialize_block(
-                        parent_hash,
-                        &B::Header::new(
-                            context_block_number,
-                            Default::default(),
-                            Default::default(),
-                            parent_hash,
-                            Default::default(),
-                        ),
-                    )
-                    .map_err(|_| sp_consensus::Error::InvalidAuthoritiesSet)?;
-            }
-        }
-    }
-    first_eligible_key::<B, C, P>(client.clone(), keystore.clone(), &parent_hash)
-        .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)
+    let (_first_eligibile_key, para_id) =
+        first_eligible_key::<B, C, P>(client.clone(), parent_hash, keystore.clone())?;
+    let authorities = runtime_api
+        .para_id_authorities(parent_hash.clone(), para_id)
+        .ok()?;
+    log::info!(
+        "Authorities found for para {:?} are {:?}",
+        para_id,
+        authorities
+    );
+    authorities
 }
 
 use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
@@ -102,11 +92,12 @@ use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
 /// If multiple keys are eligible this function still only returns one
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.
 /// This is the standard way of determining which key to author with.
+/// It also returns its paraId assignemnt (provided that they key is eligible for a paraId)
 pub fn first_eligible_key<B: BlockT, C, P>(
     client: &C,
-    keystore: SyncCryptoStorePtr,
     parent_hash: &B::Hash,
-) -> Option<Vec<AuthorityId<P>>>
+    keystore: SyncCryptoStorePtr,
+) -> Option<(AuthorityId<P>, ParaId)>
 where
     C: ProvideRuntimeApi<B>,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
@@ -132,7 +123,7 @@ where
     // Iterate keys until we find an eligible one, or run out of candidates.
     // If we are skipping prediction, then we author with the first key we find.
     // prediction skipping only really makes sense when there is a single key in the keystore.
-    let maybe_authorities = available_keys.into_iter().find_map(|type_public_pair| {
+    available_keys.into_iter().find_map(|type_public_pair| {
         // Have to convert to a typed NimbusId to pass to the runtime API. Maybe this is a clue
         // That I should be passing Vec<u8> across the wasm boundary?
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
@@ -142,15 +133,8 @@ where
                 runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into())
             {
                 log::info!("Para id found for assignment {:?}", para_id);
-                let authorities = runtime_api
-                    .para_id_authorities(parent_hash.clone(), para_id)
-                    .ok()?;
-                log::info!(
-                    "Authorities found for para {:?} are {:?}",
-                    para_id,
-                    authorities
-                );
-                authorities
+
+                Some((nimbus_id.into(), para_id))
             } else {
                 log::info!("No Para id found for assignment {:?}", nimbus_id);
 
@@ -159,7 +143,5 @@ where
         } else {
             None
         }
-    });
-
-    maybe_authorities
+    })
 }

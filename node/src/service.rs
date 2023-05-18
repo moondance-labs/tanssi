@@ -905,12 +905,11 @@ fn build_consensus_container(
                     )
                 })?;
 
-                let authorities =
-                    tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
-                        orchestrator_client_for_cidp.as_ref(),
-                        keystore_for_cidp,
-                        &latest_header.hash(),
-                    );
+                let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                    orchestrator_client_for_cidp.as_ref(),
+                    &latest_header.hash(),
+                    keystore_for_cidp,
+                );
 
                 let aux_data = authorities.ok_or_else(|| {
                     Box::<dyn std::error::Error + Send + Sync>::from(
@@ -1035,12 +1034,11 @@ fn build_consensus_orchestrator(
                 let keystore_for_cidp = keystore_for_cidp.clone();
 
                 async move {
-                    let authorities =
-                        tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
-                            client_set_aside_for_orch.as_ref(),
-                            keystore_for_cidp,
-                            &block_hash,
-                        );
+                    let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                        client_set_aside_for_orch.as_ref(),
+                        &block_hash,
+                        keystore_for_cidp,
+                    );
 
                     let aux_data = authorities.ok_or_else(|| {
                         Box::<dyn std::error::Error + Send + Sync>::from(
