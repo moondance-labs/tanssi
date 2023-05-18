@@ -2,7 +2,6 @@
 use exit_future::Signal;
 use futures::FutureExt;
 use sc_service::SpawnTaskHandle;
-use sp_core::traits::SpawnEssentialNamed;
 use std::collections::HashMap;
 use std::pin::Pin;
 use tokio::sync::mpsc::unbounded_channel;
@@ -178,7 +177,8 @@ pub fn new_partial(
 
             async move {
                 if is_orchestrator_chain {
-                    if let Some(cc_spawn_tx) = CCSPAWN.lock().expect("poison error").as_ref() {
+                    let cc_spawn_tx = CCSPAWN.lock().expect("poison error").as_ref().cloned();
+                    if let Some(cc_spawn_tx) = cc_spawn_tx {
                         let nimbus_keys =
                             SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
                         let collator_account_id = AccountId::from(
@@ -535,9 +535,9 @@ async fn start_node_impl(
     start_network.start_network();
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
-        //let cc_para_id = container_chain_cli.base.para_id;
+        let cc_para_id = container_chain_cli.base.para_id;
         let orchestrator_client = client.clone();
-        let spawn_essential_handle = Arc::new(task_manager.spawn_essential_handle());
+        let spawn_handle = task_manager.spawn_handle();
         let container_chain_spawner = ContainerChainSpawner {
             orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
             orchestrator_client,
@@ -550,16 +550,13 @@ async fn start_node_impl(
             sync_keystore,
             orchestrator_para_id: para_id,
             validator,
-            spawn_essential_handle: spawn_essential_handle.clone(),
+            spawn_handle: spawn_handle.clone(),
             spawned_para_ids: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
-        let spawn_handle = task_manager.spawn_handle();
         let (tx, rx) = unbounded_channel();
         // For testing, spawn a 2000 client for 2001 collators
-        /*
         let tx2 = tx.clone();
-        let tx3 = tx.clone();
         if cc_para_id == Some(2001) {
             spawn_handle.spawn("testing-spawn-2000-client", None, async move {
                 //tokio::time::sleep(Duration::from_secs(60)).await;
@@ -567,12 +564,11 @@ async fn start_node_impl(
                 tx2.send(CcSpawnMsg::Spawn(2000.into())).unwrap();
             });
         }
-        */
 
         task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            container_chain_spawner.rx_loop(rx, spawn_handle),
+            container_chain_spawner.rx_loop(rx),
         );
 
         *CCSPAWN.lock().expect("poison error") = Some(tx);
@@ -597,8 +593,7 @@ struct ContainerChainSpawner {
     sync_keystore: SyncCryptoStorePtr,
     orchestrator_para_id: ParaId,
     validator: bool,
-    // TODO: this could be a `SpawnEssentialTaskHandle`, but that type is private
-    spawn_essential_handle: Arc<dyn SpawnEssentialNamed>,
+    spawn_handle: SpawnTaskHandle,
 
     // State
     spawned_para_ids: Arc<Mutex<HashMap<ParaId, StopContainerChain>>>,
@@ -642,11 +637,10 @@ impl ContainerChainSpawner {
             sync_keystore,
             orchestrator_para_id,
             validator,
-            spawn_essential_handle,
+            spawn_handle,
             spawned_para_ids,
             collate_on_tanssi: _,
-        } = (*self).clone();
-        let spawn_cc_as_child_handle = spawn_essential_handle;
+        } = self.clone();
         let mut container_chain_cli: ContainerChainCli = container_chain_cli.clone();
 
         // This closure is used to emulate a try block, it enables using the `?` operator inside
@@ -760,34 +754,27 @@ impl ContainerChainSpawner {
                     .insert(container_chain_para_id.into(), StopContainerChain(signal));
             }
 
-            // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
-            // to make the parent task manager stop if the container chain task manager stops.
+            // Emulate task_manager.add_child by making the parent task manager stop if the
+            // container chain task manager stops.
             // The reverse is also true, if the parent task manager stops, the container chain
             // task manager will also stop.
             // But add an additional on_exit future to allow graceful shutdown of container chains.
-            spawn_cc_as_child_handle.spawn_essential(
-                "container-chain-task-manager",
-                None,
-                Box::pin(async move {
-                    let mut t1 = container_chain_task_manager.future().fuse();
+            // TODO: not sure what is the difference between spawn and spawn_essential, because
+            // when a "spawn" task panics it stops the node
+            spawn_handle.spawn("container-chain-task-manager", None, async move {
+                let mut t1 = container_chain_task_manager.future().fuse();
+                let mut t2 = on_exit.fuse();
 
-                    let mut t2 = on_exit.fuse();
-
-                    futures::select! {
-                        res1 = t1 => {
-                            res1.expect("container_chain_task_manager failed");
-                        }
-                        _ = t2 => {
-                            // Hack: kill task manager and sleep forever
-                            // This is because spawn_essential will stop the node if this task finishes
-                            // So we need to use spawn (non essential), and handle panics manually...
-                            drop(t1);
-                            drop(container_chain_task_manager);
-                            std::future::pending::<()>().await;
+                futures::select! {
+                    res1 = t1 => {
+                        match res1 {
+                            Ok(()) => panic!("container_chain_task_manager has stopped unexpectedly"),
+                            Err(e) => panic!("container_chain_task_manager failed: {}", e),
                         }
                     }
-                }),
-            );
+                    _ = t2 => {}
+                }
+            });
 
             sc_service::error::Result::Ok(())
         };
@@ -822,31 +809,33 @@ impl ContainerChainSpawner {
         }
     }
 
-    async fn rx_loop(
-        self,
-        mut rx: tokio::sync::mpsc::UnboundedReceiver<CcSpawnMsg>,
-        spawn_handle: SpawnTaskHandle,
-    ) {
+    async fn rx_loop(self, mut rx: tokio::sync::mpsc::UnboundedReceiver<CcSpawnMsg>) {
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::Spawn(para_id) => {
                     // For testing
-                    /*
+
                     if para_id == 2001.into() {
                         tokio::time::sleep(Duration::from_secs(120)).await;
+                        let tx3 = CCSPAWN
+                            .lock()
+                            .expect("poison error")
+                            .as_ref()
+                            .cloned()
+                            .unwrap();
                         tx3.send(CcSpawnMsg::Stop(2000.into())).unwrap();
                     }
-                    */
+
                     if para_id == self.orchestrator_para_id {
                         // Restart collation on orchestrator chain
                         let f = (self.collate_on_tanssi)();
                         f.await;
                     } else {
                         // Spawn new container chain node
-                        spawn_handle.spawn(
+                        self.spawn_handle.spawn(
                             "container-chain-spawner",
                             None,
-                            self.clone().spawn(para_id),
+                            self.spawn(para_id),
                         );
                     }
                 }
