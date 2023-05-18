@@ -1109,6 +1109,7 @@ pub fn new_dev(
     _author_id: Option<AccountId>,
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
+    para_id: ParaId,
 ) -> Result<TaskManager, ServiceError> {
     use {
         async_io::Timer,
@@ -1238,6 +1239,7 @@ pub fn new_dev(
                     tc_consensus::OrchestratorManualSealAuraConsensusDataProvider::new(
                         client.clone(),
                         keystore_container.sync_keystore(),
+                        para_id,
                     ),
                 )),
                 create_inherent_data_providers: move |block: H256, ()| {

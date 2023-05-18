@@ -1,5 +1,6 @@
 //! The Manual Seal implementation for the OrchestratorAuraConsensus
 use {
+    cumulus_primitives_core::ParaId,
     nimbus_primitives::{
         CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair, NimbusSignature,
     },
@@ -15,6 +16,7 @@ use {
     sp_runtime::{traits::Block as BlockT, Digest, DigestItem},
     sp_timestamp::TimestampInherentData,
     std::{marker::PhantomData, sync::Arc},
+    tp_consensus::TanssiAuthorityAssignmentApi,
 };
 /// Consensus data provider for Orchestrator Manual Seal Aura.
 pub struct OrchestratorManualSealAuraConsensusDataProvider<B, C, P> {
@@ -25,6 +27,9 @@ pub struct OrchestratorManualSealAuraConsensusDataProvider<B, C, P> {
 
     /// Shared reference to the client
     pub client: Arc<C>,
+
+    /// ParaId of the orchestrator
+    pub orchestrator_para_id: ParaId,
 
     // phantom data for required generics
     _phantom: PhantomData<(B, C, P)>,
@@ -38,7 +43,7 @@ where
 {
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
-    pub fn new(client: Arc<C>, keystore: SyncCryptoStorePtr) -> Self {
+    pub fn new(client: Arc<C>, keystore: SyncCryptoStorePtr, orchestrator_para_id: ParaId) -> Self {
         let slot_duration = sc_consensus_aura::slot_duration(&*client)
             .expect("slot_duration is always present; qed.");
 
@@ -46,6 +51,7 @@ where
             slot_duration,
             keystore,
             client,
+            orchestrator_para_id,
             _phantom: PhantomData,
         }
     }
@@ -59,7 +65,7 @@ where
         + HeaderMetadata<B, Error = sp_blockchain::Error>
         + UsageProvider<B>
         + ProvideRuntimeApi<B>,
-    C::Api: AuraApi<B, nimbus_primitives::NimbusId>,
+    C::Api: TanssiAuthorityAssignmentApi<B, nimbus_primitives::NimbusId>,
     P: Send + Sync,
 {
     type Transaction = TransactionFor<C, B>;
@@ -77,27 +83,22 @@ where
         let aura_digest_item =
             <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest(slot);
 
+        // Fetch the authorities for the orchestrator chain
         let authorities = self
             .client
             .runtime_api()
-            .authorities(parent.hash())
+            .para_id_authorities(parent.hash(), self.orchestrator_para_id)
             .ok()
-            .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?;
+            .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?
+            .unwrap_or_default();
 
         let expected_author = crate::slot_author::<NimbusPair>(slot, authorities.as_ref());
 
         // TODO: this should always be included, but breaks manual seal tests. We should modify
         // once configuration on how manual seal changes
-        let digest = if let Some(author) = expected_author.and_then(|p| {
-            if SyncCryptoStore::has_keys(&*self.keystore, &[(p.to_raw_vec(), NIMBUS_KEY_ID)]) {
-                log::error!("key found");
-                Some(p.clone())
-            } else {
-                None
-            }
-        }) {
+        let digest = if let Some(author) = expected_author {
             let nimbus_digest =
-                <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(author);
+                <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(author.clone());
             Digest {
                 logs: vec![aura_digest_item, nimbus_digest],
             }

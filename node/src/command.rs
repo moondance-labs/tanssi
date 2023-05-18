@@ -433,6 +433,8 @@ pub fn run() -> Result<()> {
 					.map(|e| e.para_id)
 					.ok_or("Could not find parachain ID in chain-spec.")?;
 
+                let id = ParaId::from(para_id);
+
 				let polkadot_cli = RelayChainCli::new(
 					&config,
 					[RelayChainCli::executable_name()].iter().chain(cli.relaychain_args().iter()),
@@ -446,12 +448,9 @@ pub fn run() -> Result<()> {
 					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
 
 				if dev_service {
-
 					let author_id = Some(crate::chain_spec::get_account_id_from_seed::<sr25519::Public>("Alice"));
-					return crate::service::new_dev(config, author_id, cli.run.sealing, hwbench).map_err(Into::into)
+					return crate::service::new_dev(config, author_id, cli.run.sealing, hwbench, id).map_err(Into::into)
 				}
-
-				let id = ParaId::from(para_id);
 
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
