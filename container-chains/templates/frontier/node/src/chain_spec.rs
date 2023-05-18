@@ -3,6 +3,7 @@ use {
         AccountId, EVMChainIdConfig, EVMConfig, Signature,
     },
     cumulus_primitives_core::ParaId,
+    hex_literal::hex,
     nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,

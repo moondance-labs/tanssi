@@ -1035,6 +1035,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.26",
+ "hex-literal",
  "jsonrpsee",
  "log",
  "nimbus-consensus",

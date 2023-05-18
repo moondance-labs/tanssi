@@ -12,6 +12,7 @@ async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
 futures = { workspace = true }
+hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
