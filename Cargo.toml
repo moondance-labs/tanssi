@@ -133,6 +133,7 @@ parachain-info = { git = "https://github.com/tmpolaczyk/cumulus", branch = "toma
 
 # Cumulus (client)
 cumulus-client-cli = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
+cumulus-client-collator = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
 cumulus-client-consensus-aura = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
 cumulus-client-consensus-common = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }
 cumulus-client-network = { git = "https://github.com/tmpolaczyk/cumulus", branch = "tomasz-reinitialize-9-40", default-features = false }

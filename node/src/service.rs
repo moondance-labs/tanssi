@@ -3,6 +3,7 @@ use exit_future::Signal;
 use futures::FutureExt;
 use sp_core::traits::SpawnEssentialNamed;
 use std::collections::HashMap;
+use std::pin::Pin;
 use tokio::sync::mpsc::unbounded_channel;
 use {
     crate::cli::ContainerChainCli,
@@ -457,12 +458,12 @@ async fn start_node_impl(
         overseer_handle: overseer_handle.clone(),
     };
 
-    let container_collator = container_chain_config.is_some();
     let sync_keystore = params.keystore_container.sync_keystore();
+    let mut collate_on_tanssi = None;
 
     // TODO: Investigate why CollateOn cannot be sent for two chains
     // Last one has priority apparently
-    if validator && !container_collator {
+    if validator {
         let parachain_consensus = build_consensus_orchestrator(
             client.clone(),
             block_import,
@@ -481,19 +482,38 @@ async fn start_node_impl(
         let params = StartCollatorParams {
             para_id,
             block_status: client.clone(),
-            announce_block,
+            announce_block: announce_block.clone(),
             client: client.clone(),
             task_manager: &mut task_manager,
             relay_chain_interface: relay_chain_interface.clone(),
-            spawner,
-            parachain_consensus,
+            spawner: spawner.clone(),
+            parachain_consensus: parachain_consensus.clone(),
             import_queue: import_queue_service,
             collator_key: collator_key
                 .clone()
                 .expect("Command line arguments do not allow this. qed"),
             relay_chain_slot_duration,
-            recovery_handle: Box::new(overseer_handle),
+            recovery_handle: Box::new(overseer_handle.clone()),
         };
+
+        let client2 = client.clone();
+        let collator_key2 = collator_key.clone();
+        collate_on_tanssi = Some(move || async move {
+            cumulus_client_collator::start_collator(cumulus_client_collator::StartCollatorParams {
+                runtime_api: client2.clone(),
+                block_status: client2.clone(),
+                announce_block,
+                overseer_handle,
+                spawner,
+                para_id,
+                key: collator_key2
+                    .clone()
+                    .expect("Command line arguments do not allow this. qed"),
+
+                parachain_consensus,
+            })
+            .await;
+        });
 
         start_collator(params).await?;
     } else {
@@ -531,6 +551,7 @@ async fn start_node_impl(
             validator,
             spawn_essential_handle: spawn_essential_handle.clone(),
             spawned_para_ids: Default::default(),
+            collate_on_tanssi: Box::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
 
         let container_chain_spawner = Box::leak(Box::new(container_chain_spawner));
@@ -564,15 +585,26 @@ async fn start_node_impl(
                                 tx3.send(CcSpawnMsg::Stop(2000.into())).unwrap();
                             }
                             */
-                            // Spawn new container chain node
-                            spawn_handle.spawn(
-                                "container-chain-spawner",
-                                None,
-                                container_chain_spawner.spawn(para_id),
-                            );
+                            if para_id == container_chain_spawner.orchestrator_para_id {
+                                // Restart collation on orchestrator chain
+                                let f = (container_chain_spawner.collate_on_tanssi)();
+                                f.await;
+                            } else {
+                                // Spawn new container chain node
+                                spawn_handle.spawn(
+                                    "container-chain-spawner",
+                                    None,
+                                    container_chain_spawner.spawn(para_id),
+                                );
+                            }
                         }
                         CcSpawnMsg::Stop(para_id) => {
-                            container_chain_spawner.stop(para_id);
+                            if para_id == container_chain_spawner.orchestrator_para_id {
+                                // Do nothing, because currently the only way to stop collation
+                                // on the orchestrator chain is to start a new container chain.
+                            } else {
+                                container_chain_spawner.stop(para_id);
+                            }
                         }
                     }
                 }
@@ -604,6 +636,9 @@ struct ContainerChainSpawner {
 
     // State
     spawned_para_ids: Arc<Mutex<HashMap<ParaId, CcKillHandle>>>,
+
+    // Collate on Tanssi
+    collate_on_tanssi: Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send>,
 }
 
 // TODO: this should allow us to stop a container chain client
@@ -614,7 +649,11 @@ struct CcKillHandle(Signal);
 /// `Arc<ContainerChainSpawner>` to other threads.
 #[derive(Debug)]
 enum CcSpawnMsg {
+    /// Start a container chain client for this ParaId. If the ParaId is the orchestrator chain id,
+    /// start collating there.
     Spawn(ParaId),
+    /// Stop the container chain client previously started for this ParaId. If the ParaId is the
+    /// orchestrator chain id, ignore this message.
     Stop(ParaId),
 }
 
@@ -640,6 +679,7 @@ impl ContainerChainSpawner {
             validator,
             spawn_essential_handle,
             spawned_para_ids,
+            collate_on_tanssi: _,
         } = self;
         let spawn_cc_as_child_handle = spawn_essential_handle;
         let mut container_chain_cli: ContainerChainCli = container_chain_cli.clone();

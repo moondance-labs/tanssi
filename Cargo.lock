@@ -12030,6 +12030,7 @@ dependencies = [
  "async-trait",
  "clap",
  "cumulus-client-cli",
+ "cumulus-client-collator",
  "cumulus-client-consensus-aura",
  "cumulus-client-consensus-common 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
  "cumulus-client-network",
