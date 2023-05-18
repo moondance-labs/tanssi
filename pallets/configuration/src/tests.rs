@@ -23,7 +23,7 @@ fn config_sets_default_values() {
     let default_config = HostConfiguration {
         max_collators: 100,
         min_orchestrator_collators: 2,
-        max_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
         collators_per_container: 2,
     };
     new_test_ext().execute_with(|| {
