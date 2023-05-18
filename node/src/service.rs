@@ -1,6 +1,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 use exit_future::Signal;
 use futures::FutureExt;
+use sc_service::SpawnTaskHandle;
 use sp_core::traits::SpawnEssentialNamed;
 use std::collections::HashMap;
 use std::pin::Pin;
@@ -551,13 +552,10 @@ async fn start_node_impl(
             validator,
             spawn_essential_handle: spawn_essential_handle.clone(),
             spawned_para_ids: Default::default(),
-            collate_on_tanssi: Box::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
+            collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
-
-        let container_chain_spawner = Box::leak(Box::new(container_chain_spawner));
-
         let spawn_handle = task_manager.spawn_handle();
-        let (tx, mut rx) = unbounded_channel();
+        let (tx, rx) = unbounded_channel();
         // For testing, spawn a 2000 client for 2001 collators
         /*
         let tx2 = tx.clone();
@@ -574,41 +572,7 @@ async fn start_node_impl(
         task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
-            async move {
-                while let Some(msg) = rx.recv().await {
-                    match msg {
-                        CcSpawnMsg::Spawn(para_id) => {
-                            // For testing
-                            /*
-                            if para_id == 2001.into() {
-                                tokio::time::sleep(Duration::from_secs(120)).await;
-                                tx3.send(CcSpawnMsg::Stop(2000.into())).unwrap();
-                            }
-                            */
-                            if para_id == container_chain_spawner.orchestrator_para_id {
-                                // Restart collation on orchestrator chain
-                                let f = (container_chain_spawner.collate_on_tanssi)();
-                                f.await;
-                            } else {
-                                // Spawn new container chain node
-                                spawn_handle.spawn(
-                                    "container-chain-spawner",
-                                    None,
-                                    container_chain_spawner.spawn(para_id),
-                                );
-                            }
-                        }
-                        CcSpawnMsg::Stop(para_id) => {
-                            if para_id == container_chain_spawner.orchestrator_para_id {
-                                // Do nothing, because currently the only way to stop collation
-                                // on the orchestrator chain is to start a new container chain.
-                            } else {
-                                container_chain_spawner.stop(para_id);
-                            }
-                        }
-                    }
-                }
-            },
+            container_chain_spawner.rx_loop(rx, spawn_handle),
         );
 
         *CCSPAWN.lock().expect("poison error") = Some(tx);
@@ -619,7 +583,9 @@ async fn start_node_impl(
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
 /// and creating the ChainSpec from on-chain data from the orchestrator chain.
+#[derive(Clone)]
 struct ContainerChainSpawner {
+    // Start container chain params
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     orchestrator_client: Arc<ParachainClient>,
     container_chain_cli: ContainerChainCli,
@@ -635,14 +601,13 @@ struct ContainerChainSpawner {
     spawn_essential_handle: Arc<dyn SpawnEssentialNamed>,
 
     // State
-    spawned_para_ids: Arc<Mutex<HashMap<ParaId, CcKillHandle>>>,
+    spawned_para_ids: Arc<Mutex<HashMap<ParaId, StopContainerChain>>>,
 
     // Collate on Tanssi
-    collate_on_tanssi: Box<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send>,
+    collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
 }
 
-// TODO: this should allow us to stop a container chain client
-struct CcKillHandle(Signal);
+struct StopContainerChain(Signal);
 
 /// Messages used to control the `ContainerChainSpawner`. This is needed because one of the fields
 /// of `ContainerChainSpawner` is not `Sync`, so we cannot simply pass an
@@ -664,7 +629,7 @@ lazy_static::lazy_static! {
 
 impl ContainerChainSpawner {
     /// Try to start the container chain node. In case of error, this panics and stops the node.
-    fn spawn(&self, container_chain_para_id: ParaId) -> impl Future<Output = ()> + '_ {
+    fn spawn(&self, container_chain_para_id: ParaId) -> impl Future<Output = ()> {
         let ContainerChainSpawner {
             orchestrator_chain_interface,
             orchestrator_client,
@@ -680,7 +645,7 @@ impl ContainerChainSpawner {
             spawn_essential_handle,
             spawned_para_ids,
             collate_on_tanssi: _,
-        } = self;
+        } = (*self).clone();
         let spawn_cc_as_child_handle = spawn_essential_handle;
         let mut container_chain_cli: ContainerChainCli = container_chain_cli.clone();
 
@@ -781,8 +746,8 @@ impl ContainerChainSpawner {
                     collator_key.clone(),
                     sync_keystore.clone(),
                     container_chain_para_id.into(),
-                    *orchestrator_para_id,
-                    *validator,
+                    orchestrator_para_id,
+                    validator,
                 )
                 .await?;
 
@@ -792,7 +757,7 @@ impl ContainerChainSpawner {
                 spawned_para_ids
                     .lock()
                     .expect("poison error")
-                    .insert(container_chain_para_id.into(), CcKillHandle(signal));
+                    .insert(container_chain_para_id.into(), StopContainerChain(signal));
             }
 
             // Emulate task_manager.add_child by using task_manager.spawn_essential_task,
@@ -853,6 +818,46 @@ impl ContainerChainSpawner {
                     "Tried to stop a container chain that is not running: {}",
                     container_chain_para_id
                 );
+            }
+        }
+    }
+
+    async fn rx_loop(
+        self,
+        mut rx: tokio::sync::mpsc::UnboundedReceiver<CcSpawnMsg>,
+        spawn_handle: SpawnTaskHandle,
+    ) {
+        while let Some(msg) = rx.recv().await {
+            match msg {
+                CcSpawnMsg::Spawn(para_id) => {
+                    // For testing
+                    /*
+                    if para_id == 2001.into() {
+                        tokio::time::sleep(Duration::from_secs(120)).await;
+                        tx3.send(CcSpawnMsg::Stop(2000.into())).unwrap();
+                    }
+                    */
+                    if para_id == self.orchestrator_para_id {
+                        // Restart collation on orchestrator chain
+                        let f = (self.collate_on_tanssi)();
+                        f.await;
+                    } else {
+                        // Spawn new container chain node
+                        spawn_handle.spawn(
+                            "container-chain-spawner",
+                            None,
+                            self.clone().spawn(para_id),
+                        );
+                    }
+                }
+                CcSpawnMsg::Stop(para_id) => {
+                    if para_id == self.orchestrator_para_id {
+                        // Do nothing, because currently the only way to stop collation
+                        // on the orchestrator chain is to start a new container chain.
+                    } else {
+                        self.stop(para_id);
+                    }
+                }
             }
         }
     }
