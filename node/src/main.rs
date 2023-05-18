@@ -7,6 +7,7 @@ mod chain_spec;
 mod service;
 mod cli;
 mod command;
+mod container_chain_spawner;
 mod rpc;
 
 fn main() -> sc_cli::Result<()> {
