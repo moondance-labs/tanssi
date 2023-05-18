@@ -124,10 +124,8 @@ where
     // If we are skipping prediction, then we author with the first key we find.
     // prediction skipping only really makes sense when there is a single key in the keystore.
     available_keys.into_iter().find_map(|type_public_pair| {
-        // Have to convert to a typed NimbusId to pass to the runtime API. Maybe this is a clue
-        // That I should be passing Vec<u8> across the wasm boundary?
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
-            // If we dont find any parachain that we are assigned to, return non
+            // If we dont find any parachain that we are assigned to, return none
 
             if let Ok(Some(para_id)) =
                 runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into())
