@@ -66,6 +66,5 @@ describeSuite({
         expect(blockFill.normal.refTime.unwrap().gt(new BN(0))).to.be.true;
       },
     });
-
   },
 });
