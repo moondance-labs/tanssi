@@ -93,24 +93,25 @@ pub trait WeightInfo {
     fn set_hrmp_open_request_ttl() -> Weight;
 }
 
+// TODO: set proper weights
 impl WeightInfo for () {
     fn set_config_with_block_number() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_config_with_u32() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_config_with_option_u32() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_config_with_weight() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_config_with_balance() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_hrmp_open_request_ttl() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
 }
 

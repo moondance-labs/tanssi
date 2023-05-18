@@ -6,49 +6,69 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use {
-    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::ParaId,
-    frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-    nimbus_primitives::NimbusId,
-    smallvec::smallvec,
-    sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, OpaqueMetadata},
-    sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
-        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
-        transaction_validity::{TransactionSource, TransactionValidity},
-        ApplyExtrinsicResult, MultiSignature,
-    },
-};
-
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-use {sp_std::prelude::*, sp_version::RuntimeVersion};
 
-pub use sp_runtime::{MultiAddress, Perbill, Permill};
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
+
+mod precompiles;
+
 use {
+    crate::precompiles::FrontierPrecompiles,
+    core::marker::PhantomData,
+    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
+    cumulus_primitives_core::ParaId,
+    fp_account::EthereumSignature,
+    fp_evm::weight_per_gas,
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything},
+        traits::{ConstU32, ConstU64, ConstU8, Everything, FindAuthor},
         weights::{
-            constants::WEIGHT_REF_TIME_PER_SECOND, Weight, WeightToFeeCoefficient,
+            constants::{
+                BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
+                WEIGHT_REF_TIME_PER_SECOND,
+            },
+            ConstantMultiplier, IdentityFee, Weight, WeightToFeeCoefficient,
             WeightToFeeCoefficients, WeightToFeePolynomial,
         },
+        ConsensusEngineId,
     },
     frame_system::limits::{BlockLength, BlockWeights},
+    nimbus_primitives::NimbusId,
+    pallet_ethereum::PostLogContent,
+    pallet_evm::{EnsureAccountId20, IdentityAddressMapping},
+    pallet_transaction_payment::CurrencyAdapter,
+    smallvec::smallvec,
+    sp_api::impl_runtime_apis,
+    sp_core::{
+        crypto::{ByteArray, KeyTypeId},
+        OpaqueMetadata, H160, U256,
+    },
+    sp_runtime::{
+        create_runtime_str, generic, impl_opaque_keys,
+        traits::{
+            AccountIdLookup, BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable,
+            IdentifyAccount, PostDispatchInfoOf, Verify,
+        },
+        transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
+        ApplyExtrinsicResult,
+    },
+    sp_std::prelude::*,
+    sp_version::RuntimeVersion,
 };
-
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
+pub use {
+    sp_consensus_aura::sr25519::AuthorityId as AuraId,
+    sp_runtime::{MultiAddress, Perbill, Permill},
+};
 
 // Polkadot imports
 use polkadot_runtime_common::BlockHashCount;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
-pub type Signature = MultiSignature;
+pub type Signature = EthereumSignature;
 
 /// Some way of identifying an account on the chain. We intentionally make it equivalent
 /// to the public key of our transaction signing scheme.
@@ -90,14 +110,17 @@ pub type SignedExtra = (
     frame_system::CheckEra<Runtime>,
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
+    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
-
+    fp_self_contained::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
+pub type CheckedExtrinsic =
+    fp_self_contained::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra, H160>;
+/// The payload being signed in transactions.
+pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
@@ -107,6 +130,64 @@ pub type Executive = frame_executive::Executive<
     Runtime,
     AllPalletsWithSystem,
 >;
+
+impl fp_self_contained::SelfContainedCall for RuntimeCall {
+    type SignedInfo = H160;
+
+    fn is_self_contained(&self) -> bool {
+        match self {
+            RuntimeCall::Ethereum(call) => call.is_self_contained(),
+            _ => false,
+        }
+    }
+
+    fn check_self_contained(&self) -> Option<Result<Self::SignedInfo, TransactionValidityError>> {
+        match self {
+            RuntimeCall::Ethereum(call) => call.check_self_contained(),
+            _ => None,
+        }
+    }
+
+    fn validate_self_contained(
+        &self,
+        info: &Self::SignedInfo,
+        dispatch_info: &DispatchInfoOf<RuntimeCall>,
+        len: usize,
+    ) -> Option<TransactionValidity> {
+        match self {
+            RuntimeCall::Ethereum(call) => call.validate_self_contained(info, dispatch_info, len),
+            _ => None,
+        }
+    }
+
+    fn pre_dispatch_self_contained(
+        &self,
+        info: &Self::SignedInfo,
+        dispatch_info: &DispatchInfoOf<RuntimeCall>,
+        len: usize,
+    ) -> Option<Result<(), TransactionValidityError>> {
+        match self {
+            RuntimeCall::Ethereum(call) => {
+                call.pre_dispatch_self_contained(info, dispatch_info, len)
+            }
+            _ => None,
+        }
+    }
+
+    fn apply_self_contained(
+        self,
+        info: Self::SignedInfo,
+    ) -> Option<sp_runtime::DispatchResultWithInfo<PostDispatchInfoOf<Self>>> {
+        match self {
+            call @ RuntimeCall::Ethereum(pallet_ethereum::Call::transact { .. }) => {
+                Some(call.dispatch(RuntimeOrigin::from(
+                    pallet_ethereum::RawOrigin::EthereumTransaction(info),
+                )))
+            }
+            _ => None,
+        }
+    }
+}
 
 /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
 /// node's balance type.
@@ -162,8 +243,8 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("container-chain-template"),
-    impl_name: create_runtime_str!("container-chain-template"),
+    spec_name: create_runtime_str!("frontier-template"),
+    impl_name: create_runtime_str!("frontier-template"),
     authoring_version: 1,
     spec_version: 1,
     impl_version: 0,
@@ -210,6 +291,9 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
     WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
     cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
+
+/// We allow for 2000ms of compute with a 6 second average block time.
+pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 2000;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -302,6 +386,19 @@ impl frame_system::Config for Runtime {
     type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
+parameter_types! {
+    pub const TransactionByteFee: Balance = 1;
+}
+
+impl pallet_transaction_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OperationalFeeMultiplier = ConstU8<5>;
+    type WeightToFee = IdentityFee<Balance>;
+    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+    type FeeMultiplierUpdate = ();
+}
+
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
@@ -352,8 +449,6 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 
 impl parachain_info::Config for Runtime {}
 
-impl cumulus_pallet_aura_ext::Config for Runtime {}
-
 parameter_types! {
     pub const Period: u32 = 6 * HOURS;
     pub const Offset: u32 = 0;
@@ -388,7 +483,101 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type OrchestratorAccountId = AccountId;
+    type OrchestratorAccountId =
+        <<sp_runtime::MultiSignature as Verify>::Signer as IdentifyAccount>::AccountId;
+}
+
+const BLOCK_GAS_LIMIT: u64 = 75_000_000;
+
+impl pallet_evm_chain_id::Config for Runtime {}
+
+pub struct FindAuthorTruncated<F>(PhantomData<F>);
+impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
+    fn find_author<'a, I>(digests: I) -> Option<H160>
+    where
+        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
+    {
+        if let Some(author_index) = F::find_author(digests) {
+            let authority_id = Aura::authorities()[author_index as usize].clone();
+            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
+        }
+        None
+    }
+}
+
+parameter_types! {
+    pub BlockGasLimit: U256 = U256::from(BLOCK_GAS_LIMIT);
+    pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
+    pub WeightPerGas: Weight = Weight::from_parts(weight_per_gas(BLOCK_GAS_LIMIT, NORMAL_DISPATCH_RATIO, WEIGHT_MILLISECS_PER_BLOCK), 0);
+}
+
+impl pallet_evm::Config for Runtime {
+    type FeeCalculator = BaseFee;
+    type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
+    type WeightPerGas = WeightPerGas;
+    type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
+    type CallOrigin = EnsureAccountId20;
+    type WithdrawOrigin = EnsureAccountId20;
+    type AddressMapping = IdentityAddressMapping;
+    type Currency = Balances;
+    type RuntimeEvent = RuntimeEvent;
+    type PrecompilesType = FrontierPrecompiles<Self>;
+    type PrecompilesValue = PrecompilesValue;
+    type ChainId = EVMChainId;
+    type BlockGasLimit = BlockGasLimit;
+    type Runner = pallet_evm::runner::stack::Runner<Self>;
+    type OnChargeTransaction = ();
+    type OnCreate = ();
+    type FindAuthor = FindAuthorTruncated<Aura>;
+}
+
+parameter_types! {
+    pub const PostBlockAndTxnHashes: PostLogContent = PostLogContent::BlockAndTxnHashes;
+}
+
+impl pallet_ethereum::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type StateRoot = pallet_ethereum::IntermediateStateRoot<Self>;
+    type PostLogContent = PostBlockAndTxnHashes;
+    type ExtraDataLength = ConstU32<30>;
+}
+
+parameter_types! {
+    pub BoundDivision: U256 = U256::from(1024);
+}
+
+impl pallet_dynamic_fee::Config for Runtime {
+    type MinGasPriceBoundDivisor = BoundDivision;
+}
+
+parameter_types! {
+    pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
+    pub DefaultElasticity: Permill = Permill::from_parts(125_000);
+}
+
+pub struct BaseFeeThreshold;
+impl pallet_base_fee::BaseFeeThreshold for BaseFeeThreshold {
+    fn lower() -> Permill {
+        Permill::zero()
+    }
+    fn ideal() -> Permill {
+        Permill::from_parts(500_000)
+    }
+    fn upper() -> Permill {
+        Permill::from_parts(1_000_000)
+    }
+}
+
+impl pallet_base_fee::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Threshold = BaseFeeThreshold;
+    type DefaultBaseFeePerGas = DefaultBaseFeePerGas;
+    type DefaultElasticity = DefaultElasticity;
+}
+
+impl pallet_hotfix_sufficients::Config for Runtime {
+    type AddressMapping = IdentityAddressMapping;
+    type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -407,14 +596,22 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
 
-        // Collator support. The order of these 4 are important and shall not change.
+        // Collator support. The order of these 3 is important and shall not change.
         Authorship: pallet_authorship = 30,
         Session: pallet_session = 32,
         Aura: pallet_aura = 33,
-        AuraExt: cumulus_pallet_aura_ext = 34,
 
         // ContainerChain
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
+
+        // Frontier
+        Ethereum: pallet_ethereum = 60,
+        EVM: pallet_evm = 61,
+        EVMChainId: pallet_evm_chain_id = 62,
+        DynamicFee: pallet_dynamic_fee = 63,
+        BaseFee: pallet_base_fee = 64,
+        HotfixSufficients: pallet_hotfix_sufficients = 65,
+        TransactionPayment: pallet_transaction_payment = 66,
 
     }
 );

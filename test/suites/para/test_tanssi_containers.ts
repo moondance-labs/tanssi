@@ -27,7 +27,7 @@ describeSuite({
       expect(container2000Network, "Container2000 API incorrect").to.contain("container-chain-template");
 
       const container2001Network = container2001Api.consts.system.version.specName.toString();
-      expect(container2001Network, "Container2001 API incorrect").to.contain("container-chain-template");
+      expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
 
     }, 120000);
 
