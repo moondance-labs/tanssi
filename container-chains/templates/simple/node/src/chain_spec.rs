@@ -1,6 +1,7 @@
 use {
-    container_chain_template_simple_runtime::{AccountId, AuraId, Signature},
+    container_chain_template_simple_runtime::{AccountId, Signature},
     cumulus_primitives_core::ParaId,
+    nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
@@ -43,8 +44,8 @@ type AccountPublic = <Signature as Verify>::Signer;
 /// Generate collator keys from seed.
 ///
 /// This function's return type must always match the session keys of the chain in tuple format.
-pub fn get_collator_keys_from_seed(seed: &str) -> AuraId {
-    get_from_seed::<AuraId>(seed)
+pub fn get_collator_keys_from_seed(seed: &str) -> NimbusId {
+    get_from_seed::<NimbusId>(seed)
 }
 
 /// Helper function to generate an account ID from seed
@@ -58,7 +59,9 @@ where
 /// Generate the session keys from individual elements.
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(keys: AuraId) -> container_chain_template_simple_runtime::SessionKeys {
+pub fn template_session_keys(
+    keys: NimbusId,
+) -> container_chain_template_simple_runtime::SessionKeys {
     container_chain_template_simple_runtime::SessionKeys { aura: keys }
 }
 
@@ -74,7 +77,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
         .iter()
         .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
         .collect();
-    let collator_keys: Vec<AuraId> = initial_collator_seeds
+    let collator_keys: Vec<NimbusId> = initial_collator_seeds
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
@@ -125,7 +128,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
         .iter()
         .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
         .collect();
-    let collator_keys: Vec<AuraId> = initial_collator_seeds
+    let collator_keys: Vec<NimbusId> = initial_collator_seeds
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
@@ -170,7 +173,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
 }
 
 fn testnet_genesis(
-    invulnerables: Vec<(AccountId, AuraId)>,
+    invulnerables: Vec<(AccountId, NimbusId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
 ) -> container_chain_template_simple_runtime::GenesisConfig {

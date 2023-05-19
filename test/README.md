@@ -10,7 +10,7 @@ pnpm i
 Before running tests: compile rust binaries and build ChainSpec files:
 
 ```
-cargo build --release
+cargo build --features=fast-runtime --release --all
 pnpm run build-spec
 ```
 

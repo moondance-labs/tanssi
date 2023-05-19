@@ -19,6 +19,11 @@ serde = { workspace = true, features = [ "derive" ] }
 
 # Local
 container-chain-template-simple-runtime = { path = "../runtime", default-features = false, features = [ "std" ] }
+tc-consensus = { workspace = true }
+
+# Nimbus
+nimbus-primitives = { workspace = true, features = [ "std" ]}
+nimbus-consensus = { workspace = true }
 
 # Substrate
 frame-benchmarking = { workspace = true }

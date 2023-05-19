@@ -5,6 +5,7 @@ use {
         dispatch::Dispatchable,
         traits::{GenesisBuild, OnFinalize, OnInitialize},
     },
+    nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::Encode,
     polkadot_parachain::primitives::HeadData,
@@ -15,8 +16,8 @@ use {
 };
 
 pub use test_runtime::{
-    AccountId, Aura, AuraId, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
-    RuntimeCall, RuntimeEvent, Session, System,
+    AccountId, Aura, Authorship, Balance, Balances, Initializer, Registrar, Runtime, RuntimeCall,
+    RuntimeEvent, Session, System,
 };
 
 pub fn run_to_session(n: u32, add_author: bool) {
@@ -205,7 +206,7 @@ pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
 }
 
 /// Helper function to generate a crypto pair from seed
-pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
+pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
     sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()

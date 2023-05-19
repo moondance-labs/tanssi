@@ -27,7 +27,13 @@ test-runtime = { workspace = true, features = [ "std" ] }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 tp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 tp-container-chain-genesis-data = { workspace = true, features = [ "std", "json" ] }
+
+tc-consensus = { workspace = true }
 tc-orchestrator-chain-interface = { workspace = true }
+
+# Nimbus
+nimbus-primitives = { workspace = true, features = [ "std" ]}
+nimbus-consensus = { workspace = true }
 
 # Substrate
 frame-benchmarking = { workspace = true }

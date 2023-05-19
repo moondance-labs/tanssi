@@ -74,6 +74,30 @@ pub mod pallet {
     #[pallet::pallet]
     pub struct Pallet<T>(PhantomData<T>);
 
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(_n: T::BlockNumber) -> Weight {
+            let mut weight = Weight::zero();
+
+            // We clear this storage item to make sure its always included
+            DidSetContainerAuthorData::<T>::kill();
+
+            weight += T::DbWeight::get().writes(1);
+
+            // The read onfinalizes
+            weight += T::DbWeight::get().reads(1);
+
+            weight
+        }
+
+        fn on_finalize(_: T::BlockNumber) {
+            assert!(
+                <DidSetContainerAuthorData<T>>::exists(),
+                "Container chain author data needs to be present in every block!"
+            );
+        }
+    }
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -85,6 +109,11 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
+
+            assert!(
+                !<DidSetContainerAuthorData<T>>::exists(),
+                "DidSetContainerAuthorData must be updated only once in a block",
+            );
 
             let tp_author_noting_inherent::OwnParachainInherentData {
                 relay_storage_proof,
@@ -106,6 +135,9 @@ pub mod pallet {
                     ),
                 }
             }
+
+            // We correctly set the data
+            DidSetContainerAuthorData::<T>::put(true);
 
             Ok(PostDispatchInfo {
                 actual_weight: Some(total_weight),
@@ -144,6 +176,10 @@ pub mod pallet {
     #[pallet::getter(fn latest_author)]
     pub(super) type LatestAuthor<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
+
+    /// Was the containerAuthorData set?
+    #[pallet::storage]
+    pub(super) type DidSetContainerAuthorData<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     #[pallet::inherent]
     impl<T: Config> ProvideInherent for Pallet<T> {
