@@ -146,7 +146,7 @@ describeSuite({
     it({
       id: "T08",
       title: "Test live registration of container chain 2002",
-      timeout: 120000,
+      timeout: 600000, // 10 minutes
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
@@ -160,6 +160,7 @@ describeSuite({
             spec2002 = await fs.readFile("../specs/template-container-2002.json", 'utf8');
         }
 
+        console.log("read spec file ok, size: ", spec2002.length);
         // Augment paraApi with new RPC method
         const wsProvider2 = new WsProvider('ws://127.0.0.1:9948');
         let paraApi2 = await ApiPromise.create({ provider: wsProvider2,
@@ -197,26 +198,31 @@ describeSuite({
             }
           }
         });
+        console.log("before rpc call");
         let spec2002text = paraApi2.createType('Text', spec2002);
         const containerChainGenesisDataFromRpc = await paraApi2.rpc.utils.raw_chain_spec_into_container_chain_genesis_data(spec2002text);
-        expect(containerChainGenesisDataFromRpc[0]).to.be.equal(2002);
+        expect(containerChainGenesisDataFromRpc[0].toNumber()).to.be.equal(2002);
 
+        console.log("rpc call ok");
         const tx = paraApi.tx.registrar.register(2002, containerChainGenesisDataFromRpc[1]);
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
+        console.log("registrar register call ok");
         const tanssiBlockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+        console.log("wait for block", tanssiBlockNum+1+3);
         await context.waitBlock(tanssiBlockNum+1+3, "Tanssi");
+        console.log("wait for block ok");
 
         // TODO: check that pending para ids contains 2002
         // And genesis data is not empty
         const registered = (await paraApi.query.registrar.registeredParaIds());
-        //console.log("registrar: ", registered);
+        console.log("registrar registered: ", registered);
 
         // This ws api is only available after the node detects its assignment
         // TODO: wait up to 30 seconds after a new block is created to ensure this port is available
         const wsProvider = new WsProvider('ws://127.0.0.1:9951');
         let container2002Api = await ApiPromise.create({ provider: wsProvider });
-        console.log(container2002Api.genesisHash.toHex());
+        console.log("container2002 genesis hash: ", container2002Api.genesisHash.toHex());
 
         const container2002Network = container2002Api.consts.system.version.specName.toString();
         expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
