@@ -10,9 +10,8 @@ use {
     sp_api::{HeaderT, ProvideRuntimeApi, TransactionFor},
     sp_blockchain::{HeaderBackend, HeaderMetadata},
     sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, Slot, SlotDuration},
-    sp_core::crypto::ByteArray,
     sp_inherents::InherentData,
-    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_keystore::SyncCryptoStorePtr,
     sp_runtime::{traits::Block as BlockT, Digest, DigestItem},
     sp_timestamp::TimestampInherentData,
     std::{marker::PhantomData, sync::Arc},
@@ -56,7 +55,6 @@ where
         }
     }
 }
-use nimbus_primitives::NIMBUS_KEY_ID;
 impl<B, C, P> ConsensusDataProvider<B> for OrchestratorManualSealAuraConsensusDataProvider<B, C, P>
 where
     B: BlockT,
