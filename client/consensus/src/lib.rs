@@ -92,7 +92,7 @@ use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
 /// If multiple keys are eligible this function still only returns one
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.
 /// This is the standard way of determining which key to author with.
-/// It also returns its paraId assignemnt (provided that they key is eligible for a paraId)
+/// It also returns its ParaId assignment
 pub fn first_eligible_key<B: BlockT, C, P>(
     client: &C,
     parent_hash: &B::Hash,
