@@ -126,7 +126,7 @@ From cumulus:
 - _ParachainSystem_: A helper to perform relay-storage verifications and injection of cross-chain messages
 - _ParachainInfo_: A place to store parachain-relevant constants like parachain id
 
-The following pallets are stored in `pallets/`. They are designed for Moonbeam's specific requirements:
+The following pallets are stored in `pallets/`. They are designed for Tanssi's specific requirements:
 
 - _Registrar_: A pallet that stores all registered container-chains
 - _Configuration_: A pallet storing the current configuration from which several other components depend
