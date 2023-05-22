@@ -149,7 +149,6 @@ describeSuite({
       },
     });
 
-
     it({
       id: "T08",
       title: "Test live registration of container chain 2002",
@@ -215,7 +214,7 @@ describeSuite({
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
         const tanssiBlockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        await context.waitBlock(tanssiBlockNum+1+3, "Tanssi");
+        await context.waitBlock(1+3, "Tanssi");
 
         // TODO: check that pending para ids contains 2002
         // And genesis data is not empty
@@ -237,7 +236,7 @@ describeSuite({
 
         while (blockNum == 0) {
             // Wait a bit
-            // Cannot use context.waitForBlock because the container2002Api is not part of moonwall
+            // Cannot use context.waitBlock because the container2002Api is not part of moonwall
             const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
             await sleep(1_000);
 
@@ -247,5 +246,27 @@ describeSuite({
       },
     });
 
+    it({
+      id: "T09",
+      title: "Deregister container chain 2002, collators should move to tanssi",
+      timeout: 300000,
+      test: async function () {
+        const keyring = new Keyring({ type: 'sr25519' });
+        let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+
+        const tx = paraApi.tx.registrar.deregister(2002);
+        await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
+        
+        const tanssiBlockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+        await context.waitBlock(1+3, "Tanssi");
+
+        // TODO: check that pending para ids removes 2002
+        const registered = (await paraApi.query.registrar.registeredParaIds());
+        //console.log("registrar: ", registered);
+
+        // TODO: check authors of tanssi blocks
+        // Should be 4 different keys when 2002 is registered, and 6 different keys when 2002 is deregistered
+      },
+    });
   },
 });
