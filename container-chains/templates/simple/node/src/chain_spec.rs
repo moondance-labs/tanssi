@@ -1,4 +1,4 @@
-// Copyright 2019-2022 Moondance Labs Ltd.
+// Copyright (C) Moondance Labs Ltd.
 // This file is part of Tanssi.
 
 // Tanssi is free software: you can redistribute it and/or modify
