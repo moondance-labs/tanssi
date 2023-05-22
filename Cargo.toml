@@ -1,6 +1,6 @@
 [workspace.package]
 authors = [ "Moondance Labs" ]
-repository = "https://github.com/moondance-labs/moondance"
+repository = "https://github.com/moondance-labs/tanssi"
 
 [workspace]
 members = [
