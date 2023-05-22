@@ -134,3 +134,25 @@ The following pallets are stored in `pallets/`. They are designed for Tanssi's s
 - _AuthorNoting_: A pallet that stores the latest author of each of the container-chains
 
 When modifying the git repository for these dependencies, a tool called [diener](https://github.com/bkchr/diener) can be used to replace the git URL and branch for each reference in all `Cargo.toml` files with a single command. This alleviates a lot of the repetitive modifications necessary when changing dependency versions.
+
+## Container-chain templates
+
+Currently two templates are offered within this repository
+
+
+- __Simple template__: Which ressembles the parachain-template node from cumulus and substrate, and only basic pallet like *pallet-balances*, *parachain-system* and basic configuration.
+
+- __Frontier template__: Which ressembles a moonbeam-alike chain, with all pallets necessary for evm and ethereum compatibility
+
+### Build container-chain nodes (full nodes only, not collators)
+These nodes will only act as full nodes, but not as collators since these are offered by Tanssi:
+
+```bash
+# Build the simple-template node
+cargo build -p container-chain-template-simple-node --release
+```
+
+```bash
+# Build the frontier-template node
+cargo build -p container-chain-template-frontier-node --release
+```
