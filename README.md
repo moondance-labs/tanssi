@@ -109,7 +109,7 @@ The Tanssi Runtime is built using FRAME and consists of pallets from substrate, 
 
 From substrate:
 
-- _Balances_: Tracks GLMR token balances
+- _Balances_: Tracks token balances
 - _Sudo_: Allows a privileged account to make arbitrary runtime changes - will be removed before
   launch
 - _Timestamp_: On-Chain notion of time
@@ -155,4 +155,16 @@ cargo build -p container-chain-template-simple-node --release
 ```bash
 # Build the frontier-template node
 cargo build -p container-chain-template-frontier-node --release
+```
+
+## Run with Zombienet directly
+You can directly use the zombieTanssi.json file and pass it to zombienet to spawn yourself the network. From the test directory you can do:
+
+
+```bash
+# Generates the latest specs for orchestrator and container-chains
+npm run build-spec
+
+# Spawns Tanssi and container-chains with zombienet
+/path/to/zombienet spawn -p native ./configs/zombieTanssi.json
 ```
