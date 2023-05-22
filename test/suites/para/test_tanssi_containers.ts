@@ -24,14 +24,20 @@ describeSuite({
       expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
 
       const paraNetwork = paraApi.consts.system.version.specName.toString();
+      const paraId1000 = (await paraApi.query.parachainInfo.parachainId()).toString();
       expect(paraNetwork, "Para API incorrect").to.contain("orchestrator-template-parachain");
+      expect(paraId1000, "Para API incorrect").to.be.equal("1000");
 
       const container2000Network = container2000Api.consts.system.version.specName.toString();
+      const paraId2000 = (await container2000Api.query.parachainInfo.parachainId()).toString();
       expect(container2000Network, "Container2000 API incorrect").to.contain("container-chain-template");
+      expect(paraId2000, "Container2000 API incorrect").to.be.equal("2000");
 
       const container2001Network = container2001Api.consts.system.version.specName.toString();
+      const paraId2001 = (await container2001Api.query.parachainInfo.parachainId()).toString();
       // TODO: this breaks the hack of starting 2001 nodes as 2000 and then rotating, for testing
       //expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
+      //expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
 
     }, 120000);
 
@@ -202,6 +208,9 @@ describeSuite({
         const containerChainGenesisDataFromRpc = await paraApi2.rpc.utils.raw_chain_spec_into_container_chain_genesis_data(spec2002text);
         expect(containerChainGenesisDataFromRpc[0].toNumber()).to.be.equal(2002);
 
+        // TODO: before registering container chain 2002, ensure that it has 0 blocks
+        // Since the RPC doesn't exist at this point, we need to get that from the relay somehow
+
         const tx = paraApi.tx.registrar.register(2002, containerChainGenesisDataFromRpc[1]);
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
@@ -220,10 +229,20 @@ describeSuite({
         console.log(container2002Api.genesisHash.toHex());
 
         const container2002Network = container2002Api.consts.system.version.specName.toString();
+        const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
         expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
+        expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
 
-        const blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
-        // TODO: maybe wait a bit instead of failing?
+        let blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
+
+        while (blockNum == 0) {
+            // Wait a bit
+            // Cannot use context.waitForBlock because the container2002Api is not part of moonwall
+            const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+            await sleep(1_000);
+
+            blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
+        }
         expect(blockNum).to.be.greaterThan(0);
       },
     });
