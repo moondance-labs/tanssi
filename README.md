@@ -29,7 +29,7 @@ cargo build --release
 Tanssi has Rust unit tests as well as typescript integration tests. These tests are run in CI, and can also be run locally. Tanssi tests (specially those in typescript) depend on sessions being shorter, so you probably want to compile the node first as:
 
 ```bash
-# Run the Rust unit tests
+# Build the node with short session times
 cargo build --features=fast-runtime --release
 ```
 
@@ -81,29 +81,27 @@ The command above will start the node in instant seal mode. It creates a block w
 ### Prefunded Development Addresses
 
 Running Tanssi in development mode will pre-fund several well-known addresses that (mostly) These addresses are derived from
-using the account name as a seed:
+using the well known private key `bottom drive obey lake curtain smoke basket hold race lonely fit walk` and appending the account name as a hard derivation key to the seed above, e.g., `bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice`:
 
 ```
 # Alice:
-- Address: 0xf24FF3a9CF04c71Dbc94D0b566f7A27B94566cac
+- Address: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
 
 # Bob:
-- Address: 0x3Cd0A705a2DC65e5b1E1205896BaA2be8A07c6e0
+- Address: 5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty
 
-# Charleth:
-- Address: 0x798d4Ba9baf0064Ec19eB4F0a1a45785ae9D6DFc
+# Charlie:
+- Address: 5FLSigC9HGRKVhB9FiEo4Y3koPsNmBmLJbpXg2mp1hXcS59Y
 
-# Dorothy:
-- Address: 0x773539d4Ac0e786233D90A233654ccEE26a613D9
+# Dave:
+- Address: 5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy
 
-# Ethan:
-- Address: 0xFf64d3F6efE2317EE2807d223a0Bdc4c0c49dfDB
+# Eve:
+- Address: 5HGjWAeFDfFCWPsjFQdVV2Msvz2XtMktvgocEZcCj68kUMaw
 
-# Faith:
-- Address: 0xC0F0f4ab324C46e55D02D0033343B4Be8A55532d
+# Ferdie:
+- Address: 5CiPPseXPECbkjWCa6MnjNokrgYjMqmKndv2rSnekmSK2DjL
 
-# Goliath:
-- Address: 0x7BF369283338E12C90514468aa3868A551AB2929
 ```
 ## Runtime Architecture
 
