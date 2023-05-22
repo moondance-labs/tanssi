@@ -2,6 +2,8 @@ import { expect, describeSuite, beforeAll } from "@moonwall/cli";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { BN } from "@polkadot/util";
 const fs = require('fs/promises');
+import { getHeaderFromRelay } from "../../util/relayInterface";
+import { getAuthorFromDigest } from "../../util/author";
 
 describeSuite({
   id: "ZTN",
@@ -38,6 +40,13 @@ describeSuite({
       // TODO: this breaks the hack of starting 2001 nodes as 2000 and then rotating, for testing
       //expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
       //expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
+
+      // Test block numbers in relay are 0 yet
+      const header2000 = await getHeaderFromRelay(relayApi, 2000);
+      const header2001 = await getHeaderFromRelay(relayApi, 2001);
+
+      expect(header2000.number.toNumber()).to.be.equal(0);
+      expect(header2001.number.toNumber()).to.be.equal(0);
 
     }, 120000);
 
@@ -151,6 +160,16 @@ describeSuite({
 
     it({
       id: "T08",
+      title: "Test author is correct in Orchestrator",
+      test: async function () {
+        const authorities = (await paraApi.query.aura.authorities());
+        const author = await getAuthorFromDigest(paraApi);
+        expect(authorities.toHuman().includes(author.toString())).to.be.true;
+      },
+    });
+
+    it({
+      id: "T09",
       title: "Test live registration of container chain 2002",
       timeout: 300000,
       test: async function () {
@@ -207,8 +226,12 @@ describeSuite({
         const containerChainGenesisDataFromRpc = await paraApi2.rpc.utils.raw_chain_spec_into_container_chain_genesis_data(spec2002text);
         expect(containerChainGenesisDataFromRpc[0].toNumber()).to.be.equal(2002);
 
-        // TODO: before registering container chain 2002, ensure that it has 0 blocks
-        // Since the RPC doesn't exist at this point, we need to get that from the relay somehow
+        // Before registering container chain 2002, ensure that it has 0 blocks
+        // Since the RPC doesn't exist at this point, we need to get that from the relay
+        const header2002 = await getHeaderFromRelay(relayApi, 2002);
+        expect(header2002.number.toNumber()).to.be.equal(0);
+        const registered1 = (await paraApi.query.registrar.registeredParaIds());
+        expect(registered1.toHuman().includes("2002")).to.be.false;
 
         const tx = paraApi.tx.registrar.register(2002, containerChainGenesisDataFromRpc[1]);
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
@@ -219,7 +242,7 @@ describeSuite({
         // TODO: check that pending para ids contains 2002
         // And genesis data is not empty
         const registered = (await paraApi.query.registrar.registeredParaIds());
-        //console.log("registrar: ", registered);
+        expect(registered.toHuman().includes("2002")).to.be.true;
 
         // This ws api is only available after the node detects its assignment
         // TODO: wait up to 30 seconds after a new block is created to ensure this port is available
@@ -247,7 +270,7 @@ describeSuite({
     });
 
     it({
-      id: "T09",
+      id: "T10",
       title: "Deregister container chain 2002, collators should move to tanssi",
       timeout: 300000,
       test: async function () {
@@ -262,10 +285,25 @@ describeSuite({
 
         // TODO: check that pending para ids removes 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
-        //console.log("registrar: ", registered);
+        expect(registered.toHuman().includes("2002")).to.be.false;
 
-        // TODO: check authors of tanssi blocks
+        // Check authors of tanssi blocks
         // Should be 4 different keys when 2002 is registered, and 6 different keys when 2002 is deregistered
+        const authorities = (await paraApi.query.aura.authorities());
+        const actualAuthors = [];
+
+        for (let i = 0; i < 6; i++) {
+            const author = await getAuthorFromDigest(paraApi);
+            actualAuthors.push(author);
+            await context.waitBlock(1, "Tanssi");
+        }
+
+        let uniq = [...new Set(actualAuthors)];
+
+        if (uniq.length != 6) {
+          console.error("Mismatch between authorities and actual block authors: authorities: ", authorities.toHuman(), ", actual authors: ", actualAuthors);
+          expect(false).to.be.true;
+        }
       },
     });
   },
