@@ -15,13 +15,13 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-pub use test_runtime::{
+pub use orchestrator_runtime::{
     AccountId, Aura, Authorship, Balance, Balances, Initializer, Registrar, Runtime, RuntimeCall,
     RuntimeEvent, Session, System,
 };
 
 pub fn run_to_session(n: u32, add_author: bool) {
-    let block_number = test_runtime::Period::get() * n;
+    let block_number = orchestrator_runtime::Period::get() * n;
     run_to_block(block_number + 1, add_author);
 }
 
@@ -166,7 +166,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        test_runtime::SessionKeys {
+                        orchestrator_runtime::SessionKeys {
                             aura: aura_id.clone(),
                         },
                     )

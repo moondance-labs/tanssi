@@ -23,6 +23,7 @@ use {
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
+    orchestrator_runtime::{opaque::Block, AccountId, RuntimeApi},
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
@@ -46,7 +47,6 @@ use {
     tc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
-    test_runtime::{opaque::Block, AccountId, RuntimeApi},
 };
 
 type FullBackend = TFullBackend<Block>;
@@ -59,11 +59,11 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        test_runtime::api::dispatch(method, data)
+        orchestrator_runtime::api::dispatch(method, data)
     }
 
     fn native_version() -> sc_executor::NativeVersion {
-        test_runtime::native_version()
+        orchestrator_runtime::native_version()
     }
 }
 
@@ -1130,7 +1130,7 @@ pub fn new_dev(
                 inherent_data: &mut sp_inherents::InherentData,
             ) -> Result<(), sp_inherents::Error> {
                 TIMESTAMP.with(|x| {
-                    *x.borrow_mut() += test_runtime::SLOT_DURATION;
+                    *x.borrow_mut() += orchestrator_runtime::SLOT_DURATION;
                     inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
                 })
             }

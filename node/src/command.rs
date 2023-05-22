@@ -8,6 +8,7 @@ use {
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    orchestrator_runtime::Block,
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
@@ -17,7 +18,6 @@ use {
     sp_core::{hexdisplay::HexDisplay, sr25519},
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::{io::Write, net::SocketAddr},
-    test_runtime::Block,
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -79,7 +79,7 @@ impl SubstrateCli for Cli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &test_runtime::VERSION
+        &orchestrator_runtime::VERSION
     }
 }
 
@@ -179,7 +179,7 @@ impl SubstrateCli for ContainerChainCli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &test_runtime::VERSION
+        &orchestrator_runtime::VERSION
     }
 }
 
@@ -381,8 +381,8 @@ pub fn run() -> Result<()> {
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
             use {
+                orchestrator_runtime::MILLISECS_PER_BLOCK,
                 sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch},
-                test_runtime::MILLISECS_PER_BLOCK,
                 try_runtime_cli::block_building_info::timestamp_with_aura_info,
             };
 

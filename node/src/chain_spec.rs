@@ -1,20 +1,22 @@
 use {
     cumulus_primitives_core::ParaId,
     nimbus_primitives::NimbusId,
+    orchestrator_runtime::{
+        AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
+    },
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
     std::collections::BTreeMap,
-    test_runtime::{AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT},
     tp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec = sc_service::GenericChainSpec<test_runtime::GenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<orchestrator_runtime::GenesisConfig, Extensions>;
 
 /// Specialized `ChainSpec` for container chains that only allows raw genesis format.
 pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfig, Extensions>;
@@ -100,8 +102,8 @@ where
 /// Generate the session keys from individual elements.
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(keys: NimbusId) -> test_runtime::SessionKeys {
-    test_runtime::SessionKeys { aura: keys.clone() }
+pub fn template_session_keys(keys: NimbusId) -> orchestrator_runtime::SessionKeys {
+    orchestrator_runtime::SessionKeys { aura: keys.clone() }
 }
 
 /// Helper function to turn a list of names into a list of `(AccountId, AuraId)`
@@ -244,27 +246,27 @@ fn testnet_genesis(
     root_key: AccountId,
     container_chains: &[String],
     mock_container_chains: &[ParaId],
-) -> test_runtime::GenesisConfig {
-    test_runtime::GenesisConfig {
-        system: test_runtime::SystemConfig {
-            code: test_runtime::WASM_BINARY
+) -> orchestrator_runtime::GenesisConfig {
+    orchestrator_runtime::GenesisConfig {
+        system: orchestrator_runtime::SystemConfig {
+            code: orchestrator_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
                 .to_vec(),
         },
-        balances: test_runtime::BalancesConfig {
+        balances: orchestrator_runtime::BalancesConfig {
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
-        parachain_info: test_runtime::ParachainInfoConfig { parachain_id: id },
-        collator_selection: test_runtime::CollatorSelectionConfig {
+        parachain_info: orchestrator_runtime::ParachainInfoConfig { parachain_id: id },
+        collator_selection: orchestrator_runtime::CollatorSelectionConfig {
             invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
             candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
             ..Default::default()
         },
-        session: test_runtime::SessionConfig {
+        session: orchestrator_runtime::SessionConfig {
             keys: invulnerables
                 .into_iter()
                 .map(|(acc, aura)| {

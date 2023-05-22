@@ -7,6 +7,7 @@
 
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 use {
+    orchestrator_runtime::{opaque::Block, AccountId, Index as Nonce},
     polkadot_primitives::Hash,
     sc_client_api::AuxStore,
     sc_consensus_manual_seal::{
@@ -18,7 +19,6 @@ use {
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
     std::sync::Arc,
-    test_runtime::{opaque::Block, AccountId, Index as Nonce},
 };
 
 /// A type representing all RPC extensions.

@@ -5,6 +5,10 @@ use {
     cumulus_primitives_core::ParaId,
     frame_support::{assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
+    orchestrator_runtime::{
+        AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
+        Configuration,
+    },
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -18,10 +22,6 @@ use {
     },
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    test_runtime::{
-        AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
-        Configuration,
-    },
 };
 
 mod common;
@@ -303,14 +303,14 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -378,14 +378,14 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -894,14 +894,14 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -1096,7 +1096,10 @@ fn test_author_noting_not_self_para() {
 
 #[test]
 fn session_keys_key_type_id() {
-    assert_eq!(test_runtime::SessionKeys::key_ids(), vec![NIMBUS_KEY_ID]);
+    assert_eq!(
+        orchestrator_runtime::SessionKeys::key_ids(),
+        vec![NIMBUS_KEY_ID]
+    );
 }
 
 #[test]
@@ -1143,14 +1146,14 @@ fn test_session_keys_with_authority_mapping() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: bob_id_2.clone(),
                 },
                 vec![]
@@ -1250,14 +1253,14 @@ fn test_session_keys_with_authority_assignment() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: bob_id_2.clone(),
                 },
                 vec![]
