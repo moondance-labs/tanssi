@@ -2,8 +2,6 @@
   <img src="media/tanssi.png" width="360">
 </p>
 
-<div align="center">
-
 **A Substrate [Parachain](https://polkadot.network/technology/) that offers collation/data-retrievability services to appchains.**
 
 
