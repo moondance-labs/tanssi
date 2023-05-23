@@ -1,8 +1,10 @@
 [package]
 name = "tc-orchestrator-chain-interface"
-authors = [ "Anonymous" ]
 edition = "2021"
 version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
+
 [dependencies]
 async-trait = { workspace = true }
 futures = { workspace = true }

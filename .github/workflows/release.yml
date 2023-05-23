@@ -20,6 +20,25 @@ jobs:
       - name: Display variables
         run: |
           echo polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
+
+  check-copyright:
+    runs-on: ubuntu-latest
+    needs: ["set-tags"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.set-tags.outputs.git_ref }}
+      - name: Find un-copyrighted files
+        run: |
+          find . \! -name '*.expanded.rs' -name '*.rs' -exec grep  -H -E -o -c Copyright {} \; | grep ':0' || true
+          FILECOUNT=$(find . \! -name '*.expanded.rs' -name '*.rs' -exec grep  -H -E -o -c Copyright {} \; | grep -c ':0' || true)
+          if [[ $FILECOUNT -eq 0 ]]; then
+            true
+          else
+            false
+          fi
+
   ####### Building and Testing binaries #######
   build:
     runs-on: self-hosted
@@ -54,7 +73,7 @@ jobs:
           mkdir -p runtimes
           cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.wasm runtimes/;
           cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/test-runtime/test_runtime.compact.compressed.wasm runtimes/;
+          cp $CARGO_TARGET_DIR/release/wbuild/orchestrator-runtime/orchestrator_runtime.compact.compressed.wasm runtimes/;
 
       - name: Upload runtimes
         uses: actions/upload-artifact@v3.1.2
@@ -65,7 +84,7 @@ jobs:
       - name: Save tanssi and template binaries
         run: |
           mkdir -p binaries
-          cp $CARGO_TARGET_DIR/release/test-node binaries/test-node;
+          cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
           cp $CARGO_TARGET_DIR/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
           cp $CARGO_TARGET_DIR/release/container-chain-template-frontier-node binaries/container-chain-template-frontier-node;
 
@@ -104,7 +123,7 @@ jobs:
       
       - name: "Install and run upgrade test"
         run: |
-          chmod uog+x target/release/test-node
+          chmod uog+x target/release/tanssi-node
           cd test
           pnpm install --frozen-lockfile
           pnpm moonwall test dev_tanssi
@@ -153,7 +172,7 @@ jobs:
           cd test
           pnpm install --frozen-lockfile
 
-          chmod uog+x tmp/test-node
+          chmod uog+x tmp/tanssi-node
           chmod uog+x tmp/container-chain-template-simple-node
           chmod uog+x tmp/container-chain-template-frontier-node
           chmod uog+x tmp/polkadot

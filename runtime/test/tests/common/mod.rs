@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 use {
     cumulus_primitives_core::PersistedValidationData,
     frame_support::{
@@ -15,13 +31,13 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-pub use test_runtime::{
+pub use orchestrator_runtime::{
     AccountId, Aura, Authorship, Balance, Balances, Initializer, Registrar, Runtime, RuntimeCall,
     RuntimeEvent, Session, System,
 };
 
 pub fn run_to_session(n: u32, add_author: bool) {
-    let block_number = test_runtime::Period::get() * n;
+    let block_number = orchestrator_runtime::Period::get() * n;
     run_to_block(block_number + 1, add_author);
 }
 
@@ -166,7 +182,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        test_runtime::SessionKeys {
+                        orchestrator_runtime::SessionKeys {
                             aura: aura_id.clone(),
                         },
                     )

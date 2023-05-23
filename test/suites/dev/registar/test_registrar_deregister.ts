@@ -25,9 +25,8 @@ describeSuite({
               const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
   
               // These are registered in genesis
-              expect(parasRegistered[0].toBigInt()).to.be.eq(BigInt(2000));
-              expect(parasRegistered[1].toBigInt()).to.be.eq(BigInt(2001));
-          },
+              expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001]);
+            },
         });
   
       it({
@@ -46,25 +45,21 @@ describeSuite({
           await context.createBlock();
   
           const pendingParas = await polkadotJs.query.registrar.pendingParaIds();
+          expect(pendingParas.length).to.be.eq(1);
           const sessionScheduling = pendingParas[0][0];
           const parasScheduled = pendingParas[0][1];
   
-          expect(pendingParas.length).to.be.eq(1);
           expect(sessionScheduling.toBigInt()).to.be.eq(expectedScheduledOnboarding);
-          //expect(parasScheduled.length).to.be.eq(1);
-          console.log(parasScheduled.toString())
   
           // These will be the paras in session 2
-          expect(parasScheduled[0].toBigInt()).to.be.eq(BigInt(2000));
+          expect(parasScheduled.toJSON()).to.deep.equal([2000]);
   
           // Checking that in session 2 paras are registered
           await jumpSessions(context, 2)
   
           // Expect now paraIds to be registered
           const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
-          expect(parasRegistered.length).to.be.eq(1);
-  
-          expect(parasRegistered[0].toBigInt()).to.be.eq(BigInt(2000));
+          expect(parasRegistered.toJSON()).to.deep.equal([2000]);
         },
       });
       },
