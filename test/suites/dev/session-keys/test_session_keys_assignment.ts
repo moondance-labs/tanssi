@@ -28,17 +28,17 @@ describeSuite({
         title: "Checking that authority assignment is correct on genesis",
         test: async function () {
             // for session 0
-            const assignment0 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).unwrap().toHuman();
-            const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toHuman();
+            const assignment0 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).unwrap().toJSON();
+            const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toJSON();
 
             expect(assignment0.orchestratorChain).to.deep.equal([
-                u8aToHex(alice.publicKey).toString(),
-                u8aToHex(bob.publicKey).toString(),
+                u8aToHex(alice.publicKey),
+                u8aToHex(bob.publicKey),
             ]);
             expect(assignment0.containerChains).to.deep.equal({
                 2000: [
-                    u8aToHex(charlie.publicKey).toString(),
-                    u8aToHex(dave.publicKey).toString(),
+                    u8aToHex(charlie.publicKey),
+                    u8aToHex(dave.publicKey),
                 ],
                 2001: [],
             });
@@ -50,8 +50,10 @@ describeSuite({
 
             // Check authorities are correct
             const authorities = (await polkadotJs.query.aura.authorities());
-            expect(u8aToHex(authorities[0])).to.be.eq(u8aToHex(alice.publicKey));
-            expect(u8aToHex(authorities[1])).to.be.eq(u8aToHex(bob.publicKey))
+            expect(authorities.toJSON()).to.deep.equal([
+                u8aToHex(alice.publicKey),
+                u8aToHex(bob.publicKey),
+            ]);
         },
     });
 
@@ -73,7 +75,7 @@ describeSuite({
             const nextKey = await polkadotJs.query.session.nextKeys(alice.address);
             expect(u8aToHex(nextKey.unwrap().aura)).to.be.eq(u8aToHex(newKey));
 
-            const initial_assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toHuman();
+            const initial_assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toJSON();
 
             // Let's jump one session
             await jumpSessions(context, 1);
@@ -87,8 +89,8 @@ describeSuite({
             expect(result1.length).to.be.eq(1);
 
             expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).isNone).to.be.true;
-            const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toHuman();
-            const assignment2 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(2)).unwrap().toHuman();
+            const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toJSON();
+            const assignment2 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(2)).unwrap().toJSON();
             expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(3)).isNone).to.be.true;
 
             // Assignment for session 1 did not change
@@ -97,28 +99,29 @@ describeSuite({
             // Assignment for session 2 uses the new keys
             expect(assignment2.orchestratorChain).to.deep.equal([
                 // This is alice's new key
-                u8aToHex(newKey).toString(),
-                u8aToHex(bob.publicKey).toString(),
+                u8aToHex(newKey),
+                u8aToHex(bob.publicKey),
             ]);
             expect(assignment2.containerChains).to.deep.equal({
                 2000: [
-                    u8aToHex(charlie.publicKey).toString(),
-                    u8aToHex(dave.publicKey).toString(),
+                    u8aToHex(charlie.publicKey),
+                    u8aToHex(dave.publicKey),
                 ],
                 2001: [],
             });
-
 
             // Let's jump one more session
             await jumpSessions(context, 1);
 
             // The change should have been applied, and now both aura and authorityMapping should reflect
             const keys = await polkadotJs.query.authorityMapping.authorityIdMapping(2);
-            expect(keys.toHuman()[u8aToHex(newKey).toString()]).to.be.eq(alice.address.toString());
+            expect(keys.toJSON()[u8aToHex(newKey)]).to.be.eq(alice.address);
 
             const authorities = (await polkadotJs.query.aura.authorities());
-            expect(u8aToHex(authorities[0])).to.be.eq(u8aToHex(newKey));
-
+            expect(authorities.toJSON()).to.deep.equal([
+                u8aToHex(newKey),
+                u8aToHex(bob.publicKey),
+            ]);
             // AuthorityMapping should no-longer contain the session 1
             expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).isNone).to.be.true;
         },
