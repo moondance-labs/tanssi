@@ -29,6 +29,7 @@ nimbus-consensus = { workspace = true }
 # Substrate
 frame-benchmarking = { workspace = true }
 frame-benchmarking-cli = { workspace = true }
+frame-system-rpc-runtime-api = { workspace = true }
 sc-basic-authorship = { workspace = true }
 sc-chain-spec = { workspace = true }
 sc-cli = { workspace = true }
@@ -82,7 +83,14 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 
 # Frontier
+fp-rpc = { workspace = true }
+fc-db = { workspace = true } 
 fp-evm = { workspace = true }
+fc-mapping-sync = { workspace = true }
+fc-rpc = { workspace = true }
+fc-cli = { workspace = true }
+fc-consensus = { workspace = true }
+fc-rpc-core = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }

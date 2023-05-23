@@ -61,6 +61,8 @@ pub enum Subcommand {
     /// Errors since the binary was not build with `--features try-runtime`.
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
+    /// Db meta columns information.
+	FrontierDb(fc_cli::FrontierDbCmd),
 }
 
 #[derive(Debug, clap::Parser)]
@@ -93,6 +95,9 @@ pub struct Cli {
     /// Optional parachain id that should be used to build chain spec.
     #[arg(long)]
     pub para_id: Option<u32>,
+
+    #[command(flatten)]
+	pub eth: EthConfiguration,
 }
 
 #[derive(Debug)]

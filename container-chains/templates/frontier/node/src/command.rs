@@ -30,7 +30,7 @@ use {
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
     },
-    sc_service::config::{BasePath, PrometheusConfig},
+    sc_service::{config::{BasePath, PrometheusConfig}, DatabaseSource},
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
@@ -193,6 +193,22 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(cmd)?;
 
             runner.sync_run(|config| {
+                // Remove Frontier offchain db
+				let frontier_database_config = match config.database {
+					DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
+						path: frontier_database_dir(&config, "db"),
+						cache_size: 0,
+					},
+					DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
+						path: frontier_database_dir(&config, "paritydb"),
+					},
+					_ => {
+						return Err(format!("Cannot purge `{:?}` database", config.database).into())
+					}
+				};
+
+				cmd.base.run(frontier_database_config)?;
+
                 let polkadot_cli = RelayChainCli::new(
                     &config,
                     [RelayChainCli::executable_name()]
@@ -267,6 +283,14 @@ pub fn run() -> Result<()> {
                 _ => Err("Benchmarking sub-command unsupported".into()),
             }
         }
+        Some(Subcommand::FrontierDb(cmd)) => {
+			let runner = cli.create_runner(cmd)?;
+			runner.sync_run(|mut config| {
+				let (client, _, _, _, frontier_backend) =
+					service::new_chain_ops(&mut config, &cli.eth)?;
+				cmd.run(client, frontier_backend)
+			})
+		}
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
             let runner = cli.create_runner(cmd)?;
