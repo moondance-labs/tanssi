@@ -105,7 +105,12 @@ pub mod pallet {
 
             let total_fee = block_cost.saturating_mul(actual_credits_purchased.into());
 
-            T::OnChargeForBlockCredit::charge_credits(&account, &para_id, actual_credits_purchased, total_fee)?;
+            T::OnChargeForBlockCredit::charge_credits(
+                &account,
+                &para_id,
+                actual_credits_purchased,
+                total_fee,
+            )?;
 
             BlockProductionCredits::<T>::insert(para_id, updated_credits);
 
@@ -160,7 +165,7 @@ pub mod pallet {
 
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
-        fn build(&self) { }
+        fn build(&self) {}
     }
 }
 

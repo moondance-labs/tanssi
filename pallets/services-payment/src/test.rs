@@ -49,11 +49,20 @@ fn purchase_credits_purchases_zero_when_max_already_stored() {
                 None,
             ),);
 
-            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(MaxCreditsStored::get()));
-            assert_ok!(
-                PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), para_id, 1, None),
+            assert_eq!(
+                <BlockProductionCredits<Test>>::get(para_id),
+                Some(MaxCreditsStored::get())
             );
-            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(MaxCreditsStored::get()));
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                para_id,
+                1,
+                None
+            ),);
+            assert_eq!(
+                <BlockProductionCredits<Test>>::get(para_id),
+                Some(MaxCreditsStored::get())
+            );
 
             // should have two purchase events (one with MaxCreditsStored, then one with zero)
             assert_eq!(
@@ -98,16 +107,20 @@ fn purchase_credits_purchases_max_possible_when_cant_purchase_all_requested() {
             let purchasable = MaxCreditsStored::get() - amount_purchased;
             assert_eq!(purchasable, 4);
 
-            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(amount_purchased));
-            assert_ok!(
-                PaymentServices::purchase_credits(
-                    RuntimeOrigin::signed(ALICE),
-                    para_id,
-                    MaxCreditsStored::get(),
-                    None,
-                ),
+            assert_eq!(
+                <BlockProductionCredits<Test>>::get(para_id),
+                Some(amount_purchased)
             );
-            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(MaxCreditsStored::get()));
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                para_id,
+                MaxCreditsStored::get(),
+                None,
+            ),);
+            assert_eq!(
+                <BlockProductionCredits<Test>>::get(para_id),
+                Some(MaxCreditsStored::get())
+            );
 
             // should have two purchase events (one with amount_purchased, then with purchasable)
             assert_eq!(
@@ -242,14 +255,12 @@ fn buy_credits_exact_price_limit_works() {
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
-            assert_ok!(
-                PaymentServices::purchase_credits(
-                    RuntimeOrigin::signed(ALICE),
-                    1.into(),
-                    1u64,
-                    Some(FIXED_BLOCK_PRODUCTION_COST),
-                ),
-            );
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1u64,
+                Some(FIXED_BLOCK_PRODUCTION_COST),
+            ),);
         });
 }
 
@@ -259,13 +270,11 @@ fn buy_credits_limit_exceeds_price_works() {
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
-            assert_ok!(
-                PaymentServices::purchase_credits(
-                    RuntimeOrigin::signed(ALICE),
-                    1.into(),
-                    1u64,
-                    Some(FIXED_BLOCK_PRODUCTION_COST + 1),
-                ),
-            );
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1u64,
+                Some(FIXED_BLOCK_PRODUCTION_COST + 1),
+            ),);
         });
 }
