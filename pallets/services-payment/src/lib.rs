@@ -46,6 +46,7 @@ pub mod pallet {
         TooManyCredits,
         InsufficientFundsToPurchaseCredits,
         InsufficientCredits,
+        CreditPriceTooExpensive,
     }
 
     #[pallet::pallet]
@@ -83,6 +84,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             para_id: ParaId,
             credits: T::BlockNumber,
+            max_price_per_credit: Option<BalanceOf<T>>,
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
@@ -96,6 +98,13 @@ pub mod pallet {
 
             // get the current per-credit cost of a block
             let (block_cost, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
+            if let Some(max_price_per_credit) = max_price_per_credit {
+                ensure!(
+                    block_cost <= max_price_per_credit,
+                    Error::<T>::CreditPriceTooExpensive,
+                );
+            }
+
             let total_fee = block_cost.saturating_mul(credits.into());
 
             T::OnChargeForBlockCredit::charge_credits(&account, &para_id, credits, total_fee)?;

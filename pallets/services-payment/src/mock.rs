@@ -114,10 +114,12 @@ impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
     }
 }
 
+pub(crate) const FIXED_BLOCK_PRODUCTION_COST: u128 = 100;
+
 pub struct BlockProductionCost<Test>(PhantomData<Test>);
 impl ProvideBlockProductionCost<Test> for BlockProductionCost<Test> {
     fn block_cost(_para_id: &ParaId) -> (u128, Weight) {
-        (100, Weight::zero())
+        (FIXED_BLOCK_PRODUCTION_COST, Weight::zero())
     }
 }
 

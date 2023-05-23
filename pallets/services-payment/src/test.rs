@@ -17,7 +17,8 @@ fn purchase_credits_works() {
             assert_ok!(PaymentServices::purchase_credits(
                 RuntimeOrigin::signed(ALICE),
                 1.into(),
-                MaxCreditsStored::get()
+                MaxCreditsStored::get(),
+                None,
             ),);
 
             assert_eq!(
@@ -42,11 +43,12 @@ fn purchase_credits_fails_when_over_max() {
             assert_ok!(PaymentServices::purchase_credits(
                 RuntimeOrigin::signed(ALICE),
                 1.into(),
-                MaxCreditsStored::get()
+                MaxCreditsStored::get(),
+                None,
             ),);
 
             assert_err!(
-                PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1),
+                PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1, None),
                 payment_services_pallet::Error::<Test>::TooManyCredits,
             );
         });
@@ -57,7 +59,7 @@ fn purchase_credits_fails_with_insufficient_balance() {
     ExtBuilder::default().build().execute_with(|| {
         // really what we're testing is that purchase_credits fails when OnChargeForBlockCredits does
         assert_err!(
-            PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1),
+            PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1, None),
             payment_services_pallet::Error::<Test>::InsufficientFundsToPurchaseCredits,
         );
     });
@@ -83,7 +85,8 @@ fn burn_credit_works() {
             assert_ok!(PaymentServices::purchase_credits(
                 RuntimeOrigin::signed(ALICE),
                 para_id,
-                1u64
+                1u64,
+                None,
             ),);
 
             // should succeed and burn one
@@ -109,7 +112,8 @@ fn burn_credit_fails_for_wrong_para() {
             assert_ok!(PaymentServices::purchase_credits(
                 RuntimeOrigin::signed(ALICE),
                 para_id,
-                1u64
+                1u64,
+                None,
             ),);
 
             // fails for wrong para
@@ -117,6 +121,73 @@ fn burn_credit_fails_for_wrong_para() {
             assert_err!(
                 PaymentServices::burn_credit_for_para(&wrong_para_id),
                 payment_services_pallet::Error::<Test>::InsufficientCredits,
+            );
+        });
+}
+
+#[test]
+fn buy_credits_no_limit_works() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1u64,
+                None,
+            ));
+        });
+}
+
+#[test]
+fn buy_credits_too_expensive_fails() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            assert_err!(
+                PaymentServices::purchase_credits(
+                    RuntimeOrigin::signed(ALICE),
+                    1.into(),
+                    1u64,
+                    Some(FIXED_BLOCK_PRODUCTION_COST - 1),
+                ),
+                payment_services_pallet::Error::<Test>::CreditPriceTooExpensive,
+            );
+        });
+}
+
+#[test]
+fn buy_credits_exact_price_limit_works() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            assert_ok!(
+                PaymentServices::purchase_credits(
+                    RuntimeOrigin::signed(ALICE),
+                    1.into(),
+                    1u64,
+                    Some(FIXED_BLOCK_PRODUCTION_COST),
+                ),
+            );
+        });
+}
+
+#[test]
+fn buy_credits_limit_exceeds_price_works() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            assert_ok!(
+                PaymentServices::purchase_credits(
+                    RuntimeOrigin::signed(ALICE),
+                    1.into(),
+                    1u64,
+                    Some(FIXED_BLOCK_PRODUCTION_COST + 1),
+                ),
             );
         });
 }
