@@ -171,7 +171,7 @@ describeSuite({
     it({
       id: "T09",
       title: "Test live registration of container chain 2002",
-      timeout: 300000,
+      timeout: 400000,
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
@@ -186,6 +186,7 @@ describeSuite({
         }
 
         // Augment paraApi with new RPC method
+        // TODO: latest moonwall version supports this in beforeAll
         const wsProvider2 = new WsProvider('ws://127.0.0.1:9948');
         let paraApi2 = await ApiPromise.create({ provider: wsProvider2,
           types: {
@@ -231,18 +232,23 @@ describeSuite({
         const header2002 = await getHeaderFromRelay(relayApi, 2002);
         expect(header2002.number.toNumber()).to.be.equal(0);
         const registered1 = (await paraApi.query.registrar.registeredParaIds());
-        expect(registered1.toHuman().includes("2002")).to.be.false;
+        console.log("registered1: ", registered1.toHuman());
+        // TODO: toHuman() convert numbers to this weird string, how can I do .includes(2002)?
+        // Actually we should try to use expect(registered).toInclude(2002)
+        expect(registered1.toHuman().includes("2,002")).to.be.false;
 
         const tx = paraApi.tx.registrar.register(2002, containerChainGenesisDataFromRpc[1]);
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
         const tanssiBlockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        await context.waitBlock(1+3, "Tanssi");
+        // TODO: this should wait 2 sessions
+        await context.waitBlock(30, "Tanssi");
 
         // TODO: check that pending para ids contains 2002
         // And genesis data is not empty
         const registered = (await paraApi.query.registrar.registeredParaIds());
-        expect(registered.toHuman().includes("2002")).to.be.true;
+        console.log("registered: ", registered.toHuman());
+        expect(registered.toHuman().includes("2,002")).to.be.true;
 
         // This ws api is only available after the node detects its assignment
         // TODO: wait up to 30 seconds after a new block is created to ensure this port is available
@@ -272,27 +278,32 @@ describeSuite({
     it({
       id: "T10",
       title: "Deregister container chain 2002, collators should move to tanssi",
-      timeout: 300000,
+      timeout: 600000,
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+
+        const registered1 = (await paraApi.query.registrar.registeredParaIds());
+        console.log("registered1: ", registered1.toHuman());
+        expect(registered1.toHuman().includes("2,002")).to.be.true;
 
         const tx = paraApi.tx.registrar.deregister(2002);
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
         const tanssiBlockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        await context.waitBlock(1+3, "Tanssi");
+        // TODO: this should wait 2 sessions
+        await context.waitBlock(30, "Tanssi");
 
         // TODO: check that pending para ids removes 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
-        expect(registered.toHuman().includes("2002")).to.be.false;
+        expect(registered.toHuman().includes("2,002")).to.be.false;
 
         // Check authors of tanssi blocks
-        // Should be 4 different keys when 2002 is registered, and 6 different keys when 2002 is deregistered
+        // Should be 2 different keys when 2002 is registered, and 4 different keys when 2002 is deregistered
         const authorities = (await paraApi.query.aura.authorities());
         const actualAuthors = [];
 
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 4; i++) {
             const author = await getAuthorFromDigest(paraApi);
             actualAuthors.push(author);
             await context.waitBlock(1, "Tanssi");
@@ -300,7 +311,7 @@ describeSuite({
 
         let uniq = [...new Set(actualAuthors)];
 
-        if (uniq.length != 6) {
+        if (uniq.length != 4) {
           console.error("Mismatch between authorities and actual block authors: authorities: ", authorities.toHuman(), ", actual authors: ", actualAuthors);
           expect(false).to.be.true;
         }
