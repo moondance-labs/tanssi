@@ -1,8 +1,11 @@
 [package]
 name = "tp-authorities-noting-inherent"
-authors = []
+description = "authorities-noting-inherent primitives"
 edition = "2021"
 version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
+
 [dependencies]
 async-trait = { workspace = true, optional = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }

@@ -5779,6 +5779,69 @@ dependencies = [
 ]
 
 [[package]]
+name = "orchestrator-runtime"
+version = "0.1.0"
+dependencies = [
+ "cumulus-pallet-aura-ext",
+ "cumulus-pallet-parachain-system",
+ "cumulus-pallet-session-benchmarking",
+ "cumulus-primitives-core",
+ "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-rpc-runtime-api",
+ "frame-try-runtime",
+ "hex-literal",
+ "log",
+ "nimbus-primitives",
+ "pallet-aura",
+ "pallet-author-inherent",
+ "pallet-author-noting",
+ "pallet-authority-assignment",
+ "pallet-authority-mapping",
+ "pallet-authorship",
+ "pallet-balances",
+ "pallet-collator-assignment",
+ "pallet-collator-assignment-runtime-api",
+ "pallet-collator-selection",
+ "pallet-configuration",
+ "pallet-initializer",
+ "pallet-registrar",
+ "pallet-registrar-runtime-api",
+ "pallet-root-testing",
+ "pallet-session",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "parachain-info",
+ "parity-scale-codec",
+ "polkadot-parachain",
+ "polkadot-runtime-common",
+ "scale-info",
+ "smallvec",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-version",
+ "substrate-wasm-builder",
+ "test-relay-sproof-builder",
+ "tp-author-noting-inherent",
+ "tp-consensus",
+ "tp-traits",
+]
+
+[[package]]
 name = "ordered-float"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12191,6 +12254,82 @@ dependencies = [
 ]
 
 [[package]]
+name = "tanssi-node"
+version = "0.1.0"
+dependencies = [
+ "async-io",
+ "async-trait",
+ "clap",
+ "cumulus-client-cli",
+ "cumulus-client-consensus-aura",
+ "cumulus-client-consensus-common",
+ "cumulus-client-network",
+ "cumulus-client-service",
+ "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
+ "cumulus-relay-chain-interface",
+ "frame-benchmarking",
+ "frame-benchmarking-cli",
+ "futures 0.3.26",
+ "hex",
+ "jsonrpsee",
+ "log",
+ "nimbus-consensus",
+ "nimbus-primitives",
+ "orchestrator-runtime",
+ "pallet-collator-assignment-runtime-api",
+ "pallet-registrar-runtime-api",
+ "parity-scale-codec",
+ "polkadot-cli",
+ "polkadot-primitives",
+ "polkadot-service",
+ "sc-basic-authorship",
+ "sc-chain-spec",
+ "sc-cli",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-consensus-manual-seal",
+ "sc-executor",
+ "sc-network",
+ "sc-network-common",
+ "sc-network-sync",
+ "sc-rpc",
+ "sc-service",
+ "sc-sysinfo",
+ "sc-telemetry",
+ "sc-tracing",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
+ "serde",
+ "serde_json",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-state-machine",
+ "sp-timestamp",
+ "sp-transaction-pool",
+ "substrate-build-script-utils",
+ "substrate-frame-rpc-system",
+ "substrate-prometheus-endpoint",
+ "tc-consensus",
+ "tc-orchestrator-chain-interface",
+ "tokio",
+ "tp-author-noting-inherent",
+ "tp-authorities-noting-inherent",
+ "tp-container-chain-genesis-data",
+ "try-runtime-cli",
+]
+
+[[package]]
 name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12204,7 +12343,7 @@ checksum = "8ae9980cab1db3fceee2f6c6f643d5d8de2997c58ee8d25fb0cc8a9e9e7348e5"
 
 [[package]]
 name = "tc-consensus"
-version = "0.9.0"
+version = "0.1.0"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -12283,82 +12422,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95059e91184749cb66be6dc994f67f182b6d897cb3df74a5bf66b5e709295fd8"
 
 [[package]]
-name = "test-node"
-version = "0.1.0"
-dependencies = [
- "async-io",
- "async-trait",
- "clap",
- "cumulus-client-cli",
- "cumulus-client-consensus-aura",
- "cumulus-client-consensus-common",
- "cumulus-client-network",
- "cumulus-client-service",
- "cumulus-primitives-core",
- "cumulus-primitives-parachain-inherent",
- "cumulus-relay-chain-interface",
- "frame-benchmarking",
- "frame-benchmarking-cli",
- "futures 0.3.26",
- "hex",
- "jsonrpsee",
- "log",
- "nimbus-consensus",
- "nimbus-primitives",
- "pallet-collator-assignment-runtime-api",
- "pallet-registrar-runtime-api",
- "parity-scale-codec",
- "polkadot-cli",
- "polkadot-primitives",
- "polkadot-service",
- "sc-basic-authorship",
- "sc-chain-spec",
- "sc-cli",
- "sc-client-api",
- "sc-consensus",
- "sc-consensus-manual-seal",
- "sc-executor",
- "sc-network",
- "sc-network-common",
- "sc-network-sync",
- "sc-rpc",
- "sc-service",
- "sc-sysinfo",
- "sc-telemetry",
- "sc-tracing",
- "sc-transaction-pool",
- "sc-transaction-pool-api",
- "serde",
- "serde_json",
- "sp-api",
- "sp-block-builder",
- "sp-blockchain",
- "sp-consensus",
- "sp-consensus-aura",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-keystore",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-state-machine",
- "sp-timestamp",
- "sp-transaction-pool",
- "substrate-build-script-utils",
- "substrate-frame-rpc-system",
- "substrate-prometheus-endpoint",
- "tc-consensus",
- "tc-orchestrator-chain-interface",
- "test-runtime",
- "tokio",
- "tp-author-noting-inherent",
- "tp-authorities-noting-inherent",
- "tp-container-chain-genesis-data",
- "try-runtime-cli",
-]
-
-[[package]]
 name = "test-relay-sproof-builder"
 version = "0.1.0"
 dependencies = [
@@ -12370,69 +12433,6 @@ dependencies = [
  "sp-trie",
  "tp-collator-assignment",
  "tp-core",
-]
-
-[[package]]
-name = "test-runtime"
-version = "0.1.0"
-dependencies = [
- "cumulus-pallet-aura-ext",
- "cumulus-pallet-parachain-system",
- "cumulus-pallet-session-benchmarking",
- "cumulus-primitives-core",
- "cumulus-primitives-timestamp",
- "cumulus-primitives-utility",
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-rpc-runtime-api",
- "frame-try-runtime",
- "hex-literal",
- "log",
- "nimbus-primitives",
- "pallet-aura",
- "pallet-author-inherent",
- "pallet-author-noting",
- "pallet-authority-assignment",
- "pallet-authority-mapping",
- "pallet-authorship",
- "pallet-balances",
- "pallet-collator-assignment",
- "pallet-collator-assignment-runtime-api",
- "pallet-collator-selection",
- "pallet-configuration",
- "pallet-initializer",
- "pallet-registrar",
- "pallet-registrar-runtime-api",
- "pallet-root-testing",
- "pallet-session",
- "pallet-sudo",
- "pallet-timestamp",
- "parachain-info",
- "parity-scale-codec",
- "polkadot-parachain",
- "polkadot-runtime-common",
- "scale-info",
- "smallvec",
- "sp-api",
- "sp-application-crypto",
- "sp-block-builder",
- "sp-consensus-aura",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-std",
- "sp-transaction-pool",
- "sp-trie",
- "sp-version",
- "substrate-wasm-builder",
- "test-relay-sproof-builder",
- "tp-author-noting-inherent",
- "tp-consensus",
- "tp-traits",
 ]
 
 [[package]]
@@ -12795,7 +12795,7 @@ dependencies = [
 
 [[package]]
 name = "tp-chain-state-snapshot"
-version = "0.1.1"
+version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
  "parity-scale-codec",
@@ -12806,7 +12806,7 @@ dependencies = [
 
 [[package]]
 name = "tp-collator-assignment"
-version = "0.1.1"
+version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -12837,7 +12837,7 @@ dependencies = [
 
 [[package]]
 name = "tp-container-chain-genesis-data"
-version = "0.1.1"
+version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -12859,7 +12859,7 @@ dependencies = [
 
 [[package]]
 name = "tp-core"
-version = "0.1.1"
+version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
  "hex-literal",

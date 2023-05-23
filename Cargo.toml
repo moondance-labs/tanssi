@@ -1,3 +1,7 @@
+[workspace.package]
+authors = [ "Moondance Labs" ]
+repository = "https://github.com/moondance-labs/tanssi"
+
 [workspace]
 members = [
 	"client/*",
@@ -31,7 +35,7 @@ pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-no
 
 tc-orchestrator-chain-interface = { path = "client/orchestrator-chain-interface" }
 test-relay-sproof-builder = { path = "test-sproof-builder" }
-test-runtime = { path = "runtime/test", default-features = false }
+orchestrator-runtime = { path = "runtime/test", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-authorities-noting-inherent = { path = "primitives/authorities-noting-inherent", default-features = false }
 tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-features = false }

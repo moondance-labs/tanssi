@@ -1,5 +1,8 @@
 import { expect, describeSuite, beforeAll, ApiPromise } from "@moonwall/cli";
 import { BN } from "@polkadot/util";
+import { getHeaderFromRelay } from "../../util/relayInterface";
+import { getAuthorFromDigest } from "../../util/author";
+
 describeSuite({
   id: "ZTN",
   title: "Zombie Tanssi Test",
@@ -28,6 +31,13 @@ describeSuite({
 
       const container2001Network = container2001Api.consts.system.version.specName.toString();
       expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
+
+      // Test block numbers in relay are 0 yet
+      const header2000 = await getHeaderFromRelay(relayApi, 2000);
+      const header2001 = await getHeaderFromRelay(relayApi, 2001);
+
+      expect(header2000.number.toNumber()).to.be.equal(0);
+      expect(header2001.number.toNumber()).to.be.equal(0);
 
     }, 120000);
 
@@ -136,6 +146,16 @@ describeSuite({
 
         expect(containerChainCollators2000.includes(author2000.toString())).to.be.true;
         expect(containerChainCollators2001.includes(author2001.toString())).to.be.true;
+      },
+    });
+
+    it({
+      id: "T08",
+      title: "Test author is correct in Orchestrator",
+      test: async function () {
+        const authorities = (await paraApi.query.aura.authorities());
+        const author = await getAuthorFromDigest(paraApi);
+        expect(authorities.toHuman().includes(author.toString())).to.be.true;
       },
     });
 
