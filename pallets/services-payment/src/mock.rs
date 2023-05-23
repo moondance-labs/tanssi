@@ -4,12 +4,9 @@ use {
     crate::{self as payment_services_pallet, OnChargeForBlockCredit, ProvideBlockProductionCost},
     cumulus_primitives_core::ParaId,
     frame_support::{
-        parameter_types,
         pallet_prelude::*,
-        traits::{
-            ConstU32, ConstU64, Everything,
-            tokens::ExistenceRequirement,
-        },
+        parameter_types,
+        traits::{tokens::ExistenceRequirement, ConstU32, ConstU64, Everything},
     },
     sp_core::H256,
     sp_runtime::{
@@ -101,12 +98,13 @@ impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
         use frame_support::traits::tokens::imbalance::Imbalance;
 
         let result = Balances::withdraw(
-            &*payer, 
-            fee, 
-            WithdrawReasons::FEE, 
-            ExistenceRequirement::AllowDeath
+            &*payer,
+            fee,
+            WithdrawReasons::FEE,
+            ExistenceRequirement::AllowDeath,
         );
-        let imbalance = result.map_err(|_| payment_services_pallet::Error::InsufficientFundsToPurchaseCredits)?;
+        let imbalance = result
+            .map_err(|_| payment_services_pallet::Error::InsufficientFundsToPurchaseCredits)?;
 
         if imbalance.peek() != fee {
             panic!("withdrawn balance incorrect");

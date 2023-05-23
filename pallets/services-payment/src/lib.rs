@@ -7,7 +7,11 @@
 
 use {
     cumulus_primitives_core::ParaId,
-    frame_support::{pallet_prelude::*, sp_runtime::{Saturating, traits::Zero}, traits::Currency},
+    frame_support::{
+        pallet_prelude::*,
+        sp_runtime::{traits::Zero, Saturating},
+        traits::Currency,
+    },
     frame_system::pallet_prelude::*,
 };
 
@@ -53,7 +57,7 @@ pub mod pallet {
         CreditsPurchased {
             para_id: ParaId,
             payer: T::AccountId,
-            fee: BalanceOf<T>, 
+            fee: BalanceOf<T>,
             credits_purchased: T::BlockNumber,
             credits_remaining: T::BlockNumber,
         },
@@ -65,16 +69,11 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn collator_commission)]
-    pub type BlockProductionCredits<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ParaId,
-        T::BlockNumber,
-        OptionQuery,
-    >;
+    pub type BlockProductionCredits<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, T::BlockNumber, OptionQuery>;
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> 
+    impl<T: Config> Pallet<T>
     where
         BalanceOf<T>: From<BlockNumberFor<T>>,
     {
@@ -83,11 +82,12 @@ pub mod pallet {
         pub fn purchase_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
-            credits: T::BlockNumber
+            credits: T::BlockNumber,
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
-            let existing_credits = BlockProductionCredits::<T>::get(para_id).unwrap_or(T::BlockNumber::zero());
+            let existing_credits =
+                BlockProductionCredits::<T>::get(para_id).unwrap_or(T::BlockNumber::zero());
             let updated_credits = existing_credits.saturating_add(credits);
             ensure!(
                 updated_credits <= T::MaxCreditsStored::get(),
@@ -97,7 +97,7 @@ pub mod pallet {
             // get the current per-credit cost of a block
             let (block_cost, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
             let total_fee = block_cost.saturating_mul(credits.into());
-            
+
             T::OnChargeForBlockCredit::charge_credits(&account, &para_id, credits, total_fee)?;
 
             BlockProductionCredits::<T>::insert(para_id, updated_credits);
@@ -118,7 +118,8 @@ pub mod pallet {
         // TODO: make this a regular call? weight?
         /// Burn a credit for the given para. Deducts one credit if possible, errors otherwise.
         pub fn burn_credit_for_para(para_id: &ParaId) -> DispatchResultWithPostInfo {
-            let existing_credits = BlockProductionCredits::<T>::get(para_id).unwrap_or(T::BlockNumber::zero());
+            let existing_credits =
+                BlockProductionCredits::<T>::get(para_id).unwrap_or(T::BlockNumber::zero());
 
             ensure!(
                 existing_credits >= 1u32.into(),
