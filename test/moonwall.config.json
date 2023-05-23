@@ -13,7 +13,7 @@
         "launchSpec": [
           {
             "name": "tanssi",
-            "binPath": "../target/release/test-node",
+            "binPath": "../target/release/tanssi-node",
             "options": [
                 "--dev",
                 "--sealing=manual"

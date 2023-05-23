@@ -1,11 +1,10 @@
 [package]
-name = "test-runtime"
-authors = [ "Anonymous" ]
-description = ""
+name = "orchestrator-runtime"
+description = "Orchestrator runtime"
 edition = "2021"
-homepage = "https://substrate.io"
-license = "Unlicense"
 version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
 
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
