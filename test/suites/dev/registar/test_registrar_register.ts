@@ -64,7 +64,7 @@ describeSuite({
         expect(sessionScheduling.toBigInt()).to.be.eq(expectedScheduledOnboarding);
 
         // These will be the paras in session 2
-        expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001]);
+        expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001, 2002]);
 
         // Checking that in session 2 paras are registered
         await jumpSessions(context, 2)
