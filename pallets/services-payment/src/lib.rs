@@ -43,7 +43,6 @@ pub mod pallet {
 
     #[pallet::error]
     pub enum Error<T> {
-        TooManyCredits,
         InsufficientFundsToPurchaseCredits,
         InsufficientCredits,
         CreditPriceTooExpensive,
@@ -90,11 +89,10 @@ pub mod pallet {
 
             let existing_credits =
                 BlockProductionCredits::<T>::get(para_id).unwrap_or(T::BlockNumber::zero());
-            let updated_credits = existing_credits.saturating_add(credits);
-            ensure!(
-                updated_credits <= T::MaxCreditsStored::get(),
-                Error::<T>::TooManyCredits,
-            );
+            let credits_purchasable = T::MaxCreditsStored::get().saturating_sub(existing_credits);
+            let actual_credits_purchased = credits.min(credits_purchasable);
+
+            let updated_credits = existing_credits.saturating_add(actual_credits_purchased);
 
             // get the current per-credit cost of a block
             let (block_cost, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
@@ -105,9 +103,9 @@ pub mod pallet {
                 );
             }
 
-            let total_fee = block_cost.saturating_mul(credits.into());
+            let total_fee = block_cost.saturating_mul(actual_credits_purchased.into());
 
-            T::OnChargeForBlockCredit::charge_credits(&account, &para_id, credits, total_fee)?;
+            T::OnChargeForBlockCredit::charge_credits(&account, &para_id, actual_credits_purchased, total_fee)?;
 
             BlockProductionCredits::<T>::insert(para_id, updated_credits);
 
@@ -115,7 +113,7 @@ pub mod pallet {
                 para_id,
                 payer: account,
                 fee: total_fee,
-                credits_purchased: credits,
+                credits_purchased: actual_credits_purchased,
                 credits_remaining: updated_credits,
             });
 

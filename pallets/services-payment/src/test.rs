@@ -11,7 +11,6 @@ fn purchase_credits_works() {
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
-            // apparently events don't work in genesis block, so start on block 1
             System::set_block_number(1);
 
             assert_ok!(PaymentServices::purchase_credits(
@@ -35,21 +34,100 @@ fn purchase_credits_works() {
 }
 
 #[test]
-fn purchase_credits_fails_when_over_max() {
+fn purchase_credits_purchases_zero_when_max_already_stored() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
+            System::set_block_number(1);
+
+            let para_id = 1.into();
             assert_ok!(PaymentServices::purchase_credits(
                 RuntimeOrigin::signed(ALICE),
-                1.into(),
+                para_id,
                 MaxCreditsStored::get(),
                 None,
             ),);
 
-            assert_err!(
-                PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1, None),
-                payment_services_pallet::Error::<Test>::TooManyCredits,
+            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(MaxCreditsStored::get()));
+            assert_ok!(
+                PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), para_id, 1, None),
+            );
+            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(MaxCreditsStored::get()));
+
+            // should have two purchase events (one with MaxCreditsStored, then one with zero)
+            assert_eq!(
+                events(),
+                vec![
+                    payment_services_pallet::Event::CreditsPurchased {
+                        para_id,
+                        payer: ALICE,
+                        fee: 500,
+                        credits_purchased: MaxCreditsStored::get(),
+                        credits_remaining: MaxCreditsStored::get(),
+                    },
+                    payment_services_pallet::Event::CreditsPurchased {
+                        para_id,
+                        payer: ALICE,
+                        fee: 0,
+                        credits_purchased: 0,
+                        credits_remaining: MaxCreditsStored::get(),
+                    },
+                ]
+            );
+        });
+}
+
+#[test]
+fn purchase_credits_purchases_max_possible_when_cant_purchase_all_requested() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            System::set_block_number(1);
+
+            let para_id = 1.into();
+            let amount_purchased = 1u64;
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                para_id,
+                amount_purchased,
+                None,
+            ));
+
+            let purchasable = MaxCreditsStored::get() - amount_purchased;
+            assert_eq!(purchasable, 4);
+
+            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(amount_purchased));
+            assert_ok!(
+                PaymentServices::purchase_credits(
+                    RuntimeOrigin::signed(ALICE),
+                    para_id,
+                    MaxCreditsStored::get(),
+                    None,
+                ),
+            );
+            assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(MaxCreditsStored::get()));
+
+            // should have two purchase events (one with amount_purchased, then with purchasable)
+            assert_eq!(
+                events(),
+                vec![
+                    payment_services_pallet::Event::CreditsPurchased {
+                        para_id,
+                        payer: ALICE,
+                        fee: 100,
+                        credits_purchased: amount_purchased,
+                        credits_remaining: amount_purchased,
+                    },
+                    payment_services_pallet::Event::CreditsPurchased {
+                        para_id,
+                        payer: ALICE,
+                        fee: 400,
+                        credits_purchased: purchasable,
+                        credits_remaining: MaxCreditsStored::get(),
+                    },
+                ]
             );
         });
 }
