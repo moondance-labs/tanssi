@@ -75,7 +75,7 @@ describeSuite({
 
             const authorities = (await polkadotJs.query.aura.authorities());
             expect(authorities.toJSON()).to.deep.equal([
-                u8aToHex(alice.publicKey),
+                u8aToHex(newKey),
                 u8aToHex(bob.publicKey),
             ]);
 
