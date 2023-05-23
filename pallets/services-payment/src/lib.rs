@@ -115,7 +115,6 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        // TODO: make this a regular call? weight?
         /// Burn a credit for the given para. Deducts one credit if possible, errors otherwise.
         pub fn burn_credit_for_para(para_id: &ParaId) -> DispatchResultWithPostInfo {
             let existing_credits =
