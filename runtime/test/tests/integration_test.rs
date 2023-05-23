@@ -38,10 +38,6 @@ use {
     },
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    test_runtime::{
-        AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
-        Configuration,
-    },
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
 };
 
@@ -1083,14 +1079,14 @@ fn test_consensus_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -1192,14 +1188,14 @@ fn test_consensus_runtime_api_session_changes() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                test_runtime::SessionKeys {
+                orchestrator_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -1211,7 +1207,7 @@ fn test_consensus_runtime_api_session_changes() {
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
 
-            let session_two_edge = test_runtime::Period::get() * 2;
+            let session_two_edge = orchestrator_runtime::Period::get() * 2;
             // Let's run just 2 blocks before the session 2 change first
             // Prediction should still be identical, as we are not in the
             // edge of a session change
