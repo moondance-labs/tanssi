@@ -4,8 +4,6 @@
 
 <div align="center">
 
-![Tests](https://github.com/moondance-labs/tanssi/workflows/Release/badge.svg)
-
 **A Substrate [Parachain](https://polkadot.network/technology/) that offers collation/data-retrievability services to appchains.**
 
 
