@@ -2,10 +2,6 @@
   <img src="media/tanssi.png" width="360">
 </p>
 
-<div align="center">
-
-![Tests](https://github.com/PureStake/moonbeam/workflows/Release/badge.svg)
-
 **A Substrate [Parachain](https://polkadot.network/technology/) that offers collation/data-retrievability services to appchains.**
 
 
@@ -17,7 +13,7 @@ If you need a refresher setting up your Substrate environment, see [Substrate's 
 
 ```bash
 # Fetch the code
-git clone https://github.com/PureStake/tanssi
+git clone https://github.com/moondance-labs/tanssi
 cd tanssi
 
 # Build the node (The first build will be long (~30min))
