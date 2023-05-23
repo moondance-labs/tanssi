@@ -27,8 +27,8 @@ describeSuite({
         test: async function () {
             // for session 0
             const keys = await polkadotJs.query.authorityMapping.authorityIdMapping(0);
-            expect(keys.toHuman()[u8aToHex(alice.publicKey).toString()]).to.be.eq(alice.address.toString());
-            expect(keys.toHuman()[u8aToHex(bob.publicKey).toString()]).to.be.eq(bob.address.toString());
+            expect(keys.toJSON()[u8aToHex(alice.publicKey)]).to.be.eq(alice.address);
+            expect(keys.toJSON()[u8aToHex(bob.publicKey)]).to.be.eq(bob.address);
 
             // Check authorities are correct
             const authorities = (await polkadotJs.query.aura.authorities());
@@ -71,10 +71,13 @@ describeSuite({
 
             // The change should have been applied, and now both aura and authorityMapping should reflect
             const keys = await polkadotJs.query.authorityMapping.authorityIdMapping(2);
-            expect(keys.toHuman()[u8aToHex(newKey).toString()]).to.be.eq(alice.address.toString());
+            expect(keys.toJSON()[u8aToHex(newKey)]).to.be.eq(alice.address);
 
             const authorities = (await polkadotJs.query.aura.authorities());
-            expect(u8aToHex(authorities[0])).to.be.eq(u8aToHex(newKey));
+            expect(authorities.toJSON()).to.deep.equal([
+                u8aToHex(alice.publicKey),
+                u8aToHex(bob.publicKey),
+            ]);
 
             // AuthorityMapping should no-longer contain the session 0 keys
             expect((await polkadotJs.query.authorityMapping.authorityIdMapping(0)).isNone).to.be.true;
