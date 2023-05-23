@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
     crate::{
         chain_spec,
@@ -8,6 +24,7 @@ use {
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    orchestrator_runtime::Block,
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
@@ -17,7 +34,6 @@ use {
     sp_core::{hexdisplay::HexDisplay, sr25519},
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::{io::Write, net::SocketAddr},
-    test_runtime::Block,
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -79,7 +95,7 @@ impl SubstrateCli for Cli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &test_runtime::VERSION
+        &orchestrator_runtime::VERSION
     }
 }
 
@@ -179,7 +195,7 @@ impl SubstrateCli for ContainerChainCli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &test_runtime::VERSION
+        &orchestrator_runtime::VERSION
     }
 }
 
@@ -382,8 +398,8 @@ pub fn run() -> Result<()> {
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
             use {
+                orchestrator_runtime::MILLISECS_PER_BLOCK,
                 sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch},
-                test_runtime::MILLISECS_PER_BLOCK,
                 try_runtime_cli::block_building_info::timestamp_with_aura_info,
             };
 
