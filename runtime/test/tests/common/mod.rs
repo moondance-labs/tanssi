@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 use {
     cumulus_primitives_core::PersistedValidationData,
     frame_support::{
@@ -5,6 +21,8 @@ use {
         dispatch::Dispatchable,
         traits::{GenesisBuild, OnFinalize, OnInitialize},
     },
+    nimbus_primitives::NimbusId,
+    pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::Encode,
     polkadot_parachain::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
@@ -13,13 +31,13 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-pub use test_runtime::{
-    AccountId, Aura, AuraId, Authorship, Balance, Balances, Initializer, Registrar, Runtime,
-    RuntimeCall, RuntimeEvent, Session, System,
+pub use orchestrator_runtime::{
+    AccountId, Aura, Authorship, Balance, Balances, Initializer, Registrar, Runtime, RuntimeCall,
+    RuntimeEvent, Session, System,
 };
 
 pub fn run_to_session(n: u32, add_author: bool) {
-    let block_number = test_runtime::Period::get() * n;
+    let block_number = orchestrator_runtime::Period::get() * n;
     run_to_block(block_number + 1, add_author);
 }
 
@@ -68,7 +86,7 @@ pub struct ExtBuilder {
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
-    para_ids: Vec<u32>,
+    para_ids: Vec<(u32, ContainerChainGenesisData)>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
 }
@@ -95,7 +113,7 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_para_ids(mut self, para_ids: Vec<u32>) -> Self {
+    pub fn with_para_ids(mut self, para_ids: Vec<(u32, ContainerChainGenesisData)>) -> Self {
         self.para_ids = para_ids;
         self
     }
@@ -120,7 +138,11 @@ impl ExtBuilder {
         // these values will be taken into account for collator-assignment.
         <pallet_registrar::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
             &pallet_registrar::GenesisConfig {
-                para_ids: self.para_ids.into_iter().map(|x| x.into()).collect(),
+                para_ids: self
+                    .para_ids
+                    .into_iter()
+                    .map(|(para_id, genesis_data)| (para_id.into(), genesis_data))
+                    .collect(),
             },
             &mut t,
         )
@@ -160,7 +182,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        test_runtime::SessionKeys {
+                        orchestrator_runtime::SessionKeys {
                             aura: aura_id.clone(),
                         },
                     )
@@ -200,7 +222,7 @@ pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
 }
 
 /// Helper function to generate a crypto pair from seed
-pub fn get_aura_id_from_seed(seed: &str) -> AuraId {
+pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
     sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
@@ -232,4 +254,15 @@ pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
         }
     )
     .dispatch(inherent_origin()));
+}
+
+pub fn empty_genesis_data() -> ContainerChainGenesisData {
+    ContainerChainGenesisData {
+        storage: Default::default(),
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
+        extensions: Default::default(),
+        properties: Default::default(),
+    }
 }

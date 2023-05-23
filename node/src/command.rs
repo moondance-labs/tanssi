@@ -1,13 +1,30 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
     crate::{
         chain_spec,
-        cli::{Cli, RelayChainCli, Subcommand, TanssiCli},
+        cli::{Cli, ContainerChainCli, RelayChainCli, Subcommand},
         service::{new_partial, IdentifyVariant, ParachainNativeExecutor},
     },
     cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    orchestrator_runtime::Block,
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
@@ -17,14 +34,25 @@ use {
     sp_core::{hexdisplay::HexDisplay, sr25519},
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::{io::Write, net::SocketAddr},
-    test_runtime::Block,
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::development_config(para_id)),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id)),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id)),
+        "dev" => Box::new(chain_spec::development_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+        )),
+        "template-rococo" => Box::new(chain_spec::local_testnet_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+        )),
+        "" | "local" => Box::new(chain_spec::local_testnet_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+        )),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
@@ -67,7 +95,7 @@ impl SubstrateCli for Cli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &test_runtime::VERSION
+        &orchestrator_runtime::VERSION
     }
 }
 
@@ -111,7 +139,7 @@ impl SubstrateCli for RelayChainCli {
     }
 }
 
-impl SubstrateCli for TanssiCli {
+impl SubstrateCli for ContainerChainCli {
     fn impl_name() -> String {
         "Container chain".into()
     }
@@ -123,10 +151,10 @@ impl SubstrateCli for TanssiCli {
     fn description() -> String {
         format!(
             "Container chain\n\nThe command-line arguments provided first will be \
-		passed to the tanssi node, while the arguments provided after -- will be passed \
+		passed to the orchestrator chain node, while the arguments provided after -- will be passed \
 		to the container chain node, and the arguments provided after another -- will be passed \
 		to the relay chain node\n\n\
-		{} [tanssi-args] -- [container_chain-args] -- [relay_chain-args] -- ",
+		{} [orchestrator-args] -- [container-chain-args] -- [relay-chain-args] -- ",
             Self::executable_name()
         )
     }
@@ -144,12 +172,50 @@ impl SubstrateCli for TanssiCli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
-        load_spec(id, self.base.para_id.unwrap_or(2000).into())
+        // ContainerChain ChainSpec must be preloaded beforehand because we need to call async
+        // functions to generate it, and this function is not async.
+        let para_id = parse_container_chain_id_str(id)?;
+
+        match &self.preloaded_chain_spec {
+            Some(spec) => {
+                let spec_para_id = crate::chain_spec::Extensions::try_get(&**spec)
+                    .map(|extension| extension.para_id);
+
+                if spec_para_id == Some(para_id) {
+                    Ok(spec.cloned_box())
+                } else {
+                    Err(format!(
+                        "Expected ChainSpec for id {}, found ChainSpec for id {:?} instead",
+                        para_id, spec_para_id
+                    ))
+                }
+            }
+            None => Err(format!("ChainSpec for {} not found", id)),
+        }
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &test_runtime::VERSION
+        &orchestrator_runtime::VERSION
     }
+}
+
+/// Parse ParaId(2000) from a string like "container-chain-2000"
+fn parse_container_chain_id_str(id: &str) -> std::result::Result<u32, String> {
+    // The id has been created using format!("container-chain-{}", para_id), so here we need
+    // to reverse that.
+    id.strip_prefix("container-chain-")
+        .and_then(|s| {
+            let id: u32 = s.parse().ok()?;
+
+            // `.parse()` ignores leading zeros, so convert the id back to string to check
+            // if we get the same string, this way we ensure a 1:1 mapping
+            if id.to_string() == s {
+                Some(id)
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| format!("load_spec called with invalid id: {:?}", id))
 }
 
 macro_rules! construct_async_run {
@@ -173,9 +239,17 @@ pub fn run() -> Result<()> {
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.parachain_id {
                     if cmd.base.shared_params.dev {
-                        Box::new(chain_spec::development_config(para_id.into()))
+                        Box::new(chain_spec::development_config(
+                            para_id.into(),
+                            cmd.add_container_chain.clone(),
+                            vec![],
+                        ))
                     } else {
-                        Box::new(chain_spec::local_testnet_config(para_id.into()))
+                        Box::new(chain_spec::local_testnet_config(
+                            para_id.into(),
+                            cmd.add_container_chain.clone(),
+                            vec![],
+                        ))
                     }
                 } else {
                     config.chain_spec
@@ -323,8 +397,8 @@ pub fn run() -> Result<()> {
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
             use {
+                orchestrator_runtime::MILLISECS_PER_BLOCK,
                 sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch},
-                test_runtime::MILLISECS_PER_BLOCK,
                 try_runtime_cli::block_building_info::timestamp_with_aura_info,
             };
 
@@ -417,26 +491,20 @@ pub fn run() -> Result<()> {
 					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 
-				let mut tanssi_config = None;
-				if !cli.tanssi_args().is_empty() {
-					let tanssi_cli = TanssiCli::new(
+				let mut container_chain_config = None;
+				if !cli.container_chain_args().is_empty() {
+					let container_chain_cli = ContainerChainCli::new(
 						&config,
-						[TanssiCli::executable_name()].iter().chain(cli.tanssi_args().iter()),
+						[ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
 					);
 					let tokio_handle = config.tokio_handle.clone();
-					let tanssi_cli_config =
-						SubstrateCli::create_configuration(&tanssi_cli, &tanssi_cli, tokio_handle)
-							.map_err(|err| format!("Tanssi argument error: {}", err))?;
-					let tanssi_para_id = chain_spec::Extensions::try_get(&*tanssi_cli_config.chain_spec)
-						.map(|e| e.para_id)
-						.ok_or_else(|| "Could not find parachain extension in chain-spec.")?;
-					tanssi_config = Some((tanssi_cli_config, ParaId::from(tanssi_para_id)));
+					container_chain_config = Some((container_chain_cli, tokio_handle));
 				}
 
 				crate::service::start_parachain_node(
 					config,
 					polkadot_config,
-                    tanssi_config,
+                    container_chain_config,
 					collator_options,
 					id,
 					hwbench,
@@ -592,7 +660,7 @@ impl CliConfiguration<Self> for RelayChainCli {
     }
 }
 
-impl DefaultConfigurationValues for TanssiCli {
+impl DefaultConfigurationValues for ContainerChainCli {
     fn p2p_listen_port() -> u16 {
         17334
     }
@@ -610,7 +678,7 @@ impl DefaultConfigurationValues for TanssiCli {
     }
 }
 
-impl CliConfiguration<Self> for TanssiCli {
+impl CliConfiguration<Self> for ContainerChainCli {
     fn shared_params(&self) -> &SharedParams {
         self.base.base.shared_params()
     }
@@ -669,14 +737,11 @@ impl CliConfiguration<Self> for TanssiCli {
         unreachable!("PolkadotCli is never initialized; qed");
     }
 
-    fn chain_id(&self, is_dev: bool) -> Result<String> {
-        let chain_id = self.base.base.chain_id(is_dev)?;
-
-        Ok(if chain_id.is_empty() {
-            self.chain_id.clone().unwrap_or_default()
-        } else {
-            chain_id
-        })
+    fn chain_id(&self, _is_dev: bool) -> Result<String> {
+        self.base
+            .para_id
+            .map(|para_id| format!("container-chain-{}", para_id))
+            .ok_or("no para-id in container chain args".into())
     }
 
     fn role(&self, is_dev: bool) -> Result<sc_service::Role> {

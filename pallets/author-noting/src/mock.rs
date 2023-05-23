@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 use {
     crate::{self as author_noting_pallet, Config},
     cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider},
@@ -223,6 +239,7 @@ pub struct BlockTests {
     >,
     overriden_state_root: Option<H256>,
     overriden_state_proof: Option<StorageProof>,
+    skip_inherent_insertion: bool,
 }
 
 impl BlockTests {
@@ -261,6 +278,11 @@ impl BlockTests {
 
     pub fn with_overriden_state_proof(mut self, proof: StorageProof) -> Self {
         self.overriden_state_proof = Some(proof);
+        self
+    }
+
+    pub fn skip_inherent_insertion(mut self) -> Self {
+        self.skip_inherent_insertion = true;
         self
     }
 
@@ -319,10 +341,12 @@ impl BlockTests {
 
                 // execute the block
                 AuthorNoting::on_initialize(*n);
-                AuthorNoting::create_inherent(&inherent_data)
-                    .expect("got an inherent")
-                    .dispatch_bypass_filter(RawOrigin::None.into())
-                    .expect("dispatch succeeded");
+                if !self.skip_inherent_insertion {
+                    AuthorNoting::create_inherent(&inherent_data)
+                        .expect("got an inherent")
+                        .dispatch_bypass_filter(RawOrigin::None.into())
+                        .expect("dispatch succeeded");
+                }
                 within_block();
                 AuthorNoting::on_finalize(*n);
 

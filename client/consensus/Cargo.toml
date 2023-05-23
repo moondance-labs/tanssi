@@ -1,0 +1,45 @@
+[package]
+name = "tc-consensus"
+description = "Client-side worker for Tanssi which unifies Aura and Nimbus"
+edition = "2021"
+version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
+
+[dependencies]
+# Substrate deps
+sc-client-api = { workspace = true }
+sc-consensus = { workspace = true }
+sc-consensus-aura = { workspace = true }
+sc-consensus-slots = { workspace = true }
+sc-consensus-manual-seal = { workspace = true }
+sc-telemetry = { workspace = true }
+sp-api = { workspace = true }
+sp-application-crypto = { workspace = true, features = [ "std" ] }
+sp-block-builder = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-consensus = { workspace = true }
+sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
+sp-core = { workspace = true }
+sp-inherents = { workspace = true }
+sp-keystore = { workspace = true }
+sp-runtime = { workspace = true }
+sp-timestamp = { workspace = true }
+substrate-prometheus-endpoint = { workspace = true }
+
+# Cumulus dependencies
+cumulus-client-consensus-common = { workspace = true }
+cumulus-primitives-core = { workspace = true }
+cumulus-primitives-parachain-inherent = { workspace = true }
+
+# Nimbus Dependencies
+nimbus-primitives = { workspace = true, features = [ "std" ] }
+nimbus-consensus = { workspace = true  }
+
+# Other deps
+async-trait = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive" ] }
+futures = { workspace = true }
+log = { workspace = true }
+tracing = { workspace = true }

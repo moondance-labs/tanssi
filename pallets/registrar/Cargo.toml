@@ -1,10 +1,10 @@
 [package]
 name = "pallet-registrar"
-authors = []
 description = "ParaRegistrar pallet that allows to register and deregister ParaIds"
 edition = "2021"
-publish = false
 version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
 
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
@@ -19,6 +19,7 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-core = { workspace = true, default-features = false }
 sp-runtime = { workspace = true, default-features = false }
 sp-std = { workspace = true, default-features = false }
+tp-container-chain-genesis-data = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -33,6 +34,8 @@ std = [
 	"frame-system/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
+	"tp-container-chain-genesis-data/std",
 	"tp-traits/std",
+	"serde",
 ]
 try-runtime = [ "frame-support/try-runtime" ]

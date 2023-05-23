@@ -1,8 +1,11 @@
 [package]
 name = "tp-author-noting-inherent"
-authors = []
+description = "primitives related to author-noting-inherent"
 edition = "2021"
 version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
+
 [dependencies]
 async-trait = { workspace = true, optional = true }
 hex-literal = { version = "0.3.4" }
@@ -31,7 +34,7 @@ sp-trie = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true, optional = true }
-
+cumulus-primitives-parachain-inherent = { workspace = true }
 polkadot-primitives = { workspace = true, optional = true }
 
 [features]

@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 use {
     crate::{self as pallet_collator_assignment},
     frame_support::traits::{ConstU16, ConstU64},
@@ -89,7 +105,8 @@ pub mod mock_data {
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub orchestrator_chain_collators: u32,
+    pub min_orchestrator_chain_collators: u32,
+    pub max_orchestrator_chain_collators: u32,
     pub collators_per_container: u32,
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
@@ -98,7 +115,8 @@ pub struct Mocks {
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            orchestrator_chain_collators: 0,
+            min_orchestrator_chain_collators: 0,
+            max_orchestrator_chain_collators: 0,
             collators_per_container: 0,
             collators: vec![],
             container_chains: vec![],
@@ -113,8 +131,12 @@ impl mock_data::Config for Test {}
 pub struct HostConfigurationGetter;
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
-    fn collators_for_orchestrator(_session_index: u32) -> u32 {
-        MockData::mock().orchestrator_chain_collators
+    fn min_collators_for_orchestrator(_session_index: u32) -> u32 {
+        MockData::mock().min_orchestrator_chain_collators
+    }
+
+    fn max_collators_for_orchestrator(_session_index: u32) -> u32 {
+        MockData::mock().max_orchestrator_chain_collators
     }
 
     fn collators_per_container(_session_index: u32) -> u32 {

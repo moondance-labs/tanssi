@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 use {
     crate::{mock::*, CollatorContainerChain},
     std::collections::BTreeMap,
@@ -28,7 +44,8 @@ fn assign_initial_collators() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
             m.container_chains = vec![1001, 1002]
@@ -64,7 +81,8 @@ fn assign_collators_after_one_leaves_container() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
             m.container_chains = vec![1001, 1002]
@@ -125,7 +143,8 @@ fn assign_collators_after_one_leaves_orchestrator_chain() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
             m.container_chains = vec![1001, 1002]
@@ -181,7 +200,8 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -206,7 +226,8 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
 
         MockData::mutate(|m| {
             // Add 3 new collators to orchestrator_chain
-            m.orchestrator_chain_collators = 8;
+            m.min_orchestrator_chain_collators = 8;
+            m.max_orchestrator_chain_collators = 8;
         });
 
         run_to_block(21);
@@ -238,7 +259,8 @@ fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -263,7 +285,8 @@ fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
 
         MockData::mutate(|m| {
             // Remove 3 collators from orchestrator_chain
-            m.orchestrator_chain_collators = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 2;
         });
 
         run_to_block(21);
@@ -280,7 +303,8 @@ fn assign_collators_if_config_collators_per_container_increases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -339,7 +363,8 @@ fn assign_collators_if_container_chain_is_removed() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -391,7 +416,8 @@ fn assign_collators_if_container_chain_is_added() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -447,7 +473,8 @@ fn assign_collators_after_decrease_num_collators() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
-            m.orchestrator_chain_collators = 5;
+            m.min_orchestrator_chain_collators = 5;
+            m.max_orchestrator_chain_collators = 5;
 
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
@@ -476,5 +503,138 @@ fn assign_collators_after_decrease_num_collators() {
 
         run_to_block(21);
         assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![]));
+    });
+}
+
+#[test]
+fn assign_collators_stay_constant_if_new_collators_can_take_new_chains() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+            m.container_chains = vec![];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![(1, 999), (2, 999), (3, 999), (4, 999), (5, 999),]),
+        );
+
+        MockData::mutate(|m| {
+            m.container_chains = vec![1001, 1002];
+        });
+        run_to_block(21);
+
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 999),
+                (4, 999),
+                (5, 999),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
+    });
+}
+
+#[test]
+fn assign_collators_move_extra_container_chain_to_orchestrator_chain_if_not_enough_collators() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            m.collators = vec![1, 2, 3, 4];
+            m.container_chains = vec![];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![(1, 999), (2, 999), (3, 999), (4, 999),]),
+        );
+
+        MockData::mutate(|m| {
+            m.collators = vec![1, 2, 3, 4, 5];
+            m.container_chains = vec![1001, 1002];
+        });
+        run_to_block(21);
+
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![(1, 999), (2, 999), (5, 1001), (3, 1001), (4, 999),]),
+        );
+    });
+}
+
+#[test]
+fn assign_collators_reorganize_container_chains_if_not_enough_collators() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+            m.container_chains = vec![1001, 1002, 1003, 1004, 1005];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 1001),
+                (4, 1001),
+                (5, 1002),
+                (6, 1002),
+                (7, 1003),
+                (8, 1003),
+                (9, 1004),
+                (10, 1004),
+                (11, 1005),
+                (12, 1005)
+            ]),
+        );
+
+        MockData::mutate(|m| {
+            // Remove collators to leave only 1 per container chain
+            m.collators = vec![1, 2, 3, 5, 7, 9, 11];
+        });
+        run_to_block(21);
+
+        // There are 7 collators in total: 2x2 container chains, plus 3 in the orchestrator chain
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 1005),
+                (5, 1004),
+                (7, 999),
+                (9, 1004),
+                (11, 1005)
+            ]),
+        );
     });
 }

@@ -1,7 +1,25 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
-    crate::service::Sealing,
+    crate::{chain_spec::RawGenesisConfig, service::Sealing},
+    pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
-    std::path::PathBuf,
+    std::{collections::BTreeMap, path::PathBuf},
+    tp_container_chain_genesis_data::json::properties_to_map,
 };
 
 /// Sub-commands supported by the collator.
@@ -57,6 +75,10 @@ pub struct BuildSpecCmd {
     /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
     #[clap(long)]
     pub parachain_id: Option<u32>,
+
+    /// List of container chain chain spec paths to add to genesis.
+    #[clap(long)]
+    pub add_container_chain: Vec<String>,
 }
 
 impl CliConfiguration for BuildSpecCmd {
@@ -161,22 +183,22 @@ pub struct Cli {
     #[arg(long)]
     pub para_id: Option<u32>,
 
-    /// Relay chain arguments, optionally followed by "--" and Tanssi arguments
+    /// Relay chain arguments, optionally followed by "--" and orchestrator chain arguments
     #[arg(raw = true)]
     extra_args: Vec<String>,
 }
 
 impl Cli {
     pub fn relaychain_args(&self) -> &[String] {
-        let (relay_chain_args, _tanssi_args) = self.split_extra_args_at_first_dashdash();
+        let (relay_chain_args, _) = self.split_extra_args_at_first_dashdash();
 
         relay_chain_args
     }
 
-    pub fn tanssi_args(&self) -> &[String] {
-        let (_relay_chain_args, tanssi_args) = self.split_extra_args_at_first_dashdash();
+    pub fn container_chain_args(&self) -> &[String] {
+        let (_, container_chain_args) = self.split_extra_args_at_first_dashdash();
 
-        tanssi_args
+        container_chain_args
     }
 
     fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
@@ -224,10 +246,10 @@ impl RelayChainCli {
     }
 }
 
-/// The `run` command used to run a node.
-#[derive(Debug, clap::Parser)]
+/// The `run` command used to run a container chain node.
+#[derive(Debug, clap::Parser, Clone)]
 #[group(skip)]
-pub struct TanssiRunCmd {
+pub struct ContainerChainRunCmd {
     /// The cumulus RunCmd inherits from sc_cli's
     #[command(flatten)]
     pub base: sc_cli::RunCmd,
@@ -238,39 +260,86 @@ pub struct TanssiRunCmd {
     #[arg(long, conflicts_with = "validator")]
     pub collator: bool,
 
-    /// Optional parachain id that should be used to build chain spec.
+    /// Optional container chain para id that should be used to build chain spec.
     #[arg(long)]
     pub para_id: Option<u32>,
 }
 
 #[derive(Debug)]
-pub struct TanssiCli {
-    /// The actual Tanssi cli object.
-    pub base: TanssiRunCmd,
+pub struct ContainerChainCli {
+    /// The actual container chain cli object.
+    pub base: ContainerChainRunCmd,
 
-    /// Optional chain id that should be passed to Tanssi.
-    pub chain_id: Option<String>,
-
-    /// The base path that should be used by Tanssi.
+    /// The base path that should be used by the container chain.
     pub base_path: Option<PathBuf>,
+
+    /// The ChainSpecs that this struct can initialize. This starts empty and gets filled
+    /// by calling preload_chain_spec_file.
+    pub preloaded_chain_spec: Option<Box<dyn sc_chain_spec::ChainSpec>>,
 }
 
-impl TanssiCli {
-    /// Parse the Tanssi CLI parameters using the para chain `Configuration`.
+impl ContainerChainCli {
+    /// Parse the container chain CLI parameters using the para chain `Configuration`.
     pub fn new<'a>(
         para_config: &sc_service::Configuration,
-        tanssi_args: impl Iterator<Item = &'a String>,
+        container_chain_args: impl Iterator<Item = &'a String>,
     ) -> Self {
-        let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
-        let chain_id = extension.map(|e| e.relay_chain.clone());
         let base_path = para_config
             .base_path
             .as_ref()
             .map(|x| x.path().join("polkadot"));
         Self {
             base_path,
-            chain_id,
-            base: clap::Parser::parse_from(tanssi_args),
+            base: clap::Parser::parse_from(container_chain_args),
+            preloaded_chain_spec: None,
         }
+    }
+
+    pub fn preload_chain_spec_from_genesis_data(
+        &mut self,
+        para_id: u32,
+        genesis_data: ContainerChainGenesisData,
+        chain_type: sc_chain_spec::ChainType,
+        relay_chain: String,
+    ) -> Result<(), String> {
+        let name = String::from_utf8(genesis_data.name).map_err(|_e| format!("Invalid name"))?;
+        let id: String = String::from_utf8(genesis_data.id).map_err(|_e| format!("Invalid id"))?;
+        let storage_raw: BTreeMap<_, _> =
+            genesis_data.storage.into_iter().map(|x| x.into()).collect();
+        let boot_nodes = vec![];
+        let telemetry_endpoints = None;
+        let protocol_id = Some(format!("container-chain-{}", para_id));
+        let fork_id = genesis_data
+            .fork_id
+            .map(|fork_id| String::from_utf8(fork_id).map_err(|_e| format!("Invalid fork_id")))
+            .transpose()?;
+        let properties = Some(
+            properties_to_map(&genesis_data.properties)
+                .map_err(|e| format!("Invalid properties: {}", e))?,
+        );
+        let extensions = crate::chain_spec::Extensions {
+            relay_chain,
+            para_id,
+        };
+        let chain_spec = Box::new(crate::chain_spec::RawChainSpec::from_genesis(
+            &name,
+            &id,
+            chain_type,
+            move || RawGenesisConfig {
+                storage_raw: storage_raw.clone(),
+            },
+            boot_nodes,
+            telemetry_endpoints,
+            protocol_id.as_deref(),
+            fork_id.as_deref(),
+            properties,
+            // TODO: what to do with extensions? We are hardcoding the relay_chain and the para_id, any
+            // other extensions are being ignored
+            extensions,
+        ));
+
+        self.preloaded_chain_spec = Some(chain_spec);
+
+        Ok(())
     }
 }

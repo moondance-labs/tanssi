@@ -1,5 +1,23 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
+use tp_container_chain_genesis_data::ContainerChainGenesisData;
+
 use {
-    crate as pallet_registrar,
+    crate::{self as pallet_registrar},
     frame_support::traits::{ConstU16, ConstU64},
     frame_system as system,
     sp_core::{ConstU32, H256},
@@ -67,6 +85,7 @@ impl pallet_registrar::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = frame_system::EnsureRoot<u64>;
     type MaxLengthParaIds = ConstU32<1000>;
+    type MaxGenesisDataSize = ConstU32<5_000_000>;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
@@ -81,7 +100,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 // Build genesis storage according to the mock runtime.
-pub fn new_test_ext_with_genesis(para_ids: Vec<ParaId>) -> sp_io::TestExternalities {
+pub fn new_test_ext_with_genesis(
+    para_ids: Vec<(ParaId, ContainerChainGenesisData)>,
+) -> sp_io::TestExternalities {
     GenesisConfig {
         system: Default::default(),
         para_registrar: pallet_registrar::GenesisConfig { para_ids },
@@ -89,4 +110,15 @@ pub fn new_test_ext_with_genesis(para_ids: Vec<ParaId>) -> sp_io::TestExternalit
     .build_storage()
     .unwrap()
     .into()
+}
+
+pub fn empty_genesis_data() -> ContainerChainGenesisData {
+    ContainerChainGenesisData {
+        storage: Default::default(),
+        name: Default::default(),
+        id: Default::default(),
+        fork_id: Default::default(),
+        extensions: Default::default(),
+        properties: Default::default(),
+    }
 }

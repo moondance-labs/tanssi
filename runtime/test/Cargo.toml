@@ -1,11 +1,10 @@
 [package]
-name = "test-runtime"
-authors = [ "Anonymous" ]
-description = ""
+name = "orchestrator-runtime"
+description = "Orchestrator runtime"
 edition = "2021"
-homepage = "https://substrate.io"
-license = "Unlicense"
 version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
 
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
@@ -19,12 +18,18 @@ smallvec = { workspace = true }
 
 # Own
 pallet-author-noting = { workspace = true }
+pallet-authority-assignment = { workspace = true }
+pallet-authority-mapping = { workspace = true }
 pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-initializer = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+
+# Nimbus
+nimbus-primitives = { workspace = true }
+pallet-author-inherent = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -40,6 +45,7 @@ pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 sp-api = { workspace = true }
+sp-application-crypto = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
@@ -79,7 +85,7 @@ substrate-wasm-builder = { workspace = true }
 default = [
 	"std",
 ]
-std = [ "cumulus-pallet-aura-ext/std", "cumulus-pallet-parachain-system/std", "cumulus-primitives-core/std", "cumulus-primitives-timestamp/std", "cumulus-primitives-utility/std", "frame-executive/std", "frame-support/std", "frame-system-rpc-runtime-api/std", "frame-system/std", "log/std", "pallet-aura/std", "pallet-author-noting/std", "pallet-authorship/std", "pallet-balances/std", "pallet-collator-assignment-runtime-api/std", "pallet-collator-selection/std", "pallet-configuration/std", "pallet-initializer/std", "pallet-registrar-runtime-api/std", "pallet-registrar/std", "pallet-session/std", "pallet-sudo/std", "pallet-timestamp/std", "parachain-info/std", "parity-scale-codec/std", "polkadot-parachain/std", "polkadot-runtime-common/std", "scale-info/std", "sp-api/std", "sp-block-builder/std", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-offchain/std", "sp-runtime/std", "sp-std/std", "sp-transaction-pool/std", "sp-version/std", "tp-author-noting-inherent/std", "tp-traits/std" ]
+std = [ "cumulus-pallet-aura-ext/std", "cumulus-pallet-parachain-system/std", "cumulus-primitives-core/std", "cumulus-primitives-timestamp/std", "cumulus-primitives-utility/std", "frame-executive/std", "frame-support/std", "frame-system-rpc-runtime-api/std", "frame-system/std", "log/std", "pallet-aura/std", "pallet-author-noting/std", "pallet-authority-assignment/std", "pallet-authorship/std", "pallet-balances/std", "pallet-collator-assignment-runtime-api/std", "pallet-collator-selection/std", "pallet-configuration/std", "pallet-initializer/std", "pallet-registrar-runtime-api/std", "pallet-registrar/std", "pallet-session/std", "pallet-sudo/std", "pallet-timestamp/std", "parachain-info/std", "parity-scale-codec/std", "polkadot-parachain/std", "polkadot-runtime-common/std", "scale-info/std", "sp-api/std", "sp-block-builder/std", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-offchain/std", "sp-runtime/std", "sp-std/std", "sp-transaction-pool/std", "sp-version/std", "tp-author-noting-inherent/std", "tp-traits/std", "sp-application-crypto/std", "nimbus-primitives/std" ]
 
 runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
@@ -106,3 +112,5 @@ try-runtime = [
 	"pallet-timestamp/try-runtime",
 	"parachain-info/try-runtime",
 ]
+
+fast-runtime = []

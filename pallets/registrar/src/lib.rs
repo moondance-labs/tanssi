@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 //! # Registrar Pallet
 //!
 //! This pallet is in charge of registering containerChains (identified by their Id)
@@ -26,6 +42,7 @@ pub mod pallet {
         frame_system::pallet_prelude::*,
         sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
         sp_std::prelude::*,
+        tp_container_chain_genesis_data::ContainerChainGenesisData,
         tp_traits::{
             GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
         },
@@ -39,26 +56,44 @@ pub mod pallet {
     #[derive(Default)]
     pub struct GenesisConfig {
         /// Para ids
-        pub para_ids: Vec<ParaId>,
+        pub para_ids: Vec<(ParaId, ContainerChainGenesisData)>,
     }
 
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig {
         fn build(&self) {
-            let mut para_ids = self.para_ids.clone();
+            // Sort para ids and detect duplicates, but do it using a vector of
+            // references to avoid cloning the genesis data, which may be big.
+            let mut para_ids: Vec<&_> = self.para_ids.iter().collect();
             para_ids.sort();
             para_ids.dedup_by(|a, b| {
-                if a == b {
-                    panic!("Duplicate para_id: {}", a);
+                if a.0 == b.0 {
+                    panic!("Duplicate para_id: {}", a.0);
                 } else {
                     false
                 }
             });
 
-            <RegisteredParaIds<T>>::put(
-                BoundedVec::<_, _>::try_from(para_ids)
-                    .expect("too many para ids in genesis: bounded vec full"),
-            );
+            let mut bounded_para_ids = BoundedVec::truncate_from(vec![]);
+
+            for (para_id, genesis_data) in para_ids {
+                bounded_para_ids
+                    .try_push(*para_id)
+                    .expect("too many para ids in genesis: bounded vec full");
+
+                let genesis_data_size = genesis_data.encoded_size();
+                if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
+                    panic!(
+                        "genesis data for para_id {:?} is too large: {} bytes (limit is {})",
+                        u32::from(*para_id),
+                        genesis_data_size,
+                        T::MaxGenesisDataSize::get()
+                    );
+                }
+                <ParaGenesisData<T>>::insert(para_id, genesis_data);
+            }
+
+            <RegisteredParaIds<T>>::put(bounded_para_ids);
         }
     }
 
@@ -75,8 +110,13 @@ pub mod pallet {
         #[pallet::constant]
         type MaxLengthParaIds: Get<u32>;
 
+        /// Max length of encoded genesis data
+        #[pallet::constant]
+        type MaxGenesisDataSize: Get<u32>;
+
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
+        #[pallet::constant]
         type SessionDelay: Get<Self::SessionIndex>;
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
@@ -95,6 +135,11 @@ pub mod pallet {
         ValueQuery,
     >;
 
+    #[pallet::storage]
+    #[pallet::getter(fn para_genesis_data)]
+    pub type ParaGenesisData<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, ContainerChainGenesisData, OptionQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -112,14 +157,20 @@ pub mod pallet {
         ParaIdNotRegistered,
         /// The bounded list of ParaIds has reached its limit
         ParaIdListFull,
+        /// Attempted to register a ParaId with a genesis data size greater than the limit
+        GenesisDataTooBig,
     }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Register parachain
         #[pallet::call_index(0)]
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1).ref_time())]
-        pub fn register(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,2).ref_time())]
+        pub fn register(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            genesis_data: ContainerChainGenesisData,
+        ) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
             Self::schedule_parachain_change(|para_ids| {
                 // We don't want to add duplicate para ids, so we check whether the potential new
@@ -137,6 +188,20 @@ pub mod pallet {
                 };
                 result
             })?;
+
+            // TODO: while the registration takes place on the next session, the genesis data
+            // is inserted immediately. This is because collators should be able to start syncing
+            // the new container chain before the first block is mined. However, we could store
+            // the genesis data in another key, like PendingParaGenesisData.
+            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
+            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
+            // won't detect that the size is too big until after iterating over all of them, so the
+            // limit in that case would be the transaction size.
+            let genesis_data_size = genesis_data.encoded_size();
+            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
+                return Err(Error::<T>::GenesisDataTooBig.into());
+            }
+            ParaGenesisData::<T>::insert(para_id, genesis_data);
 
             Self::deposit_event(Event::ParaIdRegistered { para_id });
             Ok(())
@@ -160,6 +225,11 @@ pub mod pallet {
                 result
             })?;
             Self::deposit_event(Event::ParaIdDeregistered { para_id });
+
+            // TODO: while the deregistration takes place on the next session, the genesis data
+            // is deleted immediately. This will cause problems since any new collators that want
+            // to join now will not be able to sync this parachain
+            ParaGenesisData::<T>::remove(para_id);
 
             Ok(())
         }

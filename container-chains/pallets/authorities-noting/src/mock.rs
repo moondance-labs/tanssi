@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
     crate::{self as authorities_noting_pallet, Config},
     cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider},
@@ -92,6 +108,7 @@ impl Config for Test {
     type SelfParaId = ParachainId;
     type OrchestratorParaId = OrchestratorParachainId;
     type RelayChainStateProvider = MockRelayStateProvider;
+    type OrchestratorAccountId = AccountId;
 }
 
 struct BlockTest {
@@ -147,6 +164,7 @@ pub struct BlockTests {
     relay_sproof_builder_hook:
         Option<Box<dyn Fn(&BlockTests, RelayChainBlockNumber, &mut ParaHeaderSproofBuilder)>>,
     orchestrator_storage_proof: Option<StorageProof>,
+    skip_inherent_insertion: bool,
 }
 
 impl BlockTests {
@@ -181,6 +199,11 @@ impl BlockTests {
     pub fn with_orchestrator_storage_proof(mut self, proof: StorageProof) -> Self
 where {
         self.orchestrator_storage_proof = Some(proof);
+        self
+    }
+
+    pub fn skip_inherent_insertion(mut self) -> Self {
+        self.skip_inherent_insertion = true;
         self
     }
 
@@ -235,10 +258,12 @@ where {
 
                 // execute the block
                 AuthoritiesNoting::on_initialize(*n);
-                AuthoritiesNoting::create_inherent(&inherent_data)
-                    .expect("got an inherent")
-                    .dispatch_bypass_filter(RawOrigin::None.into())
-                    .expect("dispatch succeeded");
+                if !self.skip_inherent_insertion {
+                    AuthoritiesNoting::create_inherent(&inherent_data)
+                        .expect("got an inherent")
+                        .dispatch_bypass_filter(RawOrigin::None.into())
+                        .expect("dispatch succeeded");
+                }
                 within_block();
                 AuthoritiesNoting::on_finalize(*n);
 

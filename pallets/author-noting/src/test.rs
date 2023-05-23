@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 use {
     crate::mock::*,
     cumulus_primitives_core::ParaId,
@@ -5,7 +21,10 @@ use {
     parity_scale_codec::Encode,
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
     sp_core::H256,
-    sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
+    sp_runtime::{
+        generic::DigestItem,
+        traits::{BlakeTwo256, HashFor},
+    },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
 
@@ -142,7 +161,7 @@ fn test_author_id_insertion_many_paras() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "Invalid relay chain state proof")]
 fn test_should_panic_with_invalid_proof_root() {
     BlockTests::new()
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
@@ -172,7 +191,7 @@ fn test_should_panic_with_invalid_proof_root() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "Invalid proof provided for para head key")]
 fn test_should_panic_with_invalid_proof_state() {
     let sproof_builder = ParaHeaderSproofBuilder::default();
     let (_, relay_chain_state) = sproof_builder.into_state_root_and_proof();
@@ -197,9 +216,150 @@ fn test_should_panic_with_invalid_proof_state() {
             }
             _ => unreachable!(),
         })
-        // Insert an invalid root, not matching the proof generated
+        // Insert a proof, not matching the root generated
         .with_overriden_state_proof(relay_chain_state)
         .add(1, || {
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
+        });
+}
+
+#[test]
+#[should_panic(expected = "Invalid proof provided for para head key")]
+fn test_should_panic_with_proof_for_not_including_required_para() {
+    // Since the default parachain list is vec![1001],
+    // we must always include a sproof for this para_id
+    let slot: InherentType = 10u64.into();
+    let mut para_id_1001_item = ParaHeaderSproofBuilderItem::default();
+    let mut proof_item = ParaHeaderSproofBuilder::default();
+
+    para_id_1001_item.para_id = 1001.into();
+    para_id_1001_item.author_id =
+        HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+            parent_hash: Default::default(),
+            number: Default::default(),
+            state_root: Default::default(),
+            extrinsics_root: Default::default(),
+            digest: sp_runtime::generic::Digest {
+                logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+            },
+        });
+    proof_item.items.push(para_id_1001_item.clone());
+
+    // However we insert a new para in the state. The idea is that the proof we
+    // will pass is for this new paraId, and not 1001. Passing 1001 is required so
+    // we should see the node panicking.
+
+    let slot: InherentType = 14u64.into();
+    let mut para_id_1002_item = ParaHeaderSproofBuilderItem::default();
+    para_id_1002_item.para_id = 1002.into();
+    para_id_1002_item.author_id =
+        HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+            parent_hash: Default::default(),
+            number: Default::default(),
+            state_root: Default::default(),
+            extrinsics_root: Default::default(),
+            digest: sp_runtime::generic::Digest {
+                logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+            },
+        });
+    proof_item.items.push(para_id_1002_item.clone());
+
+    // lets get the generated proof here. However we will modify later on the proof we pass to include para id 1002
+    let (root, proof) = proof_item.clone().into_state_root_and_proof();
+    let db = proof.into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
+    let backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
+
+    // this should contain both keys (1001, 1002). but we will now generate a proof without one of the keys (1001)
+    let mut relevant_keys = proof_item.relevant_keys();
+    // remove para 1001
+    relevant_keys.remove(0);
+    // re-generate the proof only for para 1002
+    let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
+
+    // We now have a state containing 1001 and 1002 paras, but only 1002 is passed in the proof (when 1001 is required)
+    BlockTests::new()
+        .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                // We guarantee we generate the same DB by constructing the same items
+                sproof.items.push(para_id_1001_item.clone());
+                sproof.items.push(para_id_1002_item.clone());
+            }
+            _ => unreachable!(),
+        })
+        .with_overriden_state_proof(proof)
+        .add(1, || {});
+}
+
+#[test]
+#[should_panic(expected = "Invalid proof provided for para head key")]
+fn test_should_panic_with_empty_proof() {
+    // Since the default parachain list is vec![1001],
+    // we must always include a sproof for this para_id
+    let slot: InherentType = 10u64.into();
+    let mut para_id_1001_item = ParaHeaderSproofBuilderItem::default();
+    let mut proof_item = ParaHeaderSproofBuilder::default();
+
+    para_id_1001_item.para_id = 1001.into();
+    para_id_1001_item.author_id =
+        HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+            parent_hash: Default::default(),
+            number: Default::default(),
+            state_root: Default::default(),
+            extrinsics_root: Default::default(),
+            digest: sp_runtime::generic::Digest {
+                logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+            },
+        });
+    proof_item.items.push(para_id_1001_item.clone());
+
+    // lets get the generated proof here. However we will modify later on the proof to not include anything
+    let (root, proof) = proof_item.clone().into_state_root_and_proof();
+    let db = proof.into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
+    let backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
+
+    // Empty relevant keys
+    let relevant_keys: Vec<Vec<u8>> = Vec::new();
+    // re-generate the proof for nothing
+    let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
+
+    // We now have a state containing 1001, but an empty proof will be passed
+    BlockTests::new()
+        .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                // We guarantee we generate the same DB by constructing the same items
+                sproof.items.push(para_id_1001_item.clone());
+            }
+            _ => unreachable!(),
+        })
+        .with_overriden_state_proof(proof)
+        .add(1, || {});
+}
+
+#[test]
+#[should_panic(expected = "Container chain author data needs to be present in every block!")]
+fn test_not_inserting_inherent() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .skip_inherent_insertion()
+        .add(1, || {
+            assert!(AuthorNoting::latest_author(ParaId::from(1001)).is_none());
         });
 }
