@@ -1065,11 +1065,11 @@ fn test_author_noting_not_self_para() {
             let slot: u64 = 5;
             let other_para: ParaId = 1001u32.into();
 
-            // Charlie and Dave to 1001
+            // Bob and Charlie to 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                vec![BOB.into(), CHARLIE.into()]
             );
 
             let mut s = ParaHeaderSproofBuilderItem::default();
@@ -1089,7 +1089,7 @@ fn test_author_noting_not_self_para() {
 
             assert_eq!(
                 AuthorNoting::latest_author(other_para),
-                Some(AccountId::from(DAVE))
+                Some(AccountId::from(CHARLIE))
             );
         });
 }

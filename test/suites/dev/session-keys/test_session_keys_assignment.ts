@@ -33,12 +33,12 @@ describeSuite({
 
             expect(assignment0.orchestratorChain).to.deep.equal([
                 u8aToHex(alice.publicKey).toString(),
-                u8aToHex(bob.publicKey).toString(),
+                //u8aToHex(bob.publicKey).toString(),
             ]);
             expect(assignment0.containerChains).to.deep.equal({
                 2000: [
+                    u8aToHex(bob.publicKey).toString(),
                     u8aToHex(charlie.publicKey).toString(),
-                    u8aToHex(dave.publicKey).toString(),
                 ],
                 2001: [],
             });
@@ -51,7 +51,7 @@ describeSuite({
             // Check authorities are correct
             const authorities = (await polkadotJs.query.aura.authorities());
             expect(u8aToHex(authorities[0])).to.be.eq(u8aToHex(alice.publicKey));
-            expect(u8aToHex(authorities[1])).to.be.eq(u8aToHex(bob.publicKey))
+            //expect(u8aToHex(authorities[1])).to.be.eq(u8aToHex(bob.publicKey))
         },
     });
 
@@ -98,12 +98,12 @@ describeSuite({
             expect(assignment2.orchestratorChain).to.deep.equal([
                 // This is alice's new key
                 u8aToHex(newKey).toString(),
-                u8aToHex(bob.publicKey).toString(),
+                //u8aToHex(bob.publicKey).toString(),
             ]);
             expect(assignment2.containerChains).to.deep.equal({
                 2000: [
+                    u8aToHex(bob.publicKey).toString(),
                     u8aToHex(charlie.publicKey).toString(),
-                    u8aToHex(dave.publicKey).toString(),
                 ],
                 2001: [],
             });

@@ -44,8 +44,8 @@ impl Default for HostConfiguration {
     fn default() -> Self {
         Self {
             max_collators: 100u32,
-            min_orchestrator_collators: 2u32,
-            max_orchestrator_collators: 2u32,
+            min_orchestrator_collators: 1u32,
+            max_orchestrator_collators: 1u32,
             collators_per_container: 2u32,
         }
     }
