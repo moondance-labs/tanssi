@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
@@ -23,6 +39,7 @@ use {
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
+    orchestrator_runtime::{opaque::Block, AccountId, RuntimeApi},
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
@@ -46,7 +63,6 @@ use {
     tc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
-    test_runtime::{opaque::Block, AccountId, RuntimeApi},
 };
 
 type FullBackend = TFullBackend<Block>;
@@ -59,11 +75,11 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        test_runtime::api::dispatch(method, data)
+        orchestrator_runtime::api::dispatch(method, data)
     }
 
     fn native_version() -> sc_executor::NativeVersion {
-        test_runtime::native_version()
+        orchestrator_runtime::native_version()
     }
 }
 
@@ -1130,7 +1146,7 @@ pub fn new_dev(
                 inherent_data: &mut sp_inherents::InherentData,
             ) -> Result<(), sp_inherents::Error> {
                 TIMESTAMP.with(|x| {
-                    *x.borrow_mut() += test_runtime::SLOT_DURATION;
+                    *x.borrow_mut() += orchestrator_runtime::SLOT_DURATION;
                     inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
                 })
             }

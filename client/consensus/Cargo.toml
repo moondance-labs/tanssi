@@ -2,7 +2,10 @@
 name = "tc-consensus"
 description = "Client-side worker for Tanssi which unifies Aura and Nimbus"
 edition = "2021"
-version = "0.9.0"
+version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
+
 [dependencies]
 # Substrate deps
 sc-client-api = { workspace = true }

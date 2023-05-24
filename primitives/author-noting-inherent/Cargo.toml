@@ -1,8 +1,11 @@
 [package]
 name = "tp-author-noting-inherent"
-authors = []
+description = "primitives related to author-noting-inherent"
 edition = "2021"
 version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
+
 [dependencies]
 async-trait = { workspace = true, optional = true }
 hex-literal = { version = "0.3.4" }

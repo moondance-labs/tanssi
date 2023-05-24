@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 //! # Configuration Pallet
 //!
 //! This pallet stores the configuration for an orchestration-collator assignation chain. In
@@ -92,24 +108,25 @@ pub trait WeightInfo {
     fn set_hrmp_open_request_ttl() -> Weight;
 }
 
+// TODO: set proper weights
 impl WeightInfo for () {
     fn set_config_with_block_number() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_config_with_u32() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_config_with_option_u32() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_config_with_weight() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_config_with_balance() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
     fn set_hrmp_open_request_ttl() -> Weight {
-        Weight::MAX
+        Weight::zero()
     }
 }
 

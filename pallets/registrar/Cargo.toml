@@ -1,10 +1,10 @@
 [package]
 name = "pallet-registrar"
-authors = []
 description = "ParaRegistrar pallet that allows to register and deregister ParaIds"
 edition = "2021"
-publish = false
 version = "0.1.0"
+authors = { workspace = true }
+license = "GPL-3.0-only"
 
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
