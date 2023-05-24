@@ -74,6 +74,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
+    parity_scale_codec::{Decode, Encode},
 };
 pub use {
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
@@ -203,6 +204,31 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
             _ => None,
         }
     }
+}
+
+#[derive(Clone)]
+pub struct TransactionConverter;
+
+impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
+	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
+		UncheckedExtrinsic::new_unsigned(
+			pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
+		)
+	}
+}
+
+impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConverter {
+	fn convert_transaction(
+		&self,
+		transaction: pallet_ethereum::Transaction,
+	) -> opaque::UncheckedExtrinsic {
+		let extrinsic = UncheckedExtrinsic::new_unsigned(
+			pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
+		);
+		let encoded = extrinsic.encode();
+		opaque::UncheckedExtrinsic::decode(&mut &encoded[..])
+			.expect("Encoded extrinsic is always valid")
+	}
 }
 
 /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
@@ -545,6 +571,8 @@ impl pallet_evm::Config for Runtime {
     type OnChargeTransaction = ();
     type OnCreate = ();
     type FindAuthor = FindAuthorTruncated<Aura>;
+    type Timestamp = Timestamp;
+	type WeightInfo = ();
 }
 
 parameter_types! {

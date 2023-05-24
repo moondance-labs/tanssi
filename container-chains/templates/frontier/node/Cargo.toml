@@ -11,12 +11,14 @@ license = "GPL-3.0-only"
 async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
+flume = { workspace = true }
 futures = { workspace = true }
 hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
+url = { workspace = true }
 
 # Local
 container-chain-template-frontier-runtime = { path = "../runtime", default-features = false, features = [ "std" ] }
@@ -91,6 +93,7 @@ fc-rpc = { workspace = true }
 fc-cli = { workspace = true }
 fc-consensus = { workspace = true }
 fc-rpc-core = { workspace = true }
+fc-storage = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
