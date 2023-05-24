@@ -434,6 +434,17 @@ pub async fn start_parachain_node(
     .await
 }
 
+use crate::client::RuntimeApiCollection;
+use crate::client::FullBackend;
+use sp_api::ConstructRuntimeApi;
+use crate::client::FullClient;
+use sc_client_api::{BlockchainEvents, StateBackendFor};
+use crate::eth::EthConfiguration;
+use sc_service::Error as ServiceError;
+use crate::eth::new_frontier_partial;
+use crate::eth::FrontierPartialComponents;
+use crate::eth::spawn_frontier_tasks;
+
 /// Builds a new service for a full client.
 pub fn new_full<RuntimeApi, Executor>(
 	mut config: Configuration,
@@ -444,7 +455,7 @@ where
 	RuntimeApi: Send + Sync + 'static,
 	RuntimeApi::RuntimeApi:
 		RuntimeApiCollection<StateBackend = StateBackendFor<FullBackend, Block>>,
-	Executor: NativeExecutionDispatch + 'static,
+	Executor: sc_executor::NativeExecutionDispatch + 'static,
 {
 	let PartialComponents {
 		client,
@@ -462,11 +473,6 @@ where
 		fee_history_cache,
 		fee_history_cache_limit,
 	} = new_frontier_partial(&eth_config)?;
-
-	let grandpa_protocol_name = sc_consensus_grandpa::protocol_standard_name(
-		&client.block_hash(0)?.expect("Genesis block exists; qed"),
-		&config.chain_spec,
-	);
 
 	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
@@ -491,7 +497,7 @@ where
 	let role = config.role.clone();
 	let force_authoring = config.force_authoring;
 	let name = config.network.node_name.clone();
-	let enable_grandpa = !config.disable_grandpa && sealing.is_none();
+	let enable_grandpa = false;
 	let prometheus_registry = config.prometheus_registry().cloned();
 
 	// Channel for the rpc handler to communicate with the authorship task.
@@ -545,11 +551,7 @@ where
 				client: client.clone(),
 				pool: pool.clone(),
 				deny_unsafe,
-				command_sink: if sealing.is_some() {
-					Some(command_sink.clone())
-				} else {
-					None
-				},
+				command_sink:None,
 				eth: eth_rpc_params.clone(),
 			};
 

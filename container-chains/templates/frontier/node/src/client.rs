@@ -65,7 +65,6 @@ pub trait RuntimeApiCollection:
 	BaseRuntimeApiCollection
 	+ EthCompatRuntimeApiCollection
 	+ sp_consensus_aura::AuraApi<Block, AuraId>
-	+ sp_consensus_grandpa::GrandpaApi<Block>
 	+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 where
 	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
@@ -77,7 +76,6 @@ where
 	Api: BaseRuntimeApiCollection
 		+ EthCompatRuntimeApiCollection
 		+ sp_consensus_aura::AuraApi<Block, AuraId>
-		+ sp_consensus_grandpa::GrandpaApi<Block>
 		+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>,
 	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
