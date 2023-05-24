@@ -29,9 +29,8 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 use tc_orchestrator_chain_interface::OrchestratorChainInterface;
-use tokio::sync::mpsc::UnboundedSender;
+use tokio::sync::mpsc::UnboundedReceiver;
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
 /// and creating the ChainSpec from on-chain data from the orchestrator chain.
@@ -72,11 +71,6 @@ pub enum CcSpawnMsg {
     /// Stop the container chain client previously started for this ParaId. If the ParaId is the
     /// orchestrator chain id, ignore this message.
     Stop(ParaId),
-}
-
-// TODO: this is for testing, remove when not needed and remove lazy_static dependency
-lazy_static::lazy_static! {
-    pub static ref CCSPAWN: Mutex<Option<UnboundedSender<CcSpawnMsg>>> = Mutex::new(None);
 }
 
 impl ContainerChainSpawner {
@@ -158,16 +152,14 @@ impl ContainerChainSpawner {
             )
             .map_err(|err| format!("Container chain argument error: {}", err))?;
 
-            // The database path is something like
-            // /tmp/zombie-6368e3e070dcee9722a19fb5fa479f21_-4023642-W9VgHHslcbzB/Collator2001-01/data/polkadot/chains/local_testnet/db/full
-            // We want to change the last "db/full" into "db/full-container-{}"
+            // Change database path to make it depend on container chain para id
+            // So instead of the usual "db/full" we have "db/full-container-2000"
             let mut db_path = container_chain_cli_config
                 .database
                 .path()
                 .unwrap()
                 .to_owned();
             db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
-            log::info!("DB PATH IS {:?}", db_path);
             container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
@@ -187,32 +179,34 @@ impl ContainerChainSpawner {
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = exit_future::signal();
 
-            {
-                spawned_para_ids
-                    .lock()
-                    .expect("poison error")
-                    .insert(container_chain_para_id.into(), StopContainerChain(signal));
-            }
+            spawned_para_ids
+                .lock()
+                .expect("poison error")
+                .insert(container_chain_para_id.into(), StopContainerChain(signal));
 
-            // Emulate task_manager.add_child by making the parent task manager stop if the
-            // container chain task manager stops.
-            // The reverse is also true, if the parent task manager stops, the container chain
-            // task manager will also stop.
-            // But add an additional on_exit future to allow graceful shutdown of container chains.
-            // TODO: not sure what is the difference between spawn and spawn_essential, because
-            // when a "spawn" task panics it stops the node
-            spawn_handle.spawn("container-chain-task-manager", None, async move {
-                let mut t1 = container_chain_task_manager.future().fuse();
-                let mut t2 = on_exit.fuse();
+            // Add the container chain task manager as a child task to the parent task manager.
+            // We want to stop the node if this task manager stops, but we also want to allow a
+            // graceful shutdown using the `on_exit` future.
+            let name = "container-chain-task-manager";
+            spawn_handle.spawn(name, None, async move {
+                let mut container_chain_task_manager_future =
+                    container_chain_task_manager.future().fuse();
+                let mut on_exit_future = on_exit.fuse();
 
                 futures::select! {
-                    res1 = t1 => {
+                    res1 = container_chain_task_manager_future => {
+                        log::error!("Essential task `{}` failed. Shutting down service.", name);
+
+                        // This should do `essential_failed_tx.close()` but we can't get that from
+                        // the parent task manager (it is private), so just panic
                         match res1 {
-                            Ok(()) => panic!("container_chain_task_manager has stopped unexpectedly"),
-                            Err(e) => panic!("container_chain_task_manager failed: {}", e),
+                            Ok(()) => panic!("{} has stopped unexpectedly", name),
+                            Err(e) => panic!("{} failed: {}", name, e),
                         }
                     }
-                    _ = t2 => {}
+                    _ = on_exit_future => {
+                        // Graceful shutdown
+                    }
                 }
             });
 
@@ -229,15 +223,16 @@ impl ContainerChainSpawner {
         }
     }
 
+    /// Stop a container chain. Prints a warning if the container chain was not running.
     fn stop(&self, container_chain_para_id: ParaId) {
-        let kill_handle = self
+        let stop_handle = self
             .spawned_para_ids
             .lock()
             .expect("poison error")
             .remove(&container_chain_para_id);
 
-        match kill_handle {
-            Some(_signal) => {
+        match stop_handle {
+            Some(_stop_handle) => {
                 log::info!("Stopping container chain {}", container_chain_para_id);
             }
             None => {
@@ -249,23 +244,11 @@ impl ContainerChainSpawner {
         }
     }
 
-    pub async fn rx_loop(self, mut rx: tokio::sync::mpsc::UnboundedReceiver<CcSpawnMsg>) {
+    /// Receive and process `CcSpawnMsg`s indefinitely
+    pub async fn rx_loop(self, mut rx: UnboundedReceiver<CcSpawnMsg>) {
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::Spawn(para_id) => {
-                    // For testing
-
-                    if para_id == 2001.into() {
-                        tokio::time::sleep(Duration::from_secs(120)).await;
-                        let tx3 = CCSPAWN
-                            .lock()
-                            .expect("poison error")
-                            .as_ref()
-                            .cloned()
-                            .unwrap();
-                        tx3.send(CcSpawnMsg::Stop(2000.into())).unwrap();
-                    }
-
                     if para_id == self.orchestrator_para_id {
                         // Restart collation on orchestrator chain
                         let f = (self.collate_on_tanssi)();

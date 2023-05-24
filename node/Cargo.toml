@@ -15,7 +15,6 @@ exit-future = { workspace = true }
 futures = { workspace = true }
 hex = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
-lazy_static = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }

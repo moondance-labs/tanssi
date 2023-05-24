@@ -17,7 +17,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 use crate::container_chain_spawner::CcSpawnMsg;
 use crate::container_chain_spawner::ContainerChainSpawner;
-use crate::container_chain_spawner::CCSPAWN;
 use sp_core::H256;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use {
@@ -630,7 +629,6 @@ async fn start_node_impl(
                 key: collator_key
                     .clone()
                     .expect("Command line arguments do not allow this. qed"),
-
                 parachain_consensus,
             })
             .await;
@@ -655,7 +653,6 @@ async fn start_node_impl(
     start_network.start_network();
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
-        let cc_para_id = container_chain_cli.base.para_id;
         let orchestrator_client = client.clone();
         let spawn_handle = task_manager.spawn_handle();
         let container_chain_spawner = ContainerChainSpawner {
@@ -674,23 +671,12 @@ async fn start_node_impl(
             spawned_para_ids: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
-        // For testing, spawn a 2000 client for 2001 collators
-        let tx2 = cc_spawn_tx.clone();
-        if cc_para_id == Some(2001) {
-            spawn_handle.spawn("testing-spawn-2000-client", None, async move {
-                //tokio::time::sleep(Duration::from_secs(60)).await;
-
-                tx2.send(CcSpawnMsg::Spawn(2000.into())).unwrap();
-            });
-        }
 
         task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
             container_chain_spawner.rx_loop(cc_spawn_rx),
         );
-
-        *CCSPAWN.lock().expect("poison error") = Some(cc_spawn_tx);
     }
 
     Ok((task_manager, client))
