@@ -44,8 +44,8 @@ use {
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
     nimbus_primitives::NIMBUS_KEY_ID,
-    pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
     orchestrator_runtime::{opaque::Block, AccountId, RuntimeApi},
+    pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
@@ -111,8 +111,100 @@ struct MockTimestampInherentDataProvider;
 /// be able to perform chain operations.
 pub fn new_partial(
     config: &Configuration,
-    orchestrator_para_id: ParaId,
-    cc_spawn_tx: Option<UnboundedSender<CcSpawnMsg>>,
+) -> Result<
+    PartialComponents<
+        ParachainClient,
+        ParachainBackend,
+        MaybeSelectChain,
+        sc_consensus::DefaultImportQueue<Block, ParachainClient>,
+        sc_transaction_pool::FullPool<Block, ParachainClient>,
+        (
+            ParachainBlockImport,
+            Option<Telemetry>,
+            Option<TelemetryWorkerHandle>,
+        ),
+    >,
+    sc_service::Error,
+> {
+    let telemetry = config
+        .telemetry_endpoints
+        .clone()
+        .filter(|x| !x.is_empty())
+        .map(|endpoints| -> Result<_, sc_telemetry::Error> {
+            let worker = TelemetryWorker::new(16)?;
+            let telemetry = worker.handle().new_telemetry(endpoints);
+            Ok((worker, telemetry))
+        })
+        .transpose()?;
+
+    let executor = ParachainExecutor::new(
+        config.wasm_method,
+        config.default_heap_pages,
+        config.max_runtime_instances,
+        config.runtime_cache_size,
+    );
+
+    let (client, backend, keystore_container, task_manager) =
+        sc_service::new_full_parts::<Block, RuntimeApi, _>(
+            config,
+            telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+            executor,
+        )?;
+    let client = Arc::new(client);
+
+    let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
+
+    let telemetry = telemetry.map(|(worker, telemetry)| {
+        task_manager
+            .spawn_handle()
+            .spawn("telemetry", None, worker.run());
+        telemetry
+    });
+
+    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
+        config.transaction_pool.clone(),
+        config.role.is_authority().into(),
+        config.prometheus_registry(),
+        task_manager.spawn_essential_handle(),
+        client.clone(),
+    );
+
+    let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
+    // The nimbus import queue ONLY checks the signature correctness
+    // Any other checks corresponding to the author-correctness should be done
+    // in the runtime
+    let import_queue = nimbus_consensus::import_queue(
+        client.clone(),
+        block_import.clone(),
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
+
+            Ok((time,))
+        },
+        &task_manager.spawn_essential_handle(),
+        config.prometheus_registry(),
+        false,
+    )?;
+
+    let maybe_select_chain = None;
+
+    Ok(PartialComponents {
+        backend,
+        client,
+        import_queue,
+        keystore_container,
+        task_manager,
+        transaction_pool,
+        select_chain: maybe_select_chain,
+        other: (block_import, telemetry, telemetry_worker_handle),
+    })
+}
+
+/// Same as `new_partial` but with additional logic to detect changes to container chain
+/// assignment, and start/stop container chains on demand.
+pub fn new_partial_orchestrator(
+    config: &Configuration,
+    cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -174,11 +266,6 @@ pub fn new_partial(
         client.clone(),
     );
 
-    let spec_para_id = crate::chain_spec::Extensions::try_get(&*config.chain_spec)
-        .map(|extension| extension.para_id)
-        .unwrap();
-    let is_orchestrator_chain = ParaId::from(spec_para_id) == orchestrator_para_id;
-
     let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
     // The nimbus import queue ONLY checks the signature correctness
     // Any other checks corresponding to the author-correctness should be done
@@ -193,15 +280,13 @@ pub fn new_partial(
             let cc_spawn_tx = cc_spawn_tx.clone();
 
             async move {
-                if is_orchestrator_chain {
-                    check_assigned_para_id(
-                        cc_spawn_tx,
-                        &*sync_keystore,
-                        initial_assigned_para_id,
-                        client_set_aside_for_cidp,
-                        block_hash,
-                    )?;
-                }
+                check_assigned_para_id(
+                    cc_spawn_tx,
+                    &*sync_keystore,
+                    initial_assigned_para_id,
+                    client_set_aside_for_cidp,
+                    block_hash,
+                )?;
 
                 let time = sp_timestamp::InherentDataProvider::from_system_time();
 
@@ -230,7 +315,7 @@ pub fn new_partial(
 /// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` if
 /// the para id has changed since the last call to this function.
 fn check_assigned_para_id<Client>(
-    cc_spawn_tx: Option<UnboundedSender<CcSpawnMsg>>,
+    cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
     sync_keystore: &dyn SyncCryptoStore,
     initial_assigned_para_id: Arc<Mutex<Option<ParaId>>>,
     client_set_aside_for_cidp: Arc<Client>,
@@ -240,36 +325,31 @@ where
     Client: ProvideRuntimeApi<Block>,
     <Client as ProvideRuntimeApi<Block>>::Api: CollatorAssignmentApi<Block, AccountId, ParaId>,
 {
-    if let Some(cc_spawn_tx) = cc_spawn_tx {
-        let nimbus_keys = SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
-        let collator_account_id =
-            AccountId::from(<[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap());
-        let container_chain_para_id = client_set_aside_for_cidp
-            .runtime_api()
-            .current_collator_parachain_assignment(block_hash, collator_account_id.clone())?;
+    let nimbus_keys = SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
+    let collator_account_id =
+        AccountId::from(<[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap());
+    let container_chain_para_id = client_set_aside_for_cidp
+        .runtime_api()
+        .current_collator_parachain_assignment(block_hash, collator_account_id.clone())?;
 
-        let mut initial_assigned_para_id = initial_assigned_para_id.lock().expect("poison error");
-        log::info!(
-            "ContainerChain assignment: old {:?} new {:?}",
-            initial_assigned_para_id,
-            container_chain_para_id
-        );
-        if container_chain_para_id != *initial_assigned_para_id {
-            if let Some(new_para_id) = container_chain_para_id {
-                // Spawn new container chain node
-                cc_spawn_tx.send(CcSpawnMsg::Spawn(new_para_id))?;
-            }
-
-            if let Some(prev_para_id) = *initial_assigned_para_id {
-                // Stop old container chain node
-                cc_spawn_tx.send(CcSpawnMsg::Stop(prev_para_id))?;
-            }
-
-            *initial_assigned_para_id = container_chain_para_id;
+    let mut initial_assigned_para_id = initial_assigned_para_id.lock().expect("poison error");
+    log::info!(
+        "ContainerChain assignment: old {:?} new {:?}",
+        initial_assigned_para_id,
+        container_chain_para_id
+    );
+    if container_chain_para_id != *initial_assigned_para_id {
+        if let Some(new_para_id) = container_chain_para_id {
+            // Spawn new container chain node
+            cc_spawn_tx.send(CcSpawnMsg::Spawn(new_para_id))?;
         }
-    } else {
-        // cc_spawn_tx.is_none(), so we must be running a 1000 collator
-        log::info!("cc_spawn_tx.is_none(), this must be a 1000 collator");
+
+        if let Some(prev_para_id) = *initial_assigned_para_id {
+            // Stop old container chain node
+            cc_spawn_tx.send(CcSpawnMsg::Stop(prev_para_id))?;
+        }
+
+        *initial_assigned_para_id = container_chain_para_id;
     }
 
     Ok(())
@@ -378,13 +458,15 @@ async fn start_node_impl(
         .map(|e| e.relay_chain.clone())
         .ok_or_else(|| "Could not find relay_chain extension in chain-spec.")?;
 
+    // Channel to send messages to start/stop container chains
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
-    let tx_for_new_partial = if container_chain_config.is_some() {
-        Some(cc_spawn_tx.clone())
+    // If this node was started without a `container_chain_config`, we don't support collation
+    // on container chains, so there is no need to detect changes to assignment
+    let params = if container_chain_config.is_some() {
+        new_partial_orchestrator(&parachain_config, cc_spawn_tx.clone())?
     } else {
-        None
+        new_partial(&parachain_config)?
     };
-    let params = new_partial(&parachain_config, para_id, tx_for_new_partial)?;
     let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
     let client = params.client.clone();
@@ -651,7 +733,7 @@ pub async fn start_node_impl_container(
         // Change this to use the syntax `PartialComponents { client, backend, .. } = params;`
         // when this issue is fixed:
         // https://github.com/rust-lang/rust/issues/104883
-        let params = new_partial(&parachain_config, orchestrator_para_id, None)?;
+        let params = new_partial(&parachain_config)?;
         let (l_block_import, l_telemetry, _telemetry_worker_handle) = params.other;
         block_import = l_block_import;
         telemetry = l_telemetry;
