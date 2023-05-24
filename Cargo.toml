@@ -33,6 +33,7 @@ pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", def
 container-chain-template-runtime = { path = "container-chain-template/runtime", default-features = false }
 pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
 
+tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface = { path = "client/orchestrator-chain-interface" }
 test-relay-sproof-builder = { path = "test-sproof-builder" }
 orchestrator-runtime = { path = "runtime/test", default-features = false }
@@ -43,12 +44,11 @@ tp-collator-assignment = { path = "primitives/collator-assignment", default-feat
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
-tc-consensus = { path = "client/consensus" }
 
 # Nimbus (wasm)
-nimbus-primitives = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false }
 nimbus-consensus = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40" }
-pallet-author-inherent = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false  }
+nimbus-primitives = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false }
+pallet-author-inherent = { git = "https://github.com/Purestake/nimbus", branch = "girazoki-polkadot-v0.9.40", default-features = false }
 
 # Substrate (wasm)
 frame-executive = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.40", default-features = false }
@@ -174,10 +174,10 @@ clap = { version = "4.1.6", features = [ "derive" ] }
 futures = { version = "0.3.1" }
 hex = { version = "0.4.3" }
 jsonrpsee = { version = "0.16.2", features = [ "server" ] }
-thiserror = { version = "1.0.40" }
 serde_json = { version = "1.0.96", default-features = false }
-tracing = { version = "0.1.37" }
+thiserror = { version = "1.0.40" }
 tokio = { version = "1.26.0", default-features = false }
+tracing = { version = "0.1.37" }
 
 [profile.production]
 codegen-units = 1

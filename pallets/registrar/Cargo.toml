@@ -34,8 +34,8 @@ std = [
 	"frame-system/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
+	"serde",
 	"tp-container-chain-genesis-data/std",
 	"tp-traits/std",
-	"serde",
 ]
 try-runtime = [ "frame-support/try-runtime" ]

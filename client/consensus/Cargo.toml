@@ -11,8 +11,8 @@ license = "GPL-3.0-only"
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
 sc-consensus-aura = { workspace = true }
-sc-consensus-slots = { workspace = true }
 sc-consensus-manual-seal = { workspace = true }
+sc-consensus-slots = { workspace = true }
 sc-telemetry = { workspace = true }
 sp-api = { workspace = true }
 sp-application-crypto = { workspace = true, features = [ "std" ] }
@@ -34,12 +34,12 @@ cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 
 # Nimbus Dependencies
+nimbus-consensus = { workspace = true }
 nimbus-primitives = { workspace = true, features = [ "std" ] }
-nimbus-consensus = { workspace = true  }
 
 # Other deps
 async-trait = { workspace = true }
-parity-scale-codec = { workspace = true, features = [ "derive" ] }
 futures = { workspace = true }
 log = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive" ] }
 tracing = { workspace = true }
