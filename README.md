@@ -2,12 +2,11 @@
   <img src="media/tanssi.png" width="360">
 </p>
 
-<div align="center">
+**A permissionless appchain infrastructure protocol designed for swift and effortless deployment of application-specific blockchains**
 
-![Tests](https://github.com/PureStake/moonbeam/workflows/Release/badge.svg)
-
-**A Substrate [Parachain](https://polkadot.network/technology/) that offers collation/data-retrievability services to appchains.**
-
+🔎 For more about Tanssi Network, head to our [website](https://www.tanssi.network)<br>
+📢 Follow our latest updates on [Twitter](https://twitter.com/TanssiNetwork)<br>
+🤝 Engage with fellow developers on our [Discord server](https://discord.com/invite/kuyPhew2KB)<br>
 
 ## Build the Tanssi Node
 
@@ -17,7 +16,7 @@ If you need a refresher setting up your Substrate environment, see [Substrate's 
 
 ```bash
 # Fetch the code
-git clone https://github.com/PureStake/tanssi
+git clone https://github.com/moondance-labs/tanssi
 cd tanssi
 
 # Build the node (The first build will be long (~30min))
