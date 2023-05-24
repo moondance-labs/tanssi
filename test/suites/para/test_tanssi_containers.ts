@@ -171,7 +171,7 @@ describeSuite({
     it({
       id: "T09",
       title: "Test live registration of container chain 2002",
-      timeout: 400000,
+      timeout: 600000,
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
@@ -238,8 +238,9 @@ describeSuite({
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
         const tanssiBlockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        // TODO: this should wait 2 sessions
-        await context.waitBlock(30, "Tanssi");
+        // TODO: this should wait 2 sessions. We are waiting 10 + 20 blocks
+        await countUniqueBlockAuthors(context, paraApi, 10, 4);
+        await context.waitBlock(20, "Tanssi");
 
         // Check that pending para ids contains 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
@@ -249,12 +250,15 @@ describeSuite({
         // TODO: wait up to 30 seconds after a new block is created to ensure this port is available
         const wsProvider = new WsProvider('ws://127.0.0.1:9951');
         let container2002Api = await ApiPromise.create({ provider: wsProvider });
-        console.log(container2002Api.genesisHash.toHex());
 
         const container2002Network = container2002Api.consts.system.version.specName.toString();
         const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
         expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
         expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
+
+        // Check authors of tanssi blocks
+        // Should be 2 different keys because 2002 has been registered
+        await countUniqueBlockAuthors(context, paraApi, 4, 2);
 
         let blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
@@ -285,8 +289,9 @@ describeSuite({
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
         const tanssiBlockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        // TODO: this should wait 2 sessions
-        await context.waitBlock(30, "Tanssi");
+        // TODO: this should wait 2 sessions. We are waiting 10 + 20 blocks
+        await countUniqueBlockAuthors(context, paraApi, 10, 2);
+        await context.waitBlock(20, "Tanssi");
 
         // Check that pending para ids removes 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
@@ -294,22 +299,27 @@ describeSuite({
 
         // Check authors of tanssi blocks
         // Should be 2 different keys when 2002 is registered, and 4 different keys when 2002 is deregistered
-        const authorities = (await paraApi.query.aura.authorities());
-        const actualAuthors = [];
-
-        for (let i = 0; i < 4; i++) {
-            const author = await getAuthorFromDigest(paraApi);
-            actualAuthors.push(author);
-            await context.waitBlock(1, "Tanssi");
-        }
-
-        let uniq = [...new Set(actualAuthors)];
-
-        if (uniq.length != 4) {
-          console.error("Mismatch between authorities and actual block authors: authorities: ", authorities.toJSON(), ", actual authors: ", actualAuthors);
-          expect(false).to.be.true;
-        }
+        await countUniqueBlockAuthors(context, paraApi, 4, 4);
       },
     });
   },
 });
+
+// Verify that the next `numBlocks` have `numAuthors` different unique authors
+async function countUniqueBlockAuthors(context, paraApi, numBlocks, numAuthors) {
+  const authorities = (await paraApi.query.aura.authorities());
+  const actualAuthors = [];
+
+  for (let i = 0; i < numBlocks; i++) {
+      const author = await getAuthorFromDigest(paraApi);
+      actualAuthors.push(author);
+      await context.waitBlock(1, "Tanssi");
+  }
+
+  let uniq = [...new Set(actualAuthors)];
+
+  if (uniq.length != numAuthors) {
+    console.error("Mismatch between authorities and actual block authors: authorities: ", authorities.toJSON(), ", actual authors: ", actualAuthors);
+    expect(false).to.be.true;
+  }
+}
