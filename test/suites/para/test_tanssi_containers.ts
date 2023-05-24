@@ -37,9 +37,8 @@ describeSuite({
 
       const container2001Network = container2001Api.consts.system.version.specName.toString();
       const paraId2001 = (await container2001Api.query.parachainInfo.parachainId()).toString();
-      // TODO: this breaks the hack of starting 2001 nodes as 2000 and then rotating, for testing
-      //expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
-      //expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
+      expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
+      expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
 
       // Test block numbers in relay are 0 yet
       const header2000 = await getHeaderFromRelay(relayApi, 2000);
