@@ -97,12 +97,12 @@ describeSuite({
             // Assignment for session 2 uses the new keys
             expect(assignment2.orchestratorChain).to.deep.equal([
                 // This is alice's new key
-                u8aToHex(newKey).toString(),
+                u8aToHex(newKey),
             ]);
             expect(assignment2.containerChains).to.deep.equal({
                 2000: [
-                    u8aToHex(bob.publicKey).toString(),
-                    u8aToHex(charlie.publicKey).toString(),
+                    u8aToHex(bob.publicKey),
+                    u8aToHex(charlie.publicKey),
                 ],
                 2001: [],
             });
