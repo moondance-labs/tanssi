@@ -12645,7 +12645,6 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "tc-orchestrator-chain-interface",
- "tempfile",
  "tokio",
  "tp-author-noting-inherent",
  "tp-authorities-noting-inherent",
