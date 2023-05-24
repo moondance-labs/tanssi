@@ -19,6 +19,7 @@ use {
     std::path::PathBuf,
     crate::eth::EthConfiguration,
 };
+use clap::Parser;
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
@@ -66,6 +67,41 @@ pub enum Subcommand {
 	FrontierDb(fc_cli::FrontierDbCmd),
 }
 
+#[derive(Debug, Parser)]
+#[group(skip)]
+pub struct RunCmd {
+	#[clap(flatten)]
+	pub base: cumulus_client_cli::RunCmd,
+
+	/// Size in bytes of the LRU cache for block data.
+	#[clap(long, default_value = "300000000")]
+	pub eth_log_block_cache: usize,
+
+	/// Size in bytes of the LRU cache for transactions statuses data.
+	#[clap(long, default_value = "300000000")]
+	pub eth_statuses_cache: usize,
+
+	/// Maximum number of logs in a query.
+	#[clap(long, default_value = "10000")]
+	pub max_past_logs: u32,
+
+	/// Id of the parachain this collator collates for.
+	#[clap(long)]
+	pub parachain_id: Option<u32>,
+
+	/// Maximum fee history cache size.
+	#[clap(long, default_value = "2048")]
+	pub fee_history_limit: u64,
+}
+
+impl std::ops::Deref for RunCmd {
+	type Target = cumulus_client_cli::RunCmd;
+
+	fn deref(&self) -> &Self::Target {
+		&self.base
+	}
+}
+
 #[derive(Debug, clap::Parser)]
 #[command(
     propagate_version = true,
@@ -77,7 +113,7 @@ pub struct Cli {
     pub subcommand: Option<Subcommand>,
 
     #[command(flatten)]
-    pub run: cumulus_client_cli::RunCmd,
+    pub run: RunCmd,
 
     /// Disable automatic hardware benchmarks.
     ///
@@ -161,13 +197,9 @@ impl CliConfiguration for BuildSpecCmd {
 }
 
 pub struct RpcConfig {
-	pub ethapi_max_permits: u32,
-	pub ethapi_trace_max_count: u32,
-	pub ethapi_trace_cache_duration: u64,
 	pub eth_log_block_cache: usize,
 	pub eth_statuses_cache: usize,
 	pub fee_history_limit: u64,
 	pub max_past_logs: u32,
 	pub relay_chain_rpc_urls: Vec<url::Url>,
-	pub tracing_raw_max_memory_usage: usize,
 }

@@ -53,23 +53,13 @@ use {
     substrate_prometheus_endpoint::Registry,
 };
 use fc_rpc_core::types::{FeeHistoryCache, FilterPool};
+use fc_db::DatabaseSource;
+use sc_service::BasePath;
 
 /// Native executor type.
-pub struct ParachainNativeExecutor;
+use crate::client::TemplateRuntimeExecutor;
 
-impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
-    type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-
-    fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        container_chain_template_frontier_runtime::api::dispatch(method, data)
-    }
-
-    fn native_version() -> sc_executor::NativeVersion {
-        container_chain_template_frontier_runtime::native_version()
-    }
-}
-
-type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
+pub type ParachainExecutor = NativeElseWasmExecutor<TemplateRuntimeExecutor>;
 
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 
@@ -79,12 +69,56 @@ type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, P
 
 use fc_consensus::FrontierBlockImport;
 
+pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
+	let config_dir = config
+		.base_path
+		.as_ref()
+		.map(|base_path| base_path.config_dir(config.chain_spec.id()))
+		.unwrap_or_else(|| {
+			BasePath::from_project("", "", "moonbeam").config_dir(config.chain_spec.id())
+		});
+	config_dir.join("frontier").join(path)
+}
+
+// TODO This is copied from frontier. It should be imported instead after
+// https://github.com/paritytech/frontier/issues/333 is solved
+pub fn open_frontier_backend<C>(
+	client: Arc<C>,
+	config: &Configuration,
+) -> Result<Arc<fc_db::Backend<Block>>, String>
+where
+	C: sp_blockchain::HeaderBackend<Block>,
+{
+	Ok(Arc::new(fc_db::Backend::<Block>::new(
+		client,
+		&fc_db::DatabaseSettings {
+			source: match config.database {
+				DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
+					path: frontier_database_dir(config, "db"),
+					cache_size: 0,
+				},
+				DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
+					path: frontier_database_dir(config, "paritydb"),
+				},
+				DatabaseSource::Auto { .. } => DatabaseSource::Auto {
+					rocksdb_path: frontier_database_dir(config, "db"),
+					paritydb_path: frontier_database_dir(config, "paritydb"),
+					cache_size: 0,
+				},
+				_ => {
+					return Err("Supported db sources: `rocksdb` | `paritydb` | `auto`".to_string())
+				}
+			},
+		},
+	)?))
+}
+
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
-pub fn new_partial<RuntimeApi, Executor>(
-    config: &Configuration,
+pub fn new_partial(
+    config: &mut Configuration,
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -95,8 +129,8 @@ pub fn new_partial<RuntimeApi, Executor>(
         
 		(FrontierBlockImport<
 				Block,
-				Arc<FullClient<RuntimeApi, Executor>>,
-				FullClient<RuntimeApi, Executor>,
+				Arc<ParachainClient>,
+				ParachainClient,
 			>,
 			Option<FilterPool>,
 			Option<Telemetry>,
@@ -106,7 +140,8 @@ pub fn new_partial<RuntimeApi, Executor>(
 		),
     >,
     sc_service::Error,
-> {
+>
+{
     // Use ethereum style for subscription ids
 	config.rpc_id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
 
@@ -197,17 +232,19 @@ pub fn new_partial<RuntimeApi, Executor>(
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
-async fn start_node_impl<RuntimeApi, Executor>(
+async fn start_node_impl(
     parachain_config: Configuration,
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
     rpc_config: crate::cli::RpcConfig,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
-    let parachain_config = prepare_node_config(parachain_config);
+)
+ -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> 
+{
+    let mut parachain_config = prepare_node_config(parachain_config);
 
-    let params = new_partial(&parachain_config)?;
+    let params = new_partial(&mut parachain_config)?;
     let (
 		_block_import,
 		filter_pool,
@@ -253,6 +290,11 @@ async fn start_node_impl<RuntimeApi, Executor>(
     let overrides = crate::rpc::overrides_handle(client.clone());
     let fee_history_limit = rpc_config.fee_history_limit;
 
+    let pubsub_notification_sinks: fc_mapping_sync::EthereumBlockNotificationSinks<
+    fc_mapping_sync::EthereumBlockNotification<Block>,
+        > = Default::default();
+    let pubsub_notification_sinks = Arc::new(pubsub_notification_sinks);    
+
     crate::rpc::spawn_essential_tasks(crate::rpc::SpawnTasksParams {
 		task_manager: &task_manager,
 		client: client.clone(),
@@ -262,6 +304,8 @@ async fn start_node_impl<RuntimeApi, Executor>(
 		overrides: overrides.clone(),
 		fee_history_limit,
 		fee_history_cache: fee_history_cache.clone(),
+        sync_service: sync_service.clone(),
+        pubsub_notification_sinks: pubsub_notification_sinks.clone(),
 	});
 
     if parachain_config.offchain_worker.enabled {
@@ -281,10 +325,13 @@ async fn start_node_impl<RuntimeApi, Executor>(
 		prometheus_registry.clone(),
 	));
 
+
     let rpc_builder = {
 		let client = client.clone();
 		let pool = transaction_pool.clone();
+        let pubsub_notification_sinks = pubsub_notification_sinks.clone();
 		let network = network.clone();
+        let sync = sync_service.clone();
 		let filter_pool = filter_pool.clone();
 		let frontier_backend = frontier_backend.clone();
 		let backend = backend.clone();
@@ -296,8 +343,8 @@ async fn start_node_impl<RuntimeApi, Executor>(
 		move |deny_unsafe, subscription_task_executor| {
 			let deps = crate::rpc::FullDeps {
 				backend: backend.clone(),
+                is_authority: false,
 				client: client.clone(),
-				command_sink: None,
 				deny_unsafe,
 				filter_pool: filter_pool.clone(),
 				frontier_backend: frontier_backend.clone(),
@@ -307,16 +354,16 @@ async fn start_node_impl<RuntimeApi, Executor>(
 				fee_history_limit,
 				fee_history_cache: fee_history_cache.clone(),
 				network: network.clone(),
-				xcm_senders: None,
+                sync: sync.clone(),
 				block_data_cache: block_data_cache.clone(),
 				overrides: overrides.clone(),
 			};	
-			rpc::create_full(deps, subscription_task_executor, None).map_err(Into::into)
+			crate::rpc::create_full(deps, subscription_task_executor, pubsub_notification_sinks.clone()).map_err(Into::into)
 		}
 	};
 
     sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-        rpc_builder,
+        rpc_builder: Box::new(rpc_builder),
         client: client.clone(),
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
@@ -386,13 +433,16 @@ pub async fn start_parachain_node(
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
+    rpc_config: crate::cli::RpcConfig,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> 
+{
     start_node_impl(
         parachain_config,
         polkadot_config,
         collator_options,
         para_id,
+        rpc_config,
         hwbench,
     )
     .await

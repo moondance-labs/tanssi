@@ -18,7 +18,8 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, RelayChainCli, Subcommand},
-        service::{new_partial, ParachainNativeExecutor},
+        client::TemplateRuntimeExecutor,
+        service::{new_partial},
     },
     container_chain_template_frontier_runtime::Block,
     cumulus_client_cli::generate_genesis_block,
@@ -34,7 +35,7 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
-    fc_db::frontier_database_dir,
+    crate::service::frontier_database_dir,
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -131,8 +132,8 @@ impl SubstrateCli for RelayChainCli {
 macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
-		runner.async_run(|$config| {
-			let $components = new_partial(&$config)?;
+		runner.async_run(|mut $config| {
+			let $components = new_partial(&mut $config)?;
 			let task_manager = $components.task_manager;
 			{ $( $code )* }.map(|v| (v, task_manager))
 		})
@@ -242,21 +243,22 @@ pub fn run() -> Result<()> {
                 cmd.run(&*spec)
             })
         }
+        Some(Subcommand::FrontierDb(_)) => todo!(),
         Some(Subcommand::Benchmark(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             // Switch on the concrete benchmark sub-command-
             match cmd {
                 BenchmarkCmd::Pallet(cmd) => {
                     if cfg!(feature = "runtime-benchmarks") {
-                        runner.sync_run(|config| cmd.run::<Block, ParachainNativeExecutor>(config))
+                        runner.sync_run(|config| cmd.run::<Block, TemplateRuntimeExecutor>(config))
                     } else {
                         Err("Benchmarking wasn't enabled when building the node. \
 					You can enable it with `--features runtime-benchmarks`."
                             .into())
                     }
                 }
-                BenchmarkCmd::Block(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config)?;
+                BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {
+                    let partials = new_partial(&mut config)?;
                     cmd.run(partials.client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -269,8 +271,8 @@ pub fn run() -> Result<()> {
                     .into())
                 }
                 #[cfg(feature = "runtime-benchmarks")]
-                BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config)?;
+                BenchmarkCmd::Storage(cmd) => runner.sync_run(|mut config| {
+                    let partials = new_partial(&mut config)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
                     cmd.run(config, partials.client.clone(), db, storage)
@@ -284,14 +286,6 @@ pub fn run() -> Result<()> {
                 _ => Err("Benchmarking sub-command unsupported".into()),
             }
         }
-        Some(Subcommand::FrontierDb(cmd)) => {
-			let runner = cli.create_runner(cmd)?;
-			runner.sync_run(|mut config| {
-				let (client, _, _, _, frontier_backend) =
-					service::new_chain_ops(&mut config, &cli.eth)?;
-				cmd.run(client, frontier_backend)
-			})
-		}
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
             let runner = cli.create_runner(cmd)?;
@@ -314,7 +308,7 @@ pub fn run() -> Result<()> {
 
             runner.async_run(|_| {
                 Ok((
-                    cmd.run::<Block, HostFunctionsOf<ParachainNativeExecutor>>(),
+                    cmd.run::<Block, HostFunctionsOf<TemplateRuntimeExecutor>>(),
                     task_manager,
                 ))
             })
@@ -342,6 +336,14 @@ pub fn run() -> Result<()> {
 					&config,
 					[RelayChainCli::executable_name()].iter().chain(cli.relay_chain_args.iter()),
 				);
+
+                let rpc_config = crate::cli::RpcConfig {
+					eth_log_block_cache: cli.run.eth_log_block_cache,
+					eth_statuses_cache: cli.run.eth_statuses_cache,
+					fee_history_limit: cli.run.fee_history_limit,
+					max_past_logs: cli.run.max_past_logs,
+					relay_chain_rpc_urls: cli.run.base.relay_chain_rpc_urls,
+				};
 
 				let id = ParaId::from(para_id);
 
@@ -372,6 +374,7 @@ pub fn run() -> Result<()> {
 					polkadot_config,
 					collator_options,
 					id,
+                    rpc_config,
 					hwbench,
 				)
 				.await

@@ -1037,6 +1037,8 @@ dependencies = [
  "fc-mapping-sync",
  "fc-rpc",
  "fc-rpc-core",
+ "fc-storage",
+ "flume",
  "fp-evm",
  "fp-rpc",
  "frame-benchmarking",
@@ -1048,6 +1050,9 @@ dependencies = [
  "log",
  "nimbus-consensus",
  "nimbus-primitives",
+ "pallet-ethereum",
+ "pallet-transaction-payment-rpc",
+ "pallet-transaction-payment-rpc-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
  "polkadot-primitives",
@@ -1089,6 +1094,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "try-runtime-cli",
+ "url",
 ]
 
 [[package]]
@@ -2762,7 +2768,7 @@ dependencies = [
 [[package]]
 name = "fc-cli"
 version = "1.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "clap",
  "ethereum-types",
@@ -2780,7 +2786,7 @@ dependencies = [
 [[package]]
 name = "fc-consensus"
 version = "2.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "async-trait",
  "fc-db",
@@ -2797,7 +2803,7 @@ dependencies = [
 [[package]]
 name = "fc-db"
 version = "2.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "fp-storage",
  "kvdb-rocksdb",
@@ -2816,7 +2822,7 @@ dependencies = [
 [[package]]
 name = "fc-mapping-sync"
 version = "2.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "fc-db",
  "fc-storage",
@@ -2825,21 +2831,25 @@ dependencies = [
  "futures 0.3.26",
  "futures-timer",
  "log",
+ "parking_lot 0.12.1",
  "sc-client-api",
+ "sc-utils",
  "sp-api",
  "sp-blockchain",
+ "sp-consensus",
  "sp-runtime",
 ]
 
 [[package]]
 name = "fc-rpc"
 version = "2.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "ethereum",
  "ethereum-types",
  "evm",
  "fc-db",
+ "fc-mapping-sync",
  "fc-rpc-core",
  "fc-storage",
  "fp-ethereum",
@@ -2865,6 +2875,7 @@ dependencies = [
  "sc-service",
  "sc-transaction-pool",
  "sc-transaction-pool-api",
+ "sc-utils",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
@@ -2881,7 +2892,7 @@ dependencies = [
 [[package]]
 name = "fc-rpc-core"
 version = "1.1.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -2894,7 +2905,7 @@ dependencies = [
 [[package]]
 name = "fc-storage"
 version = "1.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -3011,6 +3022,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "flume"
+version = "0.10.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1657b4441c3403d9f7b3409e47575237dac27b1b5726df654a6ecbf92f0f7577"
+dependencies = [
+ "futures-core",
+ "futures-sink",
+ "nanorand",
+ "pin-project",
+ "spin 0.9.8",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3036,7 +3060,7 @@ dependencies = [
 [[package]]
 name = "fp-account"
 version = "1.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "hex",
  "impl-serde",
@@ -3054,7 +3078,7 @@ dependencies = [
 [[package]]
 name = "fp-consensus"
 version = "2.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "ethereum",
  "parity-scale-codec",
@@ -3066,7 +3090,7 @@ dependencies = [
 [[package]]
 name = "fp-dynamic-fee"
 version = "1.0.0"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "async-trait",
  "sp-core",
@@ -3076,7 +3100,7 @@ dependencies = [
 [[package]]
 name = "fp-ethereum"
 version = "1.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -3090,7 +3114,7 @@ dependencies = [
 [[package]]
 name = "fp-evm"
 version = "3.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "evm",
  "frame-support",
@@ -3104,7 +3128,7 @@ dependencies = [
 [[package]]
 name = "fp-rpc"
 version = "3.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -3121,7 +3145,7 @@ dependencies = [
 [[package]]
 name = "fp-self-contained"
 version = "1.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -3133,7 +3157,7 @@ dependencies = [
 [[package]]
 name = "fp-storage"
 version = "2.0.0"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -3632,8 +3656,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c05aeb6a22b8f62540c194aac980f2115af067bfe15a0734d7277a768d396b31"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -5575,6 +5601,9 @@ name = "nanorand"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a51313c5820b0b02bd422f4b44776fbf47961755c74ce64afc73bfad10226c3"
+dependencies = [
+ "getrandom 0.2.8",
+]
 
 [[package]]
 name = "netlink-packet-core"
@@ -6236,7 +6265,7 @@ dependencies = [
 [[package]]
 name = "pallet-base-fee"
 version = "1.0.0"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -6477,7 +6506,7 @@ dependencies = [
 [[package]]
 name = "pallet-dynamic-fee"
 version = "4.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "fp-dynamic-fee",
  "fp-evm",
@@ -6547,7 +6576,7 @@ dependencies = [
 [[package]]
 name = "pallet-ethereum"
 version = "4.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "ethereum",
  "ethereum-types",
@@ -6560,7 +6589,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "pallet-evm",
- "pallet-timestamp",
  "parity-scale-codec",
  "scale-info",
  "sp-io",
@@ -6571,7 +6599,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm"
 version = "6.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "environmental",
  "evm",
@@ -6583,7 +6611,6 @@ dependencies = [
  "hex",
  "impl-trait-for-tuples",
  "log",
- "pallet-timestamp",
  "parity-scale-codec",
  "rlp",
  "scale-info",
@@ -6596,7 +6623,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-chain-id"
 version = "1.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -6607,7 +6634,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-modexp"
 version = "2.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "fp-evm",
  "num",
@@ -6616,7 +6643,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-sha3fips"
 version = "2.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "fp-evm",
  "tiny-keccak",
@@ -6625,7 +6652,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-simple"
 version = "2.0.0-dev"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "fp-evm",
  "ripemd",
@@ -6676,7 +6703,7 @@ dependencies = [
 [[package]]
 name = "pallet-hotfix-sufficients"
 version = "1.0.0"
-source = "git+https://github.com/nanocryk/frontier?branch=polkadot-v0.9.40#10ee4a6284e615a72425c4b9fa49dc4a25419dfc"
+source = "git+https://github.com/moondance-labs/frontier?branch=polkadot-v0.9.40#832eff9bfb4e1428f3005d9afbb0db8cad74d82b"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -9415,7 +9442,7 @@ dependencies = [
  "cc",
  "libc",
  "once_cell",
- "spin",
+ "spin 0.5.2",
  "untrusted",
  "web-sys",
  "winapi",
@@ -12101,6 +12128,15 @@ name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
+
+[[package]]
+name = "spin"
+version = "0.9.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
+dependencies = [
+ "lock_api",
+]
 
 [[package]]
 name = "spki"
