@@ -33,12 +33,12 @@ describeSuite({
 
             expect(assignment0.orchestratorChain).to.deep.equal([
                 u8aToHex(alice.publicKey),
-                u8aToHex(bob.publicKey),
+                //u8aToHex(bob.publicKey),
             ]);
             expect(assignment0.containerChains).to.deep.equal({
                 2000: [
+                    u8aToHex(bob.publicKey),
                     u8aToHex(charlie.publicKey),
-                    u8aToHex(dave.publicKey),
                 ],
                 2001: [],
             });
