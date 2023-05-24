@@ -25,7 +25,7 @@ export async function jumpToSession(context: DevTestContext, session: number): P
 
 export async function jumpBlocks(context: DevTestContext, blockCount: number) {
     while (blockCount > 0) {
-      (await context.createBlock()).block.hash.toString();
+      await context.createBlock();
       blockCount--;
     }
   }

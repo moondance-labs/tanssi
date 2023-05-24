@@ -1,5 +1,8 @@
 import { expect, describeSuite, beforeAll, ApiPromise } from "@moonwall/cli";
 import { BN } from "@polkadot/util";
+import { getHeaderFromRelay } from "../../util/relayInterface";
+import { getAuthorFromDigest } from "../../util/author";
+
 describeSuite({
   id: "ZTN",
   title: "Zombie Tanssi Test",
@@ -28,6 +31,13 @@ describeSuite({
 
       const container2001Network = container2001Api.consts.system.version.specName.toString();
       expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
+
+      // Test block numbers in relay are 0 yet
+      const header2000 = await getHeaderFromRelay(relayApi, 2000);
+      const header2001 = await getHeaderFromRelay(relayApi, 2001);
+
+      expect(header2000.number.toNumber()).to.be.equal(0);
+      expect(header2001.number.toNumber()).to.be.equal(0);
 
     }, 120000);
 
@@ -91,9 +101,9 @@ describeSuite({
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
         const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
 
-        const containerChainCollators = assignment.containerChains.toHuman()[paraId];
+        const containerChainCollators = assignment.containerChains.toJSON()[paraId];
 
-        const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toHuman();
+        const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
 
         for (let i = 0; i < containerChainCollators.length; i++) {
           expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);
@@ -108,9 +118,9 @@ describeSuite({
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
         const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
 
-        const containerChainCollators = assignment.containerChains.toHuman()[paraId];
+        const containerChainCollators = assignment.containerChains.toJSON()[paraId];
 
-        const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toHuman();
+        const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toJSON();
 
         for (let i = 0; i < containerChainCollators.length; i++) {
           expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);
@@ -127,8 +137,8 @@ describeSuite({
         const paraId2000 = (await container2000Api.query.parachainInfo.parachainId());
         const paraId2001 = (await container2001Api.query.parachainInfo.parachainId());
 
-        const containerChainCollators2000 = assignment.containerChains.toHuman()[paraId2000.toString()];
-        const containerChainCollators2001 = assignment.containerChains.toHuman()[paraId2001.toString()];
+        const containerChainCollators2000 = assignment.containerChains.toJSON()[paraId2000.toString()];
+        const containerChainCollators2001 = assignment.containerChains.toJSON()[paraId2001.toString()];
 
         await context.waitBlock(3, "Tanssi");
         const author2000 = await paraApi.query.authorNoting.latestAuthor(paraId2000);
@@ -136,6 +146,16 @@ describeSuite({
 
         expect(containerChainCollators2000.includes(author2000.toString())).to.be.true;
         expect(containerChainCollators2001.includes(author2001.toString())).to.be.true;
+      },
+    });
+
+    it({
+      id: "T08",
+      title: "Test author is correct in Orchestrator",
+      test: async function () {
+        const authorities = (await paraApi.query.aura.authorities());
+        const author = await getAuthorFromDigest(paraApi);
+        expect(authorities.toJSON().includes(author.toString())).to.be.true;
       },
     });
 
