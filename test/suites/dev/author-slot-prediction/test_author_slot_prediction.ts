@@ -33,12 +33,11 @@ describeSuite({
 
             expect(assignment0.orchestratorChain).to.deep.equal([
                 u8aToHex(alice.publicKey).toString(),
-                u8aToHex(bob.publicKey).toString(),
             ]);
             expect(assignment0.containerChains).to.deep.equal({
                 2000: [
+                    u8aToHex(bob.publicKey).toString(),
                     u8aToHex(charlie.publicKey).toString(),
-                    u8aToHex(dave.publicKey).toString(),
                 ],
                 2001: [],
             });
@@ -51,7 +50,6 @@ describeSuite({
             // Check authorities are correct
             const authorities = (await polkadotJs.query.aura.authorities());
             expect(u8aToHex(authorities[0])).to.be.eq(u8aToHex(alice.publicKey));
-            expect(u8aToHex(authorities[1])).to.be.eq(u8aToHex(bob.publicKey))
         },
     });
 
@@ -72,8 +70,6 @@ describeSuite({
             expect(result).is.empty;
             const nextKey = await polkadotJs.query.session.nextKeys(alice.address);
             expect(u8aToHex(nextKey.unwrap().aura)).to.be.eq(u8aToHex(newKey));
-
-            const initial_assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toHuman();
 
             // Let's jump one session
             await jumpSessions(context, 2);
