@@ -5838,6 +5838,7 @@ dependencies = [
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-consensus",
+ "tp-core",
  "tp-traits",
 ]
 
@@ -12866,6 +12867,7 @@ dependencies = [
  "parity-scale-codec",
  "sp-core",
  "sp-io",
+ "sp-runtime",
  "sp-std",
 ]
 

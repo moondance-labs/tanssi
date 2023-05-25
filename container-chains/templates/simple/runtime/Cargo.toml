@@ -79,7 +79,9 @@ std = [
 	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
 	"log/std",
+	"nimbus-primitives/std",
 	"pallet-aura/std",
+	"pallet-author-inherent/std",
 	"pallet-authorship/std",
 	"pallet-balances/std",
 	"pallet-cc-authorities-noting/std",
@@ -100,8 +102,6 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
-	"nimbus-primitives/std",
-	"pallet-author-inherent/std",
 ]
 
 runtime-benchmarks = [

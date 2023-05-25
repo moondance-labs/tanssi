@@ -137,7 +137,6 @@ where
     SO: SyncOracle + Send + Sync + Clone,
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
-    B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
 {
     OrchestratorAuraWorker {
         client,
@@ -221,7 +220,6 @@ where
         P: Pair + Send + Sync,
         P::Public: AppPublic + Hash + Member + Encode + Decode,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
-        B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
         GOH: RetrieveAuthoritiesFromOrchestrator<
                 B,
                 (PHash, PersistedValidationData),
@@ -297,7 +295,6 @@ where
         + 'static,
     W: TanssiSlotWorker<B> + Send + Sync,
     W::Proposer: Proposer<B, Proof = <EnableProofRecording as ProofRecording>::Proof>,
-    B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
 {
     async fn produce_candidate(
         &mut self,
@@ -580,7 +577,6 @@ pub struct BuildOrchestratorAuraWorkerParams<C, I, PF, SO, L, BS, N> {
     pub compatibility_mode: CompatibilityMode<N>,
 }
 
-use cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber};
 #[async_trait::async_trait]
 pub trait RetrieveAuthoritiesFromOrchestrator<Block: BlockT, ExtraArgs, A>: Send + Sync {
     /// Create the inherent data providers at the given `parent` block using the given `extra_args`.
@@ -641,8 +637,6 @@ where
     L: sc_consensus::JustificationSyncLink<B>,
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
-    // TODO: change this
-    B::Header: From<sp_runtime::generic::Header<BlockNumber, BlakeTwo256>>,
 {
     async fn tanssi_on_slot(
         &mut self,
