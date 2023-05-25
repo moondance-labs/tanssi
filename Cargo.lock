@@ -12278,6 +12278,7 @@ dependencies = [
  "nimbus-primitives",
  "orchestrator-runtime",
  "pallet-collator-assignment-runtime-api",
+ "pallet-configuration",
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",

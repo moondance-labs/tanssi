@@ -33,12 +33,11 @@ describeSuite({
 
             expect(assignment0.orchestratorChain).to.deep.equal([
                 u8aToHex(alice.publicKey),
-                u8aToHex(bob.publicKey),
             ]);
             expect(assignment0.containerChains).to.deep.equal({
                 2000: [
+                    u8aToHex(bob.publicKey),
                     u8aToHex(charlie.publicKey),
-                    u8aToHex(dave.publicKey),
                 ],
                 2001: [],
             });
@@ -52,7 +51,6 @@ describeSuite({
             const authorities = (await polkadotJs.query.aura.authorities());
             expect(authorities.toJSON()).to.deep.equal([
                 u8aToHex(alice.publicKey),
-                u8aToHex(bob.publicKey),
             ]);
         },
     });
@@ -100,12 +98,11 @@ describeSuite({
             expect(assignment2.orchestratorChain).to.deep.equal([
                 // This is alice's new key
                 u8aToHex(newKey),
-                u8aToHex(bob.publicKey),
             ]);
             expect(assignment2.containerChains).to.deep.equal({
                 2000: [
+                    u8aToHex(bob.publicKey),
                     u8aToHex(charlie.publicKey),
-                    u8aToHex(dave.publicKey),
                 ],
                 2001: [],
             });
@@ -120,7 +117,6 @@ describeSuite({
             const authorities = (await polkadotJs.query.aura.authorities());
             expect(authorities.toJSON()).to.deep.equal([
                 u8aToHex(newKey),
-                u8aToHex(bob.publicKey),
             ]);
             // AuthorityMapping should no-longer contain the session 1
             expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).isNone).to.be.true;
