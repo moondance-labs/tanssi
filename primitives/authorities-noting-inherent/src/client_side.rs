@@ -20,7 +20,10 @@ use {
     cumulus_relay_chain_interface::{PHash, RelayChainInterface},
     parity_scale_codec::Decode,
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
-    tp_core::{well_known_keys::{para_id_head, COLLATOR_ASSIGNMENT_INDEX}, Header as OrchestratorHeader},
+    tp_core::{
+        well_known_keys::{para_id_head, COLLATOR_ASSIGNMENT_INDEX},
+        Header as OrchestratorHeader,
+    },
 };
 
 const LOG_TARGET: &str = "parachain-inherent";
@@ -155,17 +158,16 @@ impl ContainerChainAuthoritiesInherentData {
             .unwrap_or_default();
 
         // We later take the Header decoded
-        let orchestrator_header = OrchestratorHeader::decode(
-            &mut header_data_orchestrator.0.as_slice(),
-        )
-        .map_err(|e| {
-            tracing::error!(
-                target: LOG_TARGET,
-                error = ?e,
-                "Cannot decode the head data",
-            )
-        })
-        .ok()?;
+        let orchestrator_header =
+            OrchestratorHeader::decode(&mut header_data_orchestrator.0.as_slice())
+                .map_err(|e| {
+                    tracing::error!(
+                        target: LOG_TARGET,
+                        error = ?e,
+                        "Cannot decode the head data",
+                    )
+                })
+                .ok()?;
 
         Some(orchestrator_header)
     }
