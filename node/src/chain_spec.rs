@@ -304,7 +304,7 @@ fn testnet_genesis(
             config: HostConfiguration {
                 max_collators: 100u32,
                 min_orchestrator_collators: 1u32,
-                max_orchestrator_collators: 1u32,
+                max_orchestrator_collators: 5u32,
                 collators_per_container: 2u32,
             },
         },
