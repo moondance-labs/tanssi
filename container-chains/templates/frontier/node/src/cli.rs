@@ -132,9 +132,6 @@ pub struct Cli {
     /// Optional parachain id that should be used to build chain spec.
     #[arg(long)]
     pub para_id: Option<u32>,
-
-    #[command(flatten)]
-	pub eth: EthConfiguration,
 }
 
 #[derive(Debug)]
