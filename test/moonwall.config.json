@@ -83,6 +83,11 @@
           "name": "Container2001",
           "type": "polkadotJs",
           "endpoints": ["ws://127.0.0.1:9950"]
+        },
+        {
+          "name": "Container2001Ethers",
+          "type": "ethers",
+          "endpoints": ["ws://127.0.0.1:9955"]
         }
       ]
     }

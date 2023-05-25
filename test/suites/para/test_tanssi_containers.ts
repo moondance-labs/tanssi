@@ -2,6 +2,7 @@ import { expect, describeSuite, beforeAll, ApiPromise } from "@moonwall/cli";
 import { BN } from "@polkadot/util";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { getAuthorFromDigest } from "../../util/author";
+import { Signer, ethers } from "ethers";
 
 describeSuite({
   id: "ZTN",
@@ -12,6 +13,7 @@ describeSuite({
     let relayApi: ApiPromise;
     let container2000Api: ApiPromise;
     let container2001Api: ApiPromise;
+    let container2001EthersSigner: Signer;
 
     beforeAll(async () => {
       
@@ -19,6 +21,7 @@ describeSuite({
       relayApi = context.polkadotJs({ apiName: "Relay" });
       container2000Api = context.polkadotJs({ apiName: "Container2000" });
       container2001Api = context.polkadotJs({ apiName: "Container2001" });
+      container2001EthersSigner = context.ethersSigner({apiName: "Container2001Ethers"});
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
       expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
@@ -64,6 +67,9 @@ describeSuite({
       title: "Blocks are being produced on container 2001",
       test: async function () {
         const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
+        const blockEth = (await container2001EthersSigner.provider.getBlock("latest")).number;
+        console.log("ethers block is ", blockEth);
+
         expect(blockNum).to.be.greaterThan(0);
       },
     });
