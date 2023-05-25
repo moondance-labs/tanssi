@@ -183,6 +183,14 @@ pub fn development_config(
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 &container_chains,
                 &mock_container_chains,
+                pallet_configuration::GenesisConfig {
+                    config: HostConfiguration {
+                        max_collators: 100u32,
+                        min_orchestrator_collators: 1u32,
+                        max_orchestrator_collators: 1u32,
+                        collators_per_container: 2u32,
+                    },
+                },
             )
         },
         Vec::new(),
@@ -236,6 +244,14 @@ pub fn local_testnet_config(
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
                 &container_chains,
                 &mock_container_chains,
+                pallet_configuration::GenesisConfig {
+                    config: HostConfiguration {
+                        max_collators: 100u32,
+                        min_orchestrator_collators: 1u32,
+                        max_orchestrator_collators: 5u32,
+                        collators_per_container: 2u32,
+                    },
+                },
             )
         },
         // Bootnodes
@@ -263,6 +279,7 @@ fn testnet_genesis(
     root_key: AccountId,
     container_chains: &[String],
     mock_container_chains: &[ParaId],
+    configuration: pallet_configuration::GenesisConfig,
 ) -> orchestrator_runtime::GenesisConfig {
     orchestrator_runtime::GenesisConfig {
         system: orchestrator_runtime::SystemConfig {
@@ -300,14 +317,7 @@ fn testnet_genesis(
         aura: Default::default(),
         aura_ext: Default::default(),
         parachain_system: Default::default(),
-        configuration: pallet_configuration::GenesisConfig {
-            config: HostConfiguration {
-                max_collators: 100u32,
-                min_orchestrator_collators: 1u32,
-                max_orchestrator_collators: 5u32,
-                collators_per_container: 2u32,
-            },
-        },
+        configuration,
         registrar: RegistrarConfig {
             para_ids: container_chains
                 .iter()
