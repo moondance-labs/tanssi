@@ -35,6 +35,7 @@ use {
     },
     nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
+    pallet_session::ShouldEndSession,
     polkadot_runtime_common::BlockHashCount,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
@@ -739,6 +740,47 @@ impl_runtime_apis! {
         /// Fetch genesis data for this para id
         fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
             Registrar::para_genesis_data(para_id)
+        }
+    }
+
+    impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
+        /// Return the current authorities assigned to a given paraId
+        fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
+            let parent_number = System::block_number();
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+
+            let session_index = if should_end_session {
+                Session::current_index() +1
+            }
+            else {
+                Session::current_index()
+            };
+
+            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+            let self_para_id = ParachainInfo::get().into();
+
+            if para_id == self_para_id {
+                Some(assigned_authorities.orchestrator_chain)
+            } else {
+                assigned_authorities.container_chains.get(&para_id.into()).cloned()
+            }
+        }
+
+        /// Return the paraId assigned to a given authority
+        fn check_para_id_assignment(authority: NimbusId) -> Option<ParaId> {
+            let parent_number = System::block_number();
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+
+            let session_index = if should_end_session {
+                Session::current_index() +1
+            }
+            else {
+                Session::current_index()
+            };
+            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+            let self_para_id = ParachainInfo::get().into();
+
+            assigned_authorities.para_id_of(&authority, self_para_id).map(|id| id.into())
         }
     }
 }

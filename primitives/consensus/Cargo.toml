@@ -1,0 +1,24 @@
+[package]
+name = "tp-consensus"
+authors = []
+description = "Primitives related to Tanssi consensus engine"
+edition = "2021"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+[dependencies]
+parity-scale-codec = { workspace = true, default-features = false }
+scale-info = { workspace = true, default-features = false }
+sp-api = { workspace = true, default-features = false }
+sp-std = { workspace = true, default-features = false }
+cumulus-primitives-core = { workspace = true, default-features = false }
+
+[features]
+default = [ "std" ]
+std = [
+	"parity-scale-codec/std",
+	"sp-api/std",
+    "cumulus-primitives-core/std",
+    "sp-std/std"
+]

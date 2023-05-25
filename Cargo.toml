@@ -41,6 +41,7 @@ tp-author-noting-inherent = { path = "primitives/author-noting-inherent", defaul
 tp-authorities-noting-inherent = { path = "primitives/authorities-noting-inherent", default-features = false }
 tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-features = false }
 tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
+tp-consensus = { path = "primitives/consensus", default-features = false }
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
