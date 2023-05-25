@@ -16,10 +16,7 @@
 
 use {
     crate::ContainerChainAuthoritiesInherentData,
-    cumulus_primitives_core::{
-        relay_chain::{BlakeTwo256, BlockNumber, HeadData},
-        ParaId,
-    },
+    cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     cumulus_relay_chain_interface::{PHash, RelayChainInterface},
     parity_scale_codec::Decode,
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
@@ -103,17 +100,16 @@ impl ContainerChainAuthoritiesInherentData {
             .unwrap_or_default();
 
         // We later take the Header decoded
-        let orchestrator_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
-            &mut header_data_orchestrator.0.as_slice(),
-        )
-        .map_err(|e| {
-            tracing::error!(
-                target: LOG_TARGET,
-                error = ?e,
-                "Cannot decode the head data",
-            )
-        })
-        .ok()?;
+        let orchestrator_header =
+            tp_core::Header::decode(&mut header_data_orchestrator.0.as_slice())
+                .map_err(|e| {
+                    tracing::error!(
+                        target: LOG_TARGET,
+                        error = ?e,
+                        "Cannot decode the head data",
+                    )
+                })
+                .ok()?;
 
         let orchestrator_chain_state = collect_orchestrator_storage_proof(
             orchestrator_chain_interface,

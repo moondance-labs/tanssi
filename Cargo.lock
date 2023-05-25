@@ -5955,6 +5955,7 @@ dependencies = [
  "substrate-wasm-builder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-core",
  "tp-traits",
 ]
 
@@ -7016,6 +7017,23 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-weights",
+]
+
+[[package]]
+name = "pallet-services-payment"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -12600,6 +12618,7 @@ dependencies = [
  "nimbus-primitives",
  "orchestrator-runtime",
  "pallet-collator-assignment-runtime-api",
+ "pallet-configuration",
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
@@ -13175,6 +13194,7 @@ dependencies = [
  "parity-scale-codec",
  "sp-core",
  "sp-io",
+ "sp-runtime",
  "sp-std",
 ]
 
