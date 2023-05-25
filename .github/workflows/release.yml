@@ -16,7 +16,7 @@ jobs:
         id: get-polkadot-release-tag
         run: |
           branch=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1 | sed 's/.*release-//#')
-          echo "polkadot_release=$(echo $branch | sed 's/#.*//' | sed 's/polkadot\?branch=tomasz-reinitialize-9-40/v0\.9\.40/')" >> $GITHUB_OUTPUT
+          echo "polkadot_release=$(echo $branch | sed 's/#.*//' | sed 's/\/polkadot?branch=tomasz-reinitialize-9-40/v0\.9\.40/')" >> $GITHUB_OUTPUT
       - name: Display variables
         run: |
           echo polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
