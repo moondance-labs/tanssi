@@ -3,7 +3,9 @@ import { BN } from "@polkadot/util";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { getAuthorFromDigest } from "../../util/author";
 import { Signer, ethers } from "ethers";
-
+import {  createRawTransfer } from "@moonwall/util";
+import { alith, BALTATHAR_ADDRESS, createTransfer, customWeb3Request } from "@moonwall/util";
+import { MIN_GAS_PRICE, generateKeyringPair } from "@moonwall/util";
 describeSuite({
   id: "ZTN",
   title: "Zombie Tanssi Test",
@@ -13,7 +15,7 @@ describeSuite({
     let relayApi: ApiPromise;
     let container2000Api: ApiPromise;
     let container2001Api: ApiPromise;
-    let container2001EthersSigner: Signer;
+    let ethersSigner: Signer;
 
     beforeAll(async () => {
       
@@ -21,7 +23,9 @@ describeSuite({
       relayApi = context.polkadotJs({ apiName: "Relay" });
       container2000Api = context.polkadotJs({ apiName: "Container2000" });
       container2001Api = context.polkadotJs({ apiName: "Container2001" });
-      container2001EthersSigner = context.ethersSigner({apiName: "Container2001Ethers"});
+      ethersSigner = context.ethersSigner();
+
+      console.log(ethersSigner)
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
       expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
@@ -67,10 +71,14 @@ describeSuite({
       title: "Blocks are being produced on container 2001",
       test: async function () {
         const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
-        const blockEth = (await container2001EthersSigner.provider.getBlock("latest")).number;
+        const blockEth = (await ethersSigner.provider.getBlock("latest")).number;
         console.log("ethers block is ", blockEth);
 
         expect(blockNum).to.be.greaterThan(0);
+        expect(
+          (await ethersSigner.provider.getBlockNumber()),
+          "Safe tag is not present"
+        ).to.be.greaterThan(0);
       },
     });
  
@@ -162,6 +170,20 @@ describeSuite({
         const authorities = (await paraApi.query.aura.authorities());
         const author = await getAuthorFromDigest(paraApi);
         expect(authorities.toHuman().includes(author.toString())).to.be.true;
+      },
+    });
+
+    it({
+      id: "T09",
+      title: "Transactions can be made with ethers",
+      test: async function () {
+        const randomAccount = generateKeyringPair();
+        await customWeb3Request(context.web3, "eth_sendRawTransaction", [
+          await createTransfer(context, randomAccount.address, 512, { gasPrice: MIN_GAS_PRICE }),
+        ]);
+        // To create the treasury account
+        createRawTransfer(context, BALTATHAR_ADDRESS, 1337);
+        await context.waitBlock(1, "Container2001");
       },
     });
 
