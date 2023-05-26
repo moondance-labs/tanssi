@@ -6024,6 +6024,8 @@ dependencies = [
  "substrate-wasm-builder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-consensus",
+ "tp-core",
  "tp-traits",
 ]
 
@@ -7083,6 +7085,23 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-weights",
+]
+
+[[package]]
+name = "pallet-services-payment"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -12471,6 +12490,7 @@ dependencies = [
  "nimbus-primitives",
  "orchestrator-runtime",
  "pallet-collator-assignment-runtime-api",
+ "pallet-configuration",
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
@@ -12566,6 +12586,7 @@ dependencies = [
  "sp-runtime",
  "sp-timestamp",
  "substrate-prometheus-endpoint",
+ "tp-consensus",
  "tracing",
 ]
 
@@ -12978,6 +12999,7 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-trie",
+ "tc-consensus",
  "tc-orchestrator-chain-interface",
  "test-relay-sproof-builder",
  "tp-core",
@@ -13016,6 +13038,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "tp-consensus"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-std",
+]
+
+[[package]]
 name = "tp-container-chain-genesis-data"
 version = "0.1.0"
 dependencies = [
@@ -13046,6 +13079,7 @@ dependencies = [
  "parity-scale-codec",
  "sp-core",
  "sp-io",
+ "sp-runtime",
  "sp-std",
 ]
 

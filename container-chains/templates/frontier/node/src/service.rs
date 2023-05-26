@@ -25,13 +25,9 @@ use container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi,Transa
 
 // Cumulus Imports
 use {
-    cumulus_client_consensus_aura::SlotProportion,
-    cumulus_client_consensus_common::{
-        ParachainBlockImport as TParachainBlockImport, ParachainConsensus,
-    },
+    cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_service::{
-        build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
-        StartCollatorParams, StartFullNodeParams,
+        build_relay_chain_interface, prepare_node_config, start_full_node, StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -42,15 +38,11 @@ use {
 
 // Substrate Imports
 use {
-    frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     sc_consensus::ImportQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
-    sc_network_sync::SyncingService,
     sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager},
-    sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
-    sp_keystore::SyncCryptoStorePtr,
-    substrate_prometheus_endpoint::Registry,
+    sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
 };
 use fc_rpc_core::types::{FeeHistoryCache, FilterPool};
 use fc_db::DatabaseSource;
@@ -258,7 +250,7 @@ async fn start_node_impl(
     let backend = params.backend.clone();
     let mut task_manager = params.task_manager;
 
-    let (relay_chain_interface, collator_key) = build_relay_chain_interface(
+    let (relay_chain_interface, _collator_key) = build_relay_chain_interface(
         polkadot_config,
         &parachain_config,
         telemetry_worker_handle,
@@ -269,11 +261,9 @@ async fn start_node_impl(
     .await
     .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
-    let force_authoring = parachain_config.force_authoring;
-    let validator = parachain_config.role.is_authority();
-    let prometheus_registry = parachain_config.prometheus_registry().cloned();
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
+    let prometheus_registry = parachain_config.prometheus_registry().cloned();
 
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
@@ -377,26 +367,6 @@ async fn start_node_impl(
         sync_service: sync_service.clone(),
     })?;
 
-    if let Some(hwbench) = hwbench {
-        sc_sysinfo::print_hwbench(&hwbench);
-        // Here you can check whether the hardware meets your chains' requirements. Putting a link
-        // in there and swapping out the requirements for your own are probably a good idea. The
-        // requirements for a para-chain are dictated by its relay-chain.
-        if !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) && validator {
-            log::warn!(
-                "⚠️  The hardware does not meet the minimal requirements for role 'Authority'."
-            );
-        }
-
-        if let Some(ref mut telemetry) = telemetry {
-            let telemetry_handle = telemetry.handle();
-            task_manager.spawn_handle().spawn(
-                "telemetry_hwbench",
-                None,
-                sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
-            );
-        }
-    }
     let overseer_handle = relay_chain_interface
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
@@ -407,8 +377,6 @@ async fn start_node_impl(
     };
 
     let relay_chain_slot_duration = Duration::from_secs(6);
-
-   
     let params = StartFullNodeParams {
         client: client.clone(),
         announce_block,

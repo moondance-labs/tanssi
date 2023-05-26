@@ -115,9 +115,9 @@ describeSuite({
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
         const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
 
-        const containerChainCollators = assignment.containerChains.toHuman()[paraId];
+        const containerChainCollators = assignment.containerChains.toJSON()[paraId];
 
-        const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toHuman();
+        const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
 
         for (let i = 0; i < containerChainCollators.length; i++) {
           expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);
@@ -132,9 +132,9 @@ describeSuite({
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
         const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
 
-        const containerChainCollators = assignment.containerChains.toHuman()[paraId];
+        const containerChainCollators = assignment.containerChains.toJSON()[paraId];
 
-        const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toHuman();
+        const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toJSON();
 
         for (let i = 0; i < containerChainCollators.length; i++) {
           expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);
@@ -151,8 +151,8 @@ describeSuite({
         const paraId2000 = (await container2000Api.query.parachainInfo.parachainId());
         const paraId2001 = (await container2001Api.query.parachainInfo.parachainId());
 
-        const containerChainCollators2000 = assignment.containerChains.toHuman()[paraId2000.toString()];
-        const containerChainCollators2001 = assignment.containerChains.toHuman()[paraId2001.toString()];
+        const containerChainCollators2000 = assignment.containerChains.toJSON()[paraId2000.toString()];
+        const containerChainCollators2001 = assignment.containerChains.toJSON()[paraId2001.toString()];
 
         await context.waitBlock(3, "Tanssi");
         const author2000 = await paraApi.query.authorNoting.latestAuthor(paraId2000);
@@ -169,7 +169,7 @@ describeSuite({
       test: async function () {
         const authorities = (await paraApi.query.aura.authorities());
         const author = await getAuthorFromDigest(paraApi);
-        expect(authorities.toHuman().includes(author.toString())).to.be.true;
+        expect(authorities.toJSON().includes(author.toString())).to.be.true;
       },
     });
 

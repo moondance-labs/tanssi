@@ -16,14 +16,14 @@
 
 use {
     crate::ContainerChainAuthoritiesInherentData,
-    cumulus_primitives_core::{
-        relay_chain::{BlakeTwo256, BlockNumber, HeadData},
-        ParaId,
-    },
+    cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     cumulus_relay_chain_interface::{PHash, RelayChainInterface},
     parity_scale_codec::Decode,
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
-    tp_core::well_known_keys::{para_id_head, COLLATOR_ASSIGNMENT_INDEX},
+    tp_core::{
+        well_known_keys::{para_id_head, COLLATOR_ASSIGNMENT_INDEX},
+        Header as OrchestratorHeader,
+    },
 };
 
 const LOG_TARGET: &str = "parachain-inherent";
@@ -103,17 +103,16 @@ impl ContainerChainAuthoritiesInherentData {
             .unwrap_or_default();
 
         // We later take the Header decoded
-        let orchestrator_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
-            &mut header_data_orchestrator.0.as_slice(),
-        )
-        .map_err(|e| {
-            tracing::error!(
-                target: LOG_TARGET,
-                error = ?e,
-                "Cannot decode the head data",
-            )
-        })
-        .ok()?;
+        let orchestrator_header =
+            tp_core::Header::decode(&mut header_data_orchestrator.0.as_slice())
+                .map_err(|e| {
+                    tracing::error!(
+                        target: LOG_TARGET,
+                        error = ?e,
+                        "Cannot decode the head data",
+                    )
+                })
+                .ok()?;
 
         let orchestrator_chain_state = collect_orchestrator_storage_proof(
             orchestrator_chain_interface,
@@ -125,6 +124,52 @@ impl ContainerChainAuthoritiesInherentData {
             relay_chain_state: relay_chain_state.clone(),
             orchestrator_chain_state: orchestrator_chain_state,
         })
+    }
+
+    pub async fn get_latest_orchestrator_head_info(
+        relay_parent: PHash,
+        relay_chain_interface: &impl RelayChainInterface,
+        orchestrator_para_id: ParaId,
+    ) -> Option<OrchestratorHeader> {
+        let header_orchestrator = relay_chain_interface
+            .get_storage_by_key(relay_parent, &para_id_head(orchestrator_para_id))
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    relay_parent = ?relay_parent,
+                    error = ?e,
+                    "Cannot obtain the orchestrator para id header."
+                )
+            })
+            .ok()?;
+
+        let header_data_orchestrator = header_orchestrator
+            .map(|raw| <HeadData>::decode(&mut &raw[..]))
+            .transpose()
+            .map_err(|e| {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    error = ?e,
+                    "Cannot decode the head data",
+                )
+            })
+            .ok()?
+            .unwrap_or_default();
+
+        // We later take the Header decoded
+        let orchestrator_header =
+            OrchestratorHeader::decode(&mut header_data_orchestrator.0.as_slice())
+                .map_err(|e| {
+                    tracing::error!(
+                        target: LOG_TARGET,
+                        error = ?e,
+                        "Cannot decode the head data",
+                    )
+                })
+                .ok()?;
+
+        Some(orchestrator_header)
     }
 }
 
