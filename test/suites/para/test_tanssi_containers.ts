@@ -164,10 +164,6 @@ describeSuite({
         const authorities = (await paraApi.query.aura.authorities());
         const author = await getAuthorFromDigest(paraApi);
         expect(authorities.toJSON().includes(author.toString())).to.be.true;
-
-        // TODO: for testing
-        await context.waitBlock(1, "Tanssi");
-        await countUniqueBlockAuthors(context, paraApi, 20, 4);
       },
     });
 
@@ -310,24 +306,26 @@ describeSuite({
 
 // Verify that the next `numBlocks` have `numAuthors` different unique authors
 async function countUniqueBlockAuthors(context, paraApi, numBlocks, numAuthors) {
-  const authorities = (await paraApi.query.aura.authorities());
+  // These are the authorities for the next block, so we need to wait 1 block before fetching the first author
+  const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+  const authorities = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
   const actualAuthors = [];
   const blockNumbers = [];
 
   for (let i = 0; i < numBlocks; i++) {
+      await context.waitBlock(1, "Tanssi");
       let blockNum1 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
       const author = await getAuthorFromDigest(paraApi);
       let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
       expect(blockNum1).to.be.eq(blockNum2);
       blockNumbers.push(blockNum1);
       actualAuthors.push(author);
-      await context.waitBlock(1, "Tanssi");
   }
 
   let uniq = [...new Set(actualAuthors)];
 
   if (uniq.length != numAuthors) {
-    console.error("Mismatch between authorities and actual block authors: authorities: ", authorities.toJSON(), ", actual authors: ", actualAuthors, ", block numbers: ", blockNumbers);
+    console.error("Mismatch between authorities and actual block authors: authorities: ", authorities, ", actual authors: ", actualAuthors, ", block numbers: ", blockNumbers);
     expect(false).to.be.true;
   }
 }
