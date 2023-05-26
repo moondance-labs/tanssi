@@ -166,6 +166,7 @@ impl ContainerChainSpawner {
             let (mut container_chain_task_manager, _container_chain_client) =
                 start_node_impl_container(
                     container_chain_cli_config,
+                    orchestrator_client.clone(),
                     relay_chain_interface.clone(),
                     orchestrator_chain_interface.clone(),
                     collator_key.clone(),

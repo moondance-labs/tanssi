@@ -12,8 +12,9 @@ parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len
 scale-info = { workspace = true }
 tracing = { workspace = true, optional = true }
 
-
 tc-orchestrator-chain-interface = { workspace = true, optional = true }
+tc-consensus = { workspace = true, optional = true }
+
 test-relay-sproof-builder = { workspace = true, optional = true }
 tp-core = { workspace = true, optional = true }
 
@@ -48,4 +49,5 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-core/std",
 	"tracing",
+	"tc-consensus"
  ]

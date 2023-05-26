@@ -5955,6 +5955,7 @@ dependencies = [
  "substrate-wasm-builder",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-consensus",
  "tp-core",
  "tp-traits",
 ]
@@ -12714,6 +12715,7 @@ dependencies = [
  "sp-runtime",
  "sp-timestamp",
  "substrate-prometheus-endpoint",
+ "tp-consensus",
  "tracing",
 ]
 
@@ -13126,6 +13128,7 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-trie",
+ "tc-consensus",
  "tc-orchestrator-chain-interface",
  "test-relay-sproof-builder",
  "tp-core",
@@ -13161,6 +13164,17 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "tp-traits",
+]
+
+[[package]]
+name = "tp-consensus"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core 0.1.0 (git+https://github.com/tmpolaczyk/cumulus?branch=tomasz-reinitialize-9-40)",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-std",
 ]
 
 [[package]]

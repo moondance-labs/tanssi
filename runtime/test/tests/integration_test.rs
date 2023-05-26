@@ -38,6 +38,7 @@ use {
     },
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
 };
 
 mod common;
@@ -1015,6 +1016,251 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             assert_eq!(
                 Runtime::future_collator_parachain_assignment(BOB.into()),
                 None
+            );
+        });
+}
+
+#[test]
+fn test_consensus_runtime_api() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2, true);
+
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            let charlie_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+
+            assert_eq!(
+                Runtime::para_id_authorities(100.into()),
+                Some(vec![alice_id.clone(), bob_id.clone()])
+            );
+            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(
+                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(charlie_id.clone().into()),
+                None
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(dave_id.clone().into()),
+                None
+            );
+
+            // Set CHARLIE and DAVE keys
+            assert_ok!(Session::set_keys(
+                origin_of(CHARLIE.into()),
+                orchestrator_runtime::SessionKeys {
+                    aura: charlie_id.clone(),
+                },
+                vec![]
+            ));
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                orchestrator_runtime::SessionKeys {
+                    aura: dave_id.clone(),
+                },
+                vec![]
+            ));
+
+            // Set new invulnerables
+            assert_ok!(CollatorSelection::set_invulnerables(
+                root_origin(),
+                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
+            ));
+
+            run_to_session(2u32, true);
+            assert_eq!(
+                Runtime::para_id_authorities(100.into()),
+                Some(vec![alice_id.clone(), bob_id.clone()])
+            );
+            assert_eq!(
+                Runtime::para_id_authorities(1001.into()),
+                Some(vec![charlie_id.clone(), dave_id.clone()])
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(charlie_id.clone().into()),
+                Some(1001.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(dave_id.clone().into()),
+                Some(1001.into())
+            );
+        });
+}
+
+#[test]
+fn test_consensus_runtime_api_session_changes() {
+    // The test shoul return always the assiignment on the next epoch
+    // Meaning that we need to see before the session change block
+    // if we can predict correctly
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data()),
+            (1002, empty_genesis_data()),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2, true);
+
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            let charlie_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+
+            assert_eq!(
+                Runtime::para_id_authorities(100.into()),
+                Some(vec![alice_id.clone(), bob_id.clone()])
+            );
+            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(
+                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(charlie_id.clone().into()),
+                None
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(dave_id.clone().into()),
+                None
+            );
+
+            // Set CHARLIE and DAVE keys
+            assert_ok!(Session::set_keys(
+                origin_of(CHARLIE.into()),
+                orchestrator_runtime::SessionKeys {
+                    aura: charlie_id.clone(),
+                },
+                vec![]
+            ));
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                orchestrator_runtime::SessionKeys {
+                    aura: dave_id.clone(),
+                },
+                vec![]
+            ));
+
+            // Set new invulnerables
+            assert_ok!(CollatorSelection::set_invulnerables(
+                root_origin(),
+                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
+            ));
+
+            let session_two_edge = orchestrator_runtime::Period::get() * 2;
+            // Let's run just 2 blocks before the session 2 change first
+            // Prediction should still be identical, as we are not in the
+            // edge of a session change
+            run_to_block(session_two_edge - 2, true);
+
+            assert_eq!(
+                Runtime::para_id_authorities(100.into()),
+                Some(vec![alice_id.clone(), bob_id.clone()])
+            );
+            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(
+                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(charlie_id.clone().into()),
+                None
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(dave_id.clone().into()),
+                None
+            );
+
+            // Now we run to session edge -1. Here we should predict already with
+            // authorities of the next block!
+            run_to_block(session_two_edge - 1, true);
+            assert_eq!(
+                Runtime::para_id_authorities(100.into()),
+                Some(vec![alice_id.clone(), bob_id.clone()])
+            );
+            assert_eq!(
+                Runtime::para_id_authorities(1001.into()),
+                Some(vec![charlie_id.clone(), dave_id.clone()])
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(charlie_id.clone().into()),
+                Some(1001.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(dave_id.clone().into()),
+                Some(1001.into())
             );
         });
 }

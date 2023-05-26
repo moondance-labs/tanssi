@@ -17,7 +17,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 use crate::container_chain_spawner::CcSpawnMsg;
 use crate::container_chain_spawner::ContainerChainSpawner;
-use sp_core::H256;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use {
     crate::cli::ContainerChainCli,
@@ -61,6 +60,7 @@ use {
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_core::H256,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{str::FromStr, sync::Arc, sync::Mutex, time::Duration},
     substrate_prometheus_endpoint::Registry,
@@ -695,6 +695,7 @@ fn container_log_str(para_id: ParaId) -> String {
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 pub async fn start_node_impl_container(
     parachain_config: Configuration,
+    orchestrator_client: Arc<ParachainClient>,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     collator_key: Option<CollatorPair>,
@@ -803,6 +804,7 @@ pub async fn start_node_impl_container(
     if collator {
         let parachain_consensus = build_consensus_container(
             client.clone(),
+            orchestrator_client.clone(),
             block_import,
             prometheus_registry.as_ref(),
             telemetry.as_ref().map(|t| t.handle()),
@@ -871,6 +873,7 @@ fn build_manual_seal_import_queue(
 
 fn build_consensus_container(
     client: Arc<ParachainClient>,
+    orchestrator_client: Arc<ParachainClient>,
     block_import: ParachainBlockImport,
     prometheus_registry: Option<&Registry>,
     telemetry: Option<TelemetryHandle>,
@@ -894,7 +897,11 @@ fn build_consensus_container(
         telemetry.clone(),
     );
 
-    let params = BuildOrchestratorAuraConsensusParams {
+    let relay_chain_interace_for_orch = relay_chain_interface.clone();
+    let orchestrator_client_for_cidp = orchestrator_client.clone();
+    let keystore_for_cidp = keystore.clone();
+
+    let params = tc_consensus::BuildOrchestratorAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
             let relay_chain_interface = relay_chain_interface.clone();
@@ -947,6 +954,47 @@ fn build_consensus_container(
                 ))
             }
         },
+        get_authorities_from_orchestrator: move |_block_hash, (relay_parent, _validation_data)| {
+            let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
+            let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
+            let keystore_for_cidp = keystore_for_cidp.clone();
+
+            async move {
+                let latest_header =
+                    tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+                        relay_parent,
+                        &relay_chain_interace_for_orch,
+                        orchestrator_para_id,
+                    )
+                    .await;
+
+                let latest_header = latest_header.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to fetch latest header",
+                    )
+                })?;
+
+                let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                    orchestrator_client_for_cidp.as_ref(),
+                    &latest_header.hash(),
+                    keystore_for_cidp,
+                );
+
+                let aux_data = authorities.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to fetch authorities with error",
+                    )
+                })?;
+
+                log::info!(
+                    "Authorities {:?} found for header {:?}",
+                    aux_data,
+                    latest_header
+                );
+
+                Ok(aux_data)
+            }
+        },
         block_import,
         para_client: client,
         backoff_authoring_blocks: Option::<()>::None,
@@ -961,7 +1009,7 @@ fn build_consensus_container(
         telemetry,
     };
 
-    Ok(OrchestratorAuraConsensus::build::<
+    Ok(tc_consensus::OrchestratorAuraConsensus::build::<
         NimbusPair,
         _,
         _,
@@ -994,7 +1042,10 @@ fn build_consensus_orchestrator(
         prometheus_registry,
         telemetry.clone(),
     );
+
     let client_set_aside_for_cidp = client.clone();
+    let keystore_for_cidp = keystore.clone();
+    let client_set_aside_for_orch = client.clone();
 
     let params = BuildOrchestratorAuraConsensusParams {
         proposer_factory,
@@ -1046,6 +1097,33 @@ fn build_consensus_orchestrator(
                 Ok((slot, timestamp, parachain_inherent, author_noting_inherent))
             }
         },
+        get_authorities_from_orchestrator:
+            move |block_hash: H256, (_relay_parent, _validation_data)| {
+                let client_set_aside_for_orch = client_set_aside_for_orch.clone();
+                let keystore_for_cidp = keystore_for_cidp.clone();
+
+                async move {
+                    let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                        client_set_aside_for_orch.as_ref(),
+                        &block_hash,
+                        keystore_for_cidp,
+                    );
+
+                    let aux_data = authorities.ok_or_else(|| {
+                        Box::<dyn std::error::Error + Send + Sync>::from(
+                            "Failed to fetch authorities with error",
+                        )
+                    })?;
+
+                    log::info!(
+                        "Authorities {:?} found for header {:?}",
+                        aux_data,
+                        block_hash
+                    );
+
+                    Ok(aux_data)
+                }
+            },
         block_import,
         para_client: client,
         backoff_authoring_blocks: Option::<()>::None,
@@ -1100,6 +1178,7 @@ pub fn new_dev(
     _author_id: Option<AccountId>,
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
+    para_id: ParaId,
 ) -> Result<TaskManager, ServiceError> {
     use {
         async_io::Timer,
@@ -1229,6 +1308,7 @@ pub fn new_dev(
                     tc_consensus::OrchestratorManualSealAuraConsensusDataProvider::new(
                         client.clone(),
                         keystore_container.sync_keystore(),
+                        para_id,
                     ),
                 )),
                 create_inherent_data_providers: move |block: H256, ()| {
