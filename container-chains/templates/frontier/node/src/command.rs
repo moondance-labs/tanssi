@@ -19,7 +19,7 @@ use {
         chain_spec,
         cli::{Cli, RelayChainCli, Subcommand},
         client::TemplateRuntimeExecutor,
-        service::{new_partial},
+        service::{frontier_database_dir, new_partial},
     },
     container_chain_template_frontier_runtime::Block,
     cumulus_client_cli::generate_genesis_block,
@@ -31,11 +31,13 @@ use {
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
     },
-    sc_service::{config::{BasePath, PrometheusConfig}, DatabaseSource},
+    sc_service::{
+        config::{BasePath, PrometheusConfig},
+        DatabaseSource,
+    },
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
-    crate::service::frontier_database_dir,
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -196,20 +198,20 @@ pub fn run() -> Result<()> {
 
             runner.sync_run(|config| {
                 // Remove Frontier offchain db
-				let frontier_database_config = match config.database {
-					DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
-						path: frontier_database_dir(&config, "db"),
-						cache_size: 0,
-					},
-					DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
-						path: frontier_database_dir(&config, "paritydb"),
-					},
-					_ => {
-						return Err(format!("Cannot purge `{:?}` database", config.database).into())
-					}
-				};
+                let frontier_database_config = match config.database {
+                    DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
+                        path: frontier_database_dir(&config, "db"),
+                        cache_size: 0,
+                    },
+                    DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
+                        path: frontier_database_dir(&config, "paritydb"),
+                    },
+                    _ => {
+                        return Err(format!("Cannot purge `{:?}` database", config.database).into())
+                    }
+                };
 
-				cmd.base.run(frontier_database_config)?;
+                cmd.base.run(frontier_database_config)?;
 
                 let polkadot_cli = RelayChainCli::new(
                     &config,

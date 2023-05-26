@@ -73,11 +73,11 @@ pub struct BuildSpecCmd {
     pub base: sc_cli::BuildSpecCmd,
 
     /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
-    #[clap(long)]
+    #[arg(long)]
     pub parachain_id: Option<u32>,
 
     /// List of container chain chain spec paths to add to genesis.
-    #[clap(long)]
+    #[arg(long)]
     pub add_container_chain: Vec<String>,
 }
 
@@ -95,19 +95,18 @@ impl CliConfiguration for BuildSpecCmd {
 #[derive(Debug, clap::Parser)]
 pub struct ExportGenesisStateCommand {
     /// Output file name or stdout if unspecified.
-    #[clap(value_parser)]
     pub output: Option<PathBuf>,
 
     /// Id of the parachain this state is for.
-    #[clap(long)]
+    #[arg(long)]
     pub parachain_id: Option<u32>,
 
     /// Write output in binary. Default is to write in hex.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub raw: bool,
 
     /// The name of the chain for that the genesis state should be exported.
-    #[clap(long)]
+    #[arg(long)]
     pub chain: Option<String>,
 }
 
@@ -115,15 +114,14 @@ pub struct ExportGenesisStateCommand {
 #[derive(Debug, clap::Parser)]
 pub struct ExportGenesisWasmCommand {
     /// Output file name or stdout if unspecified.
-    #[clap(value_parser)]
     pub output: Option<PathBuf>,
 
     /// Write output in binary. Default is to write in hex.
-    #[clap(short, long)]
+    #[arg(short, long)]
     pub raw: bool,
 
     /// The name of the chain for that the genesis wasm file should be exported.
-    #[clap(long)]
+    #[arg(long)]
     pub chain: Option<String>,
 }
 
@@ -134,17 +132,17 @@ pub struct RunCmd {
     pub base: cumulus_client_cli::RunCmd,
 
     /// Enable the development service to run without a backing relay chain
-    #[clap(long)]
+    #[arg(long)]
     pub dev_service: bool,
 
     /// When blocks should be sealed in the dev service.
     ///
     /// Options are "instant", "manual", or timer interval in milliseconds
-    #[clap(long, default_value = "instant")]
+    #[arg(long, default_value = "instant")]
     pub sealing: Sealing,
 
     /// Id of the parachain this collator collates for.
-    #[clap(long)]
+    #[arg(long)]
     pub parachain_id: Option<u32>,
 }
 

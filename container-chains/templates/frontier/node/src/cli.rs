@@ -15,11 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    clap::Parser,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::path::PathBuf,
-    crate::eth::EthConfiguration,
 };
-use clap::Parser;
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
@@ -64,42 +63,42 @@ pub enum Subcommand {
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
     /// Db meta columns information.
-	FrontierDb(fc_cli::FrontierDbCmd),
+    FrontierDb(fc_cli::FrontierDbCmd),
 }
 
 #[derive(Debug, Parser)]
 #[group(skip)]
 pub struct RunCmd {
-	#[clap(flatten)]
-	pub base: cumulus_client_cli::RunCmd,
+    #[clap(flatten)]
+    pub base: cumulus_client_cli::RunCmd,
 
-	/// Size in bytes of the LRU cache for block data.
-	#[clap(long, default_value = "300000000")]
-	pub eth_log_block_cache: usize,
+    /// Size in bytes of the LRU cache for block data.
+    #[arg(long, default_value = "300000000")]
+    pub eth_log_block_cache: usize,
 
-	/// Size in bytes of the LRU cache for transactions statuses data.
-	#[clap(long, default_value = "300000000")]
-	pub eth_statuses_cache: usize,
+    /// Size in bytes of the LRU cache for transactions statuses data.
+    #[arg(long, default_value = "300000000")]
+    pub eth_statuses_cache: usize,
 
-	/// Maximum number of logs in a query.
-	#[clap(long, default_value = "10000")]
-	pub max_past_logs: u32,
+    /// Maximum number of logs in a query.
+    #[arg(long, default_value = "10000")]
+    pub max_past_logs: u32,
 
-	/// Id of the parachain this collator collates for.
-	#[clap(long)]
-	pub parachain_id: Option<u32>,
+    /// Id of the parachain this collator collates for.
+    #[arg(long)]
+    pub parachain_id: Option<u32>,
 
-	/// Maximum fee history cache size.
-	#[clap(long, default_value = "2048")]
-	pub fee_history_limit: u64,
+    /// Maximum fee history cache size.
+    #[arg(long, default_value = "2048")]
+    pub fee_history_limit: u64,
 }
 
 impl std::ops::Deref for RunCmd {
-	type Target = cumulus_client_cli::RunCmd;
+    type Target = cumulus_client_cli::RunCmd;
 
-	fn deref(&self) -> &Self::Target {
-		&self.base
-	}
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
 }
 
 #[derive(Debug, clap::Parser)]
@@ -173,13 +172,13 @@ pub struct BuildSpecCmd {
     pub base: sc_cli::BuildSpecCmd,
 
     /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
-    #[clap(long, conflicts_with = "chain")]
-    #[clap(long)]
+    #[arg(long, conflicts_with = "chain")]
+    #[arg(long)]
     pub parachain_id: Option<u32>,
 
     /// Seeds of collators that will start as authorities and will be funded
-    #[clap(long, conflicts_with = "chain")]
-    #[clap(long, value_delimiter = ',')]
+    #[arg(long, conflicts_with = "chain")]
+    #[arg(long, value_delimiter = ',')]
     pub seeds: Option<Vec<String>>,
 }
 
@@ -194,9 +193,9 @@ impl CliConfiguration for BuildSpecCmd {
 }
 
 pub struct RpcConfig {
-	pub eth_log_block_cache: usize,
-	pub eth_statuses_cache: usize,
-	pub fee_history_limit: u64,
-	pub max_past_logs: u32,
-	pub relay_chain_rpc_urls: Vec<url::Url>,
+    pub eth_log_block_cache: usize,
+    pub eth_statuses_cache: usize,
+    pub fee_history_limit: u64,
+    pub max_past_logs: u32,
+    pub relay_chain_rpc_urls: Vec<url::Url>,
 }

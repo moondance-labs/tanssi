@@ -37,6 +37,7 @@ use {
     cumulus_primitives_core::ParaId,
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
+    fp_rpc::TransactionStatus,
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
@@ -54,14 +55,17 @@ use {
     },
     frame_system::limits::{BlockLength, BlockWeights},
     nimbus_primitives::NimbusId,
-    pallet_ethereum::PostLogContent,
-    pallet_evm::{EnsureAccountId20, IdentityAddressMapping},
+    pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
+    pallet_evm::{
+        Account as EVMAccount, EnsureAccountId20, FeeCalculator, IdentityAddressMapping, Runner,
+    },
     pallet_transaction_payment::CurrencyAdapter,
+    parity_scale_codec::{Decode, Encode},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_core::{
         crypto::{ByteArray, KeyTypeId},
-        OpaqueMetadata, H160, U256,
+        Get, OpaqueMetadata, H160, H256, U256,
     },
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
@@ -74,16 +78,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    parity_scale_codec::{Decode, Encode},
-    pallet_evm::Account as EVMAccount,
-    sp_core::H256,
-    fp_rpc::TransactionStatus,
-    pallet_evm::Runner,
 };
-use pallet_ethereum::Transaction as EthereumTransaction;
-use pallet_ethereum::Call::transact;
-use sp_core::Get;
-use pallet_evm::FeeCalculator;
 pub use {
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -218,25 +213,25 @@ impl fp_self_contained::SelfContainedCall for RuntimeCall {
 pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
-	fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
-		UncheckedExtrinsic::new_unsigned(
-			pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
-		)
-	}
+    fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
+        UncheckedExtrinsic::new_unsigned(
+            pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
+        )
+    }
 }
 
 impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConverter {
-	fn convert_transaction(
-		&self,
-		transaction: pallet_ethereum::Transaction,
-	) -> opaque::UncheckedExtrinsic {
-		let extrinsic = UncheckedExtrinsic::new_unsigned(
-			pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
-		);
-		let encoded = extrinsic.encode();
-		opaque::UncheckedExtrinsic::decode(&mut &encoded[..])
-			.expect("Encoded extrinsic is always valid")
-	}
+    fn convert_transaction(
+        &self,
+        transaction: pallet_ethereum::Transaction,
+    ) -> opaque::UncheckedExtrinsic {
+        let extrinsic = UncheckedExtrinsic::new_unsigned(
+            pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
+        );
+        let encoded = extrinsic.encode();
+        opaque::UncheckedExtrinsic::decode(&mut &encoded[..])
+            .expect("Encoded extrinsic is always valid")
+    }
 }
 
 /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
@@ -580,7 +575,7 @@ impl pallet_evm::Config for Runtime {
     type OnCreate = ();
     type FindAuthor = FindAuthorTruncated<Aura>;
     type Timestamp = Timestamp;
-	type WeightInfo = ();
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -786,7 +781,7 @@ impl_runtime_apis! {
 
         fn account_basic(address: H160) -> EVMAccount {
             let (account, _) = pallet_evm::Pallet::<Runtime>::account_basic(&address);
-			account
+            account
         }
 
         fn gas_price() -> U256 {
@@ -900,8 +895,8 @@ impl_runtime_apis! {
         ) {
             (
                 pallet_ethereum::CurrentBlock::<Runtime>::get(),
-				pallet_ethereum::CurrentReceipts::<Runtime>::get(),
-				pallet_ethereum::CurrentTransactionStatuses::<Runtime>::get()
+                pallet_ethereum::CurrentReceipts::<Runtime>::get(),
+                pallet_ethereum::CurrentTransactionStatuses::<Runtime>::get()
             )
         }
 
