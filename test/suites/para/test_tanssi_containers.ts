@@ -164,6 +164,10 @@ describeSuite({
         const authorities = (await paraApi.query.aura.authorities());
         const author = await getAuthorFromDigest(paraApi);
         expect(authorities.toJSON().includes(author.toString())).to.be.true;
+
+        // TODO: for testing
+        await context.waitBlock(1, "Tanssi");
+        await countUniqueBlockAuthors(context, paraApi, 20, 4);
       },
     });
 
@@ -288,9 +292,9 @@ describeSuite({
         await paraApi.tx.sudo.sudo(tx).signAndSend(alice);
         
         const tanssiBlockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        // TODO: this should wait 2 sessions. We are waiting 10 + 20 blocks
-        await countUniqueBlockAuthors(context, paraApi, 10, 2);
-        await context.waitBlock(20, "Tanssi");
+        // TODO: this should wait 2 sessions (between 6 and 10 blocks). We are waiting 15 blocks
+        await countUniqueBlockAuthors(context, paraApi, 4, 2);
+        await context.waitBlock(11, "Tanssi");
 
         // Check that pending para ids removes 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
@@ -308,9 +312,14 @@ describeSuite({
 async function countUniqueBlockAuthors(context, paraApi, numBlocks, numAuthors) {
   const authorities = (await paraApi.query.aura.authorities());
   const actualAuthors = [];
+  const blockNumbers = [];
 
   for (let i = 0; i < numBlocks; i++) {
+      let blockNum1 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
       const author = await getAuthorFromDigest(paraApi);
+      let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+      expect(blockNum1).to.be.eq(blockNum2);
+      blockNumbers.push(blockNum1);
       actualAuthors.push(author);
       await context.waitBlock(1, "Tanssi");
   }
@@ -318,7 +327,7 @@ async function countUniqueBlockAuthors(context, paraApi, numBlocks, numAuthors) 
   let uniq = [...new Set(actualAuthors)];
 
   if (uniq.length != numAuthors) {
-    console.error("Mismatch between authorities and actual block authors: authorities: ", authorities.toJSON(), ", actual authors: ", actualAuthors);
+    console.error("Mismatch between authorities and actual block authors: authorities: ", authorities.toJSON(), ", actual authors: ", actualAuthors, ", block numbers: ", blockNumbers);
     expect(false).to.be.true;
   }
 }
