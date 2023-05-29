@@ -5,6 +5,7 @@ repository = "https://github.com/moondance-labs/tanssi"
 [workspace]
 members = [
 	"client/*",
+	"container-chains/primitives/*",
 	"container-chains/pallets/*",
 	"container-chains/templates/frontier/*",
 	"container-chains/templates/simple/*",
@@ -32,13 +33,13 @@ pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", def
 
 container-chain-template-runtime = { path = "container-chain-template/runtime", default-features = false }
 pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
+tp-authorities-noting-inherent = { path = "container-chains/primitives/authorities-noting-inherent", default-features = false }
 
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface = { path = "client/orchestrator-chain-interface" }
 test-relay-sproof-builder = { path = "test-sproof-builder" }
 orchestrator-runtime = { path = "runtime/test", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
-tp-authorities-noting-inherent = { path = "primitives/authorities-noting-inherent", default-features = false }
 tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-features = false }
 tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
 tp-consensus = { path = "primitives/consensus", default-features = false }
