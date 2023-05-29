@@ -3,6 +3,7 @@ import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { getAuthorFromDigest } from "../../util/author";
+import { getKeyringNimbusIdHex } from "../../util/keys";
 
 describeSuite({
   id: "ZTN",
@@ -56,7 +57,7 @@ describeSuite({
         expect(blockNum).to.be.greaterThan(0);
       },
     });
- 
+
     it({
       id: "T02",
       title: "Test Tanssi assignation is correct",
@@ -84,17 +85,17 @@ describeSuite({
         }
         const expectedAllCollators = {
             orchestratorChain: [
-              keyToHex('Collator1000-01'),
-              keyToHex('Collator1000-02'),
+              getKeyringNimbusIdHex('Collator1000-01'),
+              getKeyringNimbusIdHex('Collator1000-02'),
             ],
             containerChains: {
               '2000': [
-                keyToHex('Collator2000-01'),
-                keyToHex('Collator2000-02'),
+                getKeyringNimbusIdHex('Collator2000-01'),
+                getKeyringNimbusIdHex('Collator2000-02'),
               ],
               '2001': [
-                keyToHex('Collator2001-01'),
-                keyToHex('Collator2001-02'),
+                getKeyringNimbusIdHex('Collator2001-01'),
+                getKeyringNimbusIdHex('Collator2001-02'),
               ]
           }
         };
