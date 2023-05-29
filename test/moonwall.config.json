@@ -88,6 +88,11 @@
           "name": "ethers",
           "type": "ethers",
           "endpoints": ["ws://127.0.0.1:9951"]
+        },
+        {
+          "name": "w3",
+          "type": "web3",
+          "endpoints": ["ws://127.0.0.1:9951"]
         }
       ]
     }
