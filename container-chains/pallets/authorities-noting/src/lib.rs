@@ -36,6 +36,7 @@ mod test;
 
 pub use pallet::*;
 use {
+    ccp_authorities_noting_inherent::INHERENT_IDENTIFIER,
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     cumulus_primitives_core::{
         relay_chain::{BlakeTwo256, BlockNumber, HeadData},
@@ -47,7 +48,6 @@ use {
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Hash as HashT, RuntimeString},
     sp_std::prelude::*,
-    tp_authorities_noting_inherent::INHERENT_IDENTIFIER,
     tp_chain_state_snapshot::*,
     tp_collator_assignment::AssignedCollators,
     tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX},
@@ -120,7 +120,7 @@ pub mod pallet {
         // TODO: This weight should be corrected.
         pub fn set_latest_authorities_data(
             origin: OriginFor<T>,
-            data: tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData,
+            data: ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData,
         ) -> DispatchResultWithPostInfo {
             let total_weight = Weight::zero();
             ensure_none(origin)?;
@@ -130,7 +130,7 @@ pub mod pallet {
                 "DidSetOrchestratorAuthorityData must be updated only once in a block",
             );
 
-            let tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
+            let ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
                 relay_chain_state: relay_chain_state_proof,
                 orchestrator_chain_state: orchestrator_chain_state_proof,
             } = data;
@@ -225,7 +225,7 @@ pub mod pallet {
         }
 
         fn create_inherent(data: &InherentData) -> Option<Self::Call> {
-            let data: tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData = data
+            let data: ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData = data
                 .get_data(&INHERENT_IDENTIFIER)
                 .ok()
                 .flatten()
