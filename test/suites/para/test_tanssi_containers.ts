@@ -23,7 +23,7 @@ describeSuite({
       relayApi = context.polkadotJs({ apiName: "Relay" });
       container2000Api = context.polkadotJs({ apiName: "Container2000" });
       container2001Api = context.polkadotJs({ apiName: "Container2001" });
-      ethersSigner = context.ethersSigner({ apiName: "Container2001Ethers" });
+      ethersSigner = context.ethersSigner();
 
       console.log(ethersSigner)
 

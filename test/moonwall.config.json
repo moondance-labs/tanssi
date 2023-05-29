@@ -85,7 +85,7 @@
           "endpoints": ["ws://127.0.0.1:9950"]
         },
         {
-          "name": "Container2001Ethers",
+          "name": "ethers",
           "type": "ethers",
           "endpoints": ["ws://127.0.0.1:9951"]
         }
