@@ -2,8 +2,8 @@ import { expect, describeSuite, beforeAll } from "@moonwall/cli";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 const fs = require('fs/promises');
 import { getHeaderFromRelay } from "../../util/relayInterface";
-import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, jumpSessions } from "../../util/block";
+import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
+import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 
 describeSuite({
@@ -188,6 +188,7 @@ describeSuite({
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+        let blockNum1 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
 
         // Read raw chain spec file
         // Different path in CI: ./specs vs ../specs
@@ -250,8 +251,9 @@ describeSuite({
         const tx = paraApi.tx.registrar.register(2002, containerChainGenesisDataFromRpc[1]);
         await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
         const session1 = (await paraApi.query.session.currentIndex()).toNumber();
-        await jumpSessions(context, 2);
+        await waitSessions(context, paraApi, 2);
         const session2 = (await paraApi.query.session.currentIndex()).toNumber();
+        let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
         console.log("Session before/after: ", session1, "/", session2);
         
         // TODO: this should wait 2 sessions. We are waiting 10 + 20 blocks
@@ -273,8 +275,10 @@ describeSuite({
         expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
 
         // Check authors of tanssi blocks
-        // Should be 2 different keys because 2002 has been registered
-        //await countUniqueBlockAuthors(context, paraApi, 4, 2);
+        // Should be 4 different keys before 2002 is registered, and 2 different keys when 2002 is registered
+        await countUniqueBlockAuthors(context, paraApi, blockNum1, blockNum2 - 1, 4);
+        await context.waitBlock(4, "Tanssi");
+        await countUniqueBlockAuthors(context, paraApi, blockNum2, blockNum2 + 3, 2);
 
         let blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
@@ -297,17 +301,15 @@ describeSuite({
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+        let blockNum1 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
 
         const registered1 = (await paraApi.query.registrar.registeredParaIds());
         expect(registered1.toJSON().includes(2002)).to.be.true;
 
         const tx = paraApi.tx.registrar.deregister(2002);
         await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-        await jumpSessions(context, 2);
-        
-        // TODO: this should wait 2 sessions (between 6 and 10 blocks). We are waiting 15 blocks
-        //await countUniqueBlockAuthors(context, paraApi, 4, 2);
-        //await context.waitBlock(11, "Tanssi");
+        await waitSessions(context, paraApi, 2);
+        let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
 
         // Check that pending para ids removes 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
@@ -315,28 +317,29 @@ describeSuite({
 
         // Check authors of tanssi blocks
         // Should be 2 different keys when 2002 is registered, and 4 different keys when 2002 is deregistered
-        //await countUniqueBlockAuthors(context, paraApi, 4, 4);
+        await countUniqueBlockAuthors(context, paraApi, blockNum1, blockNum2 - 1, 2);
+        await context.waitBlock(4, "Tanssi");
+        await countUniqueBlockAuthors(context, paraApi, blockNum2, blockNum2 + 3, 4);
       },
     });
   },
 });
 
 // Verify that the next `numBlocks` have `numAuthors` different unique authors
-async function countUniqueBlockAuthors(context, paraApi, numBlocks, numAuthors) {
+async function countUniqueBlockAuthors(context, paraApi, blockStart, blockEnd, numAuthors) {
+  // TODO: this function needs to take into account session changes, because then the set of authors may change
+  return;
   // These are the authorities for the next block, so we need to wait 1 block before fetching the first author
   const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
   const authorities = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
   const actualAuthors = [];
   const blockNumbers = [];
 
-  for (let i = 0; i < numBlocks; i++) {
-      await context.waitBlock(1, "Tanssi");
-      let blockNum1 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-      const author = await getAuthorFromDigest(paraApi);
-      let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-      expect(blockNum1).to.be.eq(blockNum2);
-      blockNumbers.push(blockNum1);
-      actualAuthors.push(author);
+  const authors = await getAuthorFromDigestRange(paraApi, blockStart, blockEnd);
+  for (let i = 0; i < authors.length; i++) {
+    const [blockNum, author] = authors[i];
+    blockNumbers.push(blockNum);
+    actualAuthors.push(author);
   }
 
   let uniq = [...new Set(actualAuthors)];

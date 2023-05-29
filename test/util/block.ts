@@ -18,15 +18,8 @@ export async function jumpToSession(context: DevTestContext, session: number): P
       } else if (currentSession > session) {
         return null;
       }
-  
-      if (context.createBlock) {
-        lastBlockHash = (await context.createBlock()).block.hash.toString();
-      }
-      else {
-        await context.waitBlock(1, "Tanssi");
-        let paraApi = context.polkadotJs({ apiName: "Tanssi" });
-        lastBlockHash = (await paraApi.rpc.chain.getBlock()).block.hash.toString();
-      }
+
+      lastBlockHash = (await context.createBlock()).block.hash.toString();
     }
 }
 
@@ -37,6 +30,28 @@ export async function jumpBlocks(context: DevTestContext, blockCount: number) {
     }
 }
 
+export async function waitSessions(context, paraApi: ApiPromise, count: Number): Promise<string | null> {
+  const session = (await paraApi.query.session.currentIndex())
+    .addn(count.valueOf())
+    .toNumber();
+
+  return waitToSession(context, paraApi, session);
+}
+
+export async function waitToSession(context, paraApi: ApiPromise, session: number): Promise<string | null> {
+  while (true) {
+    const currentSession = (
+      await paraApi.query.session.currentIndex()).toNumber();
+    if (currentSession === session) {
+      const signedBlock = await paraApi.rpc.chain.getBlock();
+      return signedBlock.block.header.hash;
+    } else if (currentSession > session) {
+      return null;
+    }
+
+    await context.waitBlock(1, "Tanssi");
+  }
+}
 
 /// Same as tx.signAndSend(account), except that it waits for the transaction to be included in a block:
 /// 
