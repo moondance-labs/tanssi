@@ -78,11 +78,6 @@ describeSuite({
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         expect(currentSession).to.be.equal(0);
         const allCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
-        const keyring = new Keyring({ type: 'sr25519' });
-        const keyToHex = (name) => {
-          const key = keyring.addFromUri('//' + name, { name: name + ' default' });
-          return u8aToHex(key.publicKey);
-        }
         const expectedAllCollators = {
             orchestratorChain: [
               getKeyringNimbusIdHex('Collator1000-01'),
