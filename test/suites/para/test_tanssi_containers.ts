@@ -123,18 +123,14 @@ describeSuite({
       id: "T05",
       title: "Test container chain 2000 assignation is correct",
       test: async function () {
-        const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-        expect(currentSession).to.be.equal(0);
-        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain(currentSession));
+        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
         const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
 
         const containerChainCollators = assignment.containerChains.toJSON()[paraId];
 
         const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
 
-        for (let i = 0; i < containerChainCollators.length; i++) {
-          expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);
-        }
+        expect(containerChainCollators).to.deep.equal(writtenCollators);
       },
     });
 
@@ -149,9 +145,7 @@ describeSuite({
 
         const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toJSON();
 
-        for (let i = 0; i < containerChainCollators.length; i++) {
-          expect(containerChainCollators[i]).to.be.equal(writtenCollators[i]);
-        }
+        expect(containerChainCollators).to.deep.equal(writtenCollators);
       },
     });
 
@@ -167,7 +161,7 @@ describeSuite({
         const containerChainCollators2000 = assignment.containerChains.toJSON()[paraId2000.toString()];
         const containerChainCollators2001 = assignment.containerChains.toJSON()[paraId2001.toString()];
 
-        await context.waitBlock(1, "Tanssi");
+        await context.waitBlock(3, "Tanssi");
         const author2000 = await paraApi.query.authorNoting.latestAuthor(paraId2000);
         const author2001 = await paraApi.query.authorNoting.latestAuthor(paraId2001);
 
