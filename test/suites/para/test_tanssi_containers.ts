@@ -1,7 +1,6 @@
 import { expect, describeSuite, beforeAll } from "@moonwall/cli";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
-import { BN } from "@polkadot/util";
-const fs = require('fs/promises');
+import { u8aToHex } from "@polkadot/util";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { getAuthorFromDigest } from "../../util/author";
 
@@ -57,33 +56,14 @@ describeSuite({
         expect(blockNum).to.be.greaterThan(0);
       },
     });
-
-    it({
-      id: "T02",
-      title: "Blocks are being produced on container 2000",
-      test: async function () {
-        const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
-        expect(blockNum).to.be.greaterThan(0);
-      },
-    });
-
-    it({
-      id: "T03",
-      title: "Blocks are being produced on container 2001",
-      test: async function () {
-        const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
-        expect(blockNum).to.be.greaterThan(0);
-      },
-    });
  
     it({
-      id: "T04A",
+      id: "T02",
       title: "Test Tanssi assignation is correct",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         expect(currentSession).to.be.equal(0);
         const tanssiCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON().orchestratorChain;
-        // TODO: we should stop using aura, and then this test would need to do countUniqueBlockAuthors
         const authorities = (await paraApi.query.aura.authorities()).toJSON();
 
         expect(tanssiCollators).to.deep.equal(authorities);
@@ -91,26 +71,30 @@ describeSuite({
     });
 
     it({
-      id: "T04B",
+      id: "T03",
       title: "Test assignation did not change",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         expect(currentSession).to.be.equal(0);
         const allCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
-        // TODO: are these keys defined somewhere?
+        const keyring = new Keyring({ type: 'sr25519' });
+        const keyToHex = (name) => {
+          const key = keyring.addFromUri('//' + name, { name: name + ' default' });
+          return u8aToHex(key.publicKey);
+        }
         const expectedAllCollators = {
             orchestratorChain: [
-              '0x00d9ef625d0074a90fd51b44ddb72a4da11669692e8c9734333a2eb91320de34',
-              '0xbe7b7e1d5d9999c3e6bc0b22b4535c5fca425d627361516868d5aa929c08b16a'
+              keyToHex('Collator1000-01'),
+              keyToHex('Collator1000-02'),
             ],
             containerChains: {
               '2000': [
-                '0x884a1b28ae04bef60698f4fab5651c02bd9df4f784f6ac59c989857da8e1d15f',
-                '0x4273e5483ebed8ef633700152986e5a43d8b89f3fd4eeb4c54d68fa93c227f28'
+                keyToHex('Collator2000-01'),
+                keyToHex('Collator2000-02'),
               ],
               '2001': [
-                '0x4af19ca11191f91d6f551e4031bca5ab825f0924189dd5a9097b1ce636f13b3e',
-                '0x7ed53377b520005872459a9b8cbc4f098be106cae64ebe65bca49d949a86075e'
+                keyToHex('Collator2001-01'),
+                keyToHex('Collator2001-02'),
               ]
           }
         };
@@ -120,7 +104,25 @@ describeSuite({
     });
 
     it({
+      id: "T04",
+      title: "Blocks are being produced on container 2000",
+      test: async function () {
+        const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
+        expect(blockNum).to.be.greaterThan(0);
+      },
+    });
+
+    it({
       id: "T05",
+      title: "Blocks are being produced on container 2001",
+      test: async function () {
+        const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
+        expect(blockNum).to.be.greaterThan(0);
+      },
+    });
+
+    it({
+      id: "T06",
       title: "Test container chain 2000 assignation is correct",
       test: async function () {
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
@@ -135,7 +137,7 @@ describeSuite({
     });
 
     it({
-      id: "T06",
+      id: "T07",
       title: "Test container chain 2001 assignation is correct",
       test: async function () {
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
@@ -150,7 +152,7 @@ describeSuite({
     });
 
     it({
-      id: "T07",
+      id: "T08",
       title: "Test author noting is correct for both containers",
       timeout: 60000,
       test: async function () {
@@ -171,7 +173,7 @@ describeSuite({
     });
 
     it({
-      id: "T08",
+      id: "T09",
       title: "Test author is correct in Orchestrator",
       test: async function () {
         const authorities = (await paraApi.query.aura.authorities());
@@ -181,29 +183,3 @@ describeSuite({
     });
   },
 });
-
-// Verify that the next `numBlocks` have `numAuthors` different unique authors
-async function countUniqueBlockAuthors(context, paraApi, numBlocks, numAuthors) {
-  // These are the authorities for the next block, so we need to wait 1 block before fetching the first author
-  const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-  const authorities = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
-  const actualAuthors = [];
-  const blockNumbers = [];
-
-  for (let i = 0; i < numBlocks; i++) {
-      await context.waitBlock(1, "Tanssi");
-      let blockNum1 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-      const author = await getAuthorFromDigest(paraApi);
-      let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-      expect(blockNum1).to.be.eq(blockNum2);
-      blockNumbers.push(blockNum1);
-      actualAuthors.push(author);
-  }
-
-  let uniq = [...new Set(actualAuthors)];
-
-  if (uniq.length != numAuthors) {
-    console.error("Mismatch between authorities and actual block authors: authorities: ", authorities, ", actual authors: ", actualAuthors, ", block numbers: ", blockNumbers);
-    expect(false).to.be.true;
-  }
-}
