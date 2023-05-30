@@ -1,11 +1,11 @@
 [package]
 name = "container-chain-template-frontier-node"
+authors = { workspace = true }
 build = "build.rs"
 description = "Frontier container chain template node"
 edition = "2021"
-version = "0.1.0"
-authors = { workspace = true }
 license = "GPL-3.0-only"
+version = "0.1.0"
 
 [dependencies]
 async-io = { workspace = true }
@@ -25,8 +25,8 @@ container-chain-template-frontier-runtime = { path = "../runtime", default-featu
 tc-consensus = { workspace = true }
 
 # Nimbus
-nimbus-primitives = { workspace = true, features = [ "std" ]}
 nimbus-consensus = { workspace = true }
+nimbus-primitives = { workspace = true, features = [ "std" ] }
 
 # Substrate
 frame-benchmarking = { workspace = true }

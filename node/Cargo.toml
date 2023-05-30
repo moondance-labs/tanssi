@@ -1,11 +1,11 @@
 [package]
 name = "tanssi-node"
+authors = { workspace = true }
 build = "build.rs"
 description = "Tanssi node implementation"
 edition = "2021"
-version = "0.1.0"
-authors = { workspace = true }
 license = "GPL-3.0-only"
+version = "0.1.0"
 
 [dependencies]
 async-io = { workspace = true }
@@ -21,12 +21,12 @@ serde_json = { workspace = true }
 tokio = { workspace = true }
 
 # Local
+ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
+orchestrator-runtime = { workspace = true, features = [ "std" ] }
 pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-configuration = { workspace = true, features = [ "std" ] }
 pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
-orchestrator-runtime = { workspace = true, features = [ "std" ] }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
-tp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
 
 tc-consensus = { workspace = true }
@@ -97,8 +97,8 @@ substrate-build-script-utils = { workspace = true }
 [features]
 default = []
 runtime-benchmarks = [
-	"polkadot-cli/runtime-benchmarks",
 	"orchestrator-runtime/runtime-benchmarks",
+	"polkadot-cli/runtime-benchmarks",
 	"try-runtime-cli/try-runtime",
 ]
 try-runtime = [
@@ -106,4 +106,4 @@ try-runtime = [
 	"try-runtime-cli/try-runtime",
 ]
 
-fast-runtime = ["orchestrator-runtime/fast-runtime"]
+fast-runtime = [ "orchestrator-runtime/fast-runtime" ]
