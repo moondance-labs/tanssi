@@ -66,7 +66,7 @@ pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::P
         .as_ref()
         .map(|base_path| base_path.config_dir(config.chain_spec.id()))
         .unwrap_or_else(|| {
-            BasePath::from_project("", "", "moonbeam").config_dir(config.chain_spec.id())
+            BasePath::from_project("", "", "container").config_dir(config.chain_spec.id())
         });
     config_dir.join("frontier").join(path)
 }
