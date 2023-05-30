@@ -38,6 +38,7 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
+    polkadot_cli::IdentifyVariant,
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -346,6 +347,18 @@ pub fn run() -> Result<()> {
 					max_past_logs: cli.run.max_past_logs,
 					relay_chain_rpc_urls: cli.run.base.relay_chain_rpc_urls,
 				};
+
+                let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
+
+				let relay_chain_id = extension.map(|e| e.relay_chain.clone());
+
+                let dev_service =
+					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
+                
+				if dev_service {
+					return crate::service::start_dev_node(config, cli.run.sealing, rpc_config, hwbench).await
+                    .map_err(Into::into)
+				}
 
 				let id = ParaId::from(para_id);
 

@@ -24,6 +24,9 @@ use std::{
 };
 
 use cumulus_client_cli::CollatorOptions;
+use cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider;
+use cumulus_primitives_parachain_inherent::MockXcmConfig;
+use sp_consensus_aura::SlotDuration;
 // Local Runtime Types
 use container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi};
 use futures::StreamExt;
@@ -106,6 +109,12 @@ where
         },
     )?))
 }
+
+thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
+
+/// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
+/// Each call will increment timestamp by slot_duration making Aura think time has passed.
+struct MockTimestampInherentDataProvider;
 
 /// Starts a `ServiceBuilder` for a full service.
 ///
@@ -542,6 +551,28 @@ pub async fn start_dev_node(
 
 		let client_set_aside_for_cidp = client.clone();
 
+        #[async_trait::async_trait]
+        impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
+            async fn provide_inherent_data(
+                &self,
+                inherent_data: &mut sp_inherents::InherentData,
+            ) -> Result<(), sp_inherents::Error> {
+                TIMESTAMP.with(|x| {
+                    *x.borrow_mut() += container_chain_template_frontier_runtime::SLOT_DURATION;
+                    inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
+                })
+            }
+
+            async fn try_handle_error(
+                &self,
+                _identifier: &sp_inherents::InherentIdentifier,
+                _error: &[u8],
+            ) -> Option<Result<(), sp_inherents::Error>> {
+                // The pallet never reports error.
+                None
+            }
+        }
+
 		let client_clone = client.clone();
 		let keystore_clone = keystore_container.sync_keystore().clone();
 		task_manager.spawn_essential_handle().spawn_blocking(
@@ -554,19 +585,20 @@ pub async fn start_dev_node(
 				pool: transaction_pool.clone(),
 				commands_stream,
 				select_chain,
-				consensus_data_provider: tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
+				consensus_data_provider: Some(Box::new(tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
                     client.clone(),
-                    keystore_container.sync_keystore()
-                ),
+                    keystore_container.sync_keystore(),
+                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION.into())
+                ))),
 				create_inherent_data_providers: move |block: H256, ()| {
 					let current_para_block = client_set_aside_for_cidp
 						.number(block)
 						.expect("Header lookup should succeed")
 						.expect("Header passed in as parent should be present in backend.");
 
-					async move {
-						let time = sp_timestamp::InherentDataProvider::from_system_time();
+                    let client_for_xcm = client_set_aside_for_cidp.clone();
 
+					async move {
                         let time = MockTimestampInherentDataProvider;
                         let mocked_parachain = MockValidationDataInherentDataProvider {
                             current_para_block,
@@ -585,16 +617,17 @@ pub async fn start_dev_node(
                             raw_horizontal_messages: vec![],
                         };
 
-                        let mocked_author_noting =
-                            tp_author_noting_inherent::MockAuthorNotingInherentDataProvider {
+                        let mocked_authorities_noting =
+                            ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
                                 current_para_block,
                                 relay_offset: 1000,
                                 relay_blocks_per_para_block: 2,
-                                para_ids,
+                                orchestrator_para_id: 1000u32.into(),
                                 slots_per_para_block: 1,
+                                authorities: vec![]
                         };
 
-						Ok(time)
+						Ok((time, mocked_parachain, mocked_authorities_noting))
 					}
 				},
 			}),
@@ -654,7 +687,7 @@ pub async fn start_dev_node(
                 block_data_cache: block_data_cache.clone(),
                 overrides: overrides.clone(),
                 is_authority: false,
-                command_sink: None,
+                command_sink: command_sink.clone(),
             };
             crate::rpc::create_full(
                 deps,

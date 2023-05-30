@@ -91,6 +91,13 @@ pub struct RunCmd {
     /// Maximum fee history cache size.
     #[arg(long, default_value = "2048")]
     pub fee_history_limit: u64,
+
+    /// When blocks should be sealed in the dev service.
+    ///
+    /// Options are "instant", "manual", or timer interval in milliseconds
+    #[arg(long, default_value = "instant")]
+    pub sealing: crate::service::Sealing,
+
 }
 
 impl std::ops::Deref for RunCmd {

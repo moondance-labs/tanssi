@@ -17,6 +17,7 @@ tc-orchestrator-chain-interface = { workspace = true, optional = true }
 
 test-relay-sproof-builder = { workspace = true, optional = true }
 tp-core = { workspace = true, optional = true }
+tp-collator-assignment = { workspace = true, optional = true }
 
 # Substrate
 sp-core = { workspace = true }
@@ -24,11 +25,16 @@ sp-inherents = { workspace = true }
 sp-io = { workspace = true }
 sp-runtime = { workspace = true, optional = true }
 sp-trie = { workspace = true }
+sp-consensus-aura = { workspace = true, optional = true }
 
 sp-state-machine = { workspace = true, optional = true }
 
+
+nimbus-primitives = { workspace = true, optional = true }
+
 # Cumulus
 cumulus-primitives-core = { workspace = true }
+cumulus-primitives-parachain-inherent = { workspace = true, optional = true }
 cumulus-relay-chain-interface = { workspace = true, optional = true }
 
 [features]
@@ -50,4 +56,8 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-core/std",
 	"tracing",
+	"nimbus-primitives/std",
+	"cumulus-primitives-parachain-inherent/std",
+	"sp-consensus-aura/std",
+	"tp-collator-assignment/std"
  ]

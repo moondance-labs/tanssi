@@ -144,7 +144,6 @@ pub struct ContainerManualSealAuraConsensusDataProvider<B, C, P> {
 
     /// Shared reference to the client
     pub client: Arc<C>,
-
     // phantom data for required generics
     _phantom: PhantomData<(B, C, P)>,
 }
@@ -153,14 +152,10 @@ impl<B, C, P> ContainerManualSealAuraConsensusDataProvider<B, C, P>
 where
     B: BlockT,
     C: AuxStore + ProvideRuntimeApi<B> + UsageProvider<B>,
-    C::Api: AuraApi<B, nimbus_primitives::NimbusId>,
 {
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
-    pub fn new(client: Arc<C>, keystore: SyncCryptoStorePtr) -> Self {
-        let slot_duration = sc_consensus_aura::slot_duration(&*client)
-            .expect("slot_duration is always present; qed.");
-
+    pub fn new(client: Arc<C>, keystore: SyncCryptoStorePtr, slot_duration: SlotDuration) -> Self {
         Self {
             slot_duration,
             keystore,
@@ -195,15 +190,14 @@ where
             <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest(slot);
 
         // Fetch the authorities for the orchestrator chain
-        let authorities = self
+        /*let authorities = self
             .client
-            .runtime_api()
+            .runtime_api()  
             .authorities(parent.hash())
             .ok()
-            .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?
-            .unwrap_or_default();
+            .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?;*/
 
-        let expected_author = crate::slot_author::<NimbusPair>(slot, authorities.as_ref());
+        let expected_author: Option<nimbus_primitives::NimbusId> = None;
 
         // TODO: this should always be included, but breaks manual seal tests. We should modify
         // once configuration on how manual seal changes
