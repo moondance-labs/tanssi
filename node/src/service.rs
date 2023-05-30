@@ -198,32 +198,17 @@ pub fn new_partial(
     })
 }
 
-/// Same as `new_partial` but with additional logic to detect changes to container chain
-/// assignment, and start/stop container chains on demand.
-pub fn new_partial_orchestrator(
-    config: &Configuration,
+/// Background task used to detect changes to container chain assignment,
+/// and start/stop container chains on demand. The check runs on every new block.
+pub fn build_check_assigned_para_id(
+    client: Arc<ParachainClient>,
+    sync_keystore: SyncCryptoStorePtr,
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
-) -> Result<
-    PartialComponents<
-        ParachainClient,
-        ParachainBackend,
-        MaybeSelectChain,
-        sc_consensus::DefaultImportQueue<Block, ParachainClient>,
-        sc_transaction_pool::FullPool<Block, ParachainClient>,
-        (
-            ParachainBlockImport,
-            Option<Telemetry>,
-            Option<TelemetryWorkerHandle>,
-        ),
-    >,
-    sc_service::Error,
-> {
-    let partial = new_partial(config)?;
-
+    spawner: impl SpawnEssentialNamed,
+) {
     // Subscribe to new blocks in order to react to para id assignment
-    let mut import_notifications = partial.client.import_notification_stream();
-    let client_set_aside_for_cidp = partial.client.clone();
-    let sync_keystore = partial.keystore_container.sync_keystore();
+    let mut import_notifications = client.import_notification_stream();
+    let client_set_aside_for_cidp = client.clone();
     let initial_assigned_para_id = Arc::new(Mutex::new(None));
 
     let check_assigned_para_id_task = async move {
@@ -245,16 +230,11 @@ pub fn new_partial_orchestrator(
         }
     };
 
-    partial
-        .task_manager
-        .spawn_essential_handle()
-        .spawn_essential(
-            "check-assigned-para-id",
-            None,
-            Box::pin(check_assigned_para_id_task),
-        );
-
-    Ok(partial)
+    spawner.spawn_essential(
+        "check-assigned-para-id",
+        None,
+        Box::pin(check_assigned_para_id_task),
+    );
 }
 
 /// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` if
@@ -403,13 +383,7 @@ async fn start_node_impl(
 
     // Channel to send messages to start/stop container chains
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
-    // If this node was started without a `container_chain_config`, we don't support collation
-    // on container chains, so there is no need to detect changes to assignment
-    let params = if container_chain_config.is_some() {
-        new_partial_orchestrator(&parachain_config, cc_spawn_tx.clone())?
-    } else {
-        new_partial(&parachain_config)?
-    };
+    let params = new_partial(&parachain_config)?;
     let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
     let client = params.client.clone();
@@ -541,6 +515,18 @@ async fn start_node_impl(
             force_authoring,
             para_id,
         )?;
+
+        // Start task which detects para id assignment, and starts/stops container chains.
+        // Note that if this node was started without a `container_chain_config`, we don't
+        // support collation on container chains, so there is no need to detect changes to assignment
+        if container_chain_config.is_some() {
+            build_check_assigned_para_id(
+                client.clone(),
+                sync_keystore.clone(),
+                cc_spawn_tx,
+                task_manager.spawn_essential_handle(),
+            );
+        }
 
         let spawner = task_manager.spawn_handle();
         let params = StartCollatorParams {

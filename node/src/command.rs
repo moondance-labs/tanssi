@@ -222,7 +222,6 @@ macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		runner.async_run(|$config| {
-			// TODO: should this be new_partial or new_partial_orchestrator?
 			let $components = new_partial(&$config)?;
 			let task_manager = $components.task_manager;
 			{ $( $code )* }.map(|v| (v, task_manager))
@@ -370,7 +369,6 @@ pub fn run() -> Result<()> {
                     }
                 }
                 BenchmarkCmd::Block(cmd) => runner.sync_run(|config| {
-                    // TODO: should this be new_partial or new_partial_orchestrator?
                     let partials = new_partial(&config)?;
                     cmd.run(partials.client)
                 }),
@@ -382,7 +380,6 @@ pub fn run() -> Result<()> {
                 )),
                 #[cfg(feature = "runtime-benchmarks")]
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
-                    // TODO: should this be new_partial or new_partial_orchestrator?
                     let partials = new_partial(&config)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
