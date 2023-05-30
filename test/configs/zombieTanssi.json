@@ -84,7 +84,7 @@
           {
             "name": "DummyCollator-2001",
             "command": "../target/release/container-chain-template-frontier-node",
-            "ws_port": 9951
+            "ws_port": 9960
           }
         ]
       }
