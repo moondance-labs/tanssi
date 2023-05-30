@@ -794,6 +794,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "ccp-authorities-noting-inherent"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cumulus-primitives-core",
+ "cumulus-relay-chain-interface",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-trie",
+ "tc-consensus",
+ "tc-orchestrator-chain-interface",
+ "test-relay-sproof-builder",
+ "tp-core",
+ "tracing",
+]
+
+[[package]]
 name = "cexpr"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6343,6 +6365,7 @@ dependencies = [
 name = "pallet-cc-authorities-noting"
 version = "0.1.0"
 dependencies = [
+ "ccp-authorities-noting-inherent",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "frame-support",
@@ -6365,7 +6388,6 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "test-relay-sproof-builder",
- "tp-authorities-noting-inherent",
  "tp-chain-state-snapshot",
  "tp-collator-assignment",
  "tp-core",
@@ -12471,6 +12493,7 @@ version = "0.1.0"
 dependencies = [
  "async-io",
  "async-trait",
+ "ccp-authorities-noting-inherent",
  "clap",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
@@ -12537,7 +12560,6 @@ dependencies = [
  "tc-orchestrator-chain-interface",
  "tokio",
  "tp-author-noting-inherent",
- "tp-authorities-noting-inherent",
  "tp-container-chain-genesis-data",
  "try-runtime-cli",
 ]
@@ -12982,28 +13004,6 @@ dependencies = [
  "sp-trie",
  "test-relay-sproof-builder",
  "tp-core",
-]
-
-[[package]]
-name = "tp-authorities-noting-inherent"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "cumulus-primitives-core",
- "cumulus-relay-chain-interface",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-inherents",
- "sp-io",
- "sp-runtime",
- "sp-state-machine",
- "sp-trie",
- "tc-consensus",
- "tc-orchestrator-chain-interface",
- "test-relay-sproof-builder",
- "tp-core",
- "tracing",
 ]
 
 [[package]]
