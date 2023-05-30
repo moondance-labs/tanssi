@@ -17,6 +17,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 use crate::container_chain_spawner::CcSpawnMsg;
 use crate::container_chain_spawner::ContainerChainSpawner;
+use sp_core::traits::SpawnEssentialNamed;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use {
     crate::cli::ContainerChainCli,
@@ -217,100 +218,50 @@ pub fn new_partial_orchestrator(
     >,
     sc_service::Error,
 > {
-    let telemetry = config
-        .telemetry_endpoints
-        .clone()
-        .filter(|x| !x.is_empty())
-        .map(|endpoints| -> Result<_, sc_telemetry::Error> {
-            let worker = TelemetryWorker::new(16)?;
-            let telemetry = worker.handle().new_telemetry(endpoints);
-            Ok((worker, telemetry))
-        })
-        .transpose()?;
+    let partial = new_partial(config)?;
 
-    let executor = ParachainExecutor::new(
-        config.wasm_method,
-        config.default_heap_pages,
-        config.max_runtime_instances,
-        config.runtime_cache_size,
-    );
-
-    let (client, backend, keystore_container, task_manager) =
-        sc_service::new_full_parts::<Block, RuntimeApi, _>(
-            config,
-            telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-            executor,
-        )?;
-    let client = Arc::new(client);
-    let client_set_aside_for_cidp = client.clone();
-    let sync_keystore = keystore_container.sync_keystore();
+    // Subscribe to new blocks in order to react to para id assignment
+    let mut import_notifications = partial.client.import_notification_stream();
+    let client_set_aside_for_cidp = partial.client.clone();
+    let sync_keystore = partial.keystore_container.sync_keystore();
     let initial_assigned_para_id = Arc::new(Mutex::new(None));
 
-    let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
-
-    let telemetry = telemetry.map(|(worker, telemetry)| {
-        task_manager
-            .spawn_handle()
-            .spawn("telemetry", None, worker.run());
-        telemetry
-    });
-
-    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-        config.transaction_pool.clone(),
-        config.role.is_authority().into(),
-        config.prometheus_registry(),
-        task_manager.spawn_essential_handle(),
-        client.clone(),
-    );
-
-    let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
-    // The nimbus import queue ONLY checks the signature correctness
-    // Any other checks corresponding to the author-correctness should be done
-    // in the runtime
-    let import_queue = nimbus_consensus::import_queue(
-        client.clone(),
-        block_import.clone(),
-        move |block_hash, ()| {
+    let check_assigned_para_id_task = async move {
+        while let Some(msg) = import_notifications.next().await {
+            let block_hash = msg.hash;
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
             let sync_keystore = sync_keystore.clone();
             let initial_assigned_para_id = initial_assigned_para_id.clone();
             let cc_spawn_tx = cc_spawn_tx.clone();
 
-            async move {
-                check_assigned_para_id(
-                    cc_spawn_tx,
-                    sync_keystore,
-                    initial_assigned_para_id,
-                    client_set_aside_for_cidp,
-                    block_hash,
-                )?;
+            check_assigned_para_id(
+                cc_spawn_tx,
+                sync_keystore,
+                initial_assigned_para_id,
+                client_set_aside_for_cidp,
+                block_hash,
+            )
+            .unwrap();
+        }
+    };
 
-                let time = sp_timestamp::InherentDataProvider::from_system_time();
+    partial
+        .task_manager
+        .spawn_essential_handle()
+        .spawn_essential(
+            "check-assigned-para-id",
+            None,
+            Box::pin(check_assigned_para_id_task),
+        );
 
-                Ok((time,))
-            }
-        },
-        &task_manager.spawn_essential_handle(),
-        config.prometheus_registry(),
-        false,
-    )?;
-
-    let maybe_select_chain = None;
-
-    Ok(PartialComponents {
-        backend,
-        client,
-        import_queue,
-        keystore_container,
-        task_manager,
-        transaction_pool,
-        select_chain: maybe_select_chain,
-        other: (block_import, telemetry, telemetry_worker_handle),
-    })
+    Ok(partial)
 }
 
 /// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` if
 /// the para id has changed since the last call to this function.
+///
+/// Checks the assignment for the next block, so if there is a session change on block 15, this will
+/// detect the assignment change after importing block 14.
 fn check_assigned_para_id(
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
     sync_keystore: SyncCryptoStorePtr,

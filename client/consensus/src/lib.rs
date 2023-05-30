@@ -145,11 +145,11 @@ where
             if let Ok(Some(para_id)) =
                 runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into())
             {
-                log::info!("Para id found for assignment {:?}", para_id);
+                log::debug!("Para id found for assignment {:?}", para_id);
 
                 Some((nimbus_id.into(), para_id))
             } else {
-                log::info!("No Para id found for assignment {:?}", nimbus_id);
+                log::debug!("No Para id found for assignment {:?}", nimbus_id);
 
                 None
             }
