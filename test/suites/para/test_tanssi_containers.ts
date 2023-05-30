@@ -4,7 +4,7 @@ import { u8aToHex } from "@polkadot/util";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { getAuthorFromDigest } from "../../util/author";
 import { Signer, ethers } from "ethers";
-import { createTransfer } from "../../util/ethereum";
+import { createTransfer, waitUntilIncluded } from "../../util/ethereum";
 import { alith, BALTATHAR_ADDRESS, customWeb3Request } from "@moonwall/util";
 import { MIN_GAS_PRICE, generateKeyringPair } from "@moonwall/util";
 import { getKeyringNimbusIdHex } from "../../util/keys";
@@ -119,8 +119,6 @@ describeSuite({
       title: "Blocks are being produced on container 2001",
       test: async function () {
         const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
-        const blockEth = (await ethersSigner.provider.getBlock("latest")).number;
-        console.log("ethers block is ", blockEth);
 
         expect(blockNum).to.be.greaterThan(0);
         expect(
@@ -198,11 +196,10 @@ describeSuite({
       test: async function () {
         const randomAccount = generateKeyringPair();
         let tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, { gasPrice: MIN_GAS_PRICE });
-        console.log("here 2")
-        await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
+        let txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
           tx,
-        ]); 
-        await context.waitBlock(2, "Container2001");
+        ]);
+        await waitUntilIncluded(context.waitBlock(1, "Container2001"), context.web3(), txHash)
         expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
       },
     });

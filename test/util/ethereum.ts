@@ -13,7 +13,6 @@ export const createTransaction = async (
     options: TransactionOptions,
     txType?: EthTransactionType
   ): Promise<string> => {
-    console.log("hello");
     const defaultTxnStyle = MoonwallContext.getContext()!.defaultEthTxnStyle;
   
     const isLegacy = txType
@@ -192,8 +191,7 @@ export const createTransaction = async (
     value: number | string | BigInt,
     options: TransactionOptions = ALITH_TRANSACTION_TEMPLATE
   ): Promise<string> => {
-    console.log("here");
-    return await createTransaction(context, {
+¡    return await createTransaction(context, {
       ...options,
       value: value.toString(),
       to,
@@ -212,3 +210,18 @@ export const createTransaction = async (
     privateKey: ALITH_PRIVATE_KEY,
   };
   
+/// Same as tx.signAndSend(account), except that it waits for the transaction to be included in a block:
+/// 
+/// ```
+/// const txHash = await tx.signAndSend(alice);
+/// // We don't know if the transaction has been included in a block or not
+/// const { txHash, blockHash } = await signAndSendAndInclude(tx, alice);
+/// // We know the blockHash of the block that includes this transaction
+/// ```
+export async function waitUntilIncluded(promise, web3, txHash)  {
+  while ((await customWeb3Request(web3, "eth_getTransactionByHash", [
+    txHash.result,
+  ])).result.blockNumber== null) {  
+    await promise;
+  }
+}
