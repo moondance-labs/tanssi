@@ -1,10 +1,10 @@
 [package]
 name = "tc-consensus"
+authors = { workspace = true }
 description = "Client-side worker for Tanssi which unifies Aura and Nimbus"
 edition = "2021"
-version = "0.1.0"
-authors = { workspace = true }
 license = "GPL-3.0-only"
+version = "0.1.0"
 
 [dependencies]
 # Substrate deps
@@ -29,7 +29,7 @@ sp-timestamp = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 
 # Own
-tp-consensus = { workspace = true, features = ["std"] }
+tp-consensus = { workspace = true, features = [ "std" ] }
 
 # Cumulus dependencies
 cumulus-client-consensus-common = { workspace = true }

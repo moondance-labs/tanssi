@@ -865,7 +865,7 @@ fn build_consensus_container(
                     .await;
 
                 let authorities_noting_inherent =
-                    tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at(
+                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at(
                         relay_parent,
                         &relay_chain_interface,
                         &orchestrator_chain_interface,
@@ -908,7 +908,7 @@ fn build_consensus_container(
 
             async move {
                 let latest_header =
-                    tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
                         relay_parent,
                         &relay_chain_interace_for_orch,
                         orchestrator_para_id,

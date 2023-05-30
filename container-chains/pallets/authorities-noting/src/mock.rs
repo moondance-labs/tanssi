@@ -240,7 +240,7 @@ where {
                 let inherent_data = {
                     let mut inherent_data = InherentData::default();
                     let system_inherent_data =
-                        tp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
+                        ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
                             relay_chain_state,
                             orchestrator_chain_state: self
                                 .orchestrator_storage_proof
@@ -249,7 +249,7 @@ where {
                         };
                     inherent_data
                         .put_data(
-                            tp_authorities_noting_inherent::INHERENT_IDENTIFIER,
+                            ccp_authorities_noting_inherent::INHERENT_IDENTIFIER,
                             &system_inherent_data,
                         )
                         .expect("failed to put VFP inherent");

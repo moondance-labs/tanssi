@@ -1,10 +1,10 @@
 [package]
 name = "pallet-cc-authorities-noting"
+authors = { workspace = true }
 description = "Author noting pallet"
 edition = "2021"
-version = "0.1.0"
-authors = { workspace = true }
 license = "GPL-3.0-only"
+version = "0.1.0"
 
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
@@ -14,7 +14,7 @@ parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len
 scale-info = { workspace = true }
 serde = { workspace = true, optional = true, features = [ "derive" ] }
 
-tp-authorities-noting-inherent = { workspace = true }
+ccp-authorities-noting-inherent = { workspace = true }
 tp-chain-state-snapshot = { workspace = true }
 tp-collator-assignment = { workspace = true }
 tp-core = { workspace = true }
@@ -46,5 +46,20 @@ test-relay-sproof-builder = { workspace = true }
 
 [features]
 default = [ "std" ]
-std = [ "cumulus-pallet-parachain-system/std", "cumulus-primitives-core/std", "frame-support/std", "frame-system/std", "parity-scale-codec/std", "scale-info/std", "serde", "sp-consensus-aura/std", "sp-state-machine/std", "sp-trie/std", "tp-authorities-noting-inherent/std", "tp-authorities-noting-inherent/std", "tp-chain-state-snapshot/std", "tp-collator-assignment/std", "tp-core/std" ]
+std = [
+	"ccp-authorities-noting-inherent/std",
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-primitives-core/std",
+	"frame-support/std",
+	"frame-system/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"serde",
+	"sp-consensus-aura/std",
+	"sp-state-machine/std",
+	"sp-trie/std",
+	"tp-chain-state-snapshot/std",
+	"tp-collator-assignment/std",
+	"tp-core/std",
+ ]
 try-runtime = [ "frame-support/try-runtime" ]
