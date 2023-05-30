@@ -15,6 +15,9 @@ describeSuite({
     let relayApi: ApiPromise;
     let container2000Api: ApiPromise;
     let container2001Api: ApiPromise;
+    let container2002Api: ApiPromise;
+    let blockNumber2002Start;
+    let blockNumber2002End;
 
     beforeAll(async () => {
       
@@ -253,12 +256,10 @@ describeSuite({
         const session1 = (await paraApi.query.session.currentIndex()).toNumber();
         await waitSessions(context, paraApi, 2);
         const session2 = (await paraApi.query.session.currentIndex()).toNumber();
+        // Sanity check because waitSessions sometimes doesn't work
+        expect(session1 + 2).to.be.equal(session2);
         let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        console.log("Session before/after: ", session1, "/", session2);
-        
-        // TODO: this should wait 2 sessions. We are waiting 10 + 20 blocks
-        //await countUniqueBlockAuthors(context, paraApi, 10, 4);
-        //await context.waitBlock(20, "Tanssi");
+        blockNumber2002Start = blockNum2;
 
         // Check that pending para ids contains 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
@@ -266,20 +267,24 @@ describeSuite({
 
         // This ws api is only available after the node detects its assignment
         // TODO: wait up to 30 seconds after a new block is created to ensure this port is available
-        const wsProvider = new WsProvider('ws://127.0.0.1:9951');
-        let container2002Api = await ApiPromise.create({ provider: wsProvider });
+        if (!container2002Api) {
+            const wsProvider = new WsProvider('ws://127.0.0.1:9951');
+            container2002Api = await ApiPromise.create({ provider: wsProvider });  
+        }
 
         const container2002Network = container2002Api.consts.system.version.specName.toString();
         const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
         expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
         expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
 
-        // Check authors of tanssi blocks
-        // Should be 4 different keys before 2002 is registered, and 2 different keys when 2002 is registered
-        await countUniqueBlockAuthors(context, paraApi, blockNum1, blockNum2 - 1, 4);
-        await context.waitBlock(4, "Tanssi");
-        await countUniqueBlockAuthors(context, paraApi, blockNum2, blockNum2 + 3, 2);
+      },
+    });
 
+    it({
+      id: "T05",
+      title: "Blocks are being produced on container 2002",
+      timeout: 60000,
+      test: async function () {
         let blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
         while (blockNum == 0) {
@@ -291,6 +296,21 @@ describeSuite({
             blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
         }
         expect(blockNum).to.be.greaterThan(0);
+      },
+    });
+
+    it({
+      id: "T07",
+      title: "Test container chain 2002 assignation is correct",
+      test: async function () {
+        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        const paraId = (await container2002Api.query.parachainInfo.parachainId()).toString();
+
+        const containerChainCollators = assignment.containerChains.toJSON()[paraId];
+
+        const writtenCollators = (await container2002Api.query.authoritiesNoting.authorities()).toJSON();
+
+        expect(containerChainCollators).to.deep.equal(writtenCollators);
       },
     });
 
@@ -310,25 +330,60 @@ describeSuite({
         await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
         await waitSessions(context, paraApi, 2);
         let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+        blockNumber2002End = blockNum2;
 
         // Check that pending para ids removes 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
         expect(registered.toJSON().includes(2002)).to.be.false;
+      },
+    });
 
-        // Check authors of tanssi blocks
-        // Should be 2 different keys when 2002 is registered, and 4 different keys when 2002 is deregistered
-        await countUniqueBlockAuthors(context, paraApi, blockNum1, blockNum2 - 1, 2);
-        await context.waitBlock(4, "Tanssi");
-        await countUniqueBlockAuthors(context, paraApi, blockNum2, blockNum2 + 3, 4);
+    it({
+      id: "T12",
+      title: "Count number of tanssi collators before, during, and after 2002 chain",
+      test: async function () {
+        // This test depends on T10 and T11 to set blockNumber2002Start and blockNumber2002End
+        console.log(`Ranges: 0-${blockNumber2002Start}, ${blockNumber2002Start}-${blockNumber2002End}`);
+        // TODO: don't hardcode the period here
+        let sessionPeriod = 5;
+        // The block range must start and end on session boundaries
+        expect(blockNumber2002Start % sessionPeriod).to.be.equal(0);
+        expect(blockNumber2002End % sessionPeriod).to.be.equal(0);
+        expect(sessionPeriod < blockNumber2002Start).to.be.true;
+        expect(blockNumber2002Start < blockNumber2002End).to.be.true;
+        // Start from block 5 because block 0 has no author
+        let blockNumber = sessionPeriod;
+        // Before 2002 registration: 4 authors
+        await countUniqueBlockAuthors(context, paraApi, blockNumber, blockNumber2002Start-1, 4);
+
+        // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
+        // FIXME: there is a delay between a node detecting a change in assignment, and changing the
+        // collation para id, so at the beginning nodes that should be creating blocks in 2002 may
+        // still create some blocks for the orchestrator chain. This will be fixed when we implement
+        // validation, once that works remove this delay.
+        let bugDelay = sessionPeriod;
+        await countUniqueBlockAuthors(context, paraApi, blockNumber2002Start+bugDelay, blockNumber2002End-1, 2);
+        
+        // Need to wait one session because the blocks don't exist yet
+        await waitSessions(context, paraApi, 1);
+        // After 2002 deregistration: 4 authors
+        await countUniqueBlockAuthors(context, paraApi, blockNumber2002End, blockNumber2002End+sessionPeriod-1, 4);
       },
     });
   },
 });
 
-// Verify that the next `numBlocks` have `numAuthors` different unique authors
+/// Verify that the next `numBlocks` have `numAuthors` different authors
+/// 
+/// Note about session changes: if the block range is smaller than 2*sessionPeriod
+/// the result may be unexpected, to avoid that case make sure that blockStart is at a
+/// session start. For example, with 4 different authors and 5 blocks per session:
+///
+/// ABCDA ABCDA
+///
+/// We may assume that any 4 consecutive blocks will contain all 4 authors (ABCD),
+/// but right at the session boundary we can see DA AB, only 3 different authors.
 async function countUniqueBlockAuthors(context, paraApi, blockStart, blockEnd, numAuthors) {
-  // TODO: this function needs to take into account session changes, because then the set of authors may change
-  return;
   // These are the authorities for the next block, so we need to wait 1 block before fetching the first author
   const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
   const authorities = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
