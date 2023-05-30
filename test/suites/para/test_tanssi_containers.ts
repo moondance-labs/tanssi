@@ -191,7 +191,6 @@ describeSuite({
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-        let blockNum1 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
 
         // Read raw chain spec file
         // Different path in CI: ./specs vs ../specs
@@ -258,18 +257,19 @@ describeSuite({
         const session2 = (await paraApi.query.session.currentIndex()).toNumber();
         // Sanity check because waitSessions sometimes doesn't work
         expect(session1 + 2).to.be.equal(session2);
-        let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        blockNumber2002Start = blockNum2;
+        let blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+        blockNumber2002Start = blockNum;
 
         // Check that pending para ids contains 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
         expect(registered.toJSON().includes(2002)).to.be.true;
 
         // This ws api is only available after the node detects its assignment
-        // TODO: wait up to 30 seconds after a new block is created to ensure this port is available
         if (!container2002Api) {
             const wsProvider = new WsProvider('ws://127.0.0.1:9951');
-            container2002Api = await ApiPromise.create({ provider: wsProvider });  
+            // If this fails, wait up to 30 seconds after a new block is created
+            // to ensure this port is available
+            container2002Api = await ApiPromise.create({ provider: wsProvider });
         }
 
         const container2002Network = container2002Api.consts.system.version.specName.toString();
@@ -280,7 +280,7 @@ describeSuite({
     });
 
     it({
-      id: "T05",
+      id: "T11",
       title: "Blocks are being produced on container 2002",
       timeout: 60000,
       test: async function () {
@@ -301,7 +301,7 @@ describeSuite({
     });
 
     it({
-      id: "T07",
+      id: "T12",
       title: "Test container chain 2002 assignation is correct",
       test: async function () {
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
@@ -316,13 +316,12 @@ describeSuite({
     });
 
     it({
-      id: "T11",
+      id: "T13",
       title: "Deregister container chain 2002, collators should move to tanssi",
       timeout: 300000,
       test: async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-        let blockNum1 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
 
         const registered1 = (await paraApi.query.registrar.registeredParaIds());
         expect(registered1.toJSON().includes(2002)).to.be.true;
@@ -330,8 +329,8 @@ describeSuite({
         const tx = paraApi.tx.registrar.deregister(2002);
         await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
         await waitSessions(context, paraApi, 2);
-        let blockNum2 = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        blockNumber2002End = blockNum2;
+        let blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+        blockNumber2002End = blockNum;
 
         // Check that pending para ids removes 2002
         const registered = (await paraApi.query.registrar.registeredParaIds());
@@ -340,12 +339,11 @@ describeSuite({
     });
 
     it({
-      id: "T12",
+      id: "T14",
       title: "Count number of tanssi collators before, during, and after 2002 chain",
       timeout: 150000,
       test: async function () {
         // This test depends on T10 and T11 to set blockNumber2002Start and blockNumber2002End
-        console.log(`Ranges: 0-${blockNumber2002Start}, ${blockNumber2002Start}-${blockNumber2002End}`);
         // TODO: don't hardcode the period here
         let sessionPeriod = 5;
         // The block range must start and end on session boundaries
@@ -356,20 +354,20 @@ describeSuite({
         // Start from block 5 because block 0 has no author
         let blockNumber = sessionPeriod;
         // Before 2002 registration: 4 authors
-        await countUniqueBlockAuthors(context, paraApi, blockNumber, blockNumber2002Start-1, 4);
+        await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start-1, 4);
 
         // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
         // FIXME: there is a delay between a node detecting a change in assignment, and changing the
         // collation para id, so at the beginning nodes that should be creating blocks in 2002 may
         // still create some blocks for the orchestrator chain. This will be fixed when we implement
         // validation, once that works remove this delay.
-        let bugDelay = sessionPeriod;
-        await countUniqueBlockAuthors(context, paraApi, blockNumber2002Start+bugDelay, blockNumber2002End-1, 2);
-        
-        // Need to wait one session because the blocks don't exist yet
+        //let bugDelay = sessionPeriod;
+        await countUniqueBlockAuthors(paraApi, blockNumber2002Start, blockNumber2002End-1, 2);
+
+        // Need to wait one session because the following blocks don't exist yet
         await waitSessions(context, paraApi, 1);
         // After 2002 deregistration: 4 authors
-        await countUniqueBlockAuthors(context, paraApi, blockNumber2002End, blockNumber2002End+sessionPeriod-1, 4);
+        await countUniqueBlockAuthors(paraApi, blockNumber2002End, blockNumber2002End+sessionPeriod-1, 4);
       },
     });
   },
@@ -385,7 +383,7 @@ describeSuite({
 ///
 /// We may assume that any 4 consecutive blocks will contain all 4 authors (ABCD),
 /// but right at the session boundary we can see DA AB, only 3 different authors.
-async function countUniqueBlockAuthors(context, paraApi, blockStart, blockEnd, numAuthors) {
+async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors) {
   // These are the authorities for the next block, so we need to wait 1 block before fetching the first author
   const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
   const authorities = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
