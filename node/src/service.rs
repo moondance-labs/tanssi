@@ -41,9 +41,7 @@ use {
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
-    nimbus_primitives::NIMBUS_KEY_ID,
     orchestrator_runtime::{opaque::Block, AccountId, RuntimeApi},
-    pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
@@ -60,7 +58,7 @@ use {
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_core::H256,
-    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_keystore::SyncCryptoStorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{str::FromStr, sync::Arc, sync::Mutex, time::Duration},
     substrate_prometheus_endpoint::Registry,
@@ -281,7 +279,7 @@ pub fn new_partial_orchestrator(
             async move {
                 check_assigned_para_id(
                     cc_spawn_tx,
-                    &*sync_keystore,
+                    sync_keystore,
                     initial_assigned_para_id,
                     client_set_aside_for_cidp,
                     block_hash,
@@ -313,24 +311,19 @@ pub fn new_partial_orchestrator(
 
 /// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` if
 /// the para id has changed since the last call to this function.
-fn check_assigned_para_id<Client>(
+fn check_assigned_para_id(
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
-    sync_keystore: &dyn SyncCryptoStore,
+    sync_keystore: SyncCryptoStorePtr,
     initial_assigned_para_id: Arc<Mutex<Option<ParaId>>>,
-    client_set_aside_for_cidp: Arc<Client>,
+    client_set_aside_for_cidp: Arc<ParachainClient>,
     block_hash: H256,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>>
-where
-    Client: ProvideRuntimeApi<Block>,
-    <Client as ProvideRuntimeApi<Block>>::Api: CollatorAssignmentApi<Block, AccountId, ParaId>,
-{
-    let nimbus_keys = SyncCryptoStore::keys(&*sync_keystore, NIMBUS_KEY_ID).unwrap();
-    let collator_account_id =
-        AccountId::from(<[u8; 32]>::try_from(nimbus_keys[0].1.clone()).unwrap());
-    let container_chain_para_id = client_set_aside_for_cidp
-        .runtime_api()
-        .current_collator_parachain_assignment(block_hash, collator_account_id.clone())?;
-
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let res = tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
+        client_set_aside_for_cidp.as_ref(),
+        &block_hash,
+        sync_keystore,
+    );
+    let container_chain_para_id = res.map(|x| x.1);
     let mut initial_assigned_para_id = initial_assigned_para_id.lock().expect("poison error");
     log::info!(
         "ContainerChain assignment: old {:?} new {:?}",
