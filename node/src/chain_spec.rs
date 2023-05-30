@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use pallet_configuration::HostConfiguration;
 use {
     cumulus_primitives_core::ParaId,
     nimbus_primitives::NimbusId,
     orchestrator_runtime::{
         AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
     },
+    pallet_configuration::HostConfiguration,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
