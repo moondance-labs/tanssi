@@ -276,7 +276,6 @@ describeSuite({
         const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
         expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
         expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
-
       },
     });
 
@@ -287,7 +286,9 @@ describeSuite({
       test: async function () {
         let blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
-        while (blockNum == 0) {
+        // Wait 3 blocks because the next test needs to get a non empty value from
+        // container2002Api.query.authoritiesNoting()
+        while (blockNum < 3) {
             // Wait a bit
             // Cannot use context.waitBlock because the container2002Api is not part of moonwall
             const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -341,6 +342,7 @@ describeSuite({
     it({
       id: "T12",
       title: "Count number of tanssi collators before, during, and after 2002 chain",
+      timeout: 150000,
       test: async function () {
         // This test depends on T10 and T11 to set blockNumber2002Start and blockNumber2002End
         console.log(`Ranges: 0-${blockNumber2002Start}, ${blockNumber2002Start}-${blockNumber2002End}`);
