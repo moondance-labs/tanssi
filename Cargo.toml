@@ -170,7 +170,9 @@ fc-cli = { git = "https://github.com/moondance-labs/frontier", branch = "polkado
 fc-consensus = { git = "https://github.com/moondance-labs/frontier", branch = "polkadot-v0.9.40", default-features = false }
 fc-db = { git = "https://github.com/moondance-labs/frontier", branch = "polkadot-v0.9.40", default-features = false }
 fc-mapping-sync = { git = "https://github.com/moondance-labs/frontier", branch = "polkadot-v0.9.40", default-features = false }
-fc-rpc = { git = "https://github.com/moondance-labs/frontier", branch = "polkadot-v0.9.40", default-features = false }
+fc-rpc = { git = "https://github.com/moondance-labs/frontier", branch = "polkadot-v0.9.40", features = [
+	"rpc-binary-search-estimate",
+] }
 fc-rpc-core = { git = "https://github.com/moondance-labs/frontier", branch = "polkadot-v0.9.40", default-features = false }
 fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "polkadot-v0.9.40", default-features = false }
 

@@ -142,6 +142,10 @@ pub fn new_partial(
         })
         .transpose()?;
 
+    // Default runtime_cache_size is 2
+    // For now we can work with this, but it will likely need
+    // to change once we start having runtime_cache_sizes, or
+    // run nodes with the maximum for this value
     let executor = ParachainExecutor::new(
         config.wasm_method,
         config.default_heap_pages,

@@ -62,8 +62,6 @@ pub enum Subcommand {
     /// Errors since the binary was not build with `--features try-runtime`.
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
-    /// Db meta columns information.
-    FrontierDb(fc_cli::FrontierDbCmd),
 }
 
 #[derive(Debug, Parser)]

@@ -268,6 +268,9 @@ where
     // Manages the pool of user-created Filters.
     if let Some(filter_pool) = params.filter_pool {
         // Each filter is allowed to stay in the pool for 100 blocks.
+        // TODO: Re-visit this assumption with parathreads, as they
+        // might have a block every good amount of time, and can be abused
+        // likely we will need to implement a time-based filter
         const FILTER_RETAIN_THRESHOLD: u64 = 100;
         params.task_manager.spawn_essential_handle().spawn(
             "frontier-filter-pool",
