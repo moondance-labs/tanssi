@@ -177,5 +177,16 @@ describeSuite({
         expect(authorities.toJSON().includes(author.toString())).to.be.true;
       },
     });
+
+    it({
+      id: "T10",
+      title: "Test frontier template isEthereum",
+      test: async function () {
+        const genesisData2000 = (await paraApi.query.registrar.paraGenesisData(2000));
+        expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
+        const genesisData2001 = (await paraApi.query.registrar.paraGenesisData(2001));
+        expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
+      },
+    });
   },
 });
