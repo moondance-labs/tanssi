@@ -70,8 +70,8 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            AccountIdLookup, BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable,
-            IdentifyAccount, PostDispatchInfoOf, Verify,
+            BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable,
+            IdentifyAccount, PostDispatchInfoOf, Verify, IdentityLookup
         },
         transaction_validity::{TransactionSource, TransactionValidity, TransactionValidityError},
         ApplyExtrinsicResult,
@@ -107,7 +107,7 @@ pub type Hash = sp_core::H256;
 pub type BlockNumber = u32;
 
 /// The address format for describing accounts.
-pub type Address = MultiAddress<AccountId, ()>;
+pub type Address = AccountId;
 
 /// Block header type as expected by this runtime.
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
@@ -380,14 +380,13 @@ parameter_types! {
 }
 
 // Configure FRAME pallets to include in runtime.
-
 impl frame_system::Config for Runtime {
     /// The identifier used to distinguish between accounts.
     type AccountId = AccountId;
     /// The aggregated dispatch type that is available for extrinsics.
     type RuntimeCall = RuntimeCall;
     /// The lookup mechanism to get account ID from whatever is passed in dispatchers.
-    type Lookup = AccountIdLookup<AccountId, ()>;
+    type Lookup = IdentityLookup<AccountId>;
     /// The index type for storing how many extrinsics an account has signed.
     type Index = Index;
     /// The index type for blocks.
