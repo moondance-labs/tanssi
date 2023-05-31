@@ -38,15 +38,19 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use {
-        frame_support::{pallet_prelude::*, LOG_TARGET},
+        frame_support::traits::ExistenceRequirement::KeepAlive,
+        frame_support::{pallet_prelude::*, traits::Currency, PalletId, LOG_TARGET},
         frame_system::pallet_prelude::*,
-        sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
+        sp_runtime::{traits::AccountIdConversion, traits::AtLeast32BitUnsigned, Saturating},
         sp_std::prelude::*,
         tp_container_chain_genesis_data::ContainerChainGenesisData,
         tp_traits::{
             GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
         },
     };
+
+    /// The Registrar pallet id
+    pub const PALLET_ID: PalletId = PalletId(*b"tregistr");
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -120,6 +124,9 @@ pub mod pallet {
         type SessionDelay: Get<Self::SessionIndex>;
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
+
+        type Currency: Currency<Self::AccountId>;
+        type DepositAmount: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
     }
 
     #[pallet::storage]
@@ -140,6 +147,11 @@ pub mod pallet {
     pub type ParaGenesisData<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, ContainerChainGenesisData, OptionQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn pending_verification)]
+    pub type PendingVerification<T: Config> =
+        StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -147,6 +159,8 @@ pub mod pallet {
         ParaIdRegistered { para_id: ParaId },
         /// A para id has been deregistered. [para_id]
         ParaIdDeregistered { para_id: ParaId },
+        /// A new para id is now valid for collating. [para_id]
+        ParaIdValidForCollating { para_id: ParaId },
     }
 
     #[pallet::error]
@@ -159,37 +173,52 @@ pub mod pallet {
         ParaIdListFull,
         /// Attempted to register a ParaId with a genesis data size greater than the limit
         GenesisDataTooBig,
+        /// Tried to mark_valid_for_collating a ParaId that is not in PendingVerification
+        ParaIdNotInPendingVerification,
     }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Register parachain
         #[pallet::call_index(0)]
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,2).ref_time())]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2).ref_time())]
         pub fn register(
             origin: OriginFor<T>,
             para_id: ParaId,
             genesis_data: ContainerChainGenesisData,
         ) -> DispatchResult {
-            T::RegistrarOrigin::ensure_origin(origin)?;
-            Self::schedule_parachain_change(|para_ids| {
-                // We don't want to add duplicate para ids, so we check whether the potential new
-                // para id is already present in the list. Because the list is always ordered, we can
-                // leverage the binary search which makes this check O(log n).
-                let result = match para_ids.binary_search(&para_id) {
-                    Ok(_) => Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                    Err(index) => {
-                        para_ids
-                            .try_insert(index, para_id)
-                            .map_err(|_e| Error::<T>::ParaIdListFull)?;
+            let account = ensure_signed(origin)?;
+            // Send deposit to reserve account
+            T::Currency::transfer(
+                &account,
+                &Self::account_id(),
+                T::DepositAmount::get(),
+                KeepAlive,
+            )?;
 
-                        Ok(())
-                    }
-                };
-                result
-            })?;
+            // Check if the para id is already registered
+            let pending_paras = <PendingParaIds<T>>::get();
+            let base_paras = pending_paras
+                .last()
+                .map(|&(_, ref paras)| paras.clone())
+                .unwrap_or_else(Self::registered_para_ids);
+            match base_paras.binary_search(&para_id) {
+                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                Err(_) => (),
+            }
 
-            // TODO: while the registration takes place on the next session, the genesis data
+            // Insert para id into PendingVerification, if it does not exist there
+            let mut pending_verification = PendingVerification::<T>::get();
+            match pending_verification.binary_search(&para_id) {
+                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                Err(index) => {
+                    pending_verification
+                        .try_insert(index, para_id)
+                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                }
+            }
+
+            // While the registration takes place on the next session, the genesis data
             // is inserted immediately. This is because collators should be able to start syncing
             // the new container chain before the first block is mined. However, we could store
             // the genesis data in another key, like PendingParaGenesisData.
@@ -201,9 +230,12 @@ pub mod pallet {
             if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
                 return Err(Error::<T>::GenesisDataTooBig.into());
             }
+
             ParaGenesisData::<T>::insert(para_id, genesis_data);
+            PendingVerification::<T>::put(pending_verification);
 
             Self::deposit_event(Event::ParaIdRegistered { para_id });
+
             Ok(())
         }
 
@@ -233,6 +265,45 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// Mark parachain valid for collating
+        #[pallet::call_index(2)]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2).ref_time())]
+        pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            T::RegistrarOrigin::ensure_origin(origin)?;
+
+            let mut pending_verification = PendingVerification::<T>::get();
+
+            match pending_verification.binary_search(&para_id) {
+                Ok(i) => {
+                    pending_verification.remove(i);
+                }
+                Err(_) => return Err(Error::<T>::ParaIdNotInPendingVerification.into()),
+            };
+
+            Self::schedule_parachain_change(|para_ids| {
+                // We don't want to add duplicate para ids, so we check whether the potential new
+                // para id is already present in the list. Because the list is always ordered, we can
+                // leverage the binary search which makes this check O(log n).
+                let result = match para_ids.binary_search(&para_id) {
+                    Ok(_) => Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                    Err(index) => {
+                        para_ids
+                            .try_insert(index, para_id)
+                            .map_err(|_e| Error::<T>::ParaIdListFull)?;
+
+                        Ok(())
+                    }
+                };
+                result
+            })?;
+
+            PendingVerification::<T>::put(pending_verification);
+
+            Self::deposit_event(Event::ParaIdValidForCollating { para_id });
+
+            Ok(())
+        }
     }
 
     pub struct SessionChangeOutcome<T: Config> {
@@ -243,6 +314,15 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        /// Returns the pallet account
+        pub fn account_id() -> T::AccountId {
+            PALLET_ID.into_account_truncating()
+        }
+        /// Returns total balance in the pallet account
+        pub fn total_locked() -> <T::Currency as Currency<T::AccountId>>::Balance {
+            T::Currency::free_balance(&Self::account_id())
+        }
+
         #[inline(never)]
         fn schedule_parachain_change(
             updater: impl FnOnce(&mut BoundedVec<ParaId, T::MaxLengthParaIds>) -> DispatchResult,

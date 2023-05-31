@@ -20,7 +20,7 @@ use {
     crate::{self as pallet_registrar},
     frame_support::traits::{ConstU16, ConstU64},
     frame_system as system,
-    sp_core::{ConstU32, H256},
+    sp_core::{parameter_types, ConstU32, H256},
     sp_runtime::{
         testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
@@ -31,6 +31,7 @@ use {
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
+pub type Balance = u128;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
@@ -40,6 +41,7 @@ frame_support::construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic,
     {
         System: frame_system,
+        Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
         ParaRegistrar: pallet_registrar,
     }
 );
@@ -62,13 +64,28 @@ impl system::Config for Test {
     type BlockHashCount = ConstU64<250>;
     type Version = ();
     type PalletInfo = PalletInfo;
-    type AccountData = ();
+    type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
     type SS58Prefix = ConstU16<42>;
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+}
+
+parameter_types! {
+    pub const ExistentialDeposit: u128 = 1;
+}
+impl pallet_balances::Config for Test {
+    type MaxReserves = ();
+    type ReserveIdentifier = [u8; 4];
+    type MaxLocks = ();
+    type Balance = Balance;
+    type RuntimeEvent = RuntimeEvent;
+    type DustRemoval = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = System;
+    type WeightInfo = ();
 }
 
 pub struct CurrentSessionIndexGetter;
@@ -81,6 +98,9 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     }
 }
 
+parameter_types! {
+    pub const DepositAmount: Balance = 100;
+}
 impl pallet_registrar::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = frame_system::EnsureRoot<u64>;
@@ -89,14 +109,25 @@ impl pallet_registrar::Config for Test {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type Currency = Balances;
+    type DepositAmount = DepositAmount;
 }
+
+const ALICE: u64 = 1;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
-        .unwrap()
-        .into()
+        .unwrap();
+
+    pallet_balances::GenesisConfig::<Test> {
+        balances: vec![(ALICE, 1_000)],
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
+
+    t.into()
 }
 
 // Build genesis storage according to the mock runtime.
@@ -105,6 +136,7 @@ pub fn new_test_ext_with_genesis(
 ) -> sp_io::TestExternalities {
     GenesisConfig {
         system: Default::default(),
+        balances: Default::default(),
         para_registrar: pallet_registrar::GenesisConfig { para_ids },
     }
     .build_storage()
