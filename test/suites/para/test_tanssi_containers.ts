@@ -357,11 +357,6 @@ describeSuite({
         await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start-1, 4);
 
         // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
-        // FIXME: there is a delay between a node detecting a change in assignment, and changing the
-        // collation para id, so at the beginning nodes that should be creating blocks in 2002 may
-        // still create some blocks for the orchestrator chain. This will be fixed when we implement
-        // validation, once that works remove this delay.
-        //let bugDelay = sessionPeriod;
         await countUniqueBlockAuthors(paraApi, blockNumber2002Start, blockNumber2002End-1, 2);
 
         // Need to wait one session because the following blocks don't exist yet
