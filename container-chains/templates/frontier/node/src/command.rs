@@ -246,7 +246,6 @@ pub fn run() -> Result<()> {
                 cmd.run(&*spec)
             })
         }
-        Some(Subcommand::FrontierDb(_)) => todo!(),
         Some(Subcommand::Benchmark(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             // Switch on the concrete benchmark sub-command-

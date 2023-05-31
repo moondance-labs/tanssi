@@ -127,7 +127,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
         None,
         None,
         None,
-        None,
+        Some(properties),
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: para_id.into(),

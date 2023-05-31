@@ -33,6 +33,8 @@ nimbus-primitives = { workspace = true, features = [ "std" ] }
 frame-benchmarking = { workspace = true }
 frame-benchmarking-cli = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
+pallet-transaction-payment-rpc = { workspace = true }
+pallet-transaction-payment-rpc-runtime-api = { workspace = true, features = [ "std" ] }
 sc-basic-authorship = { workspace = true }
 sc-chain-spec = { workspace = true }
 sc-cli = { workspace = true }
@@ -54,8 +56,6 @@ sp-api = { workspace = true, features = [ "std" ] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }
-pallet-transaction-payment-rpc = { workspace = true }
-pallet-transaction-payment-rpc-runtime-api = { workspace = true, features = [ "std" ] }
 
 sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true, features = [ "std" ] }
@@ -88,15 +88,15 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 
 # Frontier
-fp-rpc = { workspace = true }
-fc-db = { workspace = true } 
-fp-evm = { workspace = true }
-fc-mapping-sync = { workspace = true }
-fc-rpc = { workspace = true }
 fc-cli = { workspace = true }
 fc-consensus = { workspace = true }
+fc-db = { workspace = true }
+fc-mapping-sync = { workspace = true }
+fc-rpc = { workspace = true }
 fc-rpc-core = { workspace = true }
 fc-storage = { workspace = true }
+fp-evm = { workspace = true }
+fp-rpc = { workspace = true }
 pallet-ethereum = { workspace = true }
 
 [build-dependencies]

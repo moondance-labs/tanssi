@@ -13,7 +13,6 @@ export const createTransaction = async (
     options: TransactionOptions,
     txType?: EthTransactionType
   ): Promise<string> => {
-    console.log("hello");
     const defaultTxnStyle = MoonwallContext.getContext()!.defaultEthTxnStyle;
   
     const isLegacy = txType
@@ -192,7 +191,6 @@ export const createTransaction = async (
     value: number | string | BigInt,
     options: TransactionOptions = ALITH_TRANSACTION_TEMPLATE
   ): Promise<string> => {
-    console.log("here");
     return await createTransaction(context, {
       ...options,
       value: value.toString(),
@@ -212,3 +210,12 @@ export const createTransaction = async (
     privateKey: ALITH_PRIVATE_KEY,
   };
   
+/// Await for a promise resolution while we wait for the tx hash to be included
+/// This will tipically be waiting for new blocks
+export async function waitUntilEthTxIncluded(promise, web3, txHash)  {
+  while ((await customWeb3Request(web3, "eth_getTransactionByHash", [
+    txHash,
+  ])).result.blockNumber== null) {  
+    await promise();
+  }
+}
