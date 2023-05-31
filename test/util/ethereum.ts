@@ -191,7 +191,7 @@ export const createTransaction = async (
     value: number | string | BigInt,
     options: TransactionOptions = ALITH_TRANSACTION_TEMPLATE
   ): Promise<string> => {
-¡    return await createTransaction(context, {
+    return await createTransaction(context, {
       ...options,
       value: value.toString(),
       to,
@@ -210,17 +210,11 @@ export const createTransaction = async (
     privateKey: ALITH_PRIVATE_KEY,
   };
   
-/// Same as tx.signAndSend(account), except that it waits for the transaction to be included in a block:
-/// 
-/// ```
-/// const txHash = await tx.signAndSend(alice);
-/// // We don't know if the transaction has been included in a block or not
-/// const { txHash, blockHash } = await signAndSendAndInclude(tx, alice);
-/// // We know the blockHash of the block that includes this transaction
-/// ```
-export async function waitUntilIncluded(promise, web3, txHash)  {
+/// Await for a promise resolution while we wait for the tx hash to be included
+/// This will tipically be waiting for new blocks
+export async function waitUntilEthTxIncluded(promise, web3, txHash)  {
   while ((await customWeb3Request(web3, "eth_getTransactionByHash", [
-    txHash.result,
+    txHash,
   ])).result.blockNumber== null) {  
     await promise;
   }

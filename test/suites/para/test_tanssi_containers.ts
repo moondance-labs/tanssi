@@ -4,7 +4,7 @@ import { u8aToHex } from "@polkadot/util";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { getAuthorFromDigest } from "../../util/author";
 import { Signer, ethers } from "ethers";
-import { createTransfer, waitUntilIncluded } from "../../util/ethereum";
+import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
 import { alith, BALTATHAR_ADDRESS, customWeb3Request } from "@moonwall/util";
 import { MIN_GAS_PRICE, generateKeyringPair } from "@moonwall/util";
 import { getKeyringNimbusIdHex } from "../../util/keys";
@@ -199,7 +199,7 @@ describeSuite({
         let txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
           tx,
         ]);
-        await waitUntilIncluded(context.waitBlock(1, "Container2001"), context.web3(), txHash)
+        await waitUntilEthTxIncluded(context.waitBlock(1, "Container2001"), context.web3(), txHash.result)
         expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
       },
     });
