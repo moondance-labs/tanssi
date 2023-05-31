@@ -199,7 +199,7 @@ describeSuite({
         let txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
           tx,
         ]);
-        await waitUntilEthTxIncluded(context.waitBlock(1, "Container2001"), context.web3(), txHash.result)
+        await waitUntilEthTxIncluded(() => context.waitBlock(1, "Container2001"), context.web3(), txHash.result)
         expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
       },
     });
