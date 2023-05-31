@@ -21,9 +21,9 @@ serde = { workspace = true, features = [ "derive" ] }
 url = { workspace = true }
 
 # Local
+ccp-authorities-noting-inherent = { workspace = true }
 container-chain-template-frontier-runtime = { path = "../runtime", default-features = false, features = [ "std" ] }
 tc-consensus = { workspace = true }
-ccp-authorities-noting-inherent = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }
