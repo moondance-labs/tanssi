@@ -88,6 +88,7 @@ pub struct TokenMetadata {
     pub token_symbol: BoundedVec<u8, MaxLengthTokenSymbol>,
     pub ss58_format: u32,
     pub token_decimals: u32,
+    pub is_ethereum: bool,
 }
 
 impl Default for TokenMetadata {
@@ -97,6 +98,7 @@ impl Default for TokenMetadata {
             token_symbol: BoundedVec::truncate_from(b"UNIT".to_vec()),
             ss58_format: 42,
             token_decimals: 12,
+            is_ethereum: false,
         }
     }
 }

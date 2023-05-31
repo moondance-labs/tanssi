@@ -151,6 +151,18 @@ pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> To
     }) {
         properties.token_symbol = x;
     }
+    if let Some(x) = properties_json.get("isEthereum").and_then(|x| {
+        x.as_bool()
+    }).or_else(|| {
+        log::warn!(
+            "Failed to read properties.isEthereum from container chain chain spec, using default value instead. Invalid value was: {:?}",
+            properties_json.get("isEthereum")
+        );
+
+        None
+    }) {
+        properties.is_ethereum = x;
+    }
 
     properties
 }
@@ -177,6 +189,7 @@ pub fn properties_to_map(
                     .map_err(|e| format!("tokenSymbol is not valid UTF8: {}", e))?,
             ),
         ),
+        ("isEthereum", serde_json::Value::from(false)),
     ]
     .into_iter()
     .map(|(k, v)| (k.to_string(), v))
