@@ -34,6 +34,7 @@ use {
         client::BlockchainEvents,
         AuxStore, BlockOf, StorageProvider,
     },
+    sc_consensus_manual_seal::rpc::{EngineCommand, ManualSeal, ManualSealApiServer},
     sc_network::NetworkService,
     sc_network_sync::SyncingService,
     sc_service::TaskManager,
@@ -47,7 +48,6 @@ use {
     sp_core::H256,
     sp_runtime::traits::{BlakeTwo256, Block as BlockT},
     std::{sync::Arc, time::Duration},
-    sc_consensus_manual_seal::rpc::{EngineCommand, ManualSeal, ManualSealApiServer},
 };
 
 mod eth;
@@ -84,9 +84,9 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     /// Cache for Ethereum block data.
     pub block_data_cache: Arc<EthBlockDataCacheTask<Block>>,
     /// The Node authority flag
-	pub is_authority: bool,
+    pub is_authority: bool,
     /// Manual seal command sink
-	pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
+    pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
 }
 
 /// Instantiate all Full RPC extensions.
@@ -201,12 +201,12 @@ where
     )?;
 
     if let Some(command_sink) = command_sink {
-		io.merge(
-			// We provide the rpc handler with the sending end of the channel to allow the rpc
-			// send EngineCommands to the background block authorship task.
-			ManualSeal::new(command_sink).into_rpc(),
-		)?;
-	};
+        io.merge(
+            // We provide the rpc handler with the sending end of the channel to allow the rpc
+            // send EngineCommands to the background block authorship task.
+            ManualSeal::new(command_sink).into_rpc(),
+        )?;
+    };
 
     io.merge(Web3::new(Arc::clone(&client)).into_rpc())?;
     io.merge(

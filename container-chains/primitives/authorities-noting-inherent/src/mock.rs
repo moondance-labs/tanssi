@@ -33,14 +33,13 @@ use {
     cumulus_primitives_parachain_inherent::{
         ParachainInherentData, INHERENT_IDENTIFIER as PARACHAIN_SYSTEM_INHERENT_IDENTIFIER,
     },
-    parity_scale_codec::Encode,
-    sp_inherents::{InherentData, InherentDataProvider},
-    sp_runtime::{traits::BlakeTwo256, DigestItem},
-    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     nimbus_primitives::NimbusId,
-    test_relay_sproof_builder::CollatorAssignmentSproofBuilder,
-    sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
-    tp_collator_assignment::AssignedCollators
+    sp_inherents::{InherentData, InherentDataProvider},
+    test_relay_sproof_builder::{
+        CollatorAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilder,
+        ParaHeaderSproofBuilderItem,
+    },
+    tp_collator_assignment::AssignedCollators,
 };
 
 pub struct MockAuthoritiesNotingInherentDataProvider {
@@ -54,11 +53,8 @@ pub struct MockAuthoritiesNotingInherentDataProvider {
     pub relay_blocks_per_para_block: u32,
     /// Orchestrator ParaId
     pub orchestrator_para_id: ParaId,
-     /// Orchestrator ParaId
-     pub authorities: Vec<NimbusId>,
-    /// Number of parachain blocks per relay chain epoch
-    /// Mock epoch is computed by dividing `current_para_block` by this value.
-    pub slots_per_para_block: u32,
+    /// Orchestrator ParaId
+    pub authorities: Vec<NimbusId>,
 }
 
 #[async_trait::async_trait]
@@ -67,17 +63,13 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
         &self,
         inherent_data: &mut InherentData,
     ) -> Result<(), sp_inherents::Error> {
-        let slot_number =
-            InherentType::from(self.slots_per_para_block as u64 * self.current_para_block as u64);
-
         let mut sproof_builder = ParaHeaderSproofBuilder::default();
 
-        let mut assignment = CollatorAssignmentSproofBuilder::<tp_core::AccountId>
-        {
+        let assignment = CollatorAssignmentSproofBuilder::<tp_core::AccountId> {
             collator_assignment: AssignedCollators::<tp_core::AccountId> {
                 orchestrator_chain: vec![],
-                container_chains: Default::default()       
-            }
+                container_chains: Default::default(),
+            },
         };
 
         let (orchestrator_chain_root, orchestrator_chain_state) =
@@ -92,9 +84,7 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
             number: Default::default(),
             state_root: orchestrator_chain_root,
             extrinsics_root: Default::default(),
-            digest: sp_runtime::generic::Digest {
-                logs: vec![],
-            },
+            digest: sp_runtime::generic::Digest { logs: vec![] },
         });
         sproof_builder_item.author_id = header;
 
@@ -118,7 +108,7 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
                 crate::INHERENT_IDENTIFIER,
                 &ContainerChainAuthoritiesInherentData {
                     relay_chain_state: proof.clone(),
-                    orchestrator_chain_state
+                    orchestrator_chain_state,
                 },
             )?;
 

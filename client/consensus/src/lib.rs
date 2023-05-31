@@ -32,7 +32,10 @@ pub use {
 
 pub use {
     cumulus_primitives_core::ParaId,
-    manual_seal::{ContainerManualSealAuraConsensusDataProvider, OrchestratorManualSealAuraConsensusDataProvider},
+    manual_seal::{
+        ContainerManualSealAuraConsensusDataProvider,
+        OrchestratorManualSealAuraConsensusDataProvider,
+    },
     parity_scale_codec::{Decode, Encode},
     sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
     sc_consensus_slots::InherentDataProviderExt,

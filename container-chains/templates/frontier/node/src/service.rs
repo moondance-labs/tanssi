@@ -23,13 +23,18 @@ use std::{
     time::Duration,
 };
 
-use cumulus_client_cli::CollatorOptions;
-use cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider;
-use cumulus_primitives_parachain_inherent::MockXcmConfig;
-use sp_consensus_aura::SlotDuration;
+use {
+    cumulus_client_cli::CollatorOptions,
+    cumulus_primitives_parachain_inherent::{
+        MockValidationDataInherentDataProvider, MockXcmConfig,
+    },
+    sp_consensus_aura::SlotDuration,
+};
 // Local Runtime Types
-use container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi};
-use futures::StreamExt;
+use {
+    container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
+    futures::StreamExt,
+};
 
 // Cumulus Imports
 use {
@@ -184,10 +189,10 @@ pub fn new_partial(
     });
 
     let maybe_select_chain = if dev_service {
-		Some(sc_consensus::LongestChain::new(backend.clone()))
-	} else {
-		None
-	};
+        Some(sc_consensus::LongestChain::new(backend.clone()))
+    } else {
+        None
+    };
 
     let transaction_pool = sc_transaction_pool::BasicPool::new_full(
         config.transaction_pool.clone(),
@@ -415,7 +420,6 @@ async fn start_node_impl(
     Ok((task_manager, client))
 }
 
-
 /// Start a parachain node.
 pub async fn start_parachain_node(
     parachain_config: Configuration,
@@ -436,124 +440,122 @@ pub async fn start_parachain_node(
     .await
 }
 
-use nimbus_consensus::NimbusManualSealConsensusDataProvider;
-use std::str::FromStr;
-use sp_blockchain::HeaderBackend;
+use {sp_blockchain::HeaderBackend, std::str::FromStr};
 /// Builds a new development service. This service uses manual seal, and mocks
 /// the parachain inherent.
 pub async fn start_dev_node(
-	mut config: Configuration,
-	sealing: Sealing,
-	rpc_config: crate::cli::RpcConfig,
-	hwbench: Option<sc_sysinfo::HwBench>,
-) -> Result<TaskManager, sc_service::error::Error>
-{
-	use async_io::Timer;
-	use futures::Stream;
-	use sc_consensus_manual_seal::{run_manual_seal, EngineCommand, ManualSealParams};
-	use sp_core::H256;
+    mut config: Configuration,
+    sealing: Sealing,
+    rpc_config: crate::cli::RpcConfig,
+    hwbench: Option<sc_sysinfo::HwBench>,
+) -> Result<TaskManager, sc_service::error::Error> {
+    use {
+        async_io::Timer,
+        futures::Stream,
+        sc_consensus_manual_seal::{run_manual_seal, EngineCommand, ManualSealParams},
+        sp_core::H256,
+    };
 
-	let sc_service::PartialComponents {
-		client,
-		backend,
-		mut task_manager,
-		import_queue,
-		keystore_container,
-		select_chain: maybe_select_chain,
-		transaction_pool,
-		other:
-			(
-				block_import,
-				filter_pool,
-				mut telemetry,
-				_telemetry_worker_handle,
-				frontier_backend,
-				fee_history_cache,
-			),
-	} = new_partial(&mut config, true)?;
+    let sc_service::PartialComponents {
+        client,
+        backend,
+        mut task_manager,
+        import_queue,
+        keystore_container,
+        select_chain: maybe_select_chain,
+        transaction_pool,
+        other:
+            (
+                block_import,
+                filter_pool,
+                mut telemetry,
+                _telemetry_worker_handle,
+                frontier_backend,
+                fee_history_cache,
+            ),
+    } = new_partial(&mut config, true)?;
 
+    let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
+        sc_service::build_network(sc_service::BuildNetworkParams {
+            config: &config,
+            client: client.clone(),
+            transaction_pool: transaction_pool.clone(),
+            spawn_handle: task_manager.spawn_handle(),
+            import_queue,
+            block_announce_validator_builder: None,
+            warp_sync_params: None,
+        })?;
 
-	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
-		sc_service::build_network(sc_service::BuildNetworkParams {
-			config: &config,
-			client: client.clone(),
-			transaction_pool: transaction_pool.clone(),
-			spawn_handle: task_manager.spawn_handle(),
-			import_queue,
-			block_announce_validator_builder: None,
-			warp_sync_params: None,
-		})?;
+    if config.offchain_worker.enabled {
+        sc_service::build_offchain_workers(
+            &config,
+            task_manager.spawn_handle(),
+            client.clone(),
+            network.clone(),
+        );
+    }
 
-	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config,
-			task_manager.spawn_handle(),
-			client.clone(),
-			network.clone(),
-		);
-	}
-
-	let prometheus_registry = config.prometheus_registry().cloned();
-	let overrides = crate::rpc::overrides_handle(client.clone());
-	let fee_history_limit = rpc_config.fee_history_limit;
-	let collator = config.role.is_authority();
-	let mut command_sink = None;
+    let prometheus_registry = config.prometheus_registry().cloned();
+    let overrides = crate::rpc::overrides_handle(client.clone());
+    let fee_history_limit = rpc_config.fee_history_limit;
+    let collator = config.role.is_authority();
+    let mut command_sink = None;
 
     let pubsub_notification_sinks: fc_mapping_sync::EthereumBlockNotificationSinks<
         fc_mapping_sync::EthereumBlockNotification<Block>,
     > = Default::default();
     let pubsub_notification_sinks = Arc::new(pubsub_notification_sinks);
 
-	if collator {
-		let mut env = sc_basic_authorship::ProposerFactory::with_proof_recording(
-			task_manager.spawn_handle(),
-			client.clone(),
-			transaction_pool.clone(),
-			prometheus_registry.as_ref(),
-			telemetry.as_ref().map(|x| x.handle()),
-		);
+    if collator {
+        let env = sc_basic_authorship::ProposerFactory::with_proof_recording(
+            task_manager.spawn_handle(),
+            client.clone(),
+            transaction_pool.clone(),
+            prometheus_registry.as_ref(),
+            telemetry.as_ref().map(|x| x.handle()),
+        );
 
-		let commands_stream: Box<dyn Stream<Item = EngineCommand<H256>> + Send + Sync + Unpin> =
-			match sealing {
-				Sealing::Instant => {
-					Box::new(
-						// This bit cribbed from the implementation of instant seal.
-						transaction_pool
-							.pool()
-							.validated_pool()
-							.import_notification_stream()
-							.map(|_| EngineCommand::SealNewBlock {
-								create_empty: false,
-								finalize: false,
-								parent_hash: None,
-								sender: None,
-							}),
-					)
-				}
-				Sealing::Manual => {
-					let (sink, stream) = futures::channel::mpsc::channel(1000);
-					// Keep a reference to the other end of the channel. It goes to the RPC.
-					command_sink = Some(sink);
-					Box::new(stream)
-				}
-				Sealing::Interval(millis) => Box::new(StreamExt::map(
-					Timer::interval(Duration::from_millis(millis)),
-					|_| EngineCommand::SealNewBlock {
-						create_empty: true,
-						finalize: false,
-						parent_hash: None,
-						sender: None,
-					},
-				)),
-			};
+        let commands_stream: Box<dyn Stream<Item = EngineCommand<H256>> + Send + Sync + Unpin> =
+            match sealing {
+                Sealing::Instant => {
+                    Box::new(
+                        // This bit cribbed from the implementation of instant seal.
+                        transaction_pool
+                            .pool()
+                            .validated_pool()
+                            .import_notification_stream()
+                            .map(|_| EngineCommand::SealNewBlock {
+                                create_empty: false,
+                                finalize: false,
+                                parent_hash: None,
+                                sender: None,
+                            }),
+                    )
+                }
+                Sealing::Manual => {
+                    let (sink, stream) = futures::channel::mpsc::channel(1000);
+                    // Keep a reference to the other end of the channel. It goes to the RPC.
+                    command_sink = Some(sink);
+                    Box::new(stream)
+                }
+                Sealing::Interval(millis) => Box::new(StreamExt::map(
+                    Timer::interval(Duration::from_millis(millis)),
+                    |_| EngineCommand::SealNewBlock {
+                        create_empty: true,
+                        finalize: false,
+                        parent_hash: None,
+                        sender: None,
+                    },
+                )),
+            };
 
-		let select_chain = maybe_select_chain.expect(
-			"`new_partial` builds a `LongestChainRule` when building dev service.\
+        let select_chain = maybe_select_chain.expect(
+            "`new_partial` builds a `LongestChainRule` when building dev service.\
 				We specified the dev service when calling `new_partial`.\
 				Therefore, a `LongestChainRule` is present. qed.",
-		);
+        );
 
-		let client_set_aside_for_cidp = client.clone();
+        let client_set_aside_for_cidp = client.clone();
 
         #[async_trait::async_trait]
         impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
@@ -577,9 +579,7 @@ pub async fn start_dev_node(
             }
         }
 
-		let client_clone = client.clone();
-		let keystore_clone = keystore_container.sync_keystore().clone();
-		task_manager.spawn_essential_handle().spawn_blocking(
+        task_manager.spawn_essential_handle().spawn_blocking(
 			"authorship_task",
 			Some("block-authoring"),
 			run_manual_seal(ManualSealParams {
@@ -627,7 +627,6 @@ pub async fn start_dev_node(
                                 relay_offset: 1000,
                                 relay_blocks_per_para_block: 2,
                                 orchestrator_para_id: 1000u32.into(),
-                                slots_per_para_block: 1,
                                 authorities: vec![]
                         };
 
@@ -636,7 +635,7 @@ pub async fn start_dev_node(
 				},
 			}),
 		);
-	}
+    }
 
     crate::rpc::spawn_essential_tasks(crate::rpc::SpawnTasksParams {
         task_manager: &task_manager,
@@ -651,16 +650,15 @@ pub async fn start_dev_node(
         pubsub_notification_sinks: pubsub_notification_sinks.clone(),
     });
 
+    let block_data_cache = Arc::new(fc_rpc::EthBlockDataCacheTask::new(
+        task_manager.spawn_handle(),
+        overrides.clone(),
+        rpc_config.eth_log_block_cache,
+        rpc_config.eth_statuses_cache,
+        prometheus_registry,
+    ));
 
-	let block_data_cache = Arc::new(fc_rpc::EthBlockDataCacheTask::new(
-		task_manager.spawn_handle(),
-		overrides.clone(),
-		rpc_config.eth_log_block_cache,
-		rpc_config.eth_statuses_cache,
-		prometheus_registry,
-	));
-
-	let rpc_builder = {
+    let rpc_builder = {
         let client = client.clone();
         let pool = transaction_pool.clone();
         let pubsub_notification_sinks = pubsub_notification_sinks.clone();
@@ -702,38 +700,38 @@ pub async fn start_dev_node(
         }
     };
 
-	let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-		network,
-		client,
-		keystore: keystore_container.sync_keystore(),
-		task_manager: &mut task_manager,
-		transaction_pool,
-		rpc_builder: Box::new(rpc_builder),
-		backend,
-		system_rpc_tx,
-		sync_service: sync_service.clone(),
-		config,
-		tx_handler_controller,
-		telemetry: None,
-	})?;
+    let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+        network,
+        client,
+        keystore: keystore_container.sync_keystore(),
+        task_manager: &mut task_manager,
+        transaction_pool,
+        rpc_builder: Box::new(rpc_builder),
+        backend,
+        system_rpc_tx,
+        sync_service: sync_service.clone(),
+        config,
+        tx_handler_controller,
+        telemetry: None,
+    })?;
 
-	if let Some(hwbench) = hwbench {
-		sc_sysinfo::print_hwbench(&hwbench);
+    if let Some(hwbench) = hwbench {
+        sc_sysinfo::print_hwbench(&hwbench);
 
-		if let Some(ref mut telemetry) = telemetry {
-			let telemetry_handle = telemetry.handle();
-			task_manager.spawn_handle().spawn(
-				"telemetry_hwbench",
-				None,
-				sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
-			);
-		}
-	}
+        if let Some(ref mut telemetry) = telemetry {
+            let telemetry_handle = telemetry.handle();
+            task_manager.spawn_handle().spawn(
+                "telemetry_hwbench",
+                None,
+                sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
+            );
+        }
+    }
 
-	log::info!("Development Service Ready");
+    log::info!("Development Service Ready");
 
-	network_starter.start_network();
-	Ok(task_manager)
+    network_starter.start_network();
+    Ok(task_manager)
 }
 
 /// Block authoring scheme to be used by the dev service.

@@ -177,7 +177,11 @@ where
     type Transaction = TransactionFor<C, B>;
     type Proof = P;
 
-    fn create_digest(&self, parent: &B::Header, inherents: &InherentData) -> Result<Digest, Error> {
+    fn create_digest(
+        &self,
+        _parent: &B::Header,
+        inherents: &InherentData,
+    ) -> Result<Digest, Error> {
         let timestamp = inherents
             .timestamp_inherent_data()?
             .expect("Timestamp is always present; qed");
@@ -191,11 +195,11 @@ where
 
         // Fetch the authorities for the orchestrator chain
         /*let authorities = self
-            .client
-            .runtime_api()  
-            .authorities(parent.hash())
-            .ok()
-            .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?;*/
+        .client
+        .runtime_api()
+        .authorities(parent.hash())
+        .ok()
+        .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?;*/
 
         let expected_author: Option<nimbus_primitives::NimbusId> = None;
 

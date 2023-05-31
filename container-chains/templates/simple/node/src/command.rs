@@ -34,7 +34,6 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
-    polkadot_cli::IdentifyVariant
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {

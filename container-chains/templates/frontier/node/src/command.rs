@@ -27,6 +27,7 @@ use {
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
     parity_scale_codec::Encode,
+    polkadot_cli::IdentifyVariant,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
@@ -38,7 +39,6 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
-    polkadot_cli::IdentifyVariant,
 };
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
@@ -353,7 +353,7 @@ pub fn run() -> Result<()> {
 
                 let dev_service =
 					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
-                
+
 				if dev_service {
 					return crate::service::start_dev_node(config, cli.run.sealing, rpc_config, hwbench).await
                     .map_err(Into::into)

@@ -95,7 +95,6 @@ pub struct RunCmd {
     /// Options are "instant", "manual", or timer interval in milliseconds
     #[arg(long, default_value = "instant")]
     pub sealing: crate::service::Sealing,
-
 }
 
 impl std::ops::Deref for RunCmd {
