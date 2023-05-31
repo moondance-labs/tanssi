@@ -216,6 +216,6 @@ export async function waitUntilEthTxIncluded(promise, web3, txHash)  {
   while ((await customWeb3Request(web3, "eth_getTransactionByHash", [
     txHash,
   ])).result.blockNumber== null) {  
-    await promise;
+    await promise();
   }
 }
