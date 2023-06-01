@@ -65,7 +65,7 @@ pub struct ContainerChainGenesisData {
     pub fork_id: Option<Vec<u8>>,
     #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
     pub extensions: Vec<u8>,
-    pub properties: TokenMetadata,
+    pub properties: Properties,
 }
 
 // TODO: turn this into a Config type parameter
@@ -83,12 +83,20 @@ impl Get<u32> for MaxLengthTokenSymbol {
 }
 
 #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
+#[derive(
+    Debug, Default, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo,
+)]
+pub struct Properties {
+    pub token_metadata: TokenMetadata,
+    pub is_ethereum: bool,
+}
+
+#[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo)]
 pub struct TokenMetadata {
     pub token_symbol: BoundedVec<u8, MaxLengthTokenSymbol>,
     pub ss58_format: u32,
     pub token_decimals: u32,
-    pub is_ethereum: bool,
 }
 
 impl Default for TokenMetadata {
@@ -98,7 +106,6 @@ impl Default for TokenMetadata {
             token_symbol: BoundedVec::truncate_from(b"UNIT".to_vec()),
             ss58_format: 42,
             token_decimals: 12,
-            is_ethereum: false,
         }
     }
 }

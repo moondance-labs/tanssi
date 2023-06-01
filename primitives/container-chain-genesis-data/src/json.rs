@@ -17,7 +17,7 @@
 //! Helper functions to convert from `ContainerChainGenesisData` to JSON values and back
 
 use {
-    crate::{ContainerChainGenesisData, ContainerChainGenesisDataItem, TokenMetadata},
+    crate::{ContainerChainGenesisData, ContainerChainGenesisDataItem, Properties},
     cumulus_primitives_core::ParaId,
 };
 
@@ -107,8 +107,8 @@ pub fn storage_from_chainspec_json(
 
 /// Read `TokenMetadata` from a JSON value. The value is expected to be a map.
 /// In case of error, the default `TokenMetadata` is returned.
-pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> TokenMetadata {
-    let mut properties = TokenMetadata::default();
+pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> Properties {
+    let mut properties = Properties::default();
     if let Some(x) = properties_json
         .get("ss58Format")
         .and_then(|x| u32::try_from(x.as_u64()?).ok())
@@ -121,7 +121,7 @@ pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> To
             None
         })
     {
-        properties.ss58_format = x;
+        properties.token_metadata.ss58_format = x;
     }
     if let Some(x) = properties_json
         .get("tokenDecimals")
@@ -134,7 +134,7 @@ pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> To
             None
         })
     {
-        properties.token_decimals = x;
+        properties.token_metadata.token_decimals = x;
     }
     if let Some(x) = properties_json.get("tokenSymbol").and_then(|x| {
         let xs = x.as_str()?;
@@ -149,7 +149,7 @@ pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> To
 
         None
     }) {
-        properties.token_symbol = x;
+        properties.token_metadata.token_symbol = x;
     }
     if let Some(x) = properties_json.get("isEthereum").and_then(|x| {
         x.as_bool()
@@ -168,7 +168,7 @@ pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> To
 }
 
 pub fn properties_to_map(
-    properties: &TokenMetadata,
+    properties: &Properties,
 ) -> Result<serde_json::Map<String, serde_json::Value>, String> {
     // TODO: we can just derive Serialize for genesis_data.properties instead of this hack,
     // just ensure that the field names match. And "tokenSymbol" must be a string, in the struct
@@ -176,20 +176,23 @@ pub fn properties_to_map(
     let properties = vec![
         (
             "ss58Format",
-            serde_json::Value::from(properties.ss58_format),
+            serde_json::Value::from(properties.token_metadata.ss58_format),
         ),
         (
             "tokenDecimals",
-            serde_json::Value::from(properties.token_decimals),
+            serde_json::Value::from(properties.token_metadata.token_decimals),
         ),
         (
             "tokenSymbol",
             serde_json::Value::from(
-                String::from_utf8(properties.token_symbol.to_vec())
+                String::from_utf8(properties.token_metadata.token_symbol.to_vec())
                     .map_err(|e| format!("tokenSymbol is not valid UTF8: {}", e))?,
             ),
         ),
-        ("isEthereum", serde_json::Value::from(false)),
+        (
+            "isEthereum",
+            serde_json::Value::from(properties.is_ethereum),
+        ),
     ]
     .into_iter()
     .map(|(k, v)| (k.to_string(), v))
