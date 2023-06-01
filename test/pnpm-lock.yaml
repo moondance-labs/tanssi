@@ -52,6 +52,9 @@ devDependencies:
   typescript:
     specifier: ^5.0.4
     version: 5.0.4
+  viem:
+    specifier: ^0.3.31
+    version: 0.3.37(typescript@5.0.4)
   web3:
     specifier: 4.0.1-rc.0
     version: 4.0.1-rc.0
@@ -4141,6 +4144,7 @@ packages:
       chalk: 2.4.2
       diff-match-patch: 1.0.5
     dev: true
+    bundledDependencies: []
 
   /jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
