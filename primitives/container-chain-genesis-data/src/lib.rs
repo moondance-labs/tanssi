@@ -65,7 +65,7 @@ pub struct ContainerChainGenesisData {
     pub fork_id: Option<Vec<u8>>,
     #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
     pub extensions: Vec<u8>,
-    pub properties: TokenMetadata,
+    pub properties: Properties,
 }
 
 // TODO: turn this into a Config type parameter
@@ -80,6 +80,15 @@ impl Get<u32> for MaxLengthTokenSymbol {
     fn get() -> u32 {
         255
     }
+}
+
+#[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
+#[derive(
+    Debug, Default, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo,
+)]
+pub struct Properties {
+    pub token_metadata: TokenMetadata,
+    pub is_ethereum: bool,
 }
 
 #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
