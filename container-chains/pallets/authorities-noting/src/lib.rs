@@ -47,7 +47,7 @@ use {
     parity_scale_codec::{Decode, Encode},
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Hash as HashT, RuntimeString},
-    sp_std::{prelude::*},
+    sp_std::prelude::*,
     tp_chain_state_snapshot::*,
     tp_collator_assignment::AssignedCollators,
     tp_core::well_known_keys,
@@ -195,15 +195,12 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Auhtorities inserted
-        AuthoritiesInserted {
-            authorities: Vec<T::AuthorityId>,
-        },
+        AuthoritiesInserted { authorities: Vec<T::AuthorityId> },
     }
 
     #[pallet::storage]
     #[pallet::getter(fn authorities)]
-    pub(super) type Authorities<T: Config> =
-        StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
+    pub(super) type Authorities<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
 
     /// Was the containerAuthorData set?
     #[pallet::storage]
@@ -291,18 +288,18 @@ impl<T: Config> Pallet<T> {
             })?;
 
         // Read the assignment from the orchestrator
-        let assignement = orchestrator_state_proof
+        let assignment = orchestrator_state_proof
             .read_entry::<AssignedCollators<T::AuthorityId>>(
                 &well_known_keys::authority_assignment_for_session(session_index),
                 None,
             )
             .map_err(|e| match e {
-                ReadEntryErr::Proof => panic!("Invalid proof: cannot read assignement"),
+                ReadEntryErr::Proof => panic!("Invalid proof: cannot read assignment"),
                 _ => Error::<T>::FailedReading,
             })?;
 
         // Read those authorities assigned to this chain
-        let authorities = assignement
+        let authorities = assignment
             .container_chains
             .get(&para_id.into())
             .ok_or(Error::<T>::NoAuthoritiesFound)?;

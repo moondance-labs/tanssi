@@ -20,10 +20,7 @@ use {
     cumulus_relay_chain_interface::{PHash, RelayChainInterface},
     parity_scale_codec::Decode,
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
-    tp_core::{
-        well_known_keys,
-        Header as OrchestratorHeader,
-    },
+    tp_core::{well_known_keys, Header as OrchestratorHeader},
 };
 
 const LOG_TARGET: &str = "parachain-inherent";
@@ -88,7 +85,10 @@ impl ContainerChainAuthoritiesInherentData {
         .await?;
 
         let header_orchestrator = relay_chain_interface
-            .get_storage_by_key(relay_parent, &well_known_keys::para_id_head(orchestrator_para_id))
+            .get_storage_by_key(
+                relay_parent,
+                &well_known_keys::para_id_head(orchestrator_para_id),
+            )
             .await
             .map_err(|e| {
                 tracing::error!(
@@ -143,7 +143,10 @@ impl ContainerChainAuthoritiesInherentData {
         orchestrator_para_id: ParaId,
     ) -> Option<OrchestratorHeader> {
         let header_orchestrator = relay_chain_interface
-            .get_storage_by_key(relay_parent, &well_known_keys::para_id_head(orchestrator_para_id))
+            .get_storage_by_key(
+                relay_parent,
+                &well_known_keys::para_id_head(orchestrator_para_id),
+            )
             .await
             .map_err(|e| {
                 tracing::error!(

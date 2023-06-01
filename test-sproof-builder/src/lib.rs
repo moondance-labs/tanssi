@@ -192,8 +192,14 @@ impl<T: Encode> AuthorityAssignmentSproofBuilder<T> {
             backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
         };
 
-        insert(well_known_keys::SESSION_INDEX.to_vec(), self.session_index.encode());
-        insert(well_known_keys::authority_assignment_for_session(self.session_index).to_vec(), self.authority_assignment.encode());
+        insert(
+            well_known_keys::SESSION_INDEX.to_vec(),
+            self.session_index.encode(),
+        );
+        insert(
+            well_known_keys::authority_assignment_for_session(self.session_index).to_vec(),
+            self.authority_assignment.encode(),
+        );
 
         let root = backend.root().clone();
         let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");

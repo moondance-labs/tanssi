@@ -79,12 +79,12 @@ pub mod well_known_keys {
         })
     }
 
-    pub const AUTHORITY_ASSIGNEMENT_PREFIX: &[u8] =
+    pub const AUTHORITY_ASSIGNMENT_PREFIX: &[u8] =
         &hex_literal::hex!["ebe78423c7e3ed25234f80d54547285a170f16afec7d161bc6acec3964492a0c"];
 
     pub fn authority_assignment_for_session(session_index: u32) -> Vec<u8> {
         session_index.using_encoded(|index| {
-            AUTHORITY_ASSIGNEMENT_PREFIX
+            AUTHORITY_ASSIGNMENT_PREFIX
                 .iter()
                 .chain(twox_64(index).iter())
                 .chain(index.iter())
