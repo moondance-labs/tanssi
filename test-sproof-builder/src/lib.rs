@@ -22,7 +22,7 @@ use {
     sp_state_machine::Backend,
     sp_trie::{MemoryDB, StorageProof},
     tp_collator_assignment::AssignedCollators,
-    tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX},
+    tp_core::well_known_keys,
 };
 
 /// Enum representing how we want to insert the Header
@@ -82,7 +82,7 @@ impl ParaHeaderSproofBuilder {
 
             for item in self.items {
                 let para_key = item.para_id.twox_64_concat();
-                let key = [PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+                let key = [well_known_keys::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
 
                 let encoded = match item.author_id {
                     HeaderAs::AlreadyEncoded(encoded) => encoded,
@@ -105,7 +105,7 @@ impl ParaHeaderSproofBuilder {
         {
             for item in self.items {
                 let para_key = item.para_id.twox_64_concat();
-                let key = [PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+                let key = [well_known_keys::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
 
                 relevant_keys.push(key.clone());
             }
@@ -147,7 +147,7 @@ impl ParaHeaderSproofBuilder {
 
             for item in self.items {
                 let para_key = item.para_id.twox_64_concat();
-                let key = [PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+                let key = [well_known_keys::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
 
                 let encoded = match item.author_id {
                     HeaderAs::AlreadyEncoded(encoded) => encoded,
@@ -169,12 +169,12 @@ impl ParaHeaderSproofBuilder {
 
 /// Builds a sproof (portmanteau of 'spoof' and 'proof') of the orchestrator chain state.
 #[derive(Clone, Encode, Default)]
-pub struct CollatorAssignmentSproofBuilder<AccountId> {
-    /// The para id of the current parachain.
-    pub collator_assignment: AssignedCollators<AccountId>,
+pub struct AuthorityAssignmentSproofBuilder<T> {
+    pub session_index: u32,
+    pub authority_assignment: AssignedCollators<T>,
 }
 
-impl<AccountId: Encode> CollatorAssignmentSproofBuilder<AccountId> {
+impl<T: Encode> AuthorityAssignmentSproofBuilder<T> {
     pub fn into_state_root_and_proof(
         self,
     ) -> (
@@ -192,7 +192,8 @@ impl<AccountId: Encode> CollatorAssignmentSproofBuilder<AccountId> {
             backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
         };
 
-        insert(COLLATOR_ASSIGNMENT_INDEX.to_vec(), self.encode());
+        insert(well_known_keys::SESSION_INDEX.to_vec(), self.session_index.encode());
+        insert(well_known_keys::authority_assignment_for_session(self.session_index).to_vec(), self.authority_assignment.encode());
 
         let root = backend.root().clone();
         let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
