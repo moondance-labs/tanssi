@@ -34,7 +34,6 @@ describeSuite({
         id: "T04",
         title: "block author should be 0x0000000000000000000000000000000000000000",
         test: async function () {
-            console.log(await customWeb3Request(context.web3(), "eth_coinbase", []));
             expect((await customWeb3Request(context.web3(), "eth_coinbase", [])).result).toBe("0x0000000000000000000000000000000000000000");
         },
     });

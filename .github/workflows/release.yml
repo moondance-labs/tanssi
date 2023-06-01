@@ -128,6 +128,40 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm moonwall test dev_tanssi
 
+  typescript-tests-frontier:
+    runs-on: ubuntu-latest
+    needs: ["build"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.sha }}
+        
+      - name: Pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7
+        
+      - name: Node  
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18.x
+          cache: "pnpm"
+          cache-dependency-path: test/pnpm-lock.yaml
+
+      - name: "Download binaries"
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: binaries
+          path: target/release
+      
+      - name: "Install and run upgrade test"
+        run: |
+          chmod uog+x target/release/container-chain-template-frontier-node
+          cd test
+          pnpm install --frozen-lockfile
+          pnpm moonwall test dev_frontier_template
+
   zombienet-tests:
     runs-on: ubuntu-latest
     needs: ["set-tags", "build"]
