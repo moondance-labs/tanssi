@@ -42,7 +42,10 @@ use {
         construct_runtime,
         dispatch::{DispatchClass, GetDispatchInfo},
         parameter_types,
-        traits::{ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Everything, FindAuthor, Imbalance, OnUnbalanced},
+        traits::{
+            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Everything, FindAuthor,
+            Imbalance, OnUnbalanced,
+        },
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -57,7 +60,9 @@ use {
     nimbus_primitives::NimbusId,
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
-        Account as EVMAccount, EnsureAccountId20, EVMCurrencyAdapter, FeeCalculator, GasWeightMapping, IdentityAddressMapping, Runner, OnChargeEVMTransaction as OnChargeEVMTransactionT
+        Account as EVMAccount, EVMCurrencyAdapter, EnsureAccountId20, FeeCalculator,
+        GasWeightMapping, IdentityAddressMapping,
+        OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
     pallet_transaction_payment::CurrencyAdapter,
     parity_scale_codec::{Decode, Encode},
@@ -70,11 +75,12 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable,
-            IdentifyAccount, PostDispatchInfoOf, Verify, IdentityLookup,
-            UniqueSaturatedInto
+            BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentifyAccount,
+            IdentityLookup, PostDispatchInfoOf, UniqueSaturatedInto, Verify,
         },
-        transaction_validity::{InvalidTransaction, TransactionSource, TransactionValidity, TransactionValidityError},
+        transaction_validity::{
+            InvalidTransaction, TransactionSource, TransactionValidity, TransactionValidityError,
+        },
         ApplyExtrinsicResult,
     },
     sp_std::prelude::*,
@@ -574,7 +580,7 @@ impl pallet_evm::Config for Runtime {
     type ChainId = EVMChainId;
     type BlockGasLimit = BlockGasLimit;
     type Runner = pallet_evm::runner::stack::Runner<Self>;
-    type OnChargeTransaction =OnChargeEVMTransaction<()>;
+    type OnChargeTransaction = OnChargeEVMTransaction<()>;
     type OnCreate = ();
     type FindAuthor = FindAuthorTruncated<Aura>;
     type Timestamp = Timestamp;
@@ -725,62 +731,62 @@ impl_runtime_apis! {
             block_hash: <Block as BlockT>::Hash,
         ) -> TransactionValidity {
             // Filtered calls should not enter the tx pool as they'll fail if inserted.
-			// If this call is not allowed, we return early.
-			if !<Runtime as frame_system::Config>::BaseCallFilter::contains(&xt.0.function) {
-				return InvalidTransaction::Call.into();
-			}
+            // If this call is not allowed, we return early.
+            if !<Runtime as frame_system::Config>::BaseCallFilter::contains(&xt.0.function) {
+                return InvalidTransaction::Call.into();
+            }
 
-			// This runtime uses Substrate's pallet transaction payment. This
-			// makes the chain feel like a standard Substrate chain when submitting
-			// frame transactions and using Substrate ecosystem tools. It has the downside that
-			// transaction are not prioritized by gas_price. The following code reprioritizes
-			// transactions to overcome this.
-			//
-			// A more elegant, ethereum-first solution is
-			// a pallet that replaces pallet transaction payment, and allows users
-			// to directly specify a gas price rather than computing an effective one.
-			// #HopefullySomeday
+            // This runtime uses Substrate's pallet transaction payment. This
+            // makes the chain feel like a standard Substrate chain when submitting
+            // frame transactions and using Substrate ecosystem tools. It has the downside that
+            // transaction are not prioritized by gas_price. The following code reprioritizes
+            // transactions to overcome this.
+            //
+            // A more elegant, ethereum-first solution is
+            // a pallet that replaces pallet transaction payment, and allows users
+            // to directly specify a gas price rather than computing an effective one.
+            // #HopefullySomeday
 
-			// First we pass the transactions to the standard FRAME executive. This calculates all the
-			// necessary tags, longevity and other properties that we will leave unchanged.
-			// This also assigns some priority that we don't care about and will overwrite next.
-			let mut intermediate_valid = Executive::validate_transaction(source, xt.clone(), block_hash)?;
+            // First we pass the transactions to the standard FRAME executive. This calculates all the
+            // necessary tags, longevity and other properties that we will leave unchanged.
+            // This also assigns some priority that we don't care about and will overwrite next.
+            let mut intermediate_valid = Executive::validate_transaction(source, xt.clone(), block_hash)?;
 
-			let dispatch_info = xt.get_dispatch_info();
+            let dispatch_info = xt.get_dispatch_info();
 
-			// If this is a pallet ethereum transaction, then its priority is already set
-			// according to effective priority fee from pallet ethereum. If it is any other kind of
-			// transaction, we modify its priority. The goal is to arrive at a similar metric used
-			// by pallet ethereum, which means we derive a fee-per-gas from the txn's tip and
-			// weight.
-			Ok(match &xt.0.function {
-				RuntimeCall::Ethereum(transact { .. }) => intermediate_valid,
-				_ if dispatch_info.class != DispatchClass::Normal => intermediate_valid,
-				_ => {
-					let tip = match xt.0.signature {
-						None => 0,
-						Some((_, _, ref signed_extra)) => {
-							// Yuck, this depends on the index of charge transaction in Signed Extra
-							let charge_transaction = &signed_extra.7;
-							charge_transaction.tip()
-						}
-					};
+            // If this is a pallet ethereum transaction, then its priority is already set
+            // according to effective priority fee from pallet ethereum. If it is any other kind of
+            // transaction, we modify its priority. The goal is to arrive at a similar metric used
+            // by pallet ethereum, which means we derive a fee-per-gas from the txn's tip and
+            // weight.
+            Ok(match &xt.0.function {
+                RuntimeCall::Ethereum(transact { .. }) => intermediate_valid,
+                _ if dispatch_info.class != DispatchClass::Normal => intermediate_valid,
+                _ => {
+                    let tip = match xt.0.signature {
+                        None => 0,
+                        Some((_, _, ref signed_extra)) => {
+                            // Yuck, this depends on the index of charge transaction in Signed Extra
+                            let charge_transaction = &signed_extra.7;
+                            charge_transaction.tip()
+                        }
+                    };
 
-					let effective_gas =
-						<Runtime as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
-							dispatch_info.weight
-						);
-					let tip_per_gas = if effective_gas > 0 {
-						tip.saturating_div(effective_gas as u128)
-					} else {
-						0
-					};
+                    let effective_gas =
+                        <Runtime as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
+                            dispatch_info.weight
+                        );
+                    let tip_per_gas = if effective_gas > 0 {
+                        tip.saturating_div(effective_gas as u128)
+                    } else {
+                        0
+                    };
 
-					// Overwrite the original prioritization with this ethereum one
-					intermediate_valid.priority = tip_per_gas as u64;
-					intermediate_valid
-				}
-			})
+                    // Overwrite the original prioritization with this ethereum one
+                    intermediate_valid.priority = tip_per_gas as u64;
+                    intermediate_valid
+                }
+            })
         }
     }
 
