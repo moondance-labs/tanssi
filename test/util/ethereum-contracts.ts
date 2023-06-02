@@ -14,7 +14,7 @@ export interface Compiled {
 }
 
 export function getAllContracts(): string[] {
-  const contractsPath = path.join(__dirname, `../contracts/compiled/`);
+  const contractsPath = path.join(__dirname, `../helpers/compiled/`);
   const contracts = fs.readdirSync(contractsPath, { withFileTypes: true });
   // Register all the contract code
   return contracts
@@ -24,12 +24,12 @@ export function getAllContracts(): string[] {
 
 const contracts: { [name: string]: Compiled } = {};
 export function getCompiled(name: string): Compiled {
-  if (!fs.existsSync(path.join(__dirname, `../contracts/compiled/${name}.json`))) {
+  if (!fs.existsSync(path.join(__dirname, `../helpers/compiled/${name}.json`))) {
     throw new Error(`Contract name (${name}) doesn't exist in test suite`);
   }
   if (!contracts[name]) {
     try {
-      contracts[name] = require(`../contracts/compiled/${name}.json`);
+      contracts[name] = require(`../helpers/compiled/${name}.json`);
     } catch (e) {
       throw new Error(
         `Contract name ${name} is not compiled. Please run 'npm run pre-build-contracts`
