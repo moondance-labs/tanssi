@@ -16,9 +16,9 @@ describeSuite({
 
     it({
         id: "T02",
-        title: "should have chainId 1000",
+        title: "should have chainId 1281",
         test: async function () {
-            expect(BigInt((await customWeb3Request(context.web3(), "eth_chainId", [])).result)).toBe(1000n);
+            expect(BigInt((await customWeb3Request(context.web3(), "eth_chainId", [])).result)).toBe(1281n);
         },
     });
 
