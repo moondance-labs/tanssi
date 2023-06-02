@@ -273,5 +273,10 @@ impl ContainerChainSpawner {
                 }
             }
         }
+
+        // The while loop can end if all the senders get dropped, but since this is an
+        // essential task we don't want it to stop. So await a future that never completes.
+        // This should only happen when starting a full node.
+        std::future::pending().await
     }
 }

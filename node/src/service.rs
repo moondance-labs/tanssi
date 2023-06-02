@@ -523,7 +523,7 @@ async fn start_node_impl(
             build_check_assigned_para_id(
                 client.clone(),
                 sync_keystore.clone(),
-                cc_spawn_tx,
+                cc_spawn_tx.clone(),
                 task_manager.spawn_essential_handle(),
             );
         }
@@ -583,6 +583,19 @@ async fn start_node_impl(
     start_network.start_network();
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
+        // If the orchestrator chain is running as a full-node, we start a full node for the
+        // container chain immediately, because only collator nodes detect their container chain
+        // assignment so otherwise it will never start.
+        if !validator {
+            if let Some(container_chain_para_id) = container_chain_cli.base.para_id {
+                // Spawn new container chain node
+                cc_spawn_tx
+                    .send(CcSpawnMsg::Spawn(container_chain_para_id.into()))
+                    .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+            }
+        }
+
+        // Start container chain spawner task. This will start and stop container chains on demand.
         let orchestrator_client = client.clone();
         let spawn_handle = task_manager.spawn_handle();
         let container_chain_spawner = ContainerChainSpawner {
