@@ -3,6 +3,10 @@ import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { getAuthorFromDigest } from "../../util/author";
+import { Signer, ethers } from "ethers";
+import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
+import { alith, BALTATHAR_ADDRESS, customWeb3Request } from "@moonwall/util";
+import { MIN_GAS_PRICE, generateKeyringPair } from "@moonwall/util";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 
 describeSuite({
@@ -14,6 +18,7 @@ describeSuite({
     let relayApi: ApiPromise;
     let container2000Api: ApiPromise;
     let container2001Api: ApiPromise;
+    let ethersSigner: Signer;
 
     beforeAll(async () => {
       
@@ -21,6 +26,7 @@ describeSuite({
       relayApi = context.polkadotJs({ apiName: "Relay" });
       container2000Api = context.polkadotJs({ apiName: "Container2000" });
       container2001Api = context.polkadotJs({ apiName: "Container2001" });
+      ethersSigner = context.ethersSigner();
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
       expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
@@ -58,7 +64,7 @@ describeSuite({
       },
     });
 
-    it({
+   it({
       id: "T02",
       title: "Test Tanssi assignation is correct",
       test: async function () {
@@ -113,7 +119,12 @@ describeSuite({
       title: "Blocks are being produced on container 2001",
       test: async function () {
         const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
+
         expect(blockNum).to.be.greaterThan(0);
+        expect(
+          (await ethersSigner.provider.getBlockNumber()),
+          "Safe tag is not present"
+        ).to.be.greaterThan(0);
       },
     });
 
@@ -186,6 +197,20 @@ describeSuite({
         expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
         const genesisData2001 = (await paraApi.query.registrar.paraGenesisData(2001));
         expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
+      }
+    });
+    it({
+      id: "T11",
+      title: "Transactions can be made with ethers",
+      timeout: 30000,
+      test: async function () {
+        const randomAccount = generateKeyringPair();
+        let tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, { gasPrice: MIN_GAS_PRICE });
+        let txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
+          tx,
+        ]);
+        await waitUntilEthTxIncluded(() => context.waitBlock(1, "Container2001"), context.web3(), txHash.result)
+        expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
       },
     });
   },
