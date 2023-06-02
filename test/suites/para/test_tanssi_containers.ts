@@ -4,6 +4,11 @@ const fs = require('fs/promises');
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
+import { getAuthorFromDigest } from "../../util/author";
+import { Signer, ethers } from "ethers";
+import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
+import { alith, BALTATHAR_ADDRESS, customWeb3Request } from "@moonwall/util";
+import { MIN_GAS_PRICE, generateKeyringPair } from "@moonwall/util";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 
 describeSuite({
@@ -18,6 +23,7 @@ describeSuite({
     let container2002Api: ApiPromise;
     let blockNumber2002Start;
     let blockNumber2002End;
+    let ethersSigner: Signer;
 
     beforeAll(async () => {
       
@@ -25,6 +31,7 @@ describeSuite({
       relayApi = context.polkadotJs({ apiName: "Relay" });
       container2000Api = context.polkadotJs({ apiName: "Container2000" });
       container2001Api = context.polkadotJs({ apiName: "Container2001" });
+      ethersSigner = context.ethersSigner();
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
       expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
@@ -62,7 +69,7 @@ describeSuite({
       },
     });
 
-    it({
+   it({
       id: "T02",
       title: "Test Tanssi assignation is correct",
       test: async function () {
@@ -119,7 +126,12 @@ describeSuite({
       title: "Blocks are being produced on container 2001",
       test: async function () {
         const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
+
         expect(blockNum).to.be.greaterThan(0);
+        expect(
+          (await ethersSigner.provider.getBlockNumber()),
+          "Safe tag is not present"
+        ).to.be.greaterThan(0);
       },
     });
 
@@ -192,11 +204,25 @@ describeSuite({
         expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
         const genesisData2001 = (await paraApi.query.registrar.paraGenesisData(2001));
         expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
+      }
+    });
+    it({
+      id: "T11",
+      title: "Transactions can be made with ethers",
+      timeout: 30000,
+      test: async function () {
+        const randomAccount = generateKeyringPair();
+        let tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, { gasPrice: MIN_GAS_PRICE });
+        let txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
+          tx,
+        ]);
+        await waitUntilEthTxIncluded(() => context.waitBlock(1, "Container2001"), context.web3(), txHash.result)
+        expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
       },
     });
 
     it({
-      id: "T11",
+      id: "T12",
       title: "Test live registration of container chain 2002",
       timeout: 300000,
       test: async function () {
@@ -292,7 +318,7 @@ describeSuite({
     });
 
     it({
-      id: "T12",
+      id: "T13",
       title: "Blocks are being produced on container 2002",
       timeout: 60000,
       test: async function () {
@@ -313,7 +339,7 @@ describeSuite({
     });
 
     it({
-      id: "T13",
+      id: "T14",
       title: "Test container chain 2002 assignation is correct",
       test: async function () {
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
@@ -328,7 +354,7 @@ describeSuite({
     });
 
     it({
-      id: "T14",
+      id: "T15",
       title: "Deregister container chain 2002, collators should move to tanssi",
       timeout: 300000,
       test: async function () {
@@ -351,11 +377,11 @@ describeSuite({
     });
 
     it({
-      id: "T15",
+      id: "T16",
       title: "Count number of tanssi collators before, during, and after 2002 chain",
       timeout: 150000,
       test: async function () {
-        // This test depends on T11 and T14 to set blockNumber2002Start and blockNumber2002End
+        // This test depends on T12 and T15 to set blockNumber2002Start and blockNumber2002End
         // TODO: don't hardcode the period here
         let sessionPeriod = 5;
         // The block range must start and end on session boundaries

@@ -17,7 +17,11 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 // std
-use std::{sync::Arc, time::Duration};
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use cumulus_client_cli::CollatorOptions;
 // Local Runtime Types
@@ -25,7 +29,6 @@ use container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi};
 
 // Cumulus Imports
 use {
-    cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_service::{
         build_relay_chain_interface, prepare_node_config, start_full_node, StartFullNodeParams,
     },
@@ -35,42 +38,78 @@ use {
 
 // Substrate Imports
 use {
+    fc_db::DatabaseSource,
+    fc_rpc_core::types::{FeeHistoryCache, FilterPool},
     sc_consensus::ImportQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
-    sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager},
+    sc_service::{
+        BasePath, Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager,
+    },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
 };
 
 /// Native executor type.
-pub struct ParachainNativeExecutor;
+use crate::client::TemplateRuntimeExecutor;
 
-impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
-    type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-
-    fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        container_chain_template_frontier_runtime::api::dispatch(method, data)
-    }
-
-    fn native_version() -> sc_executor::NativeVersion {
-        container_chain_template_frontier_runtime::native_version()
-    }
-}
-
-type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
+pub type ParachainExecutor = NativeElseWasmExecutor<TemplateRuntimeExecutor>;
 
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 
 type ParachainBackend = TFullBackend<Block>;
 
-type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
+use fc_consensus::FrontierBlockImport;
+
+pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
+    let config_dir = config
+        .base_path
+        .as_ref()
+        .map(|base_path| base_path.config_dir(config.chain_spec.id()))
+        .unwrap_or_else(|| {
+            BasePath::from_project("", "", "container").config_dir(config.chain_spec.id())
+        });
+    config_dir.join("frontier").join(path)
+}
+
+// TODO This is copied from frontier. It should be imported instead after
+// https://github.com/paritytech/frontier/issues/333 is solved
+pub fn open_frontier_backend<C>(
+    client: Arc<C>,
+    config: &Configuration,
+) -> Result<Arc<fc_db::Backend<Block>>, String>
+where
+    C: sp_blockchain::HeaderBackend<Block>,
+{
+    Ok(Arc::new(fc_db::Backend::<Block>::new(
+        client,
+        &fc_db::DatabaseSettings {
+            source: match config.database {
+                DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
+                    path: frontier_database_dir(config, "db"),
+                    cache_size: 0,
+                },
+                DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
+                    path: frontier_database_dir(config, "paritydb"),
+                },
+                DatabaseSource::Auto { .. } => DatabaseSource::Auto {
+                    rocksdb_path: frontier_database_dir(config, "db"),
+                    paritydb_path: frontier_database_dir(config, "paritydb"),
+                    cache_size: 0,
+                },
+                _ => {
+                    return Err("Supported db sources: `rocksdb` | `paritydb` | `auto`".to_string())
+                }
+            },
+        },
+    )?))
+}
 
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
 pub fn new_partial(
-    config: &Configuration,
+    config: &mut Configuration,
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -79,13 +118,19 @@ pub fn new_partial(
         sc_consensus::DefaultImportQueue<Block, ParachainClient>,
         sc_transaction_pool::FullPool<Block, ParachainClient>,
         (
-            ParachainBlockImport,
+            FrontierBlockImport<Block, Arc<ParachainClient>, ParachainClient>,
+            Option<FilterPool>,
             Option<Telemetry>,
             Option<TelemetryWorkerHandle>,
+            Arc<fc_db::Backend<Block>>,
+            FeeHistoryCache,
         ),
     >,
     sc_service::Error,
 > {
+    // Use ethereum style for subscription ids
+    config.rpc_id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
+
     let telemetry = config
         .telemetry_endpoints
         .clone()
@@ -97,6 +142,10 @@ pub fn new_partial(
         })
         .transpose()?;
 
+    // Default runtime_cache_size is 2
+    // For now we can work with this, but it will likely need
+    // to change once we start having runtime_cache_sizes, or
+    // run nodes with the maximum for this value
     let executor = ParachainExecutor::new(
         config.wasm_method,
         config.default_heap_pages,
@@ -129,11 +178,17 @@ pub fn new_partial(
         client.clone(),
     );
 
-    let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
+    let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
+    let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
+
+    let frontier_backend = open_frontier_backend(client.clone(), config)?;
+
+    let frontier_block_import =
+        FrontierBlockImport::new(client.clone(), client.clone(), frontier_backend.clone());
 
     let import_queue = nimbus_consensus::import_queue(
         client.clone(),
-        block_import.clone(),
+        frontier_block_import.clone(),
         move |_, _| async move {
             let time = sp_timestamp::InherentDataProvider::from_system_time();
 
@@ -152,7 +207,14 @@ pub fn new_partial(
         task_manager,
         transaction_pool,
         select_chain: (),
-        other: (block_import, telemetry, telemetry_worker_handle),
+        other: (
+            frontier_block_import,
+            filter_pool,
+            telemetry,
+            telemetry_worker_handle,
+            frontier_backend,
+            fee_history_cache,
+        ),
     })
 }
 
@@ -165,12 +227,20 @@ async fn start_node_impl(
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
+    rpc_config: crate::cli::RpcConfig,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
-    let parachain_config = prepare_node_config(parachain_config);
+    let mut parachain_config = prepare_node_config(parachain_config);
 
-    let params = new_partial(&parachain_config)?;
-    let (_block_import, mut telemetry, telemetry_worker_handle) = params.other;
+    let params = new_partial(&mut parachain_config)?;
+    let (
+        _block_import,
+        filter_pool,
+        mut telemetry,
+        telemetry_worker_handle,
+        frontier_backend,
+        fee_history_cache,
+    ) = params.other;
 
     let client = params.client.clone();
     let backend = params.backend.clone();
@@ -189,6 +259,7 @@ async fn start_node_impl(
 
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
+    let prometheus_registry = parachain_config.prometheus_registry().cloned();
 
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
@@ -202,6 +273,27 @@ async fn start_node_impl(
         })
         .await?;
 
+    let overrides = crate::rpc::overrides_handle(client.clone());
+    let fee_history_limit = rpc_config.fee_history_limit;
+
+    let pubsub_notification_sinks: fc_mapping_sync::EthereumBlockNotificationSinks<
+        fc_mapping_sync::EthereumBlockNotification<Block>,
+    > = Default::default();
+    let pubsub_notification_sinks = Arc::new(pubsub_notification_sinks);
+
+    crate::rpc::spawn_essential_tasks(crate::rpc::SpawnTasksParams {
+        task_manager: &task_manager,
+        client: client.clone(),
+        substrate_backend: backend.clone(),
+        frontier_backend: frontier_backend.clone(),
+        filter_pool: filter_pool.clone(),
+        overrides: overrides.clone(),
+        fee_history_limit,
+        fee_history_cache: fee_history_cache.clone(),
+        sync_service: sync_service.clone(),
+        pubsub_notification_sinks: pubsub_notification_sinks.clone(),
+    });
+
     if parachain_config.offchain_worker.enabled {
         sc_service::build_offchain_workers(
             &parachain_config,
@@ -211,23 +303,56 @@ async fn start_node_impl(
         );
     }
 
+    let block_data_cache = Arc::new(fc_rpc::EthBlockDataCacheTask::new(
+        task_manager.spawn_handle(),
+        overrides.clone(),
+        rpc_config.eth_log_block_cache,
+        rpc_config.eth_statuses_cache,
+        prometheus_registry.clone(),
+    ));
+
     let rpc_builder = {
         let client = client.clone();
-        let transaction_pool = transaction_pool.clone();
+        let pool = transaction_pool.clone();
+        let pubsub_notification_sinks = pubsub_notification_sinks.clone();
+        let network = network.clone();
+        let sync = sync_service.clone();
+        let filter_pool = filter_pool.clone();
+        let frontier_backend = frontier_backend.clone();
+        let backend = backend.clone();
+        let max_past_logs = rpc_config.max_past_logs;
+        let overrides = overrides.clone();
+        let fee_history_cache = fee_history_cache.clone();
+        let block_data_cache = block_data_cache.clone();
 
-        Box::new(move |deny_unsafe, _| {
+        move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
+                backend: backend.clone(),
                 client: client.clone(),
-                pool: transaction_pool.clone(),
                 deny_unsafe,
+                filter_pool: filter_pool.clone(),
+                frontier_backend: frontier_backend.clone(),
+                graph: pool.pool().clone(),
+                pool: pool.clone(),
+                max_past_logs,
+                fee_history_limit,
+                fee_history_cache: fee_history_cache.clone(),
+                network: network.clone(),
+                sync: sync.clone(),
+                block_data_cache: block_data_cache.clone(),
+                overrides: overrides.clone(),
             };
-
-            crate::rpc::create_full(deps).map_err(Into::into)
-        })
+            crate::rpc::create_full(
+                deps,
+                subscription_task_executor,
+                pubsub_notification_sinks.clone(),
+            )
+            .map_err(Into::into)
+        }
     };
 
     sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-        rpc_builder,
+        rpc_builder: Box::new(rpc_builder),
         client: client.clone(),
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
@@ -275,6 +400,7 @@ pub async fn start_parachain_node(
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
+    rpc_config: crate::cli::RpcConfig,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     start_node_impl(
@@ -282,6 +408,7 @@ pub async fn start_parachain_node(
         polkadot_config,
         collator_options,
         para_id,
+        rpc_config,
         hwbench,
     )
     .await

@@ -89,7 +89,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
-    properties.insert("tokenDecimals".into(), 12.into());
+    properties.insert("tokenDecimals".into(), 18.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), true.into());
 
@@ -140,7 +140,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
-    properties.insert("tokenDecimals".into(), 12.into());
+    properties.insert("tokenDecimals".into(), 18.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), true.into());
     let protocol_id = Some(format!("container-chain-{}", para_id));
