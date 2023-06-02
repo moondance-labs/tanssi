@@ -186,6 +186,17 @@ describeSuite({
 
     it({
       id: "T10",
+      title: "Test frontier template isEthereum",
+      test: async function () {
+        const genesisData2000 = (await paraApi.query.registrar.paraGenesisData(2000));
+        expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
+        const genesisData2001 = (await paraApi.query.registrar.paraGenesisData(2001));
+        expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
+      },
+    });
+
+    it({
+      id: "T11",
       title: "Test live registration of container chain 2002",
       timeout: 300000,
       test: async function () {
@@ -218,6 +229,7 @@ describeSuite({
               token_symbol: "Vec<u8>",
               ss58_format: "u32",
               token_decimals: "u32",
+              is_ethereum: "bool",
             },
             ContainerChainGenesisDataItem: {
               key: "Vec<u8>",
@@ -280,7 +292,7 @@ describeSuite({
     });
 
     it({
-      id: "T11",
+      id: "T12",
       title: "Blocks are being produced on container 2002",
       timeout: 60000,
       test: async function () {
@@ -301,7 +313,7 @@ describeSuite({
     });
 
     it({
-      id: "T12",
+      id: "T13",
       title: "Test container chain 2002 assignation is correct",
       test: async function () {
         const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
@@ -316,7 +328,7 @@ describeSuite({
     });
 
     it({
-      id: "T13",
+      id: "T14",
       title: "Deregister container chain 2002, collators should move to tanssi",
       timeout: 300000,
       test: async function () {
@@ -339,11 +351,11 @@ describeSuite({
     });
 
     it({
-      id: "T14",
+      id: "T15",
       title: "Count number of tanssi collators before, during, and after 2002 chain",
       timeout: 150000,
       test: async function () {
-        // This test depends on T10 and T11 to set blockNumber2002Start and blockNumber2002End
+        // This test depends on T11 and T14 to set blockNumber2002Start and blockNumber2002End
         // TODO: don't hardcode the period here
         let sessionPeriod = 5;
         // The block range must start and end on session boundaries
