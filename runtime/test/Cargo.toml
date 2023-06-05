@@ -37,7 +37,6 @@ frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
-frame-try-runtime = { workspace = true, optional = true }
 pallet-aura = { workspace = true }
 pallet-authorship = { workspace = true }
 pallet-balances = { workspace = true }
@@ -76,6 +75,11 @@ cumulus-primitives-timestamp = { workspace = true }
 pallet-collator-selection = { workspace = true }
 parachain-info = { workspace = true }
 
+# Benchmarking
+frame-benchmarking = { workspace = true, optional = true }
+frame-system-benchmarking = { workspace = true, optional = true }
+frame-try-runtime = { workspace = true, optional = true }
+
 [dev-dependencies]
 sp-io = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
@@ -90,11 +94,14 @@ std = [ "cumulus-pallet-aura-ext/std", "cumulus-pallet-parachain-system/std", "c
 
 runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
+	"frame-benchmarking",
 	"frame-support/runtime-benchmarks",
+	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"hex-literal",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-collator-selection/runtime-benchmarks",
+	"pallet-registrar/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 ]
