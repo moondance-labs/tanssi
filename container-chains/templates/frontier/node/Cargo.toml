@@ -105,6 +105,7 @@ substrate-build-script-utils = { workspace = true }
 default = []
 runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
+	"pallet-ethereum/runtime-benchmarks",
 	"polkadot-cli/runtime-benchmarks",
 	"try-runtime-cli/try-runtime",
 ]
