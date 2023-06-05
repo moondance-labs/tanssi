@@ -734,6 +734,7 @@ pub async fn start_dev_node(
     Ok(task_manager)
 }
 
+/// TODO: move it somewhere common, code duplication
 /// Block authoring scheme to be used by the dev service.
 #[derive(Debug, Copy, Clone)]
 pub enum Sealing {
