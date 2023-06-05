@@ -32,8 +32,8 @@ describeSuite({
         .viemClient("public")
         .getTransactionCount({ address: ALITH_ADDRESS });
       const contractData = getCompiled("MultiplyBy7");
-      for (var b = 0; b < block_count; b++) {
-        for (var p = 0; p < priority_fees.length; p++) {
+      for (let b = 0; b < block_count; b++) {
+        for (let p = 0; p < priority_fees.length; p++) {
           await context.ethersSigner().sendTransaction({
             from: alith.address,
             data: contractData.byteCode,

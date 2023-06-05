@@ -193,14 +193,6 @@ where
         let aura_digest_item =
             <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest(slot);
 
-        // Fetch the authorities for the orchestrator chain
-        /*let authorities = self
-        .client
-        .runtime_api()
-        .authorities(parent.hash())
-        .ok()
-        .ok_or(sp_consensus::Error::InvalidAuthoritiesSet)?;*/
-
         let expected_author: Option<nimbus_primitives::NimbusId> = None;
 
         // TODO: this should always be included, but breaks manual seal tests. We should modify

@@ -329,7 +329,7 @@ pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = 1_000_000_000;
 pub const MICROUNIT: Balance = 1_000_000;
 
-/// The existential deposit. Set to 1/10 of the Connected Relay Chain.
+/// The existential deposit. Set to 0 because this is an ethereum-like chain
 pub const EXISTENTIAL_DEPOSIT: Balance = 0;
 
 /// We assume that ~5% of the block weight is consumed by `on_initialize` handlers. This is
