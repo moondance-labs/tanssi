@@ -459,6 +459,48 @@ async fn start_node_impl(
         sync_service: sync_service.clone(),
     })?;
 
+    // Start rpc proxy (maps ws://localhost:3000/container2000 to ws://localhost:9963)
+    {
+        // TODO: this doesn't work because of a conection refused error (111)
+        // I guess that's because localhost:9958 is expecting a websockets connection, while
+        // axum tries to open a normal http connection. Since hyper does not include a native
+        // websockets client, supporting this will require some effort, or more dependencies
+        use reverse_proxy_service::Identity;
+
+        use axum::Router;
+
+        let host1 = reverse_proxy_service::builder(
+            reverse_proxy_service::client::http_default(),
+            "http",
+            "localhost:9958",
+        )
+        .unwrap();
+        let host2 = reverse_proxy_service::builder(
+            reverse_proxy_service::client::http_default(),
+            "http",
+            "localhost:9954",
+        )
+        .unwrap();
+        let host3 = reverse_proxy_service::builder(
+            reverse_proxy_service::client::http_default(),
+            "http",
+            "localhost:9959",
+        )
+        .unwrap();
+
+        let app = Router::new()
+            .route_service("/tanssi", host1.build(Identity))
+            .route_service("/relay", host2.build(Identity))
+            .route_service("/container2000", host3.build(Identity));
+
+        let fut = axum::Server::bind(&"0.0.0.0:0".parse().unwrap()).serve(app.into_make_service());
+        log::info!("RPC Proxy listening at {:?}", fut.local_addr());
+
+        task_manager
+            .spawn_essential_handle()
+            .spawn("rpc-proxy", None, async { fut.await.unwrap() });
+    }
+
     if let Some(hwbench) = hwbench {
         sc_sysinfo::print_hwbench(&hwbench);
         // Here you can check whether the hardware meets your chains' requirements. Putting a link
