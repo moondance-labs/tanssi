@@ -38,19 +38,17 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use {
-        frame_support::traits::ExistenceRequirement::KeepAlive,
-        frame_support::{pallet_prelude::*, traits::Currency, PalletId, LOG_TARGET},
+        frame_support::{
+            pallet_prelude::*, traits::Currency, traits::ReservableCurrency, LOG_TARGET,
+        },
         frame_system::pallet_prelude::*,
-        sp_runtime::{traits::AccountIdConversion, traits::AtLeast32BitUnsigned, Saturating},
+        sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
         sp_std::prelude::*,
         tp_container_chain_genesis_data::ContainerChainGenesisData,
         tp_traits::{
             GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
         },
     };
-
-    /// The Registrar pallet id
-    pub const PALLET_ID: PalletId = PalletId(*b"tregistr");
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -125,7 +123,7 @@ pub mod pallet {
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
 
-        type Currency: Currency<Self::AccountId>;
+        type Currency: ReservableCurrency<Self::AccountId>;
         type DepositAmount: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
     }
 
@@ -152,6 +150,23 @@ pub mod pallet {
     pub type PendingVerification<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
+    pub type DepositBalanceOf<T> =
+        <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
+    #[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, scale_info::TypeInfo)]
+    #[scale_info(skip_type_params(T))]
+    pub struct DepositInfo<T: Config> {
+        pub creator: T::AccountId,
+        pub deposit: DepositBalanceOf<T>,
+    }
+
+    /// Registrar deposits, a mapping from paraId to a struct
+    /// holding the creator (from which the deposit was reserved) and
+    /// the deposit amount
+    #[pallet::storage]
+    #[pallet::getter(fn registrar_deposit)]
+    pub type RegistrarDeposit<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, DepositInfo<T>>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -175,6 +190,8 @@ pub mod pallet {
         GenesisDataTooBig,
         /// Tried to mark_valid_for_collating a ParaId that is not in PendingVerification
         ParaIdNotInPendingVerification,
+        /// Tried to register a ParaId with an account that did not have enough balance for the deposit
+        NotSufficientDeposit,
     }
 
     #[pallet::call]
@@ -188,13 +205,12 @@ pub mod pallet {
             genesis_data: ContainerChainGenesisData,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            // Send deposit to reserve account
-            T::Currency::transfer(
-                &account,
-                &Self::account_id(),
-                T::DepositAmount::get(),
-                KeepAlive,
-            )?;
+            let deposit = T::DepositAmount::get();
+
+            // Verify we can reserve
+            T::Currency::can_reserve(&account, deposit)
+                .then(|| true)
+                .ok_or(Error::<T>::NotSufficientDeposit)?;
 
             // Check if the para id is already registered
             let pending_paras = <PendingParaIds<T>>::get();
@@ -218,10 +234,11 @@ pub mod pallet {
                 }
             }
 
-            // While the registration takes place on the next session, the genesis data
-            // is inserted immediately. This is because collators should be able to start syncing
-            // the new container chain before the first block is mined. However, we could store
-            // the genesis data in another key, like PendingParaGenesisData.
+            // The actual registration takes place 2 sessions after the call to
+            // `mark_valid_for_collating`, but the genesis data is inserted now.
+            // This is because collators should be able to start syncing the new container chain
+            // before the first block is mined. However, we could store the genesis data in a
+            // different key, like PendingParaGenesisData.
             // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
             // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
             // won't detect that the size is too big until after iterating over all of them, so the
@@ -231,6 +248,17 @@ pub mod pallet {
                 return Err(Error::<T>::GenesisDataTooBig.into());
             }
 
+            // Reserve the deposit, we verified we can do this
+            T::Currency::reserve(&account, deposit)?;
+
+            // Update DepositInfo
+            RegistrarDeposit::<T>::insert(
+                para_id,
+                DepositInfo {
+                    creator: account.clone(),
+                    deposit,
+                },
+            );
             ParaGenesisData::<T>::insert(para_id, genesis_data);
             PendingVerification::<T>::put(pending_verification);
 
@@ -239,9 +267,12 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Deregister parachain
+        /// Deregister parachain.
+        ///
+        /// If a parachain is registered but not marked as valid_for_collating, this will remove it
+        /// from `PendingVerification` as well.
         #[pallet::call_index(1)]
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1).ref_time())]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,2).ref_time())]
         pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
@@ -252,10 +283,34 @@ pub mod pallet {
                         para_ids.remove(index);
                         Ok(())
                     }
-                    Err(_) => Err(Error::<T>::ParaIdNotRegistered.into()),
+                    Err(_) => {
+                        // If the para id is not registered yet, it may be in "PendingVerification"
+                        // In that case, remove it from there
+                        let mut para_ids = PendingVerification::<T>::get();
+
+                        match para_ids.binary_search(&para_id) {
+                            Ok(index) => {
+                                para_ids.remove(index);
+                                PendingVerification::<T>::put(para_ids);
+                                Ok(())
+                            }
+                            Err(_) => Err(Error::<T>::ParaIdNotRegistered.into()),
+                        }
+                    }
                 };
                 result
             })?;
+
+            // Get asset creator and deposit amount
+            // Deposit may not exist, for example if the para id was registered on genesis
+            if let Some(asset_info) = RegistrarDeposit::<T>::get(para_id) {
+                // Unreserve deposit
+                T::Currency::unreserve(&asset_info.creator, asset_info.deposit);
+
+                // Remove asset info
+                RegistrarDeposit::<T>::remove(para_id);
+            }
+
             Self::deposit_event(Event::ParaIdDeregistered { para_id });
 
             // TODO: while the deregistration takes place on the next session, the genesis data
@@ -314,15 +369,6 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        /// Returns the pallet account
-        pub fn account_id() -> T::AccountId {
-            PALLET_ID.into_account_truncating()
-        }
-        /// Returns total balance in the pallet account
-        pub fn total_locked() -> <T::Currency as Currency<T::AccountId>>::Balance {
-            T::Currency::free_balance(&Self::account_id())
-        }
-
         #[inline(never)]
         fn schedule_parachain_change(
             updater: impl FnOnce(&mut BoundedVec<ParaId, T::MaxLengthParaIds>) -> DispatchResult,

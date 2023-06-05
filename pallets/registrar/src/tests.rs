@@ -418,3 +418,40 @@ fn mark_valid_for_collating_already_valid_para_id() {
         );
     });
 }
+
+#[test]
+fn deregister_returns_bond() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let bond = DepositAmount::get();
+        let balance_before = Balances::free_balance(ALICE);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_eq!(Balances::free_balance(ALICE), balance_before - bond);
+
+        assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
+
+        assert_eq!(Balances::free_balance(ALICE), balance_before);
+    });
+}
+
+#[test]
+fn can_deregister_before_valid_for_collating() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+
+        assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
+    });
+}

@@ -52,11 +52,11 @@ describeSuite({
         const containerChainGenesisData = emptyGenesisData();
 
         const tx = polkadotJs.tx.registrar.register(2002, containerChainGenesisData);
-        await tx.signAndSend(alice);
-        await context.createBlock();
         const tx2 = polkadotJs.tx.registrar.markValidForCollating(2002);
-        await polkadotJs.tx.sudo.sudo(tx2).signAndSend(alice);
-        await context.createBlock();
+        await context.createBlock([
+          await tx.signAsync(alice, { nonce: 0 }),
+          await polkadotJs.tx.sudo.sudo(tx2).signAsync(alice, { nonce: 1 }),
+        ]);
 
         const pendingParas = await polkadotJs.query.registrar.pendingParaIds();
         expect(pendingParas.length).to.be.eq(1);
