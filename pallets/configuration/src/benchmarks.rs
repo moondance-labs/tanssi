@@ -19,9 +19,8 @@
 //! Benchmarking
 use {
     crate::{Call, Config, Pallet},
-    frame_benchmarking::{account, benchmarks, impl_benchmark_test_suite},
+    frame_benchmarking::{benchmarks, impl_benchmark_test_suite},
     frame_system::RawOrigin,
-    sp_std::vec,
 };
 
 benchmarks! {
