@@ -28,15 +28,27 @@ benchmarks! {
     where_clause { where T::SessionIndex: From<u32> }
 
     register {
+        // We make it dependent on the size of the runtime
+		let x in 5..3_000_000;
+        // ..and on the nummber of parachains already registered
+        let y in 1..50;
+
         let caller: T::AccountId = account("account id", 0u32, 0u32);
         let storage =  ContainerChainGenesisData {
-            storage: vec![(vec![], vec![0; 10]).into()],
+            storage: vec![(vec![], vec![0; x as usize]).into()],
             name: Default::default(),
             id: Default::default(),
             fork_id: Default::default(),
             extensions: Default::default(),
             properties: Default::default()
         };
+
+        for i in 1..y {
+            Pallet::<T>::register(RawOrigin::Root.into(), i.into(), storage.clone())?;
+        }
+        
+        
+
     }: _(RawOrigin::Root, Default::default(), storage)
     verify {
        assert!(Pallet::<T>::pending_registered_para_ids().len()>0);
