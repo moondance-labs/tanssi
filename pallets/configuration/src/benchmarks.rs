@@ -28,7 +28,7 @@ benchmarks! {
 
     impl_benchmark_test_suite!(
         Pallet,
-        crate::mock::new_test_ext(Default::default()),
+        crate::mock::new_test_ext(),
         crate::mock::Test
     );
 }
@@ -45,9 +45,9 @@ mod tests {
     }
 
     #[test]
-    fn bench_register() {
+    fn bench_set_config_with_u32() {
         new_test_ext().execute_with(|| {
-            assert_ok!(Pallet::<Test>::test_benchmark_register());
+            assert_ok!(Pallet::<Test>::test_benchmark_set_config_with_u32());
         });
     }
 }
