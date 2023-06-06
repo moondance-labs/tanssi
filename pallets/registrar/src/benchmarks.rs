@@ -46,8 +46,6 @@ benchmarks! {
         for i in 1..y {
             Pallet::<T>::register(RawOrigin::Root.into(), i.into(), storage.clone())?;
         }
-        
-        
 
     }: _(RawOrigin::Root, Default::default(), storage)
     verify {
