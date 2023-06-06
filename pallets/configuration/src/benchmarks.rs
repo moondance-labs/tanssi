@@ -25,13 +25,13 @@ use {
 };
 
 benchmarks! {
-	set_config_with_u32 {}: set_max_collators(RawOrigin::Root, 100)
+    set_config_with_u32 {}: set_max_collators(RawOrigin::Root, 100)
 
-	impl_benchmark_test_suite!(
-		Pallet,
-		crate::mock::new_test_ext(Default::default()),
-		crate::mock::Test
-	);
+    impl_benchmark_test_suite!(
+        Pallet,
+        crate::mock::new_test_ext(Default::default()),
+        crate::mock::Test
+    );
 }
 
 #[cfg(test)]
