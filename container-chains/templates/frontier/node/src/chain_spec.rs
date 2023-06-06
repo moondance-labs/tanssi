@@ -209,7 +209,7 @@ fn testnet_genesis(
             balances: endowed_accounts
                 .iter()
                 .cloned()
-                .map(|k| (k, 1 << 60))
+                .map(|k| (k, 1 << 80))
                 .collect(),
         },
         parachain_info: container_chain_template_frontier_runtime::ParachainInfoConfig {
@@ -232,8 +232,10 @@ fn testnet_genesis(
         aura: Default::default(),
         parachain_system: Default::default(),
         // EVM compatibility
+        // We should change this to something different than Moonbeam
+        // For now moonwall is very tailored for moonbeam so we need it for tests
         evm_chain_id: EVMChainIdConfig {
-            chain_id: u32::from(id) as u64,
+            chain_id: 1281u32 as u64,
         },
         evm: EVMConfig {
             accounts: {
