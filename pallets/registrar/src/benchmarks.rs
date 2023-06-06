@@ -29,7 +29,7 @@ benchmarks! {
 
     register {
         // We make it dependent on the size of the runtime
-		let x in 5..3_000_000;
+        let x in 5..3_000_000;
         // ..and on the nummber of parachains already registered
         let y in 1..50;
 
