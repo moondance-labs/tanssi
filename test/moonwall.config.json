@@ -31,7 +31,7 @@
         "type": "dev",
         "launchSpec": [
           {
-            "name": "tanssi",
+            "name": "frontier-template",
             "binPath": "../target/release/container-chain-template-frontier-node",
             "options": [
                 "--dev",
