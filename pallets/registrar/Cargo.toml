@@ -9,6 +9,7 @@ version = "0.1.0"
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
 [dependencies]
+frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true, default-features = false }
 frame-system = { workspace = true, default-features = false }
 log = { workspace = true, default-features = false }
@@ -37,5 +38,9 @@ std = [
 	"serde",
 	"tp-container-chain-genesis-data/std",
 	"tp-traits/std",
+	"frame-benchmarking/std"
+]
+runtime-benchmarks = [
+	"frame-benchmarking"
 ]
 try-runtime = [ "frame-support/try-runtime" ]

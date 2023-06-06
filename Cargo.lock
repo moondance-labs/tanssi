@@ -5976,9 +5976,11 @@ dependencies = [
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "frame-benchmarking",
  "frame-executive",
  "frame-support",
  "frame-system",
+ "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal",
@@ -6458,6 +6460,7 @@ dependencies = [
 name = "pallet-configuration"
 version = "0.1.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
@@ -7030,6 +7033,7 @@ dependencies = [
 name = "pallet-registrar"
 version = "0.1.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",

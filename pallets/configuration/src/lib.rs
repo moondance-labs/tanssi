@@ -34,6 +34,12 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
+mod weights;
+
+use crate::weights::WeightInfo;
+
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+mod benchmarks;
 
 pub use pallet::*;
 use {
@@ -96,37 +102,6 @@ impl HostConfiguration {
         if let Err(err) = self.check_consistency() {
             panic!("Host configuration is inconsistent: {:?}", err);
         }
-    }
-}
-
-pub trait WeightInfo {
-    fn set_config_with_block_number() -> Weight;
-    fn set_config_with_u32() -> Weight;
-    fn set_config_with_option_u32() -> Weight;
-    fn set_config_with_weight() -> Weight;
-    fn set_config_with_balance() -> Weight;
-    fn set_hrmp_open_request_ttl() -> Weight;
-}
-
-// TODO: set proper weights
-impl WeightInfo for () {
-    fn set_config_with_block_number() -> Weight {
-        Weight::zero()
-    }
-    fn set_config_with_u32() -> Weight {
-        Weight::zero()
-    }
-    fn set_config_with_option_u32() -> Weight {
-        Weight::zero()
-    }
-    fn set_config_with_weight() -> Weight {
-        Weight::zero()
-    }
-    fn set_config_with_balance() -> Weight {
-        Weight::zero()
-    }
-    fn set_hrmp_open_request_ttl() -> Weight {
-        Weight::zero()
     }
 }
 
