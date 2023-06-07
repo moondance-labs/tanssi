@@ -21,6 +21,7 @@ serde = { workspace = true, features = [ "derive" ] }
 url = { workspace = true }
 
 # Local
+ccp-authorities-noting-inherent = { workspace = true }
 container-chain-template-frontier-runtime = { path = "../runtime", default-features = false, features = [ "std" ] }
 tc-consensus = { workspace = true }
 
@@ -105,6 +106,7 @@ substrate-build-script-utils = { workspace = true }
 default = []
 runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
+	"pallet-ethereum/runtime-benchmarks",
 	"polkadot-cli/runtime-benchmarks",
 	"try-runtime-cli/try-runtime",
 ]

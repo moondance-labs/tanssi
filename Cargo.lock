@@ -799,9 +799,12 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core 0.1.0 (git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40)",
+ "cumulus-primitives-parachain-inherent 0.1.0 (git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40)",
  "cumulus-relay-chain-interface 0.1.0 (git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40)",
+ "nimbus-primitives",
  "parity-scale-codec",
  "scale-info",
+ "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
  "sp-io",
@@ -811,6 +814,7 @@ dependencies = [
  "tc-consensus",
  "tc-orchestrator-chain-interface",
  "test-relay-sproof-builder",
+ "tp-collator-assignment",
  "tp-core",
  "tracing",
 ]
@@ -1043,6 +1047,7 @@ version = "0.1.0"
 dependencies = [
  "async-io",
  "async-trait",
+ "ccp-authorities-noting-inherent",
  "clap",
  "container-chain-template-frontier-runtime",
  "cumulus-client-cli",
@@ -1128,7 +1133,6 @@ dependencies = [
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core 0.1.0 (git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40)",
  "cumulus-primitives-timestamp",
- "cumulus-primitives-utility",
  "fp-account",
  "fp-evm",
  "fp-rpc",
@@ -1254,7 +1258,6 @@ dependencies = [
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core 0.1.0 (git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40)",
  "cumulus-primitives-timestamp",
- "cumulus-primitives-utility",
  "frame-executive",
  "frame-support",
  "frame-system",
@@ -1973,24 +1976,6 @@ dependencies = [
  "sp-inherents",
  "sp-std",
  "sp-timestamp",
-]
-
-[[package]]
-name = "cumulus-primitives-utility"
-version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40#eee131776f875ad8bbdef2e75c36f867d16f5766"
-dependencies = [
- "cumulus-primitives-core 0.1.0 (git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40)",
- "frame-support",
- "log",
- "parity-scale-codec",
- "polkadot-runtime-common",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "xcm 0.9.40 (git+https://github.com/moondance-labs/polkadot?branch=tanssi-polkadot-v0.9.40)",
- "xcm-builder",
- "xcm-executor",
 ]
 
 [[package]]
@@ -6114,7 +6099,6 @@ dependencies = [
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core 0.1.0 (git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40)",
  "cumulus-primitives-timestamp",
- "cumulus-primitives-utility",
  "frame-executive",
  "frame-support",
  "frame-system",
