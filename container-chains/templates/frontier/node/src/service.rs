@@ -23,9 +23,18 @@ use std::{
     time::Duration,
 };
 
-use cumulus_client_cli::CollatorOptions;
+use {
+    cumulus_client_cli::CollatorOptions,
+    cumulus_primitives_parachain_inherent::{
+        MockValidationDataInherentDataProvider, MockXcmConfig,
+    },
+    sp_consensus_aura::SlotDuration,
+};
 // Local Runtime Types
-use container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi};
+use {
+    container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
+    futures::StreamExt,
+};
 
 // Cumulus Imports
 use {
@@ -57,6 +66,8 @@ pub type ParachainExecutor = NativeElseWasmExecutor<TemplateRuntimeExecutor>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 
 type ParachainBackend = TFullBackend<Block>;
+
+type MaybeSelectChain = Option<sc_consensus::LongestChain<ParachainBackend, Block>>;
 
 use fc_consensus::FrontierBlockImport;
 
@@ -104,17 +115,24 @@ where
     )?))
 }
 
+thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
+
+/// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
+/// Each call will increment timestamp by slot_duration making Aura think time has passed.
+struct MockTimestampInherentDataProvider;
+
 /// Starts a `ServiceBuilder` for a full service.
 ///
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
 pub fn new_partial(
     config: &mut Configuration,
+    dev_service: bool,
 ) -> Result<
     PartialComponents<
         ParachainClient,
         ParachainBackend,
-        (),
+        MaybeSelectChain,
         sc_consensus::DefaultImportQueue<Block, ParachainClient>,
         sc_transaction_pool::FullPool<Block, ParachainClient>,
         (
@@ -170,6 +188,12 @@ pub fn new_partial(
         telemetry
     });
 
+    let maybe_select_chain = if dev_service {
+        Some(sc_consensus::LongestChain::new(backend.clone()))
+    } else {
+        None
+    };
+
     let transaction_pool = sc_transaction_pool::BasicPool::new_full(
         config.transaction_pool.clone(),
         config.role.is_authority().into(),
@@ -196,7 +220,7 @@ pub fn new_partial(
         },
         &task_manager.spawn_essential_handle(),
         config.prometheus_registry(),
-        false,
+        !dev_service,
     )?;
 
     Ok(PartialComponents {
@@ -206,7 +230,7 @@ pub fn new_partial(
         keystore_container,
         task_manager,
         transaction_pool,
-        select_chain: (),
+        select_chain: maybe_select_chain,
         other: (
             frontier_block_import,
             filter_pool,
@@ -232,7 +256,7 @@ async fn start_node_impl(
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let mut parachain_config = prepare_node_config(parachain_config);
 
-    let params = new_partial(&mut parachain_config)?;
+    let params = new_partial(&mut parachain_config, false)?;
     let (
         _block_import,
         filter_pool,
@@ -341,6 +365,8 @@ async fn start_node_impl(
                 sync: sync.clone(),
                 block_data_cache: block_data_cache.clone(),
                 overrides: overrides.clone(),
+                is_authority: false,
+                command_sink: None,
             };
             crate::rpc::create_full(
                 deps,
@@ -412,4 +438,327 @@ pub async fn start_parachain_node(
         hwbench,
     )
     .await
+}
+
+use {sp_blockchain::HeaderBackend, std::str::FromStr};
+/// Builds a new development service. This service uses manual seal, and mocks
+/// the parachain inherent.
+pub async fn start_dev_node(
+    mut config: Configuration,
+    sealing: Sealing,
+    rpc_config: crate::cli::RpcConfig,
+    hwbench: Option<sc_sysinfo::HwBench>,
+) -> Result<TaskManager, sc_service::error::Error> {
+    use {
+        async_io::Timer,
+        futures::Stream,
+        sc_consensus_manual_seal::{run_manual_seal, EngineCommand, ManualSealParams},
+        sp_core::H256,
+    };
+
+    let sc_service::PartialComponents {
+        client,
+        backend,
+        mut task_manager,
+        import_queue,
+        keystore_container,
+        select_chain: maybe_select_chain,
+        transaction_pool,
+        other:
+            (
+                block_import,
+                filter_pool,
+                mut telemetry,
+                _telemetry_worker_handle,
+                frontier_backend,
+                fee_history_cache,
+            ),
+    } = new_partial(&mut config, true)?;
+
+    let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
+        sc_service::build_network(sc_service::BuildNetworkParams {
+            config: &config,
+            client: client.clone(),
+            transaction_pool: transaction_pool.clone(),
+            spawn_handle: task_manager.spawn_handle(),
+            import_queue,
+            block_announce_validator_builder: None,
+            warp_sync_params: None,
+        })?;
+
+    if config.offchain_worker.enabled {
+        sc_service::build_offchain_workers(
+            &config,
+            task_manager.spawn_handle(),
+            client.clone(),
+            network.clone(),
+        );
+    }
+
+    let prometheus_registry = config.prometheus_registry().cloned();
+    let overrides = crate::rpc::overrides_handle(client.clone());
+    let fee_history_limit = rpc_config.fee_history_limit;
+    let collator = config.role.is_authority();
+    let mut command_sink = None;
+
+    let pubsub_notification_sinks: fc_mapping_sync::EthereumBlockNotificationSinks<
+        fc_mapping_sync::EthereumBlockNotification<Block>,
+    > = Default::default();
+    let pubsub_notification_sinks = Arc::new(pubsub_notification_sinks);
+
+    if collator {
+        let env = sc_basic_authorship::ProposerFactory::with_proof_recording(
+            task_manager.spawn_handle(),
+            client.clone(),
+            transaction_pool.clone(),
+            prometheus_registry.as_ref(),
+            telemetry.as_ref().map(|x| x.handle()),
+        );
+
+        let commands_stream: Box<dyn Stream<Item = EngineCommand<H256>> + Send + Sync + Unpin> =
+            match sealing {
+                Sealing::Instant => {
+                    Box::new(
+                        // This bit cribbed from the implementation of instant seal.
+                        transaction_pool
+                            .pool()
+                            .validated_pool()
+                            .import_notification_stream()
+                            .map(|_| EngineCommand::SealNewBlock {
+                                create_empty: false,
+                                finalize: false,
+                                parent_hash: None,
+                                sender: None,
+                            }),
+                    )
+                }
+                Sealing::Manual => {
+                    let (sink, stream) = futures::channel::mpsc::channel(1000);
+                    // Keep a reference to the other end of the channel. It goes to the RPC.
+                    command_sink = Some(sink);
+                    Box::new(stream)
+                }
+                Sealing::Interval(millis) => Box::new(StreamExt::map(
+                    Timer::interval(Duration::from_millis(millis)),
+                    |_| EngineCommand::SealNewBlock {
+                        create_empty: true,
+                        finalize: false,
+                        parent_hash: None,
+                        sender: None,
+                    },
+                )),
+            };
+
+        let select_chain = maybe_select_chain.expect(
+            "`new_partial` builds a `LongestChainRule` when building dev service.\
+				We specified the dev service when calling `new_partial`.\
+				Therefore, a `LongestChainRule` is present. qed.",
+        );
+
+        let client_set_aside_for_cidp = client.clone();
+
+        #[async_trait::async_trait]
+        impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
+            async fn provide_inherent_data(
+                &self,
+                inherent_data: &mut sp_inherents::InherentData,
+            ) -> Result<(), sp_inherents::Error> {
+                TIMESTAMP.with(|x| {
+                    *x.borrow_mut() += container_chain_template_frontier_runtime::SLOT_DURATION;
+                    inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
+                })
+            }
+
+            async fn try_handle_error(
+                &self,
+                _identifier: &sp_inherents::InherentIdentifier,
+                _error: &[u8],
+            ) -> Option<Result<(), sp_inherents::Error>> {
+                // The pallet never reports error.
+                None
+            }
+        }
+
+        task_manager.spawn_essential_handle().spawn_blocking(
+			"authorship_task",
+			Some("block-authoring"),
+			run_manual_seal(ManualSealParams {
+				block_import,
+				env,
+				client: client.clone(),
+				pool: transaction_pool.clone(),
+				commands_stream,
+				select_chain,
+				consensus_data_provider: Some(Box::new(tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
+                    client.clone(),
+                    keystore_container.sync_keystore(),
+                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION.into())
+                ))),
+				create_inherent_data_providers: move |block: H256, ()| {
+					let current_para_block = client_set_aside_for_cidp
+						.number(block)
+						.expect("Header lookup should succeed")
+						.expect("Header passed in as parent should be present in backend.");
+
+                    let client_for_xcm = client_set_aside_for_cidp.clone();
+
+					async move {
+                        let time = MockTimestampInherentDataProvider;
+                        let mocked_parachain = MockValidationDataInherentDataProvider {
+                            current_para_block,
+                            relay_offset: 1000,
+                            relay_blocks_per_para_block: 2,
+                            // TODO: Recheck
+                            para_blocks_per_relay_epoch: 10,
+                            relay_randomness_config: (),
+                            xcm_config: MockXcmConfig::new(
+                                &*client_for_xcm,
+                                block,
+                                Default::default(),
+                                Default::default(),
+                            ),
+                            raw_downward_messages: vec![],
+                            raw_horizontal_messages: vec![],
+                        };
+
+                        let mocked_authorities_noting =
+                            ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
+                                current_para_block,
+                                relay_offset: 1000,
+                                relay_blocks_per_para_block: 2,
+                                orchestrator_para_id: 1000u32.into(),
+                                authorities: vec![]
+                        };
+
+						Ok((time, mocked_parachain, mocked_authorities_noting))
+					}
+				},
+			}),
+		);
+    }
+
+    crate::rpc::spawn_essential_tasks(crate::rpc::SpawnTasksParams {
+        task_manager: &task_manager,
+        client: client.clone(),
+        substrate_backend: backend.clone(),
+        frontier_backend: frontier_backend.clone(),
+        filter_pool: filter_pool.clone(),
+        overrides: overrides.clone(),
+        fee_history_limit,
+        fee_history_cache: fee_history_cache.clone(),
+        sync_service: sync_service.clone(),
+        pubsub_notification_sinks: pubsub_notification_sinks.clone(),
+    });
+
+    let block_data_cache = Arc::new(fc_rpc::EthBlockDataCacheTask::new(
+        task_manager.spawn_handle(),
+        overrides.clone(),
+        rpc_config.eth_log_block_cache,
+        rpc_config.eth_statuses_cache,
+        prometheus_registry,
+    ));
+
+    let rpc_builder = {
+        let client = client.clone();
+        let pool = transaction_pool.clone();
+        let pubsub_notification_sinks = pubsub_notification_sinks.clone();
+        let network = network.clone();
+        let sync = sync_service.clone();
+        let filter_pool = filter_pool.clone();
+        let frontier_backend = frontier_backend.clone();
+        let backend = backend.clone();
+        let max_past_logs = rpc_config.max_past_logs;
+        let overrides = overrides.clone();
+        let fee_history_cache = fee_history_cache.clone();
+        let block_data_cache = block_data_cache.clone();
+
+        move |deny_unsafe, subscription_task_executor| {
+            let deps = crate::rpc::FullDeps {
+                backend: backend.clone(),
+                client: client.clone(),
+                deny_unsafe,
+                filter_pool: filter_pool.clone(),
+                frontier_backend: frontier_backend.clone(),
+                graph: pool.pool().clone(),
+                pool: pool.clone(),
+                max_past_logs,
+                fee_history_limit,
+                fee_history_cache: fee_history_cache.clone(),
+                network: network.clone(),
+                sync: sync.clone(),
+                block_data_cache: block_data_cache.clone(),
+                overrides: overrides.clone(),
+                is_authority: false,
+                command_sink: command_sink.clone(),
+            };
+            crate::rpc::create_full(
+                deps,
+                subscription_task_executor,
+                pubsub_notification_sinks.clone(),
+            )
+            .map_err(Into::into)
+        }
+    };
+
+    let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+        network,
+        client,
+        keystore: keystore_container.sync_keystore(),
+        task_manager: &mut task_manager,
+        transaction_pool,
+        rpc_builder: Box::new(rpc_builder),
+        backend,
+        system_rpc_tx,
+        sync_service: sync_service.clone(),
+        config,
+        tx_handler_controller,
+        telemetry: None,
+    })?;
+
+    if let Some(hwbench) = hwbench {
+        sc_sysinfo::print_hwbench(&hwbench);
+
+        if let Some(ref mut telemetry) = telemetry {
+            let telemetry_handle = telemetry.handle();
+            task_manager.spawn_handle().spawn(
+                "telemetry_hwbench",
+                None,
+                sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
+            );
+        }
+    }
+
+    log::info!("Development Service Ready");
+
+    network_starter.start_network();
+    Ok(task_manager)
+}
+
+/// TODO: move it somewhere common, code duplication
+/// Block authoring scheme to be used by the dev service.
+#[derive(Debug, Copy, Clone)]
+pub enum Sealing {
+    /// Author a block immediately upon receiving a transaction into the transaction pool
+    Instant,
+    /// Author a block upon receiving an RPC command
+    Manual,
+    /// Author blocks at a regular interval specified in milliseconds
+    Interval(u64),
+}
+
+impl FromStr for Sealing {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "instant" => Self::Instant,
+            "manual" => Self::Manual,
+            s => {
+                let millis = s
+                    .parse::<u64>()
+                    .map_err(|_| "couldn't decode sealing param")?;
+                Self::Interval(millis)
+            }
+        })
+    }
 }
