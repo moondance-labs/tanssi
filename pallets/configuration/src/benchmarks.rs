@@ -19,7 +19,7 @@
 //! Benchmarking
 use {
     crate::{Call, Config, Pallet},
-    frame_benchmarking::{benchmarks, impl_benchmark_test_suite},
+    frame_benchmarking::benchmarks,
     frame_system::RawOrigin,
 };
 
