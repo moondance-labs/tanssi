@@ -38,7 +38,9 @@ pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use {
-        frame_support::{pallet_prelude::*, LOG_TARGET},
+        frame_support::{
+            pallet_prelude::*, traits::Currency, traits::ReservableCurrency, LOG_TARGET,
+        },
         frame_system::pallet_prelude::*,
         sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
         sp_std::prelude::*,
@@ -120,6 +122,9 @@ pub mod pallet {
         type SessionDelay: Get<Self::SessionIndex>;
 
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
+
+        type Currency: ReservableCurrency<Self::AccountId>;
+        type DepositAmount: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
     }
 
     #[pallet::storage]
@@ -140,6 +145,28 @@ pub mod pallet {
     pub type ParaGenesisData<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, ContainerChainGenesisData, OptionQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn pending_verification)]
+    pub type PendingVerification<T: Config> =
+        StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
+
+    pub type DepositBalanceOf<T> =
+        <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
+
+    #[derive(Default, Clone, Encode, Decode, RuntimeDebug, PartialEq, scale_info::TypeInfo)]
+    #[scale_info(skip_type_params(T))]
+    pub struct DepositInfo<T: Config> {
+        pub creator: T::AccountId,
+        pub deposit: DepositBalanceOf<T>,
+    }
+
+    /// Registrar deposits, a mapping from paraId to a struct
+    /// holding the creator (from which the deposit was reserved) and
+    /// the deposit amount
+    #[pallet::storage]
+    #[pallet::getter(fn registrar_deposit)]
+    pub type RegistrarDeposit<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, DepositInfo<T>>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -147,6 +174,8 @@ pub mod pallet {
         ParaIdRegistered { para_id: ParaId },
         /// A para id has been deregistered. [para_id]
         ParaIdDeregistered { para_id: ParaId },
+        /// A new para id is now valid for collating. [para_id]
+        ParaIdValidForCollating { para_id: ParaId },
     }
 
     #[pallet::error]
@@ -159,19 +188,154 @@ pub mod pallet {
         ParaIdListFull,
         /// Attempted to register a ParaId with a genesis data size greater than the limit
         GenesisDataTooBig,
+        /// Tried to mark_valid_for_collating a ParaId that is not in PendingVerification
+        ParaIdNotInPendingVerification,
+        /// Tried to register a ParaId with an account that did not have enough balance for the deposit
+        NotSufficientDeposit,
     }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         /// Register parachain
         #[pallet::call_index(0)]
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,2).ref_time())]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2).ref_time())]
         pub fn register(
             origin: OriginFor<T>,
             para_id: ParaId,
             genesis_data: ContainerChainGenesisData,
         ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            let deposit = T::DepositAmount::get();
+
+            // Verify we can reserve
+            T::Currency::can_reserve(&account, deposit)
+                .then(|| true)
+                .ok_or(Error::<T>::NotSufficientDeposit)?;
+
+            // Check if the para id is already registered
+            let pending_paras = <PendingParaIds<T>>::get();
+            let base_paras = pending_paras
+                .last()
+                .map(|&(_, ref paras)| paras.clone())
+                .unwrap_or_else(Self::registered_para_ids);
+            match base_paras.binary_search(&para_id) {
+                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                Err(_) => (),
+            }
+
+            // Insert para id into PendingVerification, if it does not exist there
+            let mut pending_verification = PendingVerification::<T>::get();
+            match pending_verification.binary_search(&para_id) {
+                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                Err(index) => {
+                    pending_verification
+                        .try_insert(index, para_id)
+                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                }
+            }
+
+            // The actual registration takes place 2 sessions after the call to
+            // `mark_valid_for_collating`, but the genesis data is inserted now.
+            // This is because collators should be able to start syncing the new container chain
+            // before the first block is mined. However, we could store the genesis data in a
+            // different key, like PendingParaGenesisData.
+            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
+            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
+            // won't detect that the size is too big until after iterating over all of them, so the
+            // limit in that case would be the transaction size.
+            let genesis_data_size = genesis_data.encoded_size();
+            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
+                return Err(Error::<T>::GenesisDataTooBig.into());
+            }
+
+            // Reserve the deposit, we verified we can do this
+            T::Currency::reserve(&account, deposit)?;
+
+            // Update DepositInfo
+            RegistrarDeposit::<T>::insert(
+                para_id,
+                DepositInfo {
+                    creator: account.clone(),
+                    deposit,
+                },
+            );
+            ParaGenesisData::<T>::insert(para_id, genesis_data);
+            PendingVerification::<T>::put(pending_verification);
+
+            Self::deposit_event(Event::ParaIdRegistered { para_id });
+
+            Ok(())
+        }
+
+        /// Deregister parachain.
+        ///
+        /// If a parachain is registered but not marked as valid_for_collating, this will remove it
+        /// from `PendingVerification` as well.
+        #[pallet::call_index(1)]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,2).ref_time())]
+        pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
+
+            Self::schedule_parachain_change(|para_ids| {
+                // We have to find out where, in the sorted vec the para id is, if anywhere.
+                let result = match para_ids.binary_search(&para_id) {
+                    Ok(index) => {
+                        para_ids.remove(index);
+                        Ok(())
+                    }
+                    Err(_) => {
+                        // If the para id is not registered yet, it may be in "PendingVerification"
+                        // In that case, remove it from there
+                        let mut para_ids = PendingVerification::<T>::get();
+
+                        match para_ids.binary_search(&para_id) {
+                            Ok(index) => {
+                                para_ids.remove(index);
+                                PendingVerification::<T>::put(para_ids);
+                                Ok(())
+                            }
+                            Err(_) => Err(Error::<T>::ParaIdNotRegistered.into()),
+                        }
+                    }
+                };
+                result
+            })?;
+
+            // Get asset creator and deposit amount
+            // Deposit may not exist, for example if the para id was registered on genesis
+            if let Some(asset_info) = RegistrarDeposit::<T>::get(para_id) {
+                // Unreserve deposit
+                T::Currency::unreserve(&asset_info.creator, asset_info.deposit);
+
+                // Remove asset info
+                RegistrarDeposit::<T>::remove(para_id);
+            }
+
+            Self::deposit_event(Event::ParaIdDeregistered { para_id });
+
+            // TODO: while the deregistration takes place on the next session, the genesis data
+            // is deleted immediately. This will cause problems since any new collators that want
+            // to join now will not be able to sync this parachain
+            ParaGenesisData::<T>::remove(para_id);
+
+            Ok(())
+        }
+
+        /// Mark parachain valid for collating
+        #[pallet::call_index(2)]
+        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2).ref_time())]
+        pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            T::RegistrarOrigin::ensure_origin(origin)?;
+
+            let mut pending_verification = PendingVerification::<T>::get();
+
+            match pending_verification.binary_search(&para_id) {
+                Ok(i) => {
+                    pending_verification.remove(i);
+                }
+                Err(_) => return Err(Error::<T>::ParaIdNotInPendingVerification.into()),
+            };
+
             Self::schedule_parachain_change(|para_ids| {
                 // We don't want to add duplicate para ids, so we check whether the potential new
                 // para id is already present in the list. Because the list is always ordered, we can
@@ -189,47 +353,9 @@ pub mod pallet {
                 result
             })?;
 
-            // TODO: while the registration takes place on the next session, the genesis data
-            // is inserted immediately. This is because collators should be able to start syncing
-            // the new container chain before the first block is mined. However, we could store
-            // the genesis data in another key, like PendingParaGenesisData.
-            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
-            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
-            // won't detect that the size is too big until after iterating over all of them, so the
-            // limit in that case would be the transaction size.
-            let genesis_data_size = genesis_data.encoded_size();
-            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
-                return Err(Error::<T>::GenesisDataTooBig.into());
-            }
-            ParaGenesisData::<T>::insert(para_id, genesis_data);
+            PendingVerification::<T>::put(pending_verification);
 
-            Self::deposit_event(Event::ParaIdRegistered { para_id });
-            Ok(())
-        }
-
-        /// Deregister parachain
-        #[pallet::call_index(1)]
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1).ref_time())]
-        pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
-            T::RegistrarOrigin::ensure_origin(origin)?;
-
-            Self::schedule_parachain_change(|para_ids| {
-                // We have to find out where, in the sorted vec the para id is, if anywhere.
-                let result = match para_ids.binary_search(&para_id) {
-                    Ok(index) => {
-                        para_ids.remove(index);
-                        Ok(())
-                    }
-                    Err(_) => Err(Error::<T>::ParaIdNotRegistered.into()),
-                };
-                result
-            })?;
-            Self::deposit_event(Event::ParaIdDeregistered { para_id });
-
-            // TODO: while the deregistration takes place on the next session, the genesis data
-            // is deleted immediately. This will cause problems since any new collators that want
-            // to join now will not be able to sync this parachain
-            ParaGenesisData::<T>::remove(para_id);
+            Self::deposit_event(Event::ParaIdValidForCollating { para_id });
 
             Ok(())
         }

@@ -228,7 +228,11 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
                 properties: Default::default(),
             };
             assert_ok!(
-                Registrar::register(root_origin(), 1003.into(), genesis_data_1003.clone()),
+                Registrar::register(
+                    origin_of(ALICE.into()),
+                    1003.into(),
+                    genesis_data_1003.clone()
+                ),
                 ()
             );
 
@@ -524,11 +528,19 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
 
             assert_ok!(
-                Registrar::register(root_origin(), 1001.into(), empty_genesis_data()),
+                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
                 ()
             );
             assert_ok!(
-                Registrar::register(root_origin(), 1002.into(), empty_genesis_data()),
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ()
+            );
+            assert_ok!(
+                Registrar::register(origin_of(ALICE.into()), 1002.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::mark_valid_for_collating(root_origin(), 1002.into()),
                 ()
             );
 
@@ -588,7 +600,11 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             );
 
             assert_ok!(
-                Registrar::register(root_origin(), 1001.into(), empty_genesis_data()),
+                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
                 ()
             );
 

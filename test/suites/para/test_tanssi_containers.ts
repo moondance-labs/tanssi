@@ -289,7 +289,9 @@ describeSuite({
         expect(registered1.toJSON().includes(2002)).to.be.false;
 
         const tx = paraApi.tx.registrar.register(2002, containerChainGenesisDataFromRpc[1]);
-        await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
+        await signAndSendAndInclude(tx, alice);
+        const tx2 = paraApi.tx.registrar.markValidForCollating(2002);
+        await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx2), alice);
         const session1 = (await paraApi.query.session.currentIndex()).toNumber();
         await waitSessions(context, paraApi, 2);
         const session2 = (await paraApi.query.session.currentIndex()).toNumber();
