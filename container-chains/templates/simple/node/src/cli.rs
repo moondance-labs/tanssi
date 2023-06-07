@@ -134,13 +134,13 @@ pub struct BuildSpecCmd {
     pub base: sc_cli::BuildSpecCmd,
 
     /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
-    #[clap(long, conflicts_with = "chain")]
-    #[clap(long)]
+    #[arg(long, conflicts_with = "chain")]
+    #[arg(long)]
     pub parachain_id: Option<u32>,
 
     /// Seeds of collators that will start as authorities and will be funded
-    #[clap(long, conflicts_with = "chain")]
-    #[clap(long, value_delimiter = ',')]
+    #[arg(long, conflicts_with = "chain")]
+    #[arg(long, value_delimiter = ',')]
     pub seeds: Option<Vec<String>>,
 }
 

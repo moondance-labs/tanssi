@@ -23,6 +23,25 @@
       }
     },
     {
+      "name": "dev_frontier_template",
+      "testFileDir": ["suites/dev-frontier-template"],
+      "multiThreads": true,
+      "html": false,
+      "foundation": {
+        "type": "dev",
+        "launchSpec": [
+          {
+            "name": "frontier-template",
+            "binPath": "../target/release/container-chain-template-frontier-node",
+            "options": [
+                "--dev",
+                "--sealing=manual"
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "zombie_tanssi_ci",
       "testFileDir": ["suites/para"],
       "foundation": {
@@ -51,6 +70,16 @@
           "name": "Container2001",
           "type": "polkadotJs",
           "endpoints": ["ws://127.0.0.1:9950"]
+        },
+        {
+          "name": "ethers",
+          "type": "ethers",
+          "endpoints": ["ws://127.0.0.1:9960"]
+        },
+        {
+          "name": "w3",
+          "type": "web3",
+          "endpoints": ["ws://127.0.0.1:9960"]
         }
       ]
     },
@@ -83,6 +112,16 @@
           "name": "Container2001",
           "type": "polkadotJs",
           "endpoints": ["ws://127.0.0.1:9950"]
+        },
+        {
+          "name": "ethers",
+          "type": "ethers",
+          "endpoints": ["ws://127.0.0.1:9960"]
+        },
+        {
+          "name": "w3",
+          "type": "web3",
+          "endpoints": ["ws://127.0.0.1:9960"]
         }
       ]
     }

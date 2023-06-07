@@ -99,6 +99,7 @@ default = []
 runtime-benchmarks = [
 	"orchestrator-runtime/runtime-benchmarks",
 	"polkadot-cli/runtime-benchmarks",
+	"polkadot-service/runtime-benchmarks",
 	"try-runtime-cli/try-runtime",
 ]
 try-runtime = [
