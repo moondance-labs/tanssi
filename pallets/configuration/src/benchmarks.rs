@@ -32,28 +32,3 @@ benchmarks! {
         crate::mock::Test
     );
 }
-
-#[cfg(test)]
-mod tests {
-    use {super::*, crate::mock::Test, frame_support::assert_ok, sp_io::TestExternalities};
-
-    pub fn new_test_ext() -> TestExternalities {
-        let t = frame_system::GenesisConfig::default()
-            .build_storage::<Test>()
-            .unwrap();
-        TestExternalities::new(t)
-    }
-
-    #[test]
-    fn bench_set_config_with_u32() {
-        new_test_ext().execute_with(|| {
-            assert_ok!(Pallet::<Test>::test_benchmark_set_config_with_u32());
-        });
-    }
-}
-
-impl_benchmark_test_suite!(
-    Pallet,
-    crate::benchmarks::tests::new_test_ext(),
-    crate::mock::Test
-);
