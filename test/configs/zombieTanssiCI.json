@@ -83,7 +83,8 @@
         "collators":  [
           {
             "name": "DummyCollator-2001",
-            "command": "tmp/container-chain-template-simple-node"
+            "command": "tmp/container-chain-template-frontier-node",
+            "ws_port": 9960
           }
         ]
       }

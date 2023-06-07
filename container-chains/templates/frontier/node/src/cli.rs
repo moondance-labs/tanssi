@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    clap::Parser,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::path::PathBuf,
 };
@@ -63,6 +64,47 @@ pub enum Subcommand {
     TryRuntime,
 }
 
+#[derive(Debug, Parser)]
+#[group(skip)]
+pub struct RunCmd {
+    #[clap(flatten)]
+    pub base: cumulus_client_cli::RunCmd,
+
+    /// Size in bytes of the LRU cache for block data.
+    #[arg(long, default_value = "300000000")]
+    pub eth_log_block_cache: usize,
+
+    /// Size in bytes of the LRU cache for transactions statuses data.
+    #[arg(long, default_value = "300000000")]
+    pub eth_statuses_cache: usize,
+
+    /// Maximum number of logs in a query.
+    #[arg(long, default_value = "10000")]
+    pub max_past_logs: u32,
+
+    /// Id of the parachain this collator collates for.
+    #[arg(long)]
+    pub parachain_id: Option<u32>,
+
+    /// Maximum fee history cache size.
+    #[arg(long, default_value = "2048")]
+    pub fee_history_limit: u64,
+
+    /// When blocks should be sealed in the dev service.
+    ///
+    /// Options are "instant", "manual", or timer interval in milliseconds
+    #[arg(long, default_value = "instant")]
+    pub sealing: crate::service::Sealing,
+}
+
+impl std::ops::Deref for RunCmd {
+    type Target = cumulus_client_cli::RunCmd;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
+}
+
 #[derive(Debug, clap::Parser)]
 #[command(
     propagate_version = true,
@@ -74,7 +116,7 @@ pub struct Cli {
     pub subcommand: Option<Subcommand>,
 
     #[command(flatten)]
-    pub run: cumulus_client_cli::RunCmd,
+    pub run: RunCmd,
 
     /// Disable automatic hardware benchmarks.
     ///
@@ -134,13 +176,13 @@ pub struct BuildSpecCmd {
     pub base: sc_cli::BuildSpecCmd,
 
     /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
-    #[clap(long, conflicts_with = "chain")]
-    #[clap(long)]
+    #[arg(long, conflicts_with = "chain")]
+    #[arg(long)]
     pub parachain_id: Option<u32>,
 
     /// Seeds of collators that will start as authorities and will be funded
-    #[clap(long, conflicts_with = "chain")]
-    #[clap(long, value_delimiter = ',')]
+    #[arg(long, conflicts_with = "chain")]
+    #[arg(long, value_delimiter = ',')]
     pub seeds: Option<Vec<String>>,
 }
 
@@ -152,4 +194,12 @@ impl CliConfiguration for BuildSpecCmd {
     fn node_key_params(&self) -> Option<&NodeKeyParams> {
         Some(&self.base.node_key_params)
     }
+}
+
+pub struct RpcConfig {
+    pub eth_log_block_cache: usize,
+    pub eth_statuses_cache: usize,
+    pub fee_history_limit: u64,
+    pub max_past_logs: u32,
+    pub relay_chain_rpc_urls: Vec<url::Url>,
 }

@@ -134,3 +134,90 @@ where
         Ok(())
     }
 }
+
+/// Consensus data provider for Container Manual Seal Aura.
+pub struct ContainerManualSealAuraConsensusDataProvider<B, C, P> {
+    // slot duration
+    slot_duration: SlotDuration,
+    /// Shared reference to keystore
+    pub keystore: SyncCryptoStorePtr,
+
+    /// Shared reference to the client
+    pub client: Arc<C>,
+    // phantom data for required generics
+    _phantom: PhantomData<(B, C, P)>,
+}
+
+impl<B, C, P> ContainerManualSealAuraConsensusDataProvider<B, C, P>
+where
+    B: BlockT,
+    C: AuxStore + ProvideRuntimeApi<B> + UsageProvider<B>,
+{
+    /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
+    /// implements [`sp_consensus_aura::AuraApi`]
+    pub fn new(client: Arc<C>, keystore: SyncCryptoStorePtr, slot_duration: SlotDuration) -> Self {
+        Self {
+            slot_duration,
+            keystore,
+            client,
+            _phantom: PhantomData,
+        }
+    }
+}
+impl<B, C, P> ConsensusDataProvider<B> for ContainerManualSealAuraConsensusDataProvider<B, C, P>
+where
+    B: BlockT,
+    C: AuxStore
+        + HeaderBackend<B>
+        + HeaderMetadata<B, Error = sp_blockchain::Error>
+        + UsageProvider<B>
+        + ProvideRuntimeApi<B>,
+    P: Send + Sync,
+{
+    type Transaction = TransactionFor<C, B>;
+    type Proof = P;
+
+    fn create_digest(
+        &self,
+        _parent: &B::Header,
+        inherents: &InherentData,
+    ) -> Result<Digest, Error> {
+        let timestamp = inherents
+            .timestamp_inherent_data()?
+            .expect("Timestamp is always present; qed");
+
+        // we always calculate the new slot number based on the current time-stamp and the slot
+        // duration.
+        // TODO: we need to add the nimbus digest here
+        let slot = Slot::from_timestamp(timestamp, self.slot_duration);
+        let aura_digest_item =
+            <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest(slot);
+
+        let expected_author: Option<nimbus_primitives::NimbusId> = None;
+
+        // TODO: this should always be included, but breaks manual seal tests. We should modify
+        // once configuration on how manual seal changes
+        let digest = if let Some(author) = expected_author {
+            let nimbus_digest =
+                <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(author.clone());
+            Digest {
+                logs: vec![aura_digest_item, nimbus_digest],
+            }
+        } else {
+            Digest {
+                logs: vec![aura_digest_item],
+            }
+        };
+        Ok(digest)
+    }
+
+    fn append_block_import(
+        &self,
+        _parent: &B::Header,
+        _params: &mut BlockImportParams<B, Self::Transaction>,
+        _inherents: &InherentData,
+        _proof: Self::Proof,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
+}

@@ -18,7 +18,8 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, RelayChainCli, Subcommand},
-        service::{new_partial, ParachainNativeExecutor},
+        client::TemplateRuntimeExecutor,
+        service::{frontier_database_dir, new_partial},
     },
     container_chain_template_frontier_runtime::Block,
     cumulus_client_cli::generate_genesis_block,
@@ -26,11 +27,15 @@ use {
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
     parity_scale_codec::Encode,
+    polkadot_cli::IdentifyVariant,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
     },
-    sc_service::config::{BasePath, PrometheusConfig},
+    sc_service::{
+        config::{BasePath, PrometheusConfig},
+        DatabaseSource,
+    },
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
@@ -130,8 +135,8 @@ impl SubstrateCli for RelayChainCli {
 macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
-		runner.async_run(|$config| {
-			let $components = new_partial(&$config)?;
+		runner.async_run(|mut $config| {
+			let $components = new_partial(&mut $config, false)?;
 			let task_manager = $components.task_manager;
 			{ $( $code )* }.map(|v| (v, task_manager))
 		})
@@ -193,6 +198,22 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(cmd)?;
 
             runner.sync_run(|config| {
+                // Remove Frontier offchain db
+                let frontier_database_config = match config.database {
+                    DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
+                        path: frontier_database_dir(&config, "db"),
+                        cache_size: 0,
+                    },
+                    DatabaseSource::ParityDb { .. } => DatabaseSource::ParityDb {
+                        path: frontier_database_dir(&config, "paritydb"),
+                    },
+                    _ => {
+                        return Err(format!("Cannot purge `{:?}` database", config.database).into())
+                    }
+                };
+
+                cmd.base.run(frontier_database_config)?;
+
                 let polkadot_cli = RelayChainCli::new(
                     &config,
                     [RelayChainCli::executable_name()]
@@ -231,15 +252,15 @@ pub fn run() -> Result<()> {
             match cmd {
                 BenchmarkCmd::Pallet(cmd) => {
                     if cfg!(feature = "runtime-benchmarks") {
-                        runner.sync_run(|config| cmd.run::<Block, ParachainNativeExecutor>(config))
+                        runner.sync_run(|config| cmd.run::<Block, TemplateRuntimeExecutor>(config))
                     } else {
                         Err("Benchmarking wasn't enabled when building the node. \
 					You can enable it with `--features runtime-benchmarks`."
                             .into())
                     }
                 }
-                BenchmarkCmd::Block(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config)?;
+                BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {
+                    let partials = new_partial(&mut config, false)?;
                     cmd.run(partials.client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -252,8 +273,8 @@ pub fn run() -> Result<()> {
                     .into())
                 }
                 #[cfg(feature = "runtime-benchmarks")]
-                BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config)?;
+                BenchmarkCmd::Storage(cmd) => runner.sync_run(|mut config| {
+                    let partials = new_partial(&mut config, false)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
                     cmd.run(config, partials.client.clone(), db, storage)
@@ -289,7 +310,7 @@ pub fn run() -> Result<()> {
 
             runner.async_run(|_| {
                 Ok((
-                    cmd.run::<Block, HostFunctionsOf<ParachainNativeExecutor>>(),
+                    cmd.run::<Block, HostFunctionsOf<TemplateRuntimeExecutor>>(),
                     task_manager,
                 ))
             })
@@ -317,6 +338,26 @@ pub fn run() -> Result<()> {
 					&config,
 					[RelayChainCli::executable_name()].iter().chain(cli.relay_chain_args.iter()),
 				);
+
+                let rpc_config = crate::cli::RpcConfig {
+					eth_log_block_cache: cli.run.eth_log_block_cache,
+					eth_statuses_cache: cli.run.eth_statuses_cache,
+					fee_history_limit: cli.run.fee_history_limit,
+					max_past_logs: cli.run.max_past_logs,
+					relay_chain_rpc_urls: cli.run.base.relay_chain_rpc_urls,
+				};
+
+                let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
+
+				let relay_chain_id = extension.map(|e| e.relay_chain.clone());
+
+                let dev_service =
+					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
+
+				if dev_service {
+					return crate::service::start_dev_node(config, cli.run.sealing, rpc_config, hwbench).await
+                    .map_err(Into::into)
+				}
 
 				let id = ParaId::from(para_id);
 
@@ -347,6 +388,7 @@ pub fn run() -> Result<()> {
 					polkadot_config,
 					collator_options,
 					id,
+                    rpc_config,
 					hwbench,
 				)
 				.await
