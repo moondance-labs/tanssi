@@ -208,13 +208,12 @@ pub fn build_check_assigned_para_id(
 ) {
     // Subscribe to new blocks in order to react to para id assignment
     let mut import_notifications = client.import_notification_stream();
-    let client_set_aside_for_cidp = client.clone();
     let initial_assigned_para_id = Arc::new(Mutex::new(None));
 
     let check_assigned_para_id_task = async move {
         while let Some(msg) = import_notifications.next().await {
             let block_hash = msg.hash;
-            let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
+            let client_set_aside_for_cidp = client.clone();
             let sync_keystore = sync_keystore.clone();
             let initial_assigned_para_id = initial_assigned_para_id.clone();
             let cc_spawn_tx = cc_spawn_tx.clone();

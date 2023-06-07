@@ -83,7 +83,7 @@ where
 
     module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
 
-    module.merge(Utils::new().into_rpc())?;
+    module.merge(Utils.into_rpc())?;
 
     if let Some(command_sink) = command_sink {
         module.merge(
@@ -97,13 +97,7 @@ where
 }
 
 /// Utils API implementation.
-pub struct Utils {}
-
-impl Utils {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+pub struct Utils;
 
 /// Utils rpc interface.
 #[rpc(server)]
