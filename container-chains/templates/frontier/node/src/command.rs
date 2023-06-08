@@ -27,6 +27,7 @@ use {
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
     parity_scale_codec::Encode,
+    polkadot_cli::IdentifyVariant,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
@@ -135,7 +136,7 @@ macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		runner.async_run(|mut $config| {
-			let $components = new_partial(&mut $config)?;
+			let $components = new_partial(&mut $config, false)?;
 			let task_manager = $components.task_manager;
 			{ $( $code )* }.map(|v| (v, task_manager))
 		})
@@ -259,7 +260,7 @@ pub fn run() -> Result<()> {
                     }
                 }
                 BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {
-                    let partials = new_partial(&mut config)?;
+                    let partials = new_partial(&mut config, false)?;
                     cmd.run(partials.client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -273,7 +274,7 @@ pub fn run() -> Result<()> {
                 }
                 #[cfg(feature = "runtime-benchmarks")]
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|mut config| {
-                    let partials = new_partial(&mut config)?;
+                    let partials = new_partial(&mut config, false)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
                     cmd.run(config, partials.client.clone(), db, storage)
@@ -345,6 +346,18 @@ pub fn run() -> Result<()> {
 					max_past_logs: cli.run.max_past_logs,
 					relay_chain_rpc_urls: cli.run.base.relay_chain_rpc_urls,
 				};
+
+                let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
+
+				let relay_chain_id = extension.map(|e| e.relay_chain.clone());
+
+                let dev_service =
+					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
+
+				if dev_service {
+					return crate::service::start_dev_node(config, cli.run.sealing, rpc_config, hwbench).await
+                    .map_err(Into::into)
+				}
 
 				let id = ParaId::from(para_id);
 

@@ -679,12 +679,14 @@ impl_runtime_apis! {
                     use frame_benchmarking::{list_benchmark, Benchmarking, BenchmarkList};
                     use frame_support::traits::StorageInfoTrait;
                     use frame_system_benchmarking::Pallet as SystemBench;
+                    use pallet_configuration::Pallet as PalletConfigurationBench;
                     use pallet_registrar::Pallet as PalletRegistrarBench;
 
 
                     let mut list = Vec::<BenchmarkList>::new();
 
                     list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
+                    list_benchmark!(list, extra, pallet_configuration, PalletConfigurationBench::<Runtime>);
                     list_benchmark!(list, extra, pallet_registrar, PalletRegistrarBench::<Runtime>);
 
                     let storage_info = AllPalletsWithSystem::storage_info();
@@ -728,20 +730,6 @@ impl_runtime_apis! {
                         hex_literal::hex!(  "26aa394eea5630e07c48ae0c9558cef7"
                                             "34abf5cb34d6244378cddbf18e849d96")
                             .to_vec().into(),
-                        // Treasury Account (py/trsry)
-                        hex_literal::hex!(  "26aa394eea5630e07c48ae0c9558cef7"
-                                            "b99d880ec681799c0cf30e8886371da9"
-                                            "7be2919ac397ba499ea5e57132180ec6"
-                                            "6d6f646c70792f747273727900000000"
-                                            "00000000"
-                        ).to_vec().into(),
-                        // Treasury Account (pc/trsry)
-                        hex_literal::hex!(  "26aa394eea5630e07c48ae0c9558cef7"
-                                            "b99d880ec681799c0cf30e8886371da9"
-                                            "7be2919ac397ba499ea5e57132180ec6"
-                                            "6d6f646c70632f747273727900000000"
-                                            "00000000"
-                        ).to_vec().into(),
                         // ParachainInfo ParachainId
                         hex_literal::hex!(  "0d715f2646c8f85767b5d2764bb27826"
                                             "04a74d81251e398fd8a0a4d55023bb3f")
@@ -753,6 +741,12 @@ impl_runtime_apis! {
                     let params = (&config, &whitelist);
 
                     add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
+                    add_benchmark!(
+                        params,
+                        batches,
+                        pallet_configuration,
+                        PalletConfigurationBench::<Runtime>
+                    );
                     add_benchmark!(
                         params,
                         batches,

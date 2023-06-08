@@ -799,9 +799,12 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
+ "nimbus-primitives",
  "parity-scale-codec",
  "scale-info",
+ "sp-consensus-aura",
  "sp-core",
  "sp-inherents",
  "sp-io",
@@ -811,6 +814,7 @@ dependencies = [
  "tc-consensus",
  "tc-orchestrator-chain-interface",
  "test-relay-sproof-builder",
+ "tp-collator-assignment",
  "tp-core",
  "tracing",
 ]
@@ -1043,6 +1047,7 @@ version = "0.1.0"
 dependencies = [
  "async-io",
  "async-trait",
+ "ccp-authorities-noting-inherent",
  "clap",
  "container-chain-template-frontier-runtime",
  "cumulus-client-cli",
@@ -6460,6 +6465,7 @@ dependencies = [
 name = "pallet-configuration"
 version = "0.1.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
