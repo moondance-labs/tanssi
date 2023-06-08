@@ -48,22 +48,32 @@
           {
             "name": "Collator2000-01",
             "command": "../target/release/tanssi-node",
-            "args": ["-- --tmp --ws-port 9949 --para-id 2000"]
+            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --ws-port 9949 --para-id 2000"]
           },
           {
             "name": "Collator2000-02",
             "command": "../target/release/tanssi-node",
-            "args": ["-- --tmp --para-id 2000"]
+            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --para-id 2000"]
           },
           {
             "name": "Collator2001-01",
             "command": "../target/release/tanssi-node",
-            "args": ["-- --tmp --ws-port 9950 --para-id 2001"]
+            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --ws-port 9950 --para-id 2001"]
           },
           {
             "name": "Collator2001-02",
             "command": "../target/release/tanssi-node",
-            "args": ["-- --tmp --para-id 2001"]
+            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --para-id 2001"]
+          },
+          {
+            "name": "Collator2002-01",
+            "command": "../target/release/tanssi-node",
+            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --ws-port 9951 --para-id 2002"]
+          },
+          {
+            "name": "Collator2002-02",
+            "command": "../target/release/tanssi-node",
+            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --para-id 2002"]
           }
         ]
       },
@@ -85,6 +95,16 @@
             "name": "DummyCollator-2001",
             "command": "../target/release/container-chain-template-frontier-node",
             "ws_port": 9960
+          }
+        ]
+      },
+      {
+        "id": 2002,
+        "chain_spec_path": "../specs/template-container-2002.json",
+        "collators":  [
+          {
+            "name": "DummyCollator-2002",
+            "command": "../target/release/container-chain-template-simple-node"
           }
         ]
       }

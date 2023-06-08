@@ -51,6 +51,14 @@ To upgrade moonwall or other dependencies:
 pnpm up --latest
 ```
 
+Debugging zombienet
+
+You can enable zombienet debug logs to get more information about the commands that are being run:
+
+```
+DEBUG=* pnpm moonwall test zombie_tanssi
+```
+
 # Spawns Tanssi and container-chains with zombienet
 You can directly use the zombieTanssi.json file and pass it to zombienet to spawn yourself the network. From the test directory you can do:
 
