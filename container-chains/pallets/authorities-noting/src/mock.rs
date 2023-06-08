@@ -108,7 +108,7 @@ impl Config for Test {
     type SelfParaId = ParachainId;
     type OrchestratorParaId = OrchestratorParachainId;
     type RelayChainStateProvider = MockRelayStateProvider;
-    type OrchestratorAccountId = AccountId;
+    type AuthorityId = AccountId;
 }
 
 struct BlockTest {

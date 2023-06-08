@@ -20,10 +20,7 @@ use {
     cumulus_relay_chain_interface::{PHash, RelayChainInterface},
     parity_scale_codec::Decode,
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
-    tp_core::{
-        well_known_keys::{para_id_head, COLLATOR_ASSIGNMENT_INDEX},
-        Header as OrchestratorHeader,
-    },
+    tp_core::{well_known_keys, Header as OrchestratorHeader},
 };
 
 const LOG_TARGET: &str = "parachain-inherent";
@@ -36,7 +33,7 @@ async fn collect_relay_storage_proof(
     relay_parent: PHash,
 ) -> Option<sp_state_machine::StorageProof> {
     let mut relevant_keys = Vec::new();
-    relevant_keys.push(para_id_head(orchestrator_para_id));
+    relevant_keys.push(well_known_keys::para_id_head(orchestrator_para_id));
 
     relay_chain_interface
         .prove_read(relay_parent, &relevant_keys)
@@ -50,8 +47,19 @@ async fn collect_orchestrator_storage_proof(
     orchestrator_chain_interface: &impl OrchestratorChainInterface,
     orchestrator_parent: PHash,
 ) -> Option<sp_state_machine::StorageProof> {
+    // We need to fetch the actual session index to build the key for the
+    // authorities.
+    let session_index = orchestrator_chain_interface
+        .get_storage_by_key(orchestrator_parent, well_known_keys::SESSION_INDEX)
+        .await
+        .ok()??;
+    let session_index = u32::decode(&mut session_index.as_slice()).ok()?;
+
     let mut relevant_keys = Vec::new();
-    relevant_keys.push(COLLATOR_ASSIGNMENT_INDEX.to_vec());
+    relevant_keys.push(well_known_keys::SESSION_INDEX.to_vec());
+    relevant_keys.push(well_known_keys::authority_assignment_for_session(
+        session_index,
+    ));
 
     orchestrator_chain_interface
         .prove_read(orchestrator_parent, &relevant_keys)
@@ -77,7 +85,10 @@ impl ContainerChainAuthoritiesInherentData {
         .await?;
 
         let header_orchestrator = relay_chain_interface
-            .get_storage_by_key(relay_parent, &para_id_head(orchestrator_para_id))
+            .get_storage_by_key(
+                relay_parent,
+                &well_known_keys::para_id_head(orchestrator_para_id),
+            )
             .await
             .map_err(|e| {
                 tracing::error!(
@@ -132,7 +143,10 @@ impl ContainerChainAuthoritiesInherentData {
         orchestrator_para_id: ParaId,
     ) -> Option<OrchestratorHeader> {
         let header_orchestrator = relay_chain_interface
-            .get_storage_by_key(relay_parent, &para_id_head(orchestrator_para_id))
+            .get_storage_by_key(
+                relay_parent,
+                &well_known_keys::para_id_head(orchestrator_para_id),
+            )
             .await
             .map_err(|e| {
                 tracing::error!(
