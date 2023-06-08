@@ -69,7 +69,6 @@ describeSuite({
       title: "Test Tanssi assignation is correct",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-        // expect(currentSession).to.be.equal(0);
         const tanssiCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON().orchestratorChain;
         const authorities = (await paraApi.query.aura.authorities()).toJSON();
 
@@ -82,7 +81,6 @@ describeSuite({
       title: "Test assignation did not change",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-        // expect(currentSession).to.be.equal(0);
         const allCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
         const expectedAllCollators = {
             orchestratorChain: [
