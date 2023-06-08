@@ -363,3 +363,44 @@ fn test_not_inserting_inherent() {
             assert!(AuthorNoting::latest_author(ParaId::from(1001)).is_none());
         });
 }
+
+#[test]
+fn encode_proof_for_benchmarks() {
+    println!(
+        "pub const ENCODED_PROOFS: &'static [(u32, &'static str, &'static [&'static str])] = &["
+    );
+
+    for x in 0u32..=100 {
+        let mut sproof_builder = ParaHeaderSproofBuilder::default();
+
+        for para_id in 0..x {
+            let slot: InherentType = 13u64.into();
+            let mut s = ParaHeaderSproofBuilderItem::default();
+            s.para_id = para_id.into();
+            // TODO: this header can be arbitrarily large, because "digest.logs" is an unbounded vec
+            let header = HeaderAs::NonEncoded(tp_core::Header {
+                parent_hash: Default::default(),
+                number: Default::default(),
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                },
+            });
+            s.author_id = header;
+            sproof_builder.items.push(s);
+        }
+
+        let (root, proof) = sproof_builder.into_state_root_and_proof();
+
+        println!("({}, \"{}\", &[", x, hex::encode(root),);
+
+        for x in proof.iter_nodes() {
+            println!("\"{}\",", hex::encode(x));
+        }
+
+        println!("]),");
+    }
+
+    println!("];")
+}

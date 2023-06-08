@@ -462,6 +462,13 @@ pub mod pallet {
                 .map(|x| x.into())
                 .collect()
         }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn set_current_container_chains(container_chains: &[ParaId]) {
+            let paras: BoundedVec<ParaId, T::MaxLengthParaIds> =
+                container_chains.to_vec().try_into().unwrap();
+            RegisteredParaIds::<T>::put(paras);
+        }
     }
 
     impl<T: Config> GetSessionContainerChains<T::SessionIndex> for Pallet<T> {
