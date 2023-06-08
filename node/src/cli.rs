@@ -276,6 +276,16 @@ pub struct ContainerChainCli {
     pub preloaded_chain_spec: Option<Box<dyn sc_chain_spec::ChainSpec>>,
 }
 
+impl Clone for ContainerChainCli {
+    fn clone(&self) -> Self {
+        Self {
+            base: self.base.clone(),
+            base_path: self.base_path.clone(),
+            preloaded_chain_spec: self.preloaded_chain_spec.as_ref().map(|x| x.cloned_box()),
+        }
+    }
+}
+
 impl ContainerChainCli {
     /// Parse the container chain CLI parameters using the para chain `Configuration`.
     pub fn new<'a>(

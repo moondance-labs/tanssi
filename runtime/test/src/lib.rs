@@ -517,6 +517,9 @@ impl pallet_configuration::Config for Runtime {
     type AuthorityId = NimbusId;
 }
 
+parameter_types! {
+    pub const DepositAmount: Balance = 100 * UNIT;
+}
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
@@ -525,6 +528,8 @@ impl pallet_registrar::Config for Runtime {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type Currency = Balances;
+    type DepositAmount = DepositAmount;
 }
 
 impl pallet_authority_mapping::Config for Runtime {
@@ -684,7 +689,7 @@ impl_runtime_apis! {
             use pallet_registrar::Pallet as PalletRegistrarBench;
 
             let mut list = Vec::<BenchmarkList>::new();
-    
+
             list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
             list_benchmark!(
                 list,
@@ -700,15 +705,15 @@ impl_runtime_apis! {
             );
     
             let storage_info = AllPalletsWithSystem::storage_info();
-    
+
             return (list, storage_info);
         }
-    
+
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
             use frame_benchmarking::{add_benchmark, BenchmarkBatch, Benchmarking, TrackedStorageKey};
-    
+
             use frame_system_benchmarking::Pallet as SystemBench;
             impl frame_system_benchmarking::Config for Runtime {}
             use pallet_configuration::Pallet as PalletConfigurationBench;
@@ -745,10 +750,10 @@ impl_runtime_apis! {
                     .to_vec()
                     .into(),
             ];
-    
+
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
-    
+
             add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
             add_benchmark!(
                 params,

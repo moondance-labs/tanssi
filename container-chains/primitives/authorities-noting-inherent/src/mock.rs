@@ -36,7 +36,7 @@ use {
     nimbus_primitives::NimbusId,
     sp_inherents::{InherentData, InherentDataProvider},
     test_relay_sproof_builder::{
-        CollatorAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilder,
+        AuthorityAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilder,
         ParaHeaderSproofBuilderItem,
     },
     tp_collator_assignment::AssignedCollators,
@@ -65,11 +65,12 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
     ) -> Result<(), sp_inherents::Error> {
         let mut sproof_builder = ParaHeaderSproofBuilder::default();
 
-        let assignment = CollatorAssignmentSproofBuilder::<tp_core::AccountId> {
-            collator_assignment: AssignedCollators::<tp_core::AccountId> {
+        let assignment = AuthorityAssignmentSproofBuilder::<NimbusId> {
+            authority_assignment: AssignedCollators {
                 orchestrator_chain: vec![],
                 container_chains: Default::default(),
             },
+            session_index: 0,
         };
 
         let (orchestrator_chain_root, orchestrator_chain_state) =

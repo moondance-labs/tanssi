@@ -54,7 +54,7 @@ pub mod pallet {
     #[pallet::getter(fn collator_container_chain)]
     pub type CollatorContainerChain<T: Config> = StorageMap<
         _,
-        Blake2_128Concat,
+        Twox64Concat,
         T::SessionIndex,
         AssignedCollators<T::AuthorityId>,
         OptionQuery,

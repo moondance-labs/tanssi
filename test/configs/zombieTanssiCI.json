@@ -64,6 +64,16 @@
             "name": "Collator2001-02",
             "command": "tmp/tanssi-node",
             "args": ["-- --tmp --para-id 2001"]
+          },
+          {
+            "name": "Collator2002-01",
+            "command": "tmp/tanssi-node",
+            "args": ["-- --tmp --ws-port 9951 --para-id 2002"]
+          },
+          {
+            "name": "Collator2002-02",
+            "command": "tmp/tanssi-node",
+            "args": ["-- --tmp --para-id 2002"]
           }
         ]
       },
@@ -85,6 +95,16 @@
             "name": "DummyCollator-2001",
             "command": "tmp/container-chain-template-frontier-node",
             "ws_port": 9960
+          }
+        ]
+      },
+      {
+        "id": 2002,
+        "chain_spec_path": "specs/template-container-2002.json",
+        "collators":  [
+          {
+            "name": "DummyCollator-2002",
+            "command": "tmp/container-chain-template-simple-node"
           }
         ]
       }

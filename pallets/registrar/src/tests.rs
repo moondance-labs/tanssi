@@ -22,21 +22,29 @@ use {
     tp_traits::ParaId,
 };
 
+const ALICE: u64 = 1;
+
 #[test]
 fn register_para_id_42() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_ok!(ParaRegistrar::register(
-            RuntimeOrigin::root(),
+            RuntimeOrigin::signed(ALICE),
             42.into(),
             empty_genesis_data()
+        ));
+        // Assert that the correct event was deposited
+        System::assert_last_event(Event::ParaIdRegistered { para_id: 42.into() }.into());
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
         ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
             vec![(2u32, BoundedVec::try_from(vec![42u32.into()]).unwrap())]
         );
         // Assert that the correct event was deposited
-        System::assert_last_event(Event::ParaIdRegistered { para_id: 42.into() }.into());
+        System::assert_last_event(Event::ParaIdValidForCollating { para_id: 42.into() }.into());
 
         // Assert after two sessions it goes to the non-pending
         ParaRegistrar::initializer_on_new_session(&2);
@@ -50,12 +58,16 @@ fn register_para_id_42_twice() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_ok!(ParaRegistrar::register(
-            RuntimeOrigin::root(),
+            RuntimeOrigin::signed(ALICE),
             42.into(),
             empty_genesis_data()
         ));
         assert_noop!(
-            ParaRegistrar::register(RuntimeOrigin::root(), 42.into(), empty_genesis_data()),
+            ParaRegistrar::register(
+                RuntimeOrigin::signed(ALICE),
+                42.into(),
+                empty_genesis_data()
+            ),
             Error::<Test>::ParaIdAlreadyRegistered
         );
     });
@@ -74,7 +86,7 @@ fn register_para_id_42_genesis_data_size_too_big() {
             properties: Default::default(),
         };
         assert_noop!(
-            ParaRegistrar::register(RuntimeOrigin::root(), 42.into(), genesis_data,),
+            ParaRegistrar::register(RuntimeOrigin::signed(ALICE), 42.into(), genesis_data,),
             Error::<Test>::GenesisDataTooBig,
         );
     });
@@ -96,9 +108,13 @@ fn deregister_para_id_42() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_ok!(ParaRegistrar::register(
-            RuntimeOrigin::root(),
+            RuntimeOrigin::signed(ALICE),
             42.into(),
             empty_genesis_data()
+        ));
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
         ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
@@ -124,9 +140,13 @@ fn deregister_para_id_42_after_session_changes() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_ok!(ParaRegistrar::register(
-            RuntimeOrigin::root(),
+            RuntimeOrigin::signed(ALICE),
             42.into(),
             empty_genesis_data()
+        ));
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
         ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
@@ -152,9 +172,13 @@ fn deregister_para_id_42_twice() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_ok!(ParaRegistrar::register(
-            RuntimeOrigin::root(),
+            RuntimeOrigin::signed(ALICE),
             42.into(),
             empty_genesis_data()
+        ));
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
         ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
@@ -185,9 +209,13 @@ fn deregister_para_id_removes_genesis_data() {
             properties: Default::default(),
         };
         assert_ok!(ParaRegistrar::register(
-            RuntimeOrigin::root(),
+            RuntimeOrigin::signed(ALICE),
             42.into(),
             genesis_data.clone(),
+        ));
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
         ));
         assert_eq!(
             ParaRegistrar::pending_registered_para_ids(),
@@ -222,7 +250,7 @@ fn register_para_id_bad_origin() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_noop!(
-            ParaRegistrar::register(RuntimeOrigin::signed(1), 42.into(), empty_genesis_data()),
+            ParaRegistrar::register(RuntimeOrigin::root(), 42.into(), empty_genesis_data()),
             DispatchError::BadOrigin
         );
     });
@@ -234,6 +262,17 @@ fn deregister_para_id_bad_origin() {
         System::set_block_number(1);
         assert_noop!(
             ParaRegistrar::deregister(RuntimeOrigin::signed(1), 42.into()),
+            DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn mark_valid_for_collating_bad_origin() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_noop!(
+            ParaRegistrar::mark_valid_for_collating(RuntimeOrigin::signed(1), 42.into()),
             DispatchError::BadOrigin
         );
     });
@@ -300,5 +339,119 @@ fn genesis_error_genesis_data_size_too_big() {
     };
     new_test_ext_with_genesis(vec![(2.into(), genesis_data)]).execute_with(|| {
         System::set_block_number(1);
+    });
+}
+
+#[test]
+fn register_without_mark_valid_for_collating() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+        // Assert that the correct event was deposited
+        System::assert_last_event(Event::ParaIdRegistered { para_id: 42.into() }.into());
+        assert_eq!(ParaRegistrar::pending_registered_para_ids(), vec![]);
+
+        // Assert after two sessions registered para ids are still empty
+        ParaRegistrar::initializer_on_new_session(&2);
+        assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
+        assert_eq!(ParaRegistrar::pending_registered_para_ids(), vec![]);
+    });
+}
+
+#[test]
+fn mark_valid_for_collating_twice() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_noop!(
+            ParaRegistrar::mark_valid_for_collating(RuntimeOrigin::root(), 42.into(),),
+            Error::<Test>::ParaIdNotInPendingVerification
+        );
+    });
+}
+
+#[test]
+fn mark_valid_for_collating_invalid_para_id() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_noop!(
+            ParaRegistrar::mark_valid_for_collating(RuntimeOrigin::root(), 1.into(),),
+            Error::<Test>::ParaIdNotInPendingVerification
+        );
+    });
+}
+
+#[test]
+fn mark_valid_for_collating_already_valid_para_id() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+        // Assert that the correct event was deposited
+        System::assert_last_event(Event::ParaIdRegistered { para_id: 42.into() }.into());
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+
+        ParaRegistrar::initializer_on_new_session(&2);
+        assert_eq!(ParaRegistrar::registered_para_ids(), vec![42.into()]);
+        assert_eq!(ParaRegistrar::pending_registered_para_ids(), vec![]);
+        assert_noop!(
+            ParaRegistrar::mark_valid_for_collating(RuntimeOrigin::root(), 42.into(),),
+            Error::<Test>::ParaIdNotInPendingVerification
+        );
+    });
+}
+
+#[test]
+fn deregister_returns_bond() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let bond = DepositAmount::get();
+        let balance_before = Balances::free_balance(ALICE);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_eq!(Balances::free_balance(ALICE), balance_before - bond);
+
+        assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
+
+        assert_eq!(Balances::free_balance(ALICE), balance_before);
+    });
+}
+
+#[test]
+fn can_deregister_before_valid_for_collating() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+
+        assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
     });
 }

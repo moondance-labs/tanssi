@@ -18,15 +18,15 @@ use {
     crate::mock::*,
     sp_runtime::traits::BlakeTwo256,
     test_relay_sproof_builder::{
-        CollatorAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
+        AuthorityAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
     },
 };
 
 #[test]
 fn test_authorities_insertion_right_para_id() {
-    let mut assignment = CollatorAssignmentSproofBuilder::<u64>::default();
+    let mut assignment = AuthorityAssignmentSproofBuilder::<u64>::default();
     assignment
-        .collator_assignment
+        .authority_assignment
         .container_chains
         .insert(ParachainId::get().into(), vec![10u64, 11u64]);
 
@@ -58,9 +58,9 @@ fn test_authorities_insertion_right_para_id() {
 
 #[test]
 fn test_authorities_insertion_wrong_para_id() {
-    let mut assignment = CollatorAssignmentSproofBuilder::<u64>::default();
+    let mut assignment = AuthorityAssignmentSproofBuilder::<u64>::default();
     assignment
-        .collator_assignment
+        .authority_assignment
         .container_chains
         .insert((ParachainId::get() + 1).into(), vec![10u64, 11u64]);
 
@@ -95,9 +95,9 @@ fn test_authorities_insertion_wrong_para_id() {
     expected = "Orchestrator chain authorities data needs to be present in every block!"
 )]
 fn test_not_inserting_inherent() {
-    let mut assignment = CollatorAssignmentSproofBuilder::<u64>::default();
+    let mut assignment = AuthorityAssignmentSproofBuilder::<u64>::default();
     assignment
-        .collator_assignment
+        .authority_assignment
         .container_chains
         .insert(ParachainId::get().into(), vec![10u64, 11u64]);
 
