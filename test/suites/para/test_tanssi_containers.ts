@@ -342,10 +342,10 @@ describeSuite({
       id: "T14",
       title: "Test container chain 2002 assignation is correct",
       test: async function () {
-        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         const paraId = (await container2002Api.query.parachainInfo.parachainId()).toString();
-
-        const containerChainCollators = assignment.containerChains.toJSON()[paraId];
+        const containerChainCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession))
+          .toJSON().containerChains[paraId];
 
         const writtenCollators = (await container2002Api.query.authoritiesNoting.authorities()).toJSON();
 
