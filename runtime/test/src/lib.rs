@@ -703,7 +703,7 @@ impl_runtime_apis! {
                 pallet_registrar,
                 PalletRegistrarBench::<Runtime>
             );
-    
+
             let storage_info = AllPalletsWithSystem::storage_info();
 
             return (list, storage_info);
@@ -718,7 +718,7 @@ impl_runtime_apis! {
             impl frame_system_benchmarking::Config for Runtime {}
             use pallet_configuration::Pallet as PalletConfigurationBench;
             use pallet_registrar::Pallet as PalletRegistrarBench;
-            
+
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
                 hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac")
