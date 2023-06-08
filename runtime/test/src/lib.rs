@@ -703,6 +703,7 @@ impl_runtime_apis! {
 
                     use frame_system_benchmarking::Pallet as SystemBench;
                     impl frame_system_benchmarking::Config for Runtime {}
+                    use pallet_configuration::Pallet as PalletConfigurationBench;
                     use pallet_registrar::Pallet as PalletRegistrarBench;
 
                     let whitelist: Vec<TrackedStorageKey> = vec![
