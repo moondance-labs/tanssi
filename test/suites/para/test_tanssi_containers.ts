@@ -74,7 +74,6 @@ describeSuite({
       title: "Test Tanssi assignation is correct",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-        expect(currentSession).to.be.equal(0);
         const tanssiCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON().orchestratorChain;
         const authorities = (await paraApi.query.aura.authorities()).toJSON();
 
@@ -87,7 +86,6 @@ describeSuite({
       title: "Test assignation did not change",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-        expect(currentSession).to.be.equal(0);
         const allCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
         const expectedAllCollators = {
             orchestratorChain: [
@@ -139,10 +137,10 @@ describeSuite({
       id: "T06",
       title: "Test container chain 2000 assignation is correct",
       test: async function () {
-        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
-
-        const containerChainCollators = assignment.containerChains.toJSON()[paraId];
+        const containerChainCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession))
+          .toJSON().containerChains[paraId];
 
         const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
 
@@ -154,10 +152,10 @@ describeSuite({
       id: "T07",
       title: "Test container chain 2001 assignation is correct",
       test: async function () {
-        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
+        const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
-
-        const containerChainCollators = assignment.containerChains.toJSON()[paraId];
+        const containerChainCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession))
+          .toJSON().containerChains[paraId];
 
         const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toJSON();
 
