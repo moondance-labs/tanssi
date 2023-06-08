@@ -11,9 +11,11 @@ describeSuite({
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
+    let maxBlock: number;
     const anotherLogger = setupLogger("anotherLogger");
     beforeAll(() => {
       polkadotJs = context.polkadotJs();
+      maxBlock = polkadotJs.consts.system.blockWeights.maxBlock.refTime.toNumber();
     });
 
     it({
@@ -26,7 +28,7 @@ describeSuite({
             const blockWeight = (await polkadotJs.query.system.blockWeight()).toJSON();
             expect(blockWeight.normal).to.deep.equal({ refTime: 0, proofSize: 0 });
             expect(blockWeight.operational).to.deep.equal({ refTime: 0, proofSize: 0 });
-            expect(blockWeight.mandatory.refTime).to.be.greaterThan(500000000000);
+            expect(blockWeight.mandatory.refTime).to.be.greaterThan(maxBlock);
         },
     });
 
@@ -39,7 +41,7 @@ describeSuite({
             const blockWeight = (await polkadotJs.query.system.blockWeight()).toJSON();
             expect(blockWeight.normal).to.deep.equal({ refTime: 0, proofSize: 0 });
             expect(blockWeight.operational).to.deep.equal({ refTime: 0, proofSize: 0 });
-            expect(blockWeight.mandatory.refTime).to.be.lessThan(500000000000);
+            expect(blockWeight.mandatory.refTime).to.be.lessThan(maxBlock);
         },
     });
     },
