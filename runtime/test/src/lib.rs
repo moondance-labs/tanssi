@@ -517,6 +517,9 @@ impl pallet_configuration::Config for Runtime {
     type AuthorityId = NimbusId;
 }
 
+parameter_types! {
+    pub const DepositAmount: Balance = 100 * UNIT;
+}
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = EnsureRoot<AccountId>;
@@ -525,6 +528,8 @@ impl pallet_registrar::Config for Runtime {
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type Currency = Balances;
+    type DepositAmount = DepositAmount;
 }
 
 impl pallet_authority_mapping::Config for Runtime {

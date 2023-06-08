@@ -50,7 +50,7 @@ use {
     sp_std::prelude::*,
     tp_chain_state_snapshot::*,
     tp_collator_assignment::AssignedCollators,
-    tp_core::well_known_keys::{COLLATOR_ASSIGNMENT_INDEX, PARAS_HEADS_INDEX},
+    tp_core::well_known_keys,
 };
 
 pub trait GetContainerChains {
@@ -74,7 +74,7 @@ pub mod pallet {
 
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
 
-        type OrchestratorAccountId: sp_std::fmt::Debug + PartialEq + Clone + FullCodec + TypeInfo;
+        type AuthorityId: sp_std::fmt::Debug + PartialEq + Clone + FullCodec + TypeInfo;
     }
 
     #[pallet::error]
@@ -182,7 +182,7 @@ pub mod pallet {
         #[pallet::weight(0)]
         pub fn set_authorities(
             origin: OriginFor<T>,
-            authorities: Vec<T::OrchestratorAccountId>,
+            authorities: Vec<T::AuthorityId>,
         ) -> DispatchResult {
             ensure_root(origin)?;
             Authorities::<T>::put(&authorities);
@@ -195,15 +195,12 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Auhtorities inserted
-        AuthoritiesInserted {
-            authorities: Vec<T::OrchestratorAccountId>,
-        },
+        AuthoritiesInserted { authorities: Vec<T::AuthorityId> },
     }
 
     #[pallet::storage]
     #[pallet::getter(fn authorities)]
-    pub(super) type Authorities<T: Config> =
-        StorageValue<_, Vec<T::OrchestratorAccountId>, ValueQuery>;
+    pub(super) type Authorities<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
 
     /// Was the containerAuthorData set?
     #[pallet::storage]
@@ -249,7 +246,7 @@ impl<T: Config> Pallet<T> {
     ) -> Result<<BlakeTwo256 as HashT>::Output, Error<T>> {
         let bytes = para_id.twox_64_concat();
         // CONCAT
-        let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
+        let key = [well_known_keys::PARAS_HEADS_INDEX, bytes.as_slice()].concat();
         // We might encounter empty vecs
         // We only note if we can decode
         // In this process several errors can occur, but we will only log if such errors happen
@@ -281,20 +278,28 @@ impl<T: Config> Pallet<T> {
     fn fetch_authorities_from_orchestrator_proof(
         orchestrator_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
-    ) -> Result<Vec<T::OrchestratorAccountId>, Error<T>> {
+    ) -> Result<Vec<T::AuthorityId>, Error<T>> {
+        // Read orchestrator session index
+        let session_index = orchestrator_state_proof
+            .read_entry::<u32>(well_known_keys::SESSION_INDEX, None)
+            .map_err(|e| match e {
+                ReadEntryErr::Proof => panic!("Invalid proof: cannot read session index"),
+                _ => Error::<T>::FailedReading,
+            })?;
+
         // Read the assignment from the orchestrator
-        let assignmnet = orchestrator_state_proof
-            .read_entry::<AssignedCollators<T::OrchestratorAccountId>>(
-                COLLATOR_ASSIGNMENT_INDEX,
+        let assignment = orchestrator_state_proof
+            .read_entry::<AssignedCollators<T::AuthorityId>>(
+                &well_known_keys::authority_assignment_for_session(session_index),
                 None,
             )
             .map_err(|e| match e {
-                ReadEntryErr::Proof => panic!("Invalid proof provided for para head key"),
+                ReadEntryErr::Proof => panic!("Invalid proof: cannot read assignment"),
                 _ => Error::<T>::FailedReading,
             })?;
 
         // Read those authorities assigned to this chain
-        let authorities = assignmnet
+        let authorities = assignment
             .container_chains
             .get(&para_id.into())
             .ok_or(Error::<T>::NoAuthoritiesFound)?;

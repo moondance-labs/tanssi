@@ -21,7 +21,10 @@
 
 #![warn(missing_docs)]
 
+use jsonrpsee::{core::RpcResult, proc_macros::rpc};
+use polkadot_primitives::Id as ParaId;
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
+use tp_container_chain_genesis_data::ContainerChainGenesisData;
 use {
     orchestrator_runtime::{opaque::Block, AccountId, Index as Nonce},
     polkadot_primitives::Hash,
@@ -80,6 +83,8 @@ where
 
     module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
 
+    module.merge(Utils.into_rpc())?;
+
     if let Some(command_sink) = command_sink {
         module.merge(
             // We provide the rpc handler with the sending end of the channel to allow the rpc
@@ -89,4 +94,29 @@ where
     };
 
     Ok(module)
+}
+
+/// Utils API implementation.
+pub struct Utils;
+
+/// Utils rpc interface.
+#[rpc(server)]
+pub trait UtilsApi {
+    #[method(name = "utils_raw_chain_spec_into_container_chain_genesis_data")]
+    fn raw_chain_spec_into_container_chain_genesis_data(
+        &self,
+        raw_chain_spec: String,
+    ) -> RpcResult<(ParaId, ContainerChainGenesisData)>;
+}
+
+impl UtilsApiServer for Utils {
+    fn raw_chain_spec_into_container_chain_genesis_data(
+        &self,
+        raw_chain_spec: String,
+    ) -> RpcResult<(ParaId, ContainerChainGenesisData)> {
+        tp_container_chain_genesis_data::json::container_chain_genesis_data_from_str(
+            &raw_chain_spec,
+        )
+        .map_err(|e| jsonrpsee::core::Error::Custom(e))
+    }
 }
