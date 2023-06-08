@@ -681,9 +681,9 @@ impl_runtime_apis! {
             use frame_support::traits::StorageInfoTrait;
             use frame_system_benchmarking::Pallet as SystemBench;
             use pallet_configuration::Pallet as PalletConfigurationBench;
-    
+
             let mut list = Vec::<BenchmarkList>::new();
-    
+
             list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
             list_benchmark!(
                 list,
@@ -691,21 +691,21 @@ impl_runtime_apis! {
                 pallet_configuration,
                 PalletConfigurationBench::<Runtime>
             );
-    
+
             let storage_info = AllPalletsWithSystem::storage_info();
-    
+
             return (list, storage_info);
         }
-    
+
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
             use frame_benchmarking::{add_benchmark, BenchmarkBatch, Benchmarking, TrackedStorageKey};
-    
+
             use frame_system_benchmarking::Pallet as SystemBench;
             impl frame_system_benchmarking::Config for Runtime {}
             use pallet_configuration::Pallet as PalletConfigurationBench;
-    
+
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
                 hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac")
@@ -732,10 +732,10 @@ impl_runtime_apis! {
                     .to_vec()
                     .into(),
             ];
-    
+
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
-    
+
             add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
             add_benchmark!(
                 params,
