@@ -18,12 +18,32 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, Pallet},
+    crate::{Call, Config, DepositBalanceOf, Pallet},
     frame_benchmarking::{account, benchmarks},
+    frame_support::traits::Currency,
     frame_system::RawOrigin,
+    sp_core::Get,
     sp_std::vec,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
+    tp_traits::ParaId,
 };
+
+/// Create a funded user.
+/// Used for generating the necessary amount for registering
+fn create_funded_user<T: Config>(
+    string: &'static str,
+    n: u32,
+    extra: DepositBalanceOf<T>,
+) -> (T::AccountId, DepositBalanceOf<T>) {
+    const SEED: u32 = 0;
+    let user = account(string, n, SEED);
+    let min_reserve_amount = T::DepositAmount::get();
+    let total = min_reserve_amount + extra;
+    T::Currency::make_free_balance_be(&user, total);
+    T::Currency::issue(total);
+    (user, total)
+}
+
 benchmarks! {
     where_clause { where T::SessionIndex: From<u32> }
 
@@ -35,7 +55,9 @@ benchmarks! {
 
         let caller: T::AccountId = account("account id", 0u32, 0u32);
         let storage =  ContainerChainGenesisData {
-            storage: vec![(vec![], vec![0; x as usize]).into()],
+            // Runtime would go under "code" key, so we mimic
+            // with 4 byte key
+            storage: vec![(vec![1; 4], vec![1; x as usize]).into()],
             name: Default::default(),
             id: Default::default(),
             fork_id: Default::default(),
@@ -44,13 +66,89 @@ benchmarks! {
         };
 
         for i in 1..y {
-            Pallet::<T>::register(RawOrigin::Root.into(), i.into(), storage.clone())?;
+            // Twice the deposit just in case
+            let (caller, deposit_amount) = create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(RawOrigin::Signed(caller.clone()).into(), i.into(), storage.clone())?;
         }
 
-    }: _(RawOrigin::Root, Default::default(), storage)
-    verify {
-       assert!(Pallet::<T>::pending_registered_para_ids().len()>0);
+        // We should have registered y-1
+        assert_eq!(Pallet::<T>::pending_verification().len(), (y -1) as usize);
 
+        let (caller, deposit_amount) = create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+
+    }: _(RawOrigin::Signed(caller.clone()), Default::default(), storage)
+    verify {
+        // We should have registered y
+        assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
+    }
+
+    deregister {
+        // We make it dependent on the size of the runtime
+        let x in 5..3_000_000;
+        // ..and on the nummber of parachains already registered
+        let y in 1..50;
+
+        // Worst case scenario is when the parachain is not yet valid for collation
+        let caller: T::AccountId = account("account id", 0u32, 0u32);
+        let storage =  ContainerChainGenesisData {
+            // Runtime would go under "code" key, so we mimic
+            // with 4 byte key
+            storage: vec![(vec![1; 4], vec![1; x as usize]).into()],
+            name: Default::default(),
+            id: Default::default(),
+            fork_id: Default::default(),
+            extensions: Default::default(),
+            properties: Default::default()
+        };
+
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, deposit_amount) = create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(RawOrigin::Signed(caller.clone()).into(), i.into(), storage.clone())?;
+        }
+
+        // We should have registered y
+        assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+
+    }: _(RawOrigin::Root, (y-1).into())
+    verify {
+        // We should have y-1
+        assert_eq!(Pallet::<T>::pending_verification().len(), (y-1) as usize);
+        assert!(Pallet::<T>::registrar_deposit(ParaId::from(y-1)).is_none());
+    }
+
+    mark_valid_for_collating {
+        // We make it dependent on the size of the runtime
+        let x in 5..3_000_000;
+        // ..and on the nummber of parachains already registered
+        let y in 1..50;
+
+        let caller: T::AccountId = account("account id", 0u32, 0u32);
+        let storage =  ContainerChainGenesisData {
+            // Runtime would go under "code" key, so we mimic
+            // with 4 byte key
+            storage: vec![(vec![1; 4], vec![1; x as usize]).into()],
+            name: Default::default(),
+            id: Default::default(),
+            fork_id: Default::default(),
+            extensions: Default::default(),
+            properties: Default::default()
+        };
+
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, deposit_amount) = create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(RawOrigin::Signed(caller.clone()).into(), i.into(), storage.clone())?;
+        }
+
+        // We should have registered y
+        assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+
+    }: _(RawOrigin::Root, (y-1).into())
+    verify {
+        // We should have y-1
+        assert_eq!(Pallet::<T>::pending_verification().len(), (y-1) as usize);
     }
 
     impl_benchmark_test_suite!(

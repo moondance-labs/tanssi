@@ -39,7 +39,8 @@ std = [
 	"serde",
 	"tp-container-chain-genesis-data/std",
 	"tp-traits/std",
-	"frame-benchmarking/std"
+	"frame-benchmarking/std",
+	"pallet-balances/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking"
