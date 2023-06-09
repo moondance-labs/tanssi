@@ -111,6 +111,7 @@ impl pallet_registrar::Config for Test {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
+    type WeightInfo = ();
 }
 
 const ALICE: u64 = 1;

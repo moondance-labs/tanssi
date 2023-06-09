@@ -94,7 +94,7 @@ benchmarks! {
         let storage =  ContainerChainGenesisData {
             // Runtime would go under "code" key, so we mimic
             // with 4 byte key
-            storage: vec![(vec![1; 4], vec![1; x as usize]).into()],
+            storage: vec![(b"code".to_vec(), vec![1; x as usize]).into()],
             name: Default::default(),
             id: Default::default(),
             fork_id: Default::default(),
