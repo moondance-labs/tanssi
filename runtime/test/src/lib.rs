@@ -530,6 +530,7 @@ impl pallet_registrar::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
+    type WeightInfo = ();
 }
 
 impl pallet_authority_mapping::Config for Runtime {

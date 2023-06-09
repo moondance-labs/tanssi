@@ -35,12 +35,14 @@ mod tests;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
+pub mod weights;
 
 pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
     use {
+        crate::weights::WeightInfo,
         frame_support::{
             pallet_prelude::*,
             traits::{Currency, ReservableCurrency},
@@ -129,7 +131,11 @@ pub mod pallet {
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
 
         type Currency: ReservableCurrency<Self::AccountId>;
+
+        #[pallet::constant]
         type DepositAmount: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
+
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::storage]
@@ -201,9 +207,9 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        /// Register parachain
+        /// Register container-chain
         #[pallet::call_index(0)]
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2).ref_time())]
+        #[pallet::weight(T::WeightInfo::register(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get()))]
         pub fn register(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -272,12 +278,15 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Deregister parachain.
+        /// Deregister container-chain.
         ///
-        /// If a parachain is registered but not marked as valid_for_collating, this will remove it
+        /// If a container-chain is registered but not marked as valid_for_collating, this will remove it
         /// from `PendingVerification` as well.
         #[pallet::call_index(1)]
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(2,2).ref_time())]
+        #[pallet::weight(T::WeightInfo::deregister(
+            T::MaxGenesisDataSize::get(),
+            T::MaxLengthParaIds::get()
+        ))]
         pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
@@ -326,9 +335,12 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Mark parachain valid for collating
+        /// Mark container-chain valid for collating
         #[pallet::call_index(2)]
-        #[pallet::weight(10_000 + T::DbWeight::get().reads_writes(3,2).ref_time())]
+        #[pallet::weight(T::WeightInfo::deregister(
+            T::MaxGenesisDataSize::get(),
+            T::MaxLengthParaIds::get()
+        ))]
         pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
