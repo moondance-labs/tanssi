@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-mod cli;
 mod chain_spec;
-mod service;
+mod cli;
 mod rpc;
+mod service;
 
 pub use {
     crate::{
@@ -57,7 +57,7 @@ impl SubstrateCli for Cli {
     }
 
     fn impl_version() -> String {
-        return "".into()
+        return "".into();
     }
 
     fn description() -> String {
@@ -97,7 +97,7 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn impl_version() -> String {
-        return "".into()
+        return "".into();
     }
 
     fn description() -> String {
