@@ -14,9 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use {
+mod cli;
+mod chain_spec;
+mod service;
+mod rpc;
+
+pub use {
     crate::{
-        chain_spec,
         cli::{Cli, RelayChainCli, Subcommand},
         service::{new_partial, ParachainNativeExecutor},
     },
@@ -53,7 +57,7 @@ impl SubstrateCli for Cli {
     }
 
     fn impl_version() -> String {
-        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
+        return "".into()
     }
 
     fn description() -> String {
@@ -93,7 +97,7 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn impl_version() -> String {
-        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
+        return "".into()
     }
 
     fn description() -> String {
@@ -139,9 +143,7 @@ macro_rules! construct_async_run {
 }
 
 /// Parse command line arguments into service configuration.
-pub fn run() -> Result<()> {
-    let cli = Cli::from_args();
-
+pub fn run(cli: &Cli) -> Result<()> {
     match &cli.subcommand {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;

@@ -32,8 +32,10 @@
         "launchSpec": [
           {
             "name": "frontier-template",
-            "binPath": "../target/release/container-chain-template-frontier-node",
+            "binPath": "../target/release/tanssi-node",
             "options": [
+                "run-container-command",
+                "ethereum",
                 "--dev",
                 "--sealing=manual"
             ]

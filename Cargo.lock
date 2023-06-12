@@ -12806,6 +12806,7 @@ dependencies = [
  "ccp-authorities-noting-inherent",
  "clap",
  "container-chain-template-frontier-node",
+ "container-chain-template-simple-node",
  "cumulus-client-cli",
  "cumulus-client-collator",
  "cumulus-client-consensus-aura",

@@ -21,6 +21,8 @@ use {
     std::{collections::BTreeMap, path::PathBuf},
     tp_container_chain_genesis_data::json::properties_to_map,
     container_chain_template_frontier_node::Cli as EthCli,
+    container_chain_template_simple_node::Cli as SimpleTemplateCli,
+
 };
 
 /// Sub-commands supported by the collator.
@@ -79,13 +81,14 @@ pub struct RunContainerSubcommand {
 
 #[derive(Debug, clap::Subcommand)]
 pub enum Container {
-    Simple(EthCli),
+    Simple(SimpleTemplateCli),
     Ethereum(EthCli),
 }
 
 impl RunContainerSubcommand {
     pub fn run(&self) -> Result<(), sc_cli::Error>  {
         match &self.container {
+            Container::Simple(simple_cli) => container_chain_template_simple_node::run(simple_cli),
             Container::Ethereum(eth_cli) => container_chain_template_frontier_node::run(&eth_cli)
         }
     }
