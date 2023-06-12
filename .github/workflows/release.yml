@@ -88,8 +88,6 @@ jobs:
         run: |
           mkdir -p binaries
           cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
-          cp $CARGO_TARGET_DIR/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
-          cp $CARGO_TARGET_DIR/release/container-chain-template-frontier-node binaries/container-chain-template-frontier-node;
 
       - name: Upload binary
         uses: actions/upload-artifact@v3.1.2
@@ -160,7 +158,7 @@ jobs:
       
       - name: "Install and run upgrade test"
         run: |
-          chmod uog+x target/release/container-chain-template-frontier-node
+          chmod uog+x target/release/tanssi-node
           cd test
           pnpm install --frozen-lockfile
           pnpm moonwall test dev_frontier_template
@@ -210,8 +208,6 @@ jobs:
           pnpm install --frozen-lockfile
 
           chmod uog+x tmp/tanssi-node
-          chmod uog+x tmp/container-chain-template-simple-node
-          chmod uog+x tmp/container-chain-template-frontier-node
           chmod uog+x tmp/polkadot
 
           ## Generate specs
