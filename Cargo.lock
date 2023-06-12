@@ -12805,6 +12805,7 @@ dependencies = [
  "async-trait",
  "ccp-authorities-noting-inherent",
  "clap",
+ "container-chain-template-frontier-node",
  "cumulus-client-cli",
  "cumulus-client-collator",
  "cumulus-client-consensus-aura",

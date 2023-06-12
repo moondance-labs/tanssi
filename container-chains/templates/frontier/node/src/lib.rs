@@ -14,9 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use {
+mod cli;
+mod chain_spec;
+mod client;
+mod service;
+mod eth;
+mod rpc;
+
+pub use {
     crate::{
-        chain_spec,
+        chain_spec::*,
         cli::{Cli, RelayChainCli, Subcommand},
         client::TemplateRuntimeExecutor,
         service::{frontier_database_dir, new_partial},
@@ -58,7 +65,7 @@ impl SubstrateCli for Cli {
     }
 
     fn impl_version() -> String {
-        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
+        return "".into()
     }
 
     fn description() -> String {
@@ -98,7 +105,7 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn impl_version() -> String {
-        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
+        return "".into()
     }
 
     fn description() -> String {
@@ -144,9 +151,7 @@ macro_rules! construct_async_run {
 }
 
 /// Parse command line arguments into service configuration.
-pub fn run() -> Result<()> {
-    let cli = Cli::from_args();
-
+pub fn run(cli: &Cli) -> Result<()> {
     match &cli.subcommand {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
@@ -344,7 +349,7 @@ pub fn run() -> Result<()> {
 					eth_statuses_cache: cli.run.eth_statuses_cache,
 					fee_history_limit: cli.run.fee_history_limit,
 					max_past_logs: cli.run.max_past_logs,
-					relay_chain_rpc_urls: cli.run.base.relay_chain_rpc_urls,
+					relay_chain_rpc_urls: cli.run.base.relay_chain_rpc_urls.clone(),
 				};
 
                 let extension = chain_spec::Extensions::try_get(&*config.chain_spec);

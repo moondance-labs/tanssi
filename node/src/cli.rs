@@ -20,6 +20,7 @@ use {
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::{collections::BTreeMap, path::PathBuf},
     tp_container_chain_genesis_data::json::properties_to_map,
+    container_chain_template_frontier_node::Cli as EthCli,
 };
 
 /// Sub-commands supported by the collator.
@@ -64,7 +65,31 @@ pub enum Subcommand {
     /// Errors since the binary was not build with `--features try-runtime`.
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
+
+    #[allow(missing_docs)]
+	#[command(name = "run-container-command", hide = true)]
+	RunContainerCommand(RunContainerSubcommand),
 }
+
+#[derive(Debug, clap::Parser)]
+pub struct RunContainerSubcommand {
+	#[command(subcommand)]
+	pub container: Container,
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum Container {
+    Simple(EthCli),
+    Ethereum(EthCli),
+}
+
+impl RunContainerSubcommand {
+    pub fn run(&self) -> Result<(), sc_cli::Error>  {
+        match &self.container {
+            Container::Ethereum(eth_cli) => container_chain_template_frontier_node::run(&eth_cli)
+        }
+    }
+} 
 
 /// The `build-spec` command used to build a specification.
 #[derive(Debug, Clone, clap::Parser)]
@@ -350,4 +375,37 @@ impl ContainerChainCli {
 
         Ok(())
     }
+}
+
+#[derive(Debug, clap::Parser)]
+#[group(skip)]
+pub struct EthRunCmd {
+    #[clap(flatten)]
+    pub base: cumulus_client_cli::RunCmd,
+
+    /// Size in bytes of the LRU cache for block data.
+    #[arg(long, default_value = "300000000")]
+    pub eth_log_block_cache: usize,
+
+    /// Size in bytes of the LRU cache for transactions statuses data.
+    #[arg(long, default_value = "300000000")]
+    pub eth_statuses_cache: usize,
+
+    /// Maximum number of logs in a query.
+    #[arg(long, default_value = "10000")]
+    pub max_past_logs: u32,
+
+    /// Id of the parachain this collator collates for.
+    #[arg(long)]
+    pub parachain_id: Option<u32>,
+
+    /// Maximum fee history cache size.
+    #[arg(long, default_value = "2048")]
+    pub fee_history_limit: u64,
+
+    /// When blocks should be sealed in the dev service.
+    ///
+    /// Options are "instant", "manual", or timer interval in milliseconds
+    #[arg(long, default_value = "instant")]
+    pub sealing: crate::service::Sealing,
 }

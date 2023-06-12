@@ -1,11 +1,13 @@
 [package]
 name = "container-chain-template-frontier-node"
 authors = { workspace = true }
-build = "build.rs"
 description = "Frontier container chain template node"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
 
 [dependencies]
 async-io = { workspace = true }

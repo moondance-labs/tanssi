@@ -33,6 +33,7 @@ pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", def
 
 ccp-authorities-noting-inherent = { path = "container-chains/primitives/authorities-noting-inherent", default-features = false }
 container-chain-template-runtime = { path = "container-chain-template/runtime", default-features = false }
+container-chain-template-frontier-node = { path = "container-chains/templates/frontier/node" }
 pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
 
 orchestrator-runtime = { path = "runtime/test", default-features = false }
