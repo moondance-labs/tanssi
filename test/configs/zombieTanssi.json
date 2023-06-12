@@ -83,7 +83,8 @@
         "collators":  [
           {
             "name": "DummyCollator-2000",
-            "command": "../target/release/container-chain-template-simple-node"
+            "validator": false,
+            "command": "../target/release/tanssi-node run-container-command simple"
           }
         ]
       },
@@ -93,8 +94,9 @@
         "collators":  [
           {
             "name": "DummyCollator-2001",
-            "command": "../target/release/container-chain-template-frontier-node",
-            "ws_port": 9960
+            "validator": false,
+            "command": "../target/release/tanssi-node run-container-command ethereum",
+            "ws-port": 9960
           }
         ]
       },
@@ -104,7 +106,8 @@
         "collators":  [
           {
             "name": "DummyCollator-2002",
-            "command": "../target/release/container-chain-template-simple-node"
+            "validator": false,
+            "command": "../target/release/tanssi-node run-container-command simple"
           }
         ]
       }
