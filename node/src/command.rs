@@ -22,9 +22,9 @@ use {
     },
     cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
     cumulus_primitives_core::ParaId,
+    dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
-    dancebox_runtime::Block,
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
@@ -43,12 +43,12 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
             vec![],
             vec![2000.into(), 2001.into()],
         )),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config(
+        "template-rococo" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
         )),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(
+        "" | "dancebox-local" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
@@ -238,14 +238,14 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.parachain_id {
-                    if cmd.base.shared_params.dev {
+                    if config.chain_spec.is_dev() {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
                         ))
                     } else {
-                        Box::new(chain_spec::local_testnet_config(
+                        Box::new(chain_spec::local_dancebox_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],

@@ -15,12 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
-use crate::container_chain_spawner::CcSpawnMsg;
-use crate::container_chain_spawner::ContainerChainSpawner;
-use sp_core::traits::SpawnEssentialNamed;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use {
-    crate::cli::ContainerChainCli,
+    crate::{
+        cli::ContainerChainCli,
+        container_chain_spawner::{CcSpawnMsg, ContainerChainSpawner},
+    },
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_aura::SlotProportion,
     cumulus_client_consensus_common::{
@@ -39,10 +38,10 @@ use {
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
+    dancebox_runtime::{opaque::Block, AccountId, RuntimeApi},
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
-    dancebox_runtime::{opaque::Block, AccountId, RuntimeApi},
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
@@ -58,15 +57,20 @@ use {
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
-    sp_core::H256,
+    sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::SyncCryptoStorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{str::FromStr, sync::Arc, sync::Mutex, time::Duration},
+    std::{
+        str::FromStr,
+        sync::{Arc, Mutex},
+        time::Duration,
+    },
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
     tc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
+    tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
 
 type FullBackend = TFullBackend<Block>;

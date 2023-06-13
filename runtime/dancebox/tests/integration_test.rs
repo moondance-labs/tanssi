@@ -19,12 +19,12 @@
 use {
     common::*,
     cumulus_primitives_core::ParaId,
-    frame_support::{assert_ok, BoundedVec},
-    nimbus_primitives::NIMBUS_KEY_ID,
     dancebox_runtime::{
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
         Configuration,
     },
+    frame_support::{assert_ok, BoundedVec},
+    nimbus_primitives::NIMBUS_KEY_ID,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,

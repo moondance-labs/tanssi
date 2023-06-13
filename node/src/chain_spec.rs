@@ -16,10 +16,8 @@
 
 use {
     cumulus_primitives_core::ParaId,
+    dancebox_runtime::{AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT},
     nimbus_primitives::NimbusId,
-    dancebox_runtime::{
-        AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
-    },
     pallet_configuration::HostConfiguration,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
@@ -158,9 +156,9 @@ pub fn development_config(
 
     ChainSpec::from_genesis(
         // Name
-        "Development",
+        "Dancebox Development Testnet",
         // ID
-        "dev",
+        "dancebox_dev",
         ChainType::Development,
         move || {
             testnet_genesis(
@@ -206,7 +204,7 @@ pub fn development_config(
     )
 }
 
-pub fn local_testnet_config(
+pub fn local_dancebox_config(
     para_id: ParaId,
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
@@ -220,9 +218,9 @@ pub fn local_testnet_config(
 
     ChainSpec::from_genesis(
         // Name
-        "Local Testnet",
+        "Dancebox Local Testnet",
         // ID
-        "local_testnet",
+        "dancebox_local",
         ChainType::Local,
         move || {
             testnet_genesis(
@@ -352,5 +350,24 @@ fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisDa
         fork_id: None,
         extensions: vec![],
         properties: Default::default(),
+    }
+}
+
+/// Can be called for a `Configuration` to check if it is a configuration for
+/// the `Tanssi` network.
+pub trait IdentifyVariant {
+    /// Returns `true` if this is a configuration for the `Dancebox` network.
+    fn is_dancebox(&self) -> bool;
+    /// Returns `true` if this is a configuration for a dev network.
+    fn is_dev(&self) -> bool;
+}
+
+impl IdentifyVariant for Box<dyn sc_service::ChainSpec> {
+    fn is_dancebox(&self) -> bool {
+        self.id().starts_with("dancebox")
+    }
+
+    fn is_dev(&self) -> bool {
+        self.chain_type() == sc_chain_spec::ChainType::Development
     }
 }
