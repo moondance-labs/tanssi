@@ -17,7 +17,7 @@
 use {
     cumulus_primitives_core::ParaId,
     nimbus_primitives::NimbusId,
-    orchestrator_runtime::{
+    dancebox_runtime::{
         AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
     },
     pallet_configuration::HostConfiguration,
@@ -33,7 +33,7 @@ use {
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec = sc_service::GenericChainSpec<orchestrator_runtime::GenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<dancebox_runtime::GenesisConfig, Extensions>;
 
 /// Specialized `ChainSpec` for container chains that only allows raw genesis format.
 pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfig, Extensions>;
@@ -119,8 +119,8 @@ where
 /// Generate the session keys from individual elements.
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(keys: NimbusId) -> orchestrator_runtime::SessionKeys {
-    orchestrator_runtime::SessionKeys { aura: keys.clone() }
+pub fn template_session_keys(keys: NimbusId) -> dancebox_runtime::SessionKeys {
+    dancebox_runtime::SessionKeys { aura: keys.clone() }
 }
 
 /// Helper function to turn a list of names into a list of `(AccountId, AuraId)`
@@ -282,27 +282,27 @@ fn testnet_genesis(
     container_chains: &[String],
     mock_container_chains: &[ParaId],
     configuration: pallet_configuration::GenesisConfig,
-) -> orchestrator_runtime::GenesisConfig {
-    orchestrator_runtime::GenesisConfig {
-        system: orchestrator_runtime::SystemConfig {
-            code: orchestrator_runtime::WASM_BINARY
+) -> dancebox_runtime::GenesisConfig {
+    dancebox_runtime::GenesisConfig {
+        system: dancebox_runtime::SystemConfig {
+            code: dancebox_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
                 .to_vec(),
         },
-        balances: orchestrator_runtime::BalancesConfig {
+        balances: dancebox_runtime::BalancesConfig {
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
-        parachain_info: orchestrator_runtime::ParachainInfoConfig { parachain_id: id },
-        collator_selection: orchestrator_runtime::CollatorSelectionConfig {
+        parachain_info: dancebox_runtime::ParachainInfoConfig { parachain_id: id },
+        collator_selection: dancebox_runtime::CollatorSelectionConfig {
             invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
             candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
             ..Default::default()
         },
-        session: orchestrator_runtime::SessionConfig {
+        session: dancebox_runtime::SessionConfig {
             keys: invulnerables
                 .into_iter()
                 .map(|(acc, aura)| {

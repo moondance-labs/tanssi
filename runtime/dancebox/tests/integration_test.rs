@@ -21,7 +21,7 @@ use {
     cumulus_primitives_core::ParaId,
     frame_support::{assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
-    orchestrator_runtime::{
+    dancebox_runtime::{
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
         Configuration,
     },
@@ -324,14 +324,14 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -399,14 +399,14 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -927,14 +927,14 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -1095,14 +1095,14 @@ fn test_consensus_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -1204,14 +1204,14 @@ fn test_consensus_runtime_api_session_changes() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: dave_id.clone(),
                 },
                 vec![]
@@ -1223,7 +1223,7 @@ fn test_consensus_runtime_api_session_changes() {
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
 
-            let session_two_edge = orchestrator_runtime::Period::get() * 2;
+            let session_two_edge = dancebox_runtime::Period::get() * 2;
             // Let's run just 2 blocks before the session 2 change first
             // Prediction should still be identical, as we are not in the
             // edge of a session change
@@ -1375,7 +1375,7 @@ fn test_author_noting_not_self_para() {
 #[test]
 fn session_keys_key_type_id() {
     assert_eq!(
-        orchestrator_runtime::SessionKeys::key_ids(),
+        dancebox_runtime::SessionKeys::key_ids(),
         vec![NIMBUS_KEY_ID]
     );
 }
@@ -1424,14 +1424,14 @@ fn test_session_keys_with_authority_mapping() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: bob_id_2.clone(),
                 },
                 vec![]
@@ -1531,14 +1531,14 @@ fn test_session_keys_with_authority_assignment() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                orchestrator_runtime::SessionKeys {
+                dancebox_runtime::SessionKeys {
                     aura: bob_id_2.clone(),
                 },
                 vec![]
