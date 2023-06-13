@@ -23,6 +23,7 @@
 
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 use polkadot_primitives::Id as ParaId;
+use sc_chain_spec::ChainType;
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 use tp_container_chain_genesis_data::ContainerChainGenesisData;
 use {
@@ -107,6 +108,13 @@ pub trait UtilsApi {
         &self,
         raw_chain_spec: String,
     ) -> RpcResult<(ParaId, ContainerChainGenesisData)>;
+
+    #[method(name = "utils_container_chain_genesis_data_into_raw_chain_spec")]
+    fn container_chain_genesis_data_into_raw_chain_spec(
+        &self,
+        para_id: ParaId,
+        container_chain_genesis_data: ContainerChainGenesisData,
+    ) -> RpcResult<String>;
 }
 
 impl UtilsApiServer for Utils {
@@ -118,5 +126,25 @@ impl UtilsApiServer for Utils {
             &raw_chain_spec,
         )
         .map_err(|e| jsonrpsee::core::Error::Custom(e))
+    }
+
+    fn container_chain_genesis_data_into_raw_chain_spec(
+        &self,
+        para_id: ParaId,
+        container_chain_genesis_data: ContainerChainGenesisData,
+    ) -> RpcResult<String> {
+        let chain_type = ChainType::Local;
+        let relay_chain = "".to_string();
+        let raw_chain_spec = crate::cli::ContainerChainCli::chain_spec_from_genesis_data(
+            para_id.into(),
+            container_chain_genesis_data,
+            chain_type,
+            relay_chain,
+        )
+        .map_err(|e| jsonrpsee::core::Error::Custom(e))?;
+
+        raw_chain_spec
+            .as_json(true)
+            .map_err(|e| jsonrpsee::core::Error::Custom(e))
     }
 }
