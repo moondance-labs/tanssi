@@ -22,6 +22,7 @@ use cumulus_relay_chain_interface::RelayChainInterface;
 use futures::FutureExt;
 use pallet_registrar_runtime_api::RegistrarApi;
 use polkadot_primitives::CollatorPair;
+use sc_service::config::OffchainWorkerConfig;
 use sc_service::SpawnTaskHandle;
 use sp_api::ProvideRuntimeApi;
 use sp_keystore::SyncCryptoStorePtr;
@@ -49,7 +50,7 @@ pub struct ContainerChainSpawner {
     pub orchestrator_para_id: ParaId,
     pub validator: bool,
     pub spawn_handle: SpawnTaskHandle,
-
+    pub offchain_worker_config: OffchainWorkerConfig,
     // State
     pub spawned_para_ids: Arc<Mutex<HashMap<ParaId, StopContainerChain>>>,
 
@@ -89,6 +90,7 @@ impl ContainerChainSpawner {
             orchestrator_para_id,
             validator,
             spawn_handle,
+            offchain_worker_config,
             spawned_para_ids,
             collate_on_tanssi: _,
         } = self.clone();
@@ -174,6 +176,7 @@ impl ContainerChainSpawner {
                     container_chain_para_id.into(),
                     orchestrator_para_id,
                     validator,
+                    offchain_worker_config
                 )
                 .await?;
 

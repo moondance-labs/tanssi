@@ -55,6 +55,7 @@ use {
         Configuration, Error as ServiceError, PartialComponents, TFullBackend, TFullClient,
         TaskManager,
     },
+    sc_service::config::OffchainWorkerConfig,
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
@@ -418,7 +419,8 @@ async fn start_node_impl(
         })
         .await?;
 
-    if parachain_config.offchain_worker.enabled {
+    let offchain_worker_config = parachain_config.offchain_worker.clone();
+    if offchain_worker_config.enabled {
         sc_service::build_offchain_workers(
             &parachain_config,
             task_manager.spawn_handle(),
@@ -609,6 +611,7 @@ async fn start_node_impl(
             sync_keystore,
             orchestrator_para_id: para_id,
             validator,
+            offchain_worker_config: offchain_worker_config,
             spawn_handle: spawn_handle.clone(),
             spawned_para_ids: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
@@ -645,6 +648,7 @@ pub async fn start_node_impl_container(
     para_id: ParaId,
     orchestrator_para_id: ParaId,
     collator: bool,
+    offchain_worker_config: OffchainWorkerConfig,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
     let block_import;
@@ -679,7 +683,6 @@ pub async fn start_node_impl_container(
     let force_authoring = parachain_config.force_authoring;
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
 
-    log::info!("are we collators? {:?}", collator);
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
             parachain_config: &parachain_config,
@@ -692,7 +695,8 @@ pub async fn start_node_impl_container(
         })
         .await?;
 
-    if parachain_config.offchain_worker.enabled {
+    if offchain_worker_config.enabled {
+
         sc_service::build_offchain_workers(
             &parachain_config,
             task_manager.spawn_handle(),
