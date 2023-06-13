@@ -176,7 +176,7 @@ impl ContainerChainSpawner {
                     container_chain_para_id.into(),
                     orchestrator_para_id,
                     validator,
-                    offchain_worker_config
+                    offchain_worker_config,
                 )
                 .await?;
 

@@ -51,11 +51,11 @@ use {
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
+    sc_service::config::OffchainWorkerConfig,
     sc_service::{
         Configuration, Error as ServiceError, PartialComponents, TFullBackend, TFullClient,
         TaskManager,
     },
-    sc_service::config::OffchainWorkerConfig,
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
@@ -696,7 +696,6 @@ pub async fn start_node_impl_container(
         .await?;
 
     if offchain_worker_config.enabled {
-
         sc_service::build_offchain_workers(
             &parachain_config,
             task_manager.spawn_handle(),
