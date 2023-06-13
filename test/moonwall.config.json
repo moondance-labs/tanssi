@@ -14,10 +14,7 @@
           {
             "name": "tanssi",
             "binPath": "../target/release/tanssi-node",
-            "options": [
-                "--dev",
-                "--sealing=manual"
-            ]
+            "options": ["--dev", "--sealing=manual"]
           }
         ]
       }
@@ -33,10 +30,7 @@
           {
             "name": "frontier-template",
             "binPath": "../target/release/container-chain-template-frontier-node",
-            "options": [
-                "--dev",
-                "--sealing=manual"
-            ]
+            "options": ["--dev", "--sealing=manual"]
           }
         ]
       }
@@ -101,7 +95,36 @@
         {
           "name": "Tanssi",
           "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9948"]
+          "endpoints": ["ws://127.0.0.1:9948"],
+          "additionalTypes": {
+            "ContainerChainGenesisData": {
+              "storage": "Vec<ContainerChainGenesisDataItem>",
+              "name": "Vec<u8>",
+              "id": "Vec<u8>",
+              "fork_id": "Option<Vec<u8>>",
+              "extensions": "Vec<u8>",
+              "properties": "TokenMetadata"
+            },
+            "TokenMetadata": {
+              "token_symbol": "Vec<u8>",
+              "ss58_format": "u32",
+              "token_decimals": "u32",
+              "is_ethereum": "bool"
+            },
+            "ContainerChainGenesisDataItem": {
+              "key": "Vec<u8>",
+              "value": "Vec<u8>"
+            }
+          },
+          "rpc": {
+            "utils": {
+              "raw_chain_spec_into_container_chain_genesis_data": {
+                "description": "Convert a raw chain spec string into a ContainerChainGenesisData",
+                "params": [{ "name": "raw_chain_spec", "type": "Text" }],
+                "type": "(u32, ContainerChainGenesisData)"
+              }
+            }
+          }
         },
         {
           "name": "Container2000",

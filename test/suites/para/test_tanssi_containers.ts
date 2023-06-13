@@ -236,47 +236,8 @@ describeSuite({
             spec2002 = await fs.readFile("../specs/template-container-2002.json", 'utf8');
         }
 
-        // Augment paraApi with new RPC method
-        // TODO: latest moonwall version supports this in beforeAll
-        const wsProvider2 = new WsProvider('ws://127.0.0.1:9948');
-        let paraApi2 = await ApiPromise.create({ provider: wsProvider2,
-          types: {
-            ContainerChainGenesisData: {
-              storage: "Vec<ContainerChainGenesisDataItem>",
-              name: "Vec<u8>",
-              id: "Vec<u8>",
-              fork_id: "Option<Vec<u8>>",
-              extensions: "Vec<u8>",
-              properties: "TokenMetadata",
-            },
-            TokenMetadata: {
-              token_symbol: "Vec<u8>",
-              ss58_format: "u32",
-              token_decimals: "u32",
-              is_ethereum: "bool",
-            },
-            ContainerChainGenesisDataItem: {
-              key: "Vec<u8>",
-              value: "Vec<u8>",
-            }
-          },
-          rpc: {
-            utils: {
-              raw_chain_spec_into_container_chain_genesis_data: {
-                description: 'Convert a raw chain spec string into a ContainerChainGenesisData',
-                params: [
-                  {
-                    name: 'raw_chain_spec',
-                    type: 'Text'
-                  }
-                ],
-                type: '(u32, ContainerChainGenesisData)'
-              }
-            }
-          }
-        });
-        let spec2002text = paraApi2.createType('Text', spec2002);
-        const containerChainGenesisDataFromRpc = await paraApi2.rpc.utils.raw_chain_spec_into_container_chain_genesis_data(spec2002text);
+        let spec2002text = paraApi.createType('Text', spec2002);
+        const containerChainGenesisDataFromRpc = await paraApi.rpc.utils.raw_chain_spec_into_container_chain_genesis_data(spec2002text);
         expect(containerChainGenesisDataFromRpc[0].toNumber()).to.be.equal(2002);
 
         // Before registering container chain 2002, ensure that it has 0 blocks

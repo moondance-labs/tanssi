@@ -114,6 +114,7 @@
         "number": "u64",
         "parent_hash": "Hash",
         "post_state": "Hash"
-      }
+      },
+      "ContainerChainGenesisData":{"storage":"Vec<ContainerChainGenesisDataItem>","name":"Vec<u8>","id":"Vec<u8>","fork_id":"Option<Vec<u8>>","extensions":"Vec<u8>","properties":"TokenMetadata"},"TokenMetadata":{"token_symbol":"Vec<u8>","ss58_format":"u32","token_decimals":"u32","is_ethereum":"bool"},"ContainerChainGenesisDataItem":{"key":"Vec<u8>","value":"Vec<u8>"}
     }
   }
