@@ -25,7 +25,6 @@ describeSuite({
         id: "E01",
         title: "Read a ChainSpec, convert it to ContainerChainGenesisData, and back to the same ChainSpec",
         test: async function () {
-            debugger;
             // Create a new provider with extended rpc and types
             const addr = polkadotJs._options.provider.endpoint;
             const wsProvider = new WsProvider(addr);

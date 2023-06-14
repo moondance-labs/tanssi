@@ -68,9 +68,10 @@ describeSuite({
 
         const tx = polkadotJs.tx.registrar.register(2002, containerChainGenesisData);
         const tx2 = polkadotJs.tx.registrar.markValidForCollating(2002);
+        const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
         await context.createBlock([
-          await tx.signAsync(alice, { nonce: 0 }),
-          await polkadotJs.tx.sudo.sudo(tx2).signAsync(alice, { nonce: 1 }),
+          await tx.signAsync(alice, { nonce }),
+          await polkadotJs.tx.sudo.sudo(tx2).signAsync(alice, { nonce: nonce.addn(1) }),
         ]);
 
         const pendingParas = await polkadotJs.query.registrar.pendingParaIds();
