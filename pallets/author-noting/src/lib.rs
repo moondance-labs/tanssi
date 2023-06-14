@@ -72,10 +72,10 @@ pub static mut MOCK_RELAY_CHAIN_STATE: Option<RelayChainState> = None;
 pub trait MockableRelaychainStateProvider {
     type Super: cumulus_pallet_parachain_system::RelaychainStateProvider;
 
-	/// May be called by any runtime module to obtain the current state of the relay chain.
-	///
-	/// **NOTE**: This is not guaranteed to return monotonically increasing relay parents.
-	fn current_relay_chain_state() -> RelayChainState {
+    /// May be called by any runtime module to obtain the current state of the relay chain.
+    ///
+    /// **NOTE**: This is not guaranteed to return monotonically increasing relay parents.
+    fn current_relay_chain_state() -> RelayChainState {
         let state = <<Self as MockableRelaychainStateProvider>::Super as cumulus_pallet_parachain_system::RelaychainStateProvider>::current_relay_chain_state();
 
         // Read the read value from storage before reading the mocked value, so that benchmarks
@@ -88,13 +88,15 @@ pub trait MockableRelaychainStateProvider {
         state
     }
 
-	#[cfg(feature = "runtime-benchmarks")]
-	fn set_current_relay_chain_state(state: RelayChainState) {
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_current_relay_chain_state(state: RelayChainState) {
         unsafe { MOCK_RELAY_CHAIN_STATE = Some(state) }
     }
 }
 
-impl<T: cumulus_pallet_parachain_system::RelaychainStateProvider> MockableRelaychainStateProvider for T {
+impl<T: cumulus_pallet_parachain_system::RelaychainStateProvider> MockableRelaychainStateProvider
+    for T
+{
     type Super = T;
 }
 

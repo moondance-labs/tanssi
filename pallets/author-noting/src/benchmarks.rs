@@ -17,9 +17,9 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
+use crate::MockableRelaychainStateProvider;
 use tp_traits::GetContainerChainAuthor;
 use tp_traits::GetCurrentContainerChains;
-use crate::MockableRelaychainStateProvider;
 use {
     crate::{Call, Config, Pallet},
     frame_benchmarking::{account, benchmarks},
