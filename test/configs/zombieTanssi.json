@@ -83,6 +83,7 @@
         "collators":  [
           {
             "name": "DummyCollator-2000",
+            "validator": false,
             "command": "../target/release/container-chain-template-simple-node"
           }
         ]
@@ -93,6 +94,7 @@
         "collators":  [
           {
             "name": "DummyCollator-2001",
+            "validator": false,
             "command": "../target/release/container-chain-template-frontier-node",
             "ws_port": 9960
           }
@@ -104,6 +106,7 @@
         "collators":  [
           {
             "name": "DummyCollator-2002",
+            "validator": false,
             "command": "../target/release/container-chain-template-simple-node"
           }
         ]
