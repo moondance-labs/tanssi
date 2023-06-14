@@ -129,6 +129,7 @@ jobs:
           chmod uog+x target/release/tanssi-node
           cd test
           pnpm install --frozen-lockfile
+          pnpm run build-spec-ci
           pnpm moonwall test dev_tanssi
 
   typescript-tests-frontier:
@@ -215,7 +216,7 @@ jobs:
           chmod uog+x tmp/polkadot
 
           ## Generate specs
-          npm run build-spec-ci
+          pnpm run build-spec-ci
 
           ## Run tests
 
