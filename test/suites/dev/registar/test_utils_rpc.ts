@@ -84,14 +84,32 @@ describeSuite({
               }
             }});
 
-            // Read raw chain spec file
-            // Different path in CI: ./specs vs ../specs
-            let spec2000 = null;
-            try {
-                spec2000 = await fs.readFile("./specs/template-container-2000.json", 'utf8');
-            } catch {
-                spec2000 = await fs.readFile("../specs/template-container-2000.json", 'utf8');
-            }
+            // Mock raw chain spec file
+            let spec2000 = `{
+              "name": "Local Testnet",
+              "id": "local_testnet",
+              "chainType": "Local",
+              "bootNodes": [],
+              "telemetryEndpoints": null,
+              "protocolId": "container-chain-2000",
+              "properties": {
+                "isEthereum": false,
+                "ss58Format": 42,
+                "tokenDecimals": 12,
+                "tokenSymbol": "UNIT"
+              },
+              "relay_chain": "rococo-local",
+              "para_id": 2000,
+              "codeSubstitutes": {},
+              "genesis": {
+                "raw": {
+                  "top": {
+                    "0xf0c365c3cf59d671eb72da0e7a4113c44e7b9012096b41c4eb3aaf947f6ea429": "0x0000"
+                  },
+                  "childrenDefault": {}
+                }
+              }
+            }`;
 
             let spec2000text = polkadotJs2.createType('Text', spec2000);
             const containerChainGenesisDataFromRpc = await polkadotJs2.rpc.utils.raw_chain_spec_into_container_chain_genesis_data(spec2000text);
