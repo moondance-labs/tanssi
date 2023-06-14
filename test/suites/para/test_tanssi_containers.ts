@@ -243,21 +243,28 @@ describeSuite({
           types: {
             ContainerChainGenesisData: {
               storage: "Vec<ContainerChainGenesisDataItem>",
-              name: "Vec<u8>",
-              id: "Vec<u8>",
+              name: "Bytes",
+              id: "Bytes",
               fork_id: "Option<Vec<u8>>",
-              extensions: "Vec<u8>",
-              properties: "TokenMetadata",
+              extensions: "Bytes",
+              properties: "Properties",
             },
-            TokenMetadata: {
-              token_symbol: "Vec<u8>",
-              ss58_format: "u32",
-              token_decimals: "u32",
+            Properties: {
+              token_metadata: "TokenMetadata",
               is_ethereum: "bool",
             },
+            TokenMetadata: {
+              // TODO: this is actually a Vec<u8>, but that doesn't work because polkadot.js converts the
+              // Vec<u8> into hex bytes, while the Rust code doesn't work with hex bytes because this is
+              // actually a BoundedVec, and there is no easy way to serialize a BoundedVec as hex bytes.
+              // Ideally this should simply be a string, because this is a token name like "UNIT".
+              token_symbol: "Vec<u16>",
+              ss58_format: "u32",
+              token_decimals: "u32",
+            },
             ContainerChainGenesisDataItem: {
-              key: "Vec<u8>",
-              value: "Vec<u8>",
+              key: "Bytes",
+              value: "Bytes",
             }
           },
           rpc: {

@@ -87,7 +87,6 @@ impl Get<u32> for MaxLengthTokenSymbol {
     Debug, Default, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo,
 )]
 pub struct Properties {
-    #[cfg_attr(feature = "std", serde(flatten))]
     pub token_metadata: TokenMetadata,
     pub is_ethereum: bool,
 }

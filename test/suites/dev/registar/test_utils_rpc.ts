@@ -22,32 +22,38 @@ describeSuite({
     });
 
     it({
-        id: "E06",
-        title: "Checking that fetching registered paraIds is possible",
+        id: "E01",
+        title: "Read a ChainSpec, convert it to ContainerChainGenesisData, and back to the same ChainSpec",
         test: async function () {
             debugger;
+            // Create a new provider with extended rpc and types
             const addr = polkadotJs._options.provider.endpoint;
             const wsProvider = new WsProvider(addr);
-            // If this fails, wait up to 30 seconds after a new block is created
-            // to ensure this port is available
             const polkadotJs2 = await ApiPromise.create({ provider: wsProvider, types: {
               ContainerChainGenesisData: {
                 storage: "Vec<ContainerChainGenesisDataItem>",
-                name: "Vec<u8>",
-                id: "Vec<u8>",
+                name: "Bytes",
+                id: "Bytes",
                 fork_id: "Option<Vec<u8>>",
-                extensions: "Vec<u8>",
-                properties: "TokenMetadata",
+                extensions: "Bytes",
+                properties: "Properties",
               },
-              TokenMetadata: {
-                token_symbol: "Vec<u8>",
-                ss58_format: "u32",
-                token_decimals: "u32",
+              Properties: {
+                token_metadata: "TokenMetadata",
                 is_ethereum: "bool",
               },
+              TokenMetadata: {
+                // TODO: this is actually a Vec<u8>, but that doesn't work because polkadot.js converts the
+                // Vec<u8> into hex bytes, while the Rust code doesn't work with hex bytes because this is
+                // actually a BoundedVec, and there is no easy way to serialize a BoundedVec as hex bytes.
+                // Ideally this should simply be a string, because this is a token name like "UNIT".
+                token_symbol: "Vec<u16>",
+                ss58_format: "u32",
+                token_decimals: "u32",
+              },
               ContainerChainGenesisDataItem: {
-                key: "Vec<u8>",
-                value: "Vec<u8>",
+                key: "Bytes",
+                value: "Bytes",
               }
             },
             rpc: {
@@ -79,11 +85,6 @@ describeSuite({
               }
             }});
 
-            const parasRegistered = await polkadotJs2.query.registrar.registeredParaIds();
-
-            // These are registered in genesis
-            expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001]);
-
             // Read raw chain spec file
             // Different path in CI: ./specs vs ../specs
             let spec2000 = null;
@@ -97,11 +98,13 @@ describeSuite({
             const containerChainGenesisDataFromRpc = await polkadotJs2.rpc.utils.raw_chain_spec_into_container_chain_genesis_data(spec2000text);
             expect(containerChainGenesisDataFromRpc[0].toNumber()).to.be.equal(2000);
 
-            console.log(containerChainGenesisDataFromRpc[1].toJSON());
-
-            console.log("----- AFTER ------");
             const chainSpecJsonAgain = await polkadotJs2.rpc.utils.container_chain_genesis_data_into_raw_chain_spec(containerChainGenesisDataFromRpc[0], containerChainGenesisDataFromRpc[1]);
-            console.log(chainSpecJsonAgain.toString());
+            const chainSpecFromFile = JSON.parse(spec2000);
+            // The chainType is set dependending on the chain name of the running node, it is not
+            // set to the chain type present in the chain spec file. So override it to make the expect pass.
+            chainSpecFromFile.chainType = "Development";
+
+            expect(chainSpecFromFile).to.deep.equal(JSON.parse(chainSpecJsonAgain.toString()));
         },
       });
     },
