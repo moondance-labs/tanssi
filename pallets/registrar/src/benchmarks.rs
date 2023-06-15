@@ -49,11 +49,18 @@ mod benchmarks {
     use super::*;
 
     #[benchmark]
-    fn register(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
+    fn register(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
+        
+        let mut data = vec![];
+        // Number of keys
+        for _i in 1..z {
+            data.push((b"code".to_vec(), vec![1; (x/z) as usize]).into())
+        }
+
         let storage = ContainerChainGenesisData {
             // Runtime would go under "code" key, so we mimic
             // with 4 byte key
-            storage: vec![(vec![1; 4], vec![1; x as usize]).into()],
+            storage: data,
             name: Default::default(),
             id: Default::default(),
             fork_id: Default::default(),

@@ -209,7 +209,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Register container-chain
         #[pallet::call_index(0)]
-        #[pallet::weight(T::WeightInfo::register(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get()))]
+        #[pallet::weight(T::WeightInfo::register(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
         pub fn register(
             origin: OriginFor<T>,
             para_id: ParaId,
