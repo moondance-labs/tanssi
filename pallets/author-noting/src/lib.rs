@@ -155,7 +155,6 @@ pub mod pallet {
             let total_weight =
                 T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
             for para_id in registered_para_ids {
-                log::info!("fetch_author_slot_from_proof {}", u32::from(para_id));
                 match Self::fetch_author_slot_from_proof(&relay_storage_rooted_proof, para_id) {
                     Ok(author) => LatestAuthor::<T>::insert(para_id, author),
                     Err(e) => log::warn!(
