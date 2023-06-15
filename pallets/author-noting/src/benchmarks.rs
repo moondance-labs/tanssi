@@ -17,7 +17,7 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
-use crate::MockableRelaychainStateProvider;
+use cumulus_pallet_parachain_system::RelaychainStateProvider;
 use tp_traits::GetContainerChainAuthor;
 use tp_traits::GetCurrentContainerChains;
 use {

@@ -66,40 +66,6 @@ pub use pallet::*;
 
 use crate::weights::WeightInfo;
 
-// TODO: we can remove this once cumulus_pallet_parachain_system::RelaychainStateProvider has a
-// set_current_relay_chain_state method
-pub static mut MOCK_RELAY_CHAIN_STATE: Option<RelayChainState> = None;
-pub trait MockableRelaychainStateProvider {
-    type Super: cumulus_pallet_parachain_system::RelaychainStateProvider;
-
-    /// May be called by any runtime module to obtain the current state of the relay chain.
-    ///
-    /// **NOTE**: This is not guaranteed to return monotonically increasing relay parents.
-    fn current_relay_chain_state() -> RelayChainState {
-        let state = <<Self as MockableRelaychainStateProvider>::Super as cumulus_pallet_parachain_system::RelaychainStateProvider>::current_relay_chain_state();
-
-        // Read the read value from storage before reading the mocked value, so that benchmarks
-        // account for the original read
-        #[cfg(feature = "runtime-benchmarks")]
-        if let Some(mock_state) = unsafe { MOCK_RELAY_CHAIN_STATE.as_ref() } {
-            return mock_state.clone();
-        }
-
-        state
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn set_current_relay_chain_state(state: RelayChainState) {
-        unsafe { MOCK_RELAY_CHAIN_STATE = Some(state) }
-    }
-}
-
-impl<T: cumulus_pallet_parachain_system::RelaychainStateProvider> MockableRelaychainStateProvider
-    for T
-{
-    type Super = T;
-}
-
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -118,7 +84,7 @@ pub mod pallet {
 
         type ContainerChainAuthor: GetContainerChainAuthor<Self::AccountId>;
 
-        type RelayChainStateProvider: MockableRelaychainStateProvider;
+        type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
     }
 
     #[pallet::error]
