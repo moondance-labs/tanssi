@@ -30,7 +30,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use cumulus_pallet_parachain_system::RelayChainState;
 pub use tp_chain_state_snapshot::*;
 use {
     cumulus_pallet_parachain_system::RelaychainStateProvider,
@@ -59,7 +58,7 @@ mod weights;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
-
+#[cfg(feature = "runtime-benchmarks")]
 mod mock_proof;
 
 pub use pallet::*;

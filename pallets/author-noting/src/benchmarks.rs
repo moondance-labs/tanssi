@@ -28,96 +28,21 @@ use {
 };
 
 mod test_sproof {
-    mod well_known_keys {
-        // They key to retrieve the para heads
-        pub const PARAS_HEADS_INDEX: &[u8] =
-    //&hex_literal::hex!["cd710b30bd2eab0352ddcc26417aa1941b3c252fcb29d88eff4f3de5de4476c3"];
-    b"\xcd\x71\x0b\x30\xbd\x2e\xab\x03\x52\xdd\xcc\x26\x41\x7a\xa1\x94\x1b\x3c\x25\x2f\xcb\x29\xd8\x8e\xff\x4f\x3d\xe5\xde\x44\x76\xc3";
-    }
-    use crate::BlakeTwo256;
-    use crate::HeadData;
-    use crate::ParaId;
-    use crate::Vec;
-    use frame_support::Hashable;
-    use sp_runtime::traits::HashFor;
-    use sp_state_machine::Backend;
-    use sp_std::vec;
-    use sp_trie::MemoryDB;
     use sp_trie::StorageProof;
 
-    /// Enum representing how we want to insert the Header
-    #[derive(Clone)]
-    pub enum HeaderAs {
-        AlreadyEncoded(Vec<u8>),
-        NonEncoded(sp_runtime::generic::Header<u32, BlakeTwo256>),
-    }
-
-    /// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
-    #[derive(Clone)]
-    pub struct ParaHeaderSproofBuilderItem {
-        /// The para id of the current parachain.
-        pub para_id: ParaId,
-
-        /// The author_id, which represents a Header with a Aura Digest
-        pub author_id: HeaderAs,
-    }
-
-    impl Default for ParaHeaderSproofBuilderItem {
-        fn default() -> Self {
-            Self {
-                para_id: ParaId::from(200),
-                author_id: HeaderAs::AlreadyEncoded(vec![]),
-            }
-        }
-    }
-
-    /// Builds a sproof (portmanteau of 'spoof' and 'proof') of the relay chain state.
-    /// Receives a vec of individual ParaHeaderSproofBuilderItem items of which
-    /// we need to insert the header
+    /// Mocked proof because we cannot build proofs in a no-std environment.
+    /// Only stores the number of parachains, and reads a previously encoded proof for that number
+    /// of items from `crate::mock_proof`.
     #[derive(Clone, Default)]
     pub struct ParaHeaderSproofBuilder {
-        pub items: Vec<ParaHeaderSproofBuilderItem>,
+        pub num_items: usize,
     }
 
     impl ParaHeaderSproofBuilder {
         pub fn into_state_root_and_proof(
             self,
         ) -> (cumulus_primitives_core::relay_chain::Hash, StorageProof) {
-            /*
-            let (db, root) =
-                MemoryDB::<HashFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
-            let state_version = Default::default(); // for test using default.
-            let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
-
-            let mut relevant_keys = Vec::new();
-            {
-                use parity_scale_codec::Encode as _;
-
-                let mut insert = |key: Vec<u8>, value: Vec<u8>| {
-                    relevant_keys.push(key.clone());
-                    backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
-                };
-
-                for item in self.items {
-                    let para_key = item.para_id.twox_64_concat();
-                    let key = [well_known_keys::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
-
-                    let encoded = match item.author_id {
-                        HeaderAs::AlreadyEncoded(encoded) => encoded,
-                        HeaderAs::NonEncoded(header) => header.encode(),
-                    };
-
-                    let head_data: HeadData = encoded.into();
-                    insert(key, head_data.encode());
-                }
-            }
-
-            let root = backend.root().clone();
-            let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
-
-            (root, proof)
-            */
-            let encoded = crate::mock_proof::ENCODED_PROOFS[self.items.len()];
+            let encoded = crate::mock_proof::ENCODED_PROOFS[self.num_items];
 
             let root = hex::decode(encoded.1).unwrap();
             let proof = StorageProof::new(encoded.2.iter().map(|s| hex::decode(s).unwrap()));
@@ -136,31 +61,19 @@ benchmarks! {
         let mut container_chains = vec![];
 
         for para_id in 0..x {
-            use crate::benchmarks::test_sproof::HeaderAs;
-            use crate::benchmarks::test_sproof::ParaHeaderSproofBuilderItem;
-            let mut s = ParaHeaderSproofBuilderItem::default();
-            s.para_id = para_id.into();
-            container_chains.push(s.para_id);
+            let para_id = para_id.into();
+            container_chains.push(para_id);
             // Mock assigned authors for this para id
             let author: T::AccountId = account("account id", 0u32, 0u32);
             // Use the max allowed value for num_each_container_chain
             let num_each_container_chain = 2;
-            T::ContainerChainAuthor::set_authors_for_para_id(s.para_id, vec![author; num_each_container_chain]);
-            // TODO: this header can be arbitrarily large, because "digest.logs" is an unbounded vec
-            let header = HeaderAs::NonEncoded(tp_core::Header {
-                parent_hash: Default::default(),
-                number: Default::default(),
-                state_root: Default::default(),
-                extrinsics_root: Default::default(),
-                digest: sp_runtime::generic::Digest { logs: vec![] },
-            });
-            s.author_id = header;
-            sproof_builder.items.push(s);
+            T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
+            sproof_builder.num_items += 1;
         }
 
         let (root, proof) = sproof_builder.into_state_root_and_proof();
 
-        let mut data = tp_author_noting_inherent::OwnParachainInherentData {
+        let data = tp_author_noting_inherent::OwnParachainInherentData {
             relay_storage_proof: proof,
         };
 
@@ -169,7 +82,14 @@ benchmarks! {
             state_root: root,
             number: 0,
         });
-
+        #[cfg(test)]
+        {
+            // set_current_relay_chain_state doesn't work in tests, we need to write the MOCK_RELAY_ROOT_KEY.
+            frame_support::storage::unhashed::put(
+                b"MOCK_RELAY_ROOT_KEY",
+                &root,
+            );
+        }
     }: _(RawOrigin::None, data)
 
     set_author {
