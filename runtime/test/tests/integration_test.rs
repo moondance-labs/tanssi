@@ -345,15 +345,17 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32, true);
-            // Session boundary even slot, ALICE.
-            assert!(Authorship::author().unwrap() == AccountId::from(ALICE));
+            let author = get_orchestrator_current_author().unwrap();
+
+            assert_eq!(Authorship::author().unwrap(), author);
             assert!(Aura::authorities() == vec![alice_id, bob_id]);
 
             // Invulnerables should have triggered on new session authorities change
             run_to_session(2u32, true);
-            assert!(Authorship::author().unwrap() == AccountId::from(CHARLIE));
-            // Session boundary even slot, CHARLIE.
-            assert!(Aura::authorities() == vec![charlie_id, dave_id]);
+            let author_after_changes = get_orchestrator_current_author().unwrap();
+
+            assert_eq!(Authorship::author().unwrap(), author_after_changes);
+            assert_eq!(Aura::authorities(), vec![charlie_id, dave_id]);
         });
 }
 
@@ -420,14 +422,15 @@ fn test_author_collation_aura_add_assigned_to_paras() {
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32, true);
-            // Session boundary even slot, ALICE.
-            assert!(Authorship::author().unwrap() == AccountId::from(ALICE));
-            assert!(Aura::authorities() == vec![alice_id.clone(), bob_id.clone()]);
+            let author = get_orchestrator_current_author().unwrap();
+
+            assert_eq!(Authorship::author().unwrap(), author);
+            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
 
             // Invulnerables should have triggered on new session authorities change
             // However charlie and dave shoudl have gone to one para (1001)
             run_to_session(2u32, true);
-            assert!(Aura::authorities() == vec![alice_id, bob_id]);
+            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
@@ -948,9 +951,10 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
             run_to_session(1u32, true);
-            // Session boundary even slot, ALICE.
-            assert!(Authorship::author().unwrap() == AccountId::from(ALICE));
-            assert!(Aura::authorities() == vec![alice_id.clone(), bob_id.clone()]);
+            let author = get_orchestrator_current_author().unwrap();
+
+            assert_eq!(Authorship::author().unwrap(), author);
+            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
             assert_eq!(
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
@@ -968,7 +972,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             // Invulnerables should have triggered on new session authorities change
             // However charlie and dave shoudl have gone to one para (1001)
             run_to_session(2u32, true);
-            assert!(Aura::authorities() == vec![alice_id, bob_id]);
+            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
