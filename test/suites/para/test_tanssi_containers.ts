@@ -240,33 +240,6 @@ describeSuite({
         // TODO: latest moonwall version supports this in beforeAll
         const wsProvider2 = new WsProvider('ws://127.0.0.1:9948');
         let paraApi2 = await ApiPromise.create({ provider: wsProvider2,
-          types: {
-            ContainerChainGenesisData: {
-              storage: "Vec<ContainerChainGenesisDataItem>",
-              name: "Bytes",
-              id: "Bytes",
-              fork_id: "Option<Vec<u8>>",
-              extensions: "Bytes",
-              properties: "Properties",
-            },
-            Properties: {
-              token_metadata: "TokenMetadata",
-              is_ethereum: "bool",
-            },
-            TokenMetadata: {
-              // TODO: this is actually a Vec<u8>, but that doesn't work because polkadot.js converts the
-              // Vec<u8> into hex bytes, while the Rust code doesn't work with hex bytes because this is
-              // actually a BoundedVec, and there is no easy way to serialize a BoundedVec as hex bytes.
-              // Ideally this should simply be a string, because this is a token name like "UNIT".
-              token_symbol: "Vec<u16>",
-              ss58_format: "u32",
-              token_decimals: "u32",
-            },
-            ContainerChainGenesisDataItem: {
-              key: "Bytes",
-              value: "Bytes",
-            }
-          },
           rpc: {
             utils: {
               raw_chain_spec_into_container_chain_genesis_data: {
@@ -277,7 +250,7 @@ describeSuite({
                     type: 'Text'
                   }
                 ],
-                type: '(u32, ContainerChainGenesisData)'
+                type: '(u32, TpContainerChainGenesisDataContainerChainGenesisData)'
               }
             }
           }
