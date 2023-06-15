@@ -12820,7 +12820,6 @@ dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.26",
- "hex",
  "jsonrpsee",
  "log",
  "nimbus-consensus",
