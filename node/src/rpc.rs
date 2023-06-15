@@ -21,14 +21,12 @@
 
 #![warn(missing_docs)]
 
-use jsonrpsee::{core::RpcResult, proc_macros::rpc};
-use polkadot_primitives::Id as ParaId;
-use sc_chain_spec::ChainType;
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
-use tp_container_chain_genesis_data::ContainerChainGenesisData;
 use {
+    jsonrpsee::{core::RpcResult, proc_macros::rpc},
     orchestrator_runtime::{opaque::Block, AccountId, Index as Nonce},
-    polkadot_primitives::Hash,
+    polkadot_primitives::{Hash, Id as ParaId},
+    sc_chain_spec::ChainType,
     sc_client_api::AuxStore,
     sc_consensus_manual_seal::{
         rpc::{ManualSeal, ManualSealApiServer},
@@ -39,6 +37,7 @@ use {
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
     std::sync::Arc,
+    tp_container_chain_genesis_data::ContainerChainGenesisData,
 };
 
 /// A type representing all RPC extensions.
