@@ -532,6 +532,7 @@ parameter_types! {
 }
 
 impl pallet_cc_authorities_noting::Config for Runtime {
+    type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;

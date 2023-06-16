@@ -697,6 +697,12 @@ impl_runtime_apis! {
             list_benchmark!(
                 list,
                 extra,
+                tp_author_noting_inherent,
+                PalletConfigurationBench::<Runtime>
+            );
+            list_benchmark!(
+                list,
+                extra,
                 pallet_configuration,
                 PalletConfigurationBench::<Runtime>
             );

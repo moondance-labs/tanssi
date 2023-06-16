@@ -100,10 +100,14 @@ impl RelaychainStateProvider for MockRelayStateProvider {
             number: 0, // block number is not relevant here
         }
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_current_relay_chain_state(_state: RelayChainState) {}
 }
 
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
+    type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type SelfParaId = ParachainId;
     type OrchestratorParaId = OrchestratorParachainId;
@@ -131,7 +135,7 @@ impl sp_core::traits::ReadRuntimeVersion for ReadRuntimeVersion {
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
-fn new_test_ext() -> sp_io::TestExternalities {
+pub fn new_test_ext() -> sp_io::TestExternalities {
     frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap()
