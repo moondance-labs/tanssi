@@ -496,7 +496,6 @@ pub fn run() -> Result<()> {
 
                 // We need to bake in some container-chain args
 				if !cli.container_chain_args().is_empty() || config.role.is_authority() {
-                    println!("I am here");
 					let container_chain_cli = ContainerChainCli::new(
 						&config,
 						[ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
