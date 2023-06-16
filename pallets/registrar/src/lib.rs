@@ -39,7 +39,9 @@ pub use pallet::*;
 pub mod pallet {
     use {
         frame_support::{
-            pallet_prelude::*, traits::Currency, traits::ReservableCurrency, LOG_TARGET,
+            pallet_prelude::*,
+            traits::{Currency, ReservableCurrency},
+            LOG_TARGET,
         },
         frame_system::pallet_prelude::*,
         sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
