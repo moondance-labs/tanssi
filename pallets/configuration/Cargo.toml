@@ -27,15 +27,13 @@ sp-io = { workspace = true, default-features = false }
 [features]
 default = [ "std" ]
 std = [
+	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde",
 	"tp-traits/std",
-	"frame-benchmarking/std",
 ]
+runtime-benchmarks = [ "frame-benchmarking" ]
 try-runtime = [ "frame-support/try-runtime" ]
-runtime-benchmarks = [
-	"frame-benchmarking"
-]

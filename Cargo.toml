@@ -191,7 +191,7 @@ clap = { version = "4.1.6", features = [ "derive" ] }
 exit-future = { version = "0.2.0" }
 flume = "0.10.9"
 futures = { version = "0.3.1" }
-hex = { version = "0.4.3" }
+hex = { version = "0.4.3", default-features = false }
 jsonrpsee = { version = "0.16.2", features = [ "server" ] }
 serde_json = { version = "1.0.96", default-features = false }
 thiserror = { version = "1.0.40" }
