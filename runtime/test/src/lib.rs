@@ -460,6 +460,7 @@ impl pallet_authority_assignment::Config for Runtime {
 }
 
 impl pallet_author_noting::Config for Runtime {
+    type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
@@ -686,6 +687,7 @@ impl_runtime_apis! {
             use frame_benchmarking::{list_benchmark, BenchmarkList, Benchmarking};
             use frame_support::traits::StorageInfoTrait;
             use frame_system_benchmarking::Pallet as SystemBench;
+            use pallet_author_noting::Pallet as PalletAuthorNotingBench;
             use pallet_configuration::Pallet as PalletConfigurationBench;
             use pallet_registrar::Pallet as PalletRegistrarBench;
 
@@ -697,6 +699,12 @@ impl_runtime_apis! {
                 extra,
                 pallet_configuration,
                 PalletConfigurationBench::<Runtime>
+            );
+            list_benchmark!(
+                list,
+                extra,
+                pallet_author_noting,
+                PalletAuthorNotingBench::<Runtime>
             );
             list_benchmark!(
                 list,
@@ -717,6 +725,7 @@ impl_runtime_apis! {
 
             use frame_system_benchmarking::Pallet as SystemBench;
             impl frame_system_benchmarking::Config for Runtime {}
+            use pallet_author_noting::Pallet as PalletAuthorNotingBench;
             use pallet_configuration::Pallet as PalletConfigurationBench;
             use pallet_registrar::Pallet as PalletRegistrarBench;
 
@@ -761,6 +770,12 @@ impl_runtime_apis! {
                 batches,
                 pallet_configuration,
                 PalletConfigurationBench::<Runtime>
+            );
+            add_benchmark!(
+                params,
+                batches,
+                pallet_author_noting,
+                PalletAuthorNotingBench::<Runtime>
             );
             add_benchmark!(
                 params,
