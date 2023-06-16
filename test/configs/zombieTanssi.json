@@ -47,13 +47,11 @@
           },
           {
             "name": "Collator2000-01",
-            "command": "../target/release/tanssi-node",
-            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --ws-port 9949 --para-id 2000"]
+            "command": "../target/release/tanssi-node"
           },
           {
             "name": "Collator2000-02",
-            "command": "../target/release/tanssi-node",
-            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --para-id 2000"]
+            "command": "../target/release/tanssi-node"
           },
           {
             "name": "Collator2001-01",
@@ -83,7 +81,9 @@
         "collators":  [
           {
             "name": "DummyCollator-2000",
-            "command": "../target/release/container-chain-template-simple-node"
+            "validator": false,
+            "ws_port": 11111,
+            "command": "../target/release/tanssi-node"
           }
         ]
       },

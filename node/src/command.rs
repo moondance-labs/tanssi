@@ -491,7 +491,12 @@ pub fn run() -> Result<()> {
 				}
 
 				let mut container_chain_config = None;
-				if !cli.container_chain_args().is_empty() {
+                // Even if container-chain-args are empty, we need to spawn the container-detection
+                // collation taks if the role is authority.
+
+                // We need to bake in some container-chain args
+				if !cli.container_chain_args().is_empty() || config.role.is_authority() {
+                    println!("I am here");
 					let container_chain_cli = ContainerChainCli::new(
 						&config,
 						[ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),

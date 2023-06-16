@@ -582,6 +582,8 @@ async fn start_node_impl(
     start_network.start_network();
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
+        log::error!("I am here spawning");
+
         // If the orchestrator chain is running as a full-node, we start a full node for the
         // container chain immediately, because only collator nodes detect their container chain
         // assignment so otherwise it will never start.
