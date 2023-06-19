@@ -26,6 +26,7 @@ use {
     jsonrpsee::{core::RpcResult, proc_macros::rpc},
     orchestrator_runtime::{opaque::Block, AccountId, Index as Nonce},
     polkadot_primitives::{Hash, Id as ParaId},
+    sc_chain_spec::ChainType,
     sc_client_api::AuxStore,
     sc_consensus_manual_seal::{
         rpc::{ManualSeal, ManualSealApiServer},
@@ -52,6 +53,8 @@ pub struct FullDeps<C, P> {
     pub deny_unsafe: DenyUnsafe,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
+    /// Orchestrator chain utils
+    pub utils: Option<Utils>,
 }
 
 /// Instantiate all RPC extensions.
@@ -78,11 +81,14 @@ where
         pool,
         deny_unsafe,
         command_sink,
+        utils,
     } = deps;
 
     module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
 
-    module.merge(Utils.into_rpc())?;
+    if let Some(utils) = utils {
+        module.merge(utils.into_rpc())?;
+    }
 
     if let Some(command_sink) = command_sink {
         module.merge(
@@ -96,7 +102,12 @@ where
 }
 
 /// Utils API implementation.
-pub struct Utils;
+pub struct Utils {
+    /// Chain name
+    pub chain_name: String,
+    /// Chain type
+    pub chain_type: ChainType,
+}
 
 /// Utils rpc interface.
 #[rpc(server)]
@@ -106,6 +117,13 @@ pub trait UtilsApi {
         &self,
         raw_chain_spec: String,
     ) -> RpcResult<(ParaId, ContainerChainGenesisData)>;
+
+    #[method(name = "utils_container_chain_genesis_data_into_raw_chain_spec")]
+    fn container_chain_genesis_data_into_raw_chain_spec(
+        &self,
+        para_id: ParaId,
+        container_chain_genesis_data: ContainerChainGenesisData,
+    ) -> RpcResult<String>;
 }
 
 impl UtilsApiServer for Utils {
@@ -117,5 +135,28 @@ impl UtilsApiServer for Utils {
             &raw_chain_spec,
         )
         .map_err(|e| jsonrpsee::core::Error::Custom(e))
+    }
+
+    fn container_chain_genesis_data_into_raw_chain_spec(
+        &self,
+        para_id: ParaId,
+        container_chain_genesis_data: ContainerChainGenesisData,
+    ) -> RpcResult<String> {
+        let relay_chain = match self.chain_name.as_str() {
+            "dancebox" => "westend",
+            _ => "rococo-local",
+        };
+        let chain_type = self.chain_type.clone();
+        let raw_chain_spec = crate::cli::ContainerChainCli::chain_spec_from_genesis_data(
+            para_id.into(),
+            container_chain_genesis_data,
+            chain_type,
+            relay_chain.to_string(),
+        )
+        .map_err(|e| jsonrpsee::core::Error::Custom(e))?;
+
+        raw_chain_spec
+            .as_json(true)
+            .map_err(|e| jsonrpsee::core::Error::Custom(e))
     }
 }
