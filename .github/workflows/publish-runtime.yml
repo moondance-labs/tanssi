@@ -65,3 +65,24 @@ jobs:
           else
             echo skiping build "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}", image already exists
           fi
+      - name: Build runtime using "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+        id: srtool_build
+        env:
+          GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chain }}
+          GH_WORKFLOW_MATRIX_SRTOOL_IMAGE: ${{ matrix.srtool_image }}
+          GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG: ${{ matrix.srtool_image_tag }}
+        run: |
+          chmod u+x ./original-scripts/build-runtime-srtool.sh
+          ./original-scripts/build-runtime-srtool.sh
+      - name: Summary
+        run: |
+          echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain }}-srtool-digest.json
+          cat ${{ matrix.chain }}-srtool-digest.json
+          cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain }}-runtime.compact.compressed.wasm
+      - name: Archive Artifacts for ${{ matrix.chain }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.chain }}-runtime
+          path: |
+            ${{ matrix.chain }}-runtime.compact.compressed.wasm
+            ${{ matrix.chain }}-srtool-digest.json
