@@ -281,5 +281,12 @@ pub mod pallet {
             let author_index = u64::from(slot) % collators.len() as u64;
             collators.get(author_index as usize).cloned()
         }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn set_authors_for_para_id(para_id: ParaId, authors: Vec<T::AccountId>) {
+            let mut assigned_collators = Pallet::<T>::collator_container_chain();
+            assigned_collators.container_chains.insert(para_id, authors);
+            CollatorContainerChain::<T>::put(assigned_collators);
+        }
     }
 }

@@ -54,8 +54,16 @@ mod mock;
 
 #[cfg(test)]
 mod test;
+mod weights;
+
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+mod benchmarks;
+#[cfg(feature = "runtime-benchmarks")]
+mod mock_proof;
 
 pub use pallet::*;
+
+use crate::weights::WeightInfo;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -63,6 +71,9 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        /// Weight information for extrinsics in this pallet.
+        type WeightInfo: WeightInfo;
+
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -118,12 +129,10 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
         #[pallet::weight((0, DispatchClass::Mandatory))]
-        // TODO: This weight should be corrected.
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
             data: tp_author_noting_inherent::OwnParachainInherentData,
         ) -> DispatchResultWithPostInfo {
-            let total_weight = Weight::zero();
             ensure_none(origin)?;
 
             assert!(
@@ -141,7 +150,10 @@ pub mod pallet {
                 GenericStateProof::new(relay_storage_root, relay_storage_proof)
                     .expect("Invalid relay chain state proof");
 
-            for para_id in T::ContainerChains::current_container_chains() {
+            let registered_para_ids = T::ContainerChains::current_container_chains();
+            let total_weight =
+                T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
+            for para_id in registered_para_ids {
                 match Self::fetch_author_slot_from_proof(&relay_storage_rooted_proof, para_id) {
                     Ok(author) => LatestAuthor::<T>::insert(para_id, author),
                     Err(e) => log::warn!(
@@ -162,7 +174,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::set_author())]
         pub fn set_author(
             origin: OriginFor<T>,
             para_id: ParaId,

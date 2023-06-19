@@ -240,26 +240,6 @@ describeSuite({
         // TODO: latest moonwall version supports this in beforeAll
         const wsProvider2 = new WsProvider('ws://127.0.0.1:9948');
         let paraApi2 = await ApiPromise.create({ provider: wsProvider2,
-          types: {
-            ContainerChainGenesisData: {
-              storage: "Vec<ContainerChainGenesisDataItem>",
-              name: "Vec<u8>",
-              id: "Vec<u8>",
-              fork_id: "Option<Vec<u8>>",
-              extensions: "Vec<u8>",
-              properties: "TokenMetadata",
-            },
-            TokenMetadata: {
-              token_symbol: "Vec<u8>",
-              ss58_format: "u32",
-              token_decimals: "u32",
-              is_ethereum: "bool",
-            },
-            ContainerChainGenesisDataItem: {
-              key: "Vec<u8>",
-              value: "Vec<u8>",
-            }
-          },
           rpc: {
             utils: {
               raw_chain_spec_into_container_chain_genesis_data: {
@@ -270,7 +250,7 @@ describeSuite({
                     type: 'Text'
                   }
                 ],
-                type: '(u32, ContainerChainGenesisData)'
+                type: '(u32, TpContainerChainGenesisDataContainerChainGenesisData)'
               }
             }
           }
