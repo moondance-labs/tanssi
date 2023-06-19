@@ -73,9 +73,6 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Weight information for extrinsics in this pallet.
-        type WeightInfo: WeightInfo;
-
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -86,6 +83,9 @@ pub mod pallet {
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
 
         type AuthorityId: sp_std::fmt::Debug + PartialEq + Clone + FullCodec + TypeInfo;
+
+        /// Weight information for extrinsics in this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::error]

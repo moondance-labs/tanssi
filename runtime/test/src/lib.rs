@@ -460,12 +460,12 @@ impl pallet_authority_assignment::Config for Runtime {
 }
 
 impl pallet_author_noting::Config for Runtime {
-    type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -511,11 +511,11 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
 }
 
 impl pallet_configuration::Config for Runtime {
-    type WeightInfo = ();
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type AuthorityId = NimbusId;
+    type WeightInfo = ();
 }
 
 parameter_types! {

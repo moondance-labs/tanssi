@@ -400,12 +400,12 @@ parameter_types! {
 }
 
 impl pallet_cc_authorities_noting::Config for Runtime {
-    type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type AuthorityId = NimbusId;
+    type WeightInfo = ();
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

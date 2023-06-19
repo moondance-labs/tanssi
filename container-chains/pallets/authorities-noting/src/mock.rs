@@ -107,12 +107,12 @@ impl RelaychainStateProvider for MockRelayStateProvider {
 
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
-    type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type SelfParaId = ParachainId;
     type OrchestratorParaId = OrchestratorParachainId;
     type RelayChainStateProvider = MockRelayStateProvider;
     type AuthorityId = AccountId;
+    type WeightInfo = ();
 }
 
 struct BlockTest {
