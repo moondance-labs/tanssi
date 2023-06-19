@@ -40,6 +40,18 @@ jobs:
           fi
 
   ####### Building and Testing binaries #######
+  cargo-clippy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Rust toolchain
+        run: rustup show
+
+      - name: Clippy
+        run: SKIP_WASM_BUILD=1 env -u RUSTFLAGS cargo clippy --features runtime-benchmarks
+
   build:
     runs-on: self-hosted
     env:
