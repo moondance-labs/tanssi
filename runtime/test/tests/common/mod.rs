@@ -81,6 +81,7 @@ pub fn run_to_block(n: u32, add_author: bool) {
     }
 }
 
+#[derive(Default)]
 pub struct ExtBuilder {
     // endowed accounts with balances
     balances: Vec<(AccountId, Balance)>,
@@ -90,17 +91,6 @@ pub struct ExtBuilder {
     para_ids: Vec<(u32, ContainerChainGenesisData)>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
-}
-
-impl Default for ExtBuilder {
-    fn default() -> ExtBuilder {
-        ExtBuilder {
-            balances: vec![],
-            collators: vec![],
-            para_ids: vec![],
-            config: Default::default(),
-        }
-    }
 }
 
 impl ExtBuilder {
@@ -183,14 +173,12 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        orchestrator_runtime::SessionKeys {
-                            aura: aura_id.clone(),
-                        },
+                        orchestrator_runtime::SessionKeys { aura: aura_id },
                     )
                 })
                 .collect();
             <pallet_session::GenesisConfig<Runtime> as GenesisBuild<Runtime>>::assimilate_storage(
-                &pallet_session::GenesisConfig { keys: keys },
+                &pallet_session::GenesisConfig { keys },
                 &mut t,
             )
             .unwrap();

@@ -43,7 +43,6 @@ use {
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Header, DispatchResult, RuntimeString},
-    sp_std::prelude::*,
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_core::well_known_keys::PARAS_HEADS_INDEX,
     tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
@@ -266,8 +265,7 @@ impl<T: Config> Pallet<T> {
         let mut author_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
             &mut head_data.0.as_slice(),
         )
-        .map_err(|_| Error::<T>::FailedDecodingHeader)?
-        .clone();
+        .map_err(|_| Error::<T>::FailedDecodingHeader)?;
 
         // We take the aura digest as the first item
         // TODO: improve in the future as iteration

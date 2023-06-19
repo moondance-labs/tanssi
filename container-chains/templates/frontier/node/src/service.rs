@@ -338,16 +338,16 @@ async fn start_node_impl(
     let rpc_builder = {
         let client = client.clone();
         let pool = transaction_pool.clone();
-        let pubsub_notification_sinks = pubsub_notification_sinks.clone();
+        let pubsub_notification_sinks = pubsub_notification_sinks;
         let network = network.clone();
         let sync = sync_service.clone();
         let filter_pool = filter_pool.clone();
         let frontier_backend = frontier_backend.clone();
         let backend = backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
-        let overrides = overrides.clone();
+        let overrides = overrides;
         let fee_history_cache = fee_history_cache.clone();
-        let block_data_cache = block_data_cache.clone();
+        let block_data_cache = block_data_cache;
 
         move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
@@ -385,7 +385,7 @@ async fn start_node_impl(
         config: parachain_config,
         keystore: params.keystore_container.sync_keystore(),
         backend,
-        network: network.clone(),
+        network,
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
@@ -397,7 +397,7 @@ async fn start_node_impl(
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     let announce_block = {
-        let sync_service = sync_service.clone();
+        let sync_service = sync_service;
         Arc::new(move |hash, data| sync_service.announce_block(hash, data))
     };
 
@@ -592,7 +592,7 @@ pub async fn start_dev_node(
 				consensus_data_provider: Some(Box::new(tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
                     client.clone(),
                     keystore_container.sync_keystore(),
-                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION.into())
+                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION)
                 ))),
 				create_inherent_data_providers: move |block: H256, ()| {
 					let current_para_block = client_set_aside_for_cidp
@@ -661,16 +661,16 @@ pub async fn start_dev_node(
     let rpc_builder = {
         let client = client.clone();
         let pool = transaction_pool.clone();
-        let pubsub_notification_sinks = pubsub_notification_sinks.clone();
+        let pubsub_notification_sinks = pubsub_notification_sinks;
         let network = network.clone();
         let sync = sync_service.clone();
-        let filter_pool = filter_pool.clone();
-        let frontier_backend = frontier_backend.clone();
+        let filter_pool = filter_pool;
+        let frontier_backend = frontier_backend;
         let backend = backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
-        let overrides = overrides.clone();
-        let fee_history_cache = fee_history_cache.clone();
-        let block_data_cache = block_data_cache.clone();
+        let overrides = overrides;
+        let fee_history_cache = fee_history_cache;
+        let block_data_cache = block_data_cache;
 
         move |deny_unsafe, subscription_task_executor| {
             let deps = crate::rpc::FullDeps {
@@ -709,7 +709,7 @@ pub async fn start_dev_node(
         rpc_builder: Box::new(rpc_builder),
         backend,
         system_rpc_tx,
-        sync_service: sync_service.clone(),
+        sync_service,
         config,
         tx_handler_controller,
         telemetry: None,

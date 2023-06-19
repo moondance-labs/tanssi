@@ -117,7 +117,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
                     .map(|(x, y)| (x.clone(), y.clone()))
                     .collect(),
                 default_funded_accounts.clone(),
-                para_id.into(),
+                para_id,
             )
         },
         Vec::new(),
@@ -169,7 +169,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
                     .map(|(x, y)| (x.clone(), y.clone()))
                     .collect(),
                 default_funded_accounts.clone(),
-                para_id.into(),
+                para_id,
             )
         },
         // Bootnodes

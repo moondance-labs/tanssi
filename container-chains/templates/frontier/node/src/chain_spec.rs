@@ -118,10 +118,10 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
                 collator_accounts
                     .iter()
                     .zip(collator_keys.iter())
-                    .map(|(x, y)| (x.clone(), y.clone()))
+                    .map(|(x, y)| (*x, y.clone()))
                     .collect(),
                 default_funded_accounts.clone(),
-                para_id.into(),
+                para_id,
             )
         },
         Vec::new(),
@@ -170,10 +170,10 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
                 collator_accounts
                     .iter()
                     .zip(collator_keys.iter())
-                    .map(|(x, y)| (x.clone(), y.clone()))
+                    .map(|(x, y)| (*x, y.clone()))
                     .collect(),
                 default_funded_accounts.clone(),
-                para_id.into(),
+                para_id,
             )
         },
         // Bootnodes
@@ -220,7 +220,7 @@ fn testnet_genesis(
                 .into_iter()
                 .map(|(acc, aura)| {
                     (
-                        acc.clone(),                 // account id
+                        acc,                         // account id
                         acc,                         // validator id
                         template_session_keys(aura), // session keys
                     )

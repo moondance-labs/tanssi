@@ -401,16 +401,12 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                orchestrator_runtime::SessionKeys {
-                    aura: charlie_id.clone(),
-                },
+                orchestrator_runtime::SessionKeys { aura: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                orchestrator_runtime::SessionKeys {
-                    aura: dave_id.clone(),
-                },
+                orchestrator_runtime::SessionKeys { aura: dave_id },
                 vec![]
             ));
 
@@ -930,16 +926,12 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                orchestrator_runtime::SessionKeys {
-                    aura: charlie_id.clone(),
-                },
+                orchestrator_runtime::SessionKeys { aura: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                orchestrator_runtime::SessionKeys {
-                    aura: dave_id.clone(),
-                },
+                orchestrator_runtime::SessionKeys { aura: dave_id },
                 vec![]
             ));
 
@@ -1080,21 +1072,15 @@ fn test_consensus_runtime_api() {
             );
             assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Runtime::check_para_id_assignment(bob_id.clone()),
                 Some(100.into())
             );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
-                None
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
-                None
-            );
+            assert_eq!(Runtime::check_para_id_assignment(charlie_id.clone()), None);
+            assert_eq!(Runtime::check_para_id_assignment(dave_id.clone()), None);
 
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
@@ -1128,19 +1114,16 @@ fn test_consensus_runtime_api() {
                 Some(vec![charlie_id.clone(), dave_id.clone()])
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id),
                 Some(100.into())
             );
+            assert_eq!(Runtime::check_para_id_assignment(bob_id), Some(100.into()));
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
-                Some(100.into())
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
+                Runtime::check_para_id_assignment(charlie_id),
                 Some(1001.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
+                Runtime::check_para_id_assignment(dave_id),
                 Some(1001.into())
             );
         });
@@ -1189,21 +1172,15 @@ fn test_consensus_runtime_api_session_changes() {
             );
             assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Runtime::check_para_id_assignment(bob_id.clone()),
                 Some(100.into())
             );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
-                None
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
-                None
-            );
+            assert_eq!(Runtime::check_para_id_assignment(charlie_id.clone()), None);
+            assert_eq!(Runtime::check_para_id_assignment(dave_id.clone()), None);
 
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
@@ -1239,21 +1216,15 @@ fn test_consensus_runtime_api_session_changes() {
             );
             assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Runtime::check_para_id_assignment(bob_id.clone()),
                 Some(100.into())
             );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
-                None
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
-                None
-            );
+            assert_eq!(Runtime::check_para_id_assignment(charlie_id.clone()), None);
+            assert_eq!(Runtime::check_para_id_assignment(dave_id.clone()), None);
 
             // Now we run to session edge -1. Here we should predict already with
             // authorities of the next block!
@@ -1267,19 +1238,16 @@ fn test_consensus_runtime_api_session_changes() {
                 Some(vec![charlie_id.clone(), dave_id.clone()])
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id),
                 Some(100.into())
             );
+            assert_eq!(Runtime::check_para_id_assignment(bob_id), Some(100.into()));
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
-                Some(100.into())
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
+                Runtime::check_para_id_assignment(charlie_id),
                 Some(1001.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
+                Runtime::check_para_id_assignment(dave_id),
                 Some(1001.into())
             );
         });
@@ -1575,7 +1543,7 @@ fn test_session_keys_with_authority_assignment() {
             assert!(key_mapping_session_3.is_none());
 
             // Everything should match to aura
-            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
 
             run_to_session(2u32, true);
 

@@ -30,7 +30,6 @@ use {
     polkadot_parachain::primitives::RelayChainBlockNumber,
     polkadot_primitives::Slot,
     sp_core::H256,
-    sp_io,
     sp_runtime::{
         testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
@@ -139,7 +138,7 @@ pub struct MockAuthorFetcher;
 
 impl tp_traits::GetContainerChainAuthor<AccountId> for MockAuthorFetcher {
     fn author_for_slot(slot: Slot, _para_id: ParaId) -> Option<AccountId> {
-        return Some(slot.into());
+        Some(slot.into())
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -161,7 +160,7 @@ impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
     }
 }
 
-const MOCK_RELAY_ROOT_KEY: &'static [u8] = b"MOCK_RELAY_ROOT_KEY";
+const MOCK_RELAY_ROOT_KEY: &[u8] = b"MOCK_RELAY_ROOT_KEY";
 
 pub struct MockRelayStateProvider;
 
@@ -308,7 +307,7 @@ impl BlockTests {
             {
                 // begin initialization
                 System::reset_events();
-                System::initialize(&n, &Default::default(), &Default::default());
+                System::initialize(n, &Default::default(), &Default::default());
 
                 // now mess with the storage the way validate_block does
                 let mut sproof_builder = ParaHeaderSproofBuilder::default();

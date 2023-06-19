@@ -77,12 +77,9 @@ impl ContainerChainAuthoritiesInherentData {
         orchestrator_chain_interface: &impl OrchestratorChainInterface,
         orchestrator_para_id: ParaId,
     ) -> Option<ContainerChainAuthoritiesInherentData> {
-        let relay_chain_state = collect_relay_storage_proof(
-            relay_chain_interface,
-            orchestrator_para_id.clone(),
-            relay_parent,
-        )
-        .await?;
+        let relay_chain_state =
+            collect_relay_storage_proof(relay_chain_interface, orchestrator_para_id, relay_parent)
+                .await?;
 
         let header_orchestrator = relay_chain_interface
             .get_storage_by_key(
@@ -133,7 +130,7 @@ impl ContainerChainAuthoritiesInherentData {
 
         Some(ContainerChainAuthoritiesInherentData {
             relay_chain_state: relay_chain_state.clone(),
-            orchestrator_chain_state: orchestrator_chain_state,
+            orchestrator_chain_state,
         })
     }
 

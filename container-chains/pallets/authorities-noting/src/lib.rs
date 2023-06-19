@@ -140,7 +140,7 @@ pub mod pallet {
 
             let para_id = T::OrchestratorParaId::get();
             let relay_chain_state_proof =
-                GenericStateProof::new(relay_storage_root, relay_chain_state_proof.clone())
+                GenericStateProof::new(relay_storage_root, relay_chain_state_proof)
                     .expect("Invalid relay chain state proof");
 
             // Fetch authorities
@@ -150,11 +150,9 @@ pub mod pallet {
                     para_id,
                 )?;
 
-                let orchestrator_chain_state_proof = GenericStateProof::new(
-                    orchestrator_root,
-                    orchestrator_chain_state_proof.clone(),
-                )
-                .expect("Invalid orchestrator chain state proof");
+                let orchestrator_chain_state_proof =
+                    GenericStateProof::new(orchestrator_root, orchestrator_chain_state_proof)
+                        .expect("Invalid orchestrator chain state proof");
 
                 Self::fetch_authorities_from_orchestrator_proof(
                     &orchestrator_chain_state_proof,
@@ -265,8 +263,7 @@ impl<T: Config> Pallet<T> {
             sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
                 &mut head_data.0.as_slice(),
             )
-            .map_err(|_| Error::<T>::FailedDecodingHeader)?
-            .clone();
+            .map_err(|_| Error::<T>::FailedDecodingHeader)?;
 
         // Fetch the orchestrator chain storage root
         let orchestrator_chain_storage_root = orchestrator_chain_header.state_root;
@@ -301,7 +298,7 @@ impl<T: Config> Pallet<T> {
         // Read those authorities assigned to this chain
         let authorities = assignment
             .container_chains
-            .get(&para_id.into())
+            .get(&para_id)
             .ok_or(Error::<T>::NoAuthoritiesFound)?;
         Ok(authorities.clone())
     }

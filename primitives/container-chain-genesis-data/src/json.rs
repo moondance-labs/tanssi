@@ -37,7 +37,7 @@ pub fn container_chain_genesis_data_from_str(
     raw_chainspec_str: &str,
 ) -> Result<(ParaId, ContainerChainGenesisData), String> {
     let raw_chainspec_json: serde_json::Value =
-        serde_json::from_str(&raw_chainspec_str).map_err(|e| e.to_string())?;
+        serde_json::from_str(raw_chainspec_str).map_err(|e| e.to_string())?;
 
     container_chain_genesis_data_from_json(&raw_chainspec_json)
 }
@@ -56,7 +56,7 @@ pub fn container_chain_genesis_data_from_json(
     let genesis_raw_top_json = &raw_chainspec_json["genesis"]["raw"]["top"];
     let storage = storage_from_chainspec_json(genesis_raw_top_json)?;
     let properties_json = &raw_chainspec_json["properties"];
-    let properties = properties_from_chainspec_json(&properties_json);
+    let properties = properties_from_chainspec_json(properties_json);
 
     Ok((
         para_id.into(),
@@ -76,18 +76,18 @@ pub fn storage_from_chainspec_json(
 ) -> Result<Vec<ContainerChainGenesisDataItem>, String> {
     let genesis_data_map = genesis_raw_top_json
         .as_object()
-        .ok_or(format!("genesis.raw.top is not an object"))?;
+        .ok_or("genesis.raw.top is not an object".to_string())?;
 
     let mut genesis_data_vec = Vec::with_capacity(genesis_data_map.len());
 
     for (key, value) in genesis_data_map {
         let key_hex = key
             .strip_prefix("0x")
-            .ok_or(format!("key does not start with 0x"))?;
-        let value = value.as_str().ok_or(format!("value is not a string"))?;
+            .ok_or("key does not start with 0x".to_string())?;
+        let value = value.as_str().ok_or("value is not a string".to_string())?;
         let value_hex = value
             .strip_prefix("0x")
-            .ok_or(format!("value does not start with 0x"))?;
+            .ok_or("value does not start with 0x".to_string())?;
 
         let key_bytes = hex::decode(key_hex).map_err(|e| e.to_string())?;
         let value_bytes = hex::decode(value_hex).map_err(|e| e.to_string())?;
@@ -255,7 +255,7 @@ mod tests {
     #[test]
     fn test_serde_serialize() {
         let x = expected_container_chain_genesis_data();
-        let xv = serde_json::to_value(&x).unwrap();
+        let xv = serde_json::to_value(x).unwrap();
         // Regenerate expected string using
         //println!("{}", serde_json::to_string_pretty(&x).unwrap());
         let expected = expected_string();

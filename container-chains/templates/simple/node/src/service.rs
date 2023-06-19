@@ -234,7 +234,7 @@ async fn start_node_impl(
         config: parachain_config,
         keystore: params.keystore_container.sync_keystore(),
         backend,
-        network: network.clone(),
+        network,
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
@@ -246,7 +246,7 @@ async fn start_node_impl(
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
     let announce_block = {
-        let sync_service = sync_service.clone();
+        let sync_service = sync_service;
         Arc::new(move |hash, data| sync_service.announce_block(hash, data))
     };
 

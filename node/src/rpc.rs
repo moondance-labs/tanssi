@@ -134,7 +134,7 @@ impl UtilsApiServer for Utils {
         tp_container_chain_genesis_data::json::container_chain_genesis_data_from_str(
             &raw_chain_spec,
         )
-        .map_err(|e| jsonrpsee::core::Error::Custom(e))
+        .map_err(jsonrpsee::core::Error::Custom)
     }
 
     fn container_chain_genesis_data_into_raw_chain_spec(
@@ -153,10 +153,10 @@ impl UtilsApiServer for Utils {
             chain_type,
             relay_chain.to_string(),
         )
-        .map_err(|e| jsonrpsee::core::Error::Custom(e))?;
+        .map_err(jsonrpsee::core::Error::Custom)?;
 
         raw_chain_spec
             .as_json(true)
-            .map_err(|e| jsonrpsee::core::Error::Custom(e))
+            .map_err(jsonrpsee::core::Error::Custom)
     }
 }

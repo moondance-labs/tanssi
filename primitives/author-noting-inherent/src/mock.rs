@@ -70,7 +70,7 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
         // Use the "sproof" (spoof proof) builder to build valid mock state root and proof.
         for para_id in self.para_ids.iter() {
             let mut sproof_builder_item = ParaHeaderSproofBuilderItem::default();
-            sproof_builder_item.para_id = (*para_id).into();
+            sproof_builder_item.para_id = *para_id;
 
             let header = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                 parent_hash: Default::default(),

@@ -424,7 +424,7 @@ impl parachain_info::Config for Runtime {}
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 parameter_types! {
-    pub const Period: u32 = prod_or_fast!(6 * HOURS, 1 * MINUTES);
+    pub const Period: u32 = prod_or_fast!(6 * HOURS, MINUTES);
     pub const Offset: u32 = 0;
 }
 
@@ -715,7 +715,7 @@ impl_runtime_apis! {
 
             let storage_info = AllPalletsWithSystem::storage_info();
 
-            return (list, storage_info);
+            (list, storage_info)
         }
 
         fn dispatch_benchmark(
@@ -814,9 +814,9 @@ impl_runtime_apis! {
         /// Returns `None` if the `AccountId` is not collating.
         fn current_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
             let assigned_collators = CollatorAssignment::collator_container_chain();
-            let self_para_id = ParachainInfo::get().into();
+            let self_para_id = ParachainInfo::get();
 
-            assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
+            assigned_collators.para_id_of(&account, self_para_id)
         }
 
         /// Return the parachain that the given `AccountId` will be collating for
@@ -827,9 +827,9 @@ impl_runtime_apis! {
 
             match assigned_collators {
                 Some(assigned_collators) => {
-                    let self_para_id = ParachainInfo::get().into();
+                    let self_para_id = ParachainInfo::get();
 
-                    assigned_collators.para_id_of(&account, self_para_id).map(|id| id.into())
+                    assigned_collators.para_id_of(&account, self_para_id)
                 }
                 None => {
                     Self::current_collator_parachain_assignment(account)
@@ -842,12 +842,12 @@ impl_runtime_apis! {
         /// Returns `None` if the `ParaId` is not in the registrar.
         fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>> {
             let assigned_collators = CollatorAssignment::collator_container_chain();
-            let self_para_id = ParachainInfo::get().into();
+            let self_para_id = ParachainInfo::get();
 
             if para_id == self_para_id {
                 Some(assigned_collators.orchestrator_chain)
             } else {
-                assigned_collators.container_chains.get(&para_id.into()).cloned()
+                assigned_collators.container_chains.get(&para_id).cloned()
             }
         }
     }
@@ -878,12 +878,12 @@ impl_runtime_apis! {
             };
 
             let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
-            let self_para_id = ParachainInfo::get().into();
+            let self_para_id = ParachainInfo::get();
 
             if para_id == self_para_id {
                 Some(assigned_authorities.orchestrator_chain)
             } else {
-                assigned_authorities.container_chains.get(&para_id.into()).cloned()
+                assigned_authorities.container_chains.get(&para_id).cloned()
             }
         }
 
@@ -899,9 +899,9 @@ impl_runtime_apis! {
                 Session::current_index()
             };
             let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
-            let self_para_id = ParachainInfo::get().into();
+            let self_para_id = ParachainInfo::get();
 
-            assigned_authorities.para_id_of(&authority, self_para_id).map(|id| id.into())
+            assigned_authorities.para_id_of(&authority, self_para_id)
         }
     }
 }

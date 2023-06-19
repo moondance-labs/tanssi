@@ -106,18 +106,10 @@ pub mod mock_data {
 
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Default)]
 pub struct Mocks {
     pub nimbus_map: BTreeMap<u64, String>,
     pub next_collator_assignment: AssignedCollators<u64>,
-}
-
-impl Default for Mocks {
-    fn default() -> Self {
-        Self {
-            nimbus_map: Default::default(),
-            next_collator_assignment: Default::default(),
-        }
-    }
 }
 
 impl mock_data::Config for Test {}
@@ -160,8 +152,8 @@ pub fn run_to_block(n: u64) {
             let next_collator_assignment = &MockData::mock().next_collator_assignment;
             AuthorityAssignment::initializer_on_new_session(
                 &session_index,
-                &nimbus_map,
-                &next_collator_assignment,
+                nimbus_map,
+                next_collator_assignment,
             );
         }
     }
