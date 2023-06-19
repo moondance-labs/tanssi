@@ -2,7 +2,7 @@ name: Publish Runtime Draft
 
 # The code (like generate-release-body) will be taken from the tag versions, not master
 on:
-  workflow_dispatch:
+  push:
     inputs:
       from:
         description: tag (ex. runtime-53) to retrieve commit diff from
@@ -15,7 +15,7 @@ jobs:
   ####### Build runtimes with srtool #######
 
   setup-scripts:
-    runs-on: bare-metal
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v3
       - name: Upload scripts
@@ -31,7 +31,7 @@ jobs:
 
   build-srtool-runtimes:
     needs: ["setup-scripts"]
-    runs-on: bare-metal
+    runs-on: self-hosted
     strategy:
       matrix:
         chain: ["dancebox"]
