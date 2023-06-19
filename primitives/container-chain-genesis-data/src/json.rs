@@ -200,3 +200,74 @@ pub fn properties_to_map(
 
     Ok(properties)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn expected_container_chain_genesis_data() -> ContainerChainGenesisData {
+        let para_id = 2000;
+
+        ContainerChainGenesisData {
+            storage: vec![(b"code".to_vec(), vec![1, 2, 3, 4, 5, 6]).into()],
+            name: format!("Container Chain {}", para_id).into(),
+            id: format!("container-chain-{}", para_id).into(),
+            fork_id: None,
+            extensions: vec![],
+            properties: Default::default(),
+        }
+    }
+
+    fn expected_string() -> &'static str {
+        // TODO: this should be improved:
+        // * name should be a string "Container Chain 2000"
+        // * id should be a string
+        // * token_symbol should be a string
+        // * storage should be a map:
+        //   "storage": { "0x636f6465": "0x010203040506" }
+        r#"{
+            "storage": [
+              {
+                "key": "0x636f6465",
+                "value": "0x010203040506"
+              }
+            ],
+            "name": "0x436f6e7461696e657220436861696e2032303030",
+            "id": "0x636f6e7461696e65722d636861696e2d32303030",
+            "fork_id": null,
+            "extensions": "0x",
+            "properties": {
+              "token_metadata": {
+                "token_symbol": [
+                  85,
+                  78,
+                  73,
+                  84
+                ],
+                "ss58_format": 42,
+                "token_decimals": 12
+              },
+              "is_ethereum": false
+            }
+        }"#
+    }
+
+    #[test]
+    fn test_serde_serialize() {
+        let x = expected_container_chain_genesis_data();
+        let xv = serde_json::to_value(&x).unwrap();
+        // Regenerate expected string using
+        //println!("{}", serde_json::to_string_pretty(&x).unwrap());
+        let expected = expected_string();
+        let ev: serde_json::Value = serde_json::from_str(expected).unwrap();
+        assert_eq!(xv, ev);
+    }
+
+    #[test]
+    fn test_serde_deserialize() {
+        let expected = expected_container_chain_genesis_data();
+        let s = expected_string();
+        let x: ContainerChainGenesisData = serde_json::from_str(s).unwrap();
+        assert_eq!(x, expected);
+    }
+}

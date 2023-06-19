@@ -42,20 +42,36 @@ describeSuite({
         const expectedScheduledOnboarding = BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
         const emptyGenesisData = () => {
-            // TODO: fill with default value for all the entries of ContainerChainGenesisData
-            let g = {
-              id: "container-chain-2002",
-              name: "Container Chain 2002",
-            };
+            let g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+              "storage": [
+                {
+                  "key": "0x636f6465",
+                  "value": "0x010203040506"
+                }
+              ],
+              "name": "0x436f6e7461696e657220436861696e2032303030",
+              "id": "0x636f6e7461696e65722d636861696e2d32303030",
+              "forkId": null,
+              "extensions": "0x",
+              "properties": {
+                "tokenMetadata": {
+                  "tokenSymbol": "0x61626364",
+                  "ss58Format": 42,
+                  "tokenDecimals": 12
+                },
+                "isEthereum": false
+              }
+            });
             return g;
         };
         const containerChainGenesisData = emptyGenesisData();
 
         const tx = polkadotJs.tx.registrar.register(2002, containerChainGenesisData);
         const tx2 = polkadotJs.tx.registrar.markValidForCollating(2002);
+        const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
         await context.createBlock([
-          await tx.signAsync(alice, { nonce: 0 }),
-          await polkadotJs.tx.sudo.sudo(tx2).signAsync(alice, { nonce: 1 }),
+          await tx.signAsync(alice, { nonce }),
+          await polkadotJs.tx.sudo.sudo(tx2).signAsync(alice, { nonce: nonce.addn(1) }),
         ]);
 
         const pendingParas = await polkadotJs.query.registrar.pendingParaIds();
@@ -67,6 +83,10 @@ describeSuite({
 
         // These will be the paras in session 2
         expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001, 2002]);
+
+        // Check that the on chain genesis data is set correctly
+        const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
+        expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
         // Checking that in session 2 paras are registered
         await jumpSessions(context, 2)
