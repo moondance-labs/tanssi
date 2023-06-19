@@ -26,12 +26,12 @@ async function main() {
       },
       owner: {
         type: "string",
-        describe: "Repository owner (Ex: PureStake)",
+        describe: "Repository owner (Ex: moondance-labs)",
         required: true,
       },
       repo: {
         type: "string",
-        describe: "Repository name (Ex: moonbeam)",
+        describe: "Repository name (Ex: dancebox)",
         required: true,
       },
     })
@@ -74,7 +74,7 @@ ${filteredPr.map((pr) => `* ${printPr(pr)}`).join("\n")}
 
 ## Dependency changes
 
-Moonbeam: https://github.com/${argv.owner}/${argv.repo}/compare/${previousTag}...${newTag}
+Tanssi: https://github.com/${argv.owner}/${argv.repo}/compare/${previousTag}...${newTag}
 ${moduleLinks.map((modules) => `${capitalize(modules.name)}: ${modules.link}`).join("\n")}
 `;
   console.log(template);

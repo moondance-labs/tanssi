@@ -8,12 +8,8 @@ import { blake2AsHex } from "@polkadot/util-crypto";
 
 const BREAKING_CHANGES_LABEL = "D2-breaksapi";
 const RUNTIME_CHANGES_LABEL = "B7-runtimenoteworthy";
-// `ParachainSystem` is pallet index 6. `authorize_upgrade` is extrinsic index 2.
-const MOONBASE_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE = "0x0602";
 // `ParachainSystem` is pallet index 1. `authorize_upgrade` is extrinsic index 2.
-const MOONRIVER_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE = "0x0102";
-// `ParachainSystem` is pallet index 1. `authorize_upgrade` is extrinsic index 2.
-const MOONBEAM_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE = "0x0102";
+const DANCEBOX_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE = "0x0102";
 
 function capitalize(s) {
   return s[0].toUpperCase() + s.slice(1);
@@ -32,23 +28,16 @@ function getRuntimeInfo(srtoolReportFolder: string, runtimeName: string) {
   };
 }
 
-// Srtool expects the pallet parachain_system to be at index 1. However, in the case of moonbase,
-// the pallet parachain_system is at index 6, so we have to recalculate the hash of the
-// authorizeUpgrade call in the case of moonbase by hand.
+// Srtool expects the pallet parachain_system to be at index 1. However just in case we recalculate
 function authorizeUpgradeHash(runtimeName: string, srtool: any): string {
-  if (runtimeName == "moonbase") {
+  if (runtimeName == "dancebox") {
     return blake2AsHex(
-      MOONBASE_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE +
-        srtool.runtimes.compressed.blake2_256.substr(2) // remove "0x" prefix
-    );
-  } else if (runtimeName == "moonriver") {
-    return blake2AsHex(
-      MOONRIVER_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE +
+      DANCEBOX_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE +
         srtool.runtimes.compressed.blake2_256.substr(2) // remove "0x" prefix
     );
   } else {
     return blake2AsHex(
-      MOONBEAM_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE +
+      DANCEBOX_PREFIX_PARACHAINSYSTEM_AUTHORIZE_UPGRADE +
         srtool.runtimes.compressed.blake2_256.substr(2) // remove "0x" prefix
     );
   }
@@ -76,12 +65,12 @@ async function main() {
       },
       owner: {
         type: "string",
-        describe: "Repository owner (Ex: PureStake)",
+        describe: "Repository owner (Ex: moondance-labs)",
         required: true,
       },
       repo: {
         type: "string",
-        describe: "Repository name (Ex: moonbeam)",
+        describe: "Repository name (Ex: dancebox)",
         required: true,
       },
     })
@@ -95,7 +84,7 @@ async function main() {
   const previousTag = argv.from;
   const newTag = argv.to;
 
-  const runtimes = ["moonbase", "moonriver", "moonbeam"].map((runtimeName) =>
+  const runtimes = ["dancebox"].map((runtimeName) =>
     getRuntimeInfo(argv["srtool-report-folder"], runtimeName)
   );
 
@@ -153,7 +142,7 @@ ${filteredPr.map((pr) => `* ${printPr(pr)}`).join("\n")}
 
 ## Dependency changes
 
-Moonbeam: https://github.com/${argv.owner}/${argv.repo}/compare/${previousTag}...${newTag}
+Tanssi: https://github.com/${argv.owner}/${argv.repo}/compare/${previousTag}...${newTag}
 ${moduleLinks.map((modules) => `${capitalize(modules.name)}: ${modules.link}`).join("\n")}
 `;
   console.log(template);
