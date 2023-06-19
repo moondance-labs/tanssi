@@ -460,6 +460,7 @@ impl pallet_authority_assignment::Config for Runtime {
 }
 
 impl pallet_author_noting::Config for Runtime {
+    type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
@@ -530,6 +531,7 @@ impl pallet_registrar::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
+    type WeightInfo = ();
 }
 
 impl pallet_authority_mapping::Config for Runtime {
@@ -685,7 +687,9 @@ impl_runtime_apis! {
             use frame_benchmarking::{list_benchmark, BenchmarkList, Benchmarking};
             use frame_support::traits::StorageInfoTrait;
             use frame_system_benchmarking::Pallet as SystemBench;
+            use pallet_author_noting::Pallet as PalletAuthorNotingBench;
             use pallet_configuration::Pallet as PalletConfigurationBench;
+            use pallet_registrar::Pallet as PalletRegistrarBench;
 
             let mut list = Vec::<BenchmarkList>::new();
 
@@ -695,6 +699,18 @@ impl_runtime_apis! {
                 extra,
                 pallet_configuration,
                 PalletConfigurationBench::<Runtime>
+            );
+            list_benchmark!(
+                list,
+                extra,
+                pallet_author_noting,
+                PalletAuthorNotingBench::<Runtime>
+            );
+            list_benchmark!(
+                list,
+                extra,
+                pallet_registrar,
+                PalletRegistrarBench::<Runtime>
             );
 
             let storage_info = AllPalletsWithSystem::storage_info();
@@ -709,7 +725,9 @@ impl_runtime_apis! {
 
             use frame_system_benchmarking::Pallet as SystemBench;
             impl frame_system_benchmarking::Config for Runtime {}
+            use pallet_author_noting::Pallet as PalletAuthorNotingBench;
             use pallet_configuration::Pallet as PalletConfigurationBench;
+            use pallet_registrar::Pallet as PalletRegistrarBench;
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -736,6 +754,11 @@ impl_runtime_apis! {
                 hex_literal::hex!("3a7472616e73616374696f6e5f6c6576656c3a")
                     .to_vec()
                     .into(),
+
+                // ParachainInfo ParachainId
+                hex_literal::hex!(  "0d715f2646c8f85767b5d2764bb2782604a74d81251e398fd8a0a4d55023bb3f")
+                    .to_vec()
+                    .into(),
             ];
 
             let mut batches = Vec::<BenchmarkBatch>::new();
@@ -747,6 +770,18 @@ impl_runtime_apis! {
                 batches,
                 pallet_configuration,
                 PalletConfigurationBench::<Runtime>
+            );
+            add_benchmark!(
+                params,
+                batches,
+                pallet_author_noting,
+                PalletAuthorNotingBench::<Runtime>
+            );
+            add_benchmark!(
+                params,
+                batches,
+                pallet_registrar,
+                PalletRegistrarBench::<Runtime>
             );
             if batches.is_empty() {
                 return Err("Benchmark not found for this pallet.".into());

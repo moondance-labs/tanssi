@@ -303,13 +303,12 @@ impl ContainerChainCli {
         }
     }
 
-    pub fn preload_chain_spec_from_genesis_data(
-        &mut self,
+    pub fn chain_spec_from_genesis_data(
         para_id: u32,
         genesis_data: ContainerChainGenesisData,
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
-    ) -> Result<(), String> {
+    ) -> Result<crate::chain_spec::RawChainSpec, String> {
         let name = String::from_utf8(genesis_data.name).map_err(|_e| format!("Invalid name"))?;
         let id: String = String::from_utf8(genesis_data.id).map_err(|_e| format!("Invalid id"))?;
         let storage_raw: BTreeMap<_, _> =
@@ -329,7 +328,7 @@ impl ContainerChainCli {
             relay_chain,
             para_id,
         };
-        let chain_spec = Box::new(crate::chain_spec::RawChainSpec::from_genesis(
+        let chain_spec = crate::chain_spec::RawChainSpec::from_genesis(
             &name,
             &id,
             chain_type,
@@ -344,9 +343,21 @@ impl ContainerChainCli {
             // TODO: what to do with extensions? We are hardcoding the relay_chain and the para_id, any
             // other extensions are being ignored
             extensions,
-        ));
+        );
 
-        self.preloaded_chain_spec = Some(chain_spec);
+        Ok(chain_spec)
+    }
+
+    pub fn preload_chain_spec_from_genesis_data(
+        &mut self,
+        para_id: u32,
+        genesis_data: ContainerChainGenesisData,
+        chain_type: sc_chain_spec::ChainType,
+        relay_chain: String,
+    ) -> Result<(), String> {
+        let chain_spec =
+            Self::chain_spec_from_genesis_data(para_id, genesis_data, chain_type, relay_chain)?;
+        self.preloaded_chain_spec = Some(Box::new(chain_spec));
 
         Ok(())
     }

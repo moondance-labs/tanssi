@@ -141,6 +141,9 @@ impl tp_traits::GetContainerChainAuthor<AccountId> for MockAuthorFetcher {
     fn author_for_slot(slot: Slot, _para_id: ParaId) -> Option<AccountId> {
         return Some(slot.into());
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_authors_for_para_id(_para_id: ParaId, _authors: Vec<AccountId>) {}
 }
 
 pub struct MockContainerChainGetter;
@@ -148,6 +151,13 @@ pub struct MockContainerChainGetter;
 impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
     fn current_container_chains() -> Vec<ParaId> {
         MockData::mock().container_chains
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_current_container_chains(container_chains: &[ParaId]) {
+        MockData::mutate(|m| {
+            m.container_chains = container_chains.to_vec();
+        });
     }
 }
 
@@ -169,6 +179,7 @@ impl RelaychainStateProvider for MockRelayStateProvider {
 
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
+    type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type ContainerChainAuthor = MockAuthorFetcher;
     type SelfParaId = ParachainId;
@@ -196,7 +207,7 @@ impl sp_core::traits::ReadRuntimeVersion for ReadRuntimeVersion {
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
-fn new_test_ext() -> sp_io::TestExternalities {
+pub fn new_test_ext() -> sp_io::TestExternalities {
     frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap()

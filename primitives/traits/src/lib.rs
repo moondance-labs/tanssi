@@ -25,6 +25,9 @@ use sp_std::vec::Vec;
 /// Get the current list of container chains parachain ids.
 pub trait GetCurrentContainerChains {
     fn current_container_chains() -> Vec<ParaId>;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_current_container_chains(container_chains: &[ParaId]);
 }
 
 /// Get the list of container chains parachain ids at given
@@ -36,6 +39,8 @@ pub trait GetSessionContainerChains<SessionIndex> {
 /// Returns author for a parachain id for the given slot.
 pub trait GetContainerChainAuthor<AccountId> {
     fn author_for_slot(slot: Slot, para_id: ParaId) -> Option<AccountId>;
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_authors_for_para_id(para_id: ParaId, authors: Vec<AccountId>);
 }
 
 /// Returns the host configuration composed of the amount of collators assigned

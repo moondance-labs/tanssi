@@ -22,18 +22,19 @@ use {
         traits::{GenesisBuild, OnFinalize, OnInitialize},
     },
     nimbus_primitives::NimbusId,
+    pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::Encode,
     polkadot_parachain::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_core::Pair,
+    sp_core::{Get, Pair},
     sp_runtime::{Digest, DigestItem},
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
 pub use dancebox_runtime::{
-    AccountId, Aura, Authorship, Balance, Balances, Initializer, Registrar, Runtime, RuntimeCall,
-    RuntimeEvent, Session, System,
+    AccountId, Aura, Authorship, Balance, Balances, Initializer, ParachainInfo, Registrar, Runtime,
+    RuntimeCall, RuntimeEvent, Session, System,
 };
 
 pub fn run_to_session(n: u32, add_author: bool) {
@@ -229,6 +230,13 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
         .into()
 }
 
+pub fn get_orchestrator_current_author() -> Option<AccountId> {
+    let slot: u64 = Aura::current_slot().into();
+    let orchestrator_collators = Runtime::parachain_collators(ParachainInfo::get())?;
+    let author_index = slot % orchestrator_collators.len() as u64;
+    let account = orchestrator_collators.get(author_index as usize)?;
+    Some(account.clone())
+}
 /// Mocks the author noting inherent to insert the data we
 pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
     let (relay_storage_root, relay_storage_proof) = builder.into_state_root_and_proof();
