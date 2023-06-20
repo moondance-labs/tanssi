@@ -122,7 +122,7 @@ jobs:
         working-directory: original-tools
         run: |
           yarn
-          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "test-0" --to "test-1" --srtool-report-folder '../build/' > ../body.md
+          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "test-0-1" --to "test-1" --srtool-report-folder '../build/' > ../body.md
       - name: Get runtime version
         id: get-runtime-ver
         run: |
