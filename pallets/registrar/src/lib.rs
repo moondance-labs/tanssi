@@ -229,9 +229,8 @@ pub mod pallet {
                 .last()
                 .map(|(_, paras)| paras.clone())
                 .unwrap_or_else(Self::registered_para_ids);
-            match base_paras.binary_search(&para_id) {
-                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                Err(_) => (),
+            if base_paras.binary_search(&para_id).is_ok() {
+                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
             }
 
             // Insert para id into PendingVerification, if it does not exist there

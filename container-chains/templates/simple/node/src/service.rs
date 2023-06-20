@@ -245,10 +245,7 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
-    let announce_block = {
-        let sync_service = sync_service;
-        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
-    };
+    let announce_block = Arc::new(move |hash, data| sync_service.announce_block(hash, data));
 
     let relay_chain_slot_duration = Duration::from_secs(6);
 

@@ -84,7 +84,7 @@ impl ContainerChainSpawner {
         let ContainerChainSpawner {
             orchestrator_chain_interface,
             orchestrator_client,
-            container_chain_cli,
+            mut container_chain_cli,
             tokio_handle,
             chain_type,
             relay_chain,
@@ -97,7 +97,6 @@ impl ContainerChainSpawner {
             spawned_para_ids,
             collate_on_tanssi: _,
         } = self.clone();
-        let mut container_chain_cli: ContainerChainCli = container_chain_cli;
 
         // This closure is used to emulate a try block, it enables using the `?` operator inside
         let try_closure = move || async move {

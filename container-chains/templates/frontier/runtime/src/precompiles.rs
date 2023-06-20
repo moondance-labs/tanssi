@@ -25,12 +25,18 @@ use {
 
 pub struct FrontierPrecompiles<R>(PhantomData<R>);
 
+impl<R> Default for FrontierPrecompiles<R> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
 impl<R> FrontierPrecompiles<R>
 where
     R: pallet_evm::Config,
 {
     pub fn new() -> Self {
-        Self(Default::default())
+        Self::default()
     }
     pub fn used_addresses() -> [H160; 7] {
         [

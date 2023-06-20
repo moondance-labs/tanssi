@@ -424,7 +424,7 @@ impl parachain_info::Config for Runtime {}
 impl cumulus_pallet_aura_ext::Config for Runtime {}
 
 parameter_types! {
-    pub const Period: u32 = prod_or_fast!(6 * HOURS, MINUTES);
+    pub const Period: u32 = prod_or_fast!(6 * HOURS, 1 * MINUTES);
     pub const Offset: u32 = 0;
 }
 

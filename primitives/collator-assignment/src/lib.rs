@@ -196,9 +196,10 @@ where
     where
         F: FnMut(&AccountId) -> T,
     {
-        let mut a = AssignedCollators::default();
-
-        a.orchestrator_chain = self.orchestrator_chain.iter().map(&mut f).collect();
+        let mut a = AssignedCollators {
+            orchestrator_chain: self.orchestrator_chain.iter().map(&mut f).collect(),
+            ..Default::default()
+        };
 
         for (para_id, collators) in self.container_chains.iter() {
             let a_collators = collators.iter().map(&mut f).collect();
