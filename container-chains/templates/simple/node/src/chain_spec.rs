@@ -38,6 +38,9 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
         .public()
 }
 
+/// Orcherstrator's parachain id
+const ORCHESTRATOR: ParaId = ParaId::new(1000);
+
 /// The extensions for the [`ChainSpec`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
@@ -228,6 +231,9 @@ fn testnet_genesis(
         aura: Default::default(),
         aura_ext: Default::default(),
         parachain_system: Default::default(),
+        authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
+            orchestrator_para_id: ORCHESTRATOR,
+        },
     }
 }
 
