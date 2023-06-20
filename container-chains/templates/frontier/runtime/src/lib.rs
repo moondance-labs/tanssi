@@ -537,6 +537,7 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type AuthorityId = NimbusId;
+    type WeightInfo = ();
 }
 
 const BLOCK_GAS_LIMIT: u64 = 75_000_000;
