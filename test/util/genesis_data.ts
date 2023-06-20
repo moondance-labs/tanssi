@@ -1,6 +1,6 @@
 /// Utilities to convert from ChainSpec to ContainerChainGenesisData and back
 
-import { ApiPromise } from "@moonwall/cli";
+import { ApiPromise } from "@polkadot/api";
 import { hexToString, stringToHex } from '@polkadot/util';
 
 export function chainSpecToContainerChainGenesisData(paraApi: ApiPromise, chainSpec: any): any {
