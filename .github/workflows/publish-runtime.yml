@@ -122,7 +122,7 @@ jobs:
         working-directory: original-tools
         run: |
           yarn
-          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "5daa4f23996b081ceefc4573bd4e0cfd8e2a36b6" --to "d620b62beb9dcebf4ff13cb1273a596abf21248e" --srtool-report-folder '../build/' > ../body.md
+          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "test-0" --to "test-1" --srtool-report-folder '../build/' > ../body.md
       - name: Get runtime version
         id: get-runtime-ver
         run: |
@@ -136,8 +136,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.inputs.to }}
-          release_name: Runtime ${{ github.event.inputs.to }}
+          tag_name: test-1
+          release_name: Runtime test-1
           body_path: body.md
           draft: true
       - name: Upload dancebox wasm
