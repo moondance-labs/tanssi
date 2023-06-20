@@ -223,13 +223,27 @@ pub mod pallet {
             Self::deposit_event(Event::AuthoritiesInserted { authorities });
             Ok(())
         }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::set_orchestrator_para_id())]
+        pub fn set_orchestrator_para_id(
+            origin: OriginFor<T>,
+            new_para_id: ParaId,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            OrchestratorParaId::<T>::put(&new_para_id);
+            Self::deposit_event(Event::OrchestratorParachainIdUpdated { new_para_id });
+            Ok(())
+        }
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Auhtorities inserted
+        /// Authorities inserted
         AuthoritiesInserted { authorities: Vec<T::AuthorityId> },
+        /// Orchestrator Parachain Id updated
+        OrchestratorParachainIdUpdated { new_para_id: ParaId },
     }
 
     #[pallet::storage]
