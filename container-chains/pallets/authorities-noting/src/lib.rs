@@ -33,9 +33,17 @@ mod mock;
 
 #[cfg(test)]
 mod test;
+mod weights;
+
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+mod benchmarks;
+#[cfg(feature = "runtime-benchmarks")]
+mod mock_proof;
 
 pub use pallet::*;
+
 use {
+    crate::weights::WeightInfo,
     ccp_authorities_noting_inherent::INHERENT_IDENTIFIER,
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     cumulus_primitives_core::{
@@ -73,6 +81,9 @@ pub mod pallet {
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
 
         type AuthorityId: sp_std::fmt::Debug + PartialEq + Clone + FullCodec + TypeInfo;
+
+        /// Weight information for extrinsics in this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::error]
@@ -145,7 +156,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             data: ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData,
         ) -> DispatchResultWithPostInfo {
-            let total_weight = Weight::zero();
+            let total_weight = T::WeightInfo::set_latest_authorities_data();
             ensure_none(origin)?;
 
             assert!(
@@ -202,7 +213,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::set_authorities(authorities.len() as u32))]
         pub fn set_authorities(
             origin: OriginFor<T>,
             authorities: Vec<T::AuthorityId>,
