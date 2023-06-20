@@ -68,6 +68,7 @@ pallet-session = { git = "https://github.com/moondance-labs/substrate", branch =
 pallet-sudo = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.40", default-features = false }
 pallet-timestamp = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.40", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.40", default-features = false }
+pallet-utility = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.40", default-features = false }
 parity-scale-codec = { version = "3.0.0", default-features = false, features = [ "derive", "max-encoded-len" ] }
 scale-info = { version = "2.1.1", default-features = false }
 sp-api = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.40", default-features = false }
