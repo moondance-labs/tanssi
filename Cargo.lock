@@ -5683,7 +5683,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.40#007fb6d37c8f65c505931fccd2494276865fd99e"
+source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.40#24d282222894a564d0cb98217de7d9ec7bc063c9"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -5713,7 +5713,7 @@ dependencies = [
 [[package]]
 name = "nimbus-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.40#007fb6d37c8f65c505931fccd2494276865fd99e"
+source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.40#24d282222894a564d0cb98217de7d9ec7bc063c9"
 dependencies = [
  "async-trait",
  "frame-support",
@@ -6105,7 +6105,7 @@ dependencies = [
 [[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.40#007fb6d37c8f65c505931fccd2494276865fd99e"
+source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.40#24d282222894a564d0cb98217de7d9ec7bc063c9"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
