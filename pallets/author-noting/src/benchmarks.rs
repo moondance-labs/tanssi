@@ -81,14 +81,6 @@ benchmarks! {
             state_root: root,
             number: 0,
         });
-        #[cfg(test)]
-        {
-            // set_current_relay_chain_state doesn't work in tests, we need to write the MOCK_RELAY_ROOT_KEY.
-            frame_support::storage::unhashed::put(
-                b"MOCK_RELAY_ROOT_KEY",
-                &root,
-            );
-        }
     }: _(RawOrigin::None, data)
 
     set_author {

@@ -47,28 +47,24 @@
           },
           {
             "name": "Collator2000-01",
-            "command": "tmp/tanssi-node",
-            "args": ["-- --tmp --ws-port 9949 --para-id 2000"]
+            "command": "tmp/tanssi-node"
           },
           {
             "name": "Collator2000-02",
-            "command": "tmp/tanssi-node",
-            "args": ["-- --tmp --para-id 2000"]
+            "command": "tmp/tanssi-node"
           },
           {
             "name": "Collator2001-01",
-            "command": "tmp/tanssi-node",
-            "args": ["-- --tmp --ws-port 9950 --para-id 2001"]
+            "command": "tmp/tanssi-node"
           },
           {
             "name": "Collator2001-02",
-            "command": "tmp/tanssi-node",
-            "args": ["-- --tmp --para-id 2001"]
+            "command": "tmp/tanssi-node"
           },
           {
             "name": "Collator2002-01",
             "command": "tmp/tanssi-node",
-            "args": ["-- --tmp --ws-port 9951 --para-id 2002"]
+            "args": ["-- --tmp --para-id 2002"]
           },
           {
             "name": "Collator2002-02",
@@ -82,9 +78,10 @@
         "chain_spec_path": "specs/template-container-2000.json",
         "collators":  [
           {
-            "name": "DummyCollator-2000",
+            "name": "FullNode-2000",
             "validator": false,
-            "command": "tmp/container-chain-template-simple-node"
+            "command": "tmp/container-chain-template-simple-node",
+            "ws_port": 9949
           }
         ]
       },
@@ -93,10 +90,10 @@
         "chain_spec_path": "specs/template-container-2001.json",
         "collators":  [
           {
-            "name": "DummyCollator-2001",
+            "name": "FullNode-2001",
             "validator": false,
             "command": "tmp/container-chain-template-frontier-node",
-            "ws_port": 9960
+            "ws_port": 9950
           }
         ]
       },
@@ -105,9 +102,10 @@
         "chain_spec_path": "specs/template-container-2002.json",
         "collators":  [
           {
-            "name": "DummyCollator-2002",
+            "name": "FullNode-2002",
             "validator": false,
-            "command": "tmp/container-chain-template-simple-node"
+            "command": "tmp/container-chain-template-simple-node",
+            "ws_port": 9951
           }
         ]
       }
