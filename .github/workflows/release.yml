@@ -1,238 +1,160 @@
-name: CI
+name: Publish Runtime Draft
 
-on: ["pull_request"]
+# The code (like generate-release-body) will be taken from the tag versions, not master
+on:
+  push:
+    inputs:
+      from:
+        description: tag (ex. runtime-53) to retrieve commit diff from
+        required: true
+      to:
+        description: tag (ex. runtime-155) to generate release note and srtool runtimes from
+        required: true
 
 jobs:
-  set-tags:
-    runs-on: ubuntu-latest
-    outputs:
-      polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.sha }}
-      - name: Get polkadot release tag
-        id: get-polkadot-release-tag
-        run: |
-          branch=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1 | sed 's/.*release-//#')
-          echo "polkadot_release=$(echo $branch | sed 's/#.*//' | sed 's/\/polkadot?branch=tanssi-polkadot-//')" >> $GITHUB_OUTPUT
-      - name: Display variables
-        run: |
-          echo polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
+  ####### Build runtimes with srtool #######
 
-  check-copyright:
-    runs-on: ubuntu-latest
-    needs: ["set-tags"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Find un-copyrighted files
-        run: |
-          find . \! -name '*.expanded.rs' -name '*.rs' -exec grep  -H -E -o -c Copyright {} \; | grep ':0' || true
-          FILECOUNT=$(find . \! -name '*.expanded.rs' -name '*.rs' -exec grep  -H -E -o -c Copyright {} \; | grep -c ':0' || true)
-          if [[ $FILECOUNT -eq 0 ]]; then
-            true
-          else
-            false
-          fi
-
-  ####### Building and Testing binaries #######
-  build:
+  setup-scripts:
     runs-on: self-hosted
-    env:
-      RUSTFLAGS: "-C opt-level=3 -D warnings"
-      TMP_TARGET: "/tmp/target"
-      CARGO_TARGET_DIR: "target"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Setup Rust toolchain
-        run: rustup show
-
-      - name: Install nightly
-        run: rustup install nightly-2022-11-14
-      
-      - name: Add wasm32-unknown-unknown to nightly
-        run: rustup target add wasm32-unknown-unknown --toolchain nightly-2022-11-14
-
-      - name: Formatter
-        run: cargo fmt --all --check
-
-      - name: Build
-        run: cargo build --features=fast-runtime --release --all
-
-      - name: Check runtime benchmarks
-        run: cargo check --features=runtime-benchmarks --release --all
-
-      - name: Test
-        run: cargo test --release --all
-
-      - name: Save runtime wasm
-        run: |
-          mkdir -p runtimes
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
-
-      - name: Upload runtimes
-        uses: actions/upload-artifact@v3.1.2
+      - uses: actions/checkout@v3
+      - name: Upload scripts
+        uses: actions/upload-artifact@v3
         with:
-          name: runtimes
-          path: runtimes
-
-      - name: Save tanssi and template binaries
-        run: |
-          mkdir -p binaries
-          cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
-          cp $CARGO_TARGET_DIR/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
-          cp $CARGO_TARGET_DIR/release/container-chain-template-frontier-node binaries/container-chain-template-frontier-node;
-
-      - name: Upload binary
-        uses: actions/upload-artifact@v3.1.2
+          name: original-scripts
+          path: scripts
+      - name: Upload tools
+        uses: actions/upload-artifact@v3
         with:
-          name: binaries
-          path: binaries
+          name: original-tools
+          path: tools
 
-  typescript-tests:
+  build-srtool-runtimes:
+    needs: ["setup-scripts"]
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        chain: ["dancebox"]
+        srtool_image:
+          - purestake/srtool
+        srtool_image_tag:
+          - 1.69.0
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.to }}
+      - name: Download original scripts
+        uses: actions/download-artifact@v3
+        with:
+          name: original-scripts
+          path: original-scripts
+      - name: Build & Push purestake/srtool image
+        if: github.repository == 'moondance-labs/tanssi'
+        run: |
+          docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
+
+          if [[ $image_exists = "false" ]]; then
+            echo building "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+            docker build --pull --no-cache . \
+              -f docker/moonbeam-srtool.Dockerfile \
+              --build-arg SRTOOL_IMAGE_TAG=${{ matrix.srtool_image_tag }} \
+              -t ${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}
+
+            echo pushing "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+            docker push "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+          else
+            echo skiping build "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}", image already exists
+          fi
+      - name: Build runtime using "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
+        id: srtool_build
+        env:
+          GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chain }}
+          GH_WORKFLOW_MATRIX_SRTOOL_IMAGE: ${{ matrix.srtool_image }}
+          GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG: ${{ matrix.srtool_image_tag }}
+        run: |
+          chmod u+x ./original-scripts/build-runtime-srtool.sh
+          ./original-scripts/build-runtime-srtool.sh
+      - name: Summary
+        run: |
+          echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain }}-srtool-digest.json
+          cat ${{ matrix.chain }}-srtool-digest.json
+          cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain }}-runtime.compact.compressed.wasm
+      - name: Archive Artifacts for ${{ matrix.chain }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.chain }}-runtime
+          path: |
+            ${{ matrix.chain }}-runtime.compact.compressed.wasm
+            ${{ matrix.chain }}-srtool-digest.json
+
+          
+  ####### Prepare the release draft #######
+  publish-draft-release:
     runs-on: ubuntu-latest
-    needs: ["build"]
+    needs: ["setup-scripts", "build-srtool-runtimes"]
+    outputs:
+      release_url: ${{ steps.create-release.outputs.html_url }}
+      asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.inputs.sha }}
-        
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 7
-        
-      - name: Node  
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18.x
-          cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
-
-      - name: "Download binaries"
+          ref: ${{ github.event.inputs.to }}
+          fetch-depth: 0
+      - name: Download dancebox runtime
         uses: actions/download-artifact@v3.0.2
         with:
-          name: binaries
-          path: target/release
-      
-      - name: "Install and run upgrade test"
-        run: |
-          chmod uog+x target/release/tanssi-node
-          cd test
-          pnpm install --frozen-lockfile
-          pnpm moonwall test dev_tanssi
-
-  typescript-tests-frontier:
-    runs-on: ubuntu-latest
-    needs: ["build"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.sha }}
-        
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 7
-        
-      - name: Node  
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18.x
-          cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
-
-      - name: "Download binaries"
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: target/release
-      
-      - name: "Install and run upgrade test"
-        run: |
-          chmod uog+x target/release/container-chain-template-frontier-node
-          cd test
-          pnpm install --frozen-lockfile
-          pnpm moonwall test dev_frontier_template
-
-  zombienet-tests:
-    runs-on: ubuntu-latest
-    needs: ["set-tags", "build"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.inputs.sha }}
-
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 7
-        
-      - name: Node  
+          name: dancebox-runtime
+          path: build
+      - name: Use Node.js 18.x
         uses: actions/setup-node@v3
         with:
           node-version: 18.x
-          cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
-
-      - name: "Download binaries"
-        uses: actions/download-artifact@v3.0.2
+      - name: Download Original Tools
+        uses: actions/download-artifact@v3
         with:
-          name: binaries
-          path: test/tmp
-
-      
-      - name: Retrieve polkadot binary from docker
+          name: original-tools
+          path: original-tools
+      - name: Generate release body
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        id: generate-release-body
+        working-directory: original-tools
         run: |
-          POLKADOT_RELEASE=${{ needs.set-tags.outputs.polkadot_release }}
-          DOCKER_TAG="parity/polkadot:$POLKADOT_RELEASE"
-          echo $DOCKER_TAG
-          echo $POLKADOT_RELEASE
-          docker rm -f dummy 2> /dev/null | true
-          docker create -ti --name dummy $DOCKER_TAG bash
-          docker cp dummy:/usr/bin/polkadot test/tmp/polkadot
-          docker rm -f dummy
-      
-      - name: "Run zombie test"
+          yarn
+          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "test-0" --to "test-1" --srtool-report-folder '../build/' > ../body.md
+      - name: Get runtime version
+        id: get-runtime-ver
         run: |
-          cd test
-          pnpm install --frozen-lockfile
-
-          chmod uog+x tmp/tanssi-node
-          chmod uog+x tmp/container-chain-template-simple-node
-          chmod uog+x tmp/container-chain-template-frontier-node
-          chmod uog+x tmp/polkadot
-
-          ## Generate specs
-          npm run build-spec-ci
-
-          ## Run tests
-
-          pnpm moonwall test zombie_tanssi_ci
-
-      - name: "Gather zombie logs"
-        if: failure()
-        run: |
-          ls -ltr /tmp
-          latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
-          logs_dir="logs"
-          mkdir -p "$logs_dir"
-          find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
-
-      - name: "Upload zombie logs"
-        if: failure()
-        uses: actions/upload-artifact@v3.1.2
+          runtime_dancebox_ver="$(cat ./runtime/dancebox/src/lib.rs | grep -o 'spec_version: [0-9]*' | tail -1 | grep -o '[0-9]*')"
+          echo "runtime_dancebox_ver=$runtime_dancebox_ver" >> $GITHUB_OUTPUT
+          mv build/dancebox-runtime.compact.compressed.wasm dancebox-runtime-${runtime_dancebox_ver}.wasm
+          mv build/dancebox-srtool-digest.json dancebox-runtime-${runtime_dancebox_ver}-srtool-digest.json
+      - name: Create draft release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: logs
-          path: logs
+          tag_name: test-1
+          release_name: Runtime test-1
+          body_path: body.md
+          draft: true
+      - name: Upload dancebox wasm
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: dancebox-runtime-${{ steps.get-runtime-ver.outputs.runtime_dancebox_ver }}.wasm
+          asset_name: dancebox-runtime-${{ steps.get-runtime-ver.outputs.runtime_dancebox_ver }}.wasm
+          asset_content_type: application/octet-stream
+      - name: Upload dancebox srtool digest
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: dancebox-runtime-${{ steps.get-runtime-ver.outputs.runtime_dancebox_ver }}-srtool-digest.json
+          asset_name: dancebox-runtime-${{ steps.get-runtime-ver.outputs.runtime_dancebox_ver }}.srtool-digest.json
+          asset_content_type: application/json
