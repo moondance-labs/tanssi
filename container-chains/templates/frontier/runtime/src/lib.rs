@@ -34,7 +34,6 @@ use {
     crate::precompiles::FrontierPrecompiles,
     core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::ParaId,
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
     fp_rpc::TransactionStatus,
@@ -521,22 +520,30 @@ impl pallet_session::Config for Runtime {
     type WeightInfo = ();
 }
 
+impl pallet_sudo::Config for Runtime {
+    type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+}
+
+impl pallet_utility::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type PalletsOrigin = OriginCaller;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_aura::Config for Runtime {
     type AuthorityId = NimbusId;
     type DisabledValidators = ();
     type MaxAuthorities = ConstU32<100_000>;
 }
 
-parameter_types! {
-    pub Orchestrator: ParaId = 1000u32.into();
-}
-
 impl pallet_cc_authorities_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type AuthorityId = NimbusId;
+    type WeightInfo = ();
 }
 
 const BLOCK_GAS_LIMIT: u64 = 75_000_000;
@@ -647,6 +654,8 @@ construct_runtime!(
         ParachainSystem: cumulus_pallet_parachain_system = 1,
         Timestamp: pallet_timestamp = 2,
         ParachainInfo: parachain_info = 3,
+        Sudo: pallet_sudo = 4,
+        Utility: pallet_utility = 5,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,

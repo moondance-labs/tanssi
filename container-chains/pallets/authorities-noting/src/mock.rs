@@ -22,7 +22,8 @@ use {
         inherent::{InherentData, ProvideInherent},
         parameter_types,
         traits::{
-            ConstU32, ConstU64, Everything, OnFinalize, OnInitialize, UnfilteredDispatchable,
+            ConstU32, ConstU64, Everything, GenesisBuild, OnFinalize, OnInitialize,
+            UnfilteredDispatchable,
         },
     },
     frame_system::RawOrigin,
@@ -100,15 +101,20 @@ impl RelaychainStateProvider for MockRelayStateProvider {
             number: 0, // block number is not relevant here
         }
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_current_relay_chain_state(state: RelayChainState) {
+        frame_support::storage::unhashed::put(b"MOCK_RELAY_ROOT_KEY", &state.state_root);
+    }
 }
 
 // Implement the sudo module's `Config` on the Test runtime.
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type SelfParaId = ParachainId;
-    type OrchestratorParaId = OrchestratorParachainId;
     type RelayChainStateProvider = MockRelayStateProvider;
     type AuthorityId = AccountId;
+    type WeightInfo = ();
 }
 
 struct BlockTest {
@@ -131,11 +137,20 @@ impl sp_core::traits::ReadRuntimeVersion for ReadRuntimeVersion {
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
-fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::default()
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
-        .unwrap()
-        .into()
+        .unwrap();
+
+    GenesisBuild::<Test>::assimilate_storage(
+        &authorities_noting_pallet::GenesisConfig {
+            orchestrator_para_id: 1000u32.into(),
+        },
+        &mut t,
+    )
+    .expect("failed assimilating strorage for 'authorities_noting_pallet'");
+
+    t.into()
 }
 
 fn wasm_ext() -> sp_io::TestExternalities {

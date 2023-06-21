@@ -626,7 +626,7 @@ pub async fn start_dev_node(
                                 current_para_block,
                                 relay_offset: 1000,
                                 relay_blocks_per_para_block: 2,
-                                orchestrator_para_id: 1000u32.into(),
+                                orchestrator_para_id: crate::chain_spec::ORCHESTRATOR,
                                 authorities: vec![]
                         };
 

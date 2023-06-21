@@ -174,6 +174,11 @@ impl RelaychainStateProvider for MockRelayStateProvider {
             number: 0, // block number is not relevant here
         }
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_current_relay_chain_state(state: RelayChainState) {
+        frame_support::storage::unhashed::put(b"MOCK_RELAY_ROOT_KEY", &state.state_root);
+    }
 }
 
 // Implement the sudo module's `Config` on the Test runtime.

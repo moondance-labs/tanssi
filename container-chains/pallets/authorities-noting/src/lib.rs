@@ -33,9 +33,17 @@ mod mock;
 
 #[cfg(test)]
 mod test;
+mod weights;
+
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+mod benchmarks;
+#[cfg(feature = "runtime-benchmarks")]
+mod mock_proof;
 
 pub use pallet::*;
+
 use {
+    crate::weights::WeightInfo,
     ccp_authorities_noting_inherent::INHERENT_IDENTIFIER,
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     cumulus_primitives_core::{
@@ -68,13 +76,14 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        type OrchestratorParaId: Get<ParaId>;
-
         type SelfParaId: Get<ParaId>;
 
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
 
         type AuthorityId: sp_std::fmt::Debug + PartialEq + Clone + FullCodec + TypeInfo;
+
+        /// Weight information for extrinsics in this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::error]
@@ -87,7 +96,7 @@ pub mod pallet {
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
-    pub struct Pallet<T>(PhantomData<T>);
+    pub struct Pallet<T>(_);
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -113,6 +122,31 @@ pub mod pallet {
         }
     }
 
+    #[pallet::storage]
+    #[pallet::getter(fn orchestrator_para_id)]
+    pub type OrchestratorParaId<T: Config> = StorageValue<_, ParaId, ValueQuery>;
+
+    #[pallet::genesis_config]
+    pub struct GenesisConfig {
+        pub orchestrator_para_id: ParaId,
+    }
+
+    #[cfg(feature = "std")]
+    impl Default for GenesisConfig {
+        fn default() -> Self {
+            GenesisConfig {
+                orchestrator_para_id: 1000u32.into(),
+            }
+        }
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> GenesisBuild<T> for GenesisConfig {
+        fn build(&self) {
+            OrchestratorParaId::<T>::put(self.orchestrator_para_id);
+        }
+    }
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -122,7 +156,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             data: ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData,
         ) -> DispatchResultWithPostInfo {
-            let total_weight = Weight::zero();
+            let total_weight = T::WeightInfo::set_latest_authorities_data();
             ensure_none(origin)?;
 
             assert!(
@@ -138,7 +172,7 @@ pub mod pallet {
             let relay_storage_root =
                 T::RelayChainStateProvider::current_relay_chain_state().state_root;
 
-            let para_id = T::OrchestratorParaId::get();
+            let para_id = OrchestratorParaId::<T>::get();
             let relay_chain_state_proof =
                 GenericStateProof::new(relay_storage_root, relay_chain_state_proof)
                     .expect("Invalid relay chain state proof");
@@ -177,7 +211,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(0)]
+        #[pallet::weight(T::WeightInfo::set_authorities(authorities.len() as u32))]
         pub fn set_authorities(
             origin: OriginFor<T>,
             authorities: Vec<T::AuthorityId>,
@@ -187,13 +221,27 @@ pub mod pallet {
             Self::deposit_event(Event::AuthoritiesInserted { authorities });
             Ok(())
         }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::set_orchestrator_para_id())]
+        pub fn set_orchestrator_para_id(
+            origin: OriginFor<T>,
+            new_para_id: ParaId,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            OrchestratorParaId::<T>::put(new_para_id);
+            Self::deposit_event(Event::OrchestratorParachainIdUpdated { new_para_id });
+            Ok(())
+        }
     }
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Auhtorities inserted
+        /// Authorities inserted
         AuthoritiesInserted { authorities: Vec<T::AuthorityId> },
+        /// Orchestrator Parachain Id updated
+        OrchestratorParachainIdUpdated { new_para_id: ParaId },
     }
 
     #[pallet::storage]

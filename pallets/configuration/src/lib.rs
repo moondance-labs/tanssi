@@ -119,9 +119,6 @@ pub mod pallet {
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Weight information for extrinsics in this pallet.
-        type WeightInfo: WeightInfo;
-
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
@@ -137,6 +134,9 @@ pub mod pallet {
             + RuntimeAppPublic
             + MaybeSerializeDeserialize
             + MaxEncodedLen;
+
+        /// Weight information for extrinsics in this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::error]
