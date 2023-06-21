@@ -45,8 +45,8 @@ jobs:
         run: |
           mkdir -p binaries
           cp target/production/tanssi-node binaries/tanssi-node
-          cp target/production/target/production/container-chain-template-frontier-node binaries/target/production/container-chain-template-frontier-node
-          cp target/production/target/production/container-chain-template-simple-node binaries/target/production/container-chain-template-simple-node
+          cp target/production/container-chain-template-frontier-node binaries/container-chain-template-frontier-node
+          cp target/production/container-chain-template-simple-node binaries/container-chain-template-simple-node
       - name: Save parachain custom binary
         if: ${{ matrix.cpu != '' }}
         run: |
@@ -131,4 +131,31 @@ jobs:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: build/tanssi-node-znver3
           asset_name: tanssi-node-znver3
+          asset_content_type: application/octet-stream
+      - name: Upload frontier-template
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: build/container-chain-template-frontier-node
+          asset_name: container-chain-template-frontier-node
+          asset_content_type: application/octet-stream
+      - name: Upload frontier-template skylake
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: build/container-chain-template-frontier-node-skylake
+          asset_name: container-chain-template-frontier-node-skylake
+          asset_content_type: application/octet-stream
+      - name: Upload frontier-template znver3
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: build/container-chain-template-frontier-node-znver3
+          asset_name: container-chain-template-frontier-node-znver3
           asset_content_type: application/octet-stream
