@@ -42,6 +42,9 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
         .public()
 }
 
+/// Orcherstrator's parachain id
+pub const ORCHESTRATOR: ParaId = ParaId::new(1000);
+
 /// The extensions for the [`ChainSpec`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
@@ -291,6 +294,9 @@ fn testnet_genesis(
         transaction_payment: Default::default(),
         sudo: container_chain_template_frontier_runtime::SudoConfig {
             key: Some(root_key),
+        },
+        authorities_noting: container_chain_template_frontier_runtime::AuthoritiesNotingConfig {
+            orchestrator_para_id: ORCHESTRATOR,
         },
     }
 }
