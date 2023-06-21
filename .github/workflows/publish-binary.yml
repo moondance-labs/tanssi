@@ -50,7 +50,7 @@ jobs:
       - name: Save parachain custom binary
         if: ${{ matrix.cpu != '' }}
         run: |
-          mkdir -p build
+          mkdir -p binaries
           cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
           cp target/production/container-chain-template-frontier-node binaries/container-chain-template-frontier-node-${{matrix.cpu}}
           cp target/production/container-chain-template-simple-node binaries/container-chain-template-simple-node-${{matrix.cpu}}
