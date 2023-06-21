@@ -2,7 +2,7 @@ name: Publish Runtime Draft
 
 # The code (like generate-release-body) will be taken from the tag versions, not master
 on:
-  push:
+  workflow_dispatch:
     inputs:
       from:
         description: tag (ex. runtime-53) to retrieve commit diff from
@@ -106,23 +106,29 @@ jobs:
         with:
           name: dancebox-runtime
           path: build
-      - name: Use Node.js 18.x
-        uses: actions/setup-node@v3
+      - name: Pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7        
+      - name: Node  
+        uses: actions/setup-node@v2
         with:
           node-version: 18.x
+          cache: "pnpm"
+          cache-dependency-path: tools/pnpm-lock.yaml     
       - name: Download Original Tools
         uses: actions/download-artifact@v3
         with:
           name: original-tools
-          path: original-tools
+          path: original-tools 
       - name: Generate release body
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: generate-release-body
         working-directory: original-tools
         run: |
-          yarn
-          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "test-0-1" --to "test-1" --srtool-report-folder '../build/' > ../body.md
+          pnpm i
+          pnpm exec ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ github.event.inputs.from }}" --to "${{ github.event.inputs.to }}" --srtool-report-folder '../build/' > ../body.md
       - name: Get runtime version
         id: get-runtime-ver
         run: |
@@ -136,8 +142,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: test-1
-          release_name: Runtime test-1
+          tag_name: ${{ github.event.inputs.to }}
+          release_name: Runtime ${{ github.event.inputs.to }}
           body_path: body.md
           draft: true
       - name: Upload dancebox wasm
