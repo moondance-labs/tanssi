@@ -122,7 +122,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
-                collator_accounts[0].clone(),
+                AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
             )
         },
         Vec::new(),
@@ -175,7 +175,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
-                collator_accounts[0].clone(),
+                AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
             )
         },
         // Bootnodes

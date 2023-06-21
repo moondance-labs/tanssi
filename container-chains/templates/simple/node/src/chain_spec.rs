@@ -118,7 +118,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
-                collator_accounts[0].clone(),
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
             )
         },
         Vec::new(),
@@ -171,7 +171,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
-                collator_accounts[0].clone(),
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
             )
         },
         // Bootnodes
