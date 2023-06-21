@@ -321,10 +321,7 @@ impl frame_system::Config for Runtime {
 pub struct OnTimestampSet;
 impl frame_support::traits::OnTimestampSet<u64> for OnTimestampSet {
     fn on_timestamp_set(moment: u64) {
-        use {
-            sp_consensus_aura::Slot,
-            sp_runtime::{traits::Zero, SaturatedConversion},
-        };
+        use {nimbus_primitives::SlotBeacon as _, sp_runtime::traits::Zero};
 
         assert!(
             !SLOT_DURATION.is_zero(),
@@ -335,7 +332,7 @@ impl frame_support::traits::OnTimestampSet<u64> for OnTimestampSet {
         // let timestamp_slot = Slot::from(timestamp_slot.saturated_into::<u64>());
 
         assert!(
-            pallet_author_inherent::HighestSlotSeen::<Runtime>::get() as u64 == timestamp_slot,
+            SlotBeacon::slot() as u64 == timestamp_slot,
             "Timestamp slot must match `HighestSlotSeen`"
         );
     }
