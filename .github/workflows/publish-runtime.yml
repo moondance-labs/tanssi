@@ -2,7 +2,7 @@ name: Publish Runtime Draft
 
 # The code (like generate-release-body) will be taken from the tag versions, not master
 on:
-  push:
+  workflow_dispatch:
     inputs:
       from:
         description: tag (ex. runtime-53) to retrieve commit diff from
