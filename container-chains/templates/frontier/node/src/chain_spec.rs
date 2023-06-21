@@ -125,6 +125,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
+                AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
             )
         },
         Vec::new(),
@@ -177,6 +178,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
+                AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
             )
         },
         // Bootnodes
@@ -201,6 +203,7 @@ fn testnet_genesis(
     invulnerables: Vec<(AccountId, NimbusId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
+    root_key: AccountId,
 ) -> container_chain_template_frontier_runtime::GenesisConfig {
     container_chain_template_frontier_runtime::GenesisConfig {
         system: container_chain_template_frontier_runtime::SystemConfig {
@@ -289,6 +292,9 @@ fn testnet_genesis(
         dynamic_fee: Default::default(),
         base_fee: Default::default(),
         transaction_payment: Default::default(),
+        sudo: container_chain_template_frontier_runtime::SudoConfig {
+            key: Some(root_key),
+        },
         authorities_noting: container_chain_template_frontier_runtime::AuthoritiesNotingConfig {
             orchestrator_para_id: ORCHESTRATOR,
         },

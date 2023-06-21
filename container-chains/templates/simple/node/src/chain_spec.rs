@@ -121,6 +121,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
             )
         },
         Vec::new(),
@@ -173,6 +174,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
             )
         },
         // Bootnodes
@@ -197,6 +199,7 @@ fn testnet_genesis(
     invulnerables: Vec<(AccountId, NimbusId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
+    root_key: AccountId,
 ) -> container_chain_template_simple_runtime::GenesisConfig {
     container_chain_template_simple_runtime::GenesisConfig {
         system: container_chain_template_simple_runtime::SystemConfig {
@@ -231,6 +234,9 @@ fn testnet_genesis(
         aura: Default::default(),
         aura_ext: Default::default(),
         parachain_system: Default::default(),
+        sudo: container_chain_template_simple_runtime::SudoConfig {
+            key: Some(root_key),
+        },
         authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
             orchestrator_para_id: ORCHESTRATOR,
         },
