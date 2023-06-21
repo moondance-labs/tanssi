@@ -28,7 +28,10 @@ use {
     cumulus_primitives_parachain_inherent::{
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
+    fc_consensus::FrontierBlockImport,
+    nimbus_primitives::NimbusId,
     sp_consensus_aura::SlotDuration,
+    sp_core::Pair,
 };
 // Local Runtime Types
 use {
@@ -68,8 +71,6 @@ type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 
 type MaybeSelectChain = Option<sc_consensus::LongestChain<ParachainBackend, Block>>;
-
-use fc_consensus::FrontierBlockImport;
 
 pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
     let config_dir = config
@@ -440,6 +441,14 @@ pub async fn start_parachain_node(
     .await
 }
 
+/// Helper function to generate a crypto pair from seed
+fn get_aura_id_from_seed(seed: &str) -> NimbusId {
+    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
+        .expect("static values are valid; qed")
+        .public()
+        .into()
+}
+
 use {sp_blockchain::HeaderBackend, std::str::FromStr};
 /// Builds a new development service. This service uses manual seal, and mocks
 /// the parachain inherent.
@@ -621,13 +630,14 @@ pub async fn start_dev_node(
                             raw_horizontal_messages: vec![],
                         };
 
+                        let alice_id = get_aura_id_from_seed("alice");    
                         let mocked_authorities_noting =
                             ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
                                 current_para_block,
                                 relay_offset: 1000,
                                 relay_blocks_per_para_block: 2,
                                 orchestrator_para_id: 1000u32.into(),
-                                authorities: vec![]
+                                authorities: vec![alice_id]
                         };
 
 						Ok((time, mocked_parachain, mocked_authorities_noting))
