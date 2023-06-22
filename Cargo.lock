@@ -2138,6 +2138,7 @@ dependencies = [
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
+ "pallet-utility",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
