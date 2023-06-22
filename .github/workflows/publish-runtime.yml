@@ -117,6 +117,7 @@ jobs:
         run: |
           yarn
           yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ github.event.inputs.from }}" --to "${{ github.event.inputs.to }}" --srtool-report-folder '../build/' > ../body.md      - name: Get runtime version
+      - name: Get runtime version
         id: get-runtime-ver
         run: |
           runtime_dancebox_ver="$(cat ./runtime/dancebox/src/lib.rs | grep -o 'spec_version: [0-9]*' | tail -1 | grep -o '[0-9]*')"
