@@ -38,7 +38,7 @@ describeSuite({
 
       const paraNetwork = paraApi.consts.system.version.specName.toString();
       const paraId1000 = (await paraApi.query.parachainInfo.parachainId()).toString();
-      expect(paraNetwork, "Para API incorrect").to.contain("orchestrator-template-parachain");
+      expect(paraNetwork, "Para API incorrect").to.contain("dancebox");
       expect(paraId1000, "Para API incorrect").to.be.equal("1000");
 
       const container2000Network = container2000Api.consts.system.version.specName.toString();

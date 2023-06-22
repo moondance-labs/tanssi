@@ -10,7 +10,7 @@ members = [
 	"pallets/collator-assignment/rpc/runtime-api",
 	"pallets/registrar/rpc/runtime-api",
 	"primitives/*",
-	"runtime/test",
+	"runtime/dancebox",
 	"test-sproof-builder",
 ]
 resolver = "2"
@@ -35,7 +35,7 @@ ccp-authorities-noting-inherent = { path = "container-chains/primitives/authorit
 container-chain-template-runtime = { path = "container-chain-template/runtime", default-features = false }
 pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
 
-orchestrator-runtime = { path = "runtime/test", default-features = false }
+dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface = { path = "client/orchestrator-chain-interface" }
 test-relay-sproof-builder = { path = "test-sproof-builder" }
