@@ -99,17 +99,11 @@ jobs:
         uses: actions/download-artifact@v3.0.2
         with:
           name: dancebox-runtime
-          path: build
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
+          path: build     
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v3
         with:
-          version: 7        
-      - name: Node  
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18.x
-          cache: "pnpm"
-          cache-dependency-path: tools/pnpm-lock.yaml     
+          node-version: 18.x  
       - name: Download Original Tools
         uses: actions/download-artifact@v3
         with:
@@ -121,8 +115,8 @@ jobs:
         id: generate-release-body
         working-directory: original-tools
         run: |
-          pnpm i
-          pnpm exec ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ github.event.inputs.from }}" --to "${{ github.event.inputs.to }}" --srtool-report-folder '../build/' > ../body.md
+          yarn
+          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ github.event.inputs.from }}" --to "${{ github.event.inputs.to }}" --srtool-report-folder '../build/' > ../body.md      - name: Get runtime version
       - name: Get runtime version
         id: get-runtime-ver
         run: |

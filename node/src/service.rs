@@ -434,8 +434,6 @@ async fn start_node_impl(
     let rpc_builder = {
         let client = client.clone();
         let transaction_pool = transaction_pool.clone();
-        let chain_name = parachain_config.chain_spec.name().to_string();
-        let chain_type = parachain_config.chain_spec.chain_type();
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
@@ -443,10 +441,6 @@ async fn start_node_impl(
                 pool: transaction_pool.clone(),
                 deny_unsafe,
                 command_sink: None,
-                utils: Some(crate::rpc::Utils {
-                    chain_name: chain_name.clone(),
-                    chain_type: chain_type.clone(),
-                }),
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -721,7 +715,6 @@ pub async fn start_node_impl_container(
                 pool: transaction_pool.clone(),
                 deny_unsafe,
                 command_sink: None,
-                utils: None,
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -1318,8 +1311,6 @@ pub fn new_dev(
     let rpc_builder = {
         let client = client.clone();
         let transaction_pool = transaction_pool.clone();
-        let chain_name = config.chain_spec.name().to_string();
-        let chain_type = config.chain_spec.chain_type();
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
@@ -1327,10 +1318,6 @@ pub fn new_dev(
                 pool: transaction_pool.clone(),
                 deny_unsafe,
                 command_sink: command_sink.clone(),
-                utils: Some(crate::rpc::Utils {
-                    chain_name: chain_name.clone(),
-                    chain_type: chain_type.clone(),
-                }),
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
