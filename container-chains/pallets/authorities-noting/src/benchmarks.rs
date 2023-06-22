@@ -18,7 +18,7 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, Pallet},
+    crate::{Call, Config, Pallet, ParaId},
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     frame_benchmarking::{account, benchmarks},
     frame_system::RawOrigin,
@@ -95,6 +95,9 @@ benchmarks! {
             authorities.push(author);
         }
     }: _(RawOrigin::Root, authorities)
+
+    set_orchestrator_para_id {
+    }: _(RawOrigin::Root, ParaId::new(2000))
 
     impl_benchmark_test_suite!(
         Pallet,

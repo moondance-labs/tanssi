@@ -545,6 +545,13 @@ impl pallet_sudo::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+impl pallet_utility::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type PalletsOrigin = OriginCaller;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -560,6 +567,7 @@ construct_runtime!(
         Timestamp: pallet_timestamp = 2,
         ParachainInfo: parachain_info = 3,
         Sudo: pallet_sudo = 4,
+        Utility: pallet_utility = 5,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
