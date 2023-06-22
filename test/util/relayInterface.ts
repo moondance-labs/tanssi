@@ -1,4 +1,4 @@
-import { ApiPromise } from "@moonwall/cli";
+import { ApiPromise } from "@polkadot/api";
 import type { Header, ParaId } from '@polkadot/types/interfaces';
 
 export async function getHeaderFromRelay(relayApi: ApiPromise, paraId: ParaId): Promise<Header | null> {
