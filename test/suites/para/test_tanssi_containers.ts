@@ -10,6 +10,7 @@ import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
 import { alith, BALTATHAR_ADDRESS, customWeb3Request } from "@moonwall/util";
 import { MIN_GAS_PRICE, generateKeyringPair } from "@moonwall/util";
 import { getKeyringNimbusIdHex } from "../../util/keys";
+import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts";
 
 describeSuite({
   id: "ZTN",
@@ -236,29 +237,6 @@ describeSuite({
             spec2002 = await fs.readFile("../specs/template-container-2002.json", 'utf8');
         }
 
-        // Augment paraApi with new RPC method
-        // TODO: latest moonwall version supports this in beforeAll
-        const wsProvider2 = new WsProvider('ws://127.0.0.1:9948');
-        let paraApi2 = await ApiPromise.create({ provider: wsProvider2,
-          rpc: {
-            utils: {
-              raw_chain_spec_into_container_chain_genesis_data: {
-                description: 'Convert a raw chain spec string into a ContainerChainGenesisData',
-                params: [
-                  {
-                    name: 'raw_chain_spec',
-                    type: 'Text'
-                  }
-                ],
-                type: '(u32, TpContainerChainGenesisDataContainerChainGenesisData)'
-              }
-            }
-          }
-        });
-        let spec2002text = paraApi2.createType('Text', spec2002);
-        const containerChainGenesisDataFromRpc = await paraApi2.rpc.utils.raw_chain_spec_into_container_chain_genesis_data(spec2002text);
-        expect(containerChainGenesisDataFromRpc[0].toNumber()).to.be.equal(2002);
-
         // Before registering container chain 2002, ensure that it has 0 blocks
         // Since the RPC doesn't exist at this point, we need to get that from the relay
         const header2002 = await getHeaderFromRelay(relayApi, 2002);
@@ -266,7 +244,9 @@ describeSuite({
         const registered1 = (await paraApi.query.registrar.registeredParaIds());
         expect(registered1.toJSON().includes(2002)).to.be.false;
 
-        const tx = paraApi.tx.registrar.register(2002, containerChainGenesisDataFromRpc[1]);
+        const chainSpec2002 = JSON.parse(spec2002);
+        const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
+        const tx = paraApi.tx.registrar.register(2002, containerChainGenesisData);
         await signAndSendAndInclude(tx, alice);
         const tx2 = paraApi.tx.registrar.markValidForCollating(2002);
         await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx2), alice);
