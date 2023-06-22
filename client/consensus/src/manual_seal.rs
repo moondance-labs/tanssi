@@ -27,7 +27,7 @@ use {
     sp_blockchain::{HeaderBackend, HeaderMetadata},
     sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, Slot, SlotDuration},
     sp_inherents::InherentData,
-    sp_keystore::SyncCryptoStorePtr,
+    sp_keystore::KeystorePtr,
     sp_runtime::{traits::Block as BlockT, Digest, DigestItem},
     sp_timestamp::TimestampInherentData,
     std::{marker::PhantomData, sync::Arc},
@@ -38,7 +38,7 @@ pub struct OrchestratorManualSealAuraConsensusDataProvider<B, C, P> {
     // slot duration
     slot_duration: SlotDuration,
     /// Shared reference to keystore
-    pub keystore: SyncCryptoStorePtr,
+    pub keystore: KeystorePtr,
 
     /// Shared reference to the client
     pub client: Arc<C>,
@@ -58,7 +58,7 @@ where
 {
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
-    pub fn new(client: Arc<C>, keystore: SyncCryptoStorePtr, orchestrator_para_id: ParaId) -> Self {
+    pub fn new(client: Arc<C>, keystore: KeystorePtr, orchestrator_para_id: ParaId) -> Self {
         let slot_duration = sc_consensus_aura::slot_duration(&*client)
             .expect("slot_duration is always present; qed.");
 
@@ -140,7 +140,7 @@ pub struct ContainerManualSealAuraConsensusDataProvider<B, C, P> {
     // slot duration
     slot_duration: SlotDuration,
     /// Shared reference to keystore
-    pub keystore: SyncCryptoStorePtr,
+    pub keystore: KeystorePtr,
 
     /// Shared reference to the client
     pub client: Arc<C>,
@@ -155,7 +155,7 @@ where
 {
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
-    pub fn new(client: Arc<C>, keystore: SyncCryptoStorePtr, slot_duration: SlotDuration) -> Self {
+    pub fn new(client: Arc<C>, keystore: KeystorePtr, slot_duration: SlotDuration) -> Self {
         Self {
             slot_duration,
             keystore,

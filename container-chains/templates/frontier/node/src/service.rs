@@ -16,6 +16,7 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use sc_network::config::FullNetworkConfiguration;
 // std
 use std::{
     collections::BTreeMap,
@@ -53,7 +54,7 @@ use {
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
     sc_service::{
-        BasePath, Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager,
+        Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
 };
@@ -74,12 +75,11 @@ use fc_consensus::FrontierBlockImport;
 pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
     let config_dir = config
         .base_path
-        .as_ref()
-        .map(|base_path| base_path.config_dir(config.chain_spec.id()))
-        .unwrap_or_else(|| {
-            BasePath::from_project("", "", "container").config_dir(config.chain_spec.id())
-        });
-    config_dir.join("frontier").join(path)
+        .config_dir(config.chain_spec.id())
+        .join("frontier")
+        .join(path);
+
+    config_dir
 }
 
 // TODO This is copied from frontier. It should be imported instead after
@@ -87,13 +87,13 @@ pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::P
 pub fn open_frontier_backend<C>(
     client: Arc<C>,
     config: &Configuration,
-) -> Result<Arc<fc_db::Backend<Block>>, String>
+) -> Result<fc_db::kv::Backend<Block>, String>
 where
     C: sp_blockchain::HeaderBackend<Block>,
 {
-    Ok(Arc::new(fc_db::Backend::<Block>::new(
+    Ok(fc_db::kv::Backend::<Block>::new(
         client,
-        &fc_db::DatabaseSettings {
+        &fc_db::kv::DatabaseSettings {
             source: match config.database {
                 DatabaseSource::RocksDb { .. } => DatabaseSource::RocksDb {
                     path: frontier_database_dir(config, "db"),
@@ -112,7 +112,7 @@ where
                 }
             },
         },
-    )?))
+    )?)
 }
 
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
@@ -140,7 +140,7 @@ pub fn new_partial(
             Option<FilterPool>,
             Option<Telemetry>,
             Option<TelemetryWorkerHandle>,
-            Arc<fc_db::Backend<Block>>,
+            fc_db::Backend<Block>,
             FeeHistoryCache,
         ),
     >,
@@ -205,10 +205,9 @@ pub fn new_partial(
     let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
     let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
 
-    let frontier_backend = open_frontier_backend(client.clone(), config)?;
+    let frontier_backend = fc_db::Backend::KeyValue(open_frontier_backend(client.clone(), config)?);
 
-    let frontier_block_import =
-        FrontierBlockImport::new(client.clone(), client.clone(), frontier_backend.clone());
+    let frontier_block_import = FrontierBlockImport::new(client.clone(), client.clone());
 
     let import_queue = nimbus_consensus::import_queue(
         client.clone(),
@@ -284,6 +283,7 @@ async fn start_node_impl(
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
+    let net_config = FullNetworkConfiguration::new(&parachain_config.network);
 
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
@@ -294,6 +294,7 @@ async fn start_node_impl(
             import_queue: params.import_queue,
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
+            net_config,
         })
         .await?;
 
@@ -355,7 +356,10 @@ async fn start_node_impl(
                 client: client.clone(),
                 deny_unsafe,
                 filter_pool: filter_pool.clone(),
-                frontier_backend: frontier_backend.clone(),
+                frontier_backend: match frontier_backend.clone() {
+                    fc_db::Backend::KeyValue(b) => Arc::new(b),
+                    fc_db::Backend::Sql(b) => Arc::new(b),
+                },
                 graph: pool.pool().clone(),
                 pool: pool.clone(),
                 max_past_logs,
@@ -383,7 +387,7 @@ async fn start_node_impl(
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         config: parachain_config,
-        keystore: params.keystore_container.sync_keystore(),
+        keystore: params.keystore_container.keystore(),
         backend,
         network: network.clone(),
         system_rpc_tx,
@@ -411,6 +415,7 @@ async fn start_node_impl(
         relay_chain_slot_duration,
         import_queue: import_queue_service,
         recovery_handle: Box::new(overseer_handle),
+        sync_service,
     };
 
     start_full_node(params)?;
@@ -475,6 +480,8 @@ pub async fn start_dev_node(
             ),
     } = new_partial(&mut config, true)?;
 
+    let net_config = FullNetworkConfiguration::new(&config.network);
+
     let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
@@ -484,6 +491,7 @@ pub async fn start_dev_node(
             import_queue,
             block_announce_validator_builder: None,
             warp_sync_params: None,
+            net_config,
         })?;
 
     if config.offchain_worker.enabled {
@@ -591,7 +599,7 @@ pub async fn start_dev_node(
 				select_chain,
 				consensus_data_provider: Some(Box::new(tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
                     client.clone(),
-                    keystore_container.sync_keystore(),
+                    keystore_container.keystore(),
                     SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION.into())
                 ))),
 				create_inherent_data_providers: move |block: H256, ()| {
@@ -678,7 +686,10 @@ pub async fn start_dev_node(
                 client: client.clone(),
                 deny_unsafe,
                 filter_pool: filter_pool.clone(),
-                frontier_backend: frontier_backend.clone(),
+                frontier_backend: match frontier_backend.clone() {
+                    fc_db::Backend::KeyValue(b) => Arc::new(b),
+                    fc_db::Backend::Sql(b) => Arc::new(b),
+                },
                 graph: pool.pool().clone(),
                 pool: pool.clone(),
                 max_past_logs,
@@ -703,7 +714,7 @@ pub async fn start_dev_node(
     let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         network,
         client,
-        keystore: keystore_container.sync_keystore(),
+        keystore: keystore_container.keystore(),
         task_manager: &mut task_manager,
         transaction_pool,
         rpc_builder: Box::new(rpc_builder),

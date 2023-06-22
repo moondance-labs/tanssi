@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
+use sc_network::config::FullNetworkConfiguration;
 use {
     crate::{
         cli::ContainerChainCli,
@@ -58,7 +59,7 @@ use {
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_core::{traits::SpawnEssentialNamed, H256},
-    sp_keystore::SyncCryptoStorePtr,
+    sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{
         str::FromStr,
@@ -206,7 +207,7 @@ pub fn new_partial(
 /// and start/stop container chains on demand. The check runs on every new block.
 pub fn build_check_assigned_para_id(
     client: Arc<ParachainClient>,
-    sync_keystore: SyncCryptoStorePtr,
+    sync_keystore: KeystorePtr,
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
     spawner: impl SpawnEssentialNamed,
 ) {
@@ -247,7 +248,7 @@ pub fn build_check_assigned_para_id(
 /// detect the assignment change after importing block 14.
 fn check_assigned_para_id(
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
-    sync_keystore: SyncCryptoStorePtr,
+    sync_keystore: KeystorePtr,
     initial_assigned_para_id: Arc<Mutex<Option<ParaId>>>,
     client_set_aside_for_cidp: Arc<ParachainClient>,
     block_hash: H256,
@@ -409,6 +410,7 @@ async fn start_node_impl(
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
+    let net_config = FullNetworkConfiguration::new(&parachain_config.network);
 
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
@@ -419,6 +421,7 @@ async fn start_node_impl(
             import_queue: params.import_queue,
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
+            net_config,
         })
         .await?;
 
@@ -453,7 +456,7 @@ async fn start_node_impl(
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         config: parachain_config,
-        keystore: params.keystore_container.sync_keystore(),
+        keystore: params.keystore_container.keystore(),
         backend: backend.clone(),
         network: network.clone(),
         system_rpc_tx,
@@ -501,7 +504,7 @@ async fn start_node_impl(
         overseer_handle: overseer_handle.clone(),
     };
 
-    let sync_keystore = params.keystore_container.sync_keystore();
+    let sync_keystore = params.keystore_container.keystore();
     let mut collate_on_tanssi = None;
 
     if validator {
@@ -514,7 +517,7 @@ async fn start_node_impl(
             relay_chain_interface.clone(),
             transaction_pool,
             sync_service.clone(),
-            params.keystore_container.sync_keystore(),
+            params.keystore_container.keystore(),
             force_authoring,
             para_id,
         )?;
@@ -547,6 +550,7 @@ async fn start_node_impl(
                 .expect("Command line arguments do not allow this. qed"),
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle.clone()),
+            sync_service,
         };
 
         let client = client.clone();
@@ -578,6 +582,7 @@ async fn start_node_impl(
             relay_chain_slot_duration,
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
+            sync_service,
         };
 
         start_full_node(params)?;
@@ -645,7 +650,7 @@ pub async fn start_node_impl_container(
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     collator_key: Option<CollatorPair>,
-    keystore: SyncCryptoStorePtr,
+    keystore: KeystorePtr,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
     collator: bool,
@@ -682,6 +687,7 @@ pub async fn start_node_impl_container(
 
     let force_authoring = parachain_config.force_authoring;
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
+    let net_config = FullNetworkConfiguration::new(&parachain_config.network);
 
     log::info!("are we collators? {:?}", collator);
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
@@ -693,6 +699,7 @@ pub async fn start_node_impl_container(
             import_queue: params_import_queue,
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
+            net_config,
         })
         .await?;
 
@@ -758,7 +765,7 @@ pub async fn start_node_impl_container(
             relay_chain_interface.clone(),
             orchestrator_chain_interface.clone(),
             transaction_pool,
-            sync_service,
+            sync_service.clone(),
             keystore,
             force_authoring,
             para_id,
@@ -779,6 +786,7 @@ pub async fn start_node_impl_container(
             collator_key: collator_key.expect("Command line arguments do not allow this. qed"),
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle),
+            sync_service,
         };
 
         start_collator(params).await?;
@@ -792,6 +800,7 @@ pub async fn start_node_impl_container(
             relay_chain_slot_duration,
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
+            sync_service,
         };
 
         start_full_node(params)?;
@@ -828,7 +837,7 @@ fn build_consensus_container(
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
-    keystore: SyncCryptoStorePtr,
+    keystore: KeystorePtr,
     force_authoring: bool,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
@@ -975,7 +984,7 @@ fn build_consensus_orchestrator(
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
-    keystore: SyncCryptoStorePtr,
+    keystore: KeystorePtr,
     force_authoring: bool,
     para_id: ParaId,
 ) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error> {
@@ -1143,6 +1152,8 @@ pub fn new_dev(
         other: (block_import, mut telemetry, _telemetry_worker_handle),
     } = new_partial_dev(&config)?;
 
+    let net_config = FullNetworkConfiguration::new(&config.network);
+
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
@@ -1152,6 +1163,7 @@ pub fn new_dev(
             import_queue,
             block_announce_validator_builder: None,
             warp_sync_params: None,
+            net_config,
         })?;
 
     if config.offchain_worker.enabled {
@@ -1253,7 +1265,7 @@ pub fn new_dev(
                 consensus_data_provider: Some(Box::new(
                     tc_consensus::OrchestratorManualSealAuraConsensusDataProvider::new(
                         client.clone(),
-                        keystore_container.sync_keystore(),
+                        keystore_container.keystore(),
                         para_id,
                     ),
                 )),
@@ -1330,7 +1342,7 @@ pub fn new_dev(
         transaction_pool,
         task_manager: &mut task_manager,
         config,
-        keystore: keystore_container.sync_keystore(),
+        keystore: keystore_container.keystore(),
         backend,
         network,
         system_rpc_tx,

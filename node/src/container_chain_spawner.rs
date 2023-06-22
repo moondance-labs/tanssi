@@ -26,7 +26,7 @@ use {
     polkadot_primitives::CollatorPair,
     sc_service::SpawnTaskHandle,
     sp_api::ProvideRuntimeApi,
-    sp_keystore::SyncCryptoStorePtr,
+    sp_keystore::KeystorePtr,
     std::{
         collections::HashMap,
         future::Future,
@@ -50,7 +50,7 @@ pub struct ContainerChainSpawner {
     pub relay_chain: String,
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
     pub collator_key: Option<CollatorPair>,
-    pub sync_keystore: SyncCryptoStorePtr,
+    pub sync_keystore: KeystorePtr,
     pub orchestrator_para_id: ParaId,
     pub validator: bool,
     pub spawn_handle: SpawnTaskHandle,

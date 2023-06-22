@@ -31,7 +31,10 @@ frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
 pallet-aura = { workspace = true }
 pallet-authorship = { workspace = true }
-pallet-balances = { workspace = true }
+# TODO: we enable this feature here, but this feature should not be enabled when compiling
+# the other substrate-based runtimes. Check if cargo does enabled it automatically because
+# it probably does (otherwise it would have to compile this crate twice)
+pallet-balances = { workspace = true, features = ["insecure_zero_ed"] }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }

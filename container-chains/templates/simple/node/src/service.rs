@@ -20,6 +20,7 @@
 use std::{sync::Arc, time::Duration};
 
 use cumulus_client_cli::CollatorOptions;
+use sc_network::config::FullNetworkConfiguration;
 // Local Runtime Types
 use container_chain_template_simple_runtime::{opaque::Block, RuntimeApi};
 
@@ -189,6 +190,7 @@ async fn start_node_impl(
 
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
+    let net_config = FullNetworkConfiguration::new(&parachain_config.network);
 
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
@@ -199,6 +201,7 @@ async fn start_node_impl(
             import_queue: params.import_queue,
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
+            net_config,
         })
         .await?;
 
@@ -232,7 +235,7 @@ async fn start_node_impl(
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         config: parachain_config,
-        keystore: params.keystore_container.sync_keystore(),
+        keystore: params.keystore_container.keystore(),
         backend,
         network: network.clone(),
         system_rpc_tx,
@@ -261,6 +264,7 @@ async fn start_node_impl(
         relay_chain_slot_duration,
         import_queue: import_queue_service,
         recovery_handle: Box::new(overseer_handle),
+        sync_service,
     };
 
     start_full_node(params)?;
