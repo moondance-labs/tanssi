@@ -32,7 +32,7 @@ describeSuite({
       relayApi = context.polkadotJs({ apiName: "Relay" });
       container2000Api = context.polkadotJs({ apiName: "Container2000" });
       container2001Api = context.polkadotJs({ apiName: "Container2001" });
-      ethersSigner = context.ethersSigner();
+      ethersSigner = context.ethers();
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
       expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
