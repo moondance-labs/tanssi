@@ -65,6 +65,9 @@ jobs:
   publish-draft-release:
     runs-on: ubuntu-latest
     needs: ["build-binary"]
+    strategy:
+      matrix:
+        cpu: ["", "skylake", "znver3"]
     outputs:
       release_url: ${{ steps.create-release.outputs.html_url }}
       asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
@@ -107,6 +110,7 @@ jobs:
           draft: true
       - name: Upload tanssi
         uses: actions/upload-release-asset@v1
+        if: ${{ matrix.cpu == '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -114,26 +118,19 @@ jobs:
           asset_path: build/tanssi-node
           asset_name: tanssi-node
           asset_content_type: application/octet-stream
-      - name: Upload tanssi skylake
+      - name: Upload tanssi custom binary
         uses: actions/upload-release-asset@v1
+        if: ${{ matrix.cpu != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: build/tanssi-node-skylake
-          asset_name: tanssi-node-skylake
-          asset_content_type: application/octet-stream
-      - name: Upload tanssi znver3
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: build/tanssi-node-znver3
-          asset_name: tanssi-node-znver3
+          asset_path: build/tanssi-node-${{matrix.cpu}}
+          asset_name: tanssi-node-${{matrix.cpu}}
           asset_content_type: application/octet-stream
       - name: Upload frontier-template
         uses: actions/upload-release-asset@v1
+        if: ${{ matrix.cpu == '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -141,21 +138,13 @@ jobs:
           asset_path: build/container-chain-template-frontier-node
           asset_name: container-chain-template-frontier-node
           asset_content_type: application/octet-stream
-      - name: Upload frontier-template skylake
+      - name: Upload frontier-template custom
         uses: actions/upload-release-asset@v1
+        if: ${{ matrix.cpu != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: build/container-chain-template-frontier-node-skylake
-          asset_name: container-chain-template-frontier-node-skylake
-          asset_content_type: application/octet-stream
-      - name: Upload frontier-template znver3
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: build/container-chain-template-frontier-node-znver3
-          asset_name: container-chain-template-frontier-node-znver3
+          asset_path: build/container-chain-template-frontier-node-${{matrix.cpu}}
+          asset_name: container-chain-template-frontier-node-${{matrix.cpu}}
           asset_content_type: application/octet-stream
