@@ -2,7 +2,7 @@ name: Publish Runtime Draft
 
 # The code (like generate-release-body) will be taken from the tag versions, not master
 on:
-  workflow_dispatch:
+  on_push:
     inputs:
       from:
         description: tag (ex. runtime-53) to retrieve commit diff from
@@ -122,7 +122,7 @@ jobs:
         working-directory: original-tools
         run: |
           pnpm i
-          pnpm exec ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ github.event.inputs.from }}" --to "${{ github.event.inputs.to }}" --srtool-report-folder '../build/' > ../body.md
+          pnpm exec ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "test-0-1" --to "test-1" --srtool-report-folder '../build/' > ../body.md
       - name: Get runtime version
         id: get-runtime-ver
         run: |
