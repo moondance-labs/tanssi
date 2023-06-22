@@ -25,6 +25,7 @@ sp-core = { workspace = true }
 sp-inherents = { workspace = true }
 sp-io = { workspace = true }
 sp-runtime = { workspace = true, optional = true }
+sp-std = { workspace = true }
 sp-trie = { workspace = true }
 
 sp-state-machine = { workspace = true, optional = true }

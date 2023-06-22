@@ -810,6 +810,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-state-machine",
+ "sp-std",
  "sp-trie",
  "tc-consensus",
  "tc-orchestrator-chain-interface",
