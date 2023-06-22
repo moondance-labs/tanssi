@@ -81,7 +81,7 @@ jobs:
           mkdir -p runtimes
           cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.wasm runtimes/;
           cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/orchestrator-runtime/orchestrator_runtime.compact.compressed.wasm runtimes/;
+          cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
 
       - name: Upload runtimes
         uses: actions/upload-artifact@v3.1.2

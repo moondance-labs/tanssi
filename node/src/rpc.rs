@@ -23,7 +23,7 @@
 
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 use {
-    orchestrator_runtime::{opaque::Block, AccountId, Index as Nonce},
+    dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
     polkadot_primitives::Hash,
     sc_client_api::AuxStore,
     sc_consensus_manual_seal::{
