@@ -68,6 +68,7 @@ jobs:
     strategy:
       matrix:
         cpu: ["", "skylake", "znver3"]
+        node: ["tanssi-node", "container-chain-template-frontier-node"]
     outputs:
       release_url: ${{ steps.create-release.outputs.html_url }}
       asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
@@ -108,43 +109,23 @@ jobs:
           release_name: Tanssi ${{ github.event.inputs.to }}
           body_path: body.md
           draft: true
-      - name: Upload tanssi
+      - name: Upload tanssi and templates
         uses: actions/upload-release-asset@v1
         if: ${{ matrix.cpu == '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: build/tanssi-node
-          asset_name: tanssi-node
+          asset_path: build/${{matrix.node}}
+          asset_name: ${{matrix.node}}
           asset_content_type: application/octet-stream
-      - name: Upload tanssi custom binary
+      - name: Upload tanssi and templates custom binaries
         uses: actions/upload-release-asset@v1
         if: ${{ matrix.cpu != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: build/tanssi-node-${{matrix.cpu}}
-          asset_name: tanssi-node-${{matrix.cpu}}
-          asset_content_type: application/octet-stream
-      - name: Upload frontier-template
-        uses: actions/upload-release-asset@v1
-        if: ${{ matrix.cpu == '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: build/container-chain-template-frontier-node
-          asset_name: container-chain-template-frontier-node
-          asset_content_type: application/octet-stream
-      - name: Upload frontier-template custom
-        uses: actions/upload-release-asset@v1
-        if: ${{ matrix.cpu != '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: build/container-chain-template-frontier-node-${{matrix.cpu}}
-          asset_name: container-chain-template-frontier-node-${{matrix.cpu}}
+          asset_path: build/${{matrix.node}}-${{matrix.cpu}}
+          asset_name: ${{matrix.node}}-${{matrix.cpu}}
           asset_content_type: application/octet-stream
