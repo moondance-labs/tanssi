@@ -665,6 +665,13 @@ where
 
         let authorities_len = self.authorities_len(&aux_data);
 
+        info!(
+            target: logging_target,
+            "sync_oracle offline? {}, authorities_len: {:?}",
+            self.sync_oracle().is_offline(),
+            authorities_len,
+        );
+
         if !self.force_authoring()
             && self.sync_oracle().is_offline()
             && authorities_len.map(|a| a > 1).unwrap_or(false)
