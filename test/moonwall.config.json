@@ -28,7 +28,7 @@
       "testFileDir": ["suites/dev-frontier-template"],
       "multiThreads": true,
       "html": false,
-      "contracts": "contracts/",
+      "contracts": "helpers/",
       "foundation": {
         "type": "dev",
         "launchSpec": [
