@@ -716,12 +716,12 @@ impl_runtime_apis! {
         }
 
         fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
-			Runtime::metadata_at_version(version)
-		}
+            Runtime::metadata_at_version(version)
+        }
 
-		fn metadata_versions() -> Vec<u32> {
-			Runtime::metadata_versions()
-		}
+        fn metadata_versions() -> Vec<u32> {
+            Runtime::metadata_versions()
+        }
     }
 
     impl sp_block_builder::BlockBuilder<Block> for Runtime {

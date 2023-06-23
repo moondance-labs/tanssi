@@ -53,9 +53,7 @@ use {
     sc_consensus::ImportQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
-    sc_service::{
-        Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager,
-    },
+    sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager},
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
 };
 
