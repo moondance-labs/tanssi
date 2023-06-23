@@ -41,6 +41,11 @@ use {
     std::net::SocketAddr,
 };
 
+#[cfg(feature = "try-runtime")]
+use try_runtime_cli::block_building_info::substrate_info;
+#[cfg(feature = "try-runtime")]
+const SLOT_DURATION: u64 = 12;
+
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
         "dev" => Box::new(chain_spec::development_config(para_id, None)),
@@ -308,9 +313,12 @@ pub fn run() -> Result<()> {
                 sc_service::TaskManager::new(runner.config().tokio_handle.clone(), *registry)
                     .map_err(|e| format!("Error: {:?}", e))?;
 
+            let info_provider = substrate_info(SLOT_DURATION);
             runner.async_run(|_| {
                 Ok((
-                    cmd.run::<Block, HostFunctionsOf<TemplateRuntimeExecutor>>(),
+                    cmd.run::<Block, HostFunctionsOf<TemplateRuntimeExecutor>, _>(Some(
+                        info_provider,
+                    )),
                     task_manager,
                 ))
             })
