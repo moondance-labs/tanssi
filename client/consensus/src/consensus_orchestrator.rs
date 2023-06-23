@@ -419,16 +419,28 @@ where
         epoch_data: &Self::AuxData,
     ) -> Option<Self::Claim> {
         let expected_author = slot_author::<P>(slot, epoch_data);
-        expected_author.and_then(|p| {
-            if SyncCryptoStore::has_keys(
-                &*self.keystore,
-                &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
-            ) {
-                Some(p.clone())
-            } else {
-                None
-            }
-        })
+        // if not running with force-authoring, just do the usual slot check
+        if !self.force_authoring {
+            expected_author.and_then(|p| {
+                if SyncCryptoStore::has_keys(
+                    &*self.keystore,
+                    &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
+                ) {
+                    Some(p.clone())
+                } else {
+                    None
+                }
+            })
+        }
+        // if running with force-authoring, as long as you are eligible, then propose
+        else {
+            epoch_data.iter().find(|key| {
+                SyncCryptoStore::has_keys(
+                    &*self.keystore,
+                    &[(key.to_raw_vec(), sp_application_crypto::key_types::AURA)]
+                )
+            }).cloned()
+        }
     }
 
     fn pre_digest_data(&self, slot: Slot, claim: &Self::Claim) -> Vec<sp_runtime::DigestItem> {
