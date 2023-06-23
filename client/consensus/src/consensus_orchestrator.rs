@@ -435,12 +435,15 @@ where
         // if running with force-authoring, as long as you are in the authority set,
         // propose
         else {
-            epoch_data.iter().find(|key| {
-                SyncCryptoStore::has_keys(
-                    &*self.keystore,
-                    &[(key.to_raw_vec(), sp_application_crypto::key_types::AURA)]
-                )
-            }).cloned()
+            epoch_data
+                .iter()
+                .find(|key| {
+                    SyncCryptoStore::has_keys(
+                        &*self.keystore,
+                        &[(key.to_raw_vec(), sp_application_crypto::key_types::AURA)],
+                    )
+                })
+                .cloned()
         }
     }
 
