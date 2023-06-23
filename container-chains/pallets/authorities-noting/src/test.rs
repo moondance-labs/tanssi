@@ -15,12 +15,31 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::mock::*,
+    crate::{
+        mock::*,
+        {OrchestratorParaId, ParaId},
+    },
     sp_runtime::traits::BlakeTwo256,
     test_relay_sproof_builder::{
         AuthorityAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
     },
 };
+
+#[test]
+fn genesis_config_orchestrator_para_id() {
+    new_test_ext().execute_with(|| {
+        assert_eq!(OrchestratorParaId::<Test>::get(), 1000u32.into());
+    });
+}
+
+#[test]
+fn genesis_config_orchestrator_para_id_storage_update() {
+    new_test_ext().execute_with(|| {
+        let new_para_id = ParaId::new(2000);
+        OrchestratorParaId::<Test>::put(&new_para_id);
+        assert_eq!(OrchestratorParaId::<Test>::get(), new_para_id);
+    });
+}
 
 #[test]
 fn test_authorities_insertion_right_para_id() {

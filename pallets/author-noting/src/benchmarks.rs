@@ -17,14 +17,13 @@
 #![cfg(feature = "runtime-benchmarks")]
 
 //! Benchmarking
-use cumulus_pallet_parachain_system::RelaychainStateProvider;
-use tp_traits::GetContainerChainAuthor;
-use tp_traits::GetCurrentContainerChains;
 use {
     crate::{Call, Config, Pallet},
+    cumulus_pallet_parachain_system::RelaychainStateProvider,
     frame_benchmarking::{account, benchmarks},
     frame_system::RawOrigin,
     sp_std::vec,
+    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
 };
 
 mod test_sproof {

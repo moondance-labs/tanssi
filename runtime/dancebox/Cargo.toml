@@ -1,7 +1,7 @@
 [package]
-name = "orchestrator-runtime"
+name = "dancebox-runtime"
 authors = { workspace = true }
-description = "Orchestrator runtime"
+description = "Dancebox runtime"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
@@ -44,6 +44,7 @@ pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
+pallet-utility = { workspace = true }
 sp-api = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-block-builder = { workspace = true }
