@@ -35,8 +35,7 @@
             "binPath": "../target/release/container-chain-template-frontier-node",
             "options": [
                 "--dev",
-                "--sealing=manual",
-                "--para-id 2001"
+                "--sealing=manual"
             ]
           }
         ]
