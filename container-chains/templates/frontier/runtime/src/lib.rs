@@ -456,7 +456,7 @@ impl pallet_timestamp::Config for Runtime {
     type Moment = u64;
     type OnTimestampSet = ccp_author_verifiability::OnTimestampSet<
         <Self as pallet_author_inherent::Config>::SlotBeacon,
-        ConstU64<{ SLOT_DURATION }>
+        ConstU64<{ SLOT_DURATION }>,
     >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();

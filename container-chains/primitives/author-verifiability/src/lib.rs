@@ -1,4 +1,3 @@
-
 // Copyright (C) Moondance Labs Ltd.
 // This file is part of Tanssi.
 
@@ -17,12 +16,11 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::traits::Get;
-use sp_runtime::traits::Zero;
-use sp_std::marker::PhantomData;
+use {frame_support::traits::Get, sp_runtime::traits::Zero, sp_std::marker::PhantomData};
 
 pub struct OnTimestampSet<SlotBeacon, SlotDuration>(PhantomData<(SlotBeacon, SlotDuration)>);
-impl<SlotBeacon, SlotDuration> frame_support::traits::OnTimestampSet<u64> for OnTimestampSet<SlotBeacon, SlotDuration> 
+impl<SlotBeacon, SlotDuration> frame_support::traits::OnTimestampSet<u64>
+    for OnTimestampSet<SlotBeacon, SlotDuration>
 where
     SlotBeacon: nimbus_primitives::SlotBeacon,
     SlotDuration: Get<u64>,
@@ -50,9 +48,9 @@ impl nimbus_primitives::AccountLookup<nimbus_primitives::NimbusId> for Container
 }
 
 pub struct AuraDigestSlotBeacon<ContainerRuntime>(PhantomData<ContainerRuntime>);
-impl<ContainerRuntime> nimbus_primitives::SlotBeacon for AuraDigestSlotBeacon<ContainerRuntime> 
+impl<ContainerRuntime> nimbus_primitives::SlotBeacon for AuraDigestSlotBeacon<ContainerRuntime>
 where
-    ContainerRuntime: frame_system::Config
+    ContainerRuntime: frame_system::Config,
 {
     fn slot() -> u32 {
         use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
