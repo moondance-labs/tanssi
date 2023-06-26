@@ -68,14 +68,11 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
     ) -> Result<(), sp_inherents::Error> {
         let mut sproof_builder = ParaHeaderSproofBuilder::default();
 
+        let container_chains = BTreeMap::from_iter([(self.container_para_id, self.authorities.clone())]);
         let assignment = AuthorityAssignmentSproofBuilder::<NimbusId> {
             authority_assignment: AssignedCollators {
                 orchestrator_chain: vec![],
-                container_chains: {
-                    let mut chains = BTreeMap::new();
-                    chains.insert(self.container_para_id, self.authorities.clone());
-                    chains
-                },
+                container_chains,
             },
             session_index: 0,
         };
