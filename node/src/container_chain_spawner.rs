@@ -133,12 +133,24 @@ impl ContainerChainSpawner {
                     )
                 })?;
 
+            let boot_nodes_raw = orchestrator_runtime_api
+                .boot_nodes(
+                    orchestrator_chain_info.best_hash,
+                    container_chain_para_id.into(),
+                )
+                .expect("error");
+            let boot_nodes: Vec<String> = boot_nodes_raw
+                .into_iter()
+                .map(|x| String::from_utf8(x).map_err(|e| format!("{}", e)))
+                .collect::<Result<_, _>>()?;
+
             container_chain_cli
                 .preload_chain_spec_from_genesis_data(
                     container_chain_para_id.into(),
                     genesis_data,
                     chain_type.clone(),
                     relay_chain.clone(),
+                    boot_nodes,
                 )
                 .map_err(|e| format!("failed to create container chain chain spec from on chain genesis data: {}", e))?;
 

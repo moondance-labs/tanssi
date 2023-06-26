@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use sc_network::config::MultiaddrWithPeerId;
+
 use {
     crate::{chain_spec::RawGenesisConfig, service::Sealing},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
@@ -308,12 +310,19 @@ impl ContainerChainCli {
         genesis_data: ContainerChainGenesisData,
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
+        boot_nodes: Vec<String>,
     ) -> Result<crate::chain_spec::RawChainSpec, String> {
         let name = String::from_utf8(genesis_data.name).map_err(|_e| format!("Invalid name"))?;
         let id: String = String::from_utf8(genesis_data.id).map_err(|_e| format!("Invalid id"))?;
         let storage_raw: BTreeMap<_, _> =
             genesis_data.storage.into_iter().map(|x| x.into()).collect();
-        let boot_nodes = vec![];
+        let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
+            .into_iter()
+            .map(|x| {
+                x.parse::<MultiaddrWithPeerId>()
+                    .map_err(|e| format!("{}", e))
+            })
+            .collect::<Result<_, _>>()?;
         let telemetry_endpoints = None;
         let protocol_id = Some(format!("container-chain-{}", para_id));
         let fork_id = genesis_data
@@ -354,9 +363,15 @@ impl ContainerChainCli {
         genesis_data: ContainerChainGenesisData,
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
+        boot_nodes: Vec<String>,
     ) -> Result<(), String> {
-        let chain_spec =
-            Self::chain_spec_from_genesis_data(para_id, genesis_data, chain_type, relay_chain)?;
+        let chain_spec = Self::chain_spec_from_genesis_data(
+            para_id,
+            genesis_data,
+            chain_type,
+            relay_chain,
+            boot_nodes,
+        )?;
         self.preloaded_chain_spec = Some(Box::new(chain_spec));
 
         Ok(())

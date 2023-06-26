@@ -332,7 +332,7 @@ fn testnet_genesis(
                 .chain(
                     mock_container_chains
                         .iter()
-                        .map(|x| (*x, mock_container_chain_genesis_data(*x))),
+                        .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
                 )
                 .collect(),
         },

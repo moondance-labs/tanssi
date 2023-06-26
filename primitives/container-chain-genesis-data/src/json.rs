@@ -25,7 +25,7 @@ use {
 /// a `ContainerChainGenesisData` that can be used to recreate the ChainSpec later.
 pub fn container_chain_genesis_data_from_path(
     path: &str,
-) -> Result<(ParaId, ContainerChainGenesisData), String> {
+) -> Result<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>), String> {
     // Read raw chainspec file
     let raw_chainspec_str = std::fs::read_to_string(path)
         .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))?;
@@ -35,7 +35,7 @@ pub fn container_chain_genesis_data_from_path(
 
 pub fn container_chain_genesis_data_from_str(
     raw_chainspec_str: &str,
-) -> Result<(ParaId, ContainerChainGenesisData), String> {
+) -> Result<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>), String> {
     let raw_chainspec_json: serde_json::Value =
         serde_json::from_str(&raw_chainspec_str).map_err(|e| e.to_string())?;
 
@@ -44,7 +44,7 @@ pub fn container_chain_genesis_data_from_str(
 
 pub fn container_chain_genesis_data_from_json(
     raw_chainspec_json: &serde_json::Value,
-) -> Result<(ParaId, ContainerChainGenesisData), String> {
+) -> Result<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>), String> {
     // TODO: we are manually parsing a json file here, maybe we can leverage the existing
     // chainspec deserialization code.
     // TODO: this bound checking may panic, but that shouldn't be too dangerous because this
@@ -57,6 +57,15 @@ pub fn container_chain_genesis_data_from_json(
     let storage = storage_from_chainspec_json(genesis_raw_top_json)?;
     let properties_json = &raw_chainspec_json["properties"];
     let properties = properties_from_chainspec_json(&properties_json);
+    let boot_nodes: Vec<serde_json::Value> =
+        raw_chainspec_json["bootNodes"].as_array().unwrap().clone();
+    let boot_nodes: Vec<Vec<u8>> = boot_nodes
+        .into_iter()
+        .map(|x| {
+            let bytes = x.as_str().unwrap().as_bytes();
+            bytes.to_vec()
+        })
+        .collect();
 
     Ok((
         para_id.into(),
@@ -68,6 +77,7 @@ pub fn container_chain_genesis_data_from_json(
             extensions: vec![],
             properties,
         },
+        boot_nodes,
     ))
 }
 
