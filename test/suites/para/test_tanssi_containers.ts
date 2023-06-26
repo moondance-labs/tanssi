@@ -71,6 +71,7 @@ describeSuite({
       title: "Test Tanssi assignation is correct",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+        // TODO: fix once we have types
         const tanssiCollators = (
           await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
         ).toJSON().orchestratorChain;
@@ -85,6 +86,7 @@ describeSuite({
       title: "Test assignation did not change",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+        // TODO: fix once we have types
         const allCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
         const expectedAllCollators = {
           orchestratorChain: [
@@ -133,6 +135,7 @@ describeSuite({
           await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
         ).toJSON().containerChains[paraId];
 
+        // TODO: fix once we have types
         const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
 
         expect(containerChainCollators).to.deep.equal(writtenCollators);
@@ -164,6 +167,7 @@ describeSuite({
         const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
         const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
 
+        // TODO: fix once we have types
         const containerChainCollators2000 = assignment.containerChains.toJSON()[paraId2000.toString()];
         const containerChainCollators2001 = assignment.containerChains.toJSON()[paraId2001.toString()];
 
@@ -182,6 +186,7 @@ describeSuite({
       test: async function () {
         const authorities = await paraApi.query.aura.authorities();
         const author = await getAuthorFromDigest(paraApi);
+        // TODO: fix once we have types
         expect(authorities.toJSON().includes(author.toString())).to.be.true;
       },
     });
@@ -190,6 +195,7 @@ describeSuite({
       id: "T10",
       title: "Test frontier template isEthereum",
       test: async function () {
+        // TODO: fix once we have types
         const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
         expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
         const genesisData2001 = await paraApi.query.registrar.paraGenesisData(2001);
@@ -231,6 +237,7 @@ describeSuite({
         const header2002 = await getHeaderFromRelay(relayApi, 2002);
         expect(header2002.number.toNumber()).to.be.equal(0);
         const registered1 = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
         expect(registered1.toJSON().includes(2002)).to.be.false;
 
         const chainSpec2002 = JSON.parse(spec2002);
@@ -249,6 +256,7 @@ describeSuite({
 
         // Check that pending para ids contains 2002
         const registered = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
         expect(registered.toJSON().includes(2002)).to.be.true;
 
         // This ws api is only available after the node detects its assignment
@@ -293,6 +301,7 @@ describeSuite({
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         const paraId = (await container2002Api.query.parachainInfo.parachainId()).toString();
+        // TODO: fix once we have types
         const containerChainCollators = (
           await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
         ).toJSON().containerChains[paraId];
@@ -312,6 +321,7 @@ describeSuite({
         let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
         const registered1 = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
         expect(registered1.toJSON().includes(2002)).to.be.true;
 
         const tx = paraApi.tx.registrar.deregister(2002);
@@ -322,6 +332,7 @@ describeSuite({
 
         // Check that pending para ids removes 2002
         const registered = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
         expect(registered.toJSON().includes(2002)).to.be.false;
       },
     });
@@ -369,6 +380,7 @@ describeSuite({
 async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors) {
   // These are the authorities for the next block, so we need to wait 1 block before fetching the first author
   const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+  // TODO: fix once we have types
   const authorities = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
   const actualAuthors = [];
   const blockNumbers = [];
