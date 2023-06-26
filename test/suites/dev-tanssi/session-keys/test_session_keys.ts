@@ -27,11 +27,13 @@ describeSuite({
         test: async function () {
             // for session 0
             const keys = await polkadotJs.query.authorityMapping.authorityIdMapping(0);
+            // TODO: fix once we have types
             expect(keys.toJSON()[u8aToHex(alice.publicKey)]).to.be.eq(alice.address);
             expect(keys.toJSON()[u8aToHex(bob.publicKey)]).to.be.eq(bob.address);
 
             // Check authorities are correct
             const authorities = (await polkadotJs.query.aura.authorities());
+            // TODO: fix once we have types
             expect(authorities.toJSON()).to.deep.equal([u8aToHex(alice.publicKey)]);
         },
     });
@@ -70,9 +72,11 @@ describeSuite({
 
             // The change should have been applied, and now both aura and authorityMapping should reflect
             const keys = await polkadotJs.query.authorityMapping.authorityIdMapping(2);
+            // TODO: fix once we have types
             expect(keys.toJSON()[u8aToHex(newKey)]).to.be.eq(alice.address);
 
             const authorities = (await polkadotJs.query.aura.authorities());
+            // TODO: fix once we have types
             expect(authorities.toJSON()).to.deep.equal([
                 u8aToHex(newKey),
             ]);

@@ -1,6 +1,7 @@
 tmp/*
 *.sqlite
 *.wasm
+node_modules/
 
 moonbeam
 polkadot
