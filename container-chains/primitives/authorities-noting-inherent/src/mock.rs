@@ -34,7 +34,6 @@ use {
         ParachainInherentData, INHERENT_IDENTIFIER as PARACHAIN_SYSTEM_INHERENT_IDENTIFIER,
     },
     nimbus_primitives::NimbusId,
-    sp_core::Pair,
     sp_inherents::{InherentData, InherentDataProvider},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::{
@@ -43,14 +42,6 @@ use {
     },
     tp_collator_assignment::AssignedCollators,
 };
-
-/// Helper function to generate a crypto pair from seed
-fn get_aura_id_from_seed(seed: &str) -> NimbusId {
-    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
-        .into()
-}
 
 pub struct MockAuthoritiesNotingInherentDataProvider {
     /// The current block number of the local block chain (the parachain)
@@ -63,6 +54,8 @@ pub struct MockAuthoritiesNotingInherentDataProvider {
     pub relay_blocks_per_para_block: u32,
     /// Orchestrator ParaId
     pub orchestrator_para_id: ParaId,
+    /// Container ParaId,
+    pub container_para_id: ParaId,
     /// Orchestrator ParaId
     pub authorities: Vec<NimbusId>,
 }
@@ -80,7 +73,7 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
                 orchestrator_chain: vec![],
                 container_chains: {
                     let mut chains = BTreeMap::new();
-                    chains.insert(ParaId::from(2001), vec![get_aura_id_from_seed("alice")]);
+                    chains.insert(self.container_para_id, self.authorities.clone());
                     chains
                 },
             },

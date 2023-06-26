@@ -354,12 +354,13 @@ pub fn run() -> Result<()> {
                 let dev_service =
 					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
 
+                let id = ParaId::from(para_id);
+
 				if dev_service {
-					return crate::service::start_dev_node(config, cli.run.sealing, rpc_config, hwbench).await
+					return crate::service::start_dev_node(config, cli.run.sealing, rpc_config, id, hwbench).await
                     .map_err(Into::into)
 				}
 
-				let id = ParaId::from(para_id);
 
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);

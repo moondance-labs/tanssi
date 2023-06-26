@@ -31,7 +31,6 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::ParaId,
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,

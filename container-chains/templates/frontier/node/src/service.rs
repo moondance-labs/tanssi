@@ -456,6 +456,7 @@ pub async fn start_dev_node(
     mut config: Configuration,
     sealing: Sealing,
     rpc_config: crate::cli::RpcConfig,
+    para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<TaskManager, sc_service::error::Error> {
     use {
@@ -637,6 +638,7 @@ pub async fn start_dev_node(
                                 relay_offset: 1000,
                                 relay_blocks_per_para_block: 2,
                                 orchestrator_para_id: crate::chain_spec::ORCHESTRATOR,
+                                container_para_id: para_id,
                                 authorities: vec![alice_id]
                         };
 
