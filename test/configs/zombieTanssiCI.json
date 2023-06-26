@@ -78,7 +78,7 @@
         "chain_spec_path": "specs/template-container-2000.json",
         "collators":  [
           {
-            "name": "DummyCollator-2000",
+            "name": "FullNode-2000",
             "validator": false,
             "command": "tmp/container-chain-template-simple-node",
             "ws_port": 9949
@@ -90,7 +90,7 @@
         "chain_spec_path": "specs/template-container-2001.json",
         "collators":  [
           {
-            "name": "DummyCollator-2001",
+            "name": "FullNode-2001",
             "validator": false,
             "command": "tmp/container-chain-template-frontier-node",
             "ws_port": 9950
@@ -102,7 +102,7 @@
         "chain_spec_path": "specs/template-container-2002.json",
         "collators":  [
           {
-            "name": "DummyCollator-2002",
+            "name": "FullNode-2002",
             "validator": false,
             "command": "tmp/container-chain-template-simple-node",
             "ws_port": 9951

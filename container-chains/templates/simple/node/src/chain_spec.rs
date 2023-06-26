@@ -38,6 +38,9 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
         .public()
 }
 
+/// Orcherstrator's parachain id
+const ORCHESTRATOR: ParaId = ParaId::new(1000);
+
 /// The extensions for the [`ChainSpec`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]
@@ -118,6 +121,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
             )
         },
         Vec::new(),
@@ -157,9 +161,9 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
 
     ChainSpec::from_genesis(
         // Name
-        "Local Testnet",
+        &format!("Simple Container {}", para_id).to_string(),
         // ID
-        "local_testnet",
+        &format!("simple_container_{}", para_id).to_string(),
         ChainType::Local,
         move || {
             testnet_genesis(
@@ -170,6 +174,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
                     .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
+                get_account_id_from_seed::<sr25519::Public>("Alice"),
             )
         },
         // Bootnodes
@@ -194,6 +199,7 @@ fn testnet_genesis(
     invulnerables: Vec<(AccountId, NimbusId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
+    root_key: AccountId,
 ) -> container_chain_template_simple_runtime::GenesisConfig {
     container_chain_template_simple_runtime::GenesisConfig {
         system: container_chain_template_simple_runtime::SystemConfig {
@@ -228,6 +234,12 @@ fn testnet_genesis(
         aura: Default::default(),
         aura_ext: Default::default(),
         parachain_system: Default::default(),
+        sudo: container_chain_template_simple_runtime::SudoConfig {
+            key: Some(root_key),
+        },
+        authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
+            orchestrator_para_id: ORCHESTRATOR,
+        },
     }
 }
 
