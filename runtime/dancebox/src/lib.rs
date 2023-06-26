@@ -614,6 +614,8 @@ construct_runtime!(
         AuraExt: cumulus_pallet_aura_ext = 34,
         AuthorityMapping: pallet_authority_mapping = 35,
 
+        AuthorInherent: pallet_author_inherent = 50,
+
         RootTesting: pallet_root_testing = 100,
     }
 );
