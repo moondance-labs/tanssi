@@ -320,7 +320,7 @@ impl frame_system::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = ccp_author_verifiability::OnTimestampSet<
+    type OnTimestampSet = tp_consensus::OnTimestampSet<
         <Self as pallet_author_inherent::Config>::SlotBeacon,
         ConstU64<{ SLOT_DURATION }>,
     >;
@@ -429,9 +429,9 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
 
 impl pallet_author_inherent::Config for Runtime {
     type AuthorId = NimbusId;
-    type AccountLookup = ccp_author_verifiability::ContainerNimbusLookUp;
+    type AccountLookup = tp_consensus::ContainerNimbusLookUp;
     type CanAuthor = CanAuthor;
-    type SlotBeacon = ccp_author_verifiability::AuraDigestSlotBeacon<Runtime>;
+    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
     type WeightInfo = ();
 }
 

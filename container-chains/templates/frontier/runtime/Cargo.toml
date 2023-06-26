@@ -18,7 +18,7 @@ smallvec = { workspace = true }
 
 # Local
 pallet-cc-authorities-noting = { workspace = true }
-ccp-author-verifiability = { workspace = true }
+tp-consensus = { workspace = true }
 
 # Nimbus
 nimbus-primitives = { workspace = true }
@@ -87,7 +87,6 @@ default = [
 	"std",
 ]
 std = [
-	"ccp-author-verifiability/std",
 	"cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
@@ -132,6 +131,7 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+	"tp-consensus/std",
 ]
 
 runtime-benchmarks = [
