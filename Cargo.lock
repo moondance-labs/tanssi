@@ -794,18 +794,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ccp-author-verifiability"
-version = "0.1.0"
-dependencies = [
- "frame-support",
- "frame-system",
- "nimbus-primitives",
- "sp-consensus-aura",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "ccp-authorities-noting-inherent"
 version = "0.1.0"
 dependencies = [
@@ -1141,7 +1129,6 @@ dependencies = [
 name = "container-chain-template-frontier-runtime"
 version = "0.1.0"
 dependencies = [
- "ccp-author-verifiability",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
@@ -1197,6 +1184,7 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "substrate-wasm-builder",
+ "tp-consensus",
 ]
 
 [[package]]
@@ -1269,7 +1257,6 @@ dependencies = [
 name = "container-chain-template-simple-runtime"
 version = "0.1.0"
 dependencies = [
- "ccp-author-verifiability",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
@@ -1313,6 +1300,7 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "substrate-wasm-builder",
+ "tp-consensus",
 ]
 
 [[package]]
@@ -13059,9 +13047,14 @@ name = "tp-consensus"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "nimbus-primitives",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
+ "sp-consensus-aura",
+ "sp-runtime",
  "sp-std",
 ]
 
