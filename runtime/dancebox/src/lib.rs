@@ -317,7 +317,9 @@ impl pallet_authorship::Config for Runtime {
 pub struct CanAuthor;
 impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
     fn can_author(author: &NimbusId, slot: &u32) -> bool {
-        let authorities =  AuthorityAssignment::collator_container_chain(Session::current_index()).expect("authorities should be set").orchestrator_chain;
+        let authorities = AuthorityAssignment::collator_container_chain(Session::current_index())
+            .expect("authorities should be set")
+            .orchestrator_chain;
 
         if authorities.len() == 0 {
             return false;
