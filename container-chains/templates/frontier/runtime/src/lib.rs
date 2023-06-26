@@ -662,7 +662,7 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
 
 impl pallet_author_inherent::Config for Runtime {
     type AuthorId = NimbusId;
-    type AccountLookup = tp_consensus::ContainerNimbusLookUp;
+    type AccountLookup = tp_consensus::NimbusLookUp;
     type CanAuthor = CanAuthor;
     type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
     type WeightInfo = ();

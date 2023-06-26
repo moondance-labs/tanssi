@@ -56,8 +56,8 @@ where
     }
 }
 
-pub struct ContainerNimbusLookUp;
-impl nimbus_primitives::AccountLookup<nimbus_primitives::NimbusId> for ContainerNimbusLookUp {
+pub struct NimbusLookUp;
+impl nimbus_primitives::AccountLookup<nimbus_primitives::NimbusId> for NimbusLookUp {
     fn lookup_account(author: &nimbus_primitives::NimbusId) -> Option<nimbus_primitives::NimbusId> {
         Some(author.clone())
     }
