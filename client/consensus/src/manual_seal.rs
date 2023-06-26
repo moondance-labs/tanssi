@@ -151,9 +151,10 @@ pub struct ContainerManualSealAuraConsensusDataProvider<B, C, P> {
     slot_duration: SlotDuration,
     /// Shared reference to keystore
     pub keystore: SyncCryptoStorePtr,
-
     /// Shared reference to the client
     pub client: Arc<C>,
+    // Authorities from which the author should be calculated
+    pub authorities: Vec<NimbusId>,
     // phantom data for required generics
     _phantom: PhantomData<(B, C, P)>,
 }
@@ -165,11 +166,17 @@ where
 {
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
-    pub fn new(client: Arc<C>, keystore: SyncCryptoStorePtr, slot_duration: SlotDuration) -> Self {
+    pub fn new(
+        client: Arc<C>,
+        keystore: SyncCryptoStorePtr,
+        slot_duration: SlotDuration,
+        authorities: Vec<NimbusId>,
+    ) -> Self {
         Self {
             slot_duration,
             keystore,
             client,
+            authorities,
             _phantom: PhantomData,
         }
     }

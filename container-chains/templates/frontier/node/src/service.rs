@@ -589,6 +589,8 @@ pub async fn start_dev_node(
             }
         }
 
+        let authorities = vec![get_aura_id_from_seed("alice")];
+
         task_manager.spawn_essential_handle().spawn_blocking(
 			"authorship_task",
 			Some("block-authoring"),
@@ -602,7 +604,8 @@ pub async fn start_dev_node(
 				consensus_data_provider: Some(Box::new(tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
                     client.clone(),
                     keystore_container.sync_keystore(),
-                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION.into())
+                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION.into()),
+                    authorities.clone()
                 ))),
 				create_inherent_data_providers: move |block: H256, ()| {
 					let current_para_block = client_set_aside_for_cidp
@@ -611,6 +614,7 @@ pub async fn start_dev_node(
 						.expect("Header passed in as parent should be present in backend.");
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
+                    let authorities_for_cidp = authorities.clone();
 
 					async move {
                         let time = MockTimestampInherentDataProvider;
@@ -631,7 +635,6 @@ pub async fn start_dev_node(
                             raw_horizontal_messages: vec![],
                         };
 
-                        let alice_id = get_aura_id_from_seed("alice");    
                         let mocked_authorities_noting =
                             ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
                                 current_para_block,
@@ -639,7 +642,7 @@ pub async fn start_dev_node(
                                 relay_blocks_per_para_block: 2,
                                 orchestrator_para_id: crate::chain_spec::ORCHESTRATOR,
                                 container_para_id: para_id,
-                                authorities: vec![alice_id]
+                                authorities: authorities_for_cidp
                         };
 
 						Ok((time, mocked_parachain, mocked_authorities_noting))
