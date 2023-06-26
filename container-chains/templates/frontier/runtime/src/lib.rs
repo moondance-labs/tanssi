@@ -451,29 +451,13 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = ();
 }
 
-pub struct OnTimestampSet;
-impl frame_support::traits::OnTimestampSet<u64> for OnTimestampSet {
-    fn on_timestamp_set(moment: u64) {
-        use {nimbus_primitives::SlotBeacon as _, sp_runtime::traits::Zero};
-
-        assert!(
-            !SLOT_DURATION.is_zero(),
-            "Aura slot duration cannot be zero."
-        );
-
-        let timestamp_slot = moment / SLOT_DURATION;
-
-        assert!(
-            SlotBeacon::slot() as u64 == timestamp_slot,
-            "Timestamp slot must match `HighestSlotSeen`"
-        );
-    }
-}
-
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = OnTimestampSet;
+    type OnTimestampSet = ccp_author_verifiability::OnTimestampSet<
+        <Self as pallet_author_inherent::Config>::SlotBeacon,
+        ConstU64<{ SLOT_DURATION }>
+    >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();
 }
@@ -661,13 +645,6 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
-pub struct NimbusIdentityLookup;
-impl nimbus_primitives::AccountLookup<NimbusId> for NimbusIdentityLookup {
-    fn lookup_account(author: &NimbusId) -> Option<NimbusId> {
-        Some(author.clone())
-    }
-}
-
 pub struct CanAuthor;
 impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
     fn can_author(author: &NimbusId, slot: &u32) -> bool {
@@ -683,27 +660,11 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
     }
 }
 
-pub struct SlotBeacon;
-impl nimbus_primitives::SlotBeacon for SlotBeacon {
-    fn slot() -> u32 {
-        use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
-
-        let digests = System::digest();
-
-        let slot = digests
-            .convert_first(|item| item.pre_runtime_try_to::<Slot>(&AURA_ENGINE_ID))
-            .expect("slot digest should exist");
-
-        let slot: u64 = slot.into();
-        slot as u32
-    }
-}
-
 impl pallet_author_inherent::Config for Runtime {
     type AuthorId = NimbusId;
-    type AccountLookup = NimbusIdentityLookup;
+    type AccountLookup = ccp_author_verifiability::ContainerNimbusLookUp;
     type CanAuthor = CanAuthor;
-    type SlotBeacon = SlotBeacon;
+    type SlotBeacon = ccp_author_verifiability::AuraDigestSlotBeacon<Runtime>;
     type WeightInfo = ();
 }
 
@@ -730,7 +691,7 @@ construct_runtime!(
         Session: pallet_session = 32,
         Aura: pallet_aura = 33,
 
-        // ContainerChain
+        // ContainerChain author verification
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
         AuthorInherent: pallet_author_inherent = 51,
 

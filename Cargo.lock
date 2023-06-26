@@ -794,6 +794,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "ccp-author-verifiability"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "nimbus-primitives",
+ "sp-consensus-aura",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "ccp-authorities-noting-inherent"
 version = "0.1.0"
 dependencies = [
@@ -1129,6 +1141,7 @@ dependencies = [
 name = "container-chain-template-frontier-runtime"
 version = "0.1.0"
 dependencies = [
+ "ccp-author-verifiability",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
@@ -1256,6 +1269,7 @@ dependencies = [
 name = "container-chain-template-simple-runtime"
 version = "0.1.0"
 dependencies = [
+ "ccp-author-verifiability",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",

@@ -18,6 +18,7 @@ smallvec = { workspace = true }
 
 # Local
 pallet-cc-authorities-noting = { workspace = true }
+ccp-author-verifiability = { workspace = true }
 
 # Nimbus
 nimbus-primitives = { workspace = true }
@@ -74,6 +75,7 @@ default = [
 	"std",
 ]
 std = [
+	"ccp-author-verifiability/std",
 	"cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
@@ -90,6 +92,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-cc-authorities-noting/std",
 	"pallet-session/std",
+	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
