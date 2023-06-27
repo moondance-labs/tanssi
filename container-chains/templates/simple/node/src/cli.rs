@@ -142,6 +142,10 @@ pub struct BuildSpecCmd {
     #[arg(long, conflicts_with = "chain")]
     #[arg(long, value_delimiter = ',')]
     pub seeds: Option<Vec<String>>,
+
+    /// List of bootnodes to add to chain spec
+    #[arg(long)]
+    pub add_bootnode: Vec<String>,
 }
 
 impl CliConfiguration for BuildSpecCmd {

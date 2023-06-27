@@ -13,6 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+use sc_network::config::MultiaddrWithPeerId;
 
 use {
     container_chain_template_simple_runtime::{AccountId, Signature},
@@ -84,7 +85,11 @@ pub fn template_session_keys(
     container_chain_template_simple_runtime::SessionKeys { aura: keys }
 }
 
-pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
+pub fn development_config(
+    para_id: ParaId,
+    seeds: Option<Vec<String>>,
+    boot_nodes: Vec<String>,
+) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -105,6 +110,13 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
+    let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
+        .into_iter()
+        .map(|x| {
+            x.parse::<MultiaddrWithPeerId>()
+                .unwrap_or_else(|e| panic!("invalid bootnode address format {:?}: {:?}", x, e))
+        })
+        .collect();
 
     ChainSpec::from_genesis(
         // Name
@@ -124,7 +136,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
             )
         },
-        Vec::new(),
+        boot_nodes,
         None,
         None,
         None,
@@ -136,7 +148,11 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     )
 }
 
-pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
+pub fn local_testnet_config(
+    para_id: ParaId,
+    seeds: Option<Vec<String>>,
+    boot_nodes: Vec<String>,
+) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -158,6 +174,13 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
+    let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
+        .into_iter()
+        .map(|x| {
+            x.parse::<MultiaddrWithPeerId>()
+                .unwrap_or_else(|e| panic!("invalid bootnode address format {:?}: {:?}", x, e))
+        })
+        .collect();
 
     ChainSpec::from_genesis(
         // Name
@@ -178,7 +201,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
             )
         },
         // Bootnodes
-        Vec::new(),
+        boot_nodes,
         // Telemetry
         None,
         // Protocol ID

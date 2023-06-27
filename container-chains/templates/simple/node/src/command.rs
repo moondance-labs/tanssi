@@ -43,9 +43,9 @@ const SLOT_DURATION: u64 = 12;
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::development_config(para_id, None)),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id, None)),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id, None)),
+        "dev" => Box::new(chain_spec::development_config(para_id, None, vec![])),
+        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id, None, vec![])),
+        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id, None, vec![])),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
@@ -156,11 +156,13 @@ pub fn run() -> Result<()> {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
                             cmd.seeds.clone(),
+                            cmd.add_bootnode.clone(),
                         ))
                     } else {
                         Box::new(chain_spec::local_testnet_config(
                             para_id.into(),
                             cmd.seeds.clone(),
+                            cmd.add_bootnode.clone(),
                         ))
                     }
                 } else {
