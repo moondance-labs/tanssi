@@ -130,10 +130,7 @@ impl ContainerChainSpawner {
                 })?;
 
             let boot_nodes_raw = orchestrator_runtime_api
-                .boot_nodes(
-                    orchestrator_chain_info.best_hash,
-                    container_chain_para_id,
-                )
+                .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
                 .expect("error");
             let boot_nodes: Vec<String> = boot_nodes_raw
                 .into_iter()
