@@ -25,6 +25,7 @@ describeSuite({
             // Let's jump one session
             await jumpSessions(context, 1);
 
+            // TODO: fix once we have types
             const blockWeight = (await polkadotJs.query.system.blockWeight()).toJSON();
             expect(blockWeight.normal).to.deep.equal({ refTime: 0, proofSize: 0 });
             expect(blockWeight.operational).to.deep.equal({ refTime: 0, proofSize: 0 });
@@ -38,6 +39,7 @@ describeSuite({
         test: async function () {
             await context.createBlock();
 
+            // TODO: fix once we have types
             const blockWeight = (await polkadotJs.query.system.blockWeight()).toJSON();
             expect(blockWeight.normal).to.deep.equal({ refTime: 0, proofSize: 0 });
             expect(blockWeight.operational).to.deep.equal({ refTime: 0, proofSize: 0 });

@@ -1,5 +1,4 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { deployCreateCompiledContract } from "@moonwall/util";
+import { describeSuite, expect, beforeAll, deployCreateCompiledContract } from "@moonwall/cli";
 import { TransactionReceipt } from "viem";
 import { customWeb3Request } from "@moonwall/util";
 
@@ -43,7 +42,7 @@ describeSuite({
 
     beforeAll(async () => {
       const { hash } = await deployCreateCompiledContract(context, "EventEmitter");
-      const receipt = await context.viemClient("public").getTransactionReceipt({ hash });
+      const receipt = await context.viem("public").getTransactionReceipt({ hash });
       nonMatchingCases = getNonMatchingCases(receipt);
     });
 
