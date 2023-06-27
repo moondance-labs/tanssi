@@ -1,11 +1,11 @@
 {
-  "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/cli/config_schema.json",
+  "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/types/config_schema.json",
   "label": "MasterConfig 🌔",
   "defaultTestTimeout": 30000,
   "environments": [
     {
       "name": "dev_tanssi",
-      "testFileDir": ["suites/dev"],
+      "testFileDir": ["suites/dev-tanssi"],
       "multiThreads": true,
       "html": false,
       "foundation": {
@@ -17,7 +17,8 @@
             "options": [
                 "--dev",
                 "--sealing=manual"
-            ]
+            ],
+            "disableDefaultEthProviders": true
           }
         ]
       }
@@ -27,6 +28,7 @@
       "testFileDir": ["suites/dev-frontier-template"],
       "multiThreads": true,
       "html": false,
+      "contracts": "helpers/",
       "foundation": {
         "type": "dev",
         "launchSpec": [

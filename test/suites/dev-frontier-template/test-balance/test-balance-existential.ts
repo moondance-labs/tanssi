@@ -46,7 +46,7 @@ describeSuite({
             expect(result!.successful, result!.error?.name).toBe(true);
 
             expect(
-              await context.viemClient("public").getBalance({ address: randomAccount.address })
+              await context.viem("public").getBalance({ address: randomAccount.address })
             ).toBe(0n);
           },
         });
@@ -57,7 +57,7 @@ describeSuite({
         id: "T04",
         title: "should not reap on tiny balance",
         test: async function () {
-          let randomAccountBalance = await context.viemClient("public").getBalance({ address: randomAccount.address })
+          let randomAccountBalance = await context.viem("public").getBalance({ address: randomAccount.address })
           await context.createBlock(
             createRawTransfer(context, baltathar.address, randomAccountBalance - 1n - 21000n * MIN_GAS_PRICE, {
               privateKey,
@@ -67,10 +67,10 @@ describeSuite({
             })
           );
           expect(
-            await context.viemClient("public").getBalance({ address: randomAccount.address })
+            await context.viem("public").getBalance({ address: randomAccount.address })
           ).toBe(1n);
           expect(
-            await context.viemClient("public").getTransactionCount({ address: randomAccount.address })
+            await context.viem("public").getTransactionCount({ address: randomAccount.address })
           ).toBe(1);
         },
       });

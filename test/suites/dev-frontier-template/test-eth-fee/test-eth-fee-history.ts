@@ -29,12 +29,12 @@ describeSuite({
       max_fee_per_gas: string
     ) {
       let nonce = await context
-        .viemClient("public")
+        .viem("public")
         .getTransactionCount({ address: ALITH_ADDRESS });
       const contractData = getCompiled("MultiplyBy7");
       for (let b = 0; b < block_count; b++) {
         for (let p = 0; p < priority_fees.length; p++) {
-          await context.ethersSigner().sendTransaction({
+          await context.ethers().sendTransaction({
             from: alith.address,
             data: contractData.byteCode,
             value: "0x00",
@@ -71,10 +71,10 @@ describeSuite({
         const block_count = 2;
         const reward_percentiles = [20, 50, 70];
         const priority_fees = [1, 2, 3];
-        const startingBlock = await context.viemClient("public").getBlockNumber();
+        const startingBlock = await context.viem("public").getBlockNumber();
 
         const feeHistory = new Promise<FeeHistory>((resolve, reject) => {
-          const unwatch = context.viemClient("public").watchBlocks({
+          const unwatch = context.viem("public").watchBlocks({
             onBlock: async (block) => {
               if (Number(block.number! - startingBlock) == block_count) {
                 const result = (await customWeb3Request(context.web3(), "eth_feeHistory", [
@@ -125,10 +125,10 @@ describeSuite({
         let block_count = 11;
         let reward_percentiles = [20, 50, 70, 85, 100];
         let priority_fees = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        const startingBlock = await context.viemClient("public").getBlockNumber();
+        const startingBlock = await context.viem("public").getBlockNumber();
 
         const feeHistory = new Promise<FeeHistory>((resolve, reject) => {
-          const unwatch = context.viemClient("public").watchBlocks({
+          const unwatch = context.viem("public").watchBlocks({
             onBlock: async (block) => {
               if (Number(block.number! - startingBlock) == block_count) {
                 const result = (await customWeb3Request(context.web3(), "eth_feeHistory", [

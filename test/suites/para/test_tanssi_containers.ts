@@ -1,16 +1,14 @@
-import { expect, describeSuite, beforeAll } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
-const fs = require('fs/promises');
-import { getHeaderFromRelay } from "../../util/relayInterface";
-import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { getAuthorFromDigest } from "../../util/author";
-import { Signer, ethers } from "ethers";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
-import { alith, BALTATHAR_ADDRESS, customWeb3Request } from "@moonwall/util";
-import { MIN_GAS_PRICE, generateKeyringPair } from "@moonwall/util";
-import { getKeyringNimbusIdHex } from "../../util/keys";
+import { Signer } from "ethers";
+import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author.js";
+import { signAndSendAndInclude, waitSessions } from "../../util/block.js";
+import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum.js";
 import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts";
+import { getKeyringNimbusIdHex } from "../../util/keys.js";
+import { getHeaderFromRelay } from "../../util/relayInterface.js";
+import fs from "fs/promises";
 
 describeSuite({
   id: "ZTN",
@@ -27,12 +25,11 @@ describeSuite({
     let ethersSigner: Signer;
 
     beforeAll(async () => {
-      
-      paraApi = context.polkadotJs({ apiName: "Tanssi" });
-      relayApi = context.polkadotJs({ apiName: "Relay" });
-      container2000Api = context.polkadotJs({ apiName: "Container2000" });
-      container2001Api = context.polkadotJs({ apiName: "Container2001" });
-      ethersSigner = context.ethersSigner();
+      paraApi = context.polkadotJs({ apiName: "Tanssi", type: "polkadotJs" });
+      relayApi = context.polkadotJs({ apiName: "Relay", type: "polkadotJs" });
+      container2000Api = context.polkadotJs({ apiName: "Container2000", type: "polkadotJs" });
+      container2001Api = context.polkadotJs({ apiName: "Container2001", type: "polkadotJs" });
+      ethersSigner = context.ethers();
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
       expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
@@ -58,7 +55,6 @@ describeSuite({
 
       expect(header2000.number.toNumber()).to.be.equal(0);
       expect(header2001.number.toNumber()).to.be.equal(0);
-
     }, 120000);
 
     it({
@@ -70,12 +66,15 @@ describeSuite({
       },
     });
 
-   it({
+    it({
       id: "T02",
       title: "Test Tanssi assignation is correct",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-        const tanssiCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON().orchestratorChain;
+        // TODO: fix once we have types
+        const tanssiCollators = (
+          await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
+        ).toJSON().orchestratorChain;
         const authorities = (await paraApi.query.aura.authorities()).toJSON();
 
         expect(tanssiCollators).to.deep.equal(authorities);
@@ -87,24 +86,19 @@ describeSuite({
       title: "Test assignation did not change",
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+        // TODO: fix once we have types
         const allCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
         const expectedAllCollators = {
-            orchestratorChain: [
-              getKeyringNimbusIdHex('Collator1000-01'),
-              getKeyringNimbusIdHex('Collator1000-02'),
-              getKeyringNimbusIdHex('Collator2002-01'),
-              getKeyringNimbusIdHex('Collator2002-02'),
-            ],
-            containerChains: {
-              '2000': [
-                getKeyringNimbusIdHex('Collator2000-01'),
-                getKeyringNimbusIdHex('Collator2000-02'),
-              ],
-              '2001': [
-                getKeyringNimbusIdHex('Collator2001-01'),
-                getKeyringNimbusIdHex('Collator2001-02'),
-              ]
-          }
+          orchestratorChain: [
+            getKeyringNimbusIdHex("Collator1000-01"),
+            getKeyringNimbusIdHex("Collator1000-02"),
+            getKeyringNimbusIdHex("Collator2002-01"),
+            getKeyringNimbusIdHex("Collator2002-02"),
+          ],
+          containerChains: {
+            "2000": [getKeyringNimbusIdHex("Collator2000-01"), getKeyringNimbusIdHex("Collator2000-02")],
+            "2001": [getKeyringNimbusIdHex("Collator2001-01"), getKeyringNimbusIdHex("Collator2001-02")],
+          },
         };
 
         expect(allCollators).to.deep.equal(expectedAllCollators);
@@ -127,10 +121,7 @@ describeSuite({
         const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
         expect(blockNum).to.be.greaterThan(0);
-        expect(
-          (await ethersSigner.provider.getBlockNumber()),
-          "Safe tag is not present"
-        ).to.be.greaterThan(0);
+        expect(await ethersSigner.provider.getBlockNumber(), "Safe tag is not present").to.be.greaterThan(0);
       },
     });
 
@@ -140,9 +131,11 @@ describeSuite({
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
-        const containerChainCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession))
-          .toJSON().containerChains[paraId];
+        const containerChainCollators = (
+          await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
+        ).toJSON().containerChains[paraId];
 
+        // TODO: fix once we have types
         const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
 
         expect(containerChainCollators).to.deep.equal(writtenCollators);
@@ -155,8 +148,9 @@ describeSuite({
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
-        const containerChainCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession))
-          .toJSON().containerChains[paraId];
+        const containerChainCollators = (
+          await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
+        ).toJSON().containerChains[paraId];
 
         const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toJSON();
 
@@ -169,10 +163,11 @@ describeSuite({
       title: "Test author noting is correct for both containers",
       timeout: 60000,
       test: async function () {
-        const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain());
-        const paraId2000 = (await container2000Api.query.parachainInfo.parachainId());
-        const paraId2001 = (await container2001Api.query.parachainInfo.parachainId());
+        const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
+        const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
+        const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
 
+        // TODO: fix once we have types
         const containerChainCollators2000 = assignment.containerChains.toJSON()[paraId2000.toString()];
         const containerChainCollators2001 = assignment.containerChains.toJSON()[paraId2001.toString()];
 
@@ -189,8 +184,9 @@ describeSuite({
       id: "T09",
       title: "Test author is correct in Orchestrator",
       test: async function () {
-        const authorities = (await paraApi.query.aura.authorities());
+        const authorities = await paraApi.query.aura.authorities();
         const author = await getAuthorFromDigest(paraApi);
+        // TODO: fix once we have types
         expect(authorities.toJSON().includes(author.toString())).to.be.true;
       },
     });
@@ -199,11 +195,12 @@ describeSuite({
       id: "T10",
       title: "Test frontier template isEthereum",
       test: async function () {
-        const genesisData2000 = (await paraApi.query.registrar.paraGenesisData(2000));
+        // TODO: fix once we have types
+        const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
         expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
-        const genesisData2001 = (await paraApi.query.registrar.paraGenesisData(2001));
+        const genesisData2001 = await paraApi.query.registrar.paraGenesisData(2001);
         expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
-      }
+      },
     });
     it({
       id: "T11",
@@ -212,10 +209,8 @@ describeSuite({
       test: async function () {
         const randomAccount = generateKeyringPair();
         let tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, { gasPrice: MIN_GAS_PRICE });
-        let txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
-          tx,
-        ]);
-        await waitUntilEthTxIncluded(() => context.waitBlock(1, "Container2001"), context.web3(), txHash.result)
+        let txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [tx]);
+        await waitUntilEthTxIncluded(() => context.waitBlock(1, "Container2001"), context.web3(), txHash.result);
         expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
       },
     });
@@ -225,23 +220,24 @@ describeSuite({
       title: "Test live registration of container chain 2002",
       timeout: 300000,
       test: async function () {
-        const keyring = new Keyring({ type: 'sr25519' });
-        let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+        const keyring = new Keyring({ type: "sr25519" });
+        let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
         // Read raw chain spec file
         // Different path in CI: ./specs vs ../specs
         let spec2002 = null;
         try {
-            spec2002 = await fs.readFile("./specs/template-container-2002.json", 'utf8');
+          spec2002 = await fs.readFile("./specs/template-container-2002.json", "utf8");
         } catch {
-            spec2002 = await fs.readFile("../specs/template-container-2002.json", 'utf8');
+          spec2002 = await fs.readFile("../specs/template-container-2002.json", "utf8");
         }
 
         // Before registering container chain 2002, ensure that it has 0 blocks
         // Since the RPC doesn't exist at this point, we need to get that from the relay
         const header2002 = await getHeaderFromRelay(relayApi, 2002);
         expect(header2002.number.toNumber()).to.be.equal(0);
-        const registered1 = (await paraApi.query.registrar.registeredParaIds());
+        const registered1 = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
         expect(registered1.toJSON().includes(2002)).to.be.false;
 
         const chainSpec2002 = JSON.parse(spec2002);
@@ -259,15 +255,16 @@ describeSuite({
         blockNumber2002Start = blockNum;
 
         // Check that pending para ids contains 2002
-        const registered = (await paraApi.query.registrar.registeredParaIds());
+        const registered = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
         expect(registered.toJSON().includes(2002)).to.be.true;
 
         // This ws api is only available after the node detects its assignment
         if (!container2002Api) {
-            const wsProvider = new WsProvider('ws://127.0.0.1:9951');
-            // If this fails, wait up to 30 seconds after a new block is created
-            // to ensure this port is available
-            container2002Api = await ApiPromise.create({ provider: wsProvider });
+          const wsProvider = new WsProvider("ws://127.0.0.1:9951");
+          // If this fails, wait up to 30 seconds after a new block is created
+          // to ensure this port is available
+          container2002Api = await ApiPromise.create({ provider: wsProvider });
         }
 
         const container2002Network = container2002Api.consts.system.version.specName.toString();
@@ -287,12 +284,12 @@ describeSuite({
         // Wait 3 blocks because the next test needs to get a non empty value from
         // container2002Api.query.authoritiesNoting()
         while (blockNum < 3) {
-            // Wait a bit
-            // Cannot use context.waitBlock because the container2002Api is not part of moonwall
-            const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-            await sleep(1_000);
+          // Wait a bit
+          // Cannot use context.waitBlock because the container2002Api is not part of moonwall
+          const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+          await sleep(1_000);
 
-            blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
+          blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
         }
         expect(blockNum).to.be.greaterThan(0);
       },
@@ -304,8 +301,10 @@ describeSuite({
       test: async function () {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         const paraId = (await container2002Api.query.parachainInfo.parachainId()).toString();
-        const containerChainCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession))
-          .toJSON().containerChains[paraId];
+        // TODO: fix once we have types
+        const containerChainCollators = (
+          await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
+        ).toJSON().containerChains[paraId];
 
         const writtenCollators = (await container2002Api.query.authoritiesNoting.authorities()).toJSON();
 
@@ -318,10 +317,11 @@ describeSuite({
       title: "Deregister container chain 2002, collators should move to tanssi",
       timeout: 300000,
       test: async function () {
-        const keyring = new Keyring({ type: 'sr25519' });
-        let alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+        const keyring = new Keyring({ type: "sr25519" });
+        let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-        const registered1 = (await paraApi.query.registrar.registeredParaIds());
+        const registered1 = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
         expect(registered1.toJSON().includes(2002)).to.be.true;
 
         const tx = paraApi.tx.registrar.deregister(2002);
@@ -331,7 +331,8 @@ describeSuite({
         blockNumber2002End = blockNum;
 
         // Check that pending para ids removes 2002
-        const registered = (await paraApi.query.registrar.registeredParaIds());
+        const registered = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
         expect(registered.toJSON().includes(2002)).to.be.false;
       },
     });
@@ -352,22 +353,22 @@ describeSuite({
         // Start from block 5 because block 0 has no author
         let blockNumber = sessionPeriod;
         // Before 2002 registration: 4 authors
-        await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start-1, 4);
+        await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start - 1, 4);
 
         // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
-        await countUniqueBlockAuthors(paraApi, blockNumber2002Start, blockNumber2002End-1, 2);
+        await countUniqueBlockAuthors(paraApi, blockNumber2002Start, blockNumber2002End - 1, 2);
 
         // Need to wait one session because the following blocks don't exist yet
         await waitSessions(context, paraApi, 1);
         // After 2002 deregistration: 4 authors
-        await countUniqueBlockAuthors(paraApi, blockNumber2002End, blockNumber2002End+sessionPeriod-1, 4);
+        await countUniqueBlockAuthors(paraApi, blockNumber2002End, blockNumber2002End + sessionPeriod - 1, 4);
       },
     });
   },
 });
 
 /// Verify that the next `numBlocks` have `numAuthors` different authors
-/// 
+///
 /// Note about session changes: if the block range is smaller than 2*sessionPeriod
 /// the result may be unexpected, to avoid that case make sure that blockStart is at a
 /// session start. For example, with 4 different authors and 5 blocks per session:
@@ -379,6 +380,7 @@ describeSuite({
 async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors) {
   // These are the authorities for the next block, so we need to wait 1 block before fetching the first author
   const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+  // TODO: fix once we have types
   const authorities = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
   const actualAuthors = [];
   const blockNumbers = [];
@@ -393,7 +395,14 @@ async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors
   let uniq = [...new Set(actualAuthors)];
 
   if (uniq.length != numAuthors) {
-    console.error("Mismatch between authorities and actual block authors: authorities: ", authorities, ", actual authors: ", actualAuthors, ", block numbers: ", blockNumbers);
+    console.error(
+      "Mismatch between authorities and actual block authors: authorities: ",
+      authorities,
+      ", actual authors: ",
+      actualAuthors,
+      ", block numbers: ",
+      blockNumbers
+    );
     expect(false).to.be.true;
   }
 }

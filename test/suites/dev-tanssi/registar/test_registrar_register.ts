@@ -27,6 +27,7 @@ describeSuite({
             const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
             // These are registered in genesis
+            // TODO: fix once we have types
             expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001]);
         },
       });
@@ -82,10 +83,12 @@ describeSuite({
         expect(sessionScheduling.toBigInt()).to.be.eq(expectedScheduledOnboarding);
 
         // These will be the paras in session 2
+        // TODO: fix once we have types
         expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001, 2002]);
 
         // Check that the on chain genesis data is set correctly
         const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
+        // TODO: fix once we have types
         expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
         // Checking that in session 2 paras are registered
@@ -93,6 +96,7 @@ describeSuite({
 
         // Expect now paraIds to be registered
         const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
         expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001, 2002]);
       },
     });
