@@ -87,11 +87,7 @@ mod benchmarks {
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
 
         #[extrinsic_call]
-        Pallet::<T>::register(
-            RawOrigin::Signed(caller.clone()),
-            Default::default(),
-            storage.clone(),
-        );
+        Pallet::<T>::register(RawOrigin::Signed(caller), Default::default(), storage);
 
         // verification code
         assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);

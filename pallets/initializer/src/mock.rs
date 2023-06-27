@@ -84,7 +84,7 @@ impl pallet_initializer::ApplyNewSession<Test> for OwnApplySession {
         all_validators: Vec<(u64, UintAuthorityId)>,
         _queued: Vec<(u64, UintAuthorityId)>,
     ) {
-        let validators: Vec<_> = all_validators.iter().map(|(k, _)| k.clone()).collect();
+        let validators: Vec<_> = all_validators.iter().map(|(k, _)| *k).collect();
         SESSION_CHANGE_VALIDATORS.with(|r| *r.borrow_mut() = Some((session_index, validators)));
     }
 }

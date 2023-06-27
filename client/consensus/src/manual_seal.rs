@@ -217,7 +217,7 @@ where
         // once configuration on how manual seal changes
         let digest = if let Some(author) = expected_author {
             let nimbus_digest =
-                <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(author.clone());
+                <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(author);
             Digest {
                 logs: vec![aura_digest_item, nimbus_digest],
             }

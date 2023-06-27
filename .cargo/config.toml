@@ -1,0 +1,13 @@
+# If you want standard clippy run:
+# RUSTFLAGS= cargo clippy
+[target.'cfg(feature = "cargo-clippy")']
+rustflags = [
+  "-Dunsafe_code",
+  "-Dclippy::correctness",
+  "-Dclippy::complexity",
+  "-Dclippy::suspicious",
+  "-Aclippy::type_complexity",           # raison d'etre
+  "-Aclippy::too-many-arguments",        # (Turning this on would lead to)
+  "-Aclippy::erasing_op",                # E.g. 0 * DOLLARS
+  "-Aclippy::identity_op",               # E.g. 1 * DOLLARS
+]

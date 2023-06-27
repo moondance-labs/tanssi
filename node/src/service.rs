@@ -382,7 +382,7 @@ async fn start_node_impl(
     let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
     let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
         .map(|e| e.relay_chain.clone())
-        .ok_or_else(|| "Could not find relay_chain extension in chain-spec.")?;
+        .ok_or("Could not find relay_chain extension in chain-spec.")?;
 
     // Channel to send messages to start/stop container chains
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
@@ -613,7 +613,7 @@ async fn start_node_impl(
             sync_keystore,
             orchestrator_para_id: para_id,
             validator,
-            spawn_handle: spawn_handle.clone(),
+            spawn_handle,
             spawned_para_ids: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
@@ -811,7 +811,7 @@ fn build_manual_seal_import_queue(
     task_manager: &TaskManager,
 ) -> Result<sc_consensus::DefaultImportQueue<Block, ParachainClient>, sc_service::Error> {
     Ok(sc_consensus_manual_seal::import_queue(
-        Box::new(block_import.clone()),
+        Box::new(block_import),
         &task_manager.spawn_essential_handle(),
         config.prometheus_registry(),
     ))
@@ -844,7 +844,7 @@ fn build_consensus_container(
     );
 
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
-    let orchestrator_client_for_cidp = orchestrator_client.clone();
+    let orchestrator_client_for_cidp = orchestrator_client;
     let keystore_for_cidp = keystore.clone();
 
     let params = tc_consensus::BuildOrchestratorAuraConsensusParams {
@@ -1011,7 +1011,7 @@ fn build_consensus_orchestrator(
                 let para_ids = client_set_aside_for_cidp
                     .runtime_api()
                     .registered_paras(block_hash)?;
-                let para_ids: Vec<_> = para_ids.into_iter().map(|x| x.into()).collect();
+                let para_ids: Vec<_> = para_ids.into_iter().collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(
                         relay_parent,
@@ -1268,7 +1268,6 @@ pub fn new_dev(
                         .registered_paras(block)
                         .expect("registered_paras runtime API should exist")
                         .into_iter()
-                        .map(|x| x.into())
                         .collect();
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
@@ -1326,7 +1325,7 @@ pub fn new_dev(
 
     let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         rpc_builder,
-        client: client.clone(),
+        client,
         transaction_pool,
         task_manager: &mut task_manager,
         config,
@@ -1527,7 +1526,7 @@ where
     async fn prove_read(
         &self,
         orchestrator_parent: PHash,
-        relevant_keys: &Vec<Vec<u8>>,
+        relevant_keys: &[Vec<u8>],
     ) -> OrchestratorChainResult<StorageProof> {
         let state_backend = self.backend.state_at(orchestrator_parent)?;
 

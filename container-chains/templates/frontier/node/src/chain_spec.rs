@@ -134,10 +134,10 @@ pub fn development_config(
                 collator_accounts
                     .iter()
                     .zip(collator_keys.iter())
-                    .map(|(x, y)| (x.clone(), y.clone()))
+                    .map(|(x, y)| (*x, y.clone()))
                     .collect(),
                 default_funded_accounts.clone(),
-                para_id.into(),
+                para_id,
                 AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
             )
         },
@@ -189,19 +189,19 @@ pub fn local_testnet_config(
 
     ChainSpec::from_genesis(
         // Name
-        &format!("Frontier Container {}", para_id).to_string(),
+        &format!("Frontier Container {}", para_id),
         // ID
-        &format!("frontier_container_{}", para_id).to_string(),
+        &format!("frontier_container_{}", para_id),
         ChainType::Local,
         move || {
             testnet_genesis(
                 collator_accounts
                     .iter()
                     .zip(collator_keys.iter())
-                    .map(|(x, y)| (x.clone(), y.clone()))
+                    .map(|(x, y)| (*x, y.clone()))
                     .collect(),
                 default_funded_accounts.clone(),
-                para_id.into(),
+                para_id,
                 AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
             )
         },
@@ -250,7 +250,7 @@ fn testnet_genesis(
                 .into_iter()
                 .map(|(acc, aura)| {
                     (
-                        acc.clone(),                 // account id
+                        acc,                         // account id
                         acc,                         // validator id
                         template_session_keys(aura), // session keys
                     )

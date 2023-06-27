@@ -241,18 +241,17 @@ pub mod pallet {
 
             // Verify we can reserve
             T::Currency::can_reserve(&account, deposit)
-                .then(|| true)
+                .then_some(true)
                 .ok_or(Error::<T>::NotSufficientDeposit)?;
 
             // Check if the para id is already registered
             let pending_paras = <PendingParaIds<T>>::get();
             let base_paras = pending_paras
                 .last()
-                .map(|&(_, ref paras)| paras.clone())
+                .map(|(_, paras)| paras.clone())
                 .unwrap_or_else(Self::registered_para_ids);
-            match base_paras.binary_search(&para_id) {
-                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                Err(_) => (),
+            if base_paras.binary_search(&para_id).is_ok() {
+                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
             }
 
             // Insert para id into PendingVerification, if it does not exist there
@@ -287,7 +286,7 @@ pub mod pallet {
             RegistrarDeposit::<T>::insert(
                 para_id,
                 DepositInfo {
-                    creator: account.clone(),
+                    creator: account,
                     deposit,
                 },
             );
@@ -313,7 +312,8 @@ pub mod pallet {
 
             Self::schedule_parachain_change(|para_ids| {
                 // We have to find out where, in the sorted vec the para id is, if anywhere.
-                let result = match para_ids.binary_search(&para_id) {
+
+                match para_ids.binary_search(&para_id) {
                     Ok(index) => {
                         para_ids.remove(index);
                         Ok(())
@@ -332,8 +332,7 @@ pub mod pallet {
                             Err(_) => Err(Error::<T>::ParaIdNotRegistered.into()),
                         }
                     }
-                };
-                result
+                }
             })?;
 
             // Get asset creator and deposit amount
@@ -378,7 +377,8 @@ pub mod pallet {
                 // We don't want to add duplicate para ids, so we check whether the potential new
                 // para id is already present in the list. Because the list is always ordered, we can
                 // leverage the binary search which makes this check O(log n).
-                let result = match para_ids.binary_search(&para_id) {
+
+                match para_ids.binary_search(&para_id) {
                     Ok(_) => Err(Error::<T>::ParaIdAlreadyRegistered.into()),
                     Err(index) => {
                         para_ids
@@ -387,8 +387,7 @@ pub mod pallet {
 
                         Ok(())
                     }
-                };
-                result
+                }
             })?;
 
             PendingVerification::<T>::put(pending_verification);
@@ -435,7 +434,7 @@ pub mod pallet {
             // First, we need to decide what we should use as the base paras.
             let mut base_paras = pending_paras
                 .last()
-                .map(|&(_, ref paras)| paras.clone())
+                .map(|(_, paras)| paras.clone())
                 .unwrap_or_else(Self::registered_para_ids);
 
             updater(&mut base_paras)?;
@@ -515,10 +514,7 @@ pub mod pallet {
 
     impl<T: Config> GetCurrentContainerChains for Pallet<T> {
         fn current_container_chains() -> Vec<ParaId> {
-            Self::registered_para_ids()
-                .into_iter()
-                .map(|x| x.into())
-                .collect()
+            Self::registered_para_ids().into_iter().collect()
         }
 
         #[cfg(feature = "runtime-benchmarks")]
@@ -541,7 +537,7 @@ pub mod pallet {
                 Pallet::<T>::registered_para_ids()
             };
 
-            paras.into_iter().map(|x| ParaId::from(x)).collect()
+            paras.into_iter().collect()
         }
     }
 }

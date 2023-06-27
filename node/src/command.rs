@@ -323,12 +323,12 @@ pub fn run() -> Result<()> {
             let output_buf = {
                 let block: Block = generate_genesis_block(&*chain_spec, state_version)?;
                 let raw_header = block.header().encode();
-                let output_buf = if params.raw {
+
+                if params.raw {
                     raw_header
                 } else {
                     format!("0x{:?}", HexDisplay::from(&block.header().encode())).into_bytes()
-                };
-                output_buf
+                }
             };
 
             if let Some(output) = &params.output {
@@ -491,7 +491,7 @@ pub fn run() -> Result<()> {
 				info!("Parachain genesis state: {}", genesis_state);
 				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
 
-				if !collator_options.relay_chain_rpc_urls.is_empty() && cli.relaychain_args().len() > 0 {
+				if !collator_options.relay_chain_rpc_urls.is_empty() && !cli.relaychain_args().is_empty() {
 					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 

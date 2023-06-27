@@ -26,6 +26,7 @@ use {
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
     /// Build a chain specification.
     BuildSpec(BuildSpecCmd),
@@ -316,8 +317,9 @@ impl ContainerChainCli {
         relay_chain: String,
         boot_nodes: Vec<String>,
     ) -> Result<crate::chain_spec::RawChainSpec, String> {
-        let name = String::from_utf8(genesis_data.name).map_err(|_e| format!("Invalid name"))?;
-        let id: String = String::from_utf8(genesis_data.id).map_err(|_e| format!("Invalid id"))?;
+        let name = String::from_utf8(genesis_data.name).map_err(|_e| "Invalid name".to_string())?;
+        let id: String =
+            String::from_utf8(genesis_data.id).map_err(|_e| "Invalid id".to_string())?;
         let storage_raw: BTreeMap<_, _> =
             genesis_data.storage.into_iter().map(|x| x.into()).collect();
         let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
@@ -331,7 +333,7 @@ impl ContainerChainCli {
         let protocol_id = Some(format!("container-chain-{}", para_id));
         let fork_id = genesis_data
             .fork_id
-            .map(|fork_id| String::from_utf8(fork_id).map_err(|_e| format!("Invalid fork_id")))
+            .map(|fork_id| String::from_utf8(fork_id).map_err(|_e| "Invalid fork_id".to_string()))
             .transpose()?;
         let properties = Some(
             properties_to_map(&genesis_data.properties)

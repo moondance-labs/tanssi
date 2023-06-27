@@ -22,6 +22,7 @@ use {
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
     /// Build a chain specification.
     BuildSpec(BuildSpecCmd),
