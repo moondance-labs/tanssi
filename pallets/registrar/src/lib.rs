@@ -101,7 +101,7 @@ pub mod pallet {
                 }
                 <ParaGenesisData<T>>::insert(para_id, genesis_data);
                 let boot_nodes: Vec<_> = boot_nodes
-                    .into_iter()
+                    .iter()
                     .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
                     .collect();
                 let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
