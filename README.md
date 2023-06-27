@@ -55,6 +55,8 @@ pnpm moonwall test dev_tanssi
 pnpm moonwall test zombie_tanssi
 ```
 
+**Important note**: You will need to download a polkadot binary from [here](https://github.com/paritytech/polkadot/releases), place it under *test/tmp*, and give it execution permissions for the zombienet tests to work locally. 
+
 Moonwall lets you also run the testing environment wihtout performing any tests on it, as a method for you to manually test certain things:
 
 ```bash
