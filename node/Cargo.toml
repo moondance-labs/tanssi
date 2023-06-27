@@ -105,7 +105,12 @@ runtime-benchmarks = [
 ]
 try-runtime = [
 	"dancebox-runtime/try-runtime",
-	"try-runtime-cli/try-runtime",
+    "pallet-configuration/try-runtime",
+    "nimbus-primitives/try-runtime",
+    "sp-runtime/try-runtime",
+    "try-runtime-cli/try-runtime",
+    "polkadot-cli/try-runtime",
+    "polkadot-service/try-runtime"
 ]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime" ]

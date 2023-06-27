@@ -17,7 +17,7 @@ describeSuite({
       title: "should be at 0 before using it",
       test: async function () {
         expect(
-          await context.viemClient("public").getTransactionCount({ address: BALTATHAR_ADDRESS })
+          await context.viem("public").getTransactionCount({ address: BALTATHAR_ADDRESS })
         ).toBe(0);
       },
     });
@@ -27,7 +27,7 @@ describeSuite({
       title: "should be at 0 for genesis account",
       test: async function () {
         expect(
-          await context.viemClient("public").getTransactionCount({ address: ALITH_ADDRESS })
+          await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS })
         ).toBe(0);
       },
     });
@@ -41,7 +41,7 @@ describeSuite({
         ]);
 
         expect(
-          await context.viemClient("public").getTransactionCount({ address: ALITH_ADDRESS })
+          await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS })
         ).toBe(0);
         await context.createBlock();
       },
@@ -51,15 +51,15 @@ describeSuite({
       id: "T04",
       title: "should stay at previous before block is created",
       test: async function () {
-        const blockNumber = await context.viemClient("public").getBlockNumber();
+        const blockNumber = await context.viem("public").getBlockNumber();
         const nonce = await context
-          .viemClient("public")
+          .viem("public")
           .getTransactionCount({ address: ALITH_ADDRESS });
         await context.createBlock(await createRawTransfer(context, ALITH_ADDRESS, 512));
 
         expect(
           await context
-            .viemClient("public")
+            .viem("public")
             .getTransactionCount({ address: ALITH_ADDRESS, blockNumber })
         ).toBe(nonce);
       },
@@ -69,9 +69,9 @@ describeSuite({
       id: "T05",
       title: "pending transaction nonce",
       test: async function () {
-        const blockNumber = await context.viemClient("public").getBlockNumber();
+        const blockNumber = await context.viem("public").getBlockNumber();
         const nonce = await context
-          .viemClient("public")
+          .viem("public")
           .getTransactionCount({ address: ALITH_ADDRESS });
 
         await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
@@ -79,18 +79,18 @@ describeSuite({
         ]);
 
         expect(
-          await context.viemClient("public").getTransactionCount({ address: ALITH_ADDRESS }),
+          await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS }),
           "should not increase transaction count"
         ).toBe(nonce);
         expect(
           await context
-            .viemClient("public")
+            .viem("public")
             .getTransactionCount({ address: ALITH_ADDRESS, blockTag: "latest" }),
           "should not increase transaction count in latest block"
         ).toBe(nonce);
         expect(
           await context
-            .viemClient("public")
+            .viem("public")
             .getTransactionCount({ address: ALITH_ADDRESS, blockTag: "pending" }),
           "should increase transaction count in pending block"
         ).toBe(nonce + 1);
@@ -103,17 +103,17 @@ describeSuite({
       title: "transferring Nonce",
       test: async function () {
         const nonce = await context
-          .viemClient("public")
+          .viem("public")
           .getTransactionCount({ address: ALITH_ADDRESS });
 
         await context.createBlock([await createRawTransfer(context, BALTATHAR_ADDRESS, 512)]);
 
         expect(
-          await context.viemClient("public").getTransactionCount({ address: ALITH_ADDRESS }),
+          await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS }),
           "should increase the sender nonce"
         ).toBe(nonce + 1);
         expect(
-          await context.viemClient("public").getTransactionCount({ address: BALTATHAR_ADDRESS }),
+          await context.viem("public").getTransactionCount({ address: BALTATHAR_ADDRESS }),
           "should not increase the receiver nonce"
         ).toBe(0);
         await context.createBlock();
