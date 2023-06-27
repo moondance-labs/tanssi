@@ -15,6 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
+use sc_executor::HeapAllocStrategy;
+use sc_executor::WasmExecutor;
+use sc_executor::DEFAULT_HEAP_ALLOC_STRATEGY;
 use sc_network::config::FullNetworkConfiguration;
 use {
     crate::{
@@ -140,12 +143,21 @@ pub fn new_partial(
         })
         .transpose()?;
 
-    let executor = ParachainExecutor::new(
-        config.wasm_method,
-        config.default_heap_pages,
-        config.max_runtime_instances,
-        config.runtime_cache_size,
-    );
+    let heap_pages = config
+        .default_heap_pages
+        .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
+            extra_pages: h as _,
+        });
+
+    let wasm = WasmExecutor::builder()
+        .with_execution_method(config.wasm_method)
+        .with_onchain_heap_alloc_strategy(heap_pages)
+        .with_offchain_heap_alloc_strategy(heap_pages)
+        .with_max_runtime_instances(config.max_runtime_instances)
+        .with_runtime_cache_size(config.runtime_cache_size)
+        .build();
+
+    let executor = ParachainExecutor::new_with_wasm_executor(wasm);
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -311,12 +323,21 @@ pub fn new_partial_dev(
         })
         .transpose()?;
 
-    let executor = ParachainExecutor::new(
-        config.wasm_method,
-        config.default_heap_pages,
-        config.max_runtime_instances,
-        config.runtime_cache_size,
-    );
+    let heap_pages = config
+        .default_heap_pages
+        .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
+            extra_pages: h as _,
+        });
+
+    let wasm = WasmExecutor::builder()
+        .with_execution_method(config.wasm_method)
+        .with_onchain_heap_alloc_strategy(heap_pages)
+        .with_offchain_heap_alloc_strategy(heap_pages)
+        .with_max_runtime_instances(config.max_runtime_instances)
+        .with_runtime_cache_size(config.runtime_cache_size)
+        .build();
+
+    let executor = ParachainExecutor::new_with_wasm_executor(wasm);
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
