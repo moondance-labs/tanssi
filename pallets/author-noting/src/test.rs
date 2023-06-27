@@ -368,7 +368,7 @@ fn test_not_inserting_inherent() {
 #[ignore = "used to generate benchmark data"]
 fn encode_proof_for_benchmarks() {
     println!(
-        "pub const ENCODED_PROOFS: &'static [(u32, &'static str, &'static [&'static str])] = &["
+        "pub const ENCODED_PROOFS: &[(u32, &str, &[&str])] = &["
     );
 
     for x in 0u32..=100 {
