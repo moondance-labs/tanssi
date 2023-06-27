@@ -48,9 +48,9 @@ use {
     nimbus_primitives::NimbusId,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, OpaqueMetadata},
+    sp_core::OpaqueMetadata,
     sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
+        create_runtime_str, generic,
         traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, MultiSignature,
@@ -167,12 +167,6 @@ pub mod opaque {
     pub type Block = generic::Block<Header, UncheckedExtrinsic>;
     /// Opaque block identifier type.
     pub type BlockId = generic::BlockId<Block>;
-}
-
-impl_opaque_keys! {
-    pub struct SessionKeys {
-        pub aura: Aura,
-    }
 }
 
 #[sp_version::runtime_version]
@@ -328,11 +322,6 @@ impl pallet_timestamp::Config for Runtime {
     type WeightInfo = ();
 }
 
-impl pallet_authorship::Config for Runtime {
-    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-    type EventHandler = ();
-}
-
 parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
 }
@@ -370,25 +359,9 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 
 impl parachain_info::Config for Runtime {}
 
-impl cumulus_pallet_aura_ext::Config for Runtime {}
-
 parameter_types! {
     pub const Period: u32 = 6 * HOURS;
     pub const Offset: u32 = 0;
-}
-
-impl pallet_session::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type ValidatorId = <Self as frame_system::Config>::AccountId;
-    // we don't have stash and controller, thus we don't need the convert as well.
-    type ValidatorIdOf = ();
-    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-    type SessionManager = ();
-    // Essentially just Aura, but let's be pedantic.
-    type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
-    type Keys = SessionKeys;
-    type WeightInfo = ();
 }
 
 impl pallet_sudo::Config for Runtime {
@@ -401,12 +374,6 @@ impl pallet_utility::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
-}
-
-impl pallet_aura::Config for Runtime {
-    type AuthorityId = NimbusId;
-    type DisabledValidators = ();
-    type MaxAuthorities = ConstU32<100_000>;
 }
 
 impl pallet_cc_authorities_noting::Config for Runtime {
@@ -453,12 +420,6 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
 
-        // Collator support. The order of these 4 are important and shall not change.
-        Authorship: pallet_authorship = 30,
-        Session: pallet_session = 32,
-        Aura: pallet_aura = 33,
-        AuraExt: cumulus_pallet_aura_ext = 34,
-
         // ContainerChain Author Verification
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
         AuthorInherent: pallet_author_inherent = 51,
@@ -467,16 +428,6 @@ construct_runtime!(
 );
 
 impl_runtime_apis! {
-    impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
-        fn slot_duration() -> sp_consensus_aura::SlotDuration {
-            sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
-        }
-
-        fn authorities() -> Vec<NimbusId> {
-            Aura::authorities().into_inner()
-        }
-    }
-
     impl sp_api::Core<Block> for Runtime {
         fn version() -> RuntimeVersion {
             VERSION
@@ -531,18 +482,6 @@ impl_runtime_apis! {
     impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
         fn offchain_worker(header: &<Block as BlockT>::Header) {
             Executive::offchain_worker(header)
-        }
-    }
-
-    impl sp_session::SessionKeys<Block> for Runtime {
-        fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-            SessionKeys::generate(seed)
-        }
-
-        fn decode_session_keys(
-            encoded: Vec<u8>,
-        ) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
-            SessionKeys::decode_into_raw_public_keys(&encoded)
         }
     }
 
