@@ -12,19 +12,50 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
+      image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
+      sha: ${{ steps.get-sha.outputs.sha }}
+      sha8: ${{ steps.get-sha.outputs.sha8 }}
     steps:
+    - name: Check git ref
+        id: check-git-ref
+        # if PR
+        # else if manual PR
+        # else (push)
+        run: |
+          if [[ -n "${{ github.event.pull_request.head.sha }}" ]]; then
+            echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
+            echo "git_ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+          elif [[ -n "${{ github.event.inputs.pull_request }}" ]]; then
+            echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
+            echo "git_ref=refs/pull/${{ github.event.inputs.pull_request }}/head" >> $GITHUB_OUTPUT
+          else
+            echo "git_branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
+            echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.inputs.sha }}
-      - name: Get polkadot release tag
-        id: get-polkadot-release-tag
+      - name: Get Sha
+        id: get-sha
         run: |
+          echo "sha=$(git log -1 --format='%H')" >> $GITHUB_OUTPUT
+          echo "sha8=$(git log -1 --format='%H' | cut -c1-8)" >> $GITHUB_OUTPUT
           branch=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1 | sed 's/.*release-//#')
           echo "polkadot_release=$(echo $branch | sed 's/#.*//' | sed 's/\/polkadot?branch=tanssi-polkadot-//')" >> $GITHUB_OUTPUT
+
+      - name: Check existing docker image
+        id: check-docker-image
+        run: |
+          TAG=sha-${{ steps.get-sha.outputs.sha8 }}
+          echo "image_exists=$(docker image inspect moondancelabs/tanssi:$TAG > /dev/null && echo "true" || echo "false")" >> $GITHUB_OUTPUT
+
       - name: Display variables
         run: |
           echo polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
+          echo sha: ${{ steps.get-sha.outputs.sha }}
+          echo sha8: ${{ steps.get-sha.outputs.sha8 }}
+          echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
 
   check-copyright:
     runs-on: ubuntu-latest
