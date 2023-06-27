@@ -11,7 +11,7 @@ jobs:
   set-tags:
     runs-on: ubuntu-latest
     outputs:
-      polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
+      polkadot_release: ${{ steps..get-sha.outputs.polkadot_release }}
       image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
       sha: ${{ steps.get-sha.outputs.sha }}
       sha8: ${{ steps.get-sha.outputs.sha8 }}
