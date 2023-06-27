@@ -289,9 +289,15 @@ jobs:
       - name: Prepare
         id: prep
         run: |
-          DOCKER_IMAGE=moondancelabs/tanssi
-          TAGS="${DOCKER_IMAGE}:sha-${{ needs.set-tags.outputs.sha8 }}"
-          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          DOCKER_IMAGE_TANSSI=moondancelabs/tanssi
+          DOCKER_IMAGE_SIMPLE_CONTAINER=moondancelabs/container-chain-simple-template
+          DOCKER_IMAGE_EVM_CONTAINER=moondancelabs/container-chain-evm-template
+          TANSSI_TAG="${DOCKER_IMAGE_TANSSI}:sha-${{ needs.set-tags.outputs.sha8 }}"
+          SIMPLE_CONTAINER_TAG="${DOCKER_IMAGE_SIMPLE_CONTAINER}:sha-${{ needs.set-tags.outputs.sha8 }}"
+          EVM_CONTAINER_TAG="${DOCKER_IMAGE_EVM_CONTAINER}:sha-${{ needs.set-tags.outputs.sha8 }}"
+          echo "tanssi_tag=${TANSSI_TAG}" >> $GITHUB_OUTPUT
+          echo "simple_container_tag=${SIMPLE_CONTAINER_TAG}" >> $GITHUB_OUTPUT
+          echo "evm_container_tag=${EVM_CONTAINER_TAG}" >> $GITHUB_OUTPUT
           echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2.1.0
@@ -314,7 +320,7 @@ jobs:
           file: ./docker/tanssi.Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.prep.outputs.tags }}
+          tags: ${{ steps.prep.outputs.tanssi_tag }}
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
@@ -331,7 +337,7 @@ jobs:
           file: ./docker/container-chain-simple-template.Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.prep.outputs.tags }}
+          tags: ${{ steps.prep.outputs.simple_container_tag }}
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
@@ -348,7 +354,7 @@ jobs:
           file: ./docker/container-chain-evm-template.Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ${{ steps.prep.outputs.tags }}
+          tags: ${{ steps.prep.outputs.evm_container_tag }}
           labels: |
             org.opencontainers.image.title=${{ github.event.repository.name }}
             org.opencontainers.image.description=${{ github.event.repository.description }}
