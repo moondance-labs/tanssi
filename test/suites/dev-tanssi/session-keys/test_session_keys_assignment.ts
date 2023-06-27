@@ -28,6 +28,7 @@ describeSuite({
         title: "Checking that authority assignment is correct on genesis",
         test: async function () {
             // for session 0
+            // TODO: fix once we have types
             const assignment0 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).unwrap().toJSON();
             const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toJSON();
 
@@ -73,6 +74,7 @@ describeSuite({
             const nextKey = await polkadotJs.query.session.nextKeys(alice.address);
             expect(u8aToHex(nextKey.unwrap().aura)).to.be.eq(u8aToHex(newKey));
 
+            // TODO: fix once we have types
             const initial_assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toJSON();
 
             // Let's jump one session
@@ -87,6 +89,7 @@ describeSuite({
             expect(result1.length).to.be.eq(1);
 
             expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).isNone).to.be.true;
+            // TODO: fix once we have types
             const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toJSON();
             const assignment2 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(2)).unwrap().toJSON();
             expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(3)).isNone).to.be.true;
@@ -112,9 +115,11 @@ describeSuite({
 
             // The change should have been applied, and now both aura and authorityMapping should reflect
             const keys = await polkadotJs.query.authorityMapping.authorityIdMapping(2);
+            // TODO: fix once we have types
             expect(keys.toJSON()[u8aToHex(newKey)]).to.be.eq(alice.address);
 
             const authorities = (await polkadotJs.query.aura.authorities());
+            // TODO: fix once we have types
             expect(authorities.toJSON()).to.deep.equal([
                 u8aToHex(newKey),
             ]);

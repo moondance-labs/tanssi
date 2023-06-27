@@ -59,7 +59,7 @@ export const createTransaction = async (
       maxPriorityFeePerGas = options.gasPrice;
     } else {
       maxFeePerGas =
-        options.maxFeePerGas || (await context.ethersSigner().provider?.getFeeData())!.gasPrice;
+        options.maxFeePerGas || (await context.ethers().provider?.getFeeData())!.gasPrice;
       maxPriorityFeePerGas = options.maxPriorityFeePerGas || 0;
     }
   
@@ -98,10 +98,10 @@ export const createTransaction = async (
       options.nonce != null
         ? options.nonce
         : await context.web3().eth.getTransactionCount(from, "pending");
-    // : await context.ethersSigner().provider!.getTransactionCount(from, "pending");
+    // : await context.ethers().provider!.getTransactionCount(from, "pending");
   
     let data, rawTransaction;
-    const provider = context.ethersSigner().provider!;
+    const provider = context.ethers().provider!;
     // const provider = context.web3().provider
     // const newSigner = new ethers.Wallet(privateKey, provider);
     if (isLegacy) {
@@ -119,7 +119,7 @@ export const createTransaction = async (
       const tx = await context.web3().eth.accounts.signTransaction(data as any, privateKey);
       rawTransaction = tx.rawTransaction;
     } else {
-      const signer = new ethers.Wallet(privateKey, context.ethersSigner().provider!);
+      const signer = new ethers.Wallet(privateKey, context.ethers().provider!);
       const chainId = (await provider.getNetwork()).chainId;
       // const chainId = await context.web3().eth.getChainId()
       if (isEip2930) {
