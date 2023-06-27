@@ -22,9 +22,9 @@ use {
     },
     cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
     cumulus_primitives_core::ParaId,
+    dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
-    orchestrator_runtime::Block,
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
@@ -43,12 +43,12 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
             vec![],
             vec![2000.into(), 2001.into()],
         )),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config(
+        "template-rococo" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
         )),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(
+        "" | "dancebox-local" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
@@ -95,7 +95,7 @@ impl SubstrateCli for Cli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &orchestrator_runtime::VERSION
+        &dancebox_runtime::VERSION
     }
 }
 
@@ -195,7 +195,7 @@ impl SubstrateCli for ContainerChainCli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &orchestrator_runtime::VERSION
+        &dancebox_runtime::VERSION
     }
 }
 
@@ -238,14 +238,14 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.parachain_id {
-                    if cmd.base.shared_params.dev {
+                    if config.chain_spec.is_dev() {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
                         ))
                     } else {
-                        Box::new(chain_spec::local_testnet_config(
+                        Box::new(chain_spec::local_dancebox_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
@@ -397,7 +397,7 @@ pub fn run() -> Result<()> {
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
             use {
-                orchestrator_runtime::MILLISECS_PER_BLOCK,
+                dancebox_runtime::MILLISECS_PER_BLOCK,
                 sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch},
                 try_runtime_cli::block_building_info::timestamp_with_aura_info,
             };

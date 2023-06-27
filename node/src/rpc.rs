@@ -23,10 +23,8 @@
 
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 use {
-    jsonrpsee::{core::RpcResult, proc_macros::rpc},
-    orchestrator_runtime::{opaque::Block, AccountId, Index as Nonce},
-    polkadot_primitives::{Hash, Id as ParaId},
-    sc_chain_spec::ChainType,
+    dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
+    polkadot_primitives::Hash,
     sc_client_api::AuxStore,
     sc_consensus_manual_seal::{
         rpc::{ManualSeal, ManualSealApiServer},
@@ -37,7 +35,6 @@ use {
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
     std::sync::Arc,
-    tp_container_chain_genesis_data::ContainerChainGenesisData,
 };
 
 /// A type representing all RPC extensions.
@@ -53,8 +50,6 @@ pub struct FullDeps<C, P> {
     pub deny_unsafe: DenyUnsafe,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
-    /// Orchestrator chain utils
-    pub utils: Option<Utils>,
 }
 
 /// Instantiate all RPC extensions.
@@ -81,14 +76,9 @@ where
         pool,
         deny_unsafe,
         command_sink,
-        utils,
     } = deps;
 
     module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
-
-    if let Some(utils) = utils {
-        module.merge(utils.into_rpc())?;
-    }
 
     if let Some(command_sink) = command_sink {
         module.merge(
@@ -99,64 +89,4 @@ where
     };
 
     Ok(module)
-}
-
-/// Utils API implementation.
-pub struct Utils {
-    /// Chain name
-    pub chain_name: String,
-    /// Chain type
-    pub chain_type: ChainType,
-}
-
-/// Utils rpc interface.
-#[rpc(server)]
-pub trait UtilsApi {
-    #[method(name = "utils_raw_chain_spec_into_container_chain_genesis_data")]
-    fn raw_chain_spec_into_container_chain_genesis_data(
-        &self,
-        raw_chain_spec: String,
-    ) -> RpcResult<(ParaId, ContainerChainGenesisData)>;
-
-    #[method(name = "utils_container_chain_genesis_data_into_raw_chain_spec")]
-    fn container_chain_genesis_data_into_raw_chain_spec(
-        &self,
-        para_id: ParaId,
-        container_chain_genesis_data: ContainerChainGenesisData,
-    ) -> RpcResult<String>;
-}
-
-impl UtilsApiServer for Utils {
-    fn raw_chain_spec_into_container_chain_genesis_data(
-        &self,
-        raw_chain_spec: String,
-    ) -> RpcResult<(ParaId, ContainerChainGenesisData)> {
-        tp_container_chain_genesis_data::json::container_chain_genesis_data_from_str(
-            &raw_chain_spec,
-        )
-        .map_err(jsonrpsee::core::Error::Custom)
-    }
-
-    fn container_chain_genesis_data_into_raw_chain_spec(
-        &self,
-        para_id: ParaId,
-        container_chain_genesis_data: ContainerChainGenesisData,
-    ) -> RpcResult<String> {
-        let relay_chain = match self.chain_name.as_str() {
-            "dancebox" => "westend",
-            _ => "rococo-local",
-        };
-        let chain_type = self.chain_type.clone();
-        let raw_chain_spec = crate::cli::ContainerChainCli::chain_spec_from_genesis_data(
-            para_id.into(),
-            container_chain_genesis_data,
-            chain_type,
-            relay_chain.to_string(),
-        )
-        .map_err(jsonrpsee::core::Error::Custom)?;
-
-        raw_chain_spec
-            .as_json(true)
-            .map_err(jsonrpsee::core::Error::Custom)
-    }
 }

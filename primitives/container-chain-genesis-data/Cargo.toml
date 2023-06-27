@@ -9,7 +9,7 @@ version = "0.1.0"
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
 [dependencies]
-hex = { workspace = true, optional = true, features = [ "alloc"] }
+hex = { workspace = true, optional = true, features = [ "alloc" ] }
 hex-literal = { workspace = true }
 
 log = { workspace = true }

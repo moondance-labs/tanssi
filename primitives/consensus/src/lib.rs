@@ -15,7 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
-use {cumulus_primitives_core::ParaId, parity_scale_codec::Codec, sp_std::vec::Vec};
+use {
+    cumulus_primitives_core::ParaId,
+    frame_support::traits::Get,
+    parity_scale_codec::Codec,
+    sp_runtime::traits::Zero,
+    sp_std::{marker::PhantomData, vec::Vec},
+};
 
 sp_api::decl_runtime_apis! {
     /// API necessary for block authorship with Tanssi.
@@ -25,5 +31,53 @@ sp_api::decl_runtime_apis! {
 
         /// Returns the paraId for which an authority is assigned (if any)
         fn check_para_id_assignment(authority: AuthorityId) -> Option<ParaId>;
+    }
+}
+
+pub struct OnTimestampSet<SlotBeacon, SlotDuration>(PhantomData<(SlotBeacon, SlotDuration)>);
+impl<SlotBeacon, SlotDuration> frame_support::traits::OnTimestampSet<u64>
+    for OnTimestampSet<SlotBeacon, SlotDuration>
+where
+    SlotBeacon: nimbus_primitives::SlotBeacon,
+    SlotDuration: Get<u64>,
+{
+    fn on_timestamp_set(moment: u64) {
+        assert!(
+            !SlotDuration::get().is_zero(),
+            "Slot duration cannot be zero."
+        );
+
+        let timestamp_slot = moment / SlotDuration::get();
+
+        assert!(
+            SlotBeacon::slot() as u64 == timestamp_slot,
+            "Timestamp slot must match SlotBeacon slot"
+        );
+    }
+}
+
+pub struct NimbusLookUp;
+impl nimbus_primitives::AccountLookup<nimbus_primitives::NimbusId> for NimbusLookUp {
+    fn lookup_account(author: &nimbus_primitives::NimbusId) -> Option<nimbus_primitives::NimbusId> {
+        Some(author.clone())
+    }
+}
+
+pub struct AuraDigestSlotBeacon<ContainerRuntime>(PhantomData<ContainerRuntime>);
+impl<ContainerRuntime> nimbus_primitives::SlotBeacon for AuraDigestSlotBeacon<ContainerRuntime>
+where
+    ContainerRuntime: frame_system::Config,
+{
+    fn slot() -> u32 {
+        use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
+
+        let digests = frame_system::Pallet::<ContainerRuntime>::digest();
+
+        let slot = digests
+            .convert_first(|item| item.pre_runtime_try_to::<Slot>(&AURA_ENGINE_ID))
+            .expect("slot digest should exist");
+
+        let slot: u64 = slot.into();
+        slot as u32
     }
 }

@@ -15,10 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 //! The Manual Seal implementation for the OrchestratorAuraConsensus
+
 use {
     cumulus_primitives_core::ParaId,
     nimbus_primitives::{
-        CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair, NimbusSignature,
+        CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusId, NimbusPair, NimbusSignature,
     },
     sc_client_api::{AuxStore, UsageProvider},
     sc_consensus::BlockImportParams,
@@ -26,6 +27,7 @@ use {
     sp_api::{HeaderT, ProvideRuntimeApi, TransactionFor},
     sp_blockchain::{HeaderBackend, HeaderMetadata},
     sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, Slot, SlotDuration},
+    sp_core::Pair,
     sp_inherents::InherentData,
     sp_keystore::SyncCryptoStorePtr,
     sp_runtime::{traits::Block as BlockT, Digest, DigestItem},
@@ -135,15 +137,24 @@ where
     }
 }
 
+/// Helper function to generate a crypto pair from seed
+pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
+    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
+        .expect("static values are valid; qed")
+        .public()
+        .into()
+}
+
 /// Consensus data provider for Container Manual Seal Aura.
 pub struct ContainerManualSealAuraConsensusDataProvider<B, C, P> {
     // slot duration
     slot_duration: SlotDuration,
     /// Shared reference to keystore
     pub keystore: SyncCryptoStorePtr,
-
     /// Shared reference to the client
     pub client: Arc<C>,
+    // Authorities from which the author should be calculated
+    pub authorities: Vec<NimbusId>,
     // phantom data for required generics
     _phantom: PhantomData<(B, C, P)>,
 }
@@ -155,11 +166,17 @@ where
 {
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
-    pub fn new(client: Arc<C>, keystore: SyncCryptoStorePtr, slot_duration: SlotDuration) -> Self {
+    pub fn new(
+        client: Arc<C>,
+        keystore: SyncCryptoStorePtr,
+        slot_duration: SlotDuration,
+        authorities: Vec<NimbusId>,
+    ) -> Self {
         Self {
             slot_duration,
             keystore,
             client,
+            authorities,
             _phantom: PhantomData,
         }
     }
@@ -193,7 +210,8 @@ where
         let aura_digest_item =
             <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest(slot);
 
-        let expected_author: Option<nimbus_primitives::NimbusId> = None;
+        let alice_id = get_aura_id_from_seed("alice");
+        let expected_author: Option<nimbus_primitives::NimbusId> = Some(alice_id);
 
         // TODO: this should always be included, but breaks manual seal tests. We should modify
         // once configuration on how manual seal changes

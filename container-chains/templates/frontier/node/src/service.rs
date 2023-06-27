@@ -28,7 +28,10 @@ use {
     cumulus_primitives_parachain_inherent::{
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
+    fc_consensus::FrontierBlockImport,
+    nimbus_primitives::NimbusId,
     sp_consensus_aura::SlotDuration,
+    sp_core::Pair,
 };
 // Local Runtime Types
 use {
@@ -68,8 +71,6 @@ type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 
 type MaybeSelectChain = Option<sc_consensus::LongestChain<ParachainBackend, Block>>;
-
-use fc_consensus::FrontierBlockImport;
 
 pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
     let config_dir = config
@@ -440,6 +441,14 @@ pub async fn start_parachain_node(
     .await
 }
 
+/// Helper function to generate a crypto pair from seed
+fn get_aura_id_from_seed(seed: &str) -> NimbusId {
+    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
+        .expect("static values are valid; qed")
+        .public()
+        .into()
+}
+
 use {sp_blockchain::HeaderBackend, std::str::FromStr};
 /// Builds a new development service. This service uses manual seal, and mocks
 /// the parachain inherent.
@@ -447,6 +456,7 @@ pub async fn start_dev_node(
     mut config: Configuration,
     sealing: Sealing,
     rpc_config: crate::cli::RpcConfig,
+    para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<TaskManager, sc_service::error::Error> {
     use {
@@ -579,6 +589,8 @@ pub async fn start_dev_node(
             }
         }
 
+        let authorities = vec![get_aura_id_from_seed("alice")];
+
         task_manager.spawn_essential_handle().spawn_blocking(
 			"authorship_task",
 			Some("block-authoring"),
@@ -592,7 +604,8 @@ pub async fn start_dev_node(
 				consensus_data_provider: Some(Box::new(tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
                     client.clone(),
                     keystore_container.sync_keystore(),
-                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION)
+                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION.into()),
+                    authorities.clone(),
                 ))),
 				create_inherent_data_providers: move |block: H256, ()| {
 					let current_para_block = client_set_aside_for_cidp
@@ -601,6 +614,7 @@ pub async fn start_dev_node(
 						.expect("Header passed in as parent should be present in backend.");
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
+                    let authorities_for_cidp = authorities.clone();
 
 					async move {
                         let time = MockTimestampInherentDataProvider;
@@ -627,7 +641,8 @@ pub async fn start_dev_node(
                                 relay_offset: 1000,
                                 relay_blocks_per_para_block: 2,
                                 orchestrator_para_id: crate::chain_spec::ORCHESTRATOR,
-                                authorities: vec![]
+                                container_para_id: para_id,
+                                authorities: authorities_for_cidp
                         };
 
 						Ok((time, mocked_parachain, mocked_authorities_noting))

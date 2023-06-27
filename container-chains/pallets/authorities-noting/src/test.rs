@@ -15,10 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::{
-        mock::*,
-        {OrchestratorParaId, ParaId},
-    },
+    crate::{mock::*, OrchestratorParaId, ParaId},
     sp_runtime::traits::BlakeTwo256,
     test_relay_sproof_builder::{
         AuthorityAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
