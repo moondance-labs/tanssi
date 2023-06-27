@@ -21,6 +21,7 @@ use {
     crate::{Call, Config, DepositBalanceOf, Pallet},
     frame_benchmarking::{account, v2::*},
     frame_support::traits::Currency,
+    frame_support::BoundedVec,
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::vec,
@@ -86,11 +87,7 @@ mod benchmarks {
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
 
         #[extrinsic_call]
-        Pallet::<T>::register(
-            RawOrigin::Signed(caller.clone()),
-            Default::default(),
-            storage.clone(),
-        );
+        Pallet::<T>::register(RawOrigin::Signed(caller), Default::default(), storage);
 
         // verification code
         assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
@@ -134,7 +131,7 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn mark_valid_for_collatings(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
+    fn mark_valid_for_collating(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
         let storage = ContainerChainGenesisData {
             // Runtime would go under "code" key, so we mimic
             // with 4 byte key
@@ -166,6 +163,20 @@ mod benchmarks {
 
         // We should have y-1
         assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
+    }
+
+    #[benchmark]
+    fn set_boot_nodes(x: Linear<1, 200>, y: Linear<1, 10>) {
+        // x: url len, y: num boot_nodes
+        let boot_nodes = BoundedVec::try_from(vec![
+            BoundedVec::try_from(vec![b'A'; x as usize])
+                .unwrap();
+            y as usize
+        ])
+        .unwrap();
+
+        #[extrinsic_call]
+        Pallet::<T>::set_boot_nodes(RawOrigin::Root, Default::default(), boot_nodes);
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);

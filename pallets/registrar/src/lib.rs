@@ -65,7 +65,7 @@ pub mod pallet {
     #[derive(Default)]
     pub struct GenesisConfig {
         /// Para ids
-        pub para_ids: Vec<(ParaId, ContainerChainGenesisData)>,
+        pub para_ids: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     }
 
     #[pallet::genesis_build]
@@ -85,7 +85,7 @@ pub mod pallet {
 
             let mut bounded_para_ids = BoundedVec::truncate_from(vec![]);
 
-            for (para_id, genesis_data) in para_ids {
+            for (para_id, genesis_data, boot_nodes) in para_ids {
                 bounded_para_ids
                     .try_push(*para_id)
                     .expect("too many para ids in genesis: bounded vec full");
@@ -100,6 +100,12 @@ pub mod pallet {
                     );
                 }
                 <ParaGenesisData<T>>::insert(para_id, genesis_data);
+                let boot_nodes: Vec<_> = boot_nodes
+                    .iter()
+                    .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
+                    .collect();
+                let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
+                <BootNodes<T>>::insert(para_id, boot_nodes);
             }
 
             <RegisteredParaIds<T>>::put(bounded_para_ids);
@@ -122,6 +128,9 @@ pub mod pallet {
         /// Max length of encoded genesis data
         #[pallet::constant]
         type MaxGenesisDataSize: Get<u32>;
+
+        type MaxBootNodes: Get<u32>;
+        type MaxBootNodeUrlLen: Get<u32>;
 
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
@@ -161,6 +170,16 @@ pub mod pallet {
     pub type PendingVerification<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn boot_nodes)]
+    pub type BootNodes<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        ParaId,
+        BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
+        ValueQuery,
+    >;
+
     pub type DepositBalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
@@ -187,6 +206,8 @@ pub mod pallet {
         ParaIdDeregistered { para_id: ParaId },
         /// A new para id is now valid for collating. [para_id]
         ParaIdValidForCollating { para_id: ParaId },
+        /// The list of boot_nodes
+        BootNodesChanged { para_id: ParaId },
     }
 
     #[pallet::error]
@@ -220,18 +241,17 @@ pub mod pallet {
 
             // Verify we can reserve
             T::Currency::can_reserve(&account, deposit)
-                .then(|| true)
+                .then_some(true)
                 .ok_or(Error::<T>::NotSufficientDeposit)?;
 
             // Check if the para id is already registered
             let pending_paras = <PendingParaIds<T>>::get();
             let base_paras = pending_paras
                 .last()
-                .map(|&(_, ref paras)| paras.clone())
+                .map(|(_, paras)| paras.clone())
                 .unwrap_or_else(Self::registered_para_ids);
-            match base_paras.binary_search(&para_id) {
-                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                Err(_) => (),
+            if base_paras.binary_search(&para_id).is_ok() {
+                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
             }
 
             // Insert para id into PendingVerification, if it does not exist there
@@ -266,7 +286,7 @@ pub mod pallet {
             RegistrarDeposit::<T>::insert(
                 para_id,
                 DepositInfo {
-                    creator: account.clone(),
+                    creator: account,
                     deposit,
                 },
             );
@@ -292,7 +312,8 @@ pub mod pallet {
 
             Self::schedule_parachain_change(|para_ids| {
                 // We have to find out where, in the sorted vec the para id is, if anywhere.
-                let result = match para_ids.binary_search(&para_id) {
+
+                match para_ids.binary_search(&para_id) {
                     Ok(index) => {
                         para_ids.remove(index);
                         Ok(())
@@ -311,8 +332,7 @@ pub mod pallet {
                             Err(_) => Err(Error::<T>::ParaIdNotRegistered.into()),
                         }
                     }
-                };
-                result
+                }
             })?;
 
             // Get asset creator and deposit amount
@@ -337,9 +357,9 @@ pub mod pallet {
 
         /// Mark container-chain valid for collating
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::deregister(
+        #[pallet::weight(T::WeightInfo::mark_valid_for_collating(
             T::MaxGenesisDataSize::get(),
-            T::MaxLengthParaIds::get()
+            T::MaxLengthParaIds::get(),
         ))]
         pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
@@ -357,7 +377,8 @@ pub mod pallet {
                 // We don't want to add duplicate para ids, so we check whether the potential new
                 // para id is already present in the list. Because the list is always ordered, we can
                 // leverage the binary search which makes this check O(log n).
-                let result = match para_ids.binary_search(&para_id) {
+
+                match para_ids.binary_search(&para_id) {
                     Ok(_) => Err(Error::<T>::ParaIdAlreadyRegistered.into()),
                     Err(index) => {
                         para_ids
@@ -366,13 +387,32 @@ pub mod pallet {
 
                         Ok(())
                     }
-                };
-                result
+                }
             })?;
 
             PendingVerification::<T>::put(pending_verification);
 
             Self::deposit_event(Event::ParaIdValidForCollating { para_id });
+
+            Ok(())
+        }
+
+        /// Set boot_nodes for this para id
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_boot_nodes(
+            T::MaxBootNodeUrlLen::get(),
+            T::MaxBootNodes::get(),
+        ))]
+        pub fn set_boot_nodes(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
+        ) -> DispatchResult {
+            T::RegistrarOrigin::ensure_origin(origin)?;
+
+            BootNodes::<T>::insert(para_id, boot_nodes);
+
+            Self::deposit_event(Event::BootNodesChanged { para_id });
 
             Ok(())
         }
@@ -394,7 +434,7 @@ pub mod pallet {
             // First, we need to decide what we should use as the base paras.
             let mut base_paras = pending_paras
                 .last()
-                .map(|&(_, ref paras)| paras.clone())
+                .map(|(_, paras)| paras.clone())
                 .unwrap_or_else(Self::registered_para_ids);
 
             updater(&mut base_paras)?;
@@ -474,10 +514,7 @@ pub mod pallet {
 
     impl<T: Config> GetCurrentContainerChains for Pallet<T> {
         fn current_container_chains() -> Vec<ParaId> {
-            Self::registered_para_ids()
-                .into_iter()
-                .map(|x| x.into())
-                .collect()
+            Self::registered_para_ids().into_iter().collect()
         }
 
         #[cfg(feature = "runtime-benchmarks")]
@@ -500,7 +537,7 @@ pub mod pallet {
                 Pallet::<T>::registered_para_ids()
             };
 
-            paras.into_iter().map(|x| ParaId::from(x)).collect()
+            paras.into_iter().collect()
         }
     }
 }

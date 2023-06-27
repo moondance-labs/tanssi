@@ -892,6 +892,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-state-machine",
+ "sp-std",
  "sp-trie",
  "tc-consensus",
  "tc-orchestrator-chain-interface",
@@ -1289,6 +1290,7 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "substrate-wasm-builder",
+ "tp-consensus",
 ]
 
 [[package]]
@@ -1404,6 +1406,7 @@ dependencies = [
  "sp-trie",
  "sp-version",
  "substrate-wasm-builder",
+ "tp-consensus",
 ]
 
 [[package]]
@@ -6096,7 +6099,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.43#208161a1b90bb2216a3693189ea56598075f6635"
+source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.43#14f2b6f83308c905b495da331155dc8dea0e96dc"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -6126,7 +6129,7 @@ dependencies = [
 [[package]]
 name = "nimbus-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.43#208161a1b90bb2216a3693189ea56598075f6635"
+source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.43#14f2b6f83308c905b495da331155dc8dea0e96dc"
 dependencies = [
  "async-trait",
  "frame-support",
@@ -6481,7 +6484,7 @@ dependencies = [
 [[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.43#208161a1b90bb2216a3693189ea56598075f6635"
+source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.43#14f2b6f83308c905b495da331155dc8dea0e96dc"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -13754,9 +13757,14 @@ name = "tp-consensus"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "nimbus-primitives",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
+ "sp-consensus-aura",
+ "sp-runtime",
  "sp-std",
 ]
 

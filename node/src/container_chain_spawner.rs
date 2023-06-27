@@ -84,7 +84,7 @@ impl ContainerChainSpawner {
         let ContainerChainSpawner {
             orchestrator_chain_interface,
             orchestrator_client,
-            container_chain_cli,
+            mut container_chain_cli,
             tokio_handle,
             chain_type,
             relay_chain,
@@ -97,7 +97,6 @@ impl ContainerChainSpawner {
             spawned_para_ids,
             collate_on_tanssi: _,
         } = self.clone();
-        let mut container_chain_cli: ContainerChainCli = container_chain_cli.clone();
 
         // This closure is used to emulate a try block, it enables using the `?` operator inside
         let try_closure = move || async move {
@@ -121,10 +120,7 @@ impl ContainerChainSpawner {
             );
 
             let genesis_data = orchestrator_runtime_api
-                .genesis_data(
-                    orchestrator_chain_info.best_hash,
-                    container_chain_para_id.into(),
-                )
+                .genesis_data(orchestrator_chain_info.best_hash, container_chain_para_id)
                 .expect("error")
                 .ok_or_else(|| {
                     format!(
@@ -133,12 +129,21 @@ impl ContainerChainSpawner {
                     )
                 })?;
 
+            let boot_nodes_raw = orchestrator_runtime_api
+                .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
+                .expect("error");
+            let boot_nodes: Vec<String> = boot_nodes_raw
+                .into_iter()
+                .map(|x| String::from_utf8(x).map_err(|e| format!("{}", e)))
+                .collect::<Result<_, _>>()?;
+
             container_chain_cli
                 .preload_chain_spec_from_genesis_data(
                     container_chain_para_id.into(),
                     genesis_data,
                     chain_type.clone(),
                     relay_chain.clone(),
+                    boot_nodes,
                 )
                 .map_err(|e| format!("failed to create container chain chain spec from on chain genesis data: {}", e))?;
 
@@ -176,7 +181,7 @@ impl ContainerChainSpawner {
                     orchestrator_chain_interface.clone(),
                     collator_key.clone(),
                     sync_keystore.clone(),
-                    container_chain_para_id.into(),
+                    container_chain_para_id,
                     orchestrator_para_id,
                     validator,
                 )
@@ -188,7 +193,7 @@ impl ContainerChainSpawner {
             spawned_para_ids
                 .lock()
                 .expect("poison error")
-                .insert(container_chain_para_id.into(), StopContainerChain(signal));
+                .insert(container_chain_para_id, StopContainerChain(signal));
 
             // Add the container chain task manager as a child task to the parent task manager.
             // We want to stop the node if this task manager stops, but we also want to allow a

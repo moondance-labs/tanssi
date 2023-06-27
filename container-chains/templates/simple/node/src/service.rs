@@ -237,7 +237,7 @@ async fn start_node_impl(
         config: parachain_config,
         keystore: params.keystore_container.keystore(),
         backend,
-        network: network.clone(),
+        network,
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),

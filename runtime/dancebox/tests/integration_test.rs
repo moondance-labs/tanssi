@@ -75,8 +75,8 @@ fn genesis_para_registrar() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .build()
         .execute_with(|| {
@@ -96,8 +96,8 @@ fn genesis_para_registrar_deregister() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .build()
         .execute_with(|| {
@@ -140,8 +140,8 @@ fn genesis_para_registrar_runtime_api() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .build()
         .execute_with(|| {
@@ -186,8 +186,8 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, genesis_data_1001.clone()),
-            (1002, genesis_data_1002.clone()),
+            (1001, genesis_data_1001.clone(), vec![]),
+            (1002, genesis_data_1002.clone(), vec![]),
         ])
         .build()
         .execute_with(|| {
@@ -257,8 +257,8 @@ fn test_author_collation_aura() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -297,8 +297,8 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -374,8 +374,8 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -401,16 +401,12 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
-                    aura: charlie_id.clone(),
-                },
+                dancebox_runtime::SessionKeys { aura: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
-                    aura: dave_id.clone(),
-                },
+                dancebox_runtime::SessionKeys { aura: dave_id },
                 vec![]
             ));
 
@@ -647,8 +643,8 @@ fn test_parachains_deregister_collators_re_assigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -715,8 +711,8 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -787,8 +783,8 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -882,8 +878,8 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -930,16 +926,12 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
-                    aura: charlie_id.clone(),
-                },
+                dancebox_runtime::SessionKeys { aura: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
-                    aura: dave_id.clone(),
-                },
+                dancebox_runtime::SessionKeys { aura: dave_id },
                 vec![]
             ));
 
@@ -1055,8 +1047,8 @@ fn test_consensus_runtime_api() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -1080,21 +1072,15 @@ fn test_consensus_runtime_api() {
             );
             assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Runtime::check_para_id_assignment(bob_id.clone()),
                 Some(100.into())
             );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
-                None
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
-                None
-            );
+            assert_eq!(Runtime::check_para_id_assignment(charlie_id.clone()), None);
+            assert_eq!(Runtime::check_para_id_assignment(dave_id.clone()), None);
 
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
@@ -1128,19 +1114,16 @@ fn test_consensus_runtime_api() {
                 Some(vec![charlie_id.clone(), dave_id.clone()])
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id),
                 Some(100.into())
             );
+            assert_eq!(Runtime::check_para_id_assignment(bob_id), Some(100.into()));
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
-                Some(100.into())
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
+                Runtime::check_para_id_assignment(charlie_id),
                 Some(1001.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
+                Runtime::check_para_id_assignment(dave_id),
                 Some(1001.into())
             );
         });
@@ -1164,8 +1147,8 @@ fn test_consensus_runtime_api_session_changes() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -1189,21 +1172,15 @@ fn test_consensus_runtime_api_session_changes() {
             );
             assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Runtime::check_para_id_assignment(bob_id.clone()),
                 Some(100.into())
             );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
-                None
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
-                None
-            );
+            assert_eq!(Runtime::check_para_id_assignment(charlie_id.clone()), None);
+            assert_eq!(Runtime::check_para_id_assignment(dave_id.clone()), None);
 
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
@@ -1239,21 +1216,15 @@ fn test_consensus_runtime_api_session_changes() {
             );
             assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
+                Runtime::check_para_id_assignment(bob_id.clone()),
                 Some(100.into())
             );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
-                None
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
-                None
-            );
+            assert_eq!(Runtime::check_para_id_assignment(charlie_id.clone()), None);
+            assert_eq!(Runtime::check_para_id_assignment(dave_id.clone()), None);
 
             // Now we run to session edge -1. Here we should predict already with
             // authorities of the next block!
@@ -1267,19 +1238,16 @@ fn test_consensus_runtime_api_session_changes() {
                 Some(vec![charlie_id.clone(), dave_id.clone()])
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(alice_id.clone().into()),
+                Runtime::check_para_id_assignment(alice_id),
                 Some(100.into())
             );
+            assert_eq!(Runtime::check_para_id_assignment(bob_id), Some(100.into()));
             assert_eq!(
-                Runtime::check_para_id_assignment(bob_id.clone().into()),
-                Some(100.into())
-            );
-            assert_eq!(
-                Runtime::check_para_id_assignment(charlie_id.clone().into()),
+                Runtime::check_para_id_assignment(charlie_id),
                 Some(1001.into())
             );
             assert_eq!(
-                Runtime::check_para_id_assignment(dave_id.clone().into()),
+                Runtime::check_para_id_assignment(dave_id),
                 Some(1001.into())
             );
         });
@@ -1338,8 +1306,8 @@ fn test_author_noting_not_self_para() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .build()
         .execute_with(|| {
@@ -1399,8 +1367,8 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -1489,8 +1457,8 @@ fn test_session_keys_with_authority_assignment() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data()),
-            (1002, empty_genesis_data()),
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -1575,7 +1543,7 @@ fn test_session_keys_with_authority_assignment() {
             assert!(key_mapping_session_3.is_none());
 
             // Everything should match to aura
-            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
 
             run_to_session(2u32, true);
 

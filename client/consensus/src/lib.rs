@@ -93,9 +93,9 @@ where
     let runtime_api = client.runtime_api();
 
     let (_first_eligibile_key, para_id) =
-        first_eligible_key::<B, C, P>(client.clone(), parent_hash, keystore.clone())?;
+        first_eligible_key::<B, C, P>(client, parent_hash, keystore.clone())?;
     let authorities = runtime_api
-        .para_id_authorities(parent_hash.clone(), para_id)
+        .para_id_authorities(*parent_hash, para_id)
         .ok()?;
     log::info!(
         "Authorities found for para {:?} are {:?}",
@@ -146,7 +146,7 @@ where
             // If we dont find any parachain that we are assigned to, return none
 
             if let Ok(Some(para_id)) =
-                runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into())
+                runtime_api.check_para_id_assignment(*parent_hash, nimbus_id.clone().into())
             {
                 log::debug!("Para id found for assignment {:?}", para_id);
 

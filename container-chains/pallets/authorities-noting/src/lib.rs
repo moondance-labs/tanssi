@@ -143,7 +143,7 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig {
         fn build(&self) {
-            OrchestratorParaId::<T>::put(&self.orchestrator_para_id);
+            OrchestratorParaId::<T>::put(self.orchestrator_para_id);
         }
     }
 
@@ -174,7 +174,7 @@ pub mod pallet {
 
             let para_id = OrchestratorParaId::<T>::get();
             let relay_chain_state_proof =
-                GenericStateProof::new(relay_storage_root, relay_chain_state_proof.clone())
+                GenericStateProof::new(relay_storage_root, relay_chain_state_proof)
                     .expect("Invalid relay chain state proof");
 
             // Fetch authorities
@@ -184,11 +184,9 @@ pub mod pallet {
                     para_id,
                 )?;
 
-                let orchestrator_chain_state_proof = GenericStateProof::new(
-                    orchestrator_root,
-                    orchestrator_chain_state_proof.clone(),
-                )
-                .expect("Invalid orchestrator chain state proof");
+                let orchestrator_chain_state_proof =
+                    GenericStateProof::new(orchestrator_root, orchestrator_chain_state_proof)
+                        .expect("Invalid orchestrator chain state proof");
 
                 Self::fetch_authorities_from_orchestrator_proof(
                     &orchestrator_chain_state_proof,
@@ -231,7 +229,7 @@ pub mod pallet {
             new_para_id: ParaId,
         ) -> DispatchResult {
             ensure_root(origin)?;
-            OrchestratorParaId::<T>::put(&new_para_id);
+            OrchestratorParaId::<T>::put(new_para_id);
             Self::deposit_event(Event::OrchestratorParachainIdUpdated { new_para_id });
             Ok(())
         }
@@ -248,7 +246,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn authorities)]
-    pub(super) type Authorities<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
+    pub type Authorities<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
 
     /// Was the containerAuthorData set?
     #[pallet::storage]
@@ -313,8 +311,7 @@ impl<T: Config> Pallet<T> {
             sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
                 &mut head_data.0.as_slice(),
             )
-            .map_err(|_| Error::<T>::FailedDecodingHeader)?
-            .clone();
+            .map_err(|_| Error::<T>::FailedDecodingHeader)?;
 
         // Fetch the orchestrator chain storage root
         let orchestrator_chain_storage_root = orchestrator_chain_header.state_root;
@@ -349,7 +346,7 @@ impl<T: Config> Pallet<T> {
         // Read those authorities assigned to this chain
         let authorities = assignment
             .container_chains
-            .get(&para_id.into())
+            .get(&para_id)
             .ok_or(Error::<T>::NoAuthoritiesFound)?;
         Ok(authorities.clone())
     }

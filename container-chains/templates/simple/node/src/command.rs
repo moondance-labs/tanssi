@@ -36,11 +36,16 @@ use {
     std::net::SocketAddr,
 };
 
+#[cfg(feature = "try-runtime")]
+use try_runtime_cli::block_building_info::substrate_info;
+#[cfg(feature = "try-runtime")]
+const SLOT_DURATION: u64 = 12;
+
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::development_config(para_id, None)),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id, None)),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id, None)),
+        "dev" => Box::new(chain_spec::development_config(para_id, None, vec![])),
+        "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id, None, vec![])),
+        "" | "local" => Box::new(chain_spec::local_testnet_config(para_id, None, vec![])),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
@@ -151,11 +156,13 @@ pub fn run() -> Result<()> {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
                             cmd.seeds.clone(),
+                            cmd.add_bootnode.clone(),
                         ))
                     } else {
                         Box::new(chain_spec::local_testnet_config(
                             para_id.into(),
                             cmd.seeds.clone(),
+                            cmd.add_bootnode.clone(),
                         ))
                     }
                 } else {
@@ -243,14 +250,11 @@ pub fn run() -> Result<()> {
                     cmd.run(partials.client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
-                BenchmarkCmd::Storage(_) => {
-                    return Err(sc_cli::Error::Input(
-                        "Compile with --features=runtime-benchmarks \
+                BenchmarkCmd::Storage(_) => Err(sc_cli::Error::Input(
+                    "Compile with --features=runtime-benchmarks \
 						to enable storage benchmarks."
-                            .into(),
-                    )
-                    .into())
-                }
+                        .into(),
+                )),
                 #[cfg(feature = "runtime-benchmarks")]
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
                     let partials = new_partial(&config)?;
@@ -287,9 +291,12 @@ pub fn run() -> Result<()> {
                 sc_service::TaskManager::new(runner.config().tokio_handle.clone(), *registry)
                     .map_err(|e| format!("Error: {:?}", e))?;
 
+            let info_provider = substrate_info(SLOT_DURATION);
             runner.async_run(|_| {
                 Ok((
-                    cmd.run::<Block, HostFunctionsOf<ParachainNativeExecutor>>(),
+                    cmd.run::<Block, HostFunctionsOf<ParachainNativeExecutor>, _>(Some(
+                        info_provider,
+                    )),
                     task_manager,
                 ))
             })
@@ -305,13 +312,13 @@ pub fn run() -> Result<()> {
             runner.run_node_until_exit(|config| async move {
 				let hwbench = (!cli.no_hardware_benchmarks).then_some(
 					config.database.path().map(|database_path| {
-						let _ = std::fs::create_dir_all(&database_path);
+						let _ = std::fs::create_dir_all(database_path);
 						sc_sysinfo::gather_hwbench(Some(database_path))
 					})).flatten();
 
 				let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
 					.map(|e| e.para_id)
-					.ok_or_else(|| "Could not find parachain ID in chain-spec.")?;
+					.ok_or("Could not find parachain ID in chain-spec.")?;
 
 				let polkadot_cli = RelayChainCli::new(
 					&config,
@@ -338,7 +345,7 @@ pub fn run() -> Result<()> {
 				info!("Parachain genesis state: {}", genesis_state);
 				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
 
-				if !collator_options.relay_chain_rpc_urls.is_empty() && cli.relay_chain_args.len() > 0 {
+				if !collator_options.relay_chain_rpc_urls.is_empty() && !cli.relay_chain_args.is_empty() {
 					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 

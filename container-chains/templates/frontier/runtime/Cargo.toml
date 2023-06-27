@@ -18,6 +18,7 @@ smallvec = { workspace = true }
 
 # Local
 pallet-cc-authorities-noting = { workspace = true }
+tp-consensus = { workspace = true }
 
 # Nimbus
 nimbus-primitives = { workspace = true }
@@ -101,6 +102,7 @@ std = [
 	"frame-support/std",
 	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
+	"frame-try-runtime/std",
 	"log/std",
 	"pallet-aura/std",
 	"pallet-authorship/std",
@@ -117,7 +119,9 @@ std = [
 	"pallet-evm/std",
 	"pallet-hotfix-sufficients/std",
 	"pallet-session/std",
+	"pallet-sudo/std",
 	"pallet-timestamp/std",
+	"pallet-utility/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain/std",
@@ -133,6 +137,7 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+	"tp-consensus/std",
 ]
 
 runtime-benchmarks = [
@@ -147,15 +152,30 @@ runtime-benchmarks = [
 ]
 
 try-runtime = [
-	"cumulus-pallet-aura-ext/try-runtime",
-	"cumulus-pallet-parachain-system/try-runtime",
+	"pallet-cc-authorities-noting/try-runtime",
+	"nimbus-primitives/try-runtime",
 	"frame-executive/try-runtime",
+	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
 	"pallet-aura/try-runtime",
 	"pallet-authorship/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-session/try-runtime",
+	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
+	"pallet-transaction-payment/try-runtime",
+	"pallet-utility/try-runtime",
+	"sp-runtime/try-runtime",
+	"polkadot-runtime-common/try-runtime",
+	"cumulus-pallet-aura-ext/try-runtime",
+	"cumulus-pallet-parachain-system/try-runtime",
 	"parachain-info/try-runtime",
+	"fp-self-contained/try-runtime",
+	"pallet-base-fee/try-runtime",
+	"pallet-dynamic-fee/try-runtime",
+	"pallet-ethereum/try-runtime",
+	"pallet-evm/try-runtime",
+	"pallet-evm-chain-id/try-runtime",
+	"pallet-hotfix-sufficients/try-runtime",
 ]

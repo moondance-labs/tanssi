@@ -22,9 +22,29 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+#[cfg(feature = "std")]
+use sp_version::NativeVersion;
+
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
+
+pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+    frame_support::{
+        construct_runtime,
+        dispatch::DispatchClass,
+        parameter_types,
+        traits::{ConstU32, ConstU64, Everything},
+        weights::{
+            constants::{
+                BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
+                WEIGHT_REF_TIME_PER_SECOND,
+            },
+            Weight, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
+        },
+    },
+    frame_system::limits::{BlockLength, BlockWeights},
     nimbus_primitives::NimbusId,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
@@ -35,29 +55,9 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, MultiSignature,
     },
+    sp_std::prelude::*,
+    sp_version::RuntimeVersion,
 };
-
-#[cfg(feature = "std")]
-use sp_version::NativeVersion;
-use {sp_std::prelude::*, sp_version::RuntimeVersion};
-
-pub use sp_runtime::{MultiAddress, Perbill, Permill};
-use {
-    frame_support::{
-        construct_runtime,
-        dispatch::DispatchClass,
-        parameter_types,
-        traits::{ConstU32, ConstU64, Everything},
-        weights::{
-            constants::WEIGHT_REF_TIME_PER_SECOND, Weight, WeightToFeeCoefficient,
-            WeightToFeeCoefficients, WeightToFeePolynomial,
-        },
-    },
-    frame_system::limits::{BlockLength, BlockWeights},
-};
-
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
 
 // Polkadot imports
 use polkadot_runtime_common::BlockHashCount;
@@ -320,7 +320,10 @@ impl frame_system::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = Aura;
+    type OnTimestampSet = tp_consensus::OnTimestampSet<
+        <Self as pallet_author_inherent::Config>::SlotBeacon,
+        ConstU64<{ SLOT_DURATION }>,
+    >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();
 }
@@ -419,6 +422,24 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type WeightInfo = ();
 }
 
+pub struct CanAuthor;
+impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
+    fn can_author(author: &NimbusId, slot: &u32) -> bool {
+        let authorities = AuthoritiesNoting::authorities();
+        let expected_author = &authorities[(*slot as usize) % authorities.len()];
+
+        expected_author == author
+    }
+}
+
+impl pallet_author_inherent::Config for Runtime {
+    type AuthorId = NimbusId;
+    type AccountLookup = tp_consensus::NimbusLookUp;
+    type CanAuthor = CanAuthor;
+    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type WeightInfo = ();
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -443,8 +464,9 @@ construct_runtime!(
         Aura: pallet_aura = 33,
         AuraExt: cumulus_pallet_aura_ext = 34,
 
-        // ContainerChain
+        // ContainerChain Author Verification
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
+        AuthorInherent: pallet_author_inherent = 51,
 
     }
 );

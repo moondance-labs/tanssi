@@ -30,5 +30,8 @@ sp_api::decl_runtime_apis! {
 
         /// Fetch genesis data for this para id
         fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData>;
+
+        /// Fetch boot_nodes for this para id
+        fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>>;
     }
 }

@@ -5,6 +5,7 @@ import jsonBg from "json-bigint";
 import { containerChainGenesisDataToChainSpec } from "../util/genesis_data.ts";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network.js";
 import { convertExponentials } from "@zombienet/utils";
+import { hexToString } from "@polkadot/util";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 yargs(hideBin(process.argv))
@@ -12,7 +13,7 @@ yargs(hideBin(process.argv))
   .version("1.0.0")
   .command(
     `*`,
-    "Registers a parachain",
+    "Creates a chainSpec.json file based on on-chain data for a container chain",
     (yargs) => {
       return yargs
         .options({
@@ -52,6 +53,11 @@ yargs(hideBin(process.argv))
                 encoded.unwrap(),
             );
             const rawSpec = containerChainGenesisDataToChainSpec(onChainGenesisData, argv.paraId, argv.chainType, argv.relayChain);
+            // Add bootnodes (they are stored in a separate storage)
+            const bootNodes = await api.query.registrar.bootNodes(argv.paraId) as any;
+            rawSpec.bootNodes = bootNodes.map(x => {
+                return hexToString(x.toHex());
+            });
             process.stdout.write(`Writing to: ${argv.output} ...`);
             await fs.writeFile(
               argv.output,

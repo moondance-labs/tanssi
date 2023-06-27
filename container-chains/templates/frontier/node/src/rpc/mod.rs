@@ -160,7 +160,7 @@ where
         Eth::new(
             Arc::clone(&client),
             Arc::clone(&pool),
-            graph.clone(),
+            graph,
             convert_transaction,
             Arc::clone(&sync),
             signers,
@@ -180,11 +180,11 @@ where
         io.merge(
             EthFilter::new(
                 client.clone(),
-                frontier_backend.clone(),
+                frontier_backend,
                 filter_pool,
                 500_usize, // max stored filters
                 max_past_logs,
-                block_data_cache.clone(),
+                block_data_cache,
             )
             .into_rpc(),
         )?;
@@ -193,7 +193,7 @@ where
     io.merge(
         Net::new(
             Arc::clone(&client),
-            network.clone(),
+            network,
             // Whether to format the `peer_count` response as Hex (default) or not.
             true,
         )
@@ -213,7 +213,7 @@ where
         EthPubSub::new(
             pool,
             Arc::clone(&client),
-            sync.clone(),
+            sync,
             subscription_task_executor,
             overrides,
             pubsub_notification_sinks,

@@ -35,6 +35,7 @@ use {
     },
     nimbus_primitives::NimbusId,
     sp_inherents::{InherentData, InherentDataProvider},
+    sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::{
         AuthorityAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilder,
         ParaHeaderSproofBuilderItem,
@@ -53,6 +54,8 @@ pub struct MockAuthoritiesNotingInherentDataProvider {
     pub relay_blocks_per_para_block: u32,
     /// Orchestrator ParaId
     pub orchestrator_para_id: ParaId,
+    /// Container ParaId,
+    pub container_para_id: ParaId,
     /// Orchestrator ParaId
     pub authorities: Vec<NimbusId>,
 }
@@ -65,10 +68,12 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
     ) -> Result<(), sp_inherents::Error> {
         let mut sproof_builder = ParaHeaderSproofBuilder::default();
 
+        let container_chains =
+            BTreeMap::from_iter([(self.container_para_id, self.authorities.clone())]);
         let assignment = AuthorityAssignmentSproofBuilder::<NimbusId> {
             authority_assignment: AssignedCollators {
                 orchestrator_chain: vec![],
-                container_chains: Default::default(),
+                container_chains,
             },
             session_index: 0,
         };
@@ -77,8 +82,10 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
             assignment.into_state_root_and_proof();
 
         // Use the "sproof" (spoof proof) builder to build valid mock state root and proof.
-        let mut sproof_builder_item = ParaHeaderSproofBuilderItem::default();
-        sproof_builder_item.para_id = self.orchestrator_para_id;
+        let mut sproof_builder_item = ParaHeaderSproofBuilderItem {
+            para_id: self.orchestrator_para_id,
+            ..Default::default()
+        };
 
         let header = HeaderAs::NonEncoded(tp_core::Header {
             parent_hash: Default::default(),

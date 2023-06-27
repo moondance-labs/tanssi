@@ -109,7 +109,7 @@ jobs:
     strategy:
       matrix:
         cpu: ["", "skylake", "znver3"]
-        node: ["tanssi-node", "container-chain-template-frontier-node, container-chain-template-simple-node"]
+        node: ["tanssi-node", "container-chain-template-frontier-node", "container-chain-template-simple-node"]
     steps:
       - uses: actions/download-artifact@v3.0.2
         with:

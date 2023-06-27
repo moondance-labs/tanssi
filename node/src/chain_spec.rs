@@ -13,6 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+use sc_network::config::MultiaddrWithPeerId;
 
 use {
     cumulus_primitives_core::ParaId,
@@ -118,7 +119,7 @@ where
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
 pub fn template_session_keys(keys: NimbusId) -> dancebox_runtime::SessionKeys {
-    dancebox_runtime::SessionKeys { aura: keys.clone() }
+    dancebox_runtime::SessionKeys { aura: keys }
 }
 
 /// Helper function to turn a list of names into a list of `(AccountId, AuraId)`
@@ -146,6 +147,7 @@ pub fn development_config(
     para_id: ParaId,
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
+    boot_nodes: Vec<String>,
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -153,6 +155,13 @@ pub fn development_config(
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
+    let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
+        .into_iter()
+        .map(|x| {
+            x.parse::<MultiaddrWithPeerId>()
+                .unwrap_or_else(|e| panic!("invalid bootnode address format {:?}: {:?}", x, e))
+        })
+        .collect();
 
     ChainSpec::from_genesis(
         // Name
@@ -192,7 +201,7 @@ pub fn development_config(
                 },
             )
         },
-        Vec::new(),
+        boot_nodes,
         None,
         None,
         None,
@@ -208,6 +217,7 @@ pub fn local_dancebox_config(
     para_id: ParaId,
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
+    boot_nodes: Vec<String>,
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -215,6 +225,13 @@ pub fn local_dancebox_config(
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
+    let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
+        .into_iter()
+        .map(|x| {
+            x.parse::<MultiaddrWithPeerId>()
+                .unwrap_or_else(|e| panic!("invalid bootnode address format {:?}: {:?}", x, e))
+        })
+        .collect();
 
     ChainSpec::from_genesis(
         // Name
@@ -255,7 +272,7 @@ pub fn local_dancebox_config(
             )
         },
         // Bootnodes
-        Vec::new(),
+        boot_nodes,
         // Telemetry
         None,
         // Protocol ID
@@ -332,7 +349,7 @@ fn testnet_genesis(
                 .chain(
                     mock_container_chains
                         .iter()
-                        .map(|x| (*x, mock_container_chain_genesis_data(*x))),
+                        .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
                 )
                 .collect(),
         },

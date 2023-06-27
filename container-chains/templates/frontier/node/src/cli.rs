@@ -22,6 +22,7 @@ use {
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
     /// Build a chain specification.
     BuildSpec(BuildSpecCmd),
@@ -181,6 +182,10 @@ pub struct BuildSpecCmd {
     #[arg(long, conflicts_with = "chain")]
     #[arg(long, value_delimiter = ',')]
     pub seeds: Option<Vec<String>>,
+
+    /// List of bootnodes to add to chain spec
+    #[arg(long)]
+    pub add_bootnode: Vec<String>,
 }
 
 impl CliConfiguration for BuildSpecCmd {

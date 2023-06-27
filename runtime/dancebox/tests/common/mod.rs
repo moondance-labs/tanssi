@@ -81,26 +81,16 @@ pub fn run_to_block(n: u32, add_author: bool) {
     }
 }
 
+#[derive(Default)]
 pub struct ExtBuilder {
     // endowed accounts with balances
     balances: Vec<(AccountId, Balance)>,
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
-    para_ids: Vec<(u32, ContainerChainGenesisData)>,
+    para_ids: Vec<(u32, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
-}
-
-impl Default for ExtBuilder {
-    fn default() -> ExtBuilder {
-        ExtBuilder {
-            balances: vec![],
-            collators: vec![],
-            para_ids: vec![],
-            config: Default::default(),
-        }
-    }
 }
 
 impl ExtBuilder {
@@ -114,7 +104,10 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_para_ids(mut self, para_ids: Vec<(u32, ContainerChainGenesisData)>) -> Self {
+    pub fn with_para_ids(
+        mut self,
+        para_ids: Vec<(u32, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+    ) -> Self {
         self.para_ids = para_ids;
         self
     }
@@ -142,7 +135,9 @@ impl ExtBuilder {
                 para_ids: self
                     .para_ids
                     .into_iter()
-                    .map(|(para_id, genesis_data)| (para_id.into(), genesis_data))
+                    .map(|(para_id, genesis_data, boot_nodes)| {
+                        (para_id.into(), genesis_data, boot_nodes)
+                    })
                     .collect(),
             },
             &mut t,
@@ -183,14 +178,12 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        dancebox_runtime::SessionKeys {
-                            aura: aura_id.clone(),
-                        },
+                        dancebox_runtime::SessionKeys { aura: aura_id },
                     )
                 })
                 .collect();
             <pallet_session::GenesisConfig<Runtime> as GenesisBuild<Runtime>>::assimilate_storage(
-                &pallet_session::GenesisConfig { keys: keys },
+                &pallet_session::GenesisConfig { keys },
                 &mut t,
             )
             .unwrap();

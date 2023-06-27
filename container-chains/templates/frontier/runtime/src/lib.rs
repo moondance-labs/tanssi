@@ -454,7 +454,10 @@ impl pallet_transaction_payment::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = Aura;
+    type OnTimestampSet = tp_consensus::OnTimestampSet<
+        <Self as pallet_author_inherent::Config>::SlotBeacon,
+        ConstU64<{ SLOT_DURATION }>,
+    >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();
 }
@@ -647,6 +650,29 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
+pub struct CanAuthor;
+impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
+    fn can_author(author: &NimbusId, slot: &u32) -> bool {
+        let authorities = AuthoritiesNoting::authorities();
+
+        if authorities.is_empty() {
+            return false;
+        }
+
+        let expected_author = &authorities[(*slot as usize) % authorities.len()];
+
+        expected_author == author
+    }
+}
+
+impl pallet_author_inherent::Config for Runtime {
+    type AuthorId = NimbusId;
+    type AccountLookup = tp_consensus::NimbusLookUp;
+    type CanAuthor = CanAuthor;
+    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type WeightInfo = ();
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -670,8 +696,9 @@ construct_runtime!(
         Session: pallet_session = 32,
         Aura: pallet_aura = 33,
 
-        // ContainerChain
+        // ContainerChain author verification
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
+        AuthorInherent: pallet_author_inherent = 51,
 
         // Frontier
         Ethereum: pallet_ethereum = 60,
