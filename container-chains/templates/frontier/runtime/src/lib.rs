@@ -67,10 +67,7 @@ use {
     parity_scale_codec::{Decode, Encode},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{
-        crypto::ByteArray,
-        Get, OpaqueMetadata, H160, H256, U256,
-    },
+    sp_core::{crypto::ByteArray, Get, OpaqueMetadata, H160, H256, U256},
     sp_runtime::{
         create_runtime_str, generic,
         traits::{
