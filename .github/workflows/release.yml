@@ -307,7 +307,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push tanssi
-        id: docker_build
+        id: docker_build_tanssi
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -324,7 +324,7 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
       - name: Build and push containter-chain-simple-template
-        id: docker_build
+        id: docker_build_containter_chain_simple_template
         uses: docker/build-push-action@v4
         with:
           context: .
@@ -341,7 +341,7 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
       - name: Build and push containter-chain-evm-template
-        id: docker_build
+        id: docker_build_containter_chain_evm_template
         uses: docker/build-push-action@v4
         with:
           context: .
