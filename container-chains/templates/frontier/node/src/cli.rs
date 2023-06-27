@@ -179,11 +179,6 @@ pub struct BuildSpecCmd {
     #[arg(long, conflicts_with = "chain")]
     #[arg(long)]
     pub parachain_id: Option<u32>,
-
-    /// Seeds of collators that will start as authorities and will be funded
-    #[arg(long, conflicts_with = "chain")]
-    #[arg(long, value_delimiter = ',')]
-    pub seeds: Option<Vec<String>>,
 }
 
 impl CliConfiguration for BuildSpecCmd {

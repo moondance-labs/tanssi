@@ -88,7 +88,7 @@ pub fn template_session_keys(
     container_chain_template_frontier_runtime::SessionKeys { aura: keys }
 }
 
-pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
+pub fn development_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -96,15 +96,6 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), true.into());
 
-    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
-    let collator_accounts: Vec<AccountId> = initial_collator_seeds
-        .iter()
-        .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
-        .collect();
-    let collator_keys: Vec<NimbusId> = initial_collator_seeds
-        .iter()
-        .map(|seed| get_collator_keys_from_seed(seed))
-        .collect();
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
@@ -118,11 +109,6 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
         ChainType::Development,
         move || {
             testnet_genesis(
-                collator_accounts
-                    .iter()
-                    .zip(collator_keys.iter())
-                    .map(|(x, y)| (x.clone(), y.clone()))
-                    .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
                 AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
@@ -140,7 +126,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     )
 }
 
-pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -149,15 +135,6 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
     properties.insert("isEthereum".into(), true.into());
     let protocol_id = Some(format!("container-chain-{}", para_id));
 
-    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
-    let collator_accounts: Vec<AccountId> = initial_collator_seeds
-        .iter()
-        .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
-        .collect();
-    let collator_keys: Vec<NimbusId> = initial_collator_seeds
-        .iter()
-        .map(|seed| get_collator_keys_from_seed(seed))
-        .collect();
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
@@ -171,11 +148,6 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
         ChainType::Local,
         move || {
             testnet_genesis(
-                collator_accounts
-                    .iter()
-                    .zip(collator_keys.iter())
-                    .map(|(x, y)| (x.clone(), y.clone()))
-                    .collect(),
                 default_funded_accounts.clone(),
                 para_id.into(),
                 AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
@@ -200,7 +172,6 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
 }
 
 fn testnet_genesis(
-    invulnerables: Vec<(AccountId, NimbusId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
@@ -222,16 +193,7 @@ fn testnet_genesis(
             parachain_id: id,
         },
         session: container_chain_template_frontier_runtime::SessionConfig {
-            keys: invulnerables
-                .into_iter()
-                .map(|(acc, aura)| {
-                    (
-                        acc.clone(),                 // account id
-                        acc,                         // validator id
-                        template_session_keys(aura), // session keys
-                    )
-                })
-                .collect(),
+            keys: Default::default(),
         },
         // no need to pass anything to aura, in fact it will panic if we do. Session will take care
         // of this.
