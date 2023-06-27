@@ -21,7 +21,7 @@ use {
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
-    sp_core::{ecdsa, sr25519, Pair, Public},
+    sp_core::{sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
 };
 
@@ -95,7 +95,7 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
     let initial_collator_seeds = vec!["Alice".to_string(), "Bob".to_string()];
     let collator_accounts: Vec<AccountId> = initial_collator_seeds
         .iter()
-        .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
+        .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
         .collect();
     let collator_keys: Vec<NimbusId> = initial_collator_seeds
         .iter()
