@@ -165,9 +165,9 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
 
     ChainSpec::from_genesis(
         // Name
-        &format!("Frontier Container {}", para_id).to_string(),
+        &format!("Frontier Container {}", para_id),
         // ID
-        &format!("frontier_container_{}", para_id).to_string(),
+        &format!("frontier_container_{}", para_id),
         ChainType::Local,
         move || {
             testnet_genesis(

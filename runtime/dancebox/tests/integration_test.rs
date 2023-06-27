@@ -401,16 +401,12 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
-                    aura: charlie_id,
-                },
+                dancebox_runtime::SessionKeys { aura: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
-                    aura: dave_id,
-                },
+                dancebox_runtime::SessionKeys { aura: dave_id },
                 vec![]
             ));
 
@@ -930,16 +926,12 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
-                    aura: charlie_id,
-                },
+                dancebox_runtime::SessionKeys { aura: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
-                    aura: dave_id,
-                },
+                dancebox_runtime::SessionKeys { aura: dave_id },
                 vec![]
             ));
 

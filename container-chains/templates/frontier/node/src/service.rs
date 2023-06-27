@@ -604,7 +604,7 @@ pub async fn start_dev_node(
 				consensus_data_provider: Some(Box::new(tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
                     client.clone(),
                     keystore_container.sync_keystore(),
-                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION.into()),
+                    SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION),
                     authorities.clone(),
                 ))),
 				create_inherent_data_providers: move |block: H256, ()| {

@@ -173,9 +173,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        dancebox_runtime::SessionKeys {
-                            aura: aura_id,
-                        },
+                        dancebox_runtime::SessionKeys { aura: aura_id },
                     )
                 })
                 .collect();
