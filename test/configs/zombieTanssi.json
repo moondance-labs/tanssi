@@ -81,7 +81,8 @@
             "name": "FullNode-2000",
             "validator": false,
             "ws_port": 9949,
-            "command": "../target/release/tanssi-node"
+            "command": "../target/release/tanssi-node",
+            "p2p_port": 33049
           }
         ]
       },
@@ -93,7 +94,8 @@
             "name": "FullNode-2001",
             "validator": false,
             "command": "../target/release/container-chain-template-frontier-node",
-            "ws_port": 9950
+            "ws_port": 9950,
+            "p2p_port": 33050
           }
         ]
       },
@@ -105,7 +107,8 @@
             "name": "FullNode-2002",
             "validator": false,
             "command": "../target/release/container-chain-template-simple-node",
-            "ws_port": 9951
+            "ws_port": 9951,
+            "p2p_port": 33051
           }
         ]
       }
