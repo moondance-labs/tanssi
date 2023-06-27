@@ -44,7 +44,7 @@ fn test_authorities_insertion_right_para_id() {
     assignment
         .authority_assignment
         .container_chains
-        .insert(ParachainId::get().into(), vec![10u64, 11u64]);
+        .insert(ParachainId::get(), vec![10u64, 11u64]);
 
     let (orchestrator_chain_root, orchestrator_chain_state) =
         assignment.into_state_root_and_proof();
@@ -53,12 +53,12 @@ fn test_authorities_insertion_right_para_id() {
         .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = OrchestratorParachainId::get().into();
+                s.para_id = OrchestratorParachainId::get();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
                         number: Default::default(),
-                        state_root: orchestrator_chain_root.clone(),
+                        state_root: orchestrator_chain_root,
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest { logs: vec![] },
                     });
@@ -78,7 +78,7 @@ fn test_authorities_insertion_wrong_para_id() {
     assignment
         .authority_assignment
         .container_chains
-        .insert((ParachainId::get() + 1).into(), vec![10u64, 11u64]);
+        .insert(ParachainId::get() + 1, vec![10u64, 11u64]);
 
     let (orchestrator_chain_root, orchestrator_chain_state) =
         assignment.into_state_root_and_proof();
@@ -87,12 +87,12 @@ fn test_authorities_insertion_wrong_para_id() {
         .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = OrchestratorParachainId::get().into();
+                s.para_id = OrchestratorParachainId::get();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
                         number: Default::default(),
-                        state_root: orchestrator_chain_root.clone(),
+                        state_root: orchestrator_chain_root,
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest { logs: vec![] },
                     });
@@ -115,7 +115,7 @@ fn test_not_inserting_inherent() {
     assignment
         .authority_assignment
         .container_chains
-        .insert(ParachainId::get().into(), vec![10u64, 11u64]);
+        .insert(ParachainId::get(), vec![10u64, 11u64]);
 
     let (orchestrator_chain_root, orchestrator_chain_state) =
         assignment.into_state_root_and_proof();
@@ -124,12 +124,12 @@ fn test_not_inserting_inherent() {
         .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
             1 => {
                 let mut s = ParaHeaderSproofBuilderItem::default();
-                s.para_id = OrchestratorParachainId::get().into();
+                s.para_id = OrchestratorParachainId::get();
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
                         number: Default::default(),
-                        state_root: orchestrator_chain_root.clone(),
+                        state_root: orchestrator_chain_root,
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest { logs: vec![] },
                     });

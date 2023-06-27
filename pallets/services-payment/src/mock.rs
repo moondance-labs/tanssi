@@ -128,7 +128,7 @@ impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
         use frame_support::traits::tokens::imbalance::Imbalance;
 
         let result = Balances::withdraw(
-            &*payer,
+            payer,
             fee,
             WithdrawReasons::FEE,
             ExistenceRequirement::AllowDeath,

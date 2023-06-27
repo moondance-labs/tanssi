@@ -82,8 +82,10 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
             assignment.into_state_root_and_proof();
 
         // Use the "sproof" (spoof proof) builder to build valid mock state root and proof.
-        let mut sproof_builder_item = ParaHeaderSproofBuilderItem::default();
-        sproof_builder_item.para_id = self.orchestrator_para_id;
+        let mut sproof_builder_item = ParaHeaderSproofBuilderItem {
+            para_id: self.orchestrator_para_id,
+            ..Default::default()
+        };
 
         let header = HeaderAs::NonEncoded(tp_core::Header {
             parent_hash: Default::default(),

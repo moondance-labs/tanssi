@@ -94,7 +94,7 @@ impl ParaHeaderSproofBuilder {
             }
         }
 
-        let root = backend.root().clone();
+        let root = *backend.root();
         let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
 
         (root, proof)
@@ -123,9 +123,7 @@ impl ParaHeaderSproofBuilder {
         sp_state_machine::StorageProof,
     ) {
         // Recover the db
-        let db = state
-            .clone()
-            .into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
+        let db = state.into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
         let state_version = Default::default(); // for test using default.
                                                 // Construct the backend
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
@@ -160,7 +158,7 @@ impl ParaHeaderSproofBuilder {
         }
 
         // Construct proof again
-        let root = backend.root().clone();
+        let root = *backend.root();
         let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
 
         (root, proof)
@@ -201,7 +199,7 @@ impl<T: Encode> AuthorityAssignmentSproofBuilder<T> {
             self.authority_assignment.encode(),
         );
 
-        let root = backend.root().clone();
+        let root = *backend.root();
         let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
 
         (root, proof)
