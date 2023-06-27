@@ -18,6 +18,7 @@ smallvec = { workspace = true }
 
 # Local
 pallet-cc-authorities-noting = { workspace = true }
+tp-consensus = { workspace = true }
 
 # Nimbus
 nimbus-primitives = { workspace = true }
@@ -109,14 +110,15 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+	"tp-consensus/std",
 ]
 
 runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 	"frame-benchmarking",
 	"frame-support/runtime-benchmarks",
-	"frame-system/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
 	"hex-literal",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-cc-authorities-noting/runtime-benchmarks",
