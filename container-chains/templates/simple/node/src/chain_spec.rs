@@ -21,7 +21,7 @@ use {
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
-    sp_core::{sr25519, Pair, Public},
+    sp_core::{ecdsa, sr25519, Pair, Public},
     sp_runtime::traits::{IdentifyAccount, Verify},
 };
 
