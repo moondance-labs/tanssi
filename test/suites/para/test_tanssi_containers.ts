@@ -396,7 +396,7 @@ async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors
 
   let uniq = [...new Set(actualAuthors)];
 
-  if (uniq.length <= numAuthors) {
+  if ((uniq.length > numAuthors) || (uniq.length == 1 && numAuthors > 1)) {
     console.error(
       "Mismatch between authorities and actual block authors: authorities: ",
       authorities,
