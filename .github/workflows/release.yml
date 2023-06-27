@@ -16,7 +16,7 @@ jobs:
       sha: ${{ steps.get-sha.outputs.sha }}
       sha8: ${{ steps.get-sha.outputs.sha8 }}
     steps:
-    - name: Check git ref
+      - name: Check git ref
         id: check-git-ref
         # if PR
         # else if manual PR
