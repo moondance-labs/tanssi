@@ -455,3 +455,70 @@ fn can_deregister_before_valid_for_collating() {
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
     });
 }
+
+#[test]
+fn set_boot_nodes_bad_origin() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_noop!(ParaRegistrar::set_boot_nodes(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            vec![
+                b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
+            ].try_into().unwrap()
+        ),
+        DispatchError::BadOrigin
+    );
+    });
+}
+
+#[test]
+fn set_boot_nodes_bad_para_id() {
+    // This is allowed in case we want to set bootnodes before registering the chain
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        let boot_nodes: BoundedVec<BoundedVec<_, _>, _> = vec![
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+        ]
+        .try_into()
+        .unwrap();
+        assert_ok!(ParaRegistrar::set_boot_nodes(
+            RuntimeOrigin::root(),
+            42.into(),
+            boot_nodes.clone(),
+        ));
+        assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)), boot_nodes);
+    });
+}
+
+#[test]
+fn boot_nodes_removed_on_deregister() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+        let boot_nodes: BoundedVec<BoundedVec<_, _>, _> = vec![
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+        ]
+        .try_into()
+        .unwrap();
+        assert_ok!(ParaRegistrar::set_boot_nodes(
+            RuntimeOrigin::root(),
+            42.into(),
+            boot_nodes.clone(),
+        ));
+        assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)), boot_nodes);
+
+        assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into()));
+        assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)), vec![]);
+    });
+}
