@@ -84,7 +84,7 @@ pub fn template_session_keys(
     container_chain_template_simple_runtime::SessionKeys { aura: keys }
 }
 
-pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
+pub fn development_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -92,7 +92,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
-    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
+    let initial_collator_seeds = vec!["Alice".to_string(), "Bob".to_string()];
     let collator_accounts: Vec<AccountId> = initial_collator_seeds
         .iter()
         .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
@@ -101,6 +101,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
+
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
@@ -136,7 +137,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     )
 }
 
-pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -145,7 +146,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
     properties.insert("isEthereum".into(), false.into());
     let protocol_id = Some(format!("container-chain-{}", para_id));
 
-    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
+    let initial_collator_seeds = vec!["Alice".to_string(), "Bob".to_string()];
     let collator_accounts: Vec<AccountId> = initial_collator_seeds
         .iter()
         .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
@@ -154,6 +155,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
+
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
