@@ -25,15 +25,15 @@ COPY --chown=tanssi build/tanssi-node /tanssi
 RUN chmod uog+x /tanssi/tanssi*
 
 # 30333 for parachain p2p
-# 30334 for container p2p
-# 30335 for relaychain p2p
+# 30334 for relaychain p2p
+# 30335 for container p2p
 # 9933 for RPC call
 # 9944 for Websocket
 # 9615 for Prometheus (metrics)
-# 9934 for RPC call container (if we want to expose this)
-# 9945 for Websocket container (if we want to expose this)
-# 9616 for Prometheus container (metrics)
-EXPOSE 30333 30334 30335 9933 9944 9615 9934 9945 9616
+# 9935 for RPC call container (if we want to expose this)
+# 9946 for Websocket container (if we want to expose this)
+# 9617 for Prometheus container (metrics)
+EXPOSE 30333 30334 30335 9933 9944 9615 9935 9946 9617
 
 VOLUME ["/data"]
 

@@ -29,7 +29,7 @@ RUN chmod uog+x /container-chain-template-simple/container-chain-template-simple
 # 9933 for RPC call
 # 9944 for Websocket
 # 9615 for Prometheus (metrics)
-EXPOSE 30333 30334 9934 9945 9616
+EXPOSE 30333 30334 9933 9944 9615
 
 VOLUME ["/data"]
 

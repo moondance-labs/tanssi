@@ -522,19 +522,19 @@ pub fn run() -> Result<()> {
 
 impl DefaultConfigurationValues for RelayChainCli {
     fn p2p_listen_port() -> u16 {
-        30335
+        30334
     }
 
     fn rpc_ws_listen_port() -> u16 {
-        9946
+        9945
     }
 
     fn rpc_http_listen_port() -> u16 {
-        9935
+        9934
     }
 
     fn prometheus_listen_port() -> u16 {
-        9617
+        9616
     }
 }
 
@@ -665,19 +665,19 @@ impl CliConfiguration<Self> for RelayChainCli {
 
 impl DefaultConfigurationValues for ContainerChainCli {
     fn p2p_listen_port() -> u16 {
-        30334
+        30335
     }
 
     fn rpc_ws_listen_port() -> u16 {
-        9945
+        9946
     }
 
     fn rpc_http_listen_port() -> u16 {
-        9934
+        9935
     }
 
     fn prometheus_listen_port() -> u16 {
-        9616
+        9617
     }
 }
 
