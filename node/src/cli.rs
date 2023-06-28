@@ -82,10 +82,6 @@ pub struct BuildSpecCmd {
     /// List of container chain chain spec paths to add to genesis.
     #[arg(long)]
     pub add_container_chain: Vec<String>,
-
-    /// List of bootnodes to add to chain spec
-    #[arg(long)]
-    pub add_bootnode: Vec<String>,
 }
 
 impl CliConfiguration for BuildSpecCmd {

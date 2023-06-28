@@ -90,10 +90,7 @@ pub fn template_session_keys(
     container_chain_template_frontier_runtime::SessionKeys { aura: keys }
 }
 
-pub fn development_config(
-    para_id: ParaId,
-    boot_nodes: Vec<String>,
-) -> ChainSpec {
+pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -153,10 +150,7 @@ pub fn development_config(
     )
 }
 
-pub fn local_testnet_config(
-    para_id: ParaId,
-    boot_nodes: Vec<String>,
-) -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());

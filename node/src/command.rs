@@ -42,19 +42,16 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
-            vec![],
         )),
         "template-rococo" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
-            vec![],
         )),
         "" | "dancebox-local" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
-            vec![],
         )),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
@@ -246,14 +243,12 @@ pub fn run() -> Result<()> {
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
-                            cmd.add_bootnode.clone(),
                         ))
                     } else {
                         Box::new(chain_spec::local_dancebox_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
-                            cmd.add_bootnode.clone(),
                         ))
                     }
                 } else {

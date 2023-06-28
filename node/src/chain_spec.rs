@@ -13,7 +13,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
-use sc_network::config::MultiaddrWithPeerId;
 
 use {
     cumulus_primitives_core::ParaId,
@@ -147,7 +146,6 @@ pub fn development_config(
     para_id: ParaId,
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
-    boot_nodes: Vec<String>,
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -155,13 +153,6 @@ pub fn development_config(
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
-    let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
-        .into_iter()
-        .map(|x| {
-            x.parse::<MultiaddrWithPeerId>()
-                .unwrap_or_else(|e| panic!("invalid bootnode address format {:?}: {:?}", x, e))
-        })
-        .collect();
 
     ChainSpec::from_genesis(
         // Name
@@ -201,7 +192,7 @@ pub fn development_config(
                 },
             )
         },
-        boot_nodes,
+        vec![],
         None,
         None,
         None,
@@ -217,7 +208,6 @@ pub fn local_dancebox_config(
     para_id: ParaId,
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
-    boot_nodes: Vec<String>,
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -225,13 +215,6 @@ pub fn local_dancebox_config(
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
-    let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
-        .into_iter()
-        .map(|x| {
-            x.parse::<MultiaddrWithPeerId>()
-                .unwrap_or_else(|e| panic!("invalid bootnode address format {:?}: {:?}", x, e))
-        })
-        .collect();
 
     ChainSpec::from_genesis(
         // Name
@@ -272,7 +255,7 @@ pub fn local_dancebox_config(
             )
         },
         // Bootnodes
-        boot_nodes,
+        vec![],
         // Telemetry
         None,
         // Protocol ID
