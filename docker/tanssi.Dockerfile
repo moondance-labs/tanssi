@@ -1,4 +1,4 @@
-# Node for Ransi
+# Node for Tanssi
 #
 # Requires to run from repository root and to copy the binary in the build folder (part of the release workflow)
 
