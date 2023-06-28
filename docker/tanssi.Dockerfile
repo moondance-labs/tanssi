@@ -31,8 +31,8 @@ RUN chmod uog+x /tanssi/tanssi*
 # 9944 for Websocket
 # 9615 for Prometheus (metrics)
 # 9934 for RPC call container (if we want to expose this)
-# 9945 for Websocket (if we want to expose this)
-# 9616 for Prometheus (metrics)
+# 9945 for Websocket container (if we want to expose this)
+# 9616 for Prometheus container (metrics)
 EXPOSE 30333 30334 30335 9933 9944 9615 9934 9945 9616
 
 VOLUME ["/data"]
