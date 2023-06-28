@@ -79,7 +79,7 @@ where
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
+pub fn development_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -87,7 +87,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), true.into());
 
-    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
+    let initial_collator_seeds = vec!["Alice".to_string(), "Bob".to_string()];
     let collator_accounts: Vec<AccountId> = initial_collator_seeds
         .iter()
         .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
@@ -96,6 +96,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
+
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
@@ -112,10 +113,10 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
                 collator_accounts
                     .iter()
                     .zip(collator_keys.iter())
-                    .map(|(x, y)| (x.clone(), y.clone()))
+                    .map(|(x, y)| (*x, y.clone()))
                     .collect(),
                 default_funded_accounts.clone(),
-                para_id.into(),
+                para_id,
                 AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
             )
         },
@@ -131,7 +132,7 @@ pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainS
     )
 }
 
-pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -140,7 +141,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
     properties.insert("isEthereum".into(), true.into());
     let protocol_id = Some(format!("container-chain-{}", para_id));
 
-    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
+    let initial_collator_seeds = vec!["Alice".to_string(), "Bob".to_string()];
     let collator_accounts: Vec<AccountId> = initial_collator_seeds
         .iter()
         .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
@@ -149,6 +150,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
+
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
@@ -156,19 +158,19 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
 
     ChainSpec::from_genesis(
         // Name
-        &format!("Frontier Container {}", para_id).to_string(),
+        &format!("Frontier Container {}", para_id),
         // ID
-        &format!("frontier_container_{}", para_id).to_string(),
+        &format!("frontier_container_{}", para_id),
         ChainType::Local,
         move || {
             testnet_genesis(
                 collator_accounts
                     .iter()
                     .zip(collator_keys.iter())
-                    .map(|(x, y)| (x.clone(), y.clone()))
+                    .map(|(x, y)| (*x, y.clone()))
                     .collect(),
                 default_funded_accounts.clone(),
-                para_id.into(),
+                para_id,
                 AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
             )
         },

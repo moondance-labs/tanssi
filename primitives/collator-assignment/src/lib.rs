@@ -150,7 +150,7 @@ where
         let mut incomplete_container_chains: VecDeque<_> = VecDeque::new();
 
         for (para_id, collators) in self.container_chains.iter_mut() {
-            if collators.len() > 0 && collators.len() < num_each_container_chain {
+            if !collators.is_empty() && collators.len() < num_each_container_chain {
                 // Do not remove the para_id from the map, instead replace the list of
                 // collators with an empty vec using mem::take.
                 // This is to ensure that the UI shows "1001: []" when a container chain
@@ -170,7 +170,7 @@ where
         while let Some((_para_id, mut collators_min_chain)) =
             incomplete_container_chains.pop_front()
         {
-            while collators_min_chain.len() > 0 {
+            while !collators_min_chain.is_empty() {
                 match incomplete_container_chains.back_mut() {
                     Some(back) => {
                         back.1.push(collators_min_chain.pop().unwrap());
@@ -196,12 +196,13 @@ where
     where
         F: FnMut(&AccountId) -> T,
     {
-        let mut a = AssignedCollators::default();
-
-        a.orchestrator_chain = self.orchestrator_chain.iter().map(|x| f(x)).collect();
+        let mut a = AssignedCollators {
+            orchestrator_chain: self.orchestrator_chain.iter().map(&mut f).collect(),
+            ..Default::default()
+        };
 
         for (para_id, collators) in self.container_chains.iter() {
-            let a_collators = collators.iter().map(|x| f(x)).collect();
+            let a_collators = collators.iter().map(&mut f).collect();
             a.container_chains.insert(*para_id, a_collators);
         }
 

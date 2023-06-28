@@ -102,7 +102,9 @@ pub mod mock_data {
     }
 }
 
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
+#[derive(
+    Default, Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo,
+)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
     pub min_orchestrator_chain_collators: u32,
@@ -110,18 +112,6 @@ pub struct Mocks {
     pub collators_per_container: u32,
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
-}
-
-impl Default for Mocks {
-    fn default() -> Self {
-        Self {
-            min_orchestrator_chain_collators: 0,
-            max_orchestrator_chain_collators: 0,
-            collators_per_container: 0,
-            collators: vec![],
-            container_chains: vec![],
-        }
-    }
 }
 
 impl mock_data::Config for Test {}
@@ -148,7 +138,7 @@ pub struct CollatorsGetter;
 
 impl GetCollators<u64, u32> for CollatorsGetter {
     fn collators(_session_index: u32) -> Vec<u64> {
-        MockData::mock().collators.clone()
+        MockData::mock().collators
     }
 }
 
@@ -160,7 +150,7 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
             .container_chains
             .iter()
             .cloned()
-            .map(|x| ParaId::from(x))
+            .map(ParaId::from)
             .collect()
     }
 }

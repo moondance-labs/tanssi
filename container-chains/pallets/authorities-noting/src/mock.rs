@@ -87,7 +87,7 @@ parameter_types! {
     pub const OrchestratorParachainId: ParaId = ParaId::new(1000);
 }
 
-const MOCK_RELAY_ROOT_KEY: &'static [u8] = b"MOCK_RELAY_ROOT_KEY";
+const MOCK_RELAY_ROOT_KEY: &[u8] = b"MOCK_RELAY_ROOT_KEY";
 
 pub struct MockRelayStateProvider;
 
@@ -233,7 +233,7 @@ where {
             {
                 // begin initialization
                 System::reset_events();
-                System::initialize(&n, &Default::default(), &Default::default());
+                System::initialize(n, &Default::default(), &Default::default());
 
                 // now mess with the storage the way validate_block does
                 let mut sproof_builder = ParaHeaderSproofBuilder::default();

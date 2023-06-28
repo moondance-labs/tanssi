@@ -616,7 +616,7 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
     fn can_author(author: &NimbusId, slot: &u32) -> bool {
         let authorities = AuthoritiesNoting::authorities();
 
-        if authorities.len() == 0 {
+        if authorities.is_empty() {
             return false;
         }
 
