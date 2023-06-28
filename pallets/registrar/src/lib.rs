@@ -351,6 +351,7 @@ pub mod pallet {
             // is deleted immediately. This will cause problems since any new collators that want
             // to join now will not be able to sync this parachain
             ParaGenesisData::<T>::remove(para_id);
+            BootNodes::<T>::remove(para_id);
 
             Ok(())
         }
