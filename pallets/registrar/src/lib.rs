@@ -402,7 +402,7 @@ pub mod pallet {
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::set_boot_nodes(
             T::MaxBootNodeUrlLen::get(),
-            T::MaxBootNodes::get(),
+            boot_nodes.len() as u32,
         ))]
         pub fn set_boot_nodes(
             origin: OriginFor<T>,
