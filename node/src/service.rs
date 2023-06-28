@@ -833,7 +833,7 @@ fn build_consensus_container(
     para_id: ParaId,
     orchestrator_para_id: ParaId,
 ) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error> {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
+    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)?;
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
         task_manager.spawn_handle(),
