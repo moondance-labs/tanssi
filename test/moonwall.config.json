@@ -18,8 +18,7 @@
                 "--dev",
                 "--sealing=manual"
             ],
-            "disableDefaultEthProviders": true,
-            "newRpcBehaviour": true
+            "disableDefaultEthProviders": true
           }
         ]
       }
@@ -39,8 +38,7 @@
             "options": [
                 "--dev",
                 "--sealing=manual"
-            ],
-            "newRpcBehaviour": true
+            ]
           }
         ]
       }
