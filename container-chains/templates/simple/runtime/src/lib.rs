@@ -485,6 +485,18 @@ impl_runtime_apis! {
         }
     }
 
+    impl sp_session::SessionKeys<Block> for Runtime {
+        fn generate_session_keys(_seed: Option<Vec<u8>>) -> Vec<u8> {
+            unimplemented!("not implemented")
+        }
+
+        fn decode_session_keys(
+            _encoded: Vec<u8>,
+        ) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
+            unimplemented!("not implemented")
+        }
+    }
+
     impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
         fn account_nonce(account: AccountId) -> Index {
             System::account_nonce(account)

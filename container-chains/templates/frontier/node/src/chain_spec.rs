@@ -79,15 +79,6 @@ where
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-/// Generate the session keys from individual elements.
-///
-/// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(
-    keys: NimbusId,
-) -> container_chain_template_frontier_runtime::SessionKeys {
-    container_chain_template_frontier_runtime::SessionKeys { aura: keys }
-}
-
 pub fn development_config(para_id: ParaId, seeds: Option<Vec<String>>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -200,7 +191,7 @@ pub fn local_testnet_config(para_id: ParaId, seeds: Option<Vec<String>>) -> Chai
 }
 
 fn testnet_genesis(
-    invulnerables: Vec<(AccountId, NimbusId)>,
+    _invulnerables: Vec<(AccountId, NimbusId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
@@ -221,21 +212,6 @@ fn testnet_genesis(
         parachain_info: container_chain_template_frontier_runtime::ParachainInfoConfig {
             parachain_id: id,
         },
-        session: container_chain_template_frontier_runtime::SessionConfig {
-            keys: invulnerables
-                .into_iter()
-                .map(|(acc, aura)| {
-                    (
-                        acc.clone(),                 // account id
-                        acc,                         // validator id
-                        template_session_keys(aura), // session keys
-                    )
-                })
-                .collect(),
-        },
-        // no need to pass anything to aura, in fact it will panic if we do. Session will take care
-        // of this.
-        aura: Default::default(),
         parachain_system: Default::default(),
         // EVM compatibility
         // We should change this to something different than Moonbeam
