@@ -26,10 +26,10 @@ RUN chmod uog+x /container-chain-template-evm/container-chain-template-frontier*
 
 # 30333 for parachain p2p
 # 30334 for relaychain p2p
-# 9933 for RPC call
-# 9944 for Websocket
-# 9615 for Prometheus (metrics)
-EXPOSE 30333 30334 9933 9944 9615
+# 9934 for RPC call
+# 9945 for Websocket
+# 9616 for Prometheus (metrics)
+EXPOSE 30333 30334 9934 9945 9616
 
 VOLUME ["/data"]
 
