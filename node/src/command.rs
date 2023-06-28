@@ -665,19 +665,19 @@ impl CliConfiguration<Self> for RelayChainCli {
 
 impl DefaultConfigurationValues for ContainerChainCli {
     fn p2p_listen_port() -> u16 {
-        17334
+        30335
     }
 
     fn rpc_ws_listen_port() -> u16 {
-        17945
+        9946
     }
 
     fn rpc_http_listen_port() -> u16 {
-        17934
+        9935
     }
 
     fn prometheus_listen_port() -> u16 {
-        17616
+        9617
     }
 }
 
