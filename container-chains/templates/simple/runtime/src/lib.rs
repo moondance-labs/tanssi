@@ -50,7 +50,7 @@ use {
     sp_api::impl_runtime_apis,
     sp_core::OpaqueMetadata,
     sp_runtime::{
-        create_runtime_str, generic,
+        create_runtime_str, generic, impl_opaque_keys,
         traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, MultiSignature,
@@ -167,6 +167,10 @@ pub mod opaque {
     pub type Block = generic::Block<Header, UncheckedExtrinsic>;
     /// Opaque block identifier type.
     pub type BlockId = generic::BlockId<Block>;
+}
+
+impl_opaque_keys! {
+    pub struct SessionKeys { }
 }
 
 #[sp_version::runtime_version]
@@ -486,14 +490,14 @@ impl_runtime_apis! {
     }
 
     impl sp_session::SessionKeys<Block> for Runtime {
-        fn generate_session_keys(_seed: Option<Vec<u8>>) -> Vec<u8> {
-            unimplemented!("not implemented")
+        fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
+            SessionKeys::generate(seed)
         }
 
         fn decode_session_keys(
-            _encoded: Vec<u8>,
+            encoded: Vec<u8>,
         ) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
-            unimplemented!("not implemented")
+            SessionKeys::decode_into_raw_public_keys(&encoded)
         }
     }
 

@@ -69,7 +69,7 @@ use {
     sp_api::impl_runtime_apis,
     sp_core::{crypto::ByteArray, Get, OpaqueMetadata, H160, H256, U256},
     sp_runtime::{
-        create_runtime_str, generic,
+        create_runtime_str, generic, impl_opaque_keys,
         traits::{
             BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentifyAccount,
             IdentityLookup, PostDispatchInfoOf, UniqueSaturatedInto, Verify,
@@ -284,6 +284,10 @@ pub mod opaque {
 }
 
 mod impl_on_charge_evm_transaction;
+
+impl_opaque_keys! {
+    pub struct SessionKeys { }
+}
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
@@ -783,14 +787,14 @@ impl_runtime_apis! {
     }
 
     impl sp_session::SessionKeys<Block> for Runtime {
-        fn generate_session_keys(_seed: Option<Vec<u8>>) -> Vec<u8> {
-            unimplemented!("not implemented")
+        fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
+            SessionKeys::generate(seed)
         }
 
         fn decode_session_keys(
-            _encoded: Vec<u8>,
+            encoded: Vec<u8>,
         ) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
-            unimplemented!("not implemented")
+            SessionKeys::decode_into_raw_public_keys(&encoded)
         }
     }
 
