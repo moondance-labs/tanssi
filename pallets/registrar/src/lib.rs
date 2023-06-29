@@ -65,7 +65,7 @@ pub mod pallet {
     #[derive(Default)]
     pub struct GenesisConfig {
         /// Para ids
-        pub para_ids: Vec<(ParaId, ContainerChainGenesisData)>,
+        pub para_ids: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
     }
 
     #[pallet::genesis_build]
@@ -85,7 +85,7 @@ pub mod pallet {
 
             let mut bounded_para_ids = BoundedVec::truncate_from(vec![]);
 
-            for (para_id, genesis_data) in para_ids {
+            for (para_id, genesis_data, boot_nodes) in para_ids {
                 bounded_para_ids
                     .try_push(*para_id)
                     .expect("too many para ids in genesis: bounded vec full");
@@ -100,6 +100,12 @@ pub mod pallet {
                     );
                 }
                 <ParaGenesisData<T>>::insert(para_id, genesis_data);
+                let boot_nodes: Vec<_> = boot_nodes
+                    .iter()
+                    .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
+                    .collect();
+                let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
+                <BootNodes<T>>::insert(para_id, boot_nodes);
             }
 
             <RegisteredParaIds<T>>::put(bounded_para_ids);
@@ -122,6 +128,9 @@ pub mod pallet {
         /// Max length of encoded genesis data
         #[pallet::constant]
         type MaxGenesisDataSize: Get<u32>;
+
+        type MaxBootNodes: Get<u32>;
+        type MaxBootNodeUrlLen: Get<u32>;
 
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
@@ -161,6 +170,16 @@ pub mod pallet {
     pub type PendingVerification<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
+    #[pallet::storage]
+    #[pallet::getter(fn boot_nodes)]
+    pub type BootNodes<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        ParaId,
+        BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
+        ValueQuery,
+    >;
+
     pub type DepositBalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
@@ -187,6 +206,8 @@ pub mod pallet {
         ParaIdDeregistered { para_id: ParaId },
         /// A new para id is now valid for collating. [para_id]
         ParaIdValidForCollating { para_id: ParaId },
+        /// The list of boot_nodes
+        BootNodesChanged { para_id: ParaId },
     }
 
     #[pallet::error]
@@ -330,15 +351,16 @@ pub mod pallet {
             // is deleted immediately. This will cause problems since any new collators that want
             // to join now will not be able to sync this parachain
             ParaGenesisData::<T>::remove(para_id);
+            BootNodes::<T>::remove(para_id);
 
             Ok(())
         }
 
         /// Mark container-chain valid for collating
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::deregister(
+        #[pallet::weight(T::WeightInfo::mark_valid_for_collating(
             T::MaxGenesisDataSize::get(),
-            T::MaxLengthParaIds::get()
+            T::MaxLengthParaIds::get(),
         ))]
         pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
@@ -372,6 +394,26 @@ pub mod pallet {
             PendingVerification::<T>::put(pending_verification);
 
             Self::deposit_event(Event::ParaIdValidForCollating { para_id });
+
+            Ok(())
+        }
+
+        /// Set boot_nodes for this para id
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_boot_nodes(
+            T::MaxBootNodeUrlLen::get(),
+            boot_nodes.len() as u32,
+        ))]
+        pub fn set_boot_nodes(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
+        ) -> DispatchResult {
+            T::RegistrarOrigin::ensure_origin(origin)?;
+
+            BootNodes::<T>::insert(para_id, boot_nodes);
+
+            Self::deposit_event(Event::BootNodesChanged { para_id });
 
             Ok(())
         }

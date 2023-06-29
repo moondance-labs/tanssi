@@ -244,8 +244,13 @@ describeSuite({
         const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
         const tx = paraApi.tx.registrar.register(2002, containerChainGenesisData);
         await signAndSendAndInclude(tx, alice);
-        const tx2 = paraApi.tx.registrar.markValidForCollating(2002);
+        const bootNodes = [
+            "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw"
+        ];
+        const tx2 = paraApi.tx.registrar.setBootNodes(2002, bootNodes);
         await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx2), alice);
+        const tx3 = paraApi.tx.registrar.markValidForCollating(2002);
+        await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx3), alice);
         const session1 = (await paraApi.query.session.currentIndex()).toNumber();
         await waitSessions(context, paraApi, 2);
         const session2 = (await paraApi.query.session.currentIndex()).toNumber();
