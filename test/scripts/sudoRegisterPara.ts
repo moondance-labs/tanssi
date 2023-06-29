@@ -63,7 +63,6 @@ yargs(hideBin(process.argv))
             const txBatch = api.tx.utility.batchAll(txs);
             const txHash = await txBatch.signAndSend(account);
             process.stdout.write(`${txHash.toHex()}\n`);
-            // TODO: also set bootnodes and markValidForCollating, but need to check if register succeeded
             // TODO: this will always print Done, even if the extrinsic has failed
             process.stdout.write(`Done ✅\n`);
         } finally {
@@ -134,7 +133,11 @@ yargs(hideBin(process.argv))
             "keep-existing": {
                 describe: "Keep exisiting bootnodes, and append to the list instead of overwriting them",
                 type: "boolean",
-            }
+            },
+            "mark-valid-for-collating": {
+                describe: "Also mark the registered chain as valid, if it was not marked already",
+                type: "boolean",
+            },
         })
         .demandOption(["para-id", "account-priv-key"]);
     },
@@ -158,8 +161,27 @@ yargs(hideBin(process.argv))
             }
             bootnodes = [...bootnodes, ...argv.bootnode];
 
-            let tx = api.tx.registrar.setBootNodes(argv.paraId, bootnodes);
-            tx = api.tx.sudo.sudo(tx);
+            let tx1 = api.tx.registrar.setBootNodes(argv.paraId, bootnodes);
+            let tx1s = api.tx.sudo.sudo(tx1);
+            let tx2s = null;
+            if (argv.markValidForCollating) {
+                // Check if not already valid, and only in that case call markValidForCollating
+                const notValidParas = await api.query.registrar.pendingVerification() as any;
+                if (notValidParas.toJSON().includes(argv.paraId)) {
+                    process.stdout.write(`Will set container chain valid for collating\n`);
+                    let tx2 = api.tx.registrar.markValidForCollating(argv.paraId);
+                    tx2s = api.tx.sudo.sudo(tx2);
+                } else {
+                    // ParaId already valid, or not registered at all
+                    process.stdout.write(`Not setting container chain valid for collating\n`);
+                }
+            }
+            let tx;
+            if (tx2s != null) {
+                tx = api.tx.utility.batchAll([tx1s, tx2s]);
+            } else {
+                tx = tx1s;
+            }
             process.stdout.write(`Sending transaction... `);
             const txHash = await tx.signAndSend(account);
             process.stdout.write(`${txHash.toHex()}\n`);
