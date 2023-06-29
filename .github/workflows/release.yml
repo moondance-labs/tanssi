@@ -6,6 +6,11 @@ on:
     branches:
       - master
       - perm-*
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: set to pull_request number to execute on external pr
+        required: false
 
 jobs:
   set-tags:
