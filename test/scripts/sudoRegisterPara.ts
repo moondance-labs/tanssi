@@ -1,0 +1,213 @@
+import fs from "fs/promises";
+import yargs from "yargs";
+import { Keyring } from "@polkadot/api";
+import { KeyringPair } from "@polkadot/keyring/types";
+import { hideBin } from "yargs/helpers";
+import jsonBg from "json-bigint";
+import { chainSpecToContainerChainGenesisData } from "../util/genesis_data.ts";
+import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network.js";
+const JSONbig = jsonBg({ useNativeBigInt: true });
+
+yargs(hideBin(process.argv))
+  .usage("Usage: $0")
+  .version("1.0.0")
+  .command(
+    `register`,
+    "Registers a parachain, adds bootnodes, and sets it valid for collating",
+    (yargs) => {
+      return yargs
+        .options({
+            ...NETWORK_YARGS_OPTIONS,
+            "account-priv-key": {
+                type: "string",
+                demandOption: false,
+                alias: "account",
+            },
+            "chain": {
+                describe: "Input path of raw chainSpec file",
+                type: "string",
+            }
+        })
+        .demandOption(["chain", "account-priv-key"]);
+    },
+    async (argv) => {
+        const api = await getApiFor(argv);
+        const keyring = new Keyring({ type: 'sr25519' });
+
+        try {
+            process.stdout.write(`Reading chainSpec from: ${argv.chain}\n`);
+            const rawSpec = JSONbig.parse(await fs.readFile(argv.chain!, "utf8"));
+    
+            let account: KeyringPair;
+            const privKey = argv["account-priv-key"];
+            account = keyring.addFromUri(privKey);
+
+            const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
+            const txs = [];
+            const tx1 = api.tx.registrar.register(rawSpec.para_id, containerChainGenesisData);
+            txs.push(tx1);
+            if (rawSpec.bootNodes?.length) {
+                const tx2 = api.tx.registrar.setBootNodes(rawSpec.para_id, rawSpec.bootNodes);
+                const tx2s = api.tx.sudo.sudo(tx2);
+                txs.push(tx2s);
+            }
+            const tx3 = api.tx.registrar.markValidForCollating(rawSpec.para_id);
+            const tx3s = api.tx.sudo.sudo(tx3);
+            txs.push(tx3s);
+
+            if (txs.length == 2) {
+                process.stdout.write(`Sending register transaction (register + markValidForCollating)... `);
+            } else {
+                process.stdout.write(`Sending register transaction (register + setBootNodes + markValidForCollating)... `);
+            }
+            const txBatch = api.tx.utility.batchAll(txs);
+            const txHash = await txBatch.signAndSend(account);
+            process.stdout.write(`${txHash.toHex()}\n`);
+            // TODO: also set bootnodes and markValidForCollating, but need to check if register succeeded
+            // TODO: this will always print Done, even if the extrinsic has failed
+            process.stdout.write(`Done ✅\n`);
+        } finally {
+            await api.disconnect();
+        }
+    }
+  )
+  .command(
+    `markValidForCollating`,
+    "Marks a registered parachain as valid, allowing collators to start collating",
+    (yargs) => {
+      return yargs
+        .options({
+            ...NETWORK_YARGS_OPTIONS,
+            "account-priv-key": {
+                type: "string",
+                demandOption: false,
+                alias: "account",
+            },
+            "para-id": {
+                describe: "Container chain para id",
+                type: "number",
+            }
+        })
+        .demandOption(["para-id", "account-priv-key"]);
+    },
+    async (argv) => {
+        const api = await getApiFor(argv);
+        const keyring = new Keyring({ type: 'sr25519' });
+
+        try {    
+            let account: KeyringPair;
+            const privKey = argv["account-priv-key"];
+            account = keyring.addFromUri(privKey);
+
+            let tx = api.tx.registrar.markValidForCollating(argv.paraId);
+            tx = api.tx.sudo.sudo(tx);
+            process.stdout.write(`Sending transaction... `);
+            const txHash = await tx.signAndSend(account);
+            process.stdout.write(`${txHash.toHex()}\n`);
+            // TODO: this will always print Done, even if the extrinsic has failed
+            process.stdout.write(`Done ✅\n`);
+        } finally {
+            await api.disconnect();
+        }
+    }
+  )
+  .command(
+    `setBootNodes`,
+    "Set bootnodes for a container chain",
+    (yargs) => {
+      return yargs
+        .options({
+            ...NETWORK_YARGS_OPTIONS,
+            "account-priv-key": {
+                type: "string",
+                demandOption: false,
+                alias: "account",
+            },
+            "para-id": {
+                describe: "Container chain para id",
+                type: "number",
+            },
+            "bootnode": {
+                describe: "Container chain para id",
+                type: "array",
+            },
+            "keep-existing": {
+                describe: "Keep exisiting bootnodes, and append to the list instead of overwriting them",
+                type: "boolean",
+            }
+        })
+        .demandOption(["para-id", "account-priv-key"]);
+    },
+    async (argv) => {
+        const api = await getApiFor(argv as any);
+        const keyring = new Keyring({ type: 'sr25519' });
+
+        try {    
+            let account: KeyringPair;
+            const privKey = argv["account-priv-key"];
+            account = keyring.addFromUri(privKey);
+
+            let bootnodes = [];
+            if (argv.keepExisting) {
+                // Read existing bootnodes
+                const onChainBootnodes = await api.query.registrar.bootNodes(argv.paraId) as any;
+                bootnodes = [...bootnodes, ...onChainBootnodes];
+            }
+            if (!argv.bootnode) {
+                argv.bootnode = [];
+            }
+            bootnodes = [...bootnodes, ...argv.bootnode];
+
+            let tx = api.tx.registrar.setBootNodes(argv.paraId, bootnodes);
+            tx = api.tx.sudo.sudo(tx);
+            process.stdout.write(`Sending transaction... `);
+            const txHash = await tx.signAndSend(account);
+            process.stdout.write(`${txHash.toHex()}\n`);
+            // TODO: this will always print Done, even if the extrinsic has failed
+            process.stdout.write(`Done ✅\n`);
+        } finally {
+            await api.disconnect();
+        }
+    }
+  )
+  .command(
+    `deregister`,
+    "Deregister a container chain",
+    (yargs) => {
+      return yargs
+        .options({
+            ...NETWORK_YARGS_OPTIONS,
+            "account-priv-key": {
+                type: "string",
+                demandOption: false,
+                alias: "account",
+            },
+            "para-id": {
+                describe: "Container chain para id",
+                type: "number",
+            },
+        })
+        .demandOption(["para-id", "account-priv-key"]);
+    },
+    async (argv) => {
+        const api = await getApiFor(argv as any);
+        const keyring = new Keyring({ type: 'sr25519' });
+
+        try {    
+            let account: KeyringPair;
+            const privKey = argv["account-priv-key"];
+            account = keyring.addFromUri(privKey);
+
+            let tx = api.tx.registrar.deregister(argv.paraId);
+            tx = api.tx.sudo.sudo(tx);
+            process.stdout.write(`Sending transaction... `);
+            const txHash = await tx.signAndSend(account);
+            process.stdout.write(`${txHash.toHex()}\n`);
+            // TODO: this will always print Done, even if the extrinsic has failed
+            process.stdout.write(`Done ✅\n`);
+        } finally {
+            await api.disconnect();
+        }
+    }
+  )
+  .parse();
