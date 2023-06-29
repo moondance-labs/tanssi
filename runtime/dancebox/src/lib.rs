@@ -301,7 +301,10 @@ impl frame_system::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = Aura;
+    type OnTimestampSet = tp_consensus::OnTimestampSet<
+        <Self as pallet_author_inherent::Config>::SlotBeacon,
+        ConstU64<{ SLOT_DURATION }>,
+    >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();
 }
@@ -309,6 +312,31 @@ impl pallet_timestamp::Config for Runtime {
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
     type EventHandler = (CollatorSelection,);
+}
+
+pub struct CanAuthor;
+impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
+    fn can_author(author: &NimbusId, slot: &u32) -> bool {
+        let authorities = AuthorityAssignment::collator_container_chain(Session::current_index())
+            .expect("authorities should be set")
+            .orchestrator_chain;
+
+        if authorities.len() == 0 {
+            return false;
+        }
+
+        let expected_author = &authorities[(*slot as usize) % authorities.len()];
+
+        expected_author == author
+    }
+}
+
+impl pallet_author_inherent::Config for Runtime {
+    type AuthorId = NimbusId;
+    type AccountLookup = tp_consensus::NimbusLookUp;
+    type CanAuthor = CanAuthor;
+    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -596,6 +624,8 @@ construct_runtime!(
         Aura: pallet_aura = 33,
         AuraExt: cumulus_pallet_aura_ext = 34,
         AuthorityMapping: pallet_authority_mapping = 35,
+
+        AuthorInherent: pallet_author_inherent = 50,
 
         RootTesting: pallet_root_testing = 100,
     }

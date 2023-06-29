@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sc_network::config::MultiaddrWithPeerId;
-
 use {
     container_chain_template_frontier_runtime::{
         AccountId, EVMChainIdConfig, EVMConfig, Signature,
@@ -24,6 +22,7 @@ use {
     hex_literal::hex,
     nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{ecdsa, Pair, Public, H160, U256},
@@ -90,11 +89,7 @@ pub fn template_session_keys(
     container_chain_template_frontier_runtime::SessionKeys { aura: keys }
 }
 
-pub fn development_config(
-    para_id: ParaId,
-    seeds: Option<Vec<String>>,
-    boot_nodes: Vec<String>,
-) -> ChainSpec {
+pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -102,7 +97,7 @@ pub fn development_config(
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), true.into());
 
-    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
+    let initial_collator_seeds = vec!["Alice".to_string(), "Bob".to_string()];
     let collator_accounts: Vec<AccountId> = initial_collator_seeds
         .iter()
         .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
@@ -111,6 +106,7 @@ pub fn development_config(
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
+
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
@@ -153,11 +149,7 @@ pub fn development_config(
     )
 }
 
-pub fn local_testnet_config(
-    para_id: ParaId,
-    seeds: Option<Vec<String>>,
-    boot_nodes: Vec<String>,
-) -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -166,7 +158,7 @@ pub fn local_testnet_config(
     properties.insert("isEthereum".into(), true.into());
     let protocol_id = Some(format!("container-chain-{}", para_id));
 
-    let initial_collator_seeds = seeds.unwrap_or(vec!["Alice".to_string(), "Bob".to_string()]);
+    let initial_collator_seeds = vec!["Alice".to_string(), "Bob".to_string()];
     let collator_accounts: Vec<AccountId> = initial_collator_seeds
         .iter()
         .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
@@ -175,6 +167,7 @@ pub fn local_testnet_config(
         .iter()
         .map(|seed| get_collator_keys_from_seed(seed))
         .collect();
+
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();

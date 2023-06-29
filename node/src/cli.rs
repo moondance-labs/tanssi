@@ -14,12 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sc_network::config::MultiaddrWithPeerId;
-
 use {
     crate::{chain_spec::RawGenesisConfig, service::Sealing},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    sc_network::config::MultiaddrWithPeerId,
     std::{collections::BTreeMap, path::PathBuf},
     tp_container_chain_genesis_data::json::properties_to_map,
 };
@@ -82,10 +81,6 @@ pub struct BuildSpecCmd {
     /// List of container chain chain spec paths to add to genesis.
     #[arg(long)]
     pub add_container_chain: Vec<String>,
-
-    /// List of bootnodes to add to chain spec
-    #[arg(long)]
-    pub add_bootnode: Vec<String>,
 }
 
 impl CliConfiguration for BuildSpecCmd {

@@ -351,6 +351,7 @@ pub mod pallet {
             // is deleted immediately. This will cause problems since any new collators that want
             // to join now will not be able to sync this parachain
             ParaGenesisData::<T>::remove(para_id);
+            BootNodes::<T>::remove(para_id);
 
             Ok(())
         }
@@ -401,7 +402,7 @@ pub mod pallet {
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::set_boot_nodes(
             T::MaxBootNodeUrlLen::get(),
-            T::MaxBootNodes::get(),
+            boot_nodes.len() as u32,
         ))]
         pub fn set_boot_nodes(
             origin: OriginFor<T>,
