@@ -245,9 +245,6 @@ jobs:
           chmod uog+x tmp/container-chain-template-simple-node
           chmod uog+x tmp/container-chain-template-frontier-node
 
-          ## Generate specs
-          npm run build-spec-ci
-
           ## Run tests
 
           pnpm moonwall test zombie_tanssi_ci
