@@ -15,18 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    container_chain_template_frontier_runtime::{
-        AccountId, EVMChainIdConfig, EVMConfig, Signature,
-    },
+    container_chain_template_frontier_runtime::{AccountId, EVMChainIdConfig, EVMConfig},
     cumulus_primitives_core::ParaId,
     hex_literal::hex,
-    nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
-    sp_core::{ecdsa, Pair, Public, H160, U256},
-    sp_runtime::traits::{IdentifyAccount, Verify},
+    sp_core::{H160, U256},
     std::{collections::BTreeMap, str::FromStr},
 };
 
@@ -35,13 +31,6 @@ pub type ChainSpec = sc_service::GenericChainSpec<
     container_chain_template_frontier_runtime::GenesisConfig,
     Extensions,
 >;
-
-/// Helper function to generate a crypto pair from seed
-pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
-}
 
 /// Orcherstrator's parachain id
 pub const ORCHESTRATOR: ParaId = ParaId::new(1000);
@@ -63,32 +52,6 @@ impl Extensions {
     }
 }
 
-type AccountPublic = <Signature as Verify>::Signer;
-
-/// Generate collator keys from seed.
-///
-/// This function's return type must always match the session keys of the chain in tuple format.
-pub fn get_collator_keys_from_seed(seed: &str) -> NimbusId {
-    get_from_seed::<NimbusId>(seed)
-}
-
-/// Helper function to generate an account ID from seed
-pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
-}
-
-/// Generate the session keys from individual elements.
-///
-/// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(
-    keys: NimbusId,
-) -> container_chain_template_frontier_runtime::SessionKeys {
-    container_chain_template_frontier_runtime::SessionKeys { aura: keys }
-}
-
 pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -97,18 +60,7 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), true.into());
 
-    let initial_collator_seeds = vec!["Alice".to_string(), "Bob".to_string()];
-    let collator_accounts: Vec<AccountId> = initial_collator_seeds
-        .iter()
-        .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
-        .collect();
-    let collator_keys: Vec<NimbusId> = initial_collator_seeds
-        .iter()
-        .map(|seed| get_collator_keys_from_seed(seed))
-        .collect();
-
     let mut default_funded_accounts = pre_funded_accounts();
-    default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
     let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
@@ -127,11 +79,6 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
         ChainType::Development,
         move || {
             testnet_genesis(
-                collator_accounts
-                    .iter()
-                    .zip(collator_keys.iter())
-                    .map(|(x, y)| (*x, y.clone()))
-                    .collect(),
                 default_funded_accounts.clone(),
                 para_id,
                 AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
@@ -158,18 +105,7 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     properties.insert("isEthereum".into(), true.into());
     let protocol_id = Some(format!("container-chain-{}", para_id));
 
-    let initial_collator_seeds = vec!["Alice".to_string(), "Bob".to_string()];
-    let collator_accounts: Vec<AccountId> = initial_collator_seeds
-        .iter()
-        .map(|seed| get_account_id_from_seed::<ecdsa::Public>(seed))
-        .collect();
-    let collator_keys: Vec<NimbusId> = initial_collator_seeds
-        .iter()
-        .map(|seed| get_collator_keys_from_seed(seed))
-        .collect();
-
     let mut default_funded_accounts = pre_funded_accounts();
-    default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
     let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
@@ -188,11 +124,6 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
         ChainType::Local,
         move || {
             testnet_genesis(
-                collator_accounts
-                    .iter()
-                    .zip(collator_keys.iter())
-                    .map(|(x, y)| (*x, y.clone()))
-                    .collect(),
                 default_funded_accounts.clone(),
                 para_id,
                 AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
@@ -217,7 +148,6 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
 }
 
 fn testnet_genesis(
-    invulnerables: Vec<(AccountId, NimbusId)>,
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
@@ -238,21 +168,6 @@ fn testnet_genesis(
         parachain_info: container_chain_template_frontier_runtime::ParachainInfoConfig {
             parachain_id: id,
         },
-        session: container_chain_template_frontier_runtime::SessionConfig {
-            keys: invulnerables
-                .into_iter()
-                .map(|(acc, aura)| {
-                    (
-                        acc,                         // account id
-                        acc,                         // validator id
-                        template_session_keys(aura), // session keys
-                    )
-                })
-                .collect(),
-        },
-        // no need to pass anything to aura, in fact it will panic if we do. Session will take care
-        // of this.
-        aura: Default::default(),
         parachain_system: Default::default(),
         // EVM compatibility
         // We should change this to something different than Moonbeam

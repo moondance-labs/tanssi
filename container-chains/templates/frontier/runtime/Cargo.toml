@@ -30,13 +30,10 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
-pallet-aura = { workspace = true }
-pallet-authorship = { workspace = true }
 # TODO: we enable this feature here, but this feature should not be enabled when compiling
 # the other substrate-based runtimes. Check if cargo does enabled it automatically because
 # it probably does (otherwise it would have to compile this crate twice)
 pallet-balances = { workspace = true, features = ["insecure_zero_ed"] }
-pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
@@ -60,7 +57,6 @@ polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
 
 # Cumulus
-cumulus-pallet-aura-ext = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-primitives-core = { workspace = true }
@@ -90,7 +86,6 @@ default = [
 	"std",
 ]
 std = [
-	"cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
@@ -104,8 +99,6 @@ std = [
 	"frame-system/std",
 	"frame-try-runtime/std",
 	"log/std",
-	"pallet-aura/std",
-	"pallet-authorship/std",
 	"pallet-balances/std",
 	"pallet-base-fee/std",
 	"pallet-cc-authorities-noting/std",
@@ -118,7 +111,6 @@ std = [
 	"pallet-evm-precompile-simple/std",
 	"pallet-evm/std",
 	"pallet-hotfix-sufficients/std",
-	"pallet-session/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-utility/std",
@@ -158,17 +150,13 @@ try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
-	"pallet-aura/try-runtime",
-	"pallet-authorship/try-runtime",
 	"pallet-balances/try-runtime",
-	"pallet-session/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"pallet-utility/try-runtime",
 	"sp-runtime/try-runtime",
 	"polkadot-runtime-common/try-runtime",
-	"cumulus-pallet-aura-ext/try-runtime",
 	"cumulus-pallet-parachain-system/try-runtime",
 	"parachain-info/try-runtime",
 	"fp-self-contained/try-runtime",
