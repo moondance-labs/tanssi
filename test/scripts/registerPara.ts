@@ -37,6 +37,10 @@ yargs(hideBin(process.argv))
         try {
             process.stdout.write(`Reading chainSpec from: ${argv.chain}\n`);
             const rawSpec = JSONbig.parse(await fs.readFile(argv.chain!, "utf8"));
+
+            if (rawSpec.bootNodes?.length) {
+                process.stdout.write(`Warning: this chainSpec file has some bootnodes, which must be written manually using sudo: ${JSON.stringify(rawSpec.bootNodes)}\n`);
+            }
     
             let account: KeyringPair;
             const privKey = argv["account-priv-key"];

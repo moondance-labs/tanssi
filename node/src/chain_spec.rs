@@ -192,7 +192,7 @@ pub fn development_config(
                 },
             )
         },
-        Vec::new(),
+        vec![],
         None,
         None,
         None,
@@ -255,7 +255,7 @@ pub fn local_dancebox_config(
             )
         },
         // Bootnodes
-        Vec::new(),
+        vec![],
         // Telemetry
         None,
         // Protocol ID
@@ -332,7 +332,7 @@ fn testnet_genesis(
                 .chain(
                     mock_container_chains
                         .iter()
-                        .map(|x| (*x, mock_container_chain_genesis_data(*x))),
+                        .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
                 )
                 .collect(),
         },
