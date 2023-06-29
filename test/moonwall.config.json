@@ -27,6 +27,7 @@
     {
       "name": "dev_frontier_template",
       "testFileDir": ["suites/dev-frontier-template"],
+      "runScripts": ["pre-build-contracts.ts"],
       "multiThreads": true,
       "html": false,
       "contracts": "helpers/",
