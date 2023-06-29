@@ -94,7 +94,7 @@ pub fn open_frontier_backend<C>(
 where
     C: sp_blockchain::HeaderBackend<Block>,
 {
-    Ok(fc_db::kv::Backend::<Block>::new(
+    fc_db::kv::Backend::<Block>::new(
         client,
         &fc_db::kv::DatabaseSettings {
             source: match config.database {
@@ -115,7 +115,7 @@ where
                 }
             },
         },
-    )?)
+    )
 }
 
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));

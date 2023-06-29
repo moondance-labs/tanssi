@@ -271,7 +271,7 @@ where
                     params.client.clone(),
                     params.substrate_backend.clone(),
                     params.overrides.clone(),
-                    Arc::new(b.clone()),
+                    Arc::new(b),
                     3,
                     0,
                     SyncStrategy::Parachain,
