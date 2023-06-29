@@ -143,6 +143,8 @@ Currently two templates are offered within this repository
 
 - __Frontier template__: Which ressembles a moonbeam-alike chain, with all pallets necessary for evm and ethereum compatibility
 
+
+
 ### Build container-chain nodes (full nodes only, not collators)
 These nodes will only act as full nodes, but not as collators since these are offered by Tanssi:
 
