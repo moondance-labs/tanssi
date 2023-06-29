@@ -210,7 +210,7 @@ jobs:
           pnpm moonwall test dev_frontier_template
 
   zombienet-tests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: ["set-tags", "build"]
     steps:
       - name: Checkout
