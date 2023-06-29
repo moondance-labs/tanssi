@@ -293,10 +293,6 @@ jobs:
         image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
     if: needs.set-tags.outputs.image_exists == false && github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Debug
-        run: echo 'image_exists=${{ needs.set-tags.outputs.image_exists }}, ?=${{ needs.set-tags.outputs.image_exists == false}} repo=${{ github.event.pull_request.head.repo.full_name }} github.repository=${{ github.repository }} ?=${{ github.event.pull_request.head.repo.full_name == github.repository }}'
-      - name: Debug
-        run: echo '${{ toJSON(github) }}'
       - name: Checkout
         uses: actions/checkout@v3
         with:
