@@ -301,7 +301,10 @@ impl frame_system::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = Aura;
+    type OnTimestampSet = tp_consensus::OnTimestampSet<
+        <Self as pallet_author_inherent::Config>::SlotBeacon,
+        ConstU64<{ SLOT_DURATION }>,
+    >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();
 }
@@ -309,6 +312,31 @@ impl pallet_timestamp::Config for Runtime {
 impl pallet_authorship::Config for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
     type EventHandler = (CollatorSelection,);
+}
+
+pub struct CanAuthor;
+impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
+    fn can_author(author: &NimbusId, slot: &u32) -> bool {
+        let authorities = AuthorityAssignment::collator_container_chain(Session::current_index())
+            .expect("authorities should be set")
+            .orchestrator_chain;
+
+        if authorities.len() == 0 {
+            return false;
+        }
+
+        let expected_author = &authorities[(*slot as usize) % authorities.len()];
+
+        expected_author == author
+    }
+}
+
+impl pallet_author_inherent::Config for Runtime {
+    type AuthorId = NimbusId;
+    type AccountLookup = tp_consensus::NimbusLookUp;
+    type CanAuthor = CanAuthor;
+    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -499,6 +527,8 @@ impl pallet_collator_selection::Config for Runtime {
 parameter_types! {
     pub const MaxLengthParaIds: u32 = 100u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
+    pub const MaxBootNodes: u32 = 10;
+    pub const MaxBootNodeUrlLen: u32 = 200;
 }
 
 pub struct CurrentSessionIndexGetter;
@@ -526,6 +556,8 @@ impl pallet_registrar::Config for Runtime {
     type RegistrarOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
+    type MaxBootNodes = MaxBootNodes;
+    type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
@@ -587,6 +619,8 @@ construct_runtime!(
         Aura: pallet_aura = 33,
         AuraExt: cumulus_pallet_aura_ext = 34,
         AuthorityMapping: pallet_authority_mapping = 35,
+
+        AuthorInherent: pallet_author_inherent = 50,
 
         RootTesting: pallet_root_testing = 100,
     }
@@ -702,12 +736,6 @@ impl_runtime_apis! {
             let mut list = Vec::<BenchmarkList>::new();
 
             list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
-            list_benchmark!(
-                list,
-                extra,
-                tp_author_noting_inherent,
-                PalletConfigurationBench::<Runtime>
-            );
             list_benchmark!(
                 list,
                 extra,
@@ -875,6 +903,13 @@ impl_runtime_apis! {
         /// Fetch genesis data for this para id
         fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
             Registrar::para_genesis_data(para_id)
+        }
+
+        /// Fetch boot_nodes for this para id
+        fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
+            let bounded_vec = Registrar::boot_nodes(para_id);
+
+            bounded_vec.into_iter().map(|x| x.into()).collect()
         }
     }
 

@@ -18,6 +18,7 @@ use {
     container_chain_template_simple_runtime::{AccountId, Signature},
     cumulus_primitives_core::ParaId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
@@ -78,6 +79,13 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
+    let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
+        .into_iter()
+        .map(|x| {
+            x.parse::<MultiaddrWithPeerId>()
+                .unwrap_or_else(|e| panic!("invalid bootnode address format {:?}: {:?}", x, e))
+        })
+        .collect();
 
     ChainSpec::from_genesis(
         // Name
@@ -92,7 +100,7 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
                 get_account_id_from_seed::<sr25519::Public>("Alice"),
             )
         },
-        Vec::new(),
+        boot_nodes,
         None,
         None,
         None,
@@ -104,7 +112,7 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
     )
 }
 
-pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
+pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "UNIT".into());
@@ -116,6 +124,13 @@ pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
+    let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
+        .into_iter()
+        .map(|x| {
+            x.parse::<MultiaddrWithPeerId>()
+                .unwrap_or_else(|e| panic!("invalid bootnode address format {:?}: {:?}", x, e))
+        })
+        .collect();
 
     ChainSpec::from_genesis(
         // Name
@@ -131,7 +146,7 @@ pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
             )
         },
         // Bootnodes
-        Vec::new(),
+        boot_nodes,
         // Telemetry
         None,
         // Protocol ID
