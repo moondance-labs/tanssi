@@ -15,17 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    container_chain_template_frontier_runtime::{
-        AccountId, EVMChainIdConfig, EVMConfig, Signature,
-    },
+    container_chain_template_frontier_runtime::{AccountId, EVMChainIdConfig, EVMConfig},
     cumulus_primitives_core::ParaId,
     hex_literal::hex,
-    nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
-    sp_core::{Pair, Public, H160, U256},
-    sp_runtime::traits::{IdentifyAccount, Verify},
+    sp_core::{H160, U256},
     std::{collections::BTreeMap, str::FromStr},
 };
 
@@ -34,13 +30,6 @@ pub type ChainSpec = sc_service::GenericChainSpec<
     container_chain_template_frontier_runtime::GenesisConfig,
     Extensions,
 >;
-
-/// Helper function to generate a crypto pair from seed
-pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
-}
 
 /// Orcherstrator's parachain id
 pub const ORCHESTRATOR: ParaId = ParaId::new(1000);
@@ -60,23 +49,6 @@ impl Extensions {
     pub fn try_get(chain_spec: &dyn sc_service::ChainSpec) -> Option<&Self> {
         sc_chain_spec::get_extension(chain_spec.extensions())
     }
-}
-
-type AccountPublic = <Signature as Verify>::Signer;
-
-/// Generate collator keys from seed.
-///
-/// This function's return type must always match the session keys of the chain in tuple format.
-pub fn get_collator_keys_from_seed(seed: &str) -> NimbusId {
-    get_from_seed::<NimbusId>(seed)
-}
-
-/// Helper function to generate an account ID from seed
-pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
 pub fn development_config(para_id: ParaId) -> ChainSpec {

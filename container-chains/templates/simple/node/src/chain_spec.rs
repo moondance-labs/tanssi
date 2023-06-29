@@ -17,7 +17,6 @@
 use {
     container_chain_template_simple_runtime::{AccountId, Signature},
     cumulus_primitives_core::ParaId,
-    nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
@@ -59,13 +58,6 @@ impl Extensions {
 }
 
 type AccountPublic = <Signature as Verify>::Signer;
-
-/// Generate collator keys from seed.
-///
-/// This function's return type must always match the session keys of the chain in tuple format.
-pub fn get_collator_keys_from_seed(seed: &str) -> NimbusId {
-    get_from_seed::<NimbusId>(seed)
-}
 
 /// Helper function to generate an account ID from seed
 pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
