@@ -84,7 +84,6 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
     properties.insert("isEthereum".into(), false.into());
 
     let mut default_funded_accounts = pre_funded_accounts();
-    default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
 
@@ -123,7 +122,6 @@ pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
     let protocol_id = Some(format!("container-chain-{}", para_id));
 
     let mut default_funded_accounts = pre_funded_accounts();
-    default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
 

@@ -24,7 +24,7 @@ use {
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
-    sp_core::{ecdsa, Pair, Public, H160, U256},
+    sp_core::{Pair, Public, H160, U256},
     sp_runtime::traits::{IdentifyAccount, Verify},
     std::{collections::BTreeMap, str::FromStr},
 };
@@ -88,7 +88,6 @@ pub fn development_config(para_id: ParaId) -> ChainSpec {
     properties.insert("isEthereum".into(), true.into());
 
     let mut default_funded_accounts = pre_funded_accounts();
-    default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
 
@@ -127,7 +126,6 @@ pub fn local_testnet_config(para_id: ParaId) -> ChainSpec {
     let protocol_id = Some(format!("container-chain-{}", para_id));
 
     let mut default_funded_accounts = pre_funded_accounts();
-    default_funded_accounts.extend(collator_accounts.clone());
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
 
