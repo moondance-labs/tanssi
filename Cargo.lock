@@ -1129,7 +1129,6 @@ dependencies = [
 name = "container-chain-template-frontier-runtime"
 version = "0.1.0"
 dependencies = [
- "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
@@ -1146,9 +1145,7 @@ dependencies = [
  "hex-literal",
  "log",
  "nimbus-primitives",
- "pallet-aura",
  "pallet-author-inherent",
- "pallet-authorship",
  "pallet-balances",
  "pallet-base-fee",
  "pallet-cc-authorities-noting",
@@ -1160,7 +1157,6 @@ dependencies = [
  "pallet-evm-precompile-sha3fips",
  "pallet-evm-precompile-simple",
  "pallet-hotfix-sufficients",
- "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
