@@ -13,13 +13,13 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
-use sc_network::config::MultiaddrWithPeerId;
 
 use {
     container_chain_template_simple_runtime::{AccountId, Signature},
     cumulus_primitives_core::ParaId,
     nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},

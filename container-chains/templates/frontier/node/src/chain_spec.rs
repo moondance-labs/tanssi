@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sc_network::config::MultiaddrWithPeerId;
-
 use {
     container_chain_template_frontier_runtime::{
         AccountId, EVMChainIdConfig, EVMConfig, Signature,
@@ -24,6 +22,7 @@ use {
     hex_literal::hex,
     nimbus_primitives::NimbusId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{ecdsa, Pair, Public, H160, U256},
