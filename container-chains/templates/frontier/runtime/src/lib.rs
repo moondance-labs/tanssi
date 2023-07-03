@@ -43,7 +43,7 @@ use {
         parameter_types,
         traits::{
             ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Everything, FindAuthor,
-            Imbalance, OnUnbalanced,
+            Imbalance, OnUnbalanced, OnFinalize
         },
         weights::{
             constants::{
@@ -567,6 +567,7 @@ impl pallet_evm::Config for Runtime {
     type OnChargeTransaction = OnChargeEVMTransaction<()>;
     type OnCreate = ();
     type FindAuthor = ();
+    type GasLimitPovSizeRatio = ();
     type Timestamp = Timestamp;
     type WeightInfo = ();
 }
@@ -897,6 +898,8 @@ impl_runtime_apis! {
                 access_list.unwrap_or_default(),
                 is_transactional,
                 validate,
+                None,
+                None,
                 <Runtime as pallet_evm::Config>::config(),
             ).map_err(|err| err.error.into())
         }
@@ -914,7 +917,6 @@ impl_runtime_apis! {
         ) -> Result<pallet_evm::CreateInfo, sp_runtime::DispatchError> {
             let is_transactional = false;
             let validate = true;
-            #[allow(clippy::or_fun_call)] // suggestion not helpful here
             <Runtime as pallet_evm::Config>::Runner::create(
                 from,
                 data,
@@ -926,6 +928,8 @@ impl_runtime_apis! {
                 access_list.unwrap_or_default(),
                 is_transactional,
                 validate,
+                None,
+                None,
                 <Runtime as pallet_evm::Config>::config(),
             ).map_err(|err| err.error.into())
         }
@@ -964,10 +968,23 @@ impl_runtime_apis! {
         }
 
         fn elasticity() -> Option<Permill> {
-            None
+            Some(pallet_base_fee::Elasticity::<Runtime>::get())
         }
 
         fn gas_limit_multiplier_support() {}
+
+        fn pending_block(xts: Vec<<Block as sp_api::BlockT>::Extrinsic>) -> (Option<pallet_ethereum::Block>, Option<sp_std::prelude::Vec<TransactionStatus>>) {
+            for ext in xts.into_iter() {
+                let _ = Executive::apply_extrinsic(ext);
+            }
+
+            Ethereum::on_finalize(System::block_number() + 1);
+
+            (
+                pallet_ethereum::CurrentBlock::<Runtime>::get(),
+                pallet_ethereum::CurrentTransactionStatuses::<Runtime>::get()
+            )
+         }
     }
 
     impl fp_rpc::ConvertTransactionRuntimeApi<Block> for Runtime {

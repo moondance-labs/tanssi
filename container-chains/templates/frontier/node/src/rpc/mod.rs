@@ -25,7 +25,8 @@ pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 
 use {
     container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
-    fc_rpc::EthTask,
+    fc_rpc::{EthTask, TxPool},
+    fc_rpc_core::TxPoolApiServer,
     fp_rpc::EthereumRuntimeRPCApi,
     futures::StreamExt,
     jsonrpsee::RpcModule,
@@ -160,7 +161,7 @@ where
         Eth::new(
             Arc::clone(&client),
             Arc::clone(&pool),
-            graph,
+            Arc::clone(&graph),
             convert_transaction,
             Arc::clone(&sync),
             signers,
@@ -176,11 +177,13 @@ where
         .into_rpc(),
     )?;
 
+    let tx_pool = TxPool::new(client.clone(), graph);
     if let Some(filter_pool) = filter_pool {
         io.merge(
             EthFilter::new(
                 client.clone(),
                 frontier_backend,
+                tx_pool.clone(),
                 filter_pool,
                 500_usize, // max stored filters
                 max_past_logs,
@@ -220,6 +223,7 @@ where
         )
         .into_rpc(),
     )?;
+    io.merge(tx_pool.into_rpc())?;
 
     Ok(io)
 }
