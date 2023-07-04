@@ -11,7 +11,6 @@ jobs:
   set-tags:
     runs-on: ubuntu-latest
     outputs:
-      polkadot_release: ${{ steps.get-sha.outputs.polkadot_release }}
       image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
       sha: ${{ steps.get-sha.outputs.sha }}
       sha8: ${{ steps.get-sha.outputs.sha8 }}
@@ -41,8 +40,6 @@ jobs:
         run: |
           echo "sha=$(git log -1 --format='%H')" >> $GITHUB_OUTPUT
           echo "sha8=$(git log -1 --format='%H' | cut -c1-8)" >> $GITHUB_OUTPUT
-          branch=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1 | sed 's/.*release-//#')
-          echo "polkadot_release=$(echo $branch | sed 's/#.*//' | sed 's/\/polkadot?branch=tanssi-polkadot-//')" >> $GITHUB_OUTPUT
 
       - name: Check existing docker image
         id: check-docker-image
@@ -52,7 +49,6 @@ jobs:
 
       - name: Display variables
         run: |
-          echo polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
           echo sha: ${{ steps.get-sha.outputs.sha }}
           echo sha8: ${{ steps.get-sha.outputs.sha8 }}
           echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
@@ -222,7 +218,7 @@ jobs:
           pnpm moonwall test dev_frontier_template
 
   zombienet-tests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: ["set-tags", "build"]
     steps:
       - name: Checkout
@@ -247,18 +243,6 @@ jobs:
         with:
           name: binaries
           path: test/tmp
-
-      
-      - name: Retrieve polkadot binary from docker
-        run: |
-          POLKADOT_RELEASE=${{ needs.set-tags.outputs.polkadot_release }}
-          DOCKER_TAG="parity/polkadot:$POLKADOT_RELEASE"
-          echo $DOCKER_TAG
-          echo $POLKADOT_RELEASE
-          docker rm -f dummy 2> /dev/null | true
-          docker create -ti --name dummy $DOCKER_TAG bash
-          docker cp dummy:/usr/bin/polkadot test/tmp/polkadot
-          docker rm -f dummy
       
       - name: "Run zombie test"
         run: |
@@ -268,10 +252,6 @@ jobs:
           chmod uog+x tmp/tanssi-node
           chmod uog+x tmp/container-chain-template-simple-node
           chmod uog+x tmp/container-chain-template-frontier-node
-          chmod uog+x tmp/polkadot
-
-          ## Generate specs
-          npm run build-spec-ci
 
           ## Run tests
 
