@@ -15,10 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
-use sc_executor::HeapAllocStrategy;
-use sc_executor::WasmExecutor;
-use sc_executor::DEFAULT_HEAP_ALLOC_STRATEGY;
-use sc_network::config::FullNetworkConfiguration;
 use {
     crate::{
         cli::ContainerChainCli,
@@ -51,8 +47,10 @@ use {
     polkadot_service::Handle,
     sc_client_api::{AuxStore, Backend, BlockchainEvents, HeaderBackend, UsageProvider},
     sc_consensus::{BlockImport, ImportQueue},
-    sc_executor::NativeElseWasmExecutor,
-    sc_network::NetworkBlock,
+    sc_executor::{
+        HeapAllocStrategy, NativeElseWasmExecutor, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
+    },
+    sc_network::{config::FullNetworkConfiguration, NetworkBlock},
     sc_network_sync::SyncingService,
     sc_service::{
         Configuration, Error as ServiceError, PartialComponents, TFullBackend, TFullClient,
