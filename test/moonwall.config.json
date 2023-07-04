@@ -2,6 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/types/config_schema.json",
   "label": "MasterConfig 🌔",
   "defaultTestTimeout": 30000,
+  "scriptsDir": "scripts/",
   "environments": [
     {
       "name": "dev_tanssi",
@@ -27,6 +28,7 @@
     {
       "name": "dev_frontier_template",
       "testFileDir": ["suites/dev-frontier-template"],
+      "runScripts": ["pre-build-contracts.ts"],
       "multiThreads": true,
       "html": false,
       "contracts": "helpers/",
@@ -48,6 +50,7 @@
     {
       "name": "zombie_tanssi_ci",
       "testFileDir": ["suites/para"],
+      "runScripts": ["build-spec-ci.sh", "download-polkadot.sh"],
       "foundation": {
         "type": "zombie",
         "zombieSpec": {
@@ -96,6 +99,7 @@
           "configPath": "./configs/zombieTanssi.json"
         }
       },
+      "runScripts": ["build-spec.sh", "download-polkadot.sh"],
       "connections": [
         {
           "name": "Relay",
