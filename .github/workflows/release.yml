@@ -71,6 +71,16 @@ jobs:
             false
           fi
 
+  debug-docker-tanssi:
+    runs-on: ubuntu-latest
+    needs: ["set-tags"]
+    steps:
+      - name: Deebug
+        run: |
+          echo ${{ needs.set-tags.outputs.image_exists == 'false' }}
+          echo ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+          echo ${{ needs.set-tags.outputs.image_exists == 'false' }} && ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+
   ####### Building and Testing binaries #######
   cargo-clippy:
     runs-on: self-hosted
