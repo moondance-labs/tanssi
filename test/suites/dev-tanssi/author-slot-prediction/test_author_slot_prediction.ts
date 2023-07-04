@@ -66,23 +66,23 @@ describeSuite({
             // Check key is reflected in next key
             // But its not yet in queued
             const queuedKeys = await polkadotJs.query.session.queuedKeys();
-            const result = queuedKeys.filter(keyItem => keyItem[1].aura == newKey);
+            const result = queuedKeys.filter(keyItem => keyItem[1].nimbus == newKey);
             expect(result).is.empty;
             const nextKey = await polkadotJs.query.session.nextKeys(alice.address);
-            expect(u8aToHex(nextKey.unwrap().aura)).to.be.eq(u8aToHex(newKey));
+            expect(u8aToHex(nextKey.unwrap().nimbus)).to.be.eq(u8aToHex(newKey));
 
             // Let's jump one session
             await jumpSessions(context, 2);
 
             // The very first block produced by the second session should contain the new key
 
-            // The change should have been applied, and now both aura and authorityMapping should reflect
+            // The change should have been applied, and now both nimbus and authorityMapping should reflect
             const digests = (await polkadotJs.query.system.digest()).logs;
             const filtered = digests.filter(log => 
                 log.isPreRuntime === true && log.asPreRuntime[0].toHex() == stringToHex('nmbs')
             );
 
-            expect(filtered[0].asPreRuntime[1].toHex()).to.be.eq(u8aToHex(nextKey.unwrap().aura))
+            expect(filtered[0].asPreRuntime[1].toHex()).to.be.eq(u8aToHex(nextKey.unwrap().nimbus))
 
         },
     });
