@@ -609,6 +609,7 @@ impl pallet_utility::Config for Runtime {
 #[derive(
     Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
 )]
+#[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {
     /// All calls can be proxied. This is the trivial/most permissive filter.
     Any = 0,
