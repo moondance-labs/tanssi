@@ -77,7 +77,7 @@ jobs:
     steps:
       - name: Deebug
         run: |
-          echo ${{ !needs.set-tags.outputs.image_exists }}
+          echo ${{ needs.set-tags.outputs.image_exists == false }}
           echo ${{ github.event.pull_request.head.repo.full_name == github.repository }}
   
   ####### Building and Testing binaries #######
