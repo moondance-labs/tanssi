@@ -14,6 +14,7 @@ hex-literal = { workspace = true, optional = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
+serde = { workspace = true, optional = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Own
@@ -26,6 +27,7 @@ pallet-configuration = { workspace = true }
 pallet-initializer = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+pallet-proxy = { workspace = true }
 tp-core = { workspace = true }
 
 # Nimbus
@@ -112,6 +114,7 @@ std = [
 	"pallet-collator-selection/std",
 	"pallet-configuration/std",
 	"pallet-initializer/std",
+	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
 	"pallet-session/std",
@@ -123,6 +126,7 @@ std = [
 	"polkadot-parachain/std",
 	"polkadot-runtime-common/std",
 	"scale-info/std",
+	"serde",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-application-crypto/std",

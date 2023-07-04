@@ -35,7 +35,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything, OneSessionHandler},
+        traits::{ConstU128, ConstU32, ConstU64, Everything, InstanceFilter, OneSessionHandler},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -53,9 +53,10 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
     polkadot_runtime_common::BlockHashCount,
+    scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata},
+    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{AccountIdLookup, BlakeTwo256, Block as BlockT},
@@ -103,6 +104,25 @@ pub type Executive = frame_executive::Executive<
     Runtime,
     AllPalletsWithSystem,
 >;
+
+/// DANCE, the native token, uses 12 decimals of precision.
+pub mod currency {
+    use super::Balance;
+
+    // Provide a common factor between runtimes based on a supply of 10_000_000 tokens.
+    pub const SUPPLY_FACTOR: Balance = 100;
+
+    pub const MICRODANCE: Balance = 1_000_000;
+    pub const MILLIDANCE: Balance = 1_000_000_000;
+    pub const DANCE: Balance = 1_000_000_000_000;
+    pub const KILODANCE: Balance = 1_000_000_000_000_000;
+
+    pub const STORAGE_BYTE_FEE: Balance = 100 * MICRODANCE * SUPPLY_FACTOR;
+
+    pub const fn deposit(items: u32, bytes: u32) -> Balance {
+        items as Balance * 100 * MILLIDANCE * SUPPLY_FACTOR + (bytes as Balance) * STORAGE_BYTE_FEE
+    }
+}
 
 /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
 /// node's balance type.
@@ -584,6 +604,89 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
+/// The type used to represent the kinds of proxying allowed.
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
+)]
+pub enum ProxyType {
+    /// All calls can be proxied. This is the trivial/most permissive filter.
+    Any = 0,
+    /// Only extrinsics that do not transfer funds.
+    NonTransfer = 1,
+    /// Only extrinsics related to governance (democracy and collectives).
+    Governance = 2,
+    /// Only extrinsics related to staking.
+    Staking = 3,
+    /// Allow to veto an announced proxy call.
+    CancelProxy = 4,
+    /// Allow extrinsic related to Balances.
+    Balances = 5,
+}
+
+impl Default for ProxyType {
+    fn default() -> Self {
+        Self::Any
+    }
+}
+
+impl InstanceFilter<RuntimeCall> for ProxyType {
+    fn filter(&self, c: &RuntimeCall) -> bool {
+        match self {
+            ProxyType::Any => true,
+            ProxyType::NonTransfer => {
+                matches!(
+                    c,
+                    RuntimeCall::System(..)
+                        | RuntimeCall::ParachainSystem(..)
+                        | RuntimeCall::Timestamp(..)
+                        | RuntimeCall::Utility(..)
+                        | RuntimeCall::Proxy(..)
+                )
+            }
+            ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
+            ProxyType::Staking => matches!(c, RuntimeCall::Utility(..)),
+            ProxyType::CancelProxy => matches!(
+                c,
+                RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
+            ),
+            ProxyType::Balances => {
+                matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+            }
+        }
+    }
+
+    fn is_superset(&self, o: &Self) -> bool {
+        match (self, o) {
+            (x, y) if x == y => true,
+            (ProxyType::Any, _) => true,
+            (_, ProxyType::Any) => false,
+            _ => false,
+        }
+    }
+}
+
+impl pallet_proxy::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type ProxyType = ProxyType;
+    // One storage item; key size 32, value size 8
+    type ProxyDepositBase = ConstU128<{ currency::deposit(1, 8) }>;
+    // Additional storage item size of 33 bytes (32 bytes AccountId + 1 byte sizeof(ProxyType)).
+    type ProxyDepositFactor = ConstU128<{ currency::deposit(0, 33) }>;
+    type MaxProxies = ConstU32<32>;
+    type MaxPending = ConstU32<32>;
+    type CallHasher = BlakeTwo256;
+    type AnnouncementDepositBase = ConstU128<{ currency::deposit(1, 8) }>;
+    // Additional storage item size of 68 bytes:
+    // - 32 bytes AccountId
+    // - 32 bytes Hasher (Blake2256)
+    // - 4 bytes BlockNumber (u32)
+    type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
+    type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -600,6 +703,7 @@ construct_runtime!(
         ParachainInfo: parachain_info = 3,
         Sudo: pallet_sudo = 4,
         Utility: pallet_utility = 5,
+        Proxy: pallet_proxy = 6,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
