@@ -79,7 +79,7 @@ jobs:
         run: |
           echo ${{ needs.set-tags.outputs.image_exists == 'false' }}
           echo ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-          echo (${{ needs.set-tags.outputs.image_exists == 'false' }}) && (${{ github.event.pull_request.head.repo.full_name == github.repository }})
+          echo ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository) }}
 
   ####### Building and Testing binaries #######
   cargo-clippy:
