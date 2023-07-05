@@ -51,10 +51,10 @@ describeSuite({
             // Check key is reflected in next key
             // But its not yet in queued
             const queuedKeys = await polkadotJs.query.session.queuedKeys();
-            const result = queuedKeys.filter(keyItem => keyItem[1].aura == newKey);
+            const result = queuedKeys.filter(keyItem => keyItem[1].nimbus == newKey);
             expect(result).is.empty;
             const nextKey = await polkadotJs.query.session.nextKeys(alice.address);
-            expect(u8aToHex(nextKey.unwrap().aura)).to.be.eq(u8aToHex(newKey));
+            expect(u8aToHex(nextKey.unwrap().nimbus)).to.be.eq(u8aToHex(newKey));
 
             // Let's jump one session
             await jumpSessions(context, 1);
@@ -63,7 +63,7 @@ describeSuite({
             const queuedKeysSession1 = await polkadotJs.query.session.queuedKeys();
 
             const result1 = queuedKeysSession1.filter(keyItem => 
-                u8aToHex(keyItem[1].aura) == u8aToHex(newKey)
+                u8aToHex(keyItem[1].nimbus) == u8aToHex(newKey)
             );
             expect(result1.length).to.be.eq(1);
 
