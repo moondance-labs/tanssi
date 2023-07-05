@@ -172,7 +172,7 @@ pub mod opaque {
 
 impl_opaque_keys! {
     pub struct SessionKeys {
-        pub aura: Initializer,
+        pub nimbus: Initializer,
     }
 }
 
@@ -181,7 +181,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 1,
+    spec_version: 100,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
