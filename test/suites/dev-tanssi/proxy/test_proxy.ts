@@ -11,11 +11,12 @@ describeSuite({
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
     const anotherLogger = setupLogger("anotherLogger");
-    let alice, bob;
+    let alice, bob, charlie;
     beforeAll(() => {
       const keyring = new Keyring({ type: 'sr25519' });
       alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
       bob = keyring.addFromUri('//Bob', { name: 'Bob default' });
+      charlie = keyring.addFromUri('//Charlie', { name: 'Charlie default' });
       polkadotJs = context.polkadotJs();
     });
 
@@ -65,6 +66,24 @@ describeSuite({
 
         // Balance of Bob account increased
         expect(balanceBefore.lt(balanceAfter)).to.be.true;
+      },
+    });
+
+    it({
+      id: "E04",
+      title: "Unauthorized account cannot call proxy.proxy",
+      test: async function () {
+        await context.createBlock();
+
+        const balanceBefore = (await polkadotJs.query.system.account(charlie.address)).data.free;
+        const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(charlie.address, 200_000));
+        await context.createBlock([
+          await tx.signAsync(charlie),
+        ]);
+        const balanceAfter = (await polkadotJs.query.system.account(charlie.address)).data.free;
+
+        // Balance of Charlie account must be the same
+        expect(balanceBefore.eq(balanceAfter)).to.be.true;
       },
     });
     },
