@@ -39,14 +39,13 @@ pub use dancebox_runtime::{
     RuntimeEvent, Session, System,
 };
 
-pub fn run_to_session(n: u32, add_author: bool) {
+pub fn run_to_session(n: u32) {
     let block_number = dancebox_runtime::Period::get() * n;
-    run_to_block(block_number + 1, add_author);
+    run_to_block(block_number + 1);
 }
 
 /// Utility function that advances the chain to the desired block number.
-/// If add_author is true, the author information is injected to all the blocks in the meantime.
-pub fn run_to_block(n: u32, add_author: bool) {
+pub fn run_to_block(n: u32) {
     while System::block_number() < n {
         let slot = current_slot() + 1;
 
