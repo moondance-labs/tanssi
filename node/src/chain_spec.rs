@@ -149,7 +149,7 @@ pub fn development_config(
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "UNIT".into());
+    properties.insert("tokenSymbol".into(), "DANCE".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
@@ -211,7 +211,7 @@ pub fn local_dancebox_config(
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "UNIT".into());
+    properties.insert("tokenSymbol".into(), "DANCE".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
