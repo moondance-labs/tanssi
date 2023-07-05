@@ -35,7 +35,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything, OneSessionHandler},
+        traits::{ConstU32, ConstU64, Everything, FindAuthor},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -309,8 +309,38 @@ impl pallet_timestamp::Config for Runtime {
     type WeightInfo = ();
 }
 
+pub struct FindAuthorFromDigest;
+
+impl FindAuthor<u32> for FindAuthorFromDigest {
+    fn find_author<'a, I>(digests: I) -> Option<u32>
+    where
+        I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
+    {
+        use {
+            parity_scale_codec::Decode,
+            sp_consensus_aura::{Slot, AURA_ENGINE_ID},
+        };
+
+        for (id, mut data) in digests.into_iter() {
+            if id == AURA_ENGINE_ID {
+                let slot = Slot::decode(&mut data).ok()?;
+
+                let authorities =
+                    AuthorityAssignment::collator_container_chain(Session::current_index())
+                        .expect("authorities should be set")
+                        .orchestrator_chain;
+
+                let author_index = *slot % authorities.len() as u64;
+                return Some(author_index as u32);
+            }
+        }
+
+        None
+    }
+}
+
 impl pallet_authorship::Config for Runtime {
-    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
+    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, FindAuthorFromDigest>;
     type EventHandler = (CollatorSelection,);
 }
 
@@ -377,7 +407,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 pub struct OwnApplySession;
 impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
-        changed: bool,
+        _changed: bool,
         session_index: u32,
         all_validators: Vec<(AccountId, NimbusId)>,
         queued: Vec<(AccountId, NimbusId)>,
@@ -401,40 +431,6 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
-
-        let orchestrator_current_assignemnt = assignments.active_assignment.orchestrator_chain;
-        let orchestrator_queued_assignemnt = assignments.next_assignment.orchestrator_chain;
-
-        // We filter the accounts based on the collators assigned to the orchestrator chain (this chain)
-        // We insert these in Aura
-        let validators: Vec<_> = all_validators
-            .iter()
-            .filter_map(|(k, v)| {
-                if orchestrator_current_assignemnt.contains(k) {
-                    Some((k, v.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let queued: Vec<_> = queued
-            .iter()
-            .filter_map(|(k, v)| {
-                if orchestrator_queued_assignemnt.contains(k) {
-                    Some((k, v.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        // Then we apply Aura
-        if session_index == 0 {
-            Aura::on_genesis_session(validators.into_iter());
-        } else {
-            Aura::on_new_session(changed, validators.into_iter(), queued.into_iter());
-        }
     }
 }
 
@@ -613,14 +609,10 @@ construct_runtime!(
         AuthorityAssignment: pallet_authority_assignment = 25,
 
         // Collator support. The order of these 4 are important and shall not change.
-        Authorship: pallet_authorship = 30,
-        CollatorSelection: pallet_collator_selection = 31,
-        Session: pallet_session = 32,
-        Aura: pallet_aura = 33,
-        AuraExt: cumulus_pallet_aura_ext = 34,
-        AuthorityMapping: pallet_authority_mapping = 35,
-
-        AuthorInherent: pallet_author_inherent = 50,
+        CollatorSelection: pallet_collator_selection = 30,
+        Session: pallet_session = 31,
+        AuthorityMapping: pallet_authority_mapping = 32,
+        AuthorInherent: pallet_author_inherent = 33,
 
         RootTesting: pallet_root_testing = 100,
     }
@@ -629,11 +621,15 @@ construct_runtime!(
 impl_runtime_apis! {
     impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
-            sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
+            sp_consensus_aura::SlotDuration::from_millis(SLOT_DURATION)
         }
 
         fn authorities() -> Vec<NimbusId> {
-            Aura::authorities().into_inner()
+            pallet_authority_mapping::Pallet::<Runtime>::authority_id_mapping(Session::current_index())
+                .expect("authorities for current session should exist")
+                .keys()
+                .cloned()
+                .collect()
         }
     }
 
