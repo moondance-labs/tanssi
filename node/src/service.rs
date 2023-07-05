@@ -1121,7 +1121,6 @@ pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from
 /// the parachain inherent.
 pub fn new_dev(
     config: Configuration,
-    _author_id: Option<AccountId>,
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
     para_id: ParaId,
