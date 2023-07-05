@@ -16,13 +16,13 @@
 
 use {
     cumulus_primitives_core::PersistedValidationData,
-    dancebox_runtime::AuthorityAssignment,
+    dancebox_runtime::{AuthorInherent, AuthorityAssignment},
     frame_support::{
         assert_ok,
         dispatch::Dispatchable,
         traits::{GenesisBuild, OnFinalize, OnInitialize},
     },
-    nimbus_primitives::{NimbusId},
+    nimbus_primitives::{NimbusId, NIMBUS_ENGINE_ID},
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::Encode,
@@ -31,9 +31,9 @@ use {
     sp_core::{Get, Pair},
     sp_runtime::{Digest, DigestItem},
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
+    tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
-use dancebox_runtime::AuthorInherent;
 pub use dancebox_runtime::{
     AccountId, Balance, Balances, Initializer, ParachainInfo, Registrar, Runtime, RuntimeCall,
     RuntimeEvent, Session, System,
@@ -47,33 +47,35 @@ pub fn run_to_session(n: u32, add_author: bool) {
 /// Utility function that advances the chain to the desired block number.
 /// If add_author is true, the author information is injected to all the blocks in the meantime.
 pub fn run_to_block(n: u32, add_author: bool) {
-    /*
-    // Finalize the first block
-    AuthorInherent::on_finalize(System::block_number());
-    */
     while System::block_number() < n {
-        // Set the new block number and author
-        if add_author {
-            let slot = current_slot();
-            let pre_digest = Digest {
-                logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, (slot + 1).encode())],
-            };
-            System::reset_events();
-            System::initialize(
-                &(System::block_number() + 1),
-                &System::parent_hash(),
-                &pre_digest,
-            );
-        } else {
-            System::set_block_number(System::block_number() + 1);
-        }
+        let slot = current_slot() + 1;
+
+        let authorities =
+            Runtime::para_id_authorities(ParachainInfo::get()).expect("authorities should be set");
+
+        let authority: NimbusId = authorities[slot as usize % authorities.len()].clone();
+
+        let pre_digest = Digest {
+            logs: vec![
+                DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
+                DigestItem::PreRuntime(NIMBUS_ENGINE_ID, authority.encode()),
+            ],
+        };
+
+        System::reset_events();
+        System::initialize(
+            &(System::block_number() + 1),
+            &System::parent_hash(),
+            &pre_digest,
+        );
 
         // Initialize the new block
         Session::on_initialize(System::block_number());
         Initializer::on_initialize(System::block_number());
         AuthorInherent::on_initialize(System::block_number());
 
-        pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into()).expect("author inherent to dispatch correctly");
+        pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
+            .expect("author inherent to dispatch correctly");
 
         // Finalize the block
         Session::on_finalize(System::block_number());
@@ -274,9 +276,9 @@ pub fn current_slot() -> u64 {
 }
 
 pub fn authorities() -> Vec<NimbusId> {
-    let current_session = Session::current_index();
+    let session_index = Session::current_index();
 
-    AuthorityAssignment::collator_container_chain(current_session)
+    AuthorityAssignment::collator_container_chain(session_index)
         .expect("authorities should be set")
         .orchestrator_chain
 }

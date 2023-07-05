@@ -99,6 +99,16 @@ fn genesis_para_registrar_deregister() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -143,6 +153,16 @@ fn genesis_para_registrar_runtime_api() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -189,6 +209,16 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             (1001, genesis_data_1001.clone(), vec![]),
             (1002, genesis_data_1002.clone(), vec![]),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -808,46 +838,48 @@ fn test_configuration_on_session_change() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 0,
-            min_orchestrator_collators: 0,
-            max_orchestrator_collators: 0,
-            collators_per_container: 0,
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
         })
         .build()
         .execute_with(|| {
             run_to_block(1, false);
-            assert_eq!(Configuration::config().max_collators, 0);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-            assert_eq!(Configuration::config().collators_per_container, 0);
-            assert_ok!(Configuration::set_max_collators(root_origin(), 50), ());
+            assert_eq!(Configuration::config().max_collators, 100);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+            assert_eq!(Configuration::config().collators_per_container, 2);
 
+            assert_ok!(Configuration::set_max_collators(root_origin(), 50), ());
             run_to_session(1u32, false);
 
             assert_ok!(
                 Configuration::set_min_orchestrator_collators(root_origin(), 20),
                 ()
             );
-
-            assert_eq!(Configuration::config().max_collators, 0);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-            assert_eq!(Configuration::config().collators_per_container, 0);
+            assert_eq!(Configuration::config().max_collators, 100);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+            assert_eq!(Configuration::config().collators_per_container, 2);
 
             run_to_session(2u32, false);
-
             assert_ok!(
                 Configuration::set_collators_per_container(root_origin(), 10),
                 ()
             );
             assert_eq!(Configuration::config().max_collators, 50);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-            assert_eq!(Configuration::config().collators_per_container, 0);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+            assert_eq!(Configuration::config().collators_per_container, 2);
 
             run_to_session(3u32, false);
 
             assert_eq!(Configuration::config().max_collators, 50);
             assert_eq!(Configuration::config().min_orchestrator_collators, 20);
-            assert_eq!(Configuration::config().collators_per_container, 0);
+            assert_eq!(Configuration::config().collators_per_container, 2);
 
             run_to_session(4u32, false);
 
