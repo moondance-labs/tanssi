@@ -176,11 +176,11 @@ impl ExtBuilder {
                 .collators
                 .into_iter()
                 .map(|(account, _balance)| {
-                    let aura_id = get_aura_id_from_seed(&account.to_string());
+                    let nimbus_id = get_aura_id_from_seed(&account.to_string());
                     (
                         account.clone(),
                         account,
-                        dancebox_runtime::SessionKeys { aura: aura_id },
+                        dancebox_runtime::SessionKeys { nimbus: nimbus_id },
                     )
                 })
                 .collect();

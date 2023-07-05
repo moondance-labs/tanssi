@@ -66,6 +66,10 @@ pub enum Subcommand {
     /// Errors since the binary was not build with `--features try-runtime`.
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
+
+    /// Key management cli utilities
+    #[command(subcommand)]
+    Key(KeyCmd),
 }
 
 /// The `build-spec` command used to build a specification.
@@ -153,6 +157,21 @@ impl std::ops::Deref for RunCmd {
 
     fn deref(&self) -> &Self::Target {
         &self.base
+    }
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum KeyCmd {
+    #[command(flatten)]
+    BaseCli(sc_cli::KeySubcommand),
+}
+
+impl KeyCmd {
+    /// run the key subcommands
+    pub fn run<C: sc_cli::SubstrateCli>(&self, cli: &C) -> Result<(), sc_cli::Error> {
+        match self {
+            KeyCmd::BaseCli(cmd) => cmd.run(cli),
+        }
     }
 }
 

@@ -12,7 +12,8 @@
     "build-spec-ci": "./scripts/build-spec-ci.sh",
     "pre-build-contracts": "pnpm exec ts-node-esm tools/pre-build-contracts.ts && npx prettier --write ./helpers/compiled/",
     "download-chain-spec": "pnpm ts-node --esm scripts/downloadChainSpec.ts",
-    "register-para": "pnpm ts-node --esm scripts/registerPara.ts"
+    "register-para": "pnpm ts-node --esm scripts/registerPara.ts",
+    "sudo-register-para": "pnpm ts-node --esm scripts/sudoRegisterPara.ts"
   },
   "keywords": [],
   "author": "",
@@ -33,7 +34,7 @@
     "ethers": "^6.6.2",
     "pnpm": "^8.6.5",
     "prettier": "^2.8.8",
-    "solc": "^0.8.20",
+    "solc": "^0.8.19",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6",
     "viem": "^1.2.6",
