@@ -118,10 +118,10 @@ where
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
 pub fn template_session_keys(keys: NimbusId) -> dancebox_runtime::SessionKeys {
-    dancebox_runtime::SessionKeys { aura: keys }
+    dancebox_runtime::SessionKeys { nimbus: keys }
 }
 
-/// Helper function to turn a list of names into a list of `(AccountId, AuraId)`
+/// Helper function to turn a list of names into a list of `(AccountId, NimbusId)`
 pub fn invulnerables(names: &[&str]) -> Vec<(AccountId, NimbusId)> {
     names
         .iter()

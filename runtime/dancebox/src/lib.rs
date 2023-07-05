@@ -152,7 +152,7 @@ pub mod opaque {
 
 impl_opaque_keys! {
     pub struct SessionKeys {
-        pub aura: Initializer,
+        pub nimbus: Initializer,
     }
 }
 
