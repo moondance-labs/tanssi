@@ -32,9 +32,10 @@ describeSuite({
             expect(keys.toJSON()[u8aToHex(bob.publicKey)]).to.be.eq(bob.address);
 
             // Check authorities are correct
-            const authorities = (await polkadotJs.query.aura.authorities());
+            const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
+            const authorities = await polkadotJs.query.authorityAssignment.collatorContainerChain(sessionIndex);
             // TODO: fix once we have types
-            expect(authorities.toJSON()).to.deep.equal([u8aToHex(alice.publicKey)]);
+            expect(authorities.toJSON().orchestratorChain).to.deep.equal([u8aToHex(alice.publicKey)]);
         },
     });
 
@@ -75,9 +76,10 @@ describeSuite({
             // TODO: fix once we have types
             expect(keys.toJSON()[u8aToHex(newKey)]).to.be.eq(alice.address);
 
-            const authorities = (await polkadotJs.query.aura.authorities());
+            const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
+            const authorities = await polkadotJs.query.authorityAssignment.collatorContainerChain(sessionIndex);
             // TODO: fix once we have types
-            expect(authorities.toJSON()).to.deep.equal([
+            expect(authorities.toJSON().orchestratorChain).to.deep.equal([
                 u8aToHex(newKey),
             ]);
 
