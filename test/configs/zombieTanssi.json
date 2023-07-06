@@ -39,36 +39,36 @@
           {
             "name": "Collator1000-01",
             "ws_port": "9948",
-            "command": "tmp/tanssi-node"
+            "command": "../target/release/tanssi-node"
           },
           {
             "name": "Collator1000-02",
-            "command": "tmp/tanssi-node"
+            "command": "../target/release/tanssi-node"
           },
           {
             "name": "Collator2000-01",
-            "command": "tmp/tanssi-node"
+            "command": "../target/release/tanssi-node"
           },
           {
             "name": "Collator2000-02",
-            "command": "tmp/tanssi-node"
+            "command": "../target/release/tanssi-node"
           },
           {
             "name": "Collator2001-01",
-            "command": "tmp/tanssi-node"
+            "command": "../target/release/tanssi-node"
           },
           {
             "name": "Collator2001-02",
-            "command": "tmp/tanssi-node"
+            "command": "../target/release/tanssi-node"
           },
           {
             "name": "Collator2002-01",
-            "command": "tmp/tanssi-node",
+            "command": "../target/release/tanssi-node",
             "args": ["-- --tmp --para-id 2002"]
           },
           {
             "name": "Collator2002-02",
-            "command": "tmp/tanssi-node",
+            "command": "../target/release/tanssi-node",
             "args": ["-- --tmp --para-id 2002"]
           }
         ]
@@ -80,7 +80,7 @@
           {
             "name": "FullNode-2000",
             "validator": false,
-            "command": "tmp/container-chain-template-simple-node",
+            "command": "../target/release/container-chain-template-simple-node",
             "ws_port": 9949,
             "p2p_port": 33049
           }
@@ -93,7 +93,7 @@
           {
             "name": "FullNode-2001",
             "validator": false,
-            "command": "tmp/container-chain-template-frontier-node",
+            "command": "../target/release/container-chain-template-frontier-node",
             "ws_port": 9950,
             "p2p_port": 33050
           }
@@ -106,7 +106,7 @@
           {
             "name": "FullNode-2002",
             "validator": false,
-            "command": "tmp/container-chain-template-simple-node",
+            "command": "../target/release/container-chain-template-simple-node",
             "ws_port": 9951,
             "p2p_port": 33051
           }
