@@ -238,12 +238,12 @@ jobs:
       
       - name: "Run zombie test"
         run: |
-          cd test
-          pnpm install --frozen-lockfile
-
           chmod uog+x target/release/tanssi-node
           chmod uog+x target/release/container-chain-template-simple-node
           chmod uog+x target/release/container-chain-template-frontier-node
+
+          cd test
+          pnpm install --frozen-lockfile
 
           ## Run tests
 
