@@ -39,7 +39,7 @@ use {
     },
     sc_telemetry::{telemetry, TelemetryHandle, CONSENSUS_DEBUG, CONSENSUS_INFO, CONSENSUS_WARN},
     sp_api::ProvideRuntimeApi,
-    sp_application_crypto::{AppKey, AppPublic},
+    sp_application_crypto::{AppCrypto, AppPublic},
     sp_blockchain::HeaderBackend,
     sp_consensus::{
         BlockOrigin, EnableProofRecording, Environment, ProofRecording, Proposer, SyncOracle,
@@ -53,7 +53,7 @@ use {
     sp_consensus_slots::Slot,
     sp_core::crypto::{ByteArray, Pair, Public},
     sp_inherents::CreateInherentDataProviders,
-    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::{
         traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
         DigestItem,
@@ -164,7 +164,7 @@ pub struct BuildOrchestratorAuraConsensusParams<PF, BI, GOH, CIDP, Client, BS, S
     pub para_client: Arc<Client>,
     pub backoff_authoring_blocks: Option<BS>,
     pub sync_oracle: SO,
-    pub keystore: SyncCryptoStorePtr,
+    pub keystore: KeystorePtr,
     pub force_authoring: bool,
     pub slot_duration: SlotDuration,
     pub telemetry: Option<TelemetryHandle>,
@@ -353,7 +353,7 @@ struct OrchestratorAuraWorker<C, E, I, P, SO, L, BS, N> {
     client: Arc<C>,
     block_import: I,
     env: E,
-    keystore: SyncCryptoStorePtr,
+    keystore: KeystorePtr,
     sync_oracle: SO,
     justification_sync_link: L,
     force_authoring: bool,
@@ -422,7 +422,7 @@ where
         // if not running with force-authoring, just do the usual slot check
         if !self.force_authoring {
             expected_author.and_then(|p| {
-                if SyncCryptoStore::has_keys(
+                if Keystore::has_keys(
                     &*self.keystore,
                     &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
                 ) {
@@ -438,7 +438,7 @@ where
             epoch_data
                 .iter()
                 .find(|key| {
-                    SyncCryptoStore::has_keys(
+                    Keystore::has_keys(
                         &*self.keystore,
                         &[(key.to_raw_vec(), sp_application_crypto::key_types::AURA)],
                     )
@@ -472,26 +472,24 @@ where
     > {
         // sign the pre-sealed hash of the block and then
         // add it to a digest item.
-        let public_type_pair = public.to_public_crypto_pair();
-        let public = public.to_raw_vec();
-        log::info!("the ID is {:?}", <AuthorityId<P> as AppKey>::ID);
-        let signature = SyncCryptoStore::sign_with(
+        let signature = Keystore::sign_with(
             &*self.keystore,
-            <AuthorityId<P> as AppKey>::ID,
-            &public_type_pair,
+            <AuthorityId<P> as AppCrypto>::ID,
+            <AuthorityId<P> as AppCrypto>::CRYPTO_ID,
+            public.as_slice(),
             header_hash.as_ref(),
         )
-        .map_err(|e| sp_consensus::Error::CannotSign(public.clone(), e.to_string()))?
+        .map_err(|e| sp_consensus::Error::CannotSign(format!("{}. Key: {:?}", e, public)))?
         .ok_or_else(|| {
-            sp_consensus::Error::CannotSign(
-                public.clone(),
-                "Could not find key in keystore.".into(),
-            )
+            sp_consensus::Error::CannotSign(format!(
+                "Could not find key in keystore. Key: {:?}",
+                public
+            ))
         })?;
         let signature = signature
             .clone()
             .try_into()
-            .map_err(|_| sp_consensus::Error::InvalidSignature(signature, public))?;
+            .map_err(|_| sp_consensus::Error::InvalidSignature(signature, public.to_raw_vec()))?;
 
         let signature_digest_item =
             <DigestItem as NimbusCompatibleDigestItem>::nimbus_seal(signature);
@@ -575,7 +573,7 @@ pub struct BuildOrchestratorAuraWorkerParams<C, I, PF, SO, L, BS, N> {
     /// The backoff strategy when we miss slots.
     pub backoff_authoring_blocks: Option<BS>,
     /// The keystore used by the node.
-    pub keystore: SyncCryptoStorePtr,
+    pub keystore: KeystorePtr,
     /// The proportion of the slot dedicated to proposing.
     ///
     /// The block proposing will be limited to this proportion of the slot from the starting of the
