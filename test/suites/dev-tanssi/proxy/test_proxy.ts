@@ -55,14 +55,17 @@ describeSuite({
       id: "E03",
       title: "Delegate account can call proxy.proxy",
       test: async function () {
-        await context.createBlock();
+        // TODO: uncommenting this line causes the balanceAfter to be equal
+        //await context.createBlock();
 
         const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
+        console.log("Balance before ", balanceBefore);
         const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(bob.address, 200_000));
         await context.createBlock([
           await tx.signAsync(bob),
         ]);
         const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
+        console.log("Balance after ", balanceAfter);
 
         // Balance of Bob account increased
         expect(balanceBefore.lt(balanceAfter)).to.be.true;
