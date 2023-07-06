@@ -625,11 +625,9 @@ impl_runtime_apis! {
         }
 
         fn authorities() -> Vec<NimbusId> {
-            pallet_authority_mapping::Pallet::<Runtime>::authority_id_mapping(Session::current_index())
+            pallet_authority_assignment::CollatorContainerChain::<Runtime>::get(Session::current_index())
                 .expect("authorities for current session should exist")
-                .keys()
-                .cloned()
-                .collect()
+                .orchestrator_chain
         }
     }
 
