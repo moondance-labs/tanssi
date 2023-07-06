@@ -15,11 +15,15 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+use sc_executor::HeapAllocStrategy;
+use sc_executor::WasmExecutor;
+use sc_executor::DEFAULT_HEAP_ALLOC_STRATEGY;
 
 // std
 use std::{sync::Arc, time::Duration};
 
 use cumulus_client_cli::CollatorOptions;
+use sc_network::config::FullNetworkConfiguration;
 // Local Runtime Types
 use container_chain_template_simple_runtime::{opaque::Block, RuntimeApi};
 
@@ -97,12 +101,21 @@ pub fn new_partial(
         })
         .transpose()?;
 
-    let executor = ParachainExecutor::new(
-        config.wasm_method,
-        config.default_heap_pages,
-        config.max_runtime_instances,
-        config.runtime_cache_size,
-    );
+    let heap_pages = config
+        .default_heap_pages
+        .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
+            extra_pages: h as _,
+        });
+
+    let wasm = WasmExecutor::builder()
+        .with_execution_method(config.wasm_method)
+        .with_onchain_heap_alloc_strategy(heap_pages)
+        .with_offchain_heap_alloc_strategy(heap_pages)
+        .with_max_runtime_instances(config.max_runtime_instances)
+        .with_runtime_cache_size(config.runtime_cache_size)
+        .build();
+
+    let executor = ParachainExecutor::new_with_wasm_executor(wasm);
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -189,6 +202,7 @@ async fn start_node_impl(
 
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
+    let net_config = FullNetworkConfiguration::new(&parachain_config.network);
 
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
@@ -199,6 +213,7 @@ async fn start_node_impl(
             import_queue: params.import_queue,
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
+            net_config,
         })
         .await?;
 
@@ -232,7 +247,7 @@ async fn start_node_impl(
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         config: parachain_config,
-        keystore: params.keystore_container.sync_keystore(),
+        keystore: params.keystore_container.keystore(),
         backend,
         network,
         system_rpc_tx,
@@ -245,7 +260,10 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
-    let announce_block = Arc::new(move |hash, data| sync_service.announce_block(hash, data));
+    let announce_block = {
+        let sync_service = sync_service.clone();
+        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
+    };
 
     let relay_chain_slot_duration = Duration::from_secs(6);
 
@@ -258,6 +276,7 @@ async fn start_node_impl(
         relay_chain_slot_duration,
         import_queue: import_queue_service,
         recovery_handle: Box::new(overseer_handle),
+        sync_service,
     };
 
     start_full_node(params)?;
