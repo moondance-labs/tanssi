@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use fp_evm::IsPrecompileResult;
+
 use {
     pallet_evm::{Precompile, PrecompileHandle, PrecompileResult, PrecompileSet},
     pallet_evm_precompile_modexp::Modexp,
@@ -69,8 +71,11 @@ where
         }
     }
 
-    fn is_precompile(&self, address: H160) -> bool {
-        Self::used_addresses().contains(&address)
+    fn is_precompile(&self, address: H160, _remaining_gas: u64) -> IsPrecompileResult {
+        IsPrecompileResult::Answer {
+            is_precompile: Self::used_addresses().contains(&address),
+            extra_cost: 0,
+        }
     }
 }
 
