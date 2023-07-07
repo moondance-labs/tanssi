@@ -339,9 +339,13 @@ impl pallet_balances::Config for Runtime {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
+    type FreezeIdentifier = ();
+    type MaxFreezes = ();
+    type HoldIdentifier = ();
+    type MaxHolds = ();
+    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -371,6 +375,7 @@ parameter_types! {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
 }
 
 impl pallet_utility::Config for Runtime {
@@ -392,6 +397,11 @@ pub struct CanAuthor;
 impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
     fn can_author(author: &NimbusId, slot: &u32) -> bool {
         let authorities = AuthoritiesNoting::authorities();
+
+        if authorities.is_empty() {
+            return false;
+        }
+
         let expected_author = &authorities[(*slot as usize) % authorities.len()];
 
         expected_author == author
@@ -449,6 +459,14 @@ impl_runtime_apis! {
     impl sp_api::Metadata<Block> for Runtime {
         fn metadata() -> OpaqueMetadata {
             OpaqueMetadata::new(Runtime::metadata().into())
+        }
+
+        fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
+            Runtime::metadata_at_version(version)
+        }
+
+        fn metadata_versions() -> Vec<u32> {
+            Runtime::metadata_versions()
         }
     }
 

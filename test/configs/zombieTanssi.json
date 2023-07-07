@@ -64,12 +64,12 @@
           {
             "name": "Collator2002-01",
             "command": "../target/release/tanssi-node",
-            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --para-id 2002"]
+            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --para-id 2002"]
           },
           {
             "name": "Collator2002-02",
             "command": "../target/release/tanssi-node",
-            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --unsafe-ws-external --para-id 2002"]
+            "args": ["-- --tmp --prometheus-external --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe --para-id 2002"]
           }
         ]
       },

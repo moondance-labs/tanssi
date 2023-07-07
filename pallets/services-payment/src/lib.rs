@@ -53,7 +53,7 @@ mod test;
 
 pub use pallet::*;
 
-#[frame_support::pallet]
+#[frame_support::pallet(dev_mode)]
 pub mod pallet {
     use super::*;
 
