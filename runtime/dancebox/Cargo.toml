@@ -37,8 +37,6 @@ frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
-pallet-aura = { workspace = true }
-pallet-authorship = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
@@ -68,7 +66,6 @@ polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
 
 # Cumulus
-cumulus-pallet-aura-ext = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-primitives-core = { workspace = true }
@@ -92,7 +89,6 @@ default = [
 	"std",
 ]
 std = [
-	"cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
@@ -103,10 +99,8 @@ std = [
 	"frame-try-runtime/std",
 	"log/std",
 	"nimbus-primitives/std",
-	"pallet-aura/std",
 	"pallet-author-noting/std",
 	"pallet-authority-assignment/std",
-	"pallet-authorship/std",
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-collator-selection/std",
@@ -169,8 +163,6 @@ try-runtime = [
 	"frame-executive/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
-	"pallet-aura/try-runtime",
-	"pallet-authorship/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-session/try-runtime",
@@ -179,7 +171,6 @@ try-runtime = [
 	"pallet-utility/try-runtime",
 	"sp-runtime/try-runtime",
 	"polkadot-runtime-common/try-runtime",
-	"cumulus-pallet-aura-ext/try-runtime",
 	"cumulus-pallet-parachain-system/try-runtime",
 	"pallet-collator-selection/try-runtime",
 	"parachain-info/try-runtime",

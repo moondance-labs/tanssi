@@ -67,21 +67,6 @@ describeSuite({
     });
 
     it({
-      id: "T02",
-      title: "Test Tanssi assignation is correct",
-      test: async function () {
-        const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-        // TODO: fix once we have types
-        const tanssiCollators = (
-          await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-        ).toJSON().orchestratorChain;
-        const authorities = (await paraApi.query.aura.authorities()).toJSON();
-
-        expect(tanssiCollators).to.deep.equal(authorities);
-      },
-    });
-
-    it({
       id: "T03",
       title: "Test assignation did not change",
       test: async function () {
@@ -184,10 +169,11 @@ describeSuite({
       id: "T09",
       title: "Test author is correct in Orchestrator",
       test: async function () {
-        const authorities = await paraApi.query.aura.authorities();
+        const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
+        const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
         const author = await getAuthorFromDigest(paraApi);
         // TODO: fix once we have types
-        expect(authorities.toJSON().includes(author.toString())).to.be.true;
+        expect(authorities.toJSON().orchestratorChain.includes(author.toString())).to.be.true;
       },
     });
 
