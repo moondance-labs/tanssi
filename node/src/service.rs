@@ -38,7 +38,7 @@ use {
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
-    dancebox_runtime::{opaque::Block, AccountId, RuntimeApi},
+    dancebox_runtime::{opaque::Block, RuntimeApi},
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
