@@ -48,8 +48,9 @@ describeSuite({
             expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(2)).isNone).to.be.true;
 
             // Check authorities are correct
-            const authorities = (await polkadotJs.query.aura.authorities());
-            expect(u8aToHex(authorities[0])).to.be.eq(u8aToHex(alice.publicKey));
+            const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
+            const authorities = await polkadotJs.query.authorityAssignment.collatorContainerChain(sessionIndex);
+            expect(authorities.toJSON().orchestratorChain[0]).to.be.eq(u8aToHex(alice.publicKey));
         },
     });
 
