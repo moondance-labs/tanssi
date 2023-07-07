@@ -234,20 +234,20 @@ jobs:
         uses: actions/download-artifact@v3.0.2
         with:
           name: binaries
-          path: test/tmp
+          path: target/release
       
       - name: "Run zombie test"
         run: |
+          chmod uog+x target/release/tanssi-node
+          chmod uog+x target/release/container-chain-template-simple-node
+          chmod uog+x target/release/container-chain-template-frontier-node
+
           cd test
           pnpm install --frozen-lockfile
 
-          chmod uog+x tmp/tanssi-node
-          chmod uog+x tmp/container-chain-template-simple-node
-          chmod uog+x tmp/container-chain-template-frontier-node
-
           ## Run tests
 
-          pnpm moonwall test zombie_tanssi_ci
+          pnpm moonwall test zombie_tanssi
 
       - name: "Gather zombie logs"
         if: failure()

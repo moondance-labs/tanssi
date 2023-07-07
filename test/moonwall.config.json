@@ -48,58 +48,15 @@
       }
     },
     {
-      "name": "zombie_tanssi_ci",
-      "testFileDir": ["suites/para"],
-      "runScripts": ["build-spec-ci.sh", "download-polkadot.sh"],
-      "foundation": {
-        "type": "zombie",
-        "zombieSpec": {
-          "configPath": "./configs/zombieTanssiCI.json"
-        }
-      },
-      "connections": [
-        {
-          "name": "Relay",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9947"]
-        },
-        {
-          "name": "Tanssi",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9948"]
-        },
-        {
-          "name": "Container2000",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9949"]
-        },
-        {
-          "name": "Container2001",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        },
-        {
-          "name": "ethers",
-          "type": "ethers",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        },
-        {
-          "name": "w3",
-          "type": "web3",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        }
-      ]
-    },
-    {
       "name": "zombie_tanssi",
       "testFileDir": ["suites/para"],
+      "runScripts": ["build-spec.sh", "download-polkadot.sh"],
       "foundation": {
         "type": "zombie",
         "zombieSpec": {
           "configPath": "./configs/zombieTanssi.json"
         }
       },
-      "runScripts": ["build-spec.sh", "download-polkadot.sh"],
       "connections": [
         {
           "name": "Relay",
