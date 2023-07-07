@@ -9,7 +9,6 @@
     "lint": "npx prettier --write --ignore-path .gitignore '**/*.(yml|js|ts|json)'",
     "start": "pnpm moonwall",
     "build-spec": "./scripts/build-spec.sh",
-    "build-spec-ci": "./scripts/build-spec-ci.sh",
     "pre-build-contracts": "pnpm exec ts-node-esm tools/pre-build-contracts.ts && npx prettier --write ./helpers/compiled/",
     "download-chain-spec": "pnpm ts-node --esm scripts/downloadChainSpec.ts",
     "register-para": "pnpm ts-node --esm scripts/registerPara.ts",

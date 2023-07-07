@@ -224,13 +224,7 @@ describeSuite({
         let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
         // Read raw chain spec file
-        // Different path in CI: ./specs vs ../specs
-        let spec2002 = null;
-        try {
-          spec2002 = await fs.readFile("./specs/template-container-2002.json", "utf8");
-        } catch {
-          spec2002 = await fs.readFile("../specs/template-container-2002.json", "utf8");
-        }
+        let spec2002 = await fs.readFile("./specs/template-container-2002.json", "utf8");
 
         // Before registering container chain 2002, ensure that it has 0 blocks
         // Since the RPC doesn't exist at this point, we need to get that from the relay
