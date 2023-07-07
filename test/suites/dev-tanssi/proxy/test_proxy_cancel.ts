@@ -32,7 +32,10 @@ describeSuite({
         return res;
       }
     };
-    context.createBlock = createBlockAndCheckExtrinsics;
+    if (!context.hasModifiedCreateBlockThatChecksExtrinsics) {
+      context.createBlock = createBlockAndCheckExtrinsics;
+      context.hasModifiedCreateBlockThatChecksExtrinsics = true;
+    }
     beforeAll(() => {
       const keyring = new Keyring({ type: 'sr25519' });
       alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
@@ -225,18 +228,17 @@ describeSuite({
       test: async function () {
         await context.createBlock();
 
-        // Charlie can reject the announcement
-        const tx2 = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(charlie.address, 200_000));
+        const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(charlie.address, 200_000));
         await context.createBlock([
-          await tx2.signAsync(charlie),
+          await tx.signAsync(charlie),
         ]);
         const events = await polkadotJs.query.system.events();
-        const ev2 = events.filter(
+        const ev1 = events.filter(
           (a) => {
             return a.event.method == "ProxyExecuted";
         });
-        expect(ev2.length).to.be.equal(1);
-        expect(ev2[0].event.data[0].toString()).to.not.be.eq("Ok");
+        expect(ev1.length).to.be.equal(1);
+        expect(ev1[0].event.data[0].toString()).to.not.be.eq("Ok");
       },
     });
     },
