@@ -43,7 +43,8 @@
                 "--dev-service",
                 "--tmp"
             ],
-            "disableDefaultEthProviders": true
+            "disableDefaultEthProviders": true,
+            "newRpcBehaviour": true
           }
         ]
       }
