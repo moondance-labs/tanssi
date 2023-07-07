@@ -39,6 +39,7 @@ use {
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
+    tp_core::well_known_keys,
 };
 
 mod common;
@@ -1576,4 +1577,12 @@ fn test_session_keys_with_authority_assignment() {
             // Everything should match to aura
             assert_eq!(Aura::authorities(), vec![alice_id_2, bob_id_2]);
         });
+}
+
+#[test]
+fn check_well_known_keys() {
+    assert_eq!(
+        well_known_keys::PARAS_HEADS_INDEX,
+        frame_support::storage::storage_prefix(b"Paras", b"Heads")
+    )
 }
