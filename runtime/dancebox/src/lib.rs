@@ -35,7 +35,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything, FindAuthor},
+        traits::{ConstU32, ConstU64, Everything},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -309,41 +309,6 @@ impl pallet_timestamp::Config for Runtime {
     type WeightInfo = ();
 }
 
-pub struct FindAuthorFromDigest;
-
-impl FindAuthor<u32> for FindAuthorFromDigest {
-    fn find_author<'a, I>(digests: I) -> Option<u32>
-    where
-        I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
-    {
-        use {
-            parity_scale_codec::Decode,
-            sp_consensus_aura::{Slot, AURA_ENGINE_ID},
-        };
-
-        for (id, mut data) in digests.into_iter() {
-            if id == AURA_ENGINE_ID {
-                let slot = Slot::decode(&mut data).ok()?;
-
-                let authorities =
-                    AuthorityAssignment::collator_container_chain(Session::current_index())
-                        .expect("authorities should be set")
-                        .orchestrator_chain;
-
-                let author_index = *slot % authorities.len() as u64;
-                return Some(author_index as u32);
-            }
-        }
-
-        None
-    }
-}
-
-impl pallet_authorship::Config for Runtime {
-    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, FindAuthorFromDigest>;
-    type EventHandler = (CollatorSelection,);
-}
-
 pub struct CanAuthor;
 impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
     fn can_author(author: &NimbusId, slot: &u32) -> bool {
@@ -355,7 +320,8 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
             return false;
         }
 
-        let expected_author = &authorities[(*slot as usize) % authorities.len()];
+        let author_index = (*slot as usize) % authorities.len();
+        let expected_author = &authorities[author_index];
 
         expected_author == author
     }
@@ -445,8 +411,6 @@ impl pallet_initializer::Config for Runtime {
 
 impl parachain_info::Config for Runtime {}
 
-impl cumulus_pallet_aura_ext::Config for Runtime {}
-
 parameter_types! {
     pub const Period: u32 = prod_or_fast!(6 * HOURS, 1 * MINUTES);
     pub const Offset: u32 = 0;
@@ -464,12 +428,6 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = ();
-}
-
-impl pallet_aura::Config for Runtime {
-    type AuthorityId = NimbusId;
-    type DisabledValidators = ();
-    type MaxAuthorities = ConstU32<100_000>;
 }
 
 impl pallet_collator_assignment::Config for Runtime {

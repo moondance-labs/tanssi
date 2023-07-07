@@ -1253,7 +1253,6 @@ dependencies = [
 name = "container-chain-template-simple-runtime"
 version = "0.1.0"
 dependencies = [
- "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
@@ -1268,9 +1267,7 @@ dependencies = [
  "hex-literal",
  "log",
  "nimbus-primitives",
- "pallet-aura",
  "pallet-author-inherent",
- "pallet-authorship",
  "pallet-balances",
  "pallet-cc-authorities-noting",
  "pallet-session",
@@ -1775,22 +1772,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cumulus-pallet-aura-ext"
-version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40#e57a3a9a5d3df02414cc1cce4f2ba6f86e9e1d8a"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-aura",
- "parity-scale-codec",
- "scale-info",
- "sp-application-crypto",
- "sp-consensus-aura",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.40#e57a3a9a5d3df02414cc1cce4f2ba6f86e9e1d8a"
@@ -2104,7 +2085,6 @@ dependencies = [
 name = "dancebox-runtime"
 version = "0.1.0"
 dependencies = [
- "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
@@ -2119,12 +2099,10 @@ dependencies = [
  "hex-literal",
  "log",
  "nimbus-primitives",
- "pallet-aura",
  "pallet-author-inherent",
  "pallet-author-noting",
  "pallet-authority-assignment",
  "pallet-authority-mapping",
- "pallet-authorship",
  "pallet-balances",
  "pallet-collator-assignment",
  "pallet-collator-assignment-runtime-api",
@@ -6088,22 +6066,6 @@ checksum = "a1914cd452d8fccd6f9db48147b29fd4ae05bea9dc5d9ad578509f72415de282"
 dependencies = [
  "cfg-if",
  "libm 0.1.4",
-]
-
-[[package]]
-name = "pallet-aura"
-version = "4.0.0-dev"
-source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.40#0f831eea1e555c738a668ed0471483a24ee6525f"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-timestamp",
- "parity-scale-codec",
- "scale-info",
- "sp-application-crypto",
- "sp-consensus-aura",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
