@@ -26,6 +26,30 @@
       }
     },
     {
+      "name": "dev_dancebox_specs",
+      "testFileDir": ["suites/dancebox-specs"],
+      "multiThreads": true,
+      "html": false,
+      "foundation": {
+        "type": "dev",
+        "launchSpec": [
+          {
+            "name": "tanssi",
+            "binPath": "../target/release/tanssi-node",
+            "options": [
+                "--chain=dancebox-local",
+                "--sealing=manual",
+                "--collator",
+                "--dev-service",
+                "--tmp"
+            ],
+            "disableDefaultEthProviders": true,
+            "newRpcBehaviour": true
+          }
+        ]
+      }
+    },
+    {
       "name": "dev_frontier_template",
       "testFileDir": ["suites/dev-frontier-template"],
       "runScripts": ["pre-build-contracts.ts"],
