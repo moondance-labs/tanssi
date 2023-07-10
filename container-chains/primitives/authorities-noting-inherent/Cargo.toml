@@ -30,7 +30,6 @@ sp-trie = { workspace = true }
 
 sp-state-machine = { workspace = true, optional = true }
 
-
 nimbus-primitives = { workspace = true, optional = true }
 
 # Cumulus
