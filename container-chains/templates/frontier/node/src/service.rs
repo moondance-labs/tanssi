@@ -16,10 +16,10 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use sc_executor::HeapAllocStrategy;
-use sc_executor::WasmExecutor;
-use sc_executor::DEFAULT_HEAP_ALLOC_STRATEGY;
-use sc_network::config::FullNetworkConfiguration;
+use {
+    sc_executor::{HeapAllocStrategy, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY},
+    sc_network::config::FullNetworkConfiguration,
+};
 
 // std
 use std::{

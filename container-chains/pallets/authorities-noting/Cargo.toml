@@ -36,6 +36,9 @@ sp-trie = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
+# Nimbus
+nimbus-primitives = { workspace = true }
+
 [dev-dependencies]
 hex-literal = { workspace = true }
 polkadot-parachain = { workspace = true }
