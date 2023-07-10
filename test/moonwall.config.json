@@ -6,7 +6,7 @@
   "environments": [
     {
       "name": "dev_tanssi",
-      "testFileDir": ["suites/dev-tanssi"],
+      "testFileDir": ["suites/dev-tanssi", "suites/sample"],
       "multiThreads": true,
       "html": false,
       "foundation": {
