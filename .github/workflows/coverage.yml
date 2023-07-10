@@ -1,0 +1,137 @@
+name: Coverage
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+env:
+  NODE_OPTIONS: "--max-old-space-size=12288"
+  GRCOV_VERSION: 0.8.18
+
+jobs:
+  ####### Check files and formatting #######
+
+  set-tags:
+    runs-on: ubuntu-latest
+    outputs:
+      git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
+      coverage_dir: ${{ steps.check-git-ref.outputs.coverage_dir }}
+      coverage_report: ${{ steps.check-git-ref.outputs.coverage_report }}
+    steps:
+      - name: Check git ref
+        id: check-git-ref
+        # if PR
+        # else if manual PR
+        # else (push)
+        run: |
+          if [[ -n "${{ github.event.pull_request.head.sha }}" ]]; then
+            echo "git_ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+            echo "coverage_dir=pulls/${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "coverage_report=true" >> $GITHUB_OUTPUT
+          else
+            echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
+            echo "coverage_dir=branches/master" >> $GITHUB_OUTPUT
+            echo "coverage_report=false" >> $GITHUB_OUTPUT
+          fi
+  build-and-coverage:
+    runs-on:
+      labels: self-hosted
+    needs: ["set-tags"]
+    env:
+      RUSTC_WRAPPER: "sccache"
+      CARGO_INCREMENTAL: "0"
+      SCCACHE_CACHE_SIZE: "100GB"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.set-tags.outputs.git_ref }}
+      - name: Setup Variables
+        shell: bash
+        run: |
+          echo "RUSTFLAGS=-C opt-level=3 -D warnings -C instrument-coverage -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
+      - name: Setup grcov
+        run: |
+          wget https://github.com/mozilla/grcov/releases/download/v${{ env.GRCOV_VERSION }}/grcov-x86_64-unknown-linux-gnu.tar.bz2
+          chmod +x grcov
+      - name: Cargo build
+        uses: ./.github/workflow-templates/cargo-build
+        with:
+          features: fast-runtime
+      - name: Clean-up possible coverage generated during builds
+        run: |
+          rm default_*.profraw
+      - name: Upload runtimes
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: runtimes
+          path: runtimes
+      - name: Upload binary
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: moonbeam
+          path: build
+      - name: Unit tests
+        run: |
+          cargo test --release --all --features=fast-runtime
+      - name: Retrieve coverage
+        id: coverage
+        run: |
+          mkdir -p /tmp/proffiles
+
+          find . -type f -name \*.profraw -exec ls -l {}  \;
+
+          echo "Copying profraw files to /tmp/proffiles"
+          find . -name \*.profraw -exec mv {} /tmp/proffiles/ \;
+
+          mv /tmp/proffiles proffiles
+          du -sh proffiles
+
+          echo "Executing grcov"
+          ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
+            -t html --branch --ignore-not-existing --ignore target/release/build/* \
+            -o coverage/ --llvm-path ./  --llvm 2>&1 \
+            | tee grcov.log
+
+          INVALID="$(grep invalid grcov.log | \
+            grep -o '[^\ /]*raw' | \
+            sed 's/_1\.profraw/\.profraw/g' || echo '')"
+          echo "Invalid files: $INVALID"
+          if [ -n "$INVALID" ]; then
+            echo "Removing invalid files: $INVALID"
+            cd proffiles/
+            rm $INVALID
+            cd ..
+            ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
+            -t html --branch --ignore-not-existing --ignore target/release/build/* \
+            -o coverage/ --llvm-path ./  --llvm
+          fi
+
+          echo "coverage_date=\"$(date)\"" >> $GITHUB_OUTPUT
+          echo "total_percent=$(grep -o '[0-9\.]*%' coverage/html/coverage.json)" >> $GITHUB_OUTPUT
+          rm -rf proffiles/
+      - name: Upload coverate to gha
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: coverage
+          path: coverage
+      - name: Find Comment
+        if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
+        uses: peter-evans/find-comment@v2
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: Coverage generated
+      - name: Create or update comment
+        if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Coverage generated ${{ steps.coverage.outputs.coverage_date }}:
+            Pull coverage: ${{ steps.coverage.outputs.total_percent }}
+          edit-mode: replace
