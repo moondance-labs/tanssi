@@ -57,7 +57,7 @@ runs:
       shell: bash
       run: |
         GIT_COMMIT=`git log -1 --format="%H" | cut -c1-7`
-        TS_VERSION=`./target/release/tanssi --version`
+        TS_VERSION=`./target/release/tanssi-node --version`
         echo "Checking $TS_VERSION contains $GIT_COMMIT"
         echo "$TS_VERSION" | grep $GIT_COMMIT
     - name: Save runtimes wasm
