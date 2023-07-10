@@ -113,6 +113,7 @@ sc-transaction-pool = { git = "https://github.com/moondance-labs/substrate", bra
 sc-transaction-pool-api = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sp-blockchain = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sp-externalities = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
+sp-keyring = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sp-keystore = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sp-storage = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sp-timestamp = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
@@ -128,9 +129,11 @@ polkadot-runtime-common = { git = "https://github.com/moondance-labs/polkadot", 
 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
+polkadot-node-primitives = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
 polkadot-overseer = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
 polkadot-primitives = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
 polkadot-service = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
+polkadot-test-client = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
 
 # Cumulus (wasm)
 cumulus-pallet-parachain-system = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
@@ -150,6 +153,7 @@ cumulus-client-network = { git = "https://github.com/moondance-labs/cumulus", br
 cumulus-client-service = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-primitives-parachain-inherent = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-relay-chain-interface = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+cumulus-relay-chain-inprocess-interface = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 
 # Frontier (wasm)
 fp-account = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v0.9.43", default-features = false }
@@ -190,6 +194,7 @@ clap = { version = "4.1.6", features = [ "derive" ] }
 exit-future = { version = "0.2.0" }
 flume = "0.10.9"
 futures = { version = "0.3.1" }
+futures-timer = "3.0.2"
 hex = { version = "0.4.3", default-features = false }
 jsonrpsee = { version = "0.16.2", features = [ "server" ] }
 serde_json = { version = "1.0.96", default-features = false }
@@ -197,6 +202,7 @@ thiserror = { version = "1.0.40" }
 tokio = { version = "1.26.0", default-features = false }
 tracing = { version = "0.1.37" }
 url = "2.2.2"
+parking_lot = "0.12.1"
 
 [profile.production]
 codegen-units = 1

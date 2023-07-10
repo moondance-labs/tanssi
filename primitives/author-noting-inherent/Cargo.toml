@@ -37,6 +37,17 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true, optional = true }
 polkadot-primitives = { workspace = true, optional = true }
 
+[dev-dependencies]
+polkadot-test-client = { workspace = true }
+cumulus-relay-chain-inprocess-interface = { workspace = true }
+futures = { workspace = true }
+polkadot-parachain = { workspace = true }
+polkadot-node-primitives = { workspace = true }
+sp-keyring = { workspace = true }
+futures-timer = { workspace = true }
+parking_lot = { workspace = true }
+sp-consensus = { workspace = true }
+
 [features]
 default = [ "std" ]
 std = [ "async-trait", "cumulus-pallet-parachain-system/std", "cumulus-primitives-core/std", "cumulus-relay-chain-interface", "cumulus-relay-chain-interface", "frame-support", "parity-scale-codec/std", "polkadot-primitives", "sc-client-api", "scale-info/std", "scale-info/std", "sp-api", "sp-consensus-aura", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-io/std", "sp-runtime/std", "sp-state-machine/std", "sp-std/std", "sp-storage", "sp-trie/std", "test-relay-sproof-builder/std", "tp-core/std" ]
