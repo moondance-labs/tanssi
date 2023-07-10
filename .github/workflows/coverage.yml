@@ -77,6 +77,9 @@ jobs:
       - name: Unit tests
         run: |
           cargo test --release --all --features=fast-runtime
+      - name: Install llvm tools
+        run:
+          rustup component add llvm-tools-preview
       - name: Retrieve coverage
         id: coverage
         run: |
@@ -93,7 +96,7 @@ jobs:
           echo "Executing grcov"
           ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html --branch --ignore-not-existing --ignore target/release/build/* \
-            -o coverage/ --llvm-path ./  --llvm 2>&1 \
+            -o coverage/ --llvm 2>&1 \
             | tee grcov.log
 
           INVALID="$(grep invalid grcov.log | \
