@@ -49,7 +49,7 @@ runs:
         cargo build $params
     - name: Display binary comments
       shell: bash
-      run: readelf -p .comment ./target/release/tanssi
+      run: readelf -p .comment ./target/release/tanssi-node
     - name: Display sccache stats
       shell: bash
       run: ${SCCACHE_PATH} --show-stats
