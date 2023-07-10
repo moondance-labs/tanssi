@@ -99,6 +99,9 @@ jobs:
             -o coverage/ --llvm 2>&1 \
             | tee grcov.log
 
+          cat tee grcov.log
+          ls coverage
+
           INVALID="$(grep invalid grcov.log | \
             grep -o '[^\ /]*raw' | \
             sed 's/_1\.profraw/\.profraw/g' || echo '')"
