@@ -99,7 +99,7 @@ jobs:
             -o coverage/ --llvm 2>&1 \
             | tee grcov.log
 
-          cat tee grcov.log
+          cat grcov.log
           ls coverage
 
           INVALID="$(grep invalid grcov.log | \
