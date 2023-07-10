@@ -1,5 +1,5 @@
 import { describeSuite, expect, beforeAll, Web3, Signer } from "@moonwall/cli";
-import { CHARLETH_ADDRESS, BALTATHAR_ADDRESS, alith, setupLogger,generateKeyringPair } from "@moonwall/util";
+import { CHARLETH_ADDRESS, BALTATHAR_ADDRESS, alith, baltathar, setupLogger,generateKeyringPair } from "@moonwall/util";
 import { WebSocketProvider, parseEther, formatEther } from "ethers";
 import { BN } from "@polkadot/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
@@ -13,10 +13,10 @@ describeSuite({
     const anotherLogger = setupLogger("anotherLogger");
     let alice, bob;
     beforeAll(() => {
-      const keyring = new Keyring({ type: 'sr25519' });
-      alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-      bob = keyring.addFromUri('//Bob', { name: 'Bob default' });
       polkadotJs = context.polkadotJs();
+      const chain = polkadotJs.consts.system.version.specName.toString();
+      alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
+      bob = chain == 'frontier-template' ? baltathar : (new Keyring({ type: 'sr25519' }).addFromUri('//Bob', { name: 'Bob default' }));
     });
 
     it({
@@ -38,17 +38,14 @@ describeSuite({
       timeout: 20000,
       test: async function () {
         const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
+
         await polkadotJs.tx.balances
           .transfer(bob.address, 1000)
           .signAndSend(alice);
 
         await context.createBlock();
         const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
-        log(
-          `Baltathar account balance before ${formatEther(
-            balanceBefore.toBigInt()
-          )} DEV, balance after ${formatEther(balanceAfter.toBigInt())} DEV`
-        );
+        
         expect(balanceBefore.lt(balanceAfter)).to.be.true;
       },
     });
