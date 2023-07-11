@@ -1,8 +1,9 @@
 import { describeSuite, expect, beforeAll} from "@moonwall/cli";
 import { setupLogger } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
-
 import "@polkadot/api-augment";
+import { initializeCustomCreateBlock } from "../../../util/block";
+
 
 describeSuite({
   id: "D07",
@@ -12,30 +13,8 @@ describeSuite({
     let polkadotJs: ApiPromise;
     const anotherLogger = setupLogger("anotherLogger");
     let alice, bob, charlie, dave;
-    const originalCreateBlock = context.createBlock;
-    // TODO: move this function to utils, and investigate if we can make a global override
-    // Alternative implementation of context.createBlock that checks that the extrinsics have
-    // actually been included in the created block.
-    const createBlockAndCheckExtrinsics = async (tx, opt) => {
-      if (tx === undefined) {
-        return await originalCreateBlock(tx, opt);
-      } else {
-        const res = await originalCreateBlock(tx, opt);
-        // Ensure that all the extrinsics have been included
-        const expectedTxHashes = tx.map((x) => x.hash.toString());
-        let block = await polkadotJs.rpc.chain.getBlock(res.block.hash);
-        const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
-        // Note, the block may include some additional extrinsics
-        expectedTxHashes.forEach((a) => {
-          expect(includedTxHashes).toContain(a);
-        });
-        return res;
-      }
-    };
-    if (!context.hasModifiedCreateBlockThatChecksExtrinsics) {
-      context.createBlock = createBlockAndCheckExtrinsics;
-      context.hasModifiedCreateBlockThatChecksExtrinsics = true;
-    }
+    initializeCustomCreateBlock(context);
+
     beforeAll(() => {
       const keyring = new Keyring({ type: 'sr25519' });
       alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
