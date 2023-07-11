@@ -72,11 +72,17 @@ jobs:
       - name: Upload binary
         uses: actions/upload-artifact@v3.1.2
         with:
-          name: moonbeam
+          name: tanssi-node
           path: build
       - name: Unit tests
         run: |
           cargo test --release --all --features=fast-runtime
+      - name: Typescript Tests (Dev Service)
+        uses: ./.github/workflow-templates/typescript-tests
+        with:
+          timeout: 10000
+          tanssi-binary: build/tanssi-node
+          force-pass: true
       - name: Install llvm tools
         run:
           rustup component add llvm-tools-preview
