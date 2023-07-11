@@ -87,7 +87,7 @@ jobs:
         uses: ./.github/workflow-templates/typescript-tests-dev-frontier-template
         with:
           timeout: 10000
-          tanssi-binary: binaries/container-chain-template-frontier-node
+          frontier-template-binary: binaries/container-chain-template-frontier-node
           force-pass: true
       - name: Install llvm tools
         run:
