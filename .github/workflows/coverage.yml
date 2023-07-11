@@ -69,19 +69,25 @@ jobs:
         with:
           name: runtimes
           path: runtimes
-      - name: Upload binary
+      - name: Upload binaries
         uses: actions/upload-artifact@v3.1.2
         with:
-          name: tanssi-node
+          name: binaries
           path: binaries
       - name: Unit tests
         run: |
           cargo test --release --all --features=fast-runtime
-      - name: Typescript Tests (Dev Service)
-        uses: ./.github/workflow-templates/typescript-tests
+      - name: Typescript Tests Tanssi (Dev Service)
+        uses: ./.github/workflow-templates/typescript-tests-dev-tanssi
         with:
           timeout: 10000
           tanssi-binary: binaries/tanssi-node
+          force-pass: true
+      - name: Typescript Tests Frontier Template (Dev Service)
+        uses: ./.github/workflow-templates/typescript-tests-dev-frontier-template
+        with:
+          timeout: 10000
+          tanssi-binary: binaries/container-chain-template-frontier-node
           force-pass: true
       - name: Install llvm tools
         run:
