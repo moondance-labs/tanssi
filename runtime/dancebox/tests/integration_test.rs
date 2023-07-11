@@ -1581,8 +1581,31 @@ fn test_session_keys_with_authority_assignment() {
 
 #[test]
 fn check_well_known_keys() {
+    use frame_support::traits::PalletInfo;
+
+    // Pallet is named "Paras" in Polkadot.
     assert_eq!(
         well_known_keys::PARAS_HEADS_INDEX,
         frame_support::storage::storage_prefix(b"Paras", b"Heads")
-    )
+    );
+
+    // Tanssi storage. Since we cannot access the storages themselves,
+    // we test the pallet prefix matches and then compute manually the full prefix.
+    assert_eq!(
+        dancebox_runtime::PalletInfo::name::<AuthorityAssignment>(),
+        Some("AuthorityAssignment")
+    );
+    assert_eq!(
+        well_known_keys::AUTHORITY_ASSIGNMENT_PREFIX,
+        frame_support::storage::storage_prefix(b"AuthorityAssignment", b"CollatorContainerChain")
+    );
+
+    assert_eq!(
+        dancebox_runtime::PalletInfo::name::<Session>(),
+        Some("Session")
+    );
+    assert_eq!(
+        well_known_keys::SESSION_INDEX,
+        frame_support::storage::storage_prefix(b"Session", b"CurrentIndex")
+    );
 }
