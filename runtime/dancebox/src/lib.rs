@@ -602,10 +602,11 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                         | RuntimeCall::Timestamp(..)
                         | RuntimeCall::Utility(..)
                         | RuntimeCall::Proxy(..)
+                        | RuntimeCall::Registrar(..)
                 )
             }
             ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(c, RuntimeCall::Utility(..)),
+            ProxyType::Staking => matches!(c, RuntimeCall::Session(..) | RuntimeCall::Utility(..)),
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
