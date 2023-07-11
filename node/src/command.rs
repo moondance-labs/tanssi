@@ -31,7 +31,7 @@ use {
         NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
     },
     sc_service::config::{BasePath, PrometheusConfig},
-    sp_core::{hexdisplay::HexDisplay, sr25519},
+    sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::{io::Write, net::SocketAddr},
 };
@@ -462,11 +462,10 @@ pub fn run() -> Result<()> {
 				let relay_chain_id = extension.map(|e| e.relay_chain.clone());
 
 				let dev_service =
-					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
+					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string()) || cli.run.dev_service;
 
 				if dev_service {
-					let author_id = Some(crate::chain_spec::get_account_id_from_seed::<sr25519::Public>("Alice"));
-					return crate::service::new_dev(config, author_id, cli.run.sealing, hwbench, id).map_err(Into::into)
+					return crate::service::new_dev(config, cli.run.sealing, hwbench, id).map_err(Into::into)
 				}
 
 				let parachain_account =
