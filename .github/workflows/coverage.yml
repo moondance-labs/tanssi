@@ -117,7 +117,7 @@ jobs:
           fi
 
           echo "coverage_date=\"$(date)\"" >> $GITHUB_OUTPUT
-          echo "total_percent=$(grep -o '[0-9\.]*%' coverage/html/coverage.json)" >> $GITHUB_OUTPUT
+          echo "total_percent=$(grep -o '[0-9\.]*%' coverage/coverage.json)" >> $GITHUB_OUTPUT
           rm -rf proffiles/
       - name: Upload coverate to gha
         uses: actions/upload-artifact@v3.1.2
