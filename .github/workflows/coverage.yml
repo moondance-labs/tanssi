@@ -73,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@v3.1.2
         with:
           name: tanssi-node
-          path: build
+          path: binaries
       - name: Unit tests
         run: |
           cargo test --release --all --features=fast-runtime
@@ -81,7 +81,7 @@ jobs:
         uses: ./.github/workflow-templates/typescript-tests
         with:
           timeout: 10000
-          tanssi-binary: build/tanssi-node
+          tanssi-binary: binaries/tanssi-node
           force-pass: true
       - name: Install llvm tools
         run:
