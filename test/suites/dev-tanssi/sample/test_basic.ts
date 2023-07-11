@@ -49,7 +49,7 @@ describeSuite({
             balanceBefore.toBigInt()
           )} DEV, balance after ${formatEther(balanceAfter.toBigInt())} DEV`
         );
-        expect(balanceBefore.lt(balanceAfter)).to.be.false;
+        expect(balanceBefore.lt(balanceAfter)).to.be.true;
       },
     });
 
