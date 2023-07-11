@@ -28,11 +28,11 @@ jobs:
         run: |
           if [[ -n "${{ github.event.pull_request.head.sha }}" ]]; then
             echo "git_ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-            echo "coverage_dir=pulls/${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "coverage_dir=tanssi-coverage/pulls/${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
             echo "coverage_report=true" >> $GITHUB_OUTPUT
           else
             echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
-            echo "coverage_dir=branches/master" >> $GITHUB_OUTPUT
+            echo "coverage_dir=tanssi-coverage/branches/master" >> $GITHUB_OUTPUT
             echo "coverage_report=false" >> $GITHUB_OUTPUT
           fi
   build-and-coverage:
@@ -136,6 +136,15 @@ jobs:
         with:
           name: coverage
           path: coverage
+      - name: Upload coverage s3
+        uses: shallwefootball/s3-upload-action@master
+        id: S3
+        with:
+          aws_key_id: ${{ secrets.S3_COVERAGE_ID }}
+          aws_secret_access_key: ${{ secrets.S3_COVERAGE_KEY }}
+          aws_bucket: ${{ vars.S3_COVERAGE_BUCKET }}
+          destination_dir: "${{ needs.set-tags.outputs.coverage_dir }}"
+          source_dir: "coverage"
       - name: Find Comment
         if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
         uses: peter-evans/find-comment@v2
