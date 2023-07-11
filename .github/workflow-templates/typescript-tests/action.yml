@@ -17,9 +17,9 @@ runs:
   using: "composite"
   steps:
     - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 7
+      uses: pnpm/action-setup@v2
+      with:
+        version: 7
     - name: Use Node.js 18.x
       uses: actions/setup-node@v3
       with:
