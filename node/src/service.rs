@@ -38,7 +38,7 @@ use {
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
-    dancebox_runtime::{opaque::Block, AccountId, RuntimeApi},
+    dancebox_runtime::{opaque::Block, RuntimeApi},
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
@@ -1149,7 +1149,6 @@ pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from
 /// the parachain inherent.
 pub fn new_dev(
     config: Configuration,
-    _author_id: Option<AccountId>,
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
     para_id: ParaId,

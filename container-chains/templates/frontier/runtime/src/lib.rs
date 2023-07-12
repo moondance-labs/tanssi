@@ -622,25 +622,10 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
-pub struct CanAuthor;
-impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
-    fn can_author(author: &NimbusId, slot: &u32) -> bool {
-        let authorities = AuthoritiesNoting::authorities();
-
-        if authorities.is_empty() {
-            return false;
-        }
-
-        let expected_author = &authorities[(*slot as usize) % authorities.len()];
-
-        expected_author == author
-    }
-}
-
 impl pallet_author_inherent::Config for Runtime {
     type AuthorId = NimbusId;
     type AccountLookup = tp_consensus::NimbusLookUp;
-    type CanAuthor = CanAuthor;
+    type CanAuthor = pallet_cc_authorities_noting::CanAuthor<Runtime>;
     type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
     type WeightInfo = ();
 }

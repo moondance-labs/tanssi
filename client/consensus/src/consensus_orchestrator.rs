@@ -30,7 +30,9 @@ use {
 
 use {
     futures::{lock::Mutex, prelude::*},
-    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair},
+    nimbus_primitives::{
+        CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair, NIMBUS_KEY_ID,
+    },
     sc_client_api::{backend::AuxStore, BlockOf},
     sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
     sc_consensus_aura::{find_pre_digest, CompatibilityMode},
@@ -422,10 +424,7 @@ where
         // if not running with force-authoring, just do the usual slot check
         if !self.force_authoring {
             expected_author.and_then(|p| {
-                if Keystore::has_keys(
-                    &*self.keystore,
-                    &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
-                ) {
+                if Keystore::has_keys(&*self.keystore, &[(p.to_raw_vec(), NIMBUS_KEY_ID)]) {
                     Some(p.clone())
                 } else {
                     None
@@ -438,10 +437,7 @@ where
             epoch_data
                 .iter()
                 .find(|key| {
-                    Keystore::has_keys(
-                        &*self.keystore,
-                        &[(key.to_raw_vec(), sp_application_crypto::key_types::AURA)],
-                    )
+                    Keystore::has_keys(&*self.keystore, &[(key.to_raw_vec(), NIMBUS_KEY_ID)])
                 })
                 .cloned()
         }
@@ -702,6 +698,8 @@ where
         let claim = self
             .claim_slot(&slot_info.chain_head, slot, &aux_data)
             .await?;
+
+        log::info!("claim valid for slot {:?}", slot);
 
         if self.should_backoff(slot, &slot_info.chain_head) {
             return None;
