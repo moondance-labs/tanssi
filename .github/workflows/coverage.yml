@@ -130,6 +130,9 @@ jobs:
 
           echo "coverage_date=\"$(date)\"" >> $GITHUB_OUTPUT
           echo "total_percent=$(grep -o '[0-9\.]*%' coverage/coverage.json)" >> $GITHUB_OUTPUT
+          wget ${{ secrets.S3_BUCKET_URL }}/branches/master/html/coverage.json \
+            -O coverage-master.json || true
+          echo "master_percent=$(grep -o '[0-9\.]*%' coverage-master.json || echo 'N/A')" >> $GITHUB_OUTPUT
           rm -rf proffiles/
       - name: Upload coverate to gha
         uses: actions/upload-artifact@v3.1.2
@@ -161,6 +164,7 @@ jobs:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
+            Master coverage: ${{ steps.coverage.outputs.master_percent }}
             Coverage generated ${{ steps.coverage.outputs.coverage_date }}:
             Pull coverage: ${{ steps.coverage.outputs.total_percent }}
           edit-mode: replace
