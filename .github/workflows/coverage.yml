@@ -150,7 +150,9 @@ jobs:
           source_dir: "coverage"
           acl: "none"
       - name: Link To Report
-        run: echo "${{ vars.S3_BUCKET_URL }}/tanssi-coverage/${{steps.S3.outputs.object_key}}/html/index.html"
+        run: |
+          echo "${{steps.S3.outputs.object_key}}"
+          echo "${{ vars.S3_BUCKET_URL }}${{steps.S3.outputs.object_key}}/html/index.html"
       - name: Find Comment
         if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
         uses: peter-evans/find-comment@v2
