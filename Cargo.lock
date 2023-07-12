@@ -2263,6 +2263,7 @@ dependencies = [
  "pallet-root-testing",
  "pallet-session",
  "pallet-sudo",
+ "pallet-test-session",
  "pallet-timestamp",
  "pallet-utility",
  "parachain-info",
@@ -7609,6 +7610,21 @@ dependencies = [
  "frame-system",
  "parity-scale-codec",
  "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-test-session"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-session",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
  "sp-io",
  "sp-runtime",
  "sp-std",

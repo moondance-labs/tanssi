@@ -28,6 +28,7 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+use pallet_test_session::OverridablePeriodicSessions;
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{BodyId, ParaId},
@@ -421,6 +422,10 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+
+        // Last, this clears the "end of session" storage, so after this should_end_session
+        // may return a different value
+        TestSession::initializer_on_new_session(System::block_number());
     }
 }
 
@@ -436,8 +441,7 @@ impl pallet_initializer::Config for Runtime {
 impl parachain_info::Config for Runtime {}
 
 parameter_types! {
-    pub const Period: u32 = prod_or_fast!(6 * HOURS, 1 * MINUTES);
-    pub const Offset: u32 = 0;
+    pub const Period: u32 = prod_or_fast!(6 * HOURS, 10 * MINUTES);
 }
 
 impl pallet_session::Config for Runtime {
@@ -445,8 +449,8 @@ impl pallet_session::Config for Runtime {
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     // we don't have stash and controller, thus we don't need the convert as well.
     type ValidatorIdOf = pallet_collator_selection::IdentityCollator;
-    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
+    type ShouldEndSession = OverridablePeriodicSessions<Runtime, Period>;
+    type NextSessionRotation = OverridablePeriodicSessions<Runtime, Period>;
     type SessionManager = CollatorSelection;
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
@@ -495,6 +499,7 @@ impl pallet_collator_selection::Config for Runtime {
     type MinCandidates = MinCandidates;
     type MaxInvulnerables = MaxInvulnerables;
     // should be a multiple of session or things will get inconsistent
+    // TODO: pallet-test-session will break this, ensure that this list is empty when forcing a new session
     type KickThreshold = Period;
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     type ValidatorIdOf = pallet_collator_selection::IdentityCollator;
@@ -649,6 +654,9 @@ impl pallet_proxy::Config for Runtime {
 }
 
 impl pallet_root_testing::Config for Runtime {}
+impl pallet_test_session::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
@@ -684,6 +692,7 @@ construct_runtime!(
         AuthorInherent: pallet_author_inherent = 33,
 
         RootTesting: pallet_root_testing = 100,
+        TestSession: pallet_test_session = 101,
     }
 );
 

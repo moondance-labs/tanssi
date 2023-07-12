@@ -30,6 +30,7 @@ pallet-configuration = { path = "pallets/configuration", default-features = fals
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
+pallet-test-session = { path = "pallets/test-session", default-features = false }
 
 ccp-authorities-noting-inherent = { path = "container-chains/primitives/authorities-noting-inherent", default-features = false }
 

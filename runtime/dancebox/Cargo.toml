@@ -28,6 +28,7 @@ pallet-initializer = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-proxy = { workspace = true }
+pallet-test-session = { workspace = true }
 tp-core = { workspace = true }
 
 # Nimbus
@@ -115,6 +116,7 @@ std = [
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-utility/std",
+	"pallet-test-session/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain/std",
