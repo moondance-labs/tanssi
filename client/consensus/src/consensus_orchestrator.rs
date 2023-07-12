@@ -30,7 +30,7 @@ use {
 
 use {
     futures::{lock::Mutex, prelude::*},
-    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair},
+    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair, NIMBUS_KEY_ID},
     sc_client_api::{backend::AuxStore, BlockOf},
     sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
     sc_consensus_aura::{find_pre_digest, CompatibilityMode},
@@ -424,7 +424,7 @@ where
             expected_author.and_then(|p| {
                 if Keystore::has_keys(
                     &*self.keystore,
-                    &[(p.to_raw_vec(), sp_application_crypto::key_types::AURA)],
+                    &[(p.to_raw_vec(), NIMBUS_KEY_ID)],
                 ) {
                     Some(p.clone())
                 } else {
@@ -440,7 +440,7 @@ where
                 .find(|key| {
                     Keystore::has_keys(
                         &*self.keystore,
-                        &[(key.to_raw_vec(), sp_application_crypto::key_types::AURA)],
+                        &[(key.to_raw_vec(), NIMBUS_KEY_ID)],
                     )
                 })
                 .cloned()
@@ -660,6 +660,7 @@ where
     where
         Self: Sync,
     {
+        log::info!("trying to author on slot");
         let slot = slot_info.slot;
         let telemetry = self.telemetry();
         let logging_target = self.logging_target();
@@ -677,7 +678,11 @@ where
             Instant::now() + proposing_remaining_duration
         };
 
+        log::info!("about to notify slot");
+
         self.notify_slot(&slot_info.chain_head, slot, &aux_data);
+
+        log::info!("slot notified");
 
         let authorities_len = self.authorities_len(&aux_data);
 
@@ -702,6 +707,8 @@ where
         let claim = self
             .claim_slot(&slot_info.chain_head, slot, &aux_data)
             .await?;
+
+        log::info!("claim valid for slot {:?}", slot);
 
         if self.should_backoff(slot, &slot_info.chain_head) {
             return None;
