@@ -152,7 +152,7 @@ jobs:
       - name: Link To Report
         run: |
           echo "${{steps.S3.outputs.object_key}}"
-          echo "${{ vars.S3_BUCKET_URL }}${{steps.S3.outputs.object_key}}/index.html"
+          echo "${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/index.html"
       - name: Find Comment
         if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
         uses: peter-evans/find-comment@v2
