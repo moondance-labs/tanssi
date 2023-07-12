@@ -656,7 +656,6 @@ where
     where
         Self: Sync,
     {
-        log::info!("trying to author on slot");
         let slot = slot_info.slot;
         let telemetry = self.telemetry();
         let logging_target = self.logging_target();
@@ -674,11 +673,7 @@ where
             Instant::now() + proposing_remaining_duration
         };
 
-        log::info!("about to notify slot");
-
         self.notify_slot(&slot_info.chain_head, slot, &aux_data);
-
-        log::info!("slot notified");
 
         let authorities_len = self.authorities_len(&aux_data);
 
