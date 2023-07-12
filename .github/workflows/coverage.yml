@@ -124,7 +124,7 @@ jobs:
             rm $INVALID
             cd ..
             ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
-            -t html --branch --ignore-not-existing --ignore target/release/build/* \
+            -t html --branch --ignore-not-existing --ignore "target/release/build/*" \
             -o coverage/ --llvm-path ./  --llvm
           fi
 
