@@ -170,5 +170,6 @@ jobs:
           body: |
             Master coverage: ${{ steps.coverage.outputs.master_percent }}
             Coverage generated ${{ steps.coverage.outputs.coverage_date }}:
+              ${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/index.html
             Pull coverage: ${{ steps.coverage.outputs.total_percent }}
           edit-mode: replace
