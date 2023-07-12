@@ -125,7 +125,7 @@ jobs:
             cd ..
             ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html --branch --ignore-not-existing --ignore "target/release/build/*" \
-            -o coverage/ --llvm-path ./  --llvm
+            -o coverage/ --llvm
           fi
 
           echo "coverage_date=\"$(date)\"" >> $GITHUB_OUTPUT
