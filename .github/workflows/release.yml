@@ -97,12 +97,6 @@ jobs:
       - name: Setup Rust toolchain
         run: rustup show
 
-      - name: Install nightly
-        run: rustup install nightly-2022-11-14
-      
-      - name: Add wasm32-unknown-unknown to nightly
-        run: rustup target add wasm32-unknown-unknown --toolchain nightly-2022-11-14
-
       - name: Formatter
         run: cargo fmt --all --check
 

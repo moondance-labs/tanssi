@@ -21,7 +21,7 @@ use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
-        Configuration,
+        Configuration, Proxy, ProxyType,
     },
     frame_support::{assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -1601,5 +1601,105 @@ fn test_session_keys_with_authority_assignment() {
 
             // Everything should match to aura
             assert_eq!(authorities(), vec![alice_id_2, bob_id_2]);
+        });
+}
+
+fn call_transfer(
+    dest: sp_runtime::MultiAddress<sp_runtime::AccountId32, ()>,
+    value: u128,
+) -> RuntimeCall {
+    RuntimeCall::Balances(pallet_balances::Call::transfer_allow_death { dest, value })
+}
+
+#[test]
+fn test_proxy_any() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let delay = 0;
+            assert_ok!(Proxy::add_proxy(
+                origin_of(ALICE.into()),
+                AccountId::from(BOB).into(),
+                ProxyType::Any,
+                delay
+            ));
+
+            let balance_before = System::account(AccountId::from(BOB)).data.free;
+            let call = Box::new(call_transfer(AccountId::from(BOB).into(), 200_000));
+            assert_ok!(Proxy::proxy(
+                origin_of(BOB.into()),
+                AccountId::from(ALICE).into(),
+                None,
+                call
+            ));
+            let balance_after = System::account(AccountId::from(BOB)).data.free;
+
+            assert_eq!(balance_after, balance_before + 200_000);
+        });
+}
+
+#[test]
+fn test_proxy_non_transfer() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let delay = 0;
+            assert_ok!(Proxy::add_proxy(
+                origin_of(ALICE.into()),
+                AccountId::from(BOB).into(),
+                ProxyType::NonTransfer,
+                delay
+            ));
+
+            let balance_before = System::account(AccountId::from(BOB)).data.free;
+            let call = Box::new(call_transfer(AccountId::from(BOB).into(), 200_000));
+            // The extrinsic succeeds but the call is filtered, so no transfer is actually done
+            assert_ok!(Proxy::proxy(
+                origin_of(BOB.into()),
+                AccountId::from(ALICE).into(),
+                None,
+                call
+            ));
+            let balance_after = System::account(AccountId::from(BOB)).data.free;
+
+            assert_eq!(balance_after, balance_before);
         });
 }
