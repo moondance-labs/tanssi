@@ -130,7 +130,7 @@ jobs:
 
           echo "coverage_date=\"$(date)\"" >> $GITHUB_OUTPUT
           echo "total_percent=$(grep -o '[0-9\.]*%' coverage/coverage.json)" >> $GITHUB_OUTPUT
-          wget ${{ vars.S3_BUCKET_URL }}/branches/master/html/coverage.json \
+          wget ${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/html/coverage.json \
             -O coverage-master.json || true
           echo "master_percent=$(grep -o '[0-9\.]*%' coverage-master.json || echo 'N/A')" >> $GITHUB_OUTPUT
           rm -rf proffiles/
@@ -149,6 +149,8 @@ jobs:
           destination_dir: "${{ needs.set-tags.outputs.coverage_dir }}"
           source_dir: "coverage"
           acl: "none"
+      - name: Link To Report
+        run: echo "${{ vars.S3_BUCKET_URL }}/tanssi-coverage/${{steps.S3.outputs.object_key}}/html/index.html"
       - name: Find Comment
         if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
         uses: peter-evans/find-comment@v2
