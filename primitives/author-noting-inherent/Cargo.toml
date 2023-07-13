@@ -5,10 +5,9 @@ description = "primitives related to author-noting-inherent"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
-
 [dependencies]
 async-trait = { workspace = true, optional = true }
-hex-literal = { version = "0.3.4" }
+hex-literal = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }

@@ -63,7 +63,6 @@ parachain-info = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
-
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -120,20 +119,4 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 ]
 
-try-runtime = [
-    "pallet-cc-authorities-noting/try-runtime",
-    "nimbus-primitives/try-runtime",
-    "frame-executive/try-runtime",
-    "frame-support/try-runtime",
-    "frame-system/try-runtime",
-    "pallet-balances/try-runtime",
-    "pallet-session/try-runtime",
-    "pallet-sudo/try-runtime",
-    "pallet-timestamp/try-runtime",
-    "pallet-utility/try-runtime",
-    "sp-runtime/try-runtime",
-    "polkadot-runtime-common/try-runtime",
-    "cumulus-pallet-parachain-system/try-runtime",
-    "parachain-info/try-runtime",
-    "frame-try-runtime"
-]
+try-runtime = [ "cumulus-pallet-parachain-system/try-runtime", "frame-executive/try-runtime", "frame-support/try-runtime", "frame-system/try-runtime", "frame-try-runtime", "nimbus-primitives/try-runtime", "pallet-balances/try-runtime", "pallet-cc-authorities-noting/try-runtime", "pallet-session/try-runtime", "pallet-sudo/try-runtime", "pallet-timestamp/try-runtime", "pallet-utility/try-runtime", "parachain-info/try-runtime", "polkadot-runtime-common/try-runtime", "sp-runtime/try-runtime" ]
