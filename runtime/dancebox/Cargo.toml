@@ -25,9 +25,9 @@ pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-initializer = { workspace = true }
+pallet-proxy = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
-pallet-proxy = { workspace = true }
 tp-core = { workspace = true }
 
 # Nimbus
@@ -156,29 +156,29 @@ runtime-benchmarks = [
 ]
 
 try-runtime = [
-	"pallet-author-noting/try-runtime",
-	"pallet-authority-assignment/try-runtime",
-	"pallet-authority-mapping/try-runtime",
-	"pallet-collator-assignment/try-runtime",
-	"pallet-configuration/try-runtime",
-	"pallet-initializer/try-runtime",
-	"pallet-registrar/try-runtime",
-	"nimbus-primitives/try-runtime",
+	"cumulus-pallet-parachain-system/try-runtime",
 	"frame-executive/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
+	"frame-try-runtime/try-runtime",
+	"nimbus-primitives/try-runtime",
+	"pallet-author-noting/try-runtime",
+	"pallet-authority-assignment/try-runtime",
+	"pallet-authority-mapping/try-runtime",
 	"pallet-balances/try-runtime",
+	"pallet-collator-assignment/try-runtime",
+	"pallet-collator-selection/try-runtime",
+	"pallet-configuration/try-runtime",
+	"pallet-initializer/try-runtime",
+	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-utility/try-runtime",
-	"sp-runtime/try-runtime",
-	"polkadot-runtime-common/try-runtime",
-	"cumulus-pallet-parachain-system/try-runtime",
-	"pallet-collator-selection/try-runtime",
 	"parachain-info/try-runtime",
-	"frame-try-runtime/try-runtime",
+	"polkadot-runtime-common/try-runtime",
+	"sp-runtime/try-runtime",
 ]
 
-fast-runtime = [ ]
+fast-runtime = []
