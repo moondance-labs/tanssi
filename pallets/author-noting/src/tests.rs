@@ -15,8 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::mock::*,
-    crate::Event,
+    crate::{mock::*, Event},
     cumulus_primitives_core::ParaId,
     frame_support::assert_ok,
     hex_literal::hex,

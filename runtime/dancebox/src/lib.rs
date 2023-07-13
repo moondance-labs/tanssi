@@ -326,7 +326,7 @@ impl pallet_timestamp::Config for Runtime {
         ConstU64<{ SLOT_DURATION }>,
     >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
 }
 
 pub struct CanAuthor;
@@ -352,7 +352,7 @@ impl pallet_author_inherent::Config for Runtime {
     type AccountLookup = tp_consensus::NimbusLookUp;
     type CanAuthor = CanAuthor;
     type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -451,7 +451,7 @@ impl pallet_session::Config for Runtime {
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = ();
+    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_collator_assignment::Config for Runtime {
@@ -471,7 +471,7 @@ impl pallet_author_noting::Config for Runtime {
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -499,7 +499,7 @@ impl pallet_collator_selection::Config for Runtime {
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     type ValidatorIdOf = pallet_collator_selection::IdentityCollator;
     type ValidatorRegistration = Session;
-    type WeightInfo = ();
+    type WeightInfo = pallet_collator_selection::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -523,7 +523,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type AuthorityId = NimbusId;
-    type WeightInfo = ();
+    type WeightInfo = pallet_configuration::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -541,7 +541,7 @@ impl pallet_registrar::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
-    type WeightInfo = ();
+    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_mapping::Config for Runtime {
@@ -553,7 +553,7 @@ impl pallet_authority_mapping::Config for Runtime {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
+    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
