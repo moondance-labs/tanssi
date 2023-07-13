@@ -18,7 +18,7 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
-container-chain-template-simple-runtime = { path = "../runtime", default-features = false, features = [ "std" ] }
+container-chain-template-simple-runtime = { workspace = true, features = [ "std" ] }
 tc-consensus = { workspace = true }
 
 # Nimbus
