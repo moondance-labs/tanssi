@@ -15,12 +15,16 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    crate::{tests::mock_relay_chain_impl::MyMockRelayInterface, OwnParachainInherentData},
     cumulus_pallet_parachain_system::RelayChainStateProof,
     cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber},
+    futures::executor::block_on,
     hex_literal::hex,
     parity_scale_codec::{Decode, Encode},
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
+    sp_inherents::InherentDataProvider,
     sp_runtime::DigestItem,
+    std::sync::atomic::{AtomicU8, Ordering},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_core::well_known_keys::para_id_head,
 };
@@ -105,4 +109,236 @@ fn header_double_encode_even_if_already_encoded() {
     // If the AlreadyEncoded was not encoded again as a Vec, this would fail
     let v: Vec<u8> = relay_state_proof.read_entry(&key, None).unwrap();
     assert_eq!(v, header_encoded);
+}
+
+mod mock_relay_chain_impl {
+    use {
+        async_trait::async_trait,
+        cumulus_primitives_core::{
+            relay_chain::{CommittedCandidateReceipt, OccupiedCoreAssumption, SessionIndex},
+            InboundHrmpMessage, ParaId,
+        },
+        cumulus_relay_chain_interface::{
+            OverseerHandle, PHash, PHeader, RelayChainInterface, RelayChainResult,
+        },
+        futures::Stream,
+        polkadot_primitives::{InboundDownwardMessage, PersistedValidationData, ValidatorId},
+        sp_state_machine::StorageValue,
+        std::{collections::BTreeMap, pin::Pin},
+    };
+
+    pub struct MyMockRelayInterface {
+        pub prove_read: Box<
+            dyn Fn(
+                    &MyMockRelayInterface,
+                    cumulus_relay_chain_interface::PHash,
+                    &Vec<Vec<u8>>,
+                )
+                    -> cumulus_relay_chain_interface::RelayChainResult<sc_client_api::StorageProof>
+                + Send
+                + Sync,
+        >,
+    }
+
+    #[async_trait]
+    impl RelayChainInterface for MyMockRelayInterface {
+        async fn validators(&self, _: PHash) -> RelayChainResult<Vec<ValidatorId>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn best_block_hash(&self) -> RelayChainResult<PHash> {
+            unimplemented!("Not needed for test")
+        }
+        async fn finalized_block_hash(&self) -> RelayChainResult<PHash> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn retrieve_dmq_contents(
+            &self,
+            _: ParaId,
+            _: PHash,
+        ) -> RelayChainResult<Vec<InboundDownwardMessage>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn retrieve_all_inbound_hrmp_channel_contents(
+            &self,
+            _: ParaId,
+            _: PHash,
+        ) -> RelayChainResult<BTreeMap<ParaId, Vec<InboundHrmpMessage>>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn persisted_validation_data(
+            &self,
+            _: PHash,
+            _: ParaId,
+            _: OccupiedCoreAssumption,
+        ) -> RelayChainResult<Option<PersistedValidationData>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn candidate_pending_availability(
+            &self,
+            _: PHash,
+            _: ParaId,
+        ) -> RelayChainResult<Option<CommittedCandidateReceipt>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn session_index_for_child(&self, _: PHash) -> RelayChainResult<SessionIndex> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn import_notification_stream(
+            &self,
+        ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn finality_notification_stream(
+            &self,
+        ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn is_major_syncing(&self) -> RelayChainResult<bool> {
+            unimplemented!("Not needed for test")
+        }
+
+        fn overseer_handle(&self) -> RelayChainResult<OverseerHandle> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn get_storage_by_key(
+            &self,
+            _: PHash,
+            _: &[u8],
+        ) -> RelayChainResult<Option<StorageValue>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn prove_read(
+            &self,
+            relay_parent: PHash,
+            keys: &Vec<Vec<u8>>,
+        ) -> RelayChainResult<sc_client_api::StorageProof> {
+            (self.prove_read)(self, relay_parent, keys)
+        }
+
+        async fn wait_for_block(&self, _hash: PHash) -> RelayChainResult<()> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn new_best_notification_stream(
+            &self,
+        ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+            unimplemented!("Not needed for test")
+        }
+    }
+}
+
+#[test]
+fn create_inherent_with_no_para_ids() {
+    let mock_relay_parent = Default::default();
+    let mock_proof = sc_client_api::StorageProof::new(vec![]);
+    let relay_chain = MyMockRelayInterface {
+        prove_read: {
+            let mock_proof = mock_proof.clone();
+            let call_counter = AtomicU8::new(0);
+
+            Box::new(move |_this, relay_parent, keys| {
+                match call_counter.fetch_add(1, Ordering::SeqCst) {
+                    0 => {
+                        assert_eq!(relay_parent, mock_relay_parent);
+                        assert_eq!(keys.len(), 0);
+                        Ok(mock_proof.clone())
+                    }
+                    _ => panic!("Should only be called once"),
+                }
+            })
+        },
+    };
+
+    let para_ids = &[];
+    let proof = block_on(OwnParachainInherentData::create_at(
+        mock_relay_parent,
+        &relay_chain,
+        para_ids,
+    ));
+
+    assert_eq!(
+        proof,
+        Some(OwnParachainInherentData {
+            relay_storage_proof: mock_proof
+        })
+    );
+}
+
+#[test]
+fn create_inherent_with_two_para_ids() {
+    let mock_relay_parent = Default::default();
+    let dummy_node = vec![1, 2, 3];
+    let mock_proof = sc_client_api::StorageProof::new(vec![dummy_node]);
+    let relay_chain = MyMockRelayInterface {
+        prove_read: {
+            let mock_proof = mock_proof.clone();
+            let call_counter = AtomicU8::new(0);
+
+            Box::new(move |_this, relay_parent, keys| {
+                match call_counter.fetch_add(1, Ordering::SeqCst) {
+                    0 => {
+                        assert_eq!(relay_parent, mock_relay_parent);
+                        assert_eq!(keys.len(), 2);
+                        // Keys should be different because para ids are different
+                        assert_ne!(keys[0], keys[1]);
+                        Ok(mock_proof.clone())
+                    }
+                    _ => panic!("Should only be called once"),
+                }
+            })
+        },
+    };
+
+    let para_ids = &[2000.into(), 2001.into()];
+    let proof = block_on(OwnParachainInherentData::create_at(
+        mock_relay_parent,
+        &relay_chain,
+        para_ids,
+    ));
+
+    assert_eq!(
+        proof,
+        Some(OwnParachainInherentData {
+            relay_storage_proof: mock_proof
+        })
+    );
+}
+
+#[test]
+fn test_provide_inherent_data() {
+    // Ensure that provide_inherent_data stores the data at the correct key, and the data can be decoded
+    let dummy_node = vec![1, 2, 3];
+    let relay_chain = MyMockRelayInterface {
+        prove_read: Box::new(move |_, _, _| {
+            Ok(sc_client_api::StorageProof::new(vec![dummy_node.clone()]))
+        }),
+    };
+    let relay_parent = Default::default();
+    let para_ids = &[];
+    let proof = block_on(OwnParachainInherentData::create_at(
+        relay_parent,
+        &relay_chain,
+        para_ids,
+    ))
+    .unwrap();
+
+    let mut inherent_data = sp_inherents::InherentData::new();
+    block_on(proof.provide_inherent_data(&mut inherent_data)).unwrap();
+    let decoded: OwnParachainInherentData = inherent_data
+        .get_data(&crate::INHERENT_IDENTIFIER)
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(decoded, proof);
 }

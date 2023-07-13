@@ -13660,6 +13660,7 @@ dependencies = [
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
  "frame-support",
+ "futures 0.3.28",
  "hex-literal 0.3.4",
  "log",
  "parity-scale-codec",

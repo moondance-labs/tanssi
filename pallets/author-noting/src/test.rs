@@ -16,7 +16,9 @@
 
 use {
     crate::mock::*,
+    crate::Event,
     cumulus_primitives_core::ParaId,
+    frame_support::assert_ok,
     hex_literal::hex,
     parity_scale_codec::Encode,
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
@@ -402,4 +404,44 @@ fn encode_proof_for_benchmarks() {
     }
 
     println!("];")
+}
+
+#[test]
+fn test_set_author() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
+            assert_ok!(AuthorNoting::set_author(
+                RuntimeOrigin::root(),
+                1001.into(),
+                14u64
+            ));
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(14u64));
+            System::assert_last_event(
+                Event::LatestAuthorChanged {
+                    para_id: 1001.into(),
+                    new_author: 14u64,
+                }
+                .into(),
+            );
+        });
 }
