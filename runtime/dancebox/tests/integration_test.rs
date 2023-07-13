@@ -39,6 +39,7 @@ use {
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
+    tp_core::well_known_keys,
 };
 
 mod common;
@@ -1702,4 +1703,35 @@ fn test_proxy_non_transfer() {
 
             assert_eq!(balance_after, balance_before);
         });
+}
+
+#[test]
+fn check_well_known_keys() {
+    use frame_support::traits::PalletInfo;
+
+    // Pallet is named "Paras" in Polkadot.
+    assert_eq!(
+        well_known_keys::PARAS_HEADS_INDEX,
+        frame_support::storage::storage_prefix(b"Paras", b"Heads")
+    );
+
+    // Tanssi storage. Since we cannot access the storages themselves,
+    // we test the pallet prefix matches and then compute manually the full prefix.
+    assert_eq!(
+        dancebox_runtime::PalletInfo::name::<AuthorityAssignment>(),
+        Some("AuthorityAssignment")
+    );
+    assert_eq!(
+        well_known_keys::AUTHORITY_ASSIGNMENT_PREFIX,
+        frame_support::storage::storage_prefix(b"AuthorityAssignment", b"CollatorContainerChain")
+    );
+
+    assert_eq!(
+        dancebox_runtime::PalletInfo::name::<Session>(),
+        Some("Session")
+    );
+    assert_eq!(
+        well_known_keys::SESSION_INDEX,
+        frame_support::storage::storage_prefix(b"Session", b"CurrentIndex")
+    );
 }
