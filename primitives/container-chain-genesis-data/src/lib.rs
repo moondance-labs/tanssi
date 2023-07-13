@@ -18,6 +18,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use frame_support::{CloneNoBound, DebugNoBound, DefaultNoBound, EqNoBound, PartialEqNoBound};
+
 use {
     frame_support::BoundedVec,
     parity_scale_codec::{Decode, Encode},
@@ -54,8 +56,19 @@ pub mod json;
 // in polkadot.js, because `Vec<u8>` is serialized as `[12, 51, 124]` instead of hex.
 // That's why we use `serde(with = "sp_core::bytes")` everywhere, to convert it to hex.
 #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo)]
-pub struct ContainerChainGenesisData {
+#[cfg_attr(feature = "std", serde(bound = ""))]
+#[derive(
+    DebugNoBound,
+    CloneNoBound,
+    EqNoBound,
+    DefaultNoBound,
+    PartialEqNoBound,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
+)]
+#[scale_info(skip_type_params(MaxLengthTokenSymbol))]
+pub struct ContainerChainGenesisData<MaxLengthTokenSymbol: Get<u32>> {
     pub storage: Vec<ContainerChainGenesisDataItem>,
     // TODO: make all these Vec<u8> bounded
     #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
@@ -65,41 +78,40 @@ pub struct ContainerChainGenesisData {
     pub fork_id: Option<Vec<u8>>,
     #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
     pub extensions: Vec<u8>,
-    pub properties: Properties,
-}
-
-// TODO: turn this into a Config type parameter
-// The problem with that is that it forces ContainerChainGenesisData to be generic,
-// and the automatically derived traits force the generic parameter to implement those traits.
-// The errors are like "MaxLengthTokenSymbol does not implement Debug".
-// The solution is to either implement all the traits manually, or use a helper crate like
-// derivative, although that does not seem to support deriving the substrate traits.
-pub struct MaxLengthTokenSymbol;
-
-impl Get<u32> for MaxLengthTokenSymbol {
-    fn get() -> u32 {
-        255
-    }
+    pub properties: Properties<MaxLengthTokenSymbol>,
 }
 
 #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
+#[cfg_attr(feature = "std", serde(bound = ""))]
 #[derive(
-    Debug, Default, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo,
+    DebugNoBound,
+    CloneNoBound,
+    EqNoBound,
+    DefaultNoBound,
+    PartialEqNoBound,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
 )]
-pub struct Properties {
-    pub token_metadata: TokenMetadata,
+#[scale_info(skip_type_params(MaxLengthTokenSymbol))]
+pub struct Properties<MaxLengthTokenSymbol: Get<u32>> {
+    pub token_metadata: TokenMetadata<MaxLengthTokenSymbol>,
     pub is_ethereum: bool,
 }
 
 #[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo)]
-pub struct TokenMetadata {
+#[cfg_attr(feature = "std", serde(bound = ""))]
+#[derive(
+    DebugNoBound, CloneNoBound, EqNoBound, PartialEqNoBound, Encode, Decode, scale_info::TypeInfo,
+)]
+#[scale_info(skip_type_params(MaxLengthTokenSymbol))]
+pub struct TokenMetadata<MaxLengthTokenSymbol: Get<u32>> {
     pub token_symbol: BoundedVec<u8, MaxLengthTokenSymbol>,
     pub ss58_format: u32,
     pub token_decimals: u32,
 }
 
-impl Default for TokenMetadata {
+impl<MaxLengthTokenSymbol: Get<u32>> Default for TokenMetadata<MaxLengthTokenSymbol> {
     fn default() -> Self {
         // Default values from polkadot.js
         Self {
