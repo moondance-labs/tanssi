@@ -1,0 +1,50 @@
+import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+import { getBlockTime } from "@moonwall/util";
+
+import { ApiPromise } from "@polkadot/api";
+const debug = require("debug")("smoke:block-finalized");
+
+describeSuite({
+  id: "R02",
+  title: "Sample suite that only runs on Dancebox chains",
+  foundationMethods: "read_only",
+  testCases: ({ it, context }) => {
+    let api: ApiPromise;
+
+    beforeAll(() => {
+      api = context.polkadotJs();
+    });
+
+    it({
+      id: "C01",
+      title: "Config orchestrator max collators parameters should be respected",
+      test: async function () {
+        const config = await api.query.configuration.activeConfig();
+        // get current session
+        const sessionIndex = (await api.query.session.currentIndex()).toNumber();
+        // get current authorities
+        const authorities = await api.query.authorityAssignment.collatorContainerChain(sessionIndex);
+
+        // We cannot exced max collators
+        expect(authorities.toJSON()["orchestratorChain"].length).to.be.lessThanOrEqual(config["maxOrchestratorCollators"].toNumber());
+      }
+    });
+
+    it({
+        id: "C02",
+        title: "Config orchestrator min collators parameters should be respected",
+        test: async function () {
+          const config = await api.query.configuration.activeConfig();
+          // get current session
+          const sessionIndex = (await api.query.session.currentIndex()).toNumber();
+          // get current authorities
+          const authorities = (await api.query.authorityAssignment.collatorContainerChain(sessionIndex)).toJSON();
+          
+          // If we have container chain collators, is because we at least assigned min to orchestrator
+          if (Object.keys(authorities["containerChains"]).length != 0) {
+            expect(authorities["orchestratorChain"].length).to.be.greaterThanOrEqual(config["minOrchestratorCollators"].toNumber());
+          }
+        }
+    });
+  },
+});
