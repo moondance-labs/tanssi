@@ -32,7 +32,7 @@
 mod mock;
 
 #[cfg(test)]
-mod test;
+mod tests;
 mod weights;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
