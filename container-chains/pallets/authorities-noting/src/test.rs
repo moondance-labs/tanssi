@@ -15,7 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::{mock::*, OrchestratorParaId, ParaId},
+    crate::{mock::*, Authorities, Event, OrchestratorParaId, ParaId},
+    frame_support::assert_ok,
     sp_runtime::traits::BlakeTwo256,
     test_relay_sproof_builder::{
         AuthorityAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
@@ -196,4 +197,89 @@ fn encode_proof_for_benchmarks() {
     }
 
     println!("];")
+}
+
+#[test]
+fn test_set_authorities() {
+    let mut assignment = AuthorityAssignmentSproofBuilder::<u64>::default();
+    assignment
+        .authority_assignment
+        .container_chains
+        .insert(ParachainId::get(), vec![10u64, 11u64]);
+
+    let (orchestrator_chain_root, orchestrator_chain_state) =
+        assignment.into_state_root_and_proof();
+
+    BlockTests::new()
+        .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = OrchestratorParachainId::get();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: orchestrator_chain_root,
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest { logs: vec![] },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .with_orchestrator_storage_proof(orchestrator_chain_state)
+        .add(1, || {
+            let authorities = vec![4, 5];
+            assert_ok!(AuthoritiesNoting::set_authorities(
+                RuntimeOrigin::root(),
+                authorities.clone()
+            ));
+            assert_eq!(Authorities::<Test>::get(), authorities);
+            System::assert_last_event(Event::AuthoritiesInserted { authorities }.into());
+        });
+}
+
+#[test]
+fn test_set_orchestrator_para_id() {
+    let mut assignment = AuthorityAssignmentSproofBuilder::<u64>::default();
+    assignment
+        .authority_assignment
+        .container_chains
+        .insert(ParachainId::get(), vec![10u64, 11u64]);
+
+    let (orchestrator_chain_root, orchestrator_chain_state) =
+        assignment.into_state_root_and_proof();
+
+    BlockTests::new()
+        .with_relay_sproof_builder(move |_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = OrchestratorParachainId::get();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: orchestrator_chain_root,
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest { logs: vec![] },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .with_orchestrator_storage_proof(orchestrator_chain_state)
+        .add(1, || {
+            let new_para_id = ParaId::new(2000);
+            assert_ok!(AuthoritiesNoting::set_orchestrator_para_id(
+                RuntimeOrigin::root(),
+                new_para_id
+            ));
+            assert_eq!(OrchestratorParaId::<Test>::get(), new_para_id);
+            System::assert_last_event(
+                Event::OrchestratorParachainIdUpdated {
+                    new_para_id: 2000.into(),
+                }
+                .into(),
+            );
+        });
 }
