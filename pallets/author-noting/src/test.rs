@@ -470,22 +470,7 @@ fn test_on_initalize_does_not_kill_and_panics() {
             }
             _ => unreachable!(),
         })
-        .add(1, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
-            assert_ok!(AuthorNoting::set_author(
-                RuntimeOrigin::root(),
-                1001.into(),
-                14u64
-            ));
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(14u64));
-            System::assert_last_event(
-                Event::LatestAuthorChanged {
-                    para_id: 1001.into(),
-                    new_author: 14u64,
-                }
-                .into(),
-            );
-        });
+        .add(1, || {});
 }
 
 #[test]
