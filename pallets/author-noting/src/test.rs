@@ -15,8 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::mock::*,
-    crate::Event,
+    crate::{mock::*, Event},
     cumulus_primitives_core::ParaId,
     frame_support::assert_ok,
     hex_literal::hex,
@@ -443,5 +442,123 @@ fn test_set_author() {
                 }
                 .into(),
             );
+        });
+}
+
+#[test]
+#[should_panic(expected = "DidSetContainerAuthorData must be updated only once in a block")]
+fn test_on_initalize_does_not_kill_and_panics() {
+    BlockTests::new()
+        .skip_author_noting_on_initialize()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                crate::DidSetContainerAuthorData::<Test>::put(true);
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
+            assert_ok!(AuthorNoting::set_author(
+                RuntimeOrigin::root(),
+                1001.into(),
+                14u64
+            ));
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(14u64));
+            System::assert_last_event(
+                Event::LatestAuthorChanged {
+                    para_id: 1001.into(),
+                    new_author: 14u64,
+                }
+                .into(),
+            );
+        });
+}
+
+#[test]
+fn test_header_non_decodable_does_not_insert() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id = HeaderAs::AlreadyEncoded(hex!("4321").to_vec());
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
+        });
+}
+
+#[test]
+fn test_non_aura_digest_doest_not_insert_key() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        // we inject a non-aura digest
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(
+                                [b'a', b'a', b'a', b'a'],
+                                slot.encode(),
+                            )],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
+        });
+}
+
+#[test]
+fn test_non_decodable_slot_doest_not_insert_key() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        // we inject 1u8 slot, but inherentType is expected so it should not decode
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, 1u8.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
         });
 }
