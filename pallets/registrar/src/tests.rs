@@ -16,7 +16,9 @@
 
 use {
     crate::{mock::*, Error, Event},
-    frame_support::{assert_noop, assert_ok, BoundedVec},
+    frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo, BoundedVec},
+    parity_scale_codec::Encode,
+    sp_core::Get,
     sp_runtime::DispatchError,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::ParaId,
@@ -520,5 +522,57 @@ fn boot_nodes_removed_on_deregister() {
 
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into()));
         assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)), vec![]);
+    });
+}
+
+#[test]
+fn weights_assigned_to_extrinsics_are_correct() {
+    new_test_ext().execute_with(|| {
+        assert_eq!(
+            crate::Call::<Test>::register {
+                para_id: 42.into(),
+                genesis_data: empty_genesis_data()
+            }
+            .get_dispatch_info()
+            .weight,
+            <() as crate::weights::WeightInfo>::register(
+                empty_genesis_data().encoded_size() as u32,
+                <Test as crate::Config>::MaxLengthParaIds::get(),
+                0
+            )
+        );
+
+        assert_eq!(
+            crate::Call::<Test>::deregister { para_id: 42.into() }
+                .get_dispatch_info()
+                .weight,
+            <() as crate::weights::WeightInfo>::deregister(
+                <Test as crate::Config>::MaxGenesisDataSize::get(),
+                <Test as crate::Config>::MaxLengthParaIds::get()
+            )
+        );
+
+        assert_eq!(
+            crate::Call::<Test>::mark_valid_for_collating { para_id: 42.into() }
+                .get_dispatch_info()
+                .weight,
+            <() as crate::weights::WeightInfo>::mark_valid_for_collating(
+                <Test as crate::Config>::MaxGenesisDataSize::get(),
+                <Test as crate::Config>::MaxLengthParaIds::get()
+            )
+        );
+
+        assert_eq!(
+            crate::Call::<Test>::set_boot_nodes {
+                para_id: 42.into(),
+                boot_nodes: vec![].try_into().unwrap()
+            }
+            .get_dispatch_info()
+            .weight,
+            <() as crate::weights::WeightInfo>::set_boot_nodes(
+                <Test as crate::Config>::MaxBootNodeUrlLen::get(),
+                0
+            )
+        );
     });
 }
