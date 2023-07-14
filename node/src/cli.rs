@@ -19,6 +19,7 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     sc_network::config::MultiaddrWithPeerId,
+    sp_runtime::traits::Get,
     std::{collections::BTreeMap, path::PathBuf},
     tp_container_chain_genesis_data::json::properties_to_map,
 };
@@ -320,9 +321,9 @@ impl ContainerChainCli {
         }
     }
 
-    pub fn chain_spec_from_genesis_data(
+    pub fn chain_spec_from_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
         para_id: u32,
-        genesis_data: ContainerChainGenesisData,
+        genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
         boot_nodes: Vec<String>,
@@ -373,10 +374,10 @@ impl ContainerChainCli {
         Ok(chain_spec)
     }
 
-    pub fn preload_chain_spec_from_genesis_data(
+    pub fn preload_chain_spec_from_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
         &mut self,
         para_id: u32,
-        genesis_data: ContainerChainGenesisData,
+        genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
         boot_nodes: Vec<String>,

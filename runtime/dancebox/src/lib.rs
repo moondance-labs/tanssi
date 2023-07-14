@@ -528,6 +528,7 @@ impl pallet_configuration::Config for Runtime {
 
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
+    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -536,6 +537,7 @@ impl pallet_registrar::Config for Runtime {
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
+    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
@@ -965,14 +967,14 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId> for Runtime {
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId, MaxLengthTokenSymbol> for Runtime {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             Registrar::registered_para_ids().to_vec()
         }
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData<MaxLengthTokenSymbol>> {
             Registrar::para_genesis_data(para_id)
         }
 

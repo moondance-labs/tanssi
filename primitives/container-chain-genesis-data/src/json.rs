@@ -17,15 +17,22 @@
 //! Helper functions to convert from `ContainerChainGenesisData` to JSON values and back
 
 use {
-    crate::{ContainerChainGenesisData, ContainerChainGenesisDataItem, Properties},
+    crate::{ContainerChainGenesisData, ContainerChainGenesisDataItem, Get, Properties},
     cumulus_primitives_core::ParaId,
 };
 
 /// Reads a raw ChainSpec file stored in `path`, and returns its `ParaId` and
 /// a `ContainerChainGenesisData` that can be used to recreate the ChainSpec later.
-pub fn container_chain_genesis_data_from_path(
+pub fn container_chain_genesis_data_from_path<MaxLengthTokenSymbol: Get<u32>>(
     path: &str,
-) -> Result<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>), String> {
+) -> Result<
+    (
+        ParaId,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    ),
+    String,
+> {
     // Read raw chainspec file
     let raw_chainspec_str = std::fs::read_to_string(path)
         .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))?;
@@ -33,18 +40,32 @@ pub fn container_chain_genesis_data_from_path(
     container_chain_genesis_data_from_str(&raw_chainspec_str)
 }
 
-pub fn container_chain_genesis_data_from_str(
+pub fn container_chain_genesis_data_from_str<MaxLengthTokenSymbol: Get<u32>>(
     raw_chainspec_str: &str,
-) -> Result<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>), String> {
+) -> Result<
+    (
+        ParaId,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    ),
+    String,
+> {
     let raw_chainspec_json: serde_json::Value =
         serde_json::from_str(raw_chainspec_str).map_err(|e| e.to_string())?;
 
     container_chain_genesis_data_from_json(&raw_chainspec_json)
 }
 
-pub fn container_chain_genesis_data_from_json(
+pub fn container_chain_genesis_data_from_json<MaxLengthTokenSymbol: Get<u32>>(
     raw_chainspec_json: &serde_json::Value,
-) -> Result<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>), String> {
+) -> Result<
+    (
+        ParaId,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    ),
+    String,
+> {
     // TODO: we are manually parsing a json file here, maybe we can leverage the existing
     // chainspec deserialization code.
     // TODO: this bound checking may panic, but that shouldn't be too dangerous because this
@@ -117,8 +138,10 @@ pub fn storage_from_chainspec_json(
 
 /// Read `TokenMetadata` from a JSON value. The value is expected to be a map.
 /// In case of error, the default `TokenMetadata` is returned.
-pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> Properties {
-    let mut properties = Properties::default();
+pub fn properties_from_chainspec_json<MaxLengthTokenSymbol: Get<u32>>(
+    properties_json: &serde_json::Value,
+) -> Properties<MaxLengthTokenSymbol> {
+    let mut properties: Properties<MaxLengthTokenSymbol> = Properties::default();
     if let Some(x) = properties_json
         .get("ss58Format")
         .and_then(|x| u32::try_from(x.as_u64()?).ok())
@@ -177,8 +200,8 @@ pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> Pr
     properties
 }
 
-pub fn properties_to_map(
-    properties: &Properties,
+pub fn properties_to_map<MaxLengthTokenSymbol: Get<u32>>(
+    properties: &Properties<MaxLengthTokenSymbol>,
 ) -> Result<serde_json::Map<String, serde_json::Value>, String> {
     // TODO: we can just derive Serialize for genesis_data.properties instead of this hack,
     // just ensure that the field names match. And "tokenSymbol" must be a string, in the struct
@@ -213,9 +236,11 @@ pub fn properties_to_map(
 
 #[cfg(test)]
 mod tests {
+    use sp_core::ConstU32;
+
     use super::*;
 
-    fn expected_container_chain_genesis_data() -> ContainerChainGenesisData {
+    fn expected_container_chain_genesis_data() -> ContainerChainGenesisData<ConstU32<255>> {
         let para_id = 2000;
 
         ContainerChainGenesisData {
@@ -277,7 +302,7 @@ mod tests {
     fn test_serde_deserialize() {
         let expected = expected_container_chain_genesis_data();
         let s = expected_string();
-        let x: ContainerChainGenesisData = serde_json::from_str(s).unwrap();
+        let x: ContainerChainGenesisData<ConstU32<255>> = serde_json::from_str(s).unwrap();
         assert_eq!(x, expected);
     }
 }
