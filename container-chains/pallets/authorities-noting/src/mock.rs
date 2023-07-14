@@ -87,7 +87,7 @@ parameter_types! {
     pub const OrchestratorParachainId: ParaId = ParaId::new(1000);
 }
 
-const MOCK_RELAY_ROOT_KEY: &[u8] = b"MOCK_RELAY_ROOT_KEY";
+pub(crate) const MOCK_RELAY_ROOT_KEY: &[u8] = b"MOCK_RELAY_ROOT_KEY";
 
 pub struct MockRelayStateProvider;
 

@@ -17,7 +17,13 @@
 use {
     crate::{mock::*, Event},
     cumulus_primitives_core::ParaId,
-    frame_support::assert_ok,
+    frame_support::{
+        assert_ok,
+        dispatch::GetDispatchInfo,
+        inherent::{InherentData, ProvideInherent},
+        traits::UnfilteredDispatchable,
+    },
+    frame_system::RawOrigin,
     hex_literal::hex,
     parity_scale_codec::Encode,
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
@@ -27,6 +33,7 @@ use {
         traits::{BlakeTwo256, HashFor},
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    tp_traits::GetCurrentContainerChains,
 };
 
 #[test]
@@ -546,4 +553,46 @@ fn test_non_decodable_slot_doest_not_insert_key() {
         .add(1, || {
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
         });
+}
+
+#[test]
+fn weights_assigned_to_extrinsics_are_correct() {
+    new_test_ext().execute_with(|| {
+        assert_eq!(
+            crate::Call::<Test>::set_author {
+                para_id: 1.into(),
+                new: 1u64
+            }
+            .get_dispatch_info()
+            .weight,
+            <() as crate::weights::WeightInfo>::set_author()
+        );
+
+        let sproof_builder = ParaHeaderSproofBuilder::default();
+
+        let (relay_root, relay_chain_state) = sproof_builder.into_state_root_and_proof();
+        frame_support::storage::unhashed::put(MOCK_RELAY_ROOT_KEY, &relay_root);
+
+        let mut inherent_data = InherentData::default();
+        let system_inherent_data = tp_author_noting_inherent::OwnParachainInherentData {
+            relay_storage_proof: relay_chain_state,
+        };
+        inherent_data
+            .put_data(
+                tp_author_noting_inherent::INHERENT_IDENTIFIER,
+                &system_inherent_data,
+            )
+            .expect("failed to put VFP inherent");
+        let inherent_weight = AuthorNoting::create_inherent(&inherent_data)
+            .expect("got an inherent")
+            .dispatch_bypass_filter(RawOrigin::None.into())
+            .expect("dispatch succeeded");
+
+        assert_eq!(
+            inherent_weight.actual_weight.unwrap(),
+            <() as crate::weights::WeightInfo>::set_latest_author_data(
+                <Test as crate::Config>::ContainerChains::current_container_chains().len() as u32
+            )
+        );
+    });
 }
