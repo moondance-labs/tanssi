@@ -46,7 +46,7 @@ pub mod pallet {
         frame_support::{
             pallet_prelude::*,
             traits::{Currency, ReservableCurrency},
-            LOG_TARGET,
+            DefaultNoBound, LOG_TARGET,
         },
         frame_system::pallet_prelude::*,
         sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
@@ -62,19 +62,23 @@ pub mod pallet {
     pub struct Pallet<T>(_);
 
     #[pallet::genesis_config]
-    #[derive(Default)]
-    pub struct GenesisConfig {
+    #[derive(DefaultNoBound)]
+    pub struct GenesisConfig<T: Config> {
         /// Para ids
-        pub para_ids: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+        pub para_ids: Vec<(
+            ParaId,
+            ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+            Vec<Vec<u8>>,
+        )>,
     }
 
     #[pallet::genesis_build]
-    impl<T: Config> GenesisBuild<T> for GenesisConfig {
+    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
         fn build(&self) {
             // Sort para ids and detect duplicates, but do it using a vector of
             // references to avoid cloning the genesis data, which may be big.
             let mut para_ids: Vec<&_> = self.para_ids.iter().collect();
-            para_ids.sort();
+            para_ids.sort_by(|a, b| a.0.cmp(&b.0));
             para_ids.dedup_by(|a, b| {
                 if a.0 == b.0 {
                     panic!("Duplicate para_id: {}", a.0);
@@ -83,7 +87,7 @@ pub mod pallet {
                 }
             });
 
-            let mut bounded_para_ids = BoundedVec::truncate_from(vec![]);
+            let mut bounded_para_ids = BoundedVec::default();
 
             for (para_id, genesis_data, boot_nodes) in para_ids {
                 bounded_para_ids
@@ -131,6 +135,7 @@ pub mod pallet {
 
         type MaxBootNodes: Get<u32>;
         type MaxBootNodeUrlLen: Get<u32>;
+        type MaxLengthTokenSymbol: Get<u32>;
 
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
@@ -162,8 +167,13 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn para_genesis_data)]
-    pub type ParaGenesisData<T: Config> =
-        StorageMap<_, Blake2_128Concat, ParaId, ContainerChainGenesisData, OptionQuery>;
+    pub type ParaGenesisData<T: Config> = StorageMap<
+        _,
+        Blake2_128Concat,
+        ParaId,
+        ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+        OptionQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn pending_verification)]
@@ -234,7 +244,7 @@ pub mod pallet {
         pub fn register(
             origin: OriginFor<T>,
             para_id: ParaId,
-            genesis_data: ContainerChainGenesisData,
+            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
             let deposit = T::DepositAmount::get();

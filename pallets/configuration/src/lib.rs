@@ -34,7 +34,7 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
-mod weights;
+pub mod weights;
 
 use crate::weights::WeightInfo;
 

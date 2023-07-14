@@ -34,6 +34,7 @@ use {
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
+use dancebox_runtime::MaxLengthTokenSymbol;
 pub use dancebox_runtime::{
     AccountId, Balance, Balances, Initializer, ParachainInfo, Registrar, Runtime, RuntimeCall,
     RuntimeEvent, Session, System,
@@ -90,7 +91,11 @@ pub struct ExtBuilder {
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
     // list of registered para ids
-    para_ids: Vec<(u32, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+    para_ids: Vec<(
+        u32,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    )>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
 }
@@ -108,7 +113,11 @@ impl ExtBuilder {
 
     pub fn with_para_ids(
         mut self,
-        para_ids: Vec<(u32, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+        para_ids: Vec<(
+            u32,
+            ContainerChainGenesisData<MaxLengthTokenSymbol>,
+            Vec<Vec<u8>>,
+        )>,
     ) -> Self {
         self.para_ids = para_ids;
         self
@@ -132,7 +141,7 @@ impl ExtBuilder {
 
         // We need to initialize these pallets first. When initializing pallet-session,
         // these values will be taken into account for collator-assignment.
-        <pallet_registrar::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+        <pallet_registrar::GenesisConfig<Runtime> as GenesisBuild<Runtime>>::assimilate_storage(
             &pallet_registrar::GenesisConfig {
                 para_ids: self
                     .para_ids
@@ -259,7 +268,7 @@ pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
     .dispatch(inherent_origin()));
 }
 
-pub fn empty_genesis_data() -> ContainerChainGenesisData {
+pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     ContainerChainGenesisData {
         storage: Default::default(),
         name: Default::default(),
