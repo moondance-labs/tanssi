@@ -630,6 +630,8 @@ impl pallet_author_inherent::Config for Runtime {
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_root_testing::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -661,6 +663,7 @@ construct_runtime!(
         HotfixSufficients: pallet_hotfix_sufficients = 65,
         TransactionPayment: pallet_transaction_payment = 66,
 
+        RootTesting: pallet_root_testing = 100,
     }
 );
 
