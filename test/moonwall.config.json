@@ -6,7 +6,7 @@
   "environments": [
     {
       "name": "dev_tanssi",
-      "testFileDir": ["suites/dev-tanssi"],
+      "testFileDir": ["suites/dev-tanssi", "suites/common"],
       "multiThreads": true,
       "html": false,
       "foundation": {
@@ -51,7 +51,7 @@
     },
     {
       "name": "dev_frontier_template",
-      "testFileDir": ["suites/dev-frontier-template"],
+      "testFileDir": ["suites/dev-frontier-template", "suites/common"],
       "runScripts": ["pre-build-contracts.ts"],
       "multiThreads": true,
       "html": false,

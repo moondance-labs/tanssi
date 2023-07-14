@@ -1263,6 +1263,7 @@ dependencies = [
  "pallet-evm-precompile-sha3fips",
  "pallet-evm-precompile-simple",
  "pallet-hotfix-sufficients",
+ "pallet-root-testing",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -7423,6 +7424,7 @@ dependencies = [
 name = "pallet-registrar-runtime-api"
 version = "0.1.0"
 dependencies = [
+ "frame-support",
  "pallet-registrar",
  "parity-scale-codec",
  "scale-info",

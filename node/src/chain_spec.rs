@@ -23,7 +23,7 @@ use {
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
-    sp_runtime::traits::{IdentifyAccount, Verify},
+    sp_runtime::traits::{Get, IdentifyAccount, Verify},
     std::collections::BTreeMap,
     tp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
@@ -338,7 +338,9 @@ fn testnet_genesis(
     }
 }
 
-fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
+fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
+    para_id: ParaId,
+) -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     ContainerChainGenesisData {
         storage: vec![],
         name: format!("Container Chain {}", para_id).into(),

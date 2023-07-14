@@ -35,7 +35,6 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
     },
     sp_state_machine::StorageProof,
-    sp_version::RuntimeVersion,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
@@ -160,7 +159,7 @@ impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
     }
 }
 
-const MOCK_RELAY_ROOT_KEY: &[u8] = b"MOCK_RELAY_ROOT_KEY";
+pub(crate) const MOCK_RELAY_ROOT_KEY: &[u8] = b"MOCK_RELAY_ROOT_KEY";
 
 pub struct MockRelayStateProvider;
 
@@ -197,18 +196,6 @@ struct BlockTest {
     after_block: Option<Box<dyn Fn()>>,
 }
 
-struct ReadRuntimeVersion(Vec<u8>);
-
-impl sp_core::traits::ReadRuntimeVersion for ReadRuntimeVersion {
-    fn read_runtime_version(
-        &self,
-        _wasm_code: &[u8],
-        _ext: &mut dyn sp_externalities::Externalities,
-    ) -> Result<Vec<u8>, String> {
-        Ok(self.0.clone())
-    }
-}
-
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -219,17 +206,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 fn wasm_ext() -> sp_io::TestExternalities {
-    let version = RuntimeVersion {
-        spec_name: "test".into(),
-        spec_version: 2,
-        impl_version: 1,
-        ..Default::default()
-    };
-
-    let mut ext = new_test_ext();
-    ext.register_extension(sp_core::traits::ReadRuntimeVersionExt::new(
-        ReadRuntimeVersion(version.encode()),
-    ));
+    let ext = new_test_ext();
     ext
 }
 
@@ -255,6 +232,7 @@ pub struct BlockTests {
     overriden_state_root: Option<H256>,
     overriden_state_proof: Option<StorageProof>,
     skip_inherent_insertion: bool,
+    skip_author_noting_on_initialize: bool,
 }
 
 impl BlockTests {
@@ -298,6 +276,11 @@ impl BlockTests {
 
     pub fn skip_inherent_insertion(mut self) -> Self {
         self.skip_inherent_insertion = true;
+        self
+    }
+
+    pub fn skip_author_noting_on_initialize(mut self) -> Self {
+        self.skip_author_noting_on_initialize = true;
         self
     }
 
@@ -355,7 +338,10 @@ impl BlockTests {
                 };
 
                 // execute the block
-                AuthorNoting::on_initialize(*n);
+                if !self.skip_author_noting_on_initialize {
+                    AuthorNoting::on_initialize(*n);
+                }
+
                 if !self.skip_inherent_insertion {
                     AuthorNoting::create_inherent(&inherent_data)
                         .expect("got an inherent")
