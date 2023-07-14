@@ -29,10 +29,10 @@ async fn collect_relay_storage_proof(
     para_ids: &[ParaId],
     relay_parent: PHash,
 ) -> Option<sp_state_machine::StorageProof> {
-    let mut relevant_keys = Vec::new();
-    for para_id in para_ids {
-        relevant_keys.push(para_id_head(*para_id));
-    }
+    let relevant_keys = para_ids
+        .iter()
+        .map(|para_id| para_id_head(*para_id))
+        .collect();
 
     relay_chain_interface
         .prove_read(relay_parent, &relevant_keys)
