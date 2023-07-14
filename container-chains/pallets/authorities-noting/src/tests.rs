@@ -16,10 +16,16 @@
 
 use {
     crate::{mock::*, Authorities, Event, OrchestratorParaId, ParaId},
-    frame_support::assert_ok,
+    frame_support::{
+        assert_ok,
+        dispatch::{GetDispatchInfo, UnfilteredDispatchable},
+        inherent::{InherentData, ProvideInherent},
+    },
+    frame_system::RawOrigin,
     sp_runtime::traits::BlakeTwo256,
     test_relay_sproof_builder::{
-        AuthorityAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilderItem,
+        AuthorityAssignmentSproofBuilder, HeaderAs, ParaHeaderSproofBuilder,
+        ParaHeaderSproofBuilderItem,
     },
 };
 
@@ -282,4 +288,74 @@ fn test_set_orchestrator_para_id() {
                 .into(),
             );
         });
+}
+
+#[test]
+fn weights_assigned_to_extrinsics_are_correct() {
+    new_test_ext().execute_with(|| {
+        assert_eq!(
+            crate::Call::<Test>::set_authorities {
+                authorities: vec![]
+            }
+            .get_dispatch_info()
+            .weight,
+            <() as crate::weights::WeightInfo>::set_authorities(0u32)
+        );
+
+        assert_eq!(
+            crate::Call::<Test>::set_orchestrator_para_id {
+                new_para_id: 1u32.into()
+            }
+            .get_dispatch_info()
+            .weight,
+            <() as crate::weights::WeightInfo>::set_orchestrator_para_id()
+        );
+
+        let mut assignment = AuthorityAssignmentSproofBuilder::<u64>::default();
+        assignment
+            .authority_assignment
+            .container_chains
+            .insert(ParachainId::get(), vec![10u64, 11u64]);
+
+        let (orchestrator_chain_root, orchestrator_chain_state) =
+            assignment.into_state_root_and_proof();
+
+        let mut sproof_builder = ParaHeaderSproofBuilder::default();
+
+        let mut s = ParaHeaderSproofBuilderItem::default();
+        s.para_id = OrchestratorParachainId::get();
+        s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+            parent_hash: Default::default(),
+            number: Default::default(),
+            state_root: orchestrator_chain_root,
+            extrinsics_root: Default::default(),
+            digest: sp_runtime::generic::Digest { logs: vec![] },
+        });
+        sproof_builder.items.push(s);
+
+        let (relay_root, relay_chain_state) = sproof_builder.into_state_root_and_proof();
+        frame_support::storage::unhashed::put(MOCK_RELAY_ROOT_KEY, &relay_root);
+
+        let mut inherent_data = InherentData::default();
+        let system_inherent_data =
+            ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData {
+                relay_chain_state,
+                orchestrator_chain_state: orchestrator_chain_state.clone(),
+            };
+        inherent_data
+            .put_data(
+                ccp_authorities_noting_inherent::INHERENT_IDENTIFIER,
+                &system_inherent_data,
+            )
+            .expect("failed to put VFP inherent");
+        let inherent_weight = AuthoritiesNoting::create_inherent(&inherent_data)
+            .expect("got an inherent")
+            .dispatch_bypass_filter(RawOrigin::None.into())
+            .expect("dispatch succeeded");
+
+        assert_eq!(
+            inherent_weight.actual_weight.unwrap(),
+            <() as crate::weights::WeightInfo>::set_latest_authorities_data()
+        );
+    });
 }
