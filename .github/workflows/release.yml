@@ -20,6 +20,8 @@ jobs:
       - name: Display variables
         run: |
           echo polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
+      - name: Debug
+        run: echo '${{ toJSON(github) }}'
 
   check-copyright:
     runs-on: ubuntu-latest
