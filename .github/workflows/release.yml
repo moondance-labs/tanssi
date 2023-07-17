@@ -1,25 +1,58 @@
 name: CI
 
-on: ["pull_request"]
+on: 
+  pull_request:
+  push:
+    branches:
+      - master
+      - perm-*
 
 jobs:
   set-tags:
     runs-on: ubuntu-latest
     outputs:
-      polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
+      image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
+      sha: ${{ steps.get-sha.outputs.sha }}
+      sha8: ${{ steps.get-sha.outputs.sha8 }}
     steps:
+      - name: Check git ref
+        id: check-git-ref
+        # if PR
+        # else if manual PR
+        # else (push)
+        run: |
+          if [[ -n "${{ github.event.pull_request.head.sha }}" ]]; then
+            echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
+            echo "git_ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+          elif [[ -n "${{ github.event.inputs.pull_request }}" ]]; then
+            echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
+            echo "git_ref=refs/pull/${{ github.event.inputs.pull_request }}/head" >> $GITHUB_OUTPUT
+          else
+            echo "git_branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
+            echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
+          fi
       - name: Checkout
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.inputs.sha }}
-      - name: Get polkadot release tag
-        id: get-polkadot-release-tag
+      - name: Get Sha
+        id: get-sha
         run: |
-          branch=$(egrep -o '/polkadot.*#([^\"]*)' Cargo.lock | head -1 | sed 's/.*release-//#')
-          echo "polkadot_release=$(echo $branch | sed 's/#.*//' | sed 's/\/polkadot?branch=tanssi-polkadot-//')" >> $GITHUB_OUTPUT
+          echo "sha=$(git log -1 --format='%H')" >> $GITHUB_OUTPUT
+          echo "sha8=$(git log -1 --format='%H' | cut -c1-8)" >> $GITHUB_OUTPUT
+
+      - name: Check existing docker image
+        id: check-docker-image
+        run: |
+          TAG=sha-${{ steps.get-sha.outputs.sha8 }}
+          echo "image_exists=$(docker image inspect moondancelabs/tanssi:$TAG > /dev/null && echo "true" || echo "false")" >> $GITHUB_OUTPUT
+
       - name: Display variables
         run: |
-          echo polkadot_release: ${{ steps.get-polkadot-release-tag.outputs.polkadot_release }}
+          echo sha: ${{ steps.get-sha.outputs.sha }}
+          echo sha8: ${{ steps.get-sha.outputs.sha8 }}
+          echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
+      
       - name: Debug
         run: echo '${{ toJSON(github) }}'
 
@@ -42,6 +75,18 @@ jobs:
           fi
 
   ####### Building and Testing binaries #######
+  cargo-clippy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Rust toolchain
+        run: rustup show
+
+      - name: Clippy
+        run: SKIP_WASM_BUILD=1 env -u RUSTFLAGS cargo clippy --features runtime-benchmarks
+
   build:
     runs-on: self-hosted
     env:
@@ -54,12 +99,6 @@ jobs:
 
       - name: Setup Rust toolchain
         run: rustup show
-
-      - name: Install nightly
-        run: rustup install nightly-2022-11-14
-      
-      - name: Add wasm32-unknown-unknown to nightly
-        run: rustup target add wasm32-unknown-unknown --toolchain nightly-2022-11-14
 
       - name: Formatter
         run: cargo fmt --all --check
@@ -78,7 +117,7 @@ jobs:
           mkdir -p runtimes
           cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.wasm runtimes/;
           cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/orchestrator-runtime/orchestrator_runtime.compact.compressed.wasm runtimes/;
+          cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
 
       - name: Upload runtimes
         uses: actions/upload-artifact@v3.1.2
@@ -167,8 +206,42 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm moonwall test dev_frontier_template
 
-  zombienet-tests:
+  typescript-dancebox-specs:
     runs-on: ubuntu-latest
+    needs: ["build"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.sha }}
+        
+      - name: Pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7
+        
+      - name: Node  
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18.x
+          cache: "pnpm"
+          cache-dependency-path: test/pnpm-lock.yaml
+
+      - name: "Download binaries"
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: binaries
+          path: target/release
+      
+      - name: "Install and run upgrade test"
+        run: |
+          chmod uog+x target/release/tanssi-node
+          cd test
+          pnpm install --frozen-lockfile
+          pnpm moonwall test dev_dancebox_specs
+
+  zombienet-tests:
+    runs-on: self-hosted
     needs: ["set-tags", "build"]
     steps:
       - name: Checkout
@@ -192,36 +265,20 @@ jobs:
         uses: actions/download-artifact@v3.0.2
         with:
           name: binaries
-          path: test/tmp
-
-      
-      - name: Retrieve polkadot binary from docker
-        run: |
-          POLKADOT_RELEASE=${{ needs.set-tags.outputs.polkadot_release }}
-          DOCKER_TAG="parity/polkadot:$POLKADOT_RELEASE"
-          echo $DOCKER_TAG
-          echo $POLKADOT_RELEASE
-          docker rm -f dummy 2> /dev/null | true
-          docker create -ti --name dummy $DOCKER_TAG bash
-          docker cp dummy:/usr/bin/polkadot test/tmp/polkadot
-          docker rm -f dummy
+          path: target/release
       
       - name: "Run zombie test"
         run: |
+          chmod uog+x target/release/tanssi-node
+          chmod uog+x target/release/container-chain-template-simple-node
+          chmod uog+x target/release/container-chain-template-frontier-node
+
           cd test
           pnpm install --frozen-lockfile
 
-          chmod uog+x tmp/tanssi-node
-          chmod uog+x tmp/container-chain-template-simple-node
-          chmod uog+x tmp/container-chain-template-frontier-node
-          chmod uog+x tmp/polkadot
-
-          ## Generate specs
-          npm run build-spec-ci
-
           ## Run tests
 
-          pnpm moonwall test zombie_tanssi_ci
+          pnpm moonwall test zombie_tanssi
 
       - name: "Gather zombie logs"
         if: failure()
@@ -238,3 +295,57 @@ jobs:
         with:
           name: logs
           path: logs
+
+  docker-tanssi:
+    runs-on: ubuntu-latest
+    needs: ["set-tags", "build"]
+    strategy:
+      matrix:
+        image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+    if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ needs.set-tags.outputs.git_ref }}
+      - uses: actions/download-artifact@v3.0.2
+        with:
+          name: binaries
+          path: build
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=moondancelabs/${{matrix.image}}
+          TAGS="${DOCKER_IMAGE}:sha-${{ needs.set-tags.outputs.sha8 }}"
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2.1.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2.5.0
+        with:
+          version: latest
+          driver-opts: |
+            image=moby/buildkit:master
+      - name: Login to DockerHub
+        uses: docker/login-action@v2.2.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/${{matrix.image}}.Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.prep.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=${{ github.event.repository.name }}
+            org.opencontainers.image.description=${{ github.event.repository.description }}
+            org.opencontainers.image.url=${{ github.event.repository.html_url }}
+            org.opencontainers.image.source=${{ github.event.repository.clone_url }}
+            org.opencontainers.image.created=${{ steps.prep.outputs.created }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}

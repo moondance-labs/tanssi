@@ -22,43 +22,42 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use {
-    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::ParaId,
-    frame_support::weights::constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-    nimbus_primitives::NimbusId,
-    smallvec::smallvec,
-    sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, OpaqueMetadata},
-    sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
-        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
-        transaction_validity::{TransactionSource, TransactionValidity},
-        ApplyExtrinsicResult, MultiSignature,
-    },
-};
-
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-use {sp_std::prelude::*, sp_version::RuntimeVersion};
+
+#[cfg(any(feature = "std", test))]
+pub use sp_runtime::BuildStorage;
 
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
+    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
         traits::{ConstU32, ConstU64, Everything},
         weights::{
-            constants::WEIGHT_REF_TIME_PER_SECOND, Weight, WeightToFeeCoefficient,
-            WeightToFeeCoefficients, WeightToFeePolynomial,
+            constants::{
+                BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
+                WEIGHT_REF_TIME_PER_SECOND,
+            },
+            Weight, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
         },
     },
     frame_system::limits::{BlockLength, BlockWeights},
+    nimbus_primitives::NimbusId,
+    smallvec::smallvec,
+    sp_api::impl_runtime_apis,
+    sp_core::OpaqueMetadata,
+    sp_runtime::{
+        create_runtime_str, generic, impl_opaque_keys,
+        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
+        transaction_validity::{TransactionSource, TransactionValidity},
+        ApplyExtrinsicResult, MultiSignature,
+    },
+    sp_std::prelude::*,
+    sp_version::RuntimeVersion,
 };
-
-#[cfg(any(feature = "std", test))]
-pub use sp_runtime::BuildStorage;
 
 // Polkadot imports
 use polkadot_runtime_common::BlockHashCount;
@@ -171,9 +170,7 @@ pub mod opaque {
 }
 
 impl_opaque_keys! {
-    pub struct SessionKeys {
-        pub aura: Aura,
-    }
+    pub struct SessionKeys { }
 }
 
 #[sp_version::runtime_version]
@@ -321,14 +318,12 @@ impl frame_system::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = Aura;
+    type OnTimestampSet = tp_consensus::OnTimestampSet<
+        <Self as pallet_author_inherent::Config>::SlotBeacon,
+        ConstU64<{ SLOT_DURATION }>,
+    >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = ();
-}
-
-impl pallet_authorship::Config for Runtime {
-    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-    type EventHandler = ();
+    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -344,9 +339,13 @@ impl pallet_balances::Config for Runtime {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
+    type FreezeIdentifier = ();
+    type MaxFreezes = ();
+    type HoldIdentifier = ();
+    type MaxHolds = ();
+    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -368,44 +367,38 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 
 impl parachain_info::Config for Runtime {}
 
-impl cumulus_pallet_aura_ext::Config for Runtime {}
-
 parameter_types! {
     pub const Period: u32 = 6 * HOURS;
     pub const Offset: u32 = 0;
 }
 
-impl pallet_session::Config for Runtime {
+impl pallet_sudo::Config for Runtime {
+    type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type ValidatorId = <Self as frame_system::Config>::AccountId;
-    // we don't have stash and controller, thus we don't need the convert as well.
-    type ValidatorIdOf = ();
-    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-    type SessionManager = ();
-    // Essentially just Aura, but let's be pedantic.
-    type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
-    type Keys = SessionKeys;
-    type WeightInfo = ();
+    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_aura::Config for Runtime {
-    type AuthorityId = NimbusId;
-    type DisabledValidators = ();
-    type MaxAuthorities = ConstU32<100_000>;
-}
-
-parameter_types! {
-    pub Orchestrator: ParaId = 1000u32.into();
+impl pallet_utility::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type PalletsOrigin = OriginCaller;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_cc_authorities_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type AuthorityId = NimbusId;
-    type WeightInfo = ();
+    type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_author_inherent::Config for Runtime {
+    type AuthorId = NimbusId;
+    type AccountLookup = tp_consensus::NimbusLookUp;
+    type CanAuthor = pallet_cc_authorities_noting::CanAuthor<Runtime>;
+    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -420,33 +413,20 @@ construct_runtime!(
         ParachainSystem: cumulus_pallet_parachain_system = 1,
         Timestamp: pallet_timestamp = 2,
         ParachainInfo: parachain_info = 3,
+        Sudo: pallet_sudo = 4,
+        Utility: pallet_utility = 5,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
 
-        // Collator support. The order of these 4 are important and shall not change.
-        Authorship: pallet_authorship = 30,
-        Session: pallet_session = 32,
-        Aura: pallet_aura = 33,
-        AuraExt: cumulus_pallet_aura_ext = 34,
-
-        // ContainerChain
+        // ContainerChain Author Verification
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
+        AuthorInherent: pallet_author_inherent = 51,
 
     }
 );
 
 impl_runtime_apis! {
-    impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
-        fn slot_duration() -> sp_consensus_aura::SlotDuration {
-            sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
-        }
-
-        fn authorities() -> Vec<NimbusId> {
-            Aura::authorities().into_inner()
-        }
-    }
-
     impl sp_api::Core<Block> for Runtime {
         fn version() -> RuntimeVersion {
             VERSION
@@ -464,6 +444,14 @@ impl_runtime_apis! {
     impl sp_api::Metadata<Block> for Runtime {
         fn metadata() -> OpaqueMetadata {
             OpaqueMetadata::new(Runtime::metadata().into())
+        }
+
+        fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
+            Runtime::metadata_at_version(version)
+        }
+
+        fn metadata_versions() -> Vec<u32> {
+            Runtime::metadata_versions()
         }
     }
 
@@ -511,7 +499,7 @@ impl_runtime_apis! {
 
         fn decode_session_keys(
             encoded: Vec<u8>,
-        ) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
+        ) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
             SessionKeys::decode_into_raw_public_keys(&encoded)
         }
     }
@@ -553,7 +541,7 @@ impl_runtime_apis! {
 
             let storage_info = AllPalletsWithSystem::storage_info();
 
-            return (list, storage_info);
+            (list, storage_info)
         }
 
         fn dispatch_benchmark(

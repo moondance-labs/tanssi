@@ -21,7 +21,7 @@ use {
 };
 
 fn assigned_collators_at_session(session_index: u32) -> Option<BTreeMap<String, u32>> {
-    let assigned_collators = CollatorContainerChain::<Test>::get(&session_index)?;
+    let assigned_collators = CollatorContainerChain::<Test>::get(session_index)?;
 
     let mut h = BTreeMap::new();
 

@@ -8,12 +8,21 @@ version = "0.1.0"
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
 [dependencies]
-cumulus-primitives-core = { workspace = true, default-features = false }
-parity-scale-codec = { workspace = true, default-features = false }
-scale-info = { workspace = true, default-features = false }
-sp-api = { workspace = true, default-features = false }
-sp-std = { workspace = true, default-features = false }
+cumulus-primitives-core = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true }
+
+sp-consensus-aura = { workspace = true }
+sp-runtime = { workspace = true }
+
+sp-api = { workspace = true }
+sp-std = { workspace = true }
+
+# Nimbus
+nimbus-primitives = { workspace = true }
 
 [features]
 default = [ "std" ]
-std = [ "cumulus-primitives-core/std", "parity-scale-codec/std", "sp-api/std", "sp-std/std" ]
+std = [ "cumulus-primitives-core/std", "frame-support/std", "frame-system/std", "nimbus-primitives/std", "parity-scale-codec/std", "sp-api/std", "sp-consensus-aura/std", "sp-runtime/std", "sp-std/std" ]

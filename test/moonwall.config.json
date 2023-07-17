@@ -1,11 +1,12 @@
 {
-  "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/cli/config_schema.json",
+  "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/types/config_schema.json",
   "label": "MasterConfig 🌔",
   "defaultTestTimeout": 30000,
+  "scriptsDir": "scripts/",
   "environments": [
     {
       "name": "dev_tanssi",
-      "testFileDir": ["suites/dev"],
+      "testFileDir": ["suites/dev-tanssi", "suites/common"],
       "multiThreads": true,
       "html": false,
       "foundation": {
@@ -17,16 +18,44 @@
             "options": [
                 "--dev",
                 "--sealing=manual"
-            ]
+            ],
+            "disableDefaultEthProviders": true,
+            "newRpcBehaviour": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "dev_dancebox_specs",
+      "testFileDir": ["suites/dancebox-specs"],
+      "multiThreads": true,
+      "html": false,
+      "foundation": {
+        "type": "dev",
+        "launchSpec": [
+          {
+            "name": "tanssi",
+            "binPath": "../target/release/tanssi-node",
+            "options": [
+                "--chain=dancebox-local",
+                "--sealing=manual",
+                "--collator",
+                "--dev-service",
+                "--tmp"
+            ],
+            "disableDefaultEthProviders": true,
+            "newRpcBehaviour": true
           }
         ]
       }
     },
     {
       "name": "dev_frontier_template",
-      "testFileDir": ["suites/dev-frontier-template"],
+      "testFileDir": ["suites/dev-frontier-template", "suites/common"],
+      "runScripts": ["pre-build-contracts.ts"],
       "multiThreads": true,
       "html": false,
+      "contracts": "helpers/",
       "foundation": {
         "type": "dev",
         "launchSpec": [
@@ -36,56 +65,16 @@
             "options": [
                 "--dev",
                 "--sealing=manual"
-            ]
+            ],
+            "newRpcBehaviour": true
           }
         ]
       }
     },
     {
-      "name": "zombie_tanssi_ci",
-      "testFileDir": ["suites/para"],
-      "foundation": {
-        "type": "zombie",
-        "zombieSpec": {
-          "configPath": "./configs/zombieTanssiCI.json"
-        }
-      },
-      "connections": [
-        {
-          "name": "Relay",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9947"]
-        },
-        {
-          "name": "Tanssi",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9948"]
-        },
-        {
-          "name": "Container2000",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9949"]
-        },
-        {
-          "name": "Container2001",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        },
-        {
-          "name": "ethers",
-          "type": "ethers",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        },
-        {
-          "name": "w3",
-          "type": "web3",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        }
-      ]
-    },
-    {
       "name": "zombie_tanssi",
       "testFileDir": ["suites/para"],
+      "runScripts": ["build-spec.sh", "download-polkadot.sh"],
       "foundation": {
         "type": "zombie",
         "zombieSpec": {

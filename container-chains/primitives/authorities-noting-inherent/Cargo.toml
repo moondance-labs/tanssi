@@ -5,7 +5,6 @@ description = "authorities-noting-inherent primitives"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
-
 [dependencies]
 async-trait = { workspace = true, optional = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
@@ -25,10 +24,10 @@ sp-core = { workspace = true }
 sp-inherents = { workspace = true }
 sp-io = { workspace = true }
 sp-runtime = { workspace = true, optional = true }
+sp-std = { workspace = true }
 sp-trie = { workspace = true }
 
 sp-state-machine = { workspace = true, optional = true }
-
 
 nimbus-primitives = { workspace = true, optional = true }
 

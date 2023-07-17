@@ -273,7 +273,7 @@ pub mod pallet {
     impl<T: Config> GetContainerChainAuthor<T::AccountId> for Pallet<T> {
         fn author_for_slot(slot: Slot, para_id: ParaId) -> Option<T::AccountId> {
             let assigned_collators = Pallet::<T>::collator_container_chain();
-            let collators = assigned_collators.container_chains.get(&para_id.into())?;
+            let collators = assigned_collators.container_chains.get(&para_id)?;
             if collators.is_empty() {
                 // Avoid division by zero below
                 return None;

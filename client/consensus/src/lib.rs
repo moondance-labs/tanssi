@@ -43,7 +43,7 @@ pub use {
     sp_application_crypto::AppPublic,
     sp_consensus::Error as ConsensusError,
     sp_core::crypto::{ByteArray, Public},
-    sp_keystore::{SyncCryptoStore, SyncCryptoStorePtr},
+    sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
     std::hash::Hash,
     tp_consensus::TanssiAuthorityAssignmentApi,
@@ -79,7 +79,7 @@ pub(crate) fn slot_author<P: Pair>(
 pub fn authorities<B, C, P>(
     client: &C,
     parent_hash: &B::Hash,
-    keystore: SyncCryptoStorePtr,
+    keystore: KeystorePtr,
 ) -> Option<Vec<AuthorityId<P>>>
 where
     P: Pair + Send + Sync,
@@ -93,9 +93,9 @@ where
     let runtime_api = client.runtime_api();
 
     let (_first_eligibile_key, para_id) =
-        first_eligible_key::<B, C, P>(client.clone(), parent_hash, keystore.clone())?;
+        first_eligible_key::<B, C, P>(client, parent_hash, keystore.clone())?;
     let authorities = runtime_api
-        .para_id_authorities(parent_hash.clone(), para_id)
+        .para_id_authorities(*parent_hash, para_id)
         .ok()?;
     log::info!(
         "Authorities found for para {:?} are {:?}",
@@ -114,7 +114,7 @@ use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
 pub fn first_eligible_key<B: BlockT, C, P>(
     client: &C,
     parent_hash: &B::Hash,
-    keystore: SyncCryptoStorePtr,
+    keystore: KeystorePtr,
 ) -> Option<(AuthorityId<P>, ParaId)>
 where
     C: ProvideRuntimeApi<B>,
@@ -125,7 +125,7 @@ where
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
 {
     // Get all the available keys
-    let available_keys = SyncCryptoStore::keys(&*keystore, NIMBUS_KEY_ID).ok()?;
+    let available_keys = Keystore::keys(&*keystore, NIMBUS_KEY_ID).ok()?;
 
     // Print a more helpful message than "not eligible" when there are no keys at all.
     if available_keys.is_empty() {
@@ -142,11 +142,11 @@ where
     // If we are skipping prediction, then we author with the first key we find.
     // prediction skipping only really makes sense when there is a single key in the keystore.
     available_keys.into_iter().find_map(|type_public_pair| {
-        if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair.1) {
+        if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
             // If we dont find any parachain that we are assigned to, return none
 
             if let Ok(Some(para_id)) =
-                runtime_api.check_para_id_assignment(parent_hash.clone(), nimbus_id.clone().into())
+                runtime_api.check_para_id_assignment(*parent_hash, nimbus_id.clone().into())
             {
                 log::debug!("Para id found for assignment {:?}", para_id);
 

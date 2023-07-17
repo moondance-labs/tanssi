@@ -22,7 +22,8 @@ use {
         inherent::{InherentData, ProvideInherent},
         parameter_types,
         traits::{
-            ConstU32, ConstU64, Everything, OnFinalize, OnInitialize, UnfilteredDispatchable,
+            ConstU32, ConstU64, Everything, GenesisBuild, OnFinalize, OnInitialize,
+            UnfilteredDispatchable,
         },
     },
     frame_system::RawOrigin,
@@ -86,7 +87,7 @@ parameter_types! {
     pub const OrchestratorParachainId: ParaId = ParaId::new(1000);
 }
 
-const MOCK_RELAY_ROOT_KEY: &'static [u8] = b"MOCK_RELAY_ROOT_KEY";
+pub(crate) const MOCK_RELAY_ROOT_KEY: &[u8] = b"MOCK_RELAY_ROOT_KEY";
 
 pub struct MockRelayStateProvider;
 
@@ -111,7 +112,6 @@ impl RelaychainStateProvider for MockRelayStateProvider {
 impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type SelfParaId = ParachainId;
-    type OrchestratorParaId = OrchestratorParachainId;
     type RelayChainStateProvider = MockRelayStateProvider;
     type AuthorityId = AccountId;
     type WeightInfo = ();
@@ -138,10 +138,19 @@ impl sp_core::traits::ReadRuntimeVersion for ReadRuntimeVersion {
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::default()
+    let mut t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
-        .unwrap()
-        .into()
+        .unwrap();
+
+    GenesisBuild::<Test>::assimilate_storage(
+        &authorities_noting_pallet::GenesisConfig {
+            orchestrator_para_id: 1000u32.into(),
+        },
+        &mut t,
+    )
+    .expect("failed assimilating strorage for 'authorities_noting_pallet'");
+
+    t.into()
 }
 
 fn wasm_ext() -> sp_io::TestExternalities {
@@ -224,7 +233,7 @@ where {
             {
                 // begin initialization
                 System::reset_events();
-                System::initialize(&n, &Default::default(), &Default::default());
+                System::initialize(n, &Default::default(), &Default::default());
 
                 // now mess with the storage the way validate_block does
                 let mut sproof_builder = ParaHeaderSproofBuilder::default();

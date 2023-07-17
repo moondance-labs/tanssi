@@ -22,7 +22,7 @@ url = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true }
-container-chain-template-frontier-runtime = { path = "../runtime", default-features = false, features = [ "std" ] }
+container-chain-template-frontier-runtime = { workspace = true, features = [ "std" ] }
 tc-consensus = { workspace = true }
 
 # Nimbus
@@ -90,15 +90,14 @@ cumulus-relay-chain-interface = { workspace = true }
 # Frontier
 fc-cli = { workspace = true }
 fc-consensus = { workspace = true }
-fc-db = { workspace = true }
-fc-mapping-sync = { workspace = true }
+fc-db = { workspace = true, features = [ "sql" ] }
+fc-mapping-sync = { workspace = true, features = [ "sql" ] }
 fc-rpc = { workspace = true }
 fc-rpc-core = { workspace = true }
 fc-storage = { workspace = true }
 fp-evm = { workspace = true }
 fp-rpc = { workspace = true }
 pallet-ethereum = { workspace = true }
-
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 

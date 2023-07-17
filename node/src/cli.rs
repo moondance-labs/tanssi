@@ -18,12 +18,15 @@ use {
     crate::{chain_spec::RawGenesisConfig, service::Sealing},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    sc_network::config::MultiaddrWithPeerId,
+    sp_runtime::traits::Get,
     std::{collections::BTreeMap, path::PathBuf},
     tp_container_chain_genesis_data::json::properties_to_map,
 };
 
 /// Sub-commands supported by the collator.
 #[derive(Debug, clap::Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
     /// Build a chain specification.
     BuildSpec(BuildSpecCmd),
@@ -64,6 +67,10 @@ pub enum Subcommand {
     /// Errors since the binary was not build with `--features try-runtime`.
     #[cfg(not(feature = "try-runtime"))]
     TryRuntime,
+
+    /// Key management cli utilities
+    #[command(subcommand)]
+    Key(KeyCmd),
 }
 
 /// The `build-spec` command used to build a specification.
@@ -154,6 +161,21 @@ impl std::ops::Deref for RunCmd {
     }
 }
 
+#[derive(Debug, clap::Subcommand)]
+pub enum KeyCmd {
+    #[command(flatten)]
+    BaseCli(sc_cli::KeySubcommand),
+}
+
+impl KeyCmd {
+    /// run the key subcommands
+    pub fn run<C: sc_cli::SubstrateCli>(&self, cli: &C) -> Result<(), sc_cli::Error> {
+        match self {
+            KeyCmd::BaseCli(cmd) => cmd.run(cli),
+        }
+    }
+}
+
 #[derive(Debug, clap::Parser)]
 #[command(
     propagate_version = true,
@@ -221,7 +243,7 @@ pub struct RelayChainCli {
     pub chain_id: Option<String>,
 
     /// The base path that should be used by the relay chain.
-    pub base_path: Option<PathBuf>,
+    pub base_path: PathBuf,
 }
 
 impl RelayChainCli {
@@ -232,10 +254,8 @@ impl RelayChainCli {
     ) -> Self {
         let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
         let chain_id = extension.map(|e| e.relay_chain.clone());
-        let base_path = para_config
-            .base_path
-            .as_ref()
-            .map(|x| x.path().join("polkadot"));
+        let base_path = para_config.base_path.path().join("polkadot");
+
         Self {
             base_path,
             chain_id,
@@ -269,7 +289,7 @@ pub struct ContainerChainCli {
     pub base: ContainerChainRunCmd,
 
     /// The base path that should be used by the container chain.
-    pub base_path: Option<PathBuf>,
+    pub base_path: PathBuf,
 
     /// The ChainSpecs that this struct can initialize. This starts empty and gets filled
     /// by calling preload_chain_spec_file.
@@ -292,10 +312,8 @@ impl ContainerChainCli {
         para_config: &sc_service::Configuration,
         container_chain_args: impl Iterator<Item = &'a String>,
     ) -> Self {
-        let base_path = para_config
-            .base_path
-            .as_ref()
-            .map(|x| x.path().join("containers"));
+        let base_path = para_config.base_path.path().join("containers");
+
         Self {
             base_path,
             base: clap::Parser::parse_from(container_chain_args),
@@ -303,22 +321,30 @@ impl ContainerChainCli {
         }
     }
 
-    pub fn chain_spec_from_genesis_data(
+    pub fn chain_spec_from_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
         para_id: u32,
-        genesis_data: ContainerChainGenesisData,
+        genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
+        boot_nodes: Vec<String>,
     ) -> Result<crate::chain_spec::RawChainSpec, String> {
-        let name = String::from_utf8(genesis_data.name).map_err(|_e| format!("Invalid name"))?;
-        let id: String = String::from_utf8(genesis_data.id).map_err(|_e| format!("Invalid id"))?;
+        let name = String::from_utf8(genesis_data.name).map_err(|_e| "Invalid name".to_string())?;
+        let id: String =
+            String::from_utf8(genesis_data.id).map_err(|_e| "Invalid id".to_string())?;
         let storage_raw: BTreeMap<_, _> =
             genesis_data.storage.into_iter().map(|x| x.into()).collect();
-        let boot_nodes = vec![];
+        let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
+            .into_iter()
+            .map(|x| {
+                x.parse::<MultiaddrWithPeerId>()
+                    .map_err(|e| format!("{}", e))
+            })
+            .collect::<Result<_, _>>()?;
         let telemetry_endpoints = None;
         let protocol_id = Some(format!("container-chain-{}", para_id));
         let fork_id = genesis_data
             .fork_id
-            .map(|fork_id| String::from_utf8(fork_id).map_err(|_e| format!("Invalid fork_id")))
+            .map(|fork_id| String::from_utf8(fork_id).map_err(|_e| "Invalid fork_id".to_string()))
             .transpose()?;
         let properties = Some(
             properties_to_map(&genesis_data.properties)
@@ -348,15 +374,21 @@ impl ContainerChainCli {
         Ok(chain_spec)
     }
 
-    pub fn preload_chain_spec_from_genesis_data(
+    pub fn preload_chain_spec_from_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
         &mut self,
         para_id: u32,
-        genesis_data: ContainerChainGenesisData,
+        genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
+        boot_nodes: Vec<String>,
     ) -> Result<(), String> {
-        let chain_spec =
-            Self::chain_spec_from_genesis_data(para_id, genesis_data, chain_type, relay_chain)?;
+        let chain_spec = Self::chain_spec_from_genesis_data(
+            para_id,
+            genesis_data,
+            chain_type,
+            relay_chain,
+            boot_nodes,
+        )?;
         self.preloaded_chain_spec = Some(Box::new(chain_spec));
 
         Ok(())

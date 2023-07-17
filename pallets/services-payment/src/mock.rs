@@ -102,6 +102,10 @@ impl pallet_balances::Config for Test {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type FreezeIdentifier = ();
+    type MaxFreezes = ();
+    type HoldIdentifier = ();
+    type MaxHolds = ();
     type WeightInfo = ();
 }
 
@@ -128,7 +132,7 @@ impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
         use frame_support::traits::tokens::imbalance::Imbalance;
 
         let result = Balances::withdraw(
-            &*payer,
+            payer,
             fee,
             WithdrawReasons::FEE,
             ExistenceRequirement::AllowDeath,

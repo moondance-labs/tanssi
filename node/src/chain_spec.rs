@@ -16,16 +16,14 @@
 
 use {
     cumulus_primitives_core::ParaId,
+    dancebox_runtime::{AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT},
     nimbus_primitives::NimbusId,
-    orchestrator_runtime::{
-        AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
-    },
     pallet_configuration::HostConfiguration,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
-    sp_runtime::traits::{IdentifyAccount, Verify},
+    sp_runtime::traits::{Get, IdentifyAccount, Verify},
     std::collections::BTreeMap,
     tp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
@@ -33,7 +31,7 @@ use {
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec = sc_service::GenericChainSpec<orchestrator_runtime::GenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<dancebox_runtime::GenesisConfig, Extensions>;
 
 /// Specialized `ChainSpec` for container chains that only allows raw genesis format.
 pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfig, Extensions>;
@@ -119,11 +117,11 @@ where
 /// Generate the session keys from individual elements.
 ///
 /// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(keys: NimbusId) -> orchestrator_runtime::SessionKeys {
-    orchestrator_runtime::SessionKeys { aura: keys.clone() }
+pub fn template_session_keys(keys: NimbusId) -> dancebox_runtime::SessionKeys {
+    dancebox_runtime::SessionKeys { nimbus: keys }
 }
 
-/// Helper function to turn a list of names into a list of `(AccountId, AuraId)`
+/// Helper function to turn a list of names into a list of `(AccountId, NimbusId)`
 pub fn invulnerables(names: &[&str]) -> Vec<(AccountId, NimbusId)> {
     names
         .iter()
@@ -151,16 +149,16 @@ pub fn development_config(
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "UNIT".into());
+    properties.insert("tokenSymbol".into(), "DANCE".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
     ChainSpec::from_genesis(
         // Name
-        "Development",
+        "Dancebox Development Testnet",
         // ID
-        "dev",
+        "dancebox_dev",
         ChainType::Development,
         move || {
             testnet_genesis(
@@ -194,7 +192,7 @@ pub fn development_config(
                 },
             )
         },
-        Vec::new(),
+        vec![],
         None,
         None,
         None,
@@ -206,23 +204,23 @@ pub fn development_config(
     )
 }
 
-pub fn local_testnet_config(
+pub fn local_dancebox_config(
     para_id: ParaId,
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "UNIT".into());
+    properties.insert("tokenSymbol".into(), "DANCE".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
     ChainSpec::from_genesis(
         // Name
-        "Local Testnet",
+        "Dancebox Local Testnet",
         // ID
-        "local_testnet",
+        "dancebox_local",
         ChainType::Local,
         move || {
             testnet_genesis(
@@ -257,7 +255,7 @@ pub fn local_testnet_config(
             )
         },
         // Bootnodes
-        Vec::new(),
+        vec![],
         // Telemetry
         None,
         // Protocol ID
@@ -282,27 +280,27 @@ fn testnet_genesis(
     container_chains: &[String],
     mock_container_chains: &[ParaId],
     configuration: pallet_configuration::GenesisConfig,
-) -> orchestrator_runtime::GenesisConfig {
-    orchestrator_runtime::GenesisConfig {
-        system: orchestrator_runtime::SystemConfig {
-            code: orchestrator_runtime::WASM_BINARY
+) -> dancebox_runtime::GenesisConfig {
+    dancebox_runtime::GenesisConfig {
+        system: dancebox_runtime::SystemConfig {
+            code: dancebox_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
                 .to_vec(),
         },
-        balances: orchestrator_runtime::BalancesConfig {
+        balances: dancebox_runtime::BalancesConfig {
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
-        parachain_info: orchestrator_runtime::ParachainInfoConfig { parachain_id: id },
-        collator_selection: orchestrator_runtime::CollatorSelectionConfig {
+        parachain_info: dancebox_runtime::ParachainInfoConfig { parachain_id: id },
+        collator_selection: dancebox_runtime::CollatorSelectionConfig {
             invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
             candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
             ..Default::default()
         },
-        session: orchestrator_runtime::SessionConfig {
+        session: dancebox_runtime::SessionConfig {
             keys: invulnerables
                 .into_iter()
                 .map(|(acc, aura)| {
@@ -314,10 +312,6 @@ fn testnet_genesis(
                 })
                 .collect(),
         },
-        // no need to pass anything to aura, in fact it will panic if we do. Session will take care
-        // of this.
-        aura: Default::default(),
-        aura_ext: Default::default(),
         parachain_system: Default::default(),
         configuration,
         registrar: RegistrarConfig {
@@ -334,7 +328,7 @@ fn testnet_genesis(
                 .chain(
                     mock_container_chains
                         .iter()
-                        .map(|x| (*x, mock_container_chain_genesis_data(*x))),
+                        .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
                 )
                 .collect(),
         },
@@ -344,7 +338,9 @@ fn testnet_genesis(
     }
 }
 
-fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
+fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
+    para_id: ParaId,
+) -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     ContainerChainGenesisData {
         storage: vec![],
         name: format!("Container Chain {}", para_id).into(),
@@ -352,5 +348,24 @@ fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisDa
         fork_id: None,
         extensions: vec![],
         properties: Default::default(),
+    }
+}
+
+/// Can be called for a `Configuration` to check if it is a configuration for
+/// the `Tanssi` network.
+pub trait IdentifyVariant {
+    /// Returns `true` if this is a configuration for the `Dancebox` network.
+    fn is_dancebox(&self) -> bool;
+    /// Returns `true` if this is a configuration for a dev network.
+    fn is_dev(&self) -> bool;
+}
+
+impl IdentifyVariant for Box<dyn sc_service::ChainSpec> {
+    fn is_dancebox(&self) -> bool {
+        self.id().starts_with("dancebox")
+    }
+
+    fn is_dev(&self) -> bool {
+        self.chain_type() == sc_chain_spec::ChainType::Development
     }
 }

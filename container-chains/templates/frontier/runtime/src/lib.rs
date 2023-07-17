@@ -34,7 +34,6 @@ use {
     crate::precompiles::FrontierPrecompiles,
     core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::ParaId,
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
     fp_rpc::TransactionStatus,
@@ -44,7 +43,7 @@ use {
         parameter_types,
         traits::{
             ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Everything, FindAuthor,
-            Imbalance, OnUnbalanced,
+            Imbalance, OnFinalize, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -68,10 +67,7 @@ use {
     parity_scale_codec::{Decode, Encode},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{
-        crypto::{ByteArray, KeyTypeId},
-        Get, OpaqueMetadata, H160, H256, U256,
-    },
+    sp_core::{crypto::ByteArray, Get, OpaqueMetadata, H160, H256, U256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -290,9 +286,7 @@ pub mod opaque {
 mod impl_on_charge_evm_transaction;
 
 impl_opaque_keys! {
-    pub struct SessionKeys {
-        pub aura: Aura,
-    }
+    pub struct SessionKeys { }
 }
 
 #[sp_version::runtime_version]
@@ -455,14 +449,12 @@ impl pallet_transaction_payment::Config for Runtime {
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
-    type OnTimestampSet = Aura;
+    type OnTimestampSet = tp_consensus::OnTimestampSet<
+        <Self as pallet_author_inherent::Config>::SlotBeacon,
+        ConstU64<{ SLOT_DURATION }>,
+    >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = ();
-}
-
-impl pallet_authorship::Config for Runtime {
-    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-    type EventHandler = ();
+    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -478,9 +470,13 @@ impl pallet_balances::Config for Runtime {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
+    type FreezeIdentifier = ();
+    type MaxFreezes = ();
+    type HoldIdentifier = ();
+    type MaxHolds = ();
+    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -507,37 +503,25 @@ parameter_types! {
     pub const Offset: u32 = 0;
 }
 
-impl pallet_session::Config for Runtime {
+impl pallet_sudo::Config for Runtime {
+    type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type ValidatorId = <Self as frame_system::Config>::AccountId;
-    // we don't have stash and controller, thus we don't need the convert as well.
-    type ValidatorIdOf = ();
-    type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
-    type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-    type SessionManager = ();
-    // Essentially just Aura, but let's be pedantic.
-    type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
-    type Keys = SessionKeys;
-    type WeightInfo = ();
+    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_aura::Config for Runtime {
-    type AuthorityId = NimbusId;
-    type DisabledValidators = ();
-    type MaxAuthorities = ConstU32<100_000>;
-}
-
-parameter_types! {
-    pub Orchestrator: ParaId = 1000u32.into();
+impl pallet_utility::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type PalletsOrigin = OriginCaller;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_cc_authorities_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OrchestratorParaId = Orchestrator;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type AuthorityId = NimbusId;
-    type WeightInfo = ();
+    type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
 }
 
 const BLOCK_GAS_LIMIT: u64 = 75_000_000;
@@ -551,7 +535,7 @@ impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
         I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
     {
         if let Some(author_index) = F::find_author(digests) {
-            let authority_id = Aura::authorities()[author_index as usize].clone();
+            let authority_id = AuthoritiesNoting::authorities()[author_index as usize].clone();
             return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
         }
         None
@@ -582,7 +566,9 @@ impl pallet_evm::Config for Runtime {
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = OnChargeEVMTransaction<()>;
     type OnCreate = ();
-    type FindAuthor = FindAuthorTruncated<Aura>;
+    type FindAuthor = ();
+    // TODO: update in the future
+    type GasLimitPovSizeRatio = ();
     type Timestamp = Timestamp;
     type WeightInfo = ();
 }
@@ -636,6 +622,16 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_author_inherent::Config for Runtime {
+    type AuthorId = NimbusId;
+    type AccountLookup = tp_consensus::NimbusLookUp;
+    type CanAuthor = pallet_cc_authorities_noting::CanAuthor<Runtime>;
+    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_root_testing::Config for Runtime {}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -648,17 +644,15 @@ construct_runtime!(
         ParachainSystem: cumulus_pallet_parachain_system = 1,
         Timestamp: pallet_timestamp = 2,
         ParachainInfo: parachain_info = 3,
+        Sudo: pallet_sudo = 4,
+        Utility: pallet_utility = 5,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
 
-        // Collator support. The order of these 3 is important and shall not change.
-        Authorship: pallet_authorship = 30,
-        Session: pallet_session = 32,
-        Aura: pallet_aura = 33,
-
         // ContainerChain
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
+        AuthorInherent: pallet_author_inherent = 51,
 
         // Frontier
         Ethereum: pallet_ethereum = 60,
@@ -669,20 +663,11 @@ construct_runtime!(
         HotfixSufficients: pallet_hotfix_sufficients = 65,
         TransactionPayment: pallet_transaction_payment = 66,
 
+        RootTesting: pallet_root_testing = 100,
     }
 );
 
 impl_runtime_apis! {
-    impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
-        fn slot_duration() -> sp_consensus_aura::SlotDuration {
-            sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
-        }
-
-        fn authorities() -> Vec<NimbusId> {
-            Aura::authorities().into_inner()
-        }
-    }
-
     impl sp_api::Core<Block> for Runtime {
         fn version() -> RuntimeVersion {
             VERSION
@@ -700,6 +685,14 @@ impl_runtime_apis! {
     impl sp_api::Metadata<Block> for Runtime {
         fn metadata() -> OpaqueMetadata {
             OpaqueMetadata::new(Runtime::metadata().into())
+        }
+
+        fn metadata_at_version(version: u32) -> Option<OpaqueMetadata> {
+            Runtime::metadata_at_version(version)
+        }
+
+        fn metadata_versions() -> Vec<u32> {
+            Runtime::metadata_versions()
         }
     }
 
@@ -803,7 +796,7 @@ impl_runtime_apis! {
 
         fn decode_session_keys(
             encoded: Vec<u8>,
-        ) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
+        ) -> Option<Vec<(Vec<u8>, sp_core::crypto::KeyTypeId)>> {
             SessionKeys::decode_into_raw_public_keys(&encoded)
         }
     }
@@ -894,6 +887,8 @@ impl_runtime_apis! {
                 access_list.unwrap_or_default(),
                 is_transactional,
                 validate,
+                None,
+                None,
                 <Runtime as pallet_evm::Config>::config(),
             ).map_err(|err| err.error.into())
         }
@@ -911,7 +906,6 @@ impl_runtime_apis! {
         ) -> Result<pallet_evm::CreateInfo, sp_runtime::DispatchError> {
             let is_transactional = false;
             let validate = true;
-            #[allow(clippy::or_fun_call)] // suggestion not helpful here
             <Runtime as pallet_evm::Config>::Runner::create(
                 from,
                 data,
@@ -923,6 +917,8 @@ impl_runtime_apis! {
                 access_list.unwrap_or_default(),
                 is_transactional,
                 validate,
+                None,
+                None,
                 <Runtime as pallet_evm::Config>::config(),
             ).map_err(|err| err.error.into())
         }
@@ -961,10 +957,23 @@ impl_runtime_apis! {
         }
 
         fn elasticity() -> Option<Permill> {
-            None
+            Some(pallet_base_fee::Elasticity::<Runtime>::get())
         }
 
         fn gas_limit_multiplier_support() {}
+
+        fn pending_block(xts: Vec<<Block as sp_api::BlockT>::Extrinsic>) -> (Option<pallet_ethereum::Block>, Option<sp_std::prelude::Vec<TransactionStatus>>) {
+            for ext in xts.into_iter() {
+                let _ = Executive::apply_extrinsic(ext);
+            }
+
+            Ethereum::on_finalize(System::block_number() + 1);
+
+            (
+                pallet_ethereum::CurrentBlock::<Runtime>::get(),
+                pallet_ethereum::CurrentTransactionStatuses::<Runtime>::get()
+            )
+         }
     }
 
     impl fp_rpc::ConvertTransactionRuntimeApi<Block> for Runtime {

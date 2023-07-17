@@ -1,0 +1,184 @@
+[package]
+name = "dancebox-runtime"
+authors = { workspace = true }
+description = "Dancebox runtime"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[dependencies]
+hex-literal = { workspace = true, optional = true }
+log = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive" ] }
+scale-info = { workspace = true, features = [ "derive" ] }
+serde = { workspace = true, optional = true, features = [ "derive" ] }
+smallvec = { workspace = true }
+
+# Own
+pallet-author-noting = { workspace = true }
+pallet-authority-assignment = { workspace = true }
+pallet-authority-mapping = { workspace = true }
+pallet-collator-assignment = { workspace = true }
+pallet-collator-assignment-runtime-api = { workspace = true }
+pallet-configuration = { workspace = true }
+pallet-initializer = { workspace = true }
+pallet-proxy = { workspace = true }
+pallet-registrar = { workspace = true }
+pallet-registrar-runtime-api = { workspace = true }
+tp-core = { workspace = true }
+
+# Nimbus
+nimbus-primitives = { workspace = true }
+pallet-author-inherent = { workspace = true }
+
+# Substrate
+frame-executive = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+frame-system-rpc-runtime-api = { workspace = true }
+pallet-balances = { workspace = true }
+pallet-root-testing = { workspace = true }
+pallet-session = { workspace = true }
+pallet-sudo = { workspace = true }
+pallet-timestamp = { workspace = true }
+pallet-utility = { workspace = true }
+sp-api = { workspace = true }
+sp-application-crypto = { workspace = true }
+sp-block-builder = { workspace = true }
+sp-consensus-aura = { workspace = true }
+sp-core = { workspace = true }
+sp-inherents = { workspace = true }
+sp-offchain = { workspace = true }
+sp-runtime = { workspace = true }
+sp-session = { workspace = true }
+sp-std = { workspace = true }
+sp-transaction-pool = { workspace = true }
+sp-trie = { workspace = true }
+
+sp-version = { workspace = true }
+tp-author-noting-inherent = { workspace = true }
+tp-consensus = { workspace = true }
+tp-traits = { workspace = true }
+
+# Polkadot
+polkadot-parachain = { workspace = true }
+polkadot-runtime-common = { workspace = true }
+
+# Cumulus
+cumulus-pallet-parachain-system = { workspace = true }
+cumulus-pallet-session-benchmarking = { workspace = true }
+cumulus-primitives-core = { workspace = true }
+cumulus-primitives-timestamp = { workspace = true }
+pallet-collator-selection = { workspace = true }
+parachain-info = { workspace = true }
+
+# Benchmarking
+frame-benchmarking = { workspace = true, optional = true }
+frame-system-benchmarking = { workspace = true, optional = true }
+frame-try-runtime = { workspace = true, optional = true }
+
+[dev-dependencies]
+sp-io = { workspace = true }
+test-relay-sproof-builder = { workspace = true }
+[build-dependencies]
+substrate-wasm-builder = { workspace = true }
+
+[features]
+default = [
+	"std",
+]
+std = [
+	"cumulus-pallet-parachain-system/std",
+	"cumulus-primitives-core/std",
+	"cumulus-primitives-timestamp/std",
+	"frame-executive/std",
+	"frame-support/std",
+	"frame-system-rpc-runtime-api/std",
+	"frame-system/std",
+	"frame-try-runtime/std",
+	"log/std",
+	"nimbus-primitives/std",
+	"pallet-author-noting/std",
+	"pallet-authority-assignment/std",
+	"pallet-balances/std",
+	"pallet-collator-assignment-runtime-api/std",
+	"pallet-collator-selection/std",
+	"pallet-configuration/std",
+	"pallet-initializer/std",
+	"pallet-proxy/std",
+	"pallet-registrar-runtime-api/std",
+	"pallet-registrar/std",
+	"pallet-session/std",
+	"pallet-sudo/std",
+	"pallet-timestamp/std",
+	"pallet-utility/std",
+	"parachain-info/std",
+	"parity-scale-codec/std",
+	"polkadot-parachain/std",
+	"polkadot-runtime-common/std",
+	"scale-info/std",
+	"serde",
+	"sp-api/std",
+	"sp-application-crypto/std",
+	"sp-application-crypto/std",
+	"sp-block-builder/std",
+	"sp-consensus-aura/std",
+	"sp-core/std",
+	"sp-inherents/std",
+	"sp-offchain/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	"sp-transaction-pool/std",
+	"sp-version/std",
+	"tp-author-noting-inherent/std",
+	"tp-consensus/std",
+	"tp-traits/std",
+]
+
+runtime-benchmarks = [
+	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
+	"frame-benchmarking",
+	"frame-support/runtime-benchmarks",
+	"frame-system-benchmarking/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"hex-literal",
+	"pallet-author-noting/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	"pallet-collator-assignment/runtime-benchmarks",
+	"pallet-collator-selection/runtime-benchmarks",
+	"pallet-configuration/runtime-benchmarks",
+	"pallet-registrar/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+]
+
+try-runtime = [
+	"cumulus-pallet-parachain-system/try-runtime",
+	"frame-executive/try-runtime",
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+	"frame-try-runtime/try-runtime",
+	"nimbus-primitives/try-runtime",
+	"pallet-author-noting/try-runtime",
+	"pallet-authority-assignment/try-runtime",
+	"pallet-authority-mapping/try-runtime",
+	"pallet-balances/try-runtime",
+	"pallet-collator-assignment/try-runtime",
+	"pallet-collator-selection/try-runtime",
+	"pallet-configuration/try-runtime",
+	"pallet-initializer/try-runtime",
+	"pallet-registrar/try-runtime",
+	"pallet-root-testing/try-runtime",
+	"pallet-session/try-runtime",
+	"pallet-sudo/try-runtime",
+	"pallet-timestamp/try-runtime",
+	"pallet-utility/try-runtime",
+	"parachain-info/try-runtime",
+	"polkadot-runtime-common/try-runtime",
+	"sp-runtime/try-runtime",
+]
+
+fast-runtime = []

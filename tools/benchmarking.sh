@@ -24,6 +24,7 @@ function help {
     echo "EXAMPLES:"
     echo "  ${0}                       " "list all benchmarks and provide a selection to choose from" 
     echo "  ${0} --check               " "list all benchmarks and provide a selection to choose from, runs in 'check' mode (reduced steps and repetitions)" 
+    echo "  ${0} foo \"*\"               " "run all benchmarks for pallet 'foo' (the * must be inside quotes)"
     echo "  ${0} foo bar               " "run a benchmark for pallet 'foo' and benchmark 'bar'" 
     echo "  ${0} foo bar --check       " "run a benchmark for pallet 'foo' and benchmark 'bar' in 'check' mode (reduced steps and repetitions)" 
     echo "  ${0} foo bar --all         " "run a benchmark for all pallets" 

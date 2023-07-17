@@ -22,16 +22,16 @@ use {
     },
     cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
     cumulus_primitives_core::ParaId,
+    dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
-    orchestrator_runtime::Block,
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
     },
     sc_service::config::{BasePath, PrometheusConfig},
-    sp_core::{hexdisplay::HexDisplay, sr25519},
+    sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::{io::Write, net::SocketAddr},
 };
@@ -43,12 +43,12 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
             vec![],
             vec![2000.into(), 2001.into()],
         )),
-        "template-rococo" => Box::new(chain_spec::local_testnet_config(
+        "template-rococo" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
         )),
-        "" | "local" => Box::new(chain_spec::local_testnet_config(
+        "" | "dancebox-local" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
@@ -95,7 +95,7 @@ impl SubstrateCli for Cli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &orchestrator_runtime::VERSION
+        &dancebox_runtime::VERSION
     }
 }
 
@@ -195,7 +195,7 @@ impl SubstrateCli for ContainerChainCli {
     }
 
     fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &orchestrator_runtime::VERSION
+        &dancebox_runtime::VERSION
     }
 }
 
@@ -238,14 +238,14 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.parachain_id {
-                    if cmd.base.shared_params.dev {
+                    if config.chain_spec.is_dev() {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
                         ))
                     } else {
-                        Box::new(chain_spec::local_testnet_config(
+                        Box::new(chain_spec::local_dancebox_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
@@ -318,12 +318,12 @@ pub fn run() -> Result<()> {
             let output_buf = {
                 let block: Block = generate_genesis_block(&*chain_spec, state_version)?;
                 let raw_header = block.header().encode();
-                let output_buf = if params.raw {
+
+                if params.raw {
                     raw_header
                 } else {
                     format!("0x{:?}", HexDisplay::from(&block.header().encode())).into_bytes()
-                };
-                output_buf
+                }
             };
 
             if let Some(output) = &params.output {
@@ -397,7 +397,7 @@ pub fn run() -> Result<()> {
         #[cfg(feature = "try-runtime")]
         Some(Subcommand::TryRuntime(cmd)) => {
             use {
-                orchestrator_runtime::MILLISECS_PER_BLOCK,
+                dancebox_runtime::MILLISECS_PER_BLOCK,
                 sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch},
                 try_runtime_cli::block_building_info::timestamp_with_aura_info,
             };
@@ -434,6 +434,7 @@ pub fn run() -> Result<()> {
         Some(Subcommand::TryRuntime) => Err("Try-runtime was not enabled when building the node. \
 			You can enable it with `--features try-runtime`."
             .into()),
+        Some(Subcommand::Key(cmd)) => Ok(cmd.run(&cli)?),
         None => {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
@@ -461,11 +462,10 @@ pub fn run() -> Result<()> {
 				let relay_chain_id = extension.map(|e| e.relay_chain.clone());
 
 				let dev_service =
-					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
+					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string()) || cli.run.dev_service;
 
 				if dev_service {
-					let author_id = Some(crate::chain_spec::get_account_id_from_seed::<sr25519::Public>("Alice"));
-					return crate::service::new_dev(config, author_id, cli.run.sealing, hwbench, id).map_err(Into::into)
+					return crate::service::new_dev(config, cli.run.sealing, hwbench, id).map_err(Into::into)
 				}
 
 				let parachain_account =
@@ -486,7 +486,7 @@ pub fn run() -> Result<()> {
 				info!("Parachain genesis state: {}", genesis_state);
 				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
 
-				if !collator_options.relay_chain_rpc_urls.is_empty() && cli.relaychain_args().len() > 0 {
+				if !collator_options.relay_chain_rpc_urls.is_empty() && !cli.relaychain_args().is_empty() {
 					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
 				}
 
@@ -525,12 +525,8 @@ impl DefaultConfigurationValues for RelayChainCli {
         30334
     }
 
-    fn rpc_ws_listen_port() -> u16 {
+    fn rpc_listen_port() -> u16 {
         9945
-    }
-
-    fn rpc_http_listen_port() -> u16 {
-        9934
     }
 
     fn prometheus_listen_port() -> u16 {
@@ -559,19 +555,11 @@ impl CliConfiguration<Self> for RelayChainCli {
         Ok(self
             .shared_params()
             .base_path()?
-            .or_else(|| self.base_path.clone().map(Into::into)))
+            .or_else(|| Some(self.base_path.clone().into())))
     }
 
-    fn rpc_http(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-        self.base.base.rpc_http(default_listen_port)
-    }
-
-    fn rpc_ipc(&self) -> Result<Option<String>> {
-        self.base.base.rpc_ipc()
-    }
-
-    fn rpc_ws(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-        self.base.base.rpc_ws(default_listen_port)
+    fn rpc_addr(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
+        self.base.base.rpc_addr(default_listen_port)
     }
 
     fn prometheus_config(
@@ -623,8 +611,8 @@ impl CliConfiguration<Self> for RelayChainCli {
         self.base.base.rpc_methods()
     }
 
-    fn rpc_ws_max_connections(&self) -> Result<Option<usize>> {
-        self.base.base.rpc_ws_max_connections()
+    fn rpc_max_connections(&self) -> Result<u32> {
+        self.base.base.rpc_max_connections()
     }
 
     fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {
@@ -665,19 +653,15 @@ impl CliConfiguration<Self> for RelayChainCli {
 
 impl DefaultConfigurationValues for ContainerChainCli {
     fn p2p_listen_port() -> u16 {
-        17334
+        30335
     }
 
-    fn rpc_ws_listen_port() -> u16 {
-        17945
-    }
-
-    fn rpc_http_listen_port() -> u16 {
-        17934
+    fn rpc_listen_port() -> u16 {
+        9946
     }
 
     fn prometheus_listen_port() -> u16 {
-        17616
+        9617
     }
 }
 
@@ -702,19 +686,11 @@ impl CliConfiguration<Self> for ContainerChainCli {
         Ok(self
             .shared_params()
             .base_path()?
-            .or_else(|| self.base_path.clone().map(Into::into)))
+            .or_else(|| Some(self.base_path.clone().into())))
     }
 
-    fn rpc_http(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-        self.base.base.rpc_http(default_listen_port)
-    }
-
-    fn rpc_ipc(&self) -> Result<Option<String>> {
-        self.base.base.rpc_ipc()
-    }
-
-    fn rpc_ws(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
-        self.base.base.rpc_ws(default_listen_port)
+    fn rpc_addr(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
+        self.base.base.rpc_addr(default_listen_port)
     }
 
     fn prometheus_config(
@@ -763,8 +739,8 @@ impl CliConfiguration<Self> for ContainerChainCli {
         self.base.base.rpc_methods()
     }
 
-    fn rpc_ws_max_connections(&self) -> Result<Option<usize>> {
-        self.base.base.rpc_ws_max_connections()
+    fn rpc_max_connections(&self) -> Result<u32> {
+        self.base.base.rpc_max_connections()
     }
 
     fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {

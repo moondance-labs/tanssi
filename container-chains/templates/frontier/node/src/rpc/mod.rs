@@ -25,7 +25,8 @@ pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 
 use {
     container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
-    fc_rpc::EthTask,
+    fc_rpc::{EthTask, TxPool},
+    fc_rpc_core::TxPoolApiServer,
     fp_rpc::EthereumRuntimeRPCApi,
     futures::StreamExt,
     jsonrpsee::RpcModule,
@@ -70,7 +71,7 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     /// EthFilterApi pool.
     pub filter_pool: Option<FilterPool>,
     /// Frontier Backend.
-    pub frontier_backend: Arc<fc_db::Backend<Block>>,
+    pub frontier_backend: Arc<dyn fc_db::BackendReader<Block> + Send + Sync>,
     /// Backend.
     pub backend: Arc<BE>,
     /// Maximum number of logs in a query.
@@ -160,7 +161,7 @@ where
         Eth::new(
             Arc::clone(&client),
             Arc::clone(&pool),
-            graph.clone(),
+            Arc::clone(&graph),
             convert_transaction,
             Arc::clone(&sync),
             signers,
@@ -176,15 +177,17 @@ where
         .into_rpc(),
     )?;
 
+    let tx_pool = TxPool::new(client.clone(), graph);
     if let Some(filter_pool) = filter_pool {
         io.merge(
             EthFilter::new(
                 client.clone(),
-                frontier_backend.clone(),
+                frontier_backend,
+                tx_pool.clone(),
                 filter_pool,
                 500_usize, // max stored filters
                 max_past_logs,
-                block_data_cache.clone(),
+                block_data_cache,
             )
             .into_rpc(),
         )?;
@@ -193,7 +196,7 @@ where
     io.merge(
         Net::new(
             Arc::clone(&client),
-            network.clone(),
+            network,
             // Whether to format the `peer_count` response as Hex (default) or not.
             true,
         )
@@ -213,13 +216,14 @@ where
         EthPubSub::new(
             pool,
             Arc::clone(&client),
-            sync.clone(),
+            sync,
             subscription_task_executor,
             overrides,
             pubsub_notification_sinks,
         )
         .into_rpc(),
     )?;
+    io.merge(tx_pool.into_rpc())?;
 
     Ok(io)
 }
@@ -228,7 +232,7 @@ pub struct SpawnTasksParams<'a, B: BlockT, C, BE> {
     pub task_manager: &'a TaskManager,
     pub client: Arc<C>,
     pub substrate_backend: Arc<BE>,
-    pub frontier_backend: Arc<fc_db::Backend<B>>,
+    pub frontier_backend: fc_db::Backend<B>,
     pub filter_pool: Option<FilterPool>,
     pub overrides: Arc<OverrideHandle<B>>,
     pub fee_history_limit: u64,
@@ -243,7 +247,7 @@ pub struct SpawnTasksParams<'a, B: BlockT, C, BE> {
     >,
 }
 
-use fc_mapping_sync::{MappingSyncWorker, SyncStrategy};
+use fc_mapping_sync::{kv::MappingSyncWorker, SyncStrategy};
 /// Spawn the tasks that are required to run Moonbeam.
 pub fn spawn_essential_tasks<B, C, BE>(params: SpawnTasksParams<B, C, BE>)
 where
@@ -260,24 +264,47 @@ where
 {
     // Frontier offchain DB task. Essential.
     // Maps emulated ethereum data to substrate native data.
-    params.task_manager.spawn_essential_handle().spawn(
-        "frontier-mapping-sync-worker",
-        Some("frontier"),
-        MappingSyncWorker::new(
-            params.client.import_notification_stream(),
-            Duration::new(6, 0),
-            params.client.clone(),
-            params.substrate_backend.clone(),
-            params.overrides.clone(),
-            params.frontier_backend.clone(),
-            3,
-            0,
-            SyncStrategy::Parachain,
-            params.sync_service.clone(),
-            params.pubsub_notification_sinks.clone(),
-        )
-        .for_each(|()| futures::future::ready(())),
-    );
+    match params.frontier_backend {
+        fc_db::Backend::KeyValue(b) => {
+            params.task_manager.spawn_essential_handle().spawn(
+                "frontier-mapping-sync-worker",
+                Some("frontier"),
+                MappingSyncWorker::new(
+                    params.client.import_notification_stream(),
+                    Duration::new(6, 0),
+                    params.client.clone(),
+                    params.substrate_backend.clone(),
+                    params.overrides.clone(),
+                    Arc::new(b),
+                    3,
+                    0,
+                    SyncStrategy::Parachain,
+                    params.sync_service.clone(),
+                    params.pubsub_notification_sinks.clone(),
+                )
+                .for_each(|()| futures::future::ready(())),
+            );
+        }
+        fc_db::Backend::Sql(b) => {
+            params.task_manager.spawn_essential_handle().spawn_blocking(
+                "frontier-mapping-sync-worker",
+                Some("frontier"),
+                fc_mapping_sync::sql::SyncWorker::run(
+                    params.client.clone(),
+                    params.substrate_backend.clone(),
+                    Arc::new(b),
+                    params.client.import_notification_stream(),
+                    fc_mapping_sync::sql::SyncWorkerConfig {
+                        read_notification_timeout: Duration::from_secs(10),
+                        check_indexed_blocks_interval: Duration::from_secs(60),
+                    },
+                    fc_mapping_sync::SyncStrategy::Parachain,
+                    params.sync_service.clone(),
+                    params.pubsub_notification_sinks.clone(),
+                ),
+            );
+        }
+    }
 
     // Frontier `EthFilterApi` maintenance.
     // Manages the pool of user-created Filters.

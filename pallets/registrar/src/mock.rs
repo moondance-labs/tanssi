@@ -85,6 +85,10 @@ impl pallet_balances::Config for Test {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type FreezeIdentifier = ();
+    type MaxFreezes = ();
+    type HoldIdentifier = ();
+    type MaxHolds = ();
     type WeightInfo = ();
 }
 
@@ -100,12 +104,16 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
 
 parameter_types! {
     pub const DepositAmount: Balance = 100;
+    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin = frame_system::EnsureRoot<u64>;
     type MaxLengthParaIds = ConstU32<1000>;
     type MaxGenesisDataSize = ConstU32<5_000_000>;
+    type MaxBootNodes = ConstU32<10>;
+    type MaxBootNodeUrlLen = ConstU32<200>;
+    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
@@ -133,7 +141,11 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(
-    para_ids: Vec<(ParaId, ContainerChainGenesisData)>,
+    para_ids: Vec<(
+        ParaId,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    )>,
 ) -> sp_io::TestExternalities {
     GenesisConfig {
         system: Default::default(),
@@ -145,7 +157,7 @@ pub fn new_test_ext_with_genesis(
     .into()
 }
 
-pub fn empty_genesis_data() -> ContainerChainGenesisData {
+pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     ContainerChainGenesisData {
         storage: Default::default(),
         name: Default::default(),

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-pub const ENCODED_PROOFS: &'static [(u32, &'static str, &'static [&'static str])] = &[
+pub const ENCODED_PROOFS: &[(u32, &str, &[&str])] = &[
 (0, "03170a2e7597b7b7e3d84c05391d139a62b157e78786d8c082f29dcf4c111314", &[
 ]),
 (1, "b2ab0e893a631ef1bb33b2429566b9352dc55ea24d1f94bf3c5c4b58db017c8b", &[

@@ -18,6 +18,7 @@ smallvec = { workspace = true }
 
 # Local
 pallet-cc-authorities-noting = { workspace = true }
+tp-consensus = { workspace = true }
 
 # Nimbus
 nimbus-primitives = { workspace = true }
@@ -29,12 +30,12 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
-pallet-aura = { workspace = true }
-pallet-authorship = { workspace = true }
-pallet-balances = { workspace = true }
-pallet-session = { workspace = true }
+pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
+pallet-root-testing = { workspace = true }
+pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
+pallet-utility = { workspace = true }
 sp-api = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
@@ -54,7 +55,6 @@ polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
 
 # Cumulus
-cumulus-pallet-aura-ext = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-primitives-core = { workspace = true }
@@ -75,7 +75,6 @@ pallet-evm-precompile-modexp = { workspace = true }
 pallet-evm-precompile-sha3fips = { workspace = true }
 pallet-evm-precompile-simple = { workspace = true }
 pallet-hotfix-sufficients = { workspace = true }
-
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -84,7 +83,6 @@ default = [
 	"std",
 ]
 std = [
-	"cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
@@ -96,9 +94,8 @@ std = [
 	"frame-support/std",
 	"frame-system-rpc-runtime-api/std",
 	"frame-system/std",
+	"frame-try-runtime/std",
 	"log/std",
-	"pallet-aura/std",
-	"pallet-authorship/std",
 	"pallet-balances/std",
 	"pallet-base-fee/std",
 	"pallet-cc-authorities-noting/std",
@@ -111,8 +108,9 @@ std = [
 	"pallet-evm-precompile-simple/std",
 	"pallet-evm/std",
 	"pallet-hotfix-sufficients/std",
-	"pallet-session/std",
+	"pallet-sudo/std",
 	"pallet-timestamp/std",
+	"pallet-utility/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain/std",
@@ -128,6 +126,7 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
+	"tp-consensus/std",
 ]
 
 runtime-benchmarks = [
@@ -142,15 +141,26 @@ runtime-benchmarks = [
 ]
 
 try-runtime = [
-	"cumulus-pallet-aura-ext/try-runtime",
 	"cumulus-pallet-parachain-system/try-runtime",
+	"fp-self-contained/try-runtime",
 	"frame-executive/try-runtime",
+	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
-	"pallet-aura/try-runtime",
-	"pallet-authorship/try-runtime",
+	"nimbus-primitives/try-runtime",
 	"pallet-balances/try-runtime",
-	"pallet-session/try-runtime",
+	"pallet-base-fee/try-runtime",
+	"pallet-cc-authorities-noting/try-runtime",
+	"pallet-dynamic-fee/try-runtime",
+	"pallet-ethereum/try-runtime",
+	"pallet-evm-chain-id/try-runtime",
+	"pallet-evm/try-runtime",
+	"pallet-hotfix-sufficients/try-runtime",
+	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
+	"pallet-transaction-payment/try-runtime",
+	"pallet-utility/try-runtime",
 	"parachain-info/try-runtime",
+	"polkadot-runtime-common/try-runtime",
+	"sp-runtime/try-runtime",
 ]

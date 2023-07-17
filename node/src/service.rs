@@ -38,17 +38,19 @@ use {
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
+    dancebox_runtime::{opaque::Block, RuntimeApi},
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::StreamExt,
     nimbus_primitives::NimbusPair,
-    orchestrator_runtime::{opaque::Block, AccountId, RuntimeApi},
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
     sc_client_api::{AuxStore, Backend, BlockchainEvents, HeaderBackend, UsageProvider},
     sc_consensus::{BlockImport, ImportQueue},
-    sc_executor::NativeElseWasmExecutor,
-    sc_network::NetworkBlock,
+    sc_executor::{
+        HeapAllocStrategy, NativeElseWasmExecutor, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
+    },
+    sc_network::{config::FullNetworkConfiguration, NetworkBlock},
     sc_network_sync::SyncingService,
     sc_service::{
         Configuration, Error as ServiceError, PartialComponents, TFullBackend, TFullClient,
@@ -58,7 +60,7 @@ use {
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_core::{traits::SpawnEssentialNamed, H256},
-    sp_keystore::SyncCryptoStorePtr,
+    sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{
         str::FromStr,
@@ -83,11 +85,11 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
-        orchestrator_runtime::api::dispatch(method, data)
+        dancebox_runtime::api::dispatch(method, data)
     }
 
     fn native_version() -> sc_executor::NativeVersion {
-        orchestrator_runtime::native_version()
+        dancebox_runtime::native_version()
     }
 }
 
@@ -139,12 +141,21 @@ pub fn new_partial(
         })
         .transpose()?;
 
-    let executor = ParachainExecutor::new(
-        config.wasm_method,
-        config.default_heap_pages,
-        config.max_runtime_instances,
-        config.runtime_cache_size,
-    );
+    let heap_pages = config
+        .default_heap_pages
+        .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
+            extra_pages: h as _,
+        });
+
+    let wasm = WasmExecutor::builder()
+        .with_execution_method(config.wasm_method)
+        .with_onchain_heap_alloc_strategy(heap_pages)
+        .with_offchain_heap_alloc_strategy(heap_pages)
+        .with_max_runtime_instances(config.max_runtime_instances)
+        .with_runtime_cache_size(config.runtime_cache_size)
+        .build();
+
+    let executor = ParachainExecutor::new_with_wasm_executor(wasm);
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -206,7 +217,7 @@ pub fn new_partial(
 /// and start/stop container chains on demand. The check runs on every new block.
 pub fn build_check_assigned_para_id(
     client: Arc<ParachainClient>,
-    sync_keystore: SyncCryptoStorePtr,
+    sync_keystore: KeystorePtr,
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
     spawner: impl SpawnEssentialNamed,
 ) {
@@ -247,7 +258,7 @@ pub fn build_check_assigned_para_id(
 /// detect the assignment change after importing block 14.
 fn check_assigned_para_id(
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
-    sync_keystore: SyncCryptoStorePtr,
+    sync_keystore: KeystorePtr,
     initial_assigned_para_id: Arc<Mutex<Option<ParaId>>>,
     client_set_aside_for_cidp: Arc<ParachainClient>,
     block_hash: H256,
@@ -310,12 +321,21 @@ pub fn new_partial_dev(
         })
         .transpose()?;
 
-    let executor = ParachainExecutor::new(
-        config.wasm_method,
-        config.default_heap_pages,
-        config.max_runtime_instances,
-        config.runtime_cache_size,
-    );
+    let heap_pages = config
+        .default_heap_pages
+        .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
+            extra_pages: h as _,
+        });
+
+    let wasm = WasmExecutor::builder()
+        .with_execution_method(config.wasm_method)
+        .with_onchain_heap_alloc_strategy(heap_pages)
+        .with_offchain_heap_alloc_strategy(heap_pages)
+        .with_max_runtime_instances(config.max_runtime_instances)
+        .with_runtime_cache_size(config.runtime_cache_size)
+        .build();
+
+    let executor = ParachainExecutor::new_with_wasm_executor(wasm);
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -382,7 +402,7 @@ async fn start_node_impl(
     let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
     let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
         .map(|e| e.relay_chain.clone())
-        .ok_or_else(|| "Could not find relay_chain extension in chain-spec.")?;
+        .ok_or("Could not find relay_chain extension in chain-spec.")?;
 
     // Channel to send messages to start/stop container chains
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
@@ -409,6 +429,7 @@ async fn start_node_impl(
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
     let transaction_pool = params.transaction_pool.clone();
     let import_queue_service = params.import_queue.service();
+    let net_config = FullNetworkConfiguration::new(&parachain_config.network);
 
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
@@ -419,6 +440,7 @@ async fn start_node_impl(
             import_queue: params.import_queue,
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
+            net_config,
         })
         .await?;
 
@@ -434,8 +456,6 @@ async fn start_node_impl(
     let rpc_builder = {
         let client = client.clone();
         let transaction_pool = transaction_pool.clone();
-        let chain_name = parachain_config.chain_spec.name().to_string();
-        let chain_type = parachain_config.chain_spec.chain_type();
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
@@ -443,10 +463,6 @@ async fn start_node_impl(
                 pool: transaction_pool.clone(),
                 deny_unsafe,
                 command_sink: None,
-                utils: Some(crate::rpc::Utils {
-                    chain_name: chain_name.clone(),
-                    chain_type: chain_type.clone(),
-                }),
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -459,7 +475,7 @@ async fn start_node_impl(
         transaction_pool: transaction_pool.clone(),
         task_manager: &mut task_manager,
         config: parachain_config,
-        keystore: params.keystore_container.sync_keystore(),
+        keystore: params.keystore_container.keystore(),
         backend: backend.clone(),
         network: network.clone(),
         system_rpc_tx,
@@ -507,7 +523,7 @@ async fn start_node_impl(
         overseer_handle: overseer_handle.clone(),
     };
 
-    let sync_keystore = params.keystore_container.sync_keystore();
+    let sync_keystore = params.keystore_container.keystore();
     let mut collate_on_tanssi = None;
 
     if validator {
@@ -520,7 +536,7 @@ async fn start_node_impl(
             relay_chain_interface.clone(),
             transaction_pool,
             sync_service.clone(),
-            params.keystore_container.sync_keystore(),
+            params.keystore_container.keystore(),
             force_authoring,
             para_id,
         )?;
@@ -553,6 +569,7 @@ async fn start_node_impl(
                 .expect("Command line arguments do not allow this. qed"),
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle.clone()),
+            sync_service,
         };
 
         let client = client.clone();
@@ -584,6 +601,7 @@ async fn start_node_impl(
             relay_chain_slot_duration,
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
+            sync_service,
         };
 
         start_full_node(params)?;
@@ -619,7 +637,7 @@ async fn start_node_impl(
             sync_keystore,
             orchestrator_para_id: para_id,
             validator,
-            spawn_handle: spawn_handle.clone(),
+            spawn_handle,
             spawned_para_ids: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
@@ -651,7 +669,7 @@ pub async fn start_node_impl_container(
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     collator_key: Option<CollatorPair>,
-    keystore: SyncCryptoStorePtr,
+    keystore: KeystorePtr,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
     collator: bool,
@@ -688,6 +706,7 @@ pub async fn start_node_impl_container(
 
     let force_authoring = parachain_config.force_authoring;
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
+    let net_config = FullNetworkConfiguration::new(&parachain_config.network);
 
     log::info!("are we collators? {:?}", collator);
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
@@ -699,6 +718,7 @@ pub async fn start_node_impl_container(
             import_queue: params_import_queue,
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
+            net_config,
         })
         .await?;
 
@@ -721,7 +741,6 @@ pub async fn start_node_impl_container(
                 pool: transaction_pool.clone(),
                 deny_unsafe,
                 command_sink: None,
-                utils: None,
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -765,7 +784,7 @@ pub async fn start_node_impl_container(
             relay_chain_interface.clone(),
             orchestrator_chain_interface.clone(),
             transaction_pool,
-            sync_service,
+            sync_service.clone(),
             keystore,
             force_authoring,
             para_id,
@@ -786,6 +805,7 @@ pub async fn start_node_impl_container(
             collator_key: collator_key.expect("Command line arguments do not allow this. qed"),
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle),
+            sync_service,
         };
 
         start_collator(params).await?;
@@ -799,6 +819,7 @@ pub async fn start_node_impl_container(
             relay_chain_slot_duration,
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
+            sync_service,
         };
 
         start_full_node(params)?;
@@ -818,7 +839,7 @@ fn build_manual_seal_import_queue(
     task_manager: &TaskManager,
 ) -> Result<sc_consensus::DefaultImportQueue<Block, ParachainClient>, sc_service::Error> {
     Ok(sc_consensus_manual_seal::import_queue(
-        Box::new(block_import.clone()),
+        Box::new(block_import),
         &task_manager.spawn_essential_handle(),
         config.prometheus_registry(),
     ))
@@ -835,12 +856,12 @@ fn build_consensus_container(
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
-    keystore: SyncCryptoStorePtr,
+    keystore: KeystorePtr,
     force_authoring: bool,
     para_id: ParaId,
     orchestrator_para_id: ParaId,
 ) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error> {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
+    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)?;
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
         task_manager.spawn_handle(),
@@ -851,7 +872,7 @@ fn build_consensus_container(
     );
 
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
-    let orchestrator_client_for_cidp = orchestrator_client.clone();
+    let orchestrator_client_for_cidp = orchestrator_client;
     let keystore_for_cidp = keystore.clone();
 
     let params = tc_consensus::BuildOrchestratorAuraConsensusParams {
@@ -982,7 +1003,7 @@ fn build_consensus_orchestrator(
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
-    keystore: SyncCryptoStorePtr,
+    keystore: KeystorePtr,
     force_authoring: bool,
     para_id: ParaId,
 ) -> Result<Box<dyn ParachainConsensus<Block>>, sc_service::Error> {
@@ -1018,7 +1039,7 @@ fn build_consensus_orchestrator(
                 let para_ids = client_set_aside_for_cidp
                     .runtime_api()
                     .registered_paras(block_hash)?;
-                let para_ids: Vec<_> = para_ids.into_iter().map(|x| x.into()).collect();
+                let para_ids: Vec<_> = para_ids.into_iter().collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(
                         relay_parent,
@@ -1128,7 +1149,6 @@ pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from
 /// the parachain inherent.
 pub fn new_dev(
     config: Configuration,
-    _author_id: Option<AccountId>,
     sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
     para_id: ParaId,
@@ -1150,6 +1170,8 @@ pub fn new_dev(
         other: (block_import, mut telemetry, _telemetry_worker_handle),
     } = new_partial_dev(&config)?;
 
+    let net_config = FullNetworkConfiguration::new(&config.network);
+
     let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
         sc_service::build_network(sc_service::BuildNetworkParams {
             config: &config,
@@ -1159,6 +1181,7 @@ pub fn new_dev(
             import_queue,
             block_announce_validator_builder: None,
             warp_sync_params: None,
+            net_config,
         })?;
 
     if config.offchain_worker.enabled {
@@ -1232,7 +1255,7 @@ pub fn new_dev(
                 inherent_data: &mut sp_inherents::InherentData,
             ) -> Result<(), sp_inherents::Error> {
                 TIMESTAMP.with(|x| {
-                    *x.borrow_mut() += orchestrator_runtime::SLOT_DURATION;
+                    *x.borrow_mut() += dancebox_runtime::SLOT_DURATION;
                     inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
                 })
             }
@@ -1260,7 +1283,7 @@ pub fn new_dev(
                 consensus_data_provider: Some(Box::new(
                     tc_consensus::OrchestratorManualSealAuraConsensusDataProvider::new(
                         client.clone(),
-                        keystore_container.sync_keystore(),
+                        keystore_container.keystore(),
                         para_id,
                     ),
                 )),
@@ -1275,7 +1298,6 @@ pub fn new_dev(
                         .registered_paras(block)
                         .expect("registered_paras runtime API should exist")
                         .into_iter()
-                        .map(|x| x.into())
                         .collect();
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
@@ -1318,8 +1340,6 @@ pub fn new_dev(
     let rpc_builder = {
         let client = client.clone();
         let transaction_pool = transaction_pool.clone();
-        let chain_name = config.chain_spec.name().to_string();
-        let chain_type = config.chain_spec.chain_type();
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
@@ -1327,10 +1347,6 @@ pub fn new_dev(
                 pool: transaction_pool.clone(),
                 deny_unsafe,
                 command_sink: command_sink.clone(),
-                utils: Some(crate::rpc::Utils {
-                    chain_name: chain_name.clone(),
-                    chain_type: chain_type.clone(),
-                }),
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -1339,11 +1355,11 @@ pub fn new_dev(
 
     let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
         rpc_builder,
-        client: client.clone(),
+        client,
         transaction_pool,
         task_manager: &mut task_manager,
         config,
-        keystore: keystore_container.sync_keystore(),
+        keystore: keystore_container.keystore(),
         backend,
         network,
         system_rpc_tx,
@@ -1540,7 +1556,7 @@ where
     async fn prove_read(
         &self,
         orchestrator_parent: PHash,
-        relevant_keys: &Vec<Vec<u8>>,
+        relevant_keys: &[Vec<u8>],
     ) -> OrchestratorChainResult<StorageProof> {
         let state_backend = self.backend.state_at(orchestrator_parent)?;
 

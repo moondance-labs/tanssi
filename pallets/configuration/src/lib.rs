@@ -34,7 +34,7 @@ mod mock;
 
 #[cfg(test)]
 mod tests;
-mod weights;
+pub mod weights;
 
 use crate::weights::WeightInfo;
 
@@ -168,19 +168,12 @@ pub mod pallet {
     pub(crate) type BypassConsistencyCheck<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     #[pallet::genesis_config]
+    #[derive(Default)]
     pub struct GenesisConfig {
         pub config: HostConfiguration,
     }
 
     #[cfg(feature = "std")]
-    impl Default for GenesisConfig {
-        fn default() -> Self {
-            GenesisConfig {
-                config: Default::default(),
-            }
-        }
-    }
-
     #[pallet::genesis_build]
     impl<T: Config> GenesisBuild<T> for GenesisConfig {
         fn build(&self) {
@@ -377,7 +370,7 @@ pub mod pallet {
             // First, we need to decide what we should use as the base configuration.
             let mut base_config = pending_configs
                 .last()
-                .map(|&(_, ref config)| config.clone())
+                .map(|(_, config)| config.clone())
                 .unwrap_or_else(Self::config);
             let base_config_consistent = base_config.check_consistency().is_ok();
 

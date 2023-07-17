@@ -17,15 +17,22 @@
 //! Helper functions to convert from `ContainerChainGenesisData` to JSON values and back
 
 use {
-    crate::{ContainerChainGenesisData, ContainerChainGenesisDataItem, Properties},
+    crate::{ContainerChainGenesisData, ContainerChainGenesisDataItem, Get, Properties},
     cumulus_primitives_core::ParaId,
 };
 
 /// Reads a raw ChainSpec file stored in `path`, and returns its `ParaId` and
 /// a `ContainerChainGenesisData` that can be used to recreate the ChainSpec later.
-pub fn container_chain_genesis_data_from_path(
+pub fn container_chain_genesis_data_from_path<MaxLengthTokenSymbol: Get<u32>>(
     path: &str,
-) -> Result<(ParaId, ContainerChainGenesisData), String> {
+) -> Result<
+    (
+        ParaId,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    ),
+    String,
+> {
     // Read raw chainspec file
     let raw_chainspec_str = std::fs::read_to_string(path)
         .map_err(|_e| format!("ChainSpec for container chain not found at {:?}", path))?;
@@ -33,18 +40,32 @@ pub fn container_chain_genesis_data_from_path(
     container_chain_genesis_data_from_str(&raw_chainspec_str)
 }
 
-pub fn container_chain_genesis_data_from_str(
+pub fn container_chain_genesis_data_from_str<MaxLengthTokenSymbol: Get<u32>>(
     raw_chainspec_str: &str,
-) -> Result<(ParaId, ContainerChainGenesisData), String> {
+) -> Result<
+    (
+        ParaId,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    ),
+    String,
+> {
     let raw_chainspec_json: serde_json::Value =
-        serde_json::from_str(&raw_chainspec_str).map_err(|e| e.to_string())?;
+        serde_json::from_str(raw_chainspec_str).map_err(|e| e.to_string())?;
 
     container_chain_genesis_data_from_json(&raw_chainspec_json)
 }
 
-pub fn container_chain_genesis_data_from_json(
+pub fn container_chain_genesis_data_from_json<MaxLengthTokenSymbol: Get<u32>>(
     raw_chainspec_json: &serde_json::Value,
-) -> Result<(ParaId, ContainerChainGenesisData), String> {
+) -> Result<
+    (
+        ParaId,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+    ),
+    String,
+> {
     // TODO: we are manually parsing a json file here, maybe we can leverage the existing
     // chainspec deserialization code.
     // TODO: this bound checking may panic, but that shouldn't be too dangerous because this
@@ -56,7 +77,16 @@ pub fn container_chain_genesis_data_from_json(
     let genesis_raw_top_json = &raw_chainspec_json["genesis"]["raw"]["top"];
     let storage = storage_from_chainspec_json(genesis_raw_top_json)?;
     let properties_json = &raw_chainspec_json["properties"];
-    let properties = properties_from_chainspec_json(&properties_json);
+    let properties = properties_from_chainspec_json(properties_json);
+    let boot_nodes: Vec<serde_json::Value> =
+        raw_chainspec_json["bootNodes"].as_array().unwrap().clone();
+    let boot_nodes: Vec<Vec<u8>> = boot_nodes
+        .into_iter()
+        .map(|x| {
+            let bytes = x.as_str().unwrap().as_bytes();
+            bytes.to_vec()
+        })
+        .collect();
 
     Ok((
         para_id.into(),
@@ -68,6 +98,7 @@ pub fn container_chain_genesis_data_from_json(
             extensions: vec![],
             properties,
         },
+        boot_nodes,
     ))
 }
 
@@ -76,18 +107,18 @@ pub fn storage_from_chainspec_json(
 ) -> Result<Vec<ContainerChainGenesisDataItem>, String> {
     let genesis_data_map = genesis_raw_top_json
         .as_object()
-        .ok_or(format!("genesis.raw.top is not an object"))?;
+        .ok_or("genesis.raw.top is not an object".to_string())?;
 
     let mut genesis_data_vec = Vec::with_capacity(genesis_data_map.len());
 
     for (key, value) in genesis_data_map {
         let key_hex = key
             .strip_prefix("0x")
-            .ok_or(format!("key does not start with 0x"))?;
-        let value = value.as_str().ok_or(format!("value is not a string"))?;
+            .ok_or("key does not start with 0x".to_string())?;
+        let value = value.as_str().ok_or("value is not a string".to_string())?;
         let value_hex = value
             .strip_prefix("0x")
-            .ok_or(format!("value does not start with 0x"))?;
+            .ok_or("value does not start with 0x".to_string())?;
 
         let key_bytes = hex::decode(key_hex).map_err(|e| e.to_string())?;
         let value_bytes = hex::decode(value_hex).map_err(|e| e.to_string())?;
@@ -107,8 +138,10 @@ pub fn storage_from_chainspec_json(
 
 /// Read `TokenMetadata` from a JSON value. The value is expected to be a map.
 /// In case of error, the default `TokenMetadata` is returned.
-pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> Properties {
-    let mut properties = Properties::default();
+pub fn properties_from_chainspec_json<MaxLengthTokenSymbol: Get<u32>>(
+    properties_json: &serde_json::Value,
+) -> Properties<MaxLengthTokenSymbol> {
+    let mut properties: Properties<MaxLengthTokenSymbol> = Properties::default();
     if let Some(x) = properties_json
         .get("ss58Format")
         .and_then(|x| u32::try_from(x.as_u64()?).ok())
@@ -167,8 +200,8 @@ pub fn properties_from_chainspec_json(properties_json: &serde_json::Value) -> Pr
     properties
 }
 
-pub fn properties_to_map(
-    properties: &Properties,
+pub fn properties_to_map<MaxLengthTokenSymbol: Get<u32>>(
+    properties: &Properties<MaxLengthTokenSymbol>,
 ) -> Result<serde_json::Map<String, serde_json::Value>, String> {
     // TODO: we can just derive Serialize for genesis_data.properties instead of this hack,
     // just ensure that the field names match. And "tokenSymbol" must be a string, in the struct
@@ -203,9 +236,11 @@ pub fn properties_to_map(
 
 #[cfg(test)]
 mod tests {
+    use sp_core::ConstU32;
+
     use super::*;
 
-    fn expected_container_chain_genesis_data() -> ContainerChainGenesisData {
+    fn expected_container_chain_genesis_data() -> ContainerChainGenesisData<ConstU32<255>> {
         let para_id = 2000;
 
         ContainerChainGenesisData {
@@ -255,7 +290,7 @@ mod tests {
     #[test]
     fn test_serde_serialize() {
         let x = expected_container_chain_genesis_data();
-        let xv = serde_json::to_value(&x).unwrap();
+        let xv = serde_json::to_value(x).unwrap();
         // Regenerate expected string using
         //println!("{}", serde_json::to_string_pretty(&x).unwrap());
         let expected = expected_string();
@@ -267,7 +302,7 @@ mod tests {
     fn test_serde_deserialize() {
         let expected = expected_container_chain_genesis_data();
         let s = expected_string();
-        let x: ContainerChainGenesisData = serde_json::from_str(s).unwrap();
+        let x: ContainerChainGenesisData<ConstU32<255>> = serde_json::from_str(s).unwrap();
         assert_eq!(x, expected);
     }
 }

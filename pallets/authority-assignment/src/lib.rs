@@ -82,7 +82,7 @@ pub mod pallet {
                 );
                 CollatorContainerChain::<T>::insert(
                     current_session_index.saturating_add(T::SessionIndex::one()),
-                    next_nimbus_assignment.clone(),
+                    next_nimbus_assignment,
                 );
 
                 return;
@@ -94,7 +94,7 @@ pub mod pallet {
             );
             CollatorContainerChain::<T>::insert(
                 current_session_index.saturating_add(T::SessionIndex::one()),
-                next_nimbus_assignment.clone(),
+                next_nimbus_assignment,
             );
         }
 
