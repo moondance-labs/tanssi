@@ -142,6 +142,7 @@ jobs:
           name: coverage
           path: coverage
       - name: Upload coverage s3
+        if: ${{(github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         uses: mario-sangar/upload-s3-action@master
         id: S3
         with:
@@ -152,6 +153,7 @@ jobs:
           source_dir: "coverage"
           acl: "none"
       - name: Link To Report
+        if: ${{(github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         run: |
           echo "${{steps.S3.outputs.object_key}}"
           echo "${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/index.html"
