@@ -113,6 +113,17 @@
           "endpoints": ["ws://127.0.0.1:9950"]
         }
       ]
+    },
+    {
+      "name": "zombie_dancebox_upgrade",
+      "testFileDir": ["suites/rt-upgrade"],
+      "foundation": {
+        "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
+        "type": "zombie",
+        "zombieSpec": {
+          "configPath": "./configs/zombieDanceboxUpgrade.json"
+        }
+      }
     }
   ]
 }
