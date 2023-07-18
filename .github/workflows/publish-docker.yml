@@ -1,11 +1,7 @@
 name: Publish Docker
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: tag (ex. v0.8.3) to publish on docker
-        required: true
+  push
 
 jobs:
   tag-docker:
@@ -22,7 +18,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - run: |
           DOCKER_IMAGE=moondancelabs/tanssi
-          VERSION="${{ github.event.inputs.tag }}"
+          VERSION="runtime-100"
           COMMIT=`git rev-list -n 1 '${{ github.event.inputs.tag }}'`
           SHA=sha-${COMMIT::8}
           echo using "${DOCKER_IMAGE}:${SHA} as base image"
