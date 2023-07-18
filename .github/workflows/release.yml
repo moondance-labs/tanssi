@@ -367,12 +367,14 @@ jobs:
       - name: "Run zombie upgrade test"
         run: |
           chmod uog+x target/release/tanssi-node
+
+          cd test
+          
           chmod uog+x tmp/tanssi_rt
           tmp/tanssi_rt build-spec --chain ${{ matrix.chain }}-local > tmp/${{ matrix.chain }}-plain-spec.json
           pnpm ts-node --esm --swc scripts/modify-plain-specs.ts process tmp/${{ matrix.chain }}-plain-spec.json tmp/${{ matrix.chain }}-modified-spec.json 
           tmp/tanssi_rt build-spec --chain tmp/${{ matrix.chain }}-modified-spec.json --raw > tmp/${{ matrix.chain }}-raw-spec.json
 
-          cd test
           pnpm install --frozen-lockfile
 
           ## Run tests
