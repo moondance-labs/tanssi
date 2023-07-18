@@ -19,8 +19,8 @@ describeSuite({
     beforeAll(async () => {
       const keyring = new Keyring({ type: 'sr25519' });
       alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-      paraApi = context.polkadotJs({ type: "moon", apiName: "parachain" });
-      relayApi = context.polkadotJs({ type: "polkadotJs", apiName: "relaychain" });
+      paraApi = context.polkadotJs("parachain");
+      relayApi = context.polkadotJs(  "relaychain");
       ethersSigner = context.ethers();
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
