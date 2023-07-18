@@ -15,6 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(test)]
+mod mock;
+
 use {
     cumulus_primitives_core::ParaId,
     frame_support::traits::Get,
@@ -79,5 +83,49 @@ where
 
         let slot: u64 = slot.into();
         slot as u32
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::{AuraDigestSlotBeacon, NimbusLookUp, OnTimestampSet};
+    use crate::mock::{new_test_ext, Test};
+    use frame_support::traits::OnTimestampSet as OnTimestampSetT;
+    use nimbus_primitives::{AccountLookup, NimbusId, SlotBeacon};
+    use parity_scale_codec::Encode;
+    use sp_consensus_aura::AURA_ENGINE_ID;
+    use sp_core::ByteArray;
+    use sp_runtime::traits::ConstU64;
+
+    #[test]
+    fn test_on_timestamp_set() {
+        pub struct SlotBeaconMock {}
+        impl SlotBeacon for SlotBeaconMock {
+            fn slot() -> u32 {
+                1
+            }
+        }
+
+        OnTimestampSet::<SlotBeaconMock, ConstU64<1000>>::on_timestamp_set(1000u64);
+    }
+
+    #[test]
+    fn test_nimbus_lookup() {
+        let account = NimbusId::from_slice(&[0u8; 32]).unwrap();
+        let lookup = NimbusLookUp::lookup_account(&account).expect("to be ok");
+
+        assert!(account.eq(&lookup))
+    }
+
+    #[test]
+    fn test_digest() {
+        new_test_ext().execute_with(|| {
+            frame_system::Pallet::<Test>::deposit_log(sp_runtime::generic::DigestItem::PreRuntime(
+                AURA_ENGINE_ID,
+                7u64.encode(),
+            ));
+
+            assert_eq!(AuraDigestSlotBeacon::<Test>::slot(), 7u32);
+        });
     }
 }
