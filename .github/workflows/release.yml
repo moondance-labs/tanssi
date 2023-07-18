@@ -357,7 +357,8 @@ jobs:
         run: |
           TANSSI_COMMIT=${{ needs.set-tags.outputs.latest_rt_sha8 }}
           DOCKER_TAG="moondancelabs/tanssi:sha-$TANSSI_COMMIT"
-  
+          mkdir -p test/tmp
+          
           docker rm -f tanssi_container 2> /dev/null | true
           docker create --name tanssi_container $DOCKER_TAG bash
           docker cp tanssi_container:tanssi/tanssi-node test/tmp/tanssi_rt
