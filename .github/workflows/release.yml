@@ -6,11 +6,7 @@ on:
     branches:
       - master
       - perm-*
-  workflow_dispatch:
-    inputs:
-      commit:
-        description: commit for which we need to run the action
-        required: false
+
 jobs:
   set-tags:
     runs-on: ubuntu-latest
@@ -309,7 +305,7 @@ jobs:
     strategy:
       matrix:
         image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
-    if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch') }}
+    if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
