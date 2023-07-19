@@ -31,8 +31,9 @@ jobs:
       - name: Download files
         run: |
           VERSION="${{ github.event.inputs.tag }}"
+          FILES=${{ matrix.image.files }}
           mkdir -p build
-          for file in ${{ matrix.image.files }}
+          for file in "${FILES[@]}"
           do
             echo ${{ matrix.image.name }}
             echo $file
