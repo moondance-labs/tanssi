@@ -125,6 +125,20 @@
           "configPath": "./configs/zombieDanceboxUpgrade.json"
         }
       }
+    },
+    {
+      "name": "dancebox_smoke",
+      "testFileDir": ["suites/smoke-test"],
+      "foundation": {
+        "type": "read_only"
+      },
+      "connections": [
+        {
+          "name": "DBX",
+          "type": "polkadotJs",
+          "endpoints": ["wss://vira-stagenet-dancebox-rpc.a.moondev.network"]
+        }
+      ]
     }
   ]
 }
