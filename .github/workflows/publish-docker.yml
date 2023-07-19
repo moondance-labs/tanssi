@@ -34,6 +34,7 @@ jobs:
           mkdir -p build
           for file in "${{ matrix.image.files }}""
           do
+            echo ${{ matrix.image.name }}
             echo $file
             echo ${{ matrix.image.files }}
             wget "${{ env.BASE_URL }}/$VERSION/$file" -O build/$file
