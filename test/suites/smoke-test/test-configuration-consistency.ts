@@ -2,13 +2,12 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { getBlockTime } from "@moonwall/util";
 
 import { ApiPromise } from "@polkadot/api";
-const debug = require("debug")("smoke:block-finalized");
 
 describeSuite({
   id: "R02",
   title: "Sample suite that only runs on Dancebox chains",
   foundationMethods: "read_only",
-  testCases: ({ it, context }) => {
+  testCases: ({ it, context, log }) => {
     let api: ApiPromise;
 
     beforeAll(() => {
