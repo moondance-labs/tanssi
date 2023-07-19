@@ -13,9 +13,9 @@ jobs:
     strategy:
       matrix:
         image: [
-          { name: "tanssi", files: ["tanssi-node", "tanssi-node-skylake", "tanssi-node-znver3"] },
-          { name: "container-chain-simple-template", files: ["container-chain-template-simple-node", "container-chain-template-simple-node-skylake", "container-chain-template-simple-node-znver3"] },
-          { name: "container-chain-evm-template", files: ["container-chain-template-frontier-node", "container-chain-template-frontier-node-skylake", "container-chain-template-frontier-node-znver3"]}
+          { name: "tanssi", file_name: "tanssi-node" },
+          { name: "container-chain-simple-template", file_name: "container-chain-template-simple-node" },
+          {  name: "container-chain-evm-template", file_name: "container-chain-template-frontier-node" },
         ]
     steps:
       - name: Checkout
@@ -31,15 +31,10 @@ jobs:
       - name: Download files
         run: |
           VERSION="${{ github.event.inputs.tag }}"
-          FILES=${{ matrix.image.files }}
-          mkdir -p build
-          for file in "${FILES[@]}"
-          do
-            echo ${{ matrix.image.name }}
-            echo $file
-            echo ${{ matrix.image.files }}
-            wget "${{ env.BASE_URL }}/$VERSION/$file" -O build/$file
-          done
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}" -O build/${{ matrix.image.file_name }}
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-skylake" -O build/${{ matrix.image.file_name }}-skylake
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-znver3" -O build/${{ matrix.image.file_name }}-znver3
+
       - name: push to docker
         run: |
           VERSION="${{ github.event.inputs.tag }}"{ name: "container-chain-simple-template", files: ["container-chain-template-simple-node", "container-chain-template-simple-node-skylake", "container-chain-template-simple-node-znver3"] }
