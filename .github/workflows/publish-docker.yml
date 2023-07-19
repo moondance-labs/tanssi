@@ -12,12 +12,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        - image: "tanssi"
-            files: ["tanssi-node", "tanssi-node-skylake", "tanssi-node-znver3"]
-        - image: "container-chain-simple-template"
-          files: ["container-chain-template-simple-node", "container-chain-template-simple-node-skylake", "container-chain-template-simple-node-znver3"]
-        - image: "container-chain-evm-template"
-          files: ["container-chain-template-frontier-node", "container-chain-template-frontier-node-skylake", "container-chain-template-frontier-node-znver3"]
+        image: [
+          { name: "tanssi", files: ["tanssi-node", "tanssi-node-skylake", "tanssi-node-znver3"] },
+          { name: "container-chain-simple-template", files: ["container-chain-template-simple-node", "container-chain-template-simple-node-skylake", "container-chain-template-simple-node-znver3"] },
+          { name: "container-chain-evm-template", files: ["container-chain-template-frontier-node", "container-chain-template-frontier-node-skylake", "container-chain-template-frontier-node-znver3"]}
+        ]
     steps:
       - name: Checkout
         uses: actions/checkout@v3 
@@ -33,15 +32,14 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.tag }}"
           mkdir -p build
-          for file in ${{ matrix.files }}
+          for file in ${{ matrix.image.files }}
           do
             wget "${{ env.BASE_URL }}/$VERSION/$file" -O build/$file
           done
       - name: push to docker
         run: |
-          DOCKER_IMAGE=moondancelabs/${{matrix.image}}
-          VERSION="${{ github.event.inputs.tag }}"
-          COMMIT=`git rev-list -n 1 '${{ github.event.inputs.tag }}'`
+          VERSION="${{ github.event.inputs.tag }}"{ name: "container-chain-simple-template", files: ["container-chain-template-simple-node", "container-chain-template-simple-node-skylake", "container-chain-template-simple-node-znver3"] }
+          COMMIT=`git rev-list -n 1 '${{ github.event.inputs.tag }}'`{ name: "container-chain-simple-template", files: ["container-chain-template-simple-node", "container-chain-template-simple-node-skylake", "container-chain-template-simple-node-znver3"] }
           SHA=sha-${COMMIT::8}
           echo using "${DOCKER_IMAGE}:${SHA} as base image"
 
@@ -49,7 +47,7 @@ jobs:
           docker build \
             --build-arg DOCKER_IMAGE="$DOCKER_IMAGE" \
             --build-arg SHA="$SHA" \
-            -f docker/${{matrix.image}}.Dockerfile \
+            -f docker/${{matrix.image.name}}.Dockerfile \
             -t "${DOCKER_IMAGE}:${VERSION}" \
             . 
 
