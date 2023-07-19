@@ -23,6 +23,10 @@ sp-std = { workspace = true }
 # Nimbus
 nimbus-primitives = { workspace = true }
 
+[dev-dependencies]
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+
 [features]
 default = [ "std" ]
 std = [ "cumulus-primitives-core/std", "frame-support/std", "frame-system/std", "nimbus-primitives/std", "parity-scale-codec/std", "sp-api/std", "sp-consensus-aura/std", "sp-runtime/std", "sp-std/std" ]
