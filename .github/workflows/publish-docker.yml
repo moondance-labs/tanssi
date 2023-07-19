@@ -32,7 +32,7 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.tag }}"
           mkdir -p build
-          for file in "${{ matrix.image.files }}""
+          for file in ${{ matrix.image.files }}
           do
             echo ${{ matrix.image.name }}
             echo $file
