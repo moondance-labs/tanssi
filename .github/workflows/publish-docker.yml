@@ -30,6 +30,7 @@ jobs:
 
       - name: Download files
         run: |
+          mkdir -p build
           VERSION="${{ github.event.inputs.tag }}"
           wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}" -O build/${{ matrix.image.file_name }}
           wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-skylake" -O build/${{ matrix.image.file_name }}-skylake
