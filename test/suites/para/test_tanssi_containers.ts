@@ -25,10 +25,10 @@ describeSuite({
     let ethersSigner: Signer;
 
     beforeAll(async () => {
-      paraApi = context.polkadotJs({ apiName: "Tanssi", type: "polkadotJs" });
-      relayApi = context.polkadotJs({ apiName: "Relay", type: "polkadotJs" });
-      container2000Api = context.polkadotJs({ apiName: "Container2000", type: "polkadotJs" });
-      container2001Api = context.polkadotJs({ apiName: "Container2001", type: "polkadotJs" });
+      paraApi = context.polkadotJs("Tanssi");
+      relayApi = context.polkadotJs("Relay");
+      container2000Api = context.polkadotJs("Container2000");
+      container2001Api = context.polkadotJs("Container2001");
       ethersSigner = context.ethers();
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();

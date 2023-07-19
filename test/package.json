@@ -9,17 +9,17 @@
     "lint": "npx prettier --write --ignore-path .gitignore '**/*.(yml|js|ts|json)'",
     "start": "pnpm moonwall",
     "build-spec": "./scripts/build-spec.sh",
-    "pre-build-contracts": "pnpm exec ts-node-esm tools/pre-build-contracts.ts && npx prettier --write ./helpers/compiled/",
-    "download-chain-spec": "pnpm ts-node --esm scripts/downloadChainSpec.ts",
-    "register-para": "pnpm ts-node --esm scripts/registerPara.ts",
-    "sudo-register-para": "pnpm ts-node --esm scripts/sudoRegisterPara.ts"
+    "pre-build-contracts": "pnpm tsx tools/pre-build-contracts.ts && npx prettier --write ./helpers/compiled/",
+    "download-chain-spec": "pnpm tsx scripts/downloadChainSpec.ts",
+    "register-para": "pnpm tsx scripts/registerPara.ts",
+    "sudo-register-para": "pnpm tsxm scripts/sudoRegisterPara.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@moonwall/cli": "^3.0.11",
-    "@moonwall/util": "^3.0.11",
+    "@moonwall/cli": "4.0.4",
+    "@moonwall/util": "4.0.3",
     "@polkadot/api": "^10.9.1",
     "@polkadot/api-augment": "^10.9.1",
     "@polkadot/types": "^10.9.1",
@@ -31,14 +31,17 @@
     "chalk": "^5.3.0",
     "debug": "^4.3.4",
     "ethers": "^6.6.2",
+    "json-bigint": "^1.0.0",
     "pnpm": "^8.6.5",
     "prettier": "^2.8.8",
     "solc": "^0.8.19",
-    "ts-node": "^10.9.1",
+    "tsx": "^3.12.7",
     "typescript": "^5.1.6",
     "viem": "^1.2.6",
     "web3": "4.0.2",
-    "web3-providers-ws": "4.0.2"
+    "web3-providers-ws": "4.0.2",
+    "yargs": "^17.7.2",
+    "@zombienet/utils": "^0.0.19"
   },
   "pnpm": {
     "overrides": {
