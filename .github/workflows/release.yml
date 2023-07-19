@@ -36,14 +36,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.inputs.sha }}
-
-      - name: Get Latest RT Release
-        id: get-latest-rt
-        run: |
-          LATEST_RUNTIME_RELEASE=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases | jq -r '.[] | select(.name | test("runtime";"i")) | .tag_name' | head -n 1 | tr -d '[:blank:]') && [[ ! -z "${LATEST_RUNTIME_RELEASE}" ]]
-          echo $LATEST_RUNTIME_RELEASE
-          echo "latest_rt=$LATEST_RUNTIME_RELEASE" >> $GITHUB_OUTPUT
+          ref: ${{ steps.check-git-ref.outputs.git_ref }}
       - name: Get Sha
         id: get-sha
         run: |
@@ -76,6 +69,7 @@ jobs:
 
       - name: Display variables
         run: |
+          echo git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
           echo sha: ${{ steps.get-sha.outputs.sha }}
           echo sha8: ${{ steps.get-sha.outputs.sha8 }}
           echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
@@ -103,9 +97,12 @@ jobs:
   ####### Building and Testing binaries #######
   cargo-clippy:
     runs-on: self-hosted
+    needs: ["set-tags"]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.set-tags.outputs.git_ref }}
 
       - name: Setup Rust toolchain
         run: rustup show
@@ -115,6 +112,7 @@ jobs:
 
   build:
     runs-on: self-hosted
+    needs: ["set-tags"]
     env:
       RUSTFLAGS: "-C opt-level=3 -D warnings"
       TMP_TARGET: "/tmp/target"
@@ -122,6 +120,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: ${{ needs.set-tags.outputs.git_ref }}
 
       - name: Setup Rust toolchain
         run: rustup show
@@ -166,12 +166,12 @@ jobs:
 
   typescript-tests:
     runs-on: ubuntu-latest
-    needs: ["build"]
+    needs: ["set-tags", "build"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.inputs.sha }}
+          ref: ${{ needs.set-tags.outputs.git_ref }}
         
       - name: Pnpm
         uses: pnpm/action-setup@v2
@@ -200,12 +200,12 @@ jobs:
 
   typescript-tests-frontier:
     runs-on: ubuntu-latest
-    needs: ["build"]
+    needs: ["set-tags", "build"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.inputs.sha }}
+          ref: ${{ needs.set-tags.outputs.git_ref }}
         
       - name: Pnpm
         uses: pnpm/action-setup@v2
@@ -234,12 +234,12 @@ jobs:
 
   typescript-dancebox-specs:
     runs-on: ubuntu-latest
-    needs: ["build"]
+    needs: ["set-tags", "build"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.inputs.sha }}
+          ref: ${{ needs.set-tags.outputs.git_ref }}
         
       - name: Pnpm
         uses: pnpm/action-setup@v2
@@ -273,7 +273,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.inputs.sha }}
+          ref: ${{ needs.set-tags.outputs.git_ref }}
 
       - name: Pnpm
         uses: pnpm/action-setup@v2
@@ -333,7 +333,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          ref: ${{ github.event.inputs.sha }}
+          ref: ${{ steps.check-git-ref.outputs.git_ref }}
 
       - name: Pnpm
         uses: pnpm/action-setup@v2
