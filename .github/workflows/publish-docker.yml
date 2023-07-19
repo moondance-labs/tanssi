@@ -7,6 +7,8 @@ on:
         description: tag (ex. v0.8.3) to publish on docker
         required: true
 
+env:
+  BASE_URL: https://github.com/moondance-labs/tanssi/releases
 jobs:
   tag-docker:
     runs-on: ubuntu-latest
