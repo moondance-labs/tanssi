@@ -12,7 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+        - image: "tanssi"
+            files: ["tanssi-node", "tanssi-node-skylake", "tanssi-node-znver3"]
+        - image: "container-chain-simple-template"
+          files: ["container-chain-template-simple-node", "container-chain-template-simple-node-skylake", "container-chain-template-simple-node-znver3"]
+        - image: "container-chain-evm-template"
+          files: ["container-chain-template-frontier-node", "container-chain-template-frontier-node-skylake", "container-chain-template-frontier-node-znver3"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3 
@@ -23,28 +28,22 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - run: |
+
+      - name: Download files
+        run: |
+          VERSION="${{ github.event.inputs.tag }}"
+          mkdir -p build
+          for file in ${{ matrix.files }}
+          do
+            wget "${{ env.BASE_URL }}/$VERSION/$file" -O build/$file
+          done
+      - name: push to docker
+        run: |
           DOCKER_IMAGE=moondancelabs/${{matrix.image}}
           VERSION="${{ github.event.inputs.tag }}"
           COMMIT=`git rev-list -n 1 '${{ github.event.inputs.tag }}'`
           SHA=sha-${COMMIT::8}
           echo using "${DOCKER_IMAGE}:${SHA} as base image"
-
-          mkdir -p build 
-
-          if [[ ${{matrix.image}} == 'tanssi' ]]; then
-            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/tanssi-node -O build/tanssi-node
-            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/tanssi-node-skylake -O build/tanssi-node-skylake
-            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/tanssi-node-znver3 -O build/tanssi-node-znver3
-          elif [[ ${{matrix.image}} == 'container-chain-simple-template' ]]; then
-            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-simple-node -O build/container-chain-template-simple-node
-            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-simple-node-skylake -O build/container-chain-template-simple-node-skylake
-            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-simple-node-znver3 -O build/container-chain-template-simple-node-znver3
-          elif [[ ${{matrix.image}} == 'container-chain-evm-template' ]]; then
-            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-frontier-node -O build/container-chain-template-frontier-node
-            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-frontier-node-skylake -O build/container-chain-template-frontier-node-skylake
-            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-frontier-node-znver3 -O build/container-chain-template-frontier-node-znver3
-          fi
 
           echo building "${DOCKER_IMAGE}:${VERSION}"
           docker build \
@@ -54,24 +53,4 @@ jobs:
             -t "${DOCKER_IMAGE}:${VERSION}" \
             . 
 
-          docker push "${DOCKER_IMAGE}:${VERSION}"
-
-          if [[ $VERSION =~ ^v[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-            MINOR=${VERSION%.*}
-            echo tagging "${DOCKER_IMAGE}:${MINOR}"
-            docker tag "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:${MINOR}"
-            docker push "${DOCKER_IMAGE}:${MINOR}"
-
-            MAJOR=${MINOR%.*}
-            echo tagging "${DOCKER_IMAGE}:${MAJOR}"
-            docker tag "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:${MAJOR}"
-            docker push "${DOCKER_IMAGE}:${MAJOR}"
-
-            echo tagging "${DOCKER_IMAGE}:${SHA}"
-            docker tag "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:${SHA}"
-            docker push "${DOCKER_IMAGE}:${SHA}"
-
-            echo tagging "${DOCKER_IMAGE}:latest"
-            docker tag "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:latest"
-            docker push "${DOCKER_IMAGE}:latest"
-          fi
+          docker push "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:${MINOR}" "${DOCKER_IMAGE}:${MAJOR}" "${DOCKER_IMAGE}:${SHA}" "${DOCKER_IMAGE}:latest"
