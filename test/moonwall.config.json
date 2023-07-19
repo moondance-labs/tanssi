@@ -115,6 +115,18 @@
       ]
     },
     {
+      "name": "zombie_dancebox_upgrade",
+      "testFileDir": ["suites/rt-upgrade"],
+      "runScripts": ["download-polkadot.sh"],
+      "foundation": {
+        "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
+        "type": "zombie",
+        "zombieSpec": {
+          "configPath": "./configs/zombieDanceboxUpgrade.json"
+        }
+      }
+    },
+    {
       "name": "dancebox_smoke",
       "testFileDir": ["suites/smoke-test"],
       "foundation": {
