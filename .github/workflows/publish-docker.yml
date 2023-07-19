@@ -10,33 +10,47 @@ on:
 jobs:
   tag-docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3 
         with:
           fetch-depth: 0
       - name: Login to DockerHub
-        uses: docker/login-action@v2.2.0
+        uses: docker/login-action@v2.2.0  
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - run: |
-          DOCKER_IMAGE=moondancelabs/tanssi
+          DOCKER_IMAGE=moondancelabs/${{matrix.image}}
           VERSION="${{ github.event.inputs.tag }}"
           COMMIT=`git rev-list -n 1 '${{ github.event.inputs.tag }}'`
           SHA=sha-${COMMIT::8}
           echo using "${DOCKER_IMAGE}:${SHA} as base image"
 
           mkdir -p build 
-          wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/tanssi-node -O build/tanssi-node
-          wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/tanssi-node-skylake -O build/tanssi-node-skylake
-          wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/tanssi-node-znver3 -O build/tanssi-node-znver3
+
+          if [[ ${{matrix.image}} == 'tanssi' ]]; then
+            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/tanssi-node -O build/tanssi-node
+            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/tanssi-node-skylake -O build/tanssi-node-skylake
+            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/tanssi-node-znver3 -O build/tanssi-node-znver3
+          elif [[ ${{matrix.image}} == 'container-chain-simple-template' ]]; then
+            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-simple-node -O build/container-chain-template-simple-node
+            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-simple-node-skylake -O build/container-chain-template-simple-node-skylake
+            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-simple-node-znver3 -O build/container-chain-template-simple-node-znver3
+          elif [[ ${{matrix.image}} == 'container-chain-evm-template' ]]; then
+            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-frontier-node -O build/container-chain-template-frontier-node
+            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-frontier-node-skylake -O build/container-chain-template-frontier-node-skylake
+            wget https://github.com/moondance-labs/tanssi/releases/download/$VERSION/container-chain-template-frontier-node-znver3 -O build/container-chain-template-frontier-node-znver3
+          fi
 
           echo building "${DOCKER_IMAGE}:${VERSION}"
           docker build \
             --build-arg DOCKER_IMAGE="$DOCKER_IMAGE" \
             --build-arg SHA="$SHA" \
-            -f docker/tanssi.Dockerfile \
+            -f docker/${{matrix.image}}.Dockerfile \
             -t "${DOCKER_IMAGE}:${VERSION}" \
             . 
 
