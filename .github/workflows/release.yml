@@ -34,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          ref:  ${{ steps.check-git-ref.outputs.git_ref }}
+          ref: ${{ steps.check-git-ref.outputs.git_ref }}
       - name: Get Sha
         id: get-sha
         run: |
