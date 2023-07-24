@@ -23,7 +23,7 @@ describeSuite({
 
         const assignmentCollatorKey = (await api.query.authorityAssignment.collatorContainerChain(sessionIndex)).toJSON();
         const authorityKeyMapping = (await api.query.authorityMapping.authorityIdMapping(sessionIndex)).toJSON();
-        for (var key of  assignmentCollatorKey["orchestratorChain"]) {
+        for (let key of  assignmentCollatorKey["orchestratorChain"]) {
             const assignedAccount = authorityKeyMapping[key.toString()];
             expect(assignmentCollatorAccount["orchestratorChain"].includes(assignedAccount.toString())).to.be.true;
         }
@@ -38,8 +38,8 @@ describeSuite({
           const sessionIndex = (await api.query.session.currentIndex()).toNumber();
           const assignmentCollatorKey = (await api.query.authorityAssignment.collatorContainerChain(sessionIndex)).toJSON();
           const authorityKeyMapping = (await api.query.authorityMapping.authorityIdMapping(sessionIndex)).toJSON();
-          for (var container of Object.keys(assignmentCollatorKey["containerChains"])) {
-            for (var key of assignmentCollatorKey["containerChains"][container]) {
+          for (let container of Object.keys(assignmentCollatorKey["containerChains"])) {
+            for (let key of assignmentCollatorKey["containerChains"][container]) {
               const assignedAccount = authorityKeyMapping[key.toString()];
               expect(assignmentCollatorAccount["containerChains"][container].includes(assignedAccount.toString())).to.be.true;
             }

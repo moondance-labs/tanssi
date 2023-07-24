@@ -23,7 +23,7 @@ type BlockFilteredRecord = {
 
 describeSuite({
   id: "R03",
-  title: "Authors in the last ${hours} should match the slot number provided",
+  title: `Authors in the last ${hours} should match the slot number provided`,
   foundationMethods: "read_only",
   testCases: ({ it, context, log }) => {
     let api: ApiPromise;

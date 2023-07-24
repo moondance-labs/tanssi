@@ -67,7 +67,7 @@ describeSuite({
 
           expect(Object.keys(authorities["containerChains"]).length).to.be.equal(liveContainers.length);
 
-          for (var container of liveContainers) {
+          for (let container of liveContainers) {
             expect(authorities["containerChains"][container.toString()].length).to.be.equal(config["collatorsPerContainer"].toNumber());
           }
         }
