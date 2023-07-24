@@ -60,11 +60,6 @@ describeSuite({
         if (Object.keys(authorities["orchestratorChain"]).length > config["minOrchestratorCollators"].toNumber()) {
           let liveContainers = await api.query.registrar.registeredParaIds();
 
-          const pendingVerification = await api.query.registrar.pendingVerification();
-          liveContainers = liveContainers.filter( function( el ) {
-            return pendingVerification.indexOf( el ) < 0;
-          } );
-
           expect(Object.keys(authorities["containerChains"]).length).to.be.equal(liveContainers.length);
 
           for (let container of liveContainers) {
