@@ -1,5 +1,6 @@
 name: Create runtime release ticket
 on:
+  push:
   workflow_dispatch:
     inputs:
       from:
