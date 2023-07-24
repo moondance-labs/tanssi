@@ -45,5 +45,28 @@ describeSuite({
           }
         }
     });
+
+    it({
+      id: "C03",
+      title: "Config all registered paras should be filled if more than min collators in orchestrator",
+      test: async function () {
+        const config = await api.query.configuration.activeConfig();
+        // get current session
+        const sessionIndex = (await api.query.session.currentIndex()).toNumber();
+        // get current authorities
+        const authorities = (await api.query.authorityAssignment.collatorContainerChain(sessionIndex)).toJSON();
+        
+        // If we have container chain collators, is because we at least assigned min to orchestrator
+        if (Object.keys(authorities["orchestratorChain"]).length > config["minOrchestratorCollators"].toNumber()) {
+          let liveContainers = await api.query.registrar.registeredParaIds();
+
+          expect(Object.keys(authorities["containerChains"]).length).to.be.equal(liveContainers.length);
+
+          for (let container of liveContainers) {
+            expect(authorities["containerChains"][container.toString()].length).to.be.equal(config["collatorsPerContainer"].toNumber());
+          }
+        }
+      }
+    });
   },
 });
