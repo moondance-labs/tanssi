@@ -33,9 +33,11 @@ mod client_side;
 pub use client_side::*;
 #[cfg(feature = "std")]
 mod mock;
+#[cfg(test)]
+mod tests;
 #[cfg(feature = "std")]
 pub use mock::*;
-
+#[cfg(feature = "std")]
 use {
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
