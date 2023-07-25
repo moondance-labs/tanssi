@@ -30,6 +30,9 @@ use {
     sp_state_machine::StorageValue, std::sync::Arc,
 };
 
+#[cfg(test)]
+mod tests;
+
 #[derive(thiserror::Error, Debug)]
 pub enum OrchestratorChainError {
     #[error("Blockchain returned an error: {0}")]
@@ -57,6 +60,12 @@ impl From<OrchestratorChainError> for sp_blockchain::Error {
 impl<T: std::error::Error + Send + Sync + 'static> From<Box<T>> for OrchestratorChainError {
     fn from(r: Box<T>) -> Self {
         OrchestratorChainError::Application(r)
+    }
+}
+
+impl From<Box<dyn sp_state_machine::Error>> for OrchestratorChainError {
+    fn from(r: Box<dyn sp_state_machine::Error>) -> Self {
+        OrchestratorChainError::StateMachineError(r)
     }
 }
 
