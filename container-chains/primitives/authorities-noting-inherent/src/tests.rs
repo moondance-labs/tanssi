@@ -78,6 +78,17 @@ impl DummyRelayChainInterface {
             relay_client: Arc::new(builder.build()),
         }
     }
+
+    fn new_with_head_data(orchestrator_para_id: ParaId, head_data: Vec<u8>) -> Self {
+        let builder = TestClientBuilder::new().add_extra_storage(
+            well_known_keys::para_id_head(orchestrator_para_id).to_vec(),
+            head_data,
+        );
+
+        Self {
+            relay_client: Arc::new(builder.build()),
+        }
+    }
 }
 
 #[async_trait]
@@ -218,7 +229,7 @@ impl RelayChainInterface for DummyRelayChainInterface {
 }
 
 #[tokio::test]
-async fn test_get_storage() {
+async fn test_orchestrator_inherent_insertion() {
     let orch_session = 1u32;
     let orch_para_id = 1000u32;
     let orchestrator_chain_interface = Arc::new(DummyOrchestratorChainInterface::new(orch_session));
@@ -286,4 +297,141 @@ async fn test_get_storage() {
         inherent_data.get_data(&crate::INHERENT_IDENTIFIER).unwrap(),
         created
     );
+}
+
+#[tokio::test]
+async fn test_header_not_present_error() {
+    let orch_session = 1u32;
+    let orch_para_id = 1000u32;
+    let orchestrator_chain_interface = Arc::new(DummyOrchestratorChainInterface::new(orch_session));
+    let orchestrator_genesis_hash = orchestrator_chain_interface
+        .orchestrator_client
+        .genesis_hash();
+
+    let header = orchestrator_chain_interface
+        .orchestrator_client
+        .header(orchestrator_genesis_hash)
+        .unwrap()
+        .unwrap();
+
+    // The substrate example header is not the same as the tanssi one in the block num parameter
+    let orchestrator_header = OrchestratorHeader {
+        parent_hash: header.parent_hash,
+        number: header.number.try_into().unwrap(),
+        state_root: header.state_root,
+        extrinsics_root: header.extrinsics_root,
+        digest: header.digest,
+    };
+    let relay_chain_interface = Arc::new(DummyRelayChainInterface::new(
+        orch_para_id.into(),
+        orchestrator_header.clone(),
+    ));
+    let relay_genesis_hash = relay_chain_interface.relay_client.genesis_hash();
+    let relay_header = relay_chain_interface
+        .relay_client
+        .header(relay_genesis_hash)
+        .unwrap()
+        .unwrap();
+
+    // get latest header info, but for another paraId
+    let latest_header_info =
+        ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+            relay_header.hash(),
+            &relay_chain_interface,
+            (orch_para_id + 1).into(),
+        )
+        .await;
+
+    // assert creation went well
+    assert_eq!(latest_header_info, None);
+
+    let created = ContainerChainAuthoritiesInherentData::create_at(
+        relay_header.hash(),
+        &relay_chain_interface,
+        &orchestrator_chain_interface,
+        (orch_para_id + 1).into(),
+    )
+    .await;
+
+    assert_eq!(created, None);
+}
+
+#[tokio::test]
+async fn test_head_data_not_decodable_error() {
+    let orch_session = 1u32;
+    let orch_para_id = 1000u32;
+    let orchestrator_chain_interface = Arc::new(DummyOrchestratorChainInterface::new(orch_session));
+    // Put a non decodable HeadData
+    let relay_chain_interface = Arc::new(DummyRelayChainInterface::new_with_head_data(
+        orch_para_id.into(),
+        vec![10u8],
+    ));
+
+    let relay_genesis_hash = relay_chain_interface.relay_client.genesis_hash();
+    let relay_header = relay_chain_interface
+        .relay_client
+        .header(relay_genesis_hash)
+        .unwrap()
+        .unwrap();
+
+    // get latest header info, but cannot since head data does not decode
+    let latest_header_info =
+        ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+            relay_header.hash(),
+            &relay_chain_interface,
+            (orch_para_id).into(),
+        )
+        .await;
+
+    assert_eq!(latest_header_info, None);
+
+    let created = ContainerChainAuthoritiesInherentData::create_at(
+        relay_header.hash(),
+        &relay_chain_interface,
+        &orchestrator_chain_interface,
+        (orch_para_id).into(),
+    )
+    .await;
+
+    assert_eq!(created, None);
+}
+
+#[tokio::test]
+async fn test_header_not_decodable() {
+    let orch_session = 1u32;
+    let orch_para_id = 1000u32;
+    let orchestrator_chain_interface = Arc::new(DummyOrchestratorChainInterface::new(orch_session));
+    // Put a decodable HeadData, but a non-decodable header
+    let relay_chain_interface = Arc::new(DummyRelayChainInterface::new_with_head_data(
+        orch_para_id.into(),
+        HeadData(vec![1u8]).encode(),
+    ));
+
+    let relay_genesis_hash = relay_chain_interface.relay_client.genesis_hash();
+    let relay_header = relay_chain_interface
+        .relay_client
+        .header(relay_genesis_hash)
+        .unwrap()
+        .unwrap();
+
+    // get latest header info, but cannot since header does not decode
+    let latest_header_info =
+        ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+            relay_header.hash(),
+            &relay_chain_interface,
+            (orch_para_id).into(),
+        )
+        .await;
+
+    assert_eq!(latest_header_info, None);
+
+    let created = ContainerChainAuthoritiesInherentData::create_at(
+        relay_header.hash(),
+        &relay_chain_interface,
+        &orchestrator_chain_interface,
+        (orch_para_id).into(),
+    )
+    .await;
+
+    assert_eq!(created, None);
 }
