@@ -29,11 +29,11 @@ runs:
     - name: Set binary path and number of CPUs
       shell: bash
       run: |
-        #### Ensure the frontier-template-binary binary is executable
-        chmod uog+x ${{ inputs.frontier-template-binary}}
+        #### Ensure the simple-template-binary binary is executable
+        chmod uog+x ${{ inputs.simple-template-binary}}
 
         #### Set the binary path (absolute path to avoid subfolder working directories issues)
-        echo "BINARY_PATH=$(realpath ${{ inputs.frontier-template-binary }})" >> $GITHUB_ENV
+        echo "BINARY_PATH=$(realpath ${{ inputs.simple-template-binary }})" >> $GITHUB_ENV
 
         #### Set the number of CPUs to use for parallel tests.
         echo "CPUS=$(lscpu | egrep '^CPU\(s\)' | grep -o '[0-9]*')" >> $GITHUB_ENV
