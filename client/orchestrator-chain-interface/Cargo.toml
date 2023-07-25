@@ -9,14 +9,12 @@ async-trait = { workspace = true }
 futures = { workspace = true }
 parity-scale-codec = { workspace = true }
 thiserror = { workspace = true }
-tokio = { workspace = true }
 
 # Substrate
 sc-client-api = { workspace = true }
 sp-api = { workspace = true, features = [ "std" ] }
 sp-blockchain = { workspace = true }
 sp-state-machine = { workspace = true, features = [ "std" ] }
-sp-runtime = { workspace = true, features = [ "std" ] }
 
 # Polkadot
 polkadot-overseer = { workspace = true }
@@ -29,3 +27,5 @@ substrate-test-runtime-client = { workspace = true }
 substrate-test-runtime = { workspace = true }
 sp-trie = { workspace = true, features = [ "std" ] }
 sc-client-api = { workspace = true }
+tokio = { workspace = true }
+sp-runtime = { workspace = true, features = [ "std" ] }
