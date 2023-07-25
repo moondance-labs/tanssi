@@ -72,6 +72,28 @@
       }
     },
     {
+      "name": "dev_simple_template",
+      "testFileDir": ["suites/common"],
+      "multiThreads": true,
+      "html": false,
+      "foundation": {
+        "type": "dev",
+        "launchSpec": [
+          {
+            "name": "simple-template",
+            "binPath": "../target/release/container-chain-template-simple-node",
+            "options": [
+                "--dev",
+                "--tmp",
+                "--sealing=manual"
+            ],
+            "disableDefaultEthProviders": true,
+            "newRpcBehaviour": true
+          }
+        ]
+      }
+    },
+    {
       "name": "zombie_tanssi",
       "testFileDir": ["suites/para"],
       "runScripts": ["build-spec.sh", "download-polkadot.sh"],

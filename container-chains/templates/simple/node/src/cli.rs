@@ -75,7 +75,7 @@ pub struct Cli {
     pub subcommand: Option<Subcommand>,
 
     #[command(flatten)]
-    pub run: cumulus_client_cli::RunCmd,
+    pub run: RunCmd,
 
     /// Disable automatic hardware benchmarks.
     ///
@@ -106,6 +106,31 @@ pub struct RelayChainCli {
 
     /// The base path that should be used by the relay chain.
     pub base_path: PathBuf,
+}
+
+#[derive(Debug, clap::Parser)]
+#[group(skip)]
+pub struct RunCmd {
+    #[clap(flatten)]
+    pub base: cumulus_client_cli::RunCmd,
+
+    /// Enable the development service to run without a backing relay chain
+    #[arg(long)]
+    pub dev_service: bool,
+
+    /// When blocks should be sealed in the dev service.
+    ///
+    /// Options are "instant", "manual", or timer interval in milliseconds
+    #[arg(long, default_value = "instant")]
+    pub sealing: crate::service::Sealing
+}
+
+impl std::ops::Deref for RunCmd {
+    type Target = cumulus_client_cli::RunCmd;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base
+    }
 }
 
 impl RelayChainCli {

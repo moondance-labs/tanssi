@@ -89,6 +89,13 @@ jobs:
           timeout: 10000
           frontier-template-binary: binaries/container-chain-template-frontier-node
           force-pass: true
+      - name: Typescript Tests Simple Template (Dev Service)
+        uses: ./.github/workflow-templates/typescript-tests-dev-simple-template
+        with:
+          timeout: 10000
+          simple-template-binary: binaries/container-chain-template-simple-node
+          force-pass: true
+      
       - name: Install llvm tools
         run:
           rustup component add llvm-tools-preview

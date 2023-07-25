@@ -34,6 +34,7 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
+    polkadot_cli::IdentifyVariant
 };
 
 #[cfg(feature = "try-runtime")]
@@ -323,7 +324,20 @@ pub fn run() -> Result<()> {
 					[RelayChainCli::executable_name()].iter().chain(cli.relay_chain_args.iter()),
 				);
 
-				let id = ParaId::from(para_id);
+                let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
+
+				let relay_chain_id = extension.map(|e| e.relay_chain.clone());
+
+				let dev_service =
+					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
+
+                let id = ParaId::from(para_id);
+
+                println!("is dev service {:?}", dev_service);
+				if dev_service {
+					return crate::service::start_dev_node(config, cli.run.sealing, id, hwbench).await
+                    .map_err(Into::into)
+				}
 
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);

@@ -18,6 +18,7 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
+ccp-authorities-noting-inherent = { workspace = true }
 container-chain-template-simple-runtime = { workspace = true, features = [ "std" ] }
 tc-consensus = { workspace = true }
 
