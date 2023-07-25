@@ -28,6 +28,7 @@ use {
     futures::Stream,
     polkadot_overseer::Handle,
     sc_client_api::{StorageKey, StorageProvider},
+    sp_inherents::{InherentData, InherentDataProvider},
     sp_state_machine::{prove_read, StorageValue},
     std::{collections::BTreeMap, pin::Pin, sync::Arc},
     substrate_test_runtime_client::{
@@ -272,4 +273,17 @@ async fn test_get_storage() {
 
     // assert creation went well
     assert!(created.is_some());
+
+    // Assert we can put inherent data
+    let mut inherent_data = InherentData::new();
+    assert!(created
+        .clone()
+        .unwrap()
+        .provide_inherent_data(&mut inherent_data)
+        .await
+        .is_ok());
+    assert_eq!(
+        inherent_data.get_data(&crate::INHERENT_IDENTIFIER).unwrap(),
+        created
+    );
 }
