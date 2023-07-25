@@ -23,18 +23,19 @@
 
 use std::sync::Arc;
 
-use container_chain_template_simple_runtime::{opaque::Block, AccountId, Index as Nonce, Hash};
-use sc_consensus_manual_seal::EngineCommand;
-use sc_consensus_manual_seal::rpc::ManualSeal;
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 use {
+    container_chain_template_simple_runtime::{opaque::Block, AccountId, Hash, Index as Nonce},
     sc_client_api::AuxStore,
+    sc_consensus_manual_seal::{
+        rpc::{ManualSeal, ManualSealApiServer},
+        EngineCommand,
+    },
     sc_transaction_pool_api::TransactionPool,
     sp_api::ProvideRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
 };
-use sc_consensus_manual_seal::rpc::ManualSealApiServer;
 
 /// A type representing all RPC extensions.
 pub type RpcExtension = jsonrpsee::RpcModule<()>;
@@ -74,7 +75,7 @@ where
         client,
         pool,
         deny_unsafe,
-        command_sink
+        command_sink,
     } = deps;
 
     if let Some(command_sink) = command_sink {

@@ -18,12 +18,17 @@
 use sc_executor::{HeapAllocStrategy, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY};
 
 // std
-use std::{sync::Arc, time::Duration};
-use sp_core::Pair;
-use {cumulus_client_cli::CollatorOptions, sc_network::config::FullNetworkConfiguration};
+use {
+    cumulus_client_cli::CollatorOptions,
+    sc_network::config::FullNetworkConfiguration,
+    sp_core::Pair,
+    std::{sync::Arc, time::Duration},
+};
 // Local Runtime Types
-use container_chain_template_simple_runtime::{opaque::Block, RuntimeApi};
-use futures::StreamExt;
+use {
+    container_chain_template_simple_runtime::{opaque::Block, RuntimeApi},
+    futures::StreamExt,
+};
 // Cumulus Imports
 use {
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
@@ -31,10 +36,11 @@ use {
         build_relay_chain_interface, prepare_node_config, start_full_node, StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
+    cumulus_primitives_parachain_inherent::{
+        MockValidationDataInherentDataProvider, MockXcmConfig,
+    },
     cumulus_relay_chain_interface::RelayChainInterface,
 };
-use cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider;
-use cumulus_primitives_parachain_inherent::MockXcmConfig;
 // Substrate Imports
 use {
     sc_consensus::ImportQueue,
@@ -83,7 +89,7 @@ struct MockTimestampInherentDataProvider;
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
 pub fn new_partial(
-    config: &Configuration
+    config: &Configuration,
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -181,7 +187,7 @@ pub fn new_partial(
 }
 
 pub fn new_partial_dev(
-    config: &Configuration
+    config: &Configuration,
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -277,7 +283,6 @@ pub fn new_partial_dev(
         other: (block_import, telemetry, telemetry_worker_handle),
     })
 }
-
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
@@ -665,7 +670,6 @@ pub async fn start_dev_node(
     Ok(task_manager)
 }
 
-
 /// TODO: move it somewhere common, code duplication
 /// Block authoring scheme to be used by the dev service.
 #[derive(Debug, Copy, Clone)]
@@ -695,8 +699,7 @@ impl FromStr for Sealing {
     }
 }
 
-use sc_consensus::BlockImport;
-use cumulus_client_consensus_common::ParachainBlockImportMarker;
+use {cumulus_client_consensus_common::ParachainBlockImportMarker, sc_consensus::BlockImport};
 
 /// Orchestrator Parachain Block import. We cannot use the one in cumulus as it overrides the best
 /// chain selection rule
