@@ -121,8 +121,8 @@ sp-timestamp = { git = "https://github.com/moondance-labs/substrate", branch = "
 substrate-build-script-utils = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 substrate-frame-rpc-system = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 substrate-prometheus-endpoint = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
-substrate-test-runtime-client = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 substrate-test-runtime = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
+substrate-test-runtime-client = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 substrate-wasm-builder = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 try-runtime-cli = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 

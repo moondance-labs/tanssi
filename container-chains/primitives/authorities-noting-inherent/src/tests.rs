@@ -28,11 +28,8 @@ use {
     futures::Stream,
     polkadot_overseer::Handle,
     sc_client_api::{StorageKey, StorageProvider},
-    sp_runtime::traits::HashFor,
     sp_state_machine::{prove_read, StorageValue},
-    sp_trie::{HashDBT, EMPTY_PREFIX},
     std::{collections::BTreeMap, pin::Pin, sync::Arc},
-    substrate_test_runtime::Block,
     substrate_test_runtime_client::{
         ClientExt, DefaultTestClientBuilderExt, TestClient, TestClientBuilder, TestClientBuilderExt,
     },
@@ -49,7 +46,6 @@ struct DummyOrchestratorChainInterface {
 struct DummyRelayChainInterface {
     relay_client: Arc<TestClient>,
 }
-const KEY: &[u8] = b":mock";
 const VALUE: &[u8] = b"hello world";
 
 impl DummyOrchestratorChainInterface {
@@ -184,7 +180,7 @@ impl RelayChainInterface for DummyRelayChainInterface {
         unimplemented!("Not needed for test")
     }
 
-    async fn wait_for_block(&self, hash: PHash) -> RelayChainResult<()> {
+    async fn wait_for_block(&self, _hash: PHash) -> RelayChainResult<()> {
         unimplemented!("Not needed for test")
     }
 
