@@ -453,7 +453,7 @@ pub async fn start_dev_node(
         keystore_container,
         select_chain: maybe_select_chain,
         transaction_pool,
-        other: (block_import, mut telemetry, telemetry_worker_handle),
+        other: (block_import, mut telemetry, _telemetry_worker_handle),
     } = new_partial_dev(&mut config)?;
 
     let net_config = FullNetworkConfiguration::new(&config.network);
