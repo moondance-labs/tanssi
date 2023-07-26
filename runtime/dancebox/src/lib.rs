@@ -650,6 +650,12 @@ impl pallet_proxy::Config for Runtime {
     type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MigrationsList = ();
+    type XcmExecutionManager = ();
+}
+
 impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -667,6 +673,7 @@ construct_runtime!(
         Sudo: pallet_sudo = 4,
         Utility: pallet_utility = 5,
         Proxy: pallet_proxy = 6,
+        Migrations: pallet_migrations = 7,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
