@@ -7316,6 +7316,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-pooled-staking"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "nimbus-primitives",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-preimage"
 version = "4.0.0-dev"
 source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.43#11f2f27ba5af2d4e8eb1f73ae0056106be5bcfb2"
