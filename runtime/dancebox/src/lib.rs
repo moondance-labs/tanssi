@@ -35,7 +35,10 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, Everything, InstanceFilter},
+        traits::{
+            ConstU128, ConstU32, ConstU64, Contains, Everything, InstanceFilter, OffchainWorker,
+            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+        },
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -656,6 +659,102 @@ impl pallet_migrations::Config for Runtime {
     type XcmExecutionManager = ();
 }
 
+/// Maintenance mode Call filter
+pub struct MaintenanceFilter;
+impl Contains<RuntimeCall> for MaintenanceFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            RuntimeCall::Balances(_) => false,
+            _ => true,
+        }
+    }
+}
+
+/// Normal Call Filter
+/// We dont allow to create nor mint assets, this for now is disabled
+/// We only allow transfers. For now creation of assets will go through
+/// asset-manager, while minting/burning only happens through xcm messages
+/// This can change in the future
+pub struct NormalFilter;
+impl Contains<RuntimeCall> for NormalFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            // We filter anonymous proxy as they make "reserve" inconsistent
+            // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
+            RuntimeCall::Proxy(method) => match method {
+                pallet_proxy::Call::create_pure { .. } => false,
+                pallet_proxy::Call::kill_pure { .. } => false,
+                _ => true,
+            },
+            _ => true,
+        }
+    }
+}
+
+/// The hooks we want to run in Maintenance Mode
+pub struct MaintenanceHooks;
+
+impl OnInitialize<BlockNumber> for MaintenanceHooks {
+    fn on_initialize(n: BlockNumber) -> Weight {
+        AllPalletsWithSystem::on_initialize(n)
+    }
+}
+
+// return 0
+// For some reason using empty tuple () isnt working
+// There exist only two pallets that use onIdle and these are xcmp and dmp queues
+// For some reason putting an empty tumple does not work (transaction never finishes)
+// We use an empty onIdle, if on the future we want one of the pallets to execute it
+// we need to provide it here
+impl OnIdle<BlockNumber> for MaintenanceHooks {
+    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
+        Weight::zero()
+    }
+}
+
+impl OnRuntimeUpgrade for MaintenanceHooks {
+    fn on_runtime_upgrade() -> Weight {
+        AllPalletsWithSystem::on_runtime_upgrade()
+    }
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade() -> Result<Vec<u8>, &'static str> {
+        AllPalletsWithSystem::pre_upgrade()
+    }
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(state: Vec<u8>) -> Result<(), &'static str> {
+        AllPalletsWithSystem::post_upgrade(state)
+    }
+}
+
+impl OnFinalize<BlockNumber> for MaintenanceHooks {
+    fn on_finalize(n: BlockNumber) {
+        AllPalletsWithSystem::on_finalize(n)
+    }
+}
+
+impl OffchainWorker<BlockNumber> for MaintenanceHooks {
+    fn offchain_worker(n: BlockNumber) {
+        AllPalletsWithSystem::offchain_worker(n)
+    }
+}
+
+impl pallet_maintenance_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    // TODO: enable xcm-support feature when we enable xcm
+    /*
+    type XcmExecutionManager = XcmExecutionManager;
+    type NormalDmpHandler = NormalDmpHandler;
+    type MaintenanceDmpHandler = MaintenanceDmpHandler;
+    */
+    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
+    // operation
+    type NormalExecutiveHooks = AllPalletsWithSystem;
+    type MaintenanceExecutiveHooks = MaintenanceHooks;
+}
+
 impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -674,6 +773,7 @@ construct_runtime!(
         Utility: pallet_utility = 5,
         Proxy: pallet_proxy = 6,
         Migrations: pallet_migrations = 7,
+        MaintenanceMode: pallet_maintenance_mode = 8,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,

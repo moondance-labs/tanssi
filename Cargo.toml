@@ -53,6 +53,7 @@ tp-traits = { path = "primitives/traits", default-features = false }
 nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi" }
 nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi", default-features = false }
 pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi", default-features = false }
+pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi", default-features = false }
 pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi", default-features = false }
 
 # Substrate (wasm)

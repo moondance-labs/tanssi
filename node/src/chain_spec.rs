@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use dancebox_runtime::{MaintenanceModeConfig, MigrationsConfig};
+
 use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT},
@@ -334,6 +336,10 @@ fn testnet_genesis(
         },
         sudo: SudoConfig {
             key: Some(root_key),
+        },
+        migrations: MigrationsConfig {},
+        maintenance_mode: MaintenanceModeConfig {
+            start_in_maintenance_mode: false,
         },
     }
 }
