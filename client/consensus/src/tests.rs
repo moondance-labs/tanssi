@@ -24,21 +24,16 @@ mod tests {
         sc_block_builder::BlockBuilderProvider,
         sc_client_api::BlockchainEvents,
         sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
-        sc_consensus_aura::{
-            slot_duration, AuraVerifier, CheckForEquivocation, CompatibilityMode, SlotProportion,
-        },
-        sc_consensus_slots::{BackoffAuthoringOnFinalizedHeadLagging, SimpleSlotWorker},
+        sc_consensus_aura::SlotProportion,
+        sc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging,
         sc_keystore::LocalKeystore,
         sc_network_test::{Block as TestBlock, *},
-        sp_application_crypto::{key_types::AURA, AppCrypto},
         sp_consensus::{
-            BlockOrigin, DisableProofRecording, Environment, Error as ConsensusError,
-            NoNetwork as DummyOracle, Proposal, Proposer, SelectChain,
+            BlockOrigin, DisableProofRecording, Environment, NoNetwork as DummyOracle, Proposal,
+            Proposer,
         },
-        sp_consensus_aura::{
-            inherents::InherentDataProvider, sr25519::AuthorityPair, SlotDuration,
-        },
-        sp_inherents::{CreateInherentDataProviders, InherentData},
+        sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration},
+        sp_inherents::InherentData,
         sp_keyring::sr25519::Keyring,
         sp_keystore::Keystore,
         sp_runtime::{
@@ -46,15 +41,8 @@ mod tests {
             Digest, DigestItem,
         },
         sp_timestamp::Timestamp,
-        std::{
-            sync::Arc,
-            task::Poll,
-            time::{Duration, Instant},
-        },
-        substrate_test_runtime_client::{
-            runtime::{Header, H256},
-            TestClient,
-        },
+        std::{sync::Arc, task::Poll, time::Duration},
+        substrate_test_runtime_client::TestClient,
     };
     const SLOT_DURATION_MS: u64 = 1000;
 
@@ -162,7 +150,6 @@ mod tests {
             _: Duration,
             _: Option<usize>,
         ) -> Self::Proposal {
-            println!("digests porposed {:?}", digests);
             let r = self
                 .1
                 .new_block(digests)
@@ -170,13 +157,10 @@ mod tests {
                 .build()
                 .map_err(|e| e.into());
 
-            futures::future::ready(r.map(|b| {
-                println!("BLOCK ISSS {:?}", b.block.header);
-                Proposal {
-                    block: b.block,
-                    proof: (),
-                    storage_changes: b.storage_changes,
-                }
+            futures::future::ready(r.map(|b| Proposal {
+                block: b.block,
+                proof: (),
+                storage_changes: b.storage_changes,
             }))
         }
     }
@@ -204,7 +188,7 @@ mod tests {
             ((client.as_block_import()), None, ())
         }
 
-        fn make_verifier(&self, client: PeersClient, _peer_data: &()) -> Self::Verifier {
+        fn make_verifier(&self, _client: PeersClient, _peer_data: &()) -> Self::Verifier {
             OwnPassThroughVerifier::new(true)
         }
 
@@ -323,13 +307,13 @@ use {
     parity_scale_codec::{Decode, Encode},
     sc_client_api::{backend::AuxStore, BlockOf, HeaderBackend},
     sc_consensus::BlockImport,
-    sc_consensus_aura::{AuraApi, StartAuraParams},
-    sc_consensus_slots::{BackoffAuthoringBlocksStrategy, SimpleSlotWorkerToSlotWorker},
+    sc_consensus_aura::StartAuraParams,
+    sc_consensus_slots::BackoffAuthoringBlocksStrategy,
     sp_api::ProvideRuntimeApi,
-    sp_application_crypto::{AppCrypto, AppPublic},
+    sp_application_crypto::AppPublic,
     sp_consensus::{Environment, Proposer, SelectChain, SyncOracle},
     sp_core::{
-        crypto::{ByteArray, Pair, Public},
+        crypto::{ByteArray, Pair},
         H256,
     },
     sp_inherents::CreateInherentDataProviders,
@@ -391,7 +375,7 @@ where
         },
     );
     let get_authorities_from_orchestrator =
-        move |block_hash: <B as BlockT>::Hash,
+        move |_block_hash: <B as BlockT>::Hash,
               (_relay_parent, _validation_data): (H256, PersistedValidationData)| {
             async move {
                 let aux_data = vec![
@@ -414,13 +398,8 @@ where
 }
 
 use {
-    crate::{
-        consensus_orchestrator::{RetrieveAuthoritiesFromOrchestrator, TanssiSlotWorker},
-        OrchestratorAuraConsensus,
-    },
-    cumulus_client_consensus_common::ParachainConsensus,
+    crate::consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
     cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
-    sp_consensus::{EnableProofRecording, ProofRecording},
 };
 
 use {
@@ -428,7 +407,7 @@ use {
     futures_timer::Delay,
     sc_consensus_slots::SlotInfo,
     sp_consensus_slots::{Slot, SlotDuration},
-    std::time::{Duration, Instant},
+    std::time::Duration,
 };
 /// A stream that returns every time there is a new slot.
 pub(crate) struct Slots<Block, SC, IDP> {
@@ -552,9 +531,7 @@ pub fn time_until_next_slot(slot_duration: Duration) -> Duration {
     Duration::from_millis(remaining_millis as u64)
 }
 
-use {
-    nimbus_primitives::NimbusId, sc_consensus_slots::SimpleSlotWorker, sp_keyring::sr25519::Keyring,
-};
+use {nimbus_primitives::NimbusId, sp_keyring::sr25519::Keyring};
 /// Start a new slot worker.
 ///
 /// Every time a new slot is triggered, `worker.on_slot` is called and the future it returns is
