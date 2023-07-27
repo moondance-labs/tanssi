@@ -17,7 +17,7 @@
 use {
     crate::{
         traits::{ErrAdd, ErrMul, ErrSub, MulDiv},
-        Candidate, Config, Delegator, Error, Pools, PoolsKey, Shares, Stake,
+        Candidate, Config, Delegator, Error, Event, Pallet, Pools, PoolsKey, Shares, Stake,
     },
     core::marker::PhantomData,
     frame_support::ensure,
@@ -164,7 +164,7 @@ pub trait Pool<T: Config> {
 }
 
 pub fn check_candidate_consistency<T: Config>(candidate: &Candidate<T>) -> Result<(), Error<T>> {
-    let total0 = Pools::<T>::get(candidate, &PoolsKey::<T>::CandidateTotalStake);
+    let total0 = Pools::<T>::get(candidate, &PoolsKey::CandidateTotalStake);
 
     let auto = AutoCompounding::<T>::total_staked(&candidate).0;
     let manual = ManualRewards::<T>::total_staked(&candidate).0;
@@ -188,24 +188,24 @@ macro_rules! impl_pool {
             fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T> {
                 Shares(Pools::<T>::get(
                     candidate,
-                    &PoolsKey::<T>::$shares {
+                    &PoolsKey::$shares {
                         delegator: delegator.clone(),
                     },
                 ))
             }
 
             fn shares_supply(candidate: &Candidate<T>) -> Shares<T> {
-                Shares(Pools::<T>::get(candidate, &PoolsKey::<T>::$supply))
+                Shares(Pools::<T>::get(candidate, &PoolsKey::$supply))
             }
 
             fn total_staked(candidate: &Candidate<T>) -> Stake<T> {
-                Stake(Pools::<T>::get(candidate, &PoolsKey::<T>::$total))
+                Stake(Pools::<T>::get(candidate, &PoolsKey::$total))
             }
 
             fn set_shares(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Shares<T>) {
                 Pools::<T>::set(
                     candidate,
-                    &PoolsKey::<T>::$shares {
+                    &PoolsKey::$shares {
                         delegator: delegator.clone(),
                     },
                     value.0,
@@ -213,11 +213,11 @@ macro_rules! impl_pool {
             }
 
             fn set_shares_supply(candidate: &Candidate<T>, value: Shares<T>) {
-                Pools::<T>::set(candidate, &PoolsKey::<T>::$supply, value.0)
+                Pools::<T>::set(candidate, &PoolsKey::$supply, value.0)
             }
 
             fn set_total_staked(candidate: &Candidate<T>, value: Stake<T>) {
-                Pools::<T>::set(candidate, &PoolsKey::<T>::$total, value.0)
+                Pools::<T>::set(candidate, &PoolsKey::$total, value.0)
             }
 
             fn initial_share_value() -> Stake<T> {
@@ -226,6 +226,14 @@ macro_rules! impl_pool {
         }
     };
 }
+
+impl_pool!(
+    Joining,
+    JoiningShares,
+    JoiningSharesSupply,
+    JoiningSharesTotalStaked,
+    T::Balance::one(),
+);
 
 impl_pool!(
     AutoCompounding,
@@ -250,3 +258,73 @@ impl_pool!(
     LeavingSharesTotalStaked,
     T::Balance::one(),
 );
+
+impl<T: Config> ManualRewards<T> {
+    pub fn pending_rewards(
+        candidate: &Candidate<T>,
+        delegator: &Delegator<T>,
+    ) -> Result<Stake<T>, Error<T>> {
+        let shares = Self::shares(candidate, delegator);
+
+        if Zero::is_zero(&shares.0) {
+            return Ok(Stake(0u32.into()));
+        }
+
+        let counter = Pools::<T>::get(candidate, &PoolsKey::ManualRewardsCounter);
+        let checkpoint = Pools::<T>::get(
+            candidate,
+            &PoolsKey::ManualRewardsCheckpoint {
+                delegator: delegator.clone(),
+            },
+        );
+
+        // TODO: Should be safe to wrap around.
+        let diff = counter.err_sub(&checkpoint)?;
+        Ok(Stake(diff.err_mul(&shares.0)?))
+    }
+
+    pub fn claim_rewards(
+        candidate: &Candidate<T>,
+        delegator: &Delegator<T>,
+    ) -> Result<Stake<T>, Error<T>> {
+        let shares = Self::shares(candidate, delegator);
+
+        if Zero::is_zero(&shares.0) {
+            return Ok(Stake(0u32.into()));
+        }
+
+        let counter = Pools::<T>::get(candidate, &PoolsKey::ManualRewardsCounter);
+        let checkpoint = Pools::<T>::get(
+            candidate,
+            &PoolsKey::ManualRewardsCheckpoint {
+                delegator: delegator.clone(),
+            },
+        );
+
+        // TODO: Should be safe to wrap around.
+        let diff = counter.err_sub(&checkpoint)?;
+
+        if Zero::is_zero(&diff) {
+            return Ok(Stake(0u32.into()));
+        }
+
+        let rewards = diff.err_mul(&shares.0)?;
+
+        // Update checkpoint
+        Pools::<T>::set(
+            candidate,
+            &PoolsKey::ManualRewardsCheckpoint {
+                delegator: delegator.clone(),
+            },
+            checkpoint,
+        );
+
+        Pallet::<T>::deposit_event(Event::<T>::ClaimedManualRewards {
+            candidate: candidate.clone(),
+            delegator: delegator.clone(),
+            rewards,
+        });
+
+        Ok(Stake(rewards))
+    }
+}

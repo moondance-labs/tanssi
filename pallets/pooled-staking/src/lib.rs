@@ -33,6 +33,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+mod calls;
 mod candidate;
 mod pools;
 pub mod traits;
@@ -47,8 +48,9 @@ pub mod pallet {
         super::*,
         core::marker::PhantomData,
         frame_support::{
-            storage::types::{StorageDoubleMap, StorageMap, StorageValue, ValueQuery},
-            traits::{tokens::Balance, Currency, IsType, ReservableCurrency},
+            pallet_prelude::OptionQuery,
+            storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
+            traits::{fungible, tokens::Balance, Currency, IsType, ReservableCurrency},
             Blake2_128Concat, RuntimeDebug,
         },
         parity_scale_codec::{Decode, Encode, FullCodec},
@@ -74,17 +76,11 @@ pub mod pallet {
         ) -> bool;
     }
 
+    /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
+    /// StorageDoubleMap first key is the account id of the candidate.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
-    pub enum JoiningTarget {
-        AutoCompounding,
-        ManualRewards,
-    }
-
-    /// Key used by the `Pools` StorageMap, avoiding lots of maps.
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
-    pub enum PoolsKeyRaw<A: FullCodec> {
+    pub enum PoolsKey<A: FullCodec> {
         /// Total amount of currency backing this candidate across all pools.
         CandidateTotalStake,
 
@@ -127,8 +123,25 @@ pub mod pallet {
         LeavingSharesTotalStaked,
     }
 
-    #[allow(type_alias_bounds)] // more readable than fully disambiguated paths
-    pub type PoolsKey<T: Config> = PoolsKeyRaw<T::AccountId>;
+    /// Key used by the "PendingOperations" StorageDoubleMap.
+    /// StorageDoubleMap first key is the account id of the delegator who made the request.
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    pub enum PendingOperationKey<A: FullCodec, B: FullCodec> {
+        /// Candidate requested to join the auto compounding pool of a candidate.
+        JoiningAutoCompounding { candidate: A, at_block: B },
+        /// Candidate requested to join the manual rewards pool of a candidate.
+        JoiningManualRewards { candidate: A, at_block: B },
+        /// Candidate requested to to leave a pool of a candidate.
+        Leaving { candidate: A, at_block: B },
+    }
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    pub enum TargetPool {
+        AutoCompounding,
+        ManualRewards,
+    }
 
     /// Allow calls to be performed using either share amounts or stake.
     /// When providing stake, calls will convert them into share amounts that are
@@ -162,13 +175,19 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// The currency type.
         /// Shares will use the same Balance type.
-        type Currency: Currency<Self::AccountId, Balance = Self::Balance>
-            + ReservableCurrency<Self::AccountId, Balance = Self::Balance>;
+        type Currency: fungible::Inspect<Self::AccountId, Balance = Self::Balance>
+            + fungible::Mutate<Self::AccountId>
+            + fungible::hold::Mutate<Self::AccountId>;
 
         /// Same as Currency::Balance. Must impl `MulDiv` which perform
         /// multiplication followed by division using a bigger type to avoid
         /// overflows.
         type Balance: Balance + traits::MulDiv;
+
+        /// Identifier reserved for this pallet holding account funds.
+        type CurrencyHoldReason: Get<
+            <Self::Currency as fungible::hold::Inspect<Self::AccountId>>::Reason,
+        >;
 
         /// Account holding Currency of all delegators.
         type StakingAccount: Get<Self::AccountId>;
@@ -228,7 +247,19 @@ pub mod pallet {
         Blake2_128Concat,
         Candidate<T>,
         Blake2_128Concat,
-        PoolsKey<T>,
+        PoolsKey<T::AccountId>,
+        T::Balance,
+        ValueQuery,
+    >;
+
+    /// Pending operations balances.
+    #[pallet::storage]
+    pub type PendingOperations<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        Delegator<T>,
+        Blake2_128Concat,
+        PendingOperationKey<T::AccountId, T::BlockNumber>,
         T::Balance,
         ValueQuery,
     >;
