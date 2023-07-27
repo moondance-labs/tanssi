@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use dancebox_runtime::{MaintenanceModeConfig, MigrationsConfig};
-
 use {
     cumulus_primitives_core::ParaId,
-    dancebox_runtime::{AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT},
+    dancebox_runtime::{
+        AccountId, MaintenanceModeConfig, MigrationsConfig, RegistrarConfig, Signature, SudoConfig,
+        EXISTENTIAL_DEPOSIT,
+    },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
