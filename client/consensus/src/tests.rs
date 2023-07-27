@@ -49,6 +49,46 @@ mod tests {
     type Error = sp_blockchain::Error;
 
     struct DummyFactory(Arc<TestClient>);
+    // We are going to create API because we need this to test runtime apis
+    // We use the client normally, bnut for testing certain runtime-api calls,
+    // we basically mock the runtime-api calñs
+    use sp_api::{ApiRef, ProvideRuntimeApi};
+    impl ProvideRuntimeApi<Block> for DummyFactory {
+        type Api = MockApi;
+
+        fn runtime_api(&self) -> ApiRef<'_, Self::Api> {
+            MockApi.into()
+        }
+    }
+
+    use cumulus_primitives_core::ParaId;
+
+    struct MockApi;
+
+    sp_api::mock_impl_runtime_apis! {
+        impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for MockApi {
+            /// Return the current authorities assigned to a given paraId
+            fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
+                // We always return Alice in this case, regardless of the paraId
+                if para_id == 1000u32.into() {
+                    Some(vec![Keyring::Alice.public().into()])
+                }
+                else {
+                    None
+                }
+            }
+            /// Return the paraId assigned to a given authority
+            fn check_para_id_assignment(authority: NimbusId) -> Option<ParaId> {
+                if authority == Keyring::Alice.public().into() {
+                    Some(1000u32.into())
+                }
+                else {
+                    None
+                }
+            }
+        }
+    }
+
     struct DummyProposer(u64, Arc<TestClient>);
 
     #[derive(Clone)]
@@ -480,6 +520,57 @@ mod tests {
 
         // The returned block should be imported and we should be able to get its header by now.
         assert!(client.header(res.block.hash()).unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn authorities_runtime_api_tests() {
+        let net = AuraTestNet::new(4);
+        let net = Arc::new(Mutex::new(net));
+
+        let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+        let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+
+        let keystoreptr: sp_keystore::KeystorePtr = keystore.into();
+        let mut net = net.lock();
+        let peer = net.peer(3);
+        let client = peer.client().as_client();
+        let environ = DummyFactory(client.clone());
+
+        let default_hash = Default::default();
+        let authorities = crate::authorities::<_, _, nimbus_primitives::NimbusPair>(
+            &environ,
+            &default_hash,
+            keystoreptr.clone(),
+        );
+        assert!(authorities.is_none());
+
+        keystoreptr
+            .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Bob.to_seed()))
+            .expect("Key should be created");
+
+        // Bob according top the runtime-api is not eligible
+        let authorities_after_bob = crate::authorities::<_, _, nimbus_primitives::NimbusPair>(
+            &environ,
+            &default_hash,
+            keystoreptr.clone(),
+        );
+        assert!(authorities_after_bob.is_none());
+
+        // Alice according top the runtime-api is eligible
+        keystoreptr
+            .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+            .expect("Key should be created");
+
+        let authorities_after_alice = crate::authorities::<_, _, nimbus_primitives::NimbusPair>(
+            &environ,
+            &default_hash,
+            keystoreptr.clone(),
+        );
+
+        assert_eq!(
+            authorities_after_alice,
+            Some(vec![Keyring::Alice.public().into()])
+        );
     }
 }
 
