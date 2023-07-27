@@ -56,7 +56,7 @@ pub mod pallet {
         parity_scale_codec::{Decode, Encode, FullCodec},
         scale_info::TypeInfo,
         sp_core::Get,
-        sp_runtime::Perbill,
+        sp_runtime::{BoundedVec, Perbill},
         sp_std::collections::btree_set::BTreeSet,
     };
 
@@ -222,6 +222,12 @@ pub mod pallet {
         type JoiningRequestFilter: RequestFilter<Self>;
         /// Condition for when a leaving request can be executed.
         type LeavingRequestFilter: RequestFilter<Self>;
+        /// All eligible candidates are stored in a sorted list that is modified each time
+        /// delegations changes. It is safer to bound this list, in which case eligible candidate
+        /// could fall out of this list if they have less stake than the top `EligibleCandidatesBufferSize`
+        /// eligible candidates. One of this top candidates leaving will then not bring the dropped candidate
+        /// in the list. An extrinsic is available (TODO) to manually bring back such dropped candidate.
+        type EligibleCandidatesBufferSize: Get<u32>;
     }
 
     /// The final set of collators.
@@ -237,8 +243,14 @@ pub mod pallet {
     /// This can be quickly updated using a binary search, and allow to easily take the top
     /// `MaxCollatorSetSize`.
     #[pallet::storage]
-    pub type SortedEligibleCandidates<T: Config> =
-        StorageValue<_, Vec<candidate::EligibleCandidate<Candidate<T>, T::Balance>>, ValueQuery>;
+    pub type SortedEligibleCandidates<T: Config> = StorageValue<
+        _,
+        BoundedVec<
+            candidate::EligibleCandidate<Candidate<T>, T::Balance>,
+            T::EligibleCandidatesBufferSize,
+        >,
+        ValueQuery,
+    >;
 
     /// Pools balances.
     #[pallet::storage]

@@ -134,59 +134,69 @@ impl<T: Config> Candidates<T> {
 
         let self_delegation = ac_self.err_add(&mr_self)?.err_add(&joining_self)?;
 
-        SortedEligibleCandidates::<T>::mutate(|list| {
-            // Remove old data if it exists.
-            let old_position = match list.binary_search(&EligibleCandidate {
-                candidate: candidate.clone(),
-                stake: stake_before,
-            }) {
-                Ok(pos) => {
-                    let _ = list.remove(pos);
-                    Some(pos as u32)
-                }
-                Err(_) => None,
-            };
+        let mut list = SortedEligibleCandidates::<T>::get();
 
-            // Find new position in the sorted list.
-            // It will not be inserted if under the minimum self delegation.
-            let new_position = if self_delegation >= T::MinimumSelfDelegation::get() {
-                let entry = EligibleCandidate {
-                    candidate: candidate.clone(),
-                    stake: new_stake.0,
-                };
-
-                let pos = list
-                    .binary_search(&entry)
-                    .expect_err("Candidate should be present at most once in the list.");
-                list.insert(pos, entry);
+        // Remove old data if it exists.
+        let old_position = match list.binary_search(&EligibleCandidate {
+            candidate: candidate.clone(),
+            stake: stake_before,
+        }) {
+            Ok(pos) => {
+                let _ = list.remove(pos);
                 Some(pos as u32)
-            } else {
-                None
-            };
-
-            // If candidate was or is now in the top we need to update
-            // the collator set.
-            let set_size = MaxCollatorSetSize::<T>::get();
-            match (old_position, new_position) {
-                (Some(pos), _) | (_, Some(pos)) if pos < set_size => {
-                    let set: BTreeSet<_> = list
-                        .iter()
-                        .take(set_size as usize)
-                        .map(|c| c.candidate.clone())
-                        .collect();
-                    CollatorSet::<T>::put(set);
-                }
-                _ => (),
             }
+            Err(_) => None,
+        };
 
-            Pallet::<T>::deposit_event(Event::<T>::UpdatedCandidatePosition {
+        // Find new position in the sorted list.
+        // It will not be inserted if under the minimum self delegation.
+        let new_position = if self_delegation >= T::MinimumSelfDelegation::get() {
+            let entry = EligibleCandidate {
                 candidate: candidate.clone(),
                 stake: new_stake.0,
-                self_delegation,
-                before: old_position,
-                after: new_position,
-            });
+            };
+
+            let pos = list
+                .binary_search(&entry)
+                .expect_err("Candidate should be present at most once in the list.");
+
+            // Insert in correct position then truncate the list if necessary.
+            list = list
+                .try_mutate(move |list| {
+                    list.insert(pos, entry.clone());
+                    list.truncate(T::EligibleCandidatesBufferSize::get() as usize)
+                })
+                .expect("list is truncated using the vec bound");
+
+            Some(pos as u32)
+        } else {
+            None
+        };
+
+        // If candidate was or is now in the top we need to update
+        // the collator set.
+        let set_size = MaxCollatorSetSize::<T>::get();
+        match (old_position, new_position) {
+            (Some(pos), _) | (_, Some(pos)) if pos < set_size => {
+                let set: BTreeSet<_> = list
+                    .iter()
+                    .take(set_size as usize)
+                    .map(|c| c.candidate.clone())
+                    .collect();
+                CollatorSet::<T>::put(set);
+            }
+            _ => (),
+        }
+
+        Pallet::<T>::deposit_event(Event::<T>::UpdatedCandidatePosition {
+            candidate: candidate.clone(),
+            stake: new_stake.0,
+            self_delegation,
+            before: old_position,
+            after: new_position,
         });
+
+        SortedEligibleCandidates::<T>::set(list);
 
         Ok(())
     }
