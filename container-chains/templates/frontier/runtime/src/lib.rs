@@ -531,7 +531,7 @@ pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
         match c {
-            RuntimeCall::Balances(_) => false,
+            RuntimeCall::EVM(_) => false,
             _ => true,
         }
     }
@@ -546,6 +546,12 @@ pub struct NormalFilter;
 impl Contains<RuntimeCall> for NormalFilter {
     fn contains(c: &RuntimeCall) -> bool {
         match c {
+            // Filtering the EVM prevents possible re-entrancy from the precompiles which could
+            // lead to unexpected scenarios.
+            // See https://github.com/PureStake/sr-moonbeam/issues/30
+            // Note: It is also assumed that EVM calls are only allowed through `Origin::Root` so
+            // this can be seen as an additional security
+            RuntimeCall::EVM(_) => false,
             _ => true,
         }
     }
