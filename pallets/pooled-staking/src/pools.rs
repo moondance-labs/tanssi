@@ -164,9 +164,7 @@ pub trait Pool<T: Config> {
 }
 
 pub fn check_candidate_consistency<T: Config>(candidate: &Candidate<T>) -> Result<(), Error<T>> {
-    let total0 = Pools::<T>::get(&PoolsKey::<T>::CandidateTotalStake {
-        candidate: candidate.clone(),
-    });
+    let total0 = Pools::<T>::get(candidate, &PoolsKey::<T>::CandidateTotalStake);
 
     let auto = AutoCompounding::<T>::total_staked(&candidate).0;
     let manual = ManualRewards::<T>::total_staked(&candidate).0;
@@ -188,28 +186,26 @@ macro_rules! impl_pool {
         pub struct $name<T>(PhantomData<T>);
         impl<T: Config> Pool<T> for $name<T> {
             fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T> {
-                Shares(Pools::<T>::get(&PoolsKey::<T>::$shares {
-                    candidate: candidate.clone(),
-                    delegator: delegator.clone(),
-                }))
+                Shares(Pools::<T>::get(
+                    candidate,
+                    &PoolsKey::<T>::$shares {
+                        delegator: delegator.clone(),
+                    },
+                ))
             }
 
             fn shares_supply(candidate: &Candidate<T>) -> Shares<T> {
-                Shares(Pools::<T>::get(&PoolsKey::<T>::$supply {
-                    candidate: candidate.clone(),
-                }))
+                Shares(Pools::<T>::get(candidate, &PoolsKey::<T>::$supply))
             }
 
             fn total_staked(candidate: &Candidate<T>) -> Stake<T> {
-                Stake(Pools::<T>::get(&PoolsKey::<T>::$total {
-                    candidate: candidate.clone(),
-                }))
+                Stake(Pools::<T>::get(candidate, &PoolsKey::<T>::$total))
             }
 
             fn set_shares(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Shares<T>) {
                 Pools::<T>::set(
+                    candidate,
                     &PoolsKey::<T>::$shares {
-                        candidate: candidate.clone(),
                         delegator: delegator.clone(),
                     },
                     value.0,
@@ -217,21 +213,11 @@ macro_rules! impl_pool {
             }
 
             fn set_shares_supply(candidate: &Candidate<T>, value: Shares<T>) {
-                Pools::<T>::set(
-                    &PoolsKey::<T>::$supply {
-                        candidate: candidate.clone(),
-                    },
-                    value.0,
-                )
+                Pools::<T>::set(candidate, &PoolsKey::<T>::$supply, value.0)
             }
 
             fn set_total_staked(candidate: &Candidate<T>, value: Stake<T>) {
-                Pools::<T>::set(
-                    &PoolsKey::<T>::$total {
-                        candidate: candidate.clone(),
-                    },
-                    value.0,
-                )
+                Pools::<T>::set(candidate, &PoolsKey::<T>::$total, value.0)
             }
 
             fn initial_share_value() -> Stake<T> {

@@ -18,9 +18,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::traits::Get;
-use scale_info::prelude::vec::Vec;
 pub use tp_container_chain_genesis_data::ContainerChainGenesisData;
+use {frame_support::traits::Get, scale_info::prelude::vec::Vec};
 
 sp_api::decl_runtime_apis! {
     pub trait RegistrarApi<ParaId, MaxLengthTokenSymbol> where
