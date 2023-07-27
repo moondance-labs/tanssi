@@ -29,7 +29,7 @@ mod tests {
         sc_keystore::LocalKeystore,
         sc_network_test::{Block as TestBlock, *},
         sp_consensus::{
-            BlockOrigin, DisableProofRecording, Environment, NoNetwork as DummyOracle, Proposal,
+            BlockOrigin, EnableProofRecording, Environment, NoNetwork as DummyOracle, Proposal,
             Proposer,
         },
         sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration},
@@ -139,9 +139,10 @@ mod tests {
         type Error = Error;
         type Transaction =
             sc_client_api::TransactionFor<substrate_test_runtime_client::Backend, TestBlock>;
-        type Proposal = future::Ready<Result<Proposal<TestBlock, Self::Transaction, ()>, Error>>;
-        type ProofRecording = DisableProofRecording;
-        type Proof = ();
+        type Proposal =
+            future::Ready<Result<Proposal<TestBlock, Self::Transaction, Self::Proof>, Error>>;
+        type ProofRecording = EnableProofRecording;
+        type Proof = sc_client_api::StorageProof;
 
         fn propose(
             self,
@@ -159,7 +160,7 @@ mod tests {
 
             futures::future::ready(r.map(|b| Proposal {
                 block: b.block,
-                proof: (),
+                proof: sc_client_api::StorageProof::empty(),
                 storage_changes: b.storage_changes,
             }))
         }
@@ -294,6 +295,120 @@ mod tests {
         )
         .await;
     }
+
+    #[tokio::test]
+    async fn authoring_blocks_but_producing_candidates_instead_of_calling_on_slot() {
+        let net = AuraTestNet::new(3);
+
+        let peers = &[
+            (0, Keyring::Alice),
+            (1, Keyring::Bob),
+            (2, Keyring::Charlie),
+        ];
+
+        let net = Arc::new(Mutex::new(net));
+        let mut import_notifications = Vec::new();
+        let mut aura_futures = Vec::new();
+
+        let mut keystore_paths = Vec::new();
+        for (peer_id, key) in peers {
+            let mut net = net.lock();
+            let peer = net.peer(*peer_id);
+            let client = peer.client().as_client();
+            let select_chain = peer.select_chain().expect("full client has a select chain");
+            let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+            let keystore = Arc::new(
+                LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore."),
+            );
+
+            keystore
+                .sr25519_generate_new(NIMBUS_KEY_ID, Some(&key.to_seed()))
+                .expect("Creates authority key");
+            keystore_paths.push(keystore_path);
+
+            let environ = DummyFactory(client.clone());
+            import_notifications.push(
+                client
+                    .import_notification_stream()
+                    .take_while(|n| {
+                        future::ready(!(n.origin != BlockOrigin::Own && n.header.number() < &5))
+                    })
+                    .for_each(move |_| futures::future::ready(())),
+            );
+
+            let create_inherent_data_providers = |_, _| async {
+                let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+                    Timestamp::current(),
+                    SlotDuration::from_millis(SLOT_DURATION_MS),
+                );
+
+                Ok((slot,))
+            };
+
+            let sync_oracle = DummyOracle;
+            let slot_duration = SlotDuration::from_millis(SLOT_DURATION_MS);
+
+            let params = crate::BuildOrchestratorAuraConsensusParams {
+                proposer_factory: environ,
+                create_inherent_data_providers: |_, _| async {
+                    let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+                        Timestamp::current(),
+                        SlotDuration::from_millis(SLOT_DURATION_MS),
+                    );
+
+                    Ok((slot,))
+                },
+                get_authorities_from_orchestrator: move |_block_hash: <TestBlock as BlockT>::Hash,
+                (_relay_parent, _validation_data): (H256, PersistedValidationData)| {
+                    async move {
+                        let aux_data = vec![
+                            (Keyring::Alice).public().into(),
+                            (Keyring::Bob).public().into(),
+                            (Keyring::Charlie).public().into(),
+                        ];
+                        Ok(aux_data)
+                    }
+                },
+                block_import: client.clone(),
+                para_client: client,
+                sync_oracle: DummyOracle,
+                keystore,
+                force_authoring: false,
+                backoff_authoring_blocks: Some(
+                    BackoffAuthoringOnFinalizedHeadLagging::default(),
+                ),
+                slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
+                // We got around 500ms for proposing
+                block_proposal_slot_portion: SlotProportion::new(0.5),
+                max_block_proposal_slot_portion: None,
+                telemetry: None,
+            };
+
+            let parachain_block_producer =
+                crate::OrchestratorAuraConsensus::build::<NimbusPair, _, _, _, _, _, _>(params);
+
+            aura_futures.push(start_orchestrator_aura_consensus_candidate_producer(
+                slot_duration,
+                select_chain,
+                parachain_block_producer,
+                sync_oracle,
+                create_inherent_data_providers,
+            ));
+        }
+
+        future::select(
+            future::poll_fn(move |cx| {
+                net.lock().poll(cx);
+                Poll::<()>::Pending
+            }),
+            future::select(
+                future::join_all(aura_futures),
+                future::join_all(import_notifications),
+            ),
+        )
+        .await;
+    }
+
     #[tokio::test]
     async fn current_node_authority_should_claim_slot() {
         let net = AuraTestNet::new(4);
@@ -689,7 +804,50 @@ pub fn time_until_next_slot(slot_duration: Duration) -> Duration {
     Duration::from_millis(remaining_millis as u64)
 }
 
-use {nimbus_primitives::NimbusId, sp_keyring::sr25519::Keyring};
+use {
+    cumulus_client_consensus_common::ParachainConsensus, nimbus_primitives::NimbusId,
+    sp_keyring::sr25519::Keyring,
+};
+/// Start a new slot worker.
+///
+/// Every time a new slot is triggered, `worker.on_slot` is called and the future it returns is
+/// polled until completion, unless we are major syncing.
+pub async fn start_orchestrator_aura_consensus_candidate_producer<B, C, SO, CIDP>(
+    slot_duration: SlotDuration,
+    client: C,
+    mut parachain_block_producer: Box<dyn ParachainConsensus<B>>,
+    sync_oracle: SO,
+    create_inherent_data_providers: CIDP,
+) where
+    B: BlockT,
+    C: SelectChain<B>,
+    SO: SyncOracle + Send,
+    CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
+    CIDP::InherentDataProviders: InherentDataProviderExt + Send,
+{
+    let mut slots = Slots::new(
+        slot_duration.as_duration(),
+        create_inherent_data_providers,
+        client,
+    );
+
+    loop {
+        let slot_info = slots.next_slot().await;
+
+        if sync_oracle.is_major_syncing() {
+            continue;
+        }
+
+        let _ = parachain_block_producer
+            .produce_candidate(
+                &slot_info.chain_head,
+                Default::default(),
+                &Default::default(),
+            )
+            .await;
+    }
+}
+
 /// Start a new slot worker.
 ///
 /// Every time a new slot is triggered, `worker.on_slot` is called and the future it returns is

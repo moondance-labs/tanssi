@@ -21,9 +21,7 @@
 //! the ParachainConsensus trait to access the orchestrator-dicated authorities, and further
 //! it implements the TanssiWorker to TanssiOnSlot trait. This trait is
 use {
-    cumulus_client_consensus_common::{
-        ParachainBlockImportMarker, ParachainCandidate, ParachainConsensus,
-    },
+    cumulus_client_consensus_common::{ParachainCandidate, ParachainConsensus},
     cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
     parity_scale_codec::{Decode, Encode},
 };
@@ -203,11 +201,7 @@ where
         Client:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
         AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
-        BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>>
-            + ParachainBlockImportMarker
-            + Send
-            + Sync
-            + 'static,
+        BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>> + Send + Sync + 'static,
         SO: SyncOracle + Send + Sync + Clone + 'static,
         BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
         PF: Environment<B, Error = Error> + Send + Sync + 'static,
