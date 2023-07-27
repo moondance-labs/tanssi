@@ -211,92 +211,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn authoring_blocks() {
-        let net = AuraTestNet::new(3);
-
-        let peers = &[
-            (0, Keyring::Alice),
-            (1, Keyring::Bob),
-            (2, Keyring::Charlie),
-        ];
-
-        let net = Arc::new(Mutex::new(net));
-        let mut import_notifications = Vec::new();
-        let mut aura_futures = Vec::new();
-
-        let mut keystore_paths = Vec::new();
-        for (peer_id, key) in peers {
-            let mut net = net.lock();
-            let peer = net.peer(*peer_id);
-            let client = peer.client().as_client();
-            let select_chain = peer.select_chain().expect("full client has a select chain");
-            let keystore_path = tempfile::tempdir().expect("Creates keystore path");
-            let keystore = Arc::new(
-                LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore."),
-            );
-
-            keystore
-                .sr25519_generate_new(NIMBUS_KEY_ID, Some(&key.to_seed()))
-                .expect("Creates authority key");
-            keystore_paths.push(keystore_path);
-
-            let environ = DummyFactory(client.clone());
-            import_notifications.push(
-                client
-                    .import_notification_stream()
-                    .take_while(|n| {
-                        future::ready(!(n.origin != BlockOrigin::Own && n.header.number() < &5))
-                    })
-                    .for_each(move |_| futures::future::ready(())),
-            );
-
-            aura_futures.push(
-                start_orchestrator::<nimbus_primitives::NimbusPair, _, _, _, _, _, _, _, _, _, _>(
-                    StartAuraParams {
-                        slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
-                        block_import: client.clone(),
-                        select_chain,
-                        client,
-                        proposer_factory: environ,
-                        sync_oracle: DummyOracle,
-                        justification_sync_link: (),
-                        create_inherent_data_providers: |_, _| async {
-                            let slot = InherentDataProvider::from_timestamp_and_slot_duration(
-                                Timestamp::current(),
-                                SlotDuration::from_millis(SLOT_DURATION_MS),
-                            );
-
-                            Ok((slot,))
-                        },
-                        force_authoring: false,
-                        backoff_authoring_blocks: Some(
-                            BackoffAuthoringOnFinalizedHeadLagging::default(),
-                        ),
-                        keystore,
-                        block_proposal_slot_portion: SlotProportion::new(0.5),
-                        max_block_proposal_slot_portion: None,
-                        telemetry: None,
-                        compatibility_mode: Default::default(),
-                    },
-                )
-                .expect("Starts aura"),
-            );
-        }
-
-        future::select(
-            future::poll_fn(move |cx| {
-                net.lock().poll(cx);
-                Poll::<()>::Pending
-            }),
-            future::select(
-                future::join_all(aura_futures),
-                future::join_all(import_notifications),
-            ),
-        )
-        .await;
-    }
-
-    #[tokio::test]
     async fn authoring_blocks_but_producing_candidates_instead_of_calling_on_slot() {
         let net = AuraTestNet::new(3);
 
@@ -574,106 +488,19 @@ use {
         consensus_orchestrator::{
             build_orchestrator_aura_worker, BuildOrchestratorAuraWorkerParams,
         },
-        AuthorityId, ConsensusError, InherentDataProviderExt,
+        InherentDataProviderExt,
     },
-    futures::Future,
-    parity_scale_codec::{Decode, Encode},
-    sc_client_api::{backend::AuxStore, BlockOf, HeaderBackend},
-    sc_consensus::BlockImport,
-    sc_consensus_aura::StartAuraParams,
-    sc_consensus_slots::BackoffAuthoringBlocksStrategy,
-    sp_api::ProvideRuntimeApi,
-    sp_application_crypto::AppPublic,
-    sp_consensus::{Environment, Proposer, SelectChain, SyncOracle},
+    sc_client_api::HeaderBackend,
+    sp_consensus::{SelectChain, SyncOracle},
     sp_core::{
         crypto::{ByteArray, Pair},
         H256,
     },
     sp_inherents::CreateInherentDataProviders,
-    sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member, NumberFor},
-    std::hash::Hash,
+    sp_runtime::traits::{Block as BlockT, Header as HeaderT},
 };
-/// Start the aura worker. The returned future should be run in a futures executor.
-pub fn start_orchestrator<P, B, C, SC, I, PF, SO, L, CIDP, BS, Error>(
-    StartAuraParams {
-        slot_duration,
-        client,
-        select_chain,
-        block_import,
-        proposer_factory,
-        sync_oracle,
-        justification_sync_link,
-        create_inherent_data_providers,
-        force_authoring,
-        backoff_authoring_blocks,
-        keystore,
-        block_proposal_slot_portion,
-        max_block_proposal_slot_portion,
-        telemetry,
-        compatibility_mode,
-    }: StartAuraParams<C, SC, I, PF, SO, L, CIDP, BS, NumberFor<B>>,
-) -> Result<impl Future<Output = ()>, ConsensusError>
-where
-    P: Pair<Public = nimbus_primitives::NimbusId> + Send + Sync,
-    P::Public: AppPublic + Hash + Member + Encode + Decode,
-    P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
-    B: BlockT,
-    C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
-    AuthorityId<P>: From<<nimbus_primitives::NimbusPair as sp_application_crypto::Pair>::Public>,
-    SC: SelectChain<B>,
-    I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
-    PF: Environment<B, Error = Error> + Send + Sync + 'static,
-    PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
-    SO: SyncOracle + Send + Sync + Clone,
-    L: sc_consensus::JustificationSyncLink<B>,
-    CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
-    CIDP::InherentDataProviders: InherentDataProviderExt + Send,
-    BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
-    Error: std::error::Error + Send + From<ConsensusError> + 'static,
-{
-    let worker = build_orchestrator_aura_worker::<P, _, _, _, _, _, _, _, _>(
-        BuildOrchestratorAuraWorkerParams {
-            client,
-            block_import,
-            proposer_factory,
-            keystore,
-            sync_oracle: sync_oracle.clone(),
-            justification_sync_link,
-            force_authoring,
-            backoff_authoring_blocks,
-            telemetry,
-            block_proposal_slot_portion,
-            max_block_proposal_slot_portion,
-            compatibility_mode,
-        },
-    );
-    let get_authorities_from_orchestrator =
-        move |_block_hash: <B as BlockT>::Hash,
-              (_relay_parent, _validation_data): (H256, PersistedValidationData)| {
-            async move {
-                let aux_data = vec![
-                    (Keyring::Alice).public().into(),
-                    (Keyring::Bob).public().into(),
-                    (Keyring::Charlie).public().into(),
-                ];
-                Ok(aux_data)
-            }
-        };
 
-    Ok(start_tanssi_slot_worker(
-        slot_duration,
-        select_chain,
-        worker,
-        sync_oracle,
-        create_inherent_data_providers,
-        get_authorities_from_orchestrator,
-    ))
-}
-
-use {
-    crate::consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
-    cumulus_primitives_core::{relay_chain::Hash as PHash, PersistedValidationData},
-};
+use cumulus_primitives_core::PersistedValidationData;
 
 use {
     crate::LOG_TARGET,
@@ -804,10 +631,7 @@ pub fn time_until_next_slot(slot_duration: Duration) -> Duration {
     Duration::from_millis(remaining_millis as u64)
 }
 
-use {
-    cumulus_client_consensus_common::ParachainConsensus, nimbus_primitives::NimbusId,
-    sp_keyring::sr25519::Keyring,
-};
+use {cumulus_client_consensus_common::ParachainConsensus, nimbus_primitives::NimbusId};
 /// Start a new slot worker.
 ///
 /// Every time a new slot is triggered, `worker.on_slot` is called and the future it returns is
@@ -845,50 +669,5 @@ pub async fn start_orchestrator_aura_consensus_candidate_producer<B, C, SO, CIDP
                 &Default::default(),
             )
             .await;
-    }
-}
-
-/// Start a new slot worker.
-///
-/// Every time a new slot is triggered, `worker.on_slot` is called and the future it returns is
-/// polled until completion, unless we are major syncing.
-pub async fn start_tanssi_slot_worker<B, C, W, SO, CIDP, GOH>(
-    slot_duration: SlotDuration,
-    client: C,
-    mut worker: W,
-    sync_oracle: SO,
-    create_inherent_data_providers: CIDP,
-    get_authorities_from_orchestrator: GOH,
-) where
-    B: BlockT,
-    C: SelectChain<B>,
-    W: crate::consensus_orchestrator::TanssiSlotWorker<B>,
-    SO: SyncOracle + Send,
-    CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
-    CIDP::InherentDataProviders: InherentDataProviderExt + Send,
-    GOH: RetrieveAuthoritiesFromOrchestrator<B, (PHash, PersistedValidationData), W::AuxData>,
-{
-    let mut slots = Slots::new(
-        slot_duration.as_duration(),
-        create_inherent_data_providers,
-        client,
-    );
-
-    loop {
-        let slot_info = slots.next_slot().await;
-
-        if sync_oracle.is_major_syncing() {
-            continue;
-        }
-
-        let authorities = get_authorities_from_orchestrator
-            .retrieve_authorities_from_orchestrator(
-                Default::default(),
-                (Default::default(), Default::default()),
-            )
-            .await
-            .unwrap();
-
-        let _ = worker.tanssi_on_slot(slot_info, authorities).await;
     }
 }
