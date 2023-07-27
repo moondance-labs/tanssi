@@ -1,8 +1,8 @@
 import { describeSuite, expect, beforeAll} from "@moonwall/cli";
-import { setupLogger } from "@moonwall/util";
+import { CHARLETH_ADDRESS, BALTATHAR_ADDRESS, alith, baltathar, setupLogger, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import "@polkadot/api-augment";
-import { initializeCustomCreateBlock } from "../../../util/block";
+import { initializeCustomCreateBlock } from "../../util/block";
 
 describeSuite({
   id: "D10",
@@ -14,12 +14,10 @@ describeSuite({
     initializeCustomCreateBlock(context);
 
     beforeAll(() => {
-      const keyring = new Keyring({ type: 'sr25519' });
-      alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-      bob = keyring.addFromUri('//Bob', { name: 'Bob default' });
-      charlie = keyring.addFromUri('//Charlie', { name: 'Charlie default' });
-      dave = keyring.addFromUri('//Dave', { name: 'Dave default' });
       polkadotJs = context.polkadotJs();
+      const chain = polkadotJs.consts.system.version.specName.toString();
+      alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
+      bob = chain == 'frontier-template' ? baltathar : (new Keyring({ type: 'sr25519' }).addFromUri('//Bob', { name: 'Bob default' }));
     });
 
     it({
@@ -93,7 +91,7 @@ describeSuite({
         const tx = polkadotJs.tx.balances.transfer(bob.address, 1000);
 
         await context.createBlock([
-            await tx.signAsync(alice),
+            await tx.signAndSend(alice),
         ]);
         const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
 
