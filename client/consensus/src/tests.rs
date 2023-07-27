@@ -25,7 +25,7 @@ mod tests {
         sc_client_api::BlockchainEvents,
         sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
         sc_consensus_aura::SlotProportion,
-        sc_consensus_slots::BackoffAuthoringOnFinalizedHeadLagging,
+        sc_consensus_slots::{BackoffAuthoringOnFinalizedHeadLagging, SimpleSlotWorker},
         sc_keystore::LocalKeystore,
         sc_network_test::{Block as TestBlock, *},
         sp_consensus::{
@@ -293,6 +293,96 @@ mod tests {
             ),
         )
         .await;
+    }
+    #[tokio::test]
+    async fn current_node_authority_should_claim_slot() {
+        let net = AuraTestNet::new(4);
+
+        let mut authorities: Vec<NimbusId> = vec![
+            Keyring::Alice.public().into(),
+            Keyring::Bob.public().into(),
+            Keyring::Charlie.public().into(),
+        ];
+
+        let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+        let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+
+        let public = keystore
+            .sr25519_generate_new(NIMBUS_KEY_ID, None)
+            .expect("Key should be created");
+        authorities.push(public.into());
+
+        let net = Arc::new(Mutex::new(net));
+
+        let mut net = net.lock();
+        let peer = net.peer(3);
+        let client = peer.client().as_client();
+        let environ = DummyFactory(client.clone());
+
+        let worker = build_orchestrator_aura_worker::<
+            nimbus_primitives::NimbusPair,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        >(BuildOrchestratorAuraWorkerParams {
+            client: client.clone(),
+            block_import: client,
+            proposer_factory: environ,
+            keystore: keystore.into(),
+            sync_oracle: DummyOracle,
+            justification_sync_link: (),
+            force_authoring: false,
+            backoff_authoring_blocks: Some(BackoffAuthoringOnFinalizedHeadLagging::default()),
+            telemetry: None,
+            block_proposal_slot_portion: SlotProportion::new(0.5),
+            max_block_proposal_slot_portion: None,
+            compatibility_mode: Default::default(),
+        });
+
+        let head = Header::new(
+            1,
+            H256::from_low_u64_be(0),
+            H256::from_low_u64_be(0),
+            Default::default(),
+            Default::default(),
+        );
+        assert!(worker
+            .claim_slot(&head, 0.into(), &authorities)
+            .await
+            .is_none());
+        assert!(worker
+            .claim_slot(&head, 1.into(), &authorities)
+            .await
+            .is_none());
+        assert!(worker
+            .claim_slot(&head, 2.into(), &authorities)
+            .await
+            .is_none());
+        assert!(worker
+            .claim_slot(&head, 3.into(), &authorities)
+            .await
+            .is_some());
+        assert!(worker
+            .claim_slot(&head, 4.into(), &authorities)
+            .await
+            .is_none());
+        assert!(worker
+            .claim_slot(&head, 5.into(), &authorities)
+            .await
+            .is_none());
+        assert!(worker
+            .claim_slot(&head, 6.into(), &authorities)
+            .await
+            .is_none());
+        assert!(worker
+            .claim_slot(&head, 7.into(), &authorities)
+            .await
+            .is_some());
     }
 }
 
