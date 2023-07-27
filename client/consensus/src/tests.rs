@@ -384,6 +384,74 @@ mod tests {
             .await
             .is_some());
     }
+
+    #[tokio::test]
+    async fn on_slot_returns_correct_block() {
+        let net = AuraTestNet::new(4);
+
+        let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+        let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+        keystore
+            .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+            .expect("Key should be created");
+
+        let net = Arc::new(Mutex::new(net));
+
+        let mut net = net.lock();
+        let peer = net.peer(3);
+        let client = peer.client().as_client();
+        let environ = DummyFactory(client.clone());
+
+        let mut worker = build_orchestrator_aura_worker::<
+            nimbus_primitives::NimbusPair,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+        >(BuildOrchestratorAuraWorkerParams {
+            client: client.clone(),
+            block_import: client.clone(),
+            proposer_factory: environ,
+            keystore: keystore.into(),
+            sync_oracle: DummyOracle,
+            justification_sync_link: (),
+            force_authoring: false,
+            backoff_authoring_blocks: Some(BackoffAuthoringOnFinalizedHeadLagging::default()),
+            telemetry: None,
+            block_proposal_slot_portion: SlotProportion::new(0.5),
+            max_block_proposal_slot_portion: None,
+            compatibility_mode: Default::default(),
+        });
+
+        let head = client.expect_header(client.info().genesis_hash).unwrap();
+
+        use crate::consensus_orchestrator::TanssiSlotWorker;
+        let res = worker
+            .tanssi_on_slot(
+                SlotInfo {
+                    slot: 0.into(),
+                    ends_at: std::time::Instant::now() + Duration::from_secs(100),
+                    create_inherent_data: Box::new(()),
+                    duration: Duration::from_millis(1000),
+                    chain_head: head,
+                    block_size_limit: None,
+                },
+                vec![
+                    (Keyring::Alice).public().into(),
+                    (Keyring::Bob).public().into(),
+                    (Keyring::Charlie).public().into(),
+                ],
+            )
+            .await
+            .unwrap();
+
+        // The returned block should be imported and we should be able to get its header by now.
+        assert!(client.header(res.block.hash()).unwrap().is_some());
+    }
 }
 
 use {
