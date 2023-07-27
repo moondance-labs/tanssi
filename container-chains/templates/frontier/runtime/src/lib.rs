@@ -531,6 +531,8 @@ pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
         match c {
+            RuntimeCall::Balances(_) => false,
+            RuntimeCall::Ethereum(_) => false,
             RuntimeCall::EVM(_) => false,
             _ => true,
         }
