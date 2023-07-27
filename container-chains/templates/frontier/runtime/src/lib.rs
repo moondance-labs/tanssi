@@ -42,9 +42,8 @@ use {
         dispatch::{DispatchClass, GetDispatchInfo},
         parameter_types,
         traits::{
-            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Everything, FindAuthor,
-            Imbalance, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
-            OnUnbalanced,
+            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, FindAuthor, Imbalance,
+            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -423,7 +422,7 @@ impl frame_system::Config for Runtime {
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = Everything;
+    type BaseCallFilter = MaintenanceMode;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// Block & extrinsics weights: base values and limits.
