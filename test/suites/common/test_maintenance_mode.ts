@@ -11,11 +11,12 @@ describeSuite({
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
     let alice, bob, charlie, dave;
+    let chain;
     initializeCustomCreateBlock(context);
 
     beforeAll(() => {
       polkadotJs = context.polkadotJs();
-      const chain = polkadotJs.consts.system.version.specName.toString();
+      chain = polkadotJs.consts.system.version.specName.toString();
       alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
       bob = chain == 'frontier-template' ? baltathar : (new Keyring({ type: 'sr25519' }).addFromUri('//Bob', { name: 'Bob default' }));
     });
@@ -90,9 +91,18 @@ describeSuite({
 
         const tx = polkadotJs.tx.balances.transfer(bob.address, 1000);
 
-        await context.createBlock([
-            await tx.signAndSend(alice),
-        ]);
+        if (chain == 'frontier-template') {
+          expect(
+            await context
+              .createBlock([await tx.signAsync(alice)])
+              .catch((e) => e.toString())
+          ).to.equal("RpcError: 1010: Invalid Transaction: Transaction call is not expected");
+        } else {
+          await context.createBlock([
+            await tx.signAsync(alice),
+          ]);
+        }
+
         const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
 
         expect(balanceBefore.eq(balanceAfter)).to.be.true;
@@ -101,6 +111,105 @@ describeSuite({
 
     it({
       id: "E05",
+      title: "Transfer with sudo allowed in maintenance mode",
+      test: async function () {
+        await context.createBlock();
+        await context.createBlock();
+
+        const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
+        expect(enabled).to.be.true;
+
+        const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
+
+        // We need to use forceTransfer because transfer doesn't work with sudo
+        const tx = polkadotJs.tx.balances.forceTransfer(alice.address, bob.address, 1000);
+
+        await context.createBlock([
+          await polkadotJs.tx.sudo.sudo(tx).signAsync(alice),
+        ]);
+        const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
+
+        expect(balanceBefore.lt(balanceAfter)).to.be.true;
+      },
+    });
+
+    it({
+      id: "E06",
+      title: "EVM extrinsic not allowed in maintenance mode",
+      test: async function () {
+        if (chain != 'frontier-template') {
+          // Skip test if not in frontier-template
+          return;
+        }
+        await context.createBlock();
+
+        const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
+        expect(enabled).to.be.true;
+
+        const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
+
+        const tx = polkadotJs.tx.evm.call(
+            alice.address,
+            bob.address,
+            "0x0",
+            40_000n,
+            12_000_000n,
+            10_000_000_000n,
+            "0",
+            undefined,
+            []
+        );
+        expect(
+          await context
+            .createBlock([await tx.signAsync(alice)])
+            .catch((e) => e.toString())
+        ).to.equal("RpcError: 1010: Invalid Transaction: Transaction call is not expected");
+
+        const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
+
+        expect(balanceBefore.eq(balanceAfter)).to.be.true;
+      },
+    });
+
+    it({
+      id: "E07",
+      title: "EVM extrinsic with sudo allowed in maintenance mode",
+      test: async function () {
+        if (chain != 'frontier-template') {
+          // Skip test if not in frontier-template
+          return;
+        }
+        await context.createBlock();
+
+        const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
+        expect(enabled).to.be.true;
+
+        const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
+
+        const tx = polkadotJs.tx.evm.call(
+            alice.address,
+            bob.address,
+            "0x0",
+            40_000n,
+            12_000_000n,
+            10_000_000_000n,
+            "0",
+            undefined,
+            []
+        );
+
+        await context.createBlock([
+          await polkadotJs.tx.sudo.sudo(tx).signAsync(alice),
+        ]);
+
+        const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
+
+        expect(balanceBefore.lt(balanceAfter)).to.be.true;
+      },
+    });
+
+    it({
+      id: "E08",
       title: "Signed origin cannot disable maintenance mode",
       test: async function () {
         await context.createBlock();
@@ -124,7 +233,7 @@ describeSuite({
     });
 
     it({
-      id: "E06",
+      id: "E09",
       title: "Root origin can disable maintenance mode",
       test: async function () {
         await context.createBlock();
@@ -147,11 +256,9 @@ describeSuite({
     });
 
     it({
-      id: "E07",
+      id: "E10",
       title: "Transfers allowed again after disabling maintenance mode",
       test: async function () {
-        await context.createBlock();
-        await context.createBlock();
         await context.createBlock();
 
         const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
