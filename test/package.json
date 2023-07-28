@@ -19,8 +19,8 @@
   "license": "ISC",
   "devDependencies": {
     "bottleneck": "^2.19.5",
-    "@moonwall/cli": "4.0.4",
-    "@moonwall/util": "4.0.3",
+    "@moonwall/cli": "4.0.6",
+    "@moonwall/util": "4.0.5",
     "@polkadot/api": "^10.9.1",
     "@polkadot/api-augment": "^10.9.1",
     "@polkadot/types": "^10.9.1",

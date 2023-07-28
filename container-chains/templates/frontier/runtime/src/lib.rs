@@ -62,8 +62,8 @@ use {
     nimbus_primitives::NimbusId,
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
-        Account as EVMAccount, EVMCurrencyAdapter, EnsureAccountId20, FeeCalculator,
-        GasWeightMapping, IdentityAddressMapping,
+        Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot,
+        FeeCalculator, GasWeightMapping, IdentityAddressMapping,
         OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
     pallet_transaction_payment::CurrencyAdapter,
@@ -660,8 +660,8 @@ impl pallet_evm::Config for Runtime {
     type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
     type WeightPerGas = WeightPerGas;
     type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
-    type CallOrigin = EnsureAccountId20;
-    type WithdrawOrigin = EnsureAccountId20;
+    type CallOrigin = EnsureAddressRoot<AccountId>;
+    type WithdrawOrigin = EnsureAddressNever<AccountId>;
     type AddressMapping = IdentityAddressMapping;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
