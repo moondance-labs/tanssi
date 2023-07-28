@@ -401,7 +401,7 @@ mod tests {
 
     /// Start a new slot worker.
     ///
-    /// Every time a new slot is triggered, `parachain_block_producer.produce_candidate` 
+    /// Every time a new slot is triggered, `parachain_block_producer.produce_candidate`
     /// is called and the future it returns is
     /// polled until completion, unless we are major syncing.
     pub async fn start_orchestrator_aura_consensus_candidate_producer<B, C, SO, CIDP>(
