@@ -32,12 +32,13 @@ describeSuite({
           null,
           []
         );
+        let block = await context
+        .createBlock([await tx.signAsync(alith)]);
 
+        // block should be created, but the tx should have failed
         expect(
-            await context
-              .createBlock([await tx.signAsync(alith)])
-              .catch((e) => e.toString())
-          ).to.equal("RpcError: 1010: Invalid Transaction: Bad Origin");
+            block.result[0].error.name
+        ).to.equal("BadOrigin");
 
         expect(await context.viem("public").getBalance({ address: baltathar.address })).to.equal(
           DEFAULT_GENESIS_BALANCE
