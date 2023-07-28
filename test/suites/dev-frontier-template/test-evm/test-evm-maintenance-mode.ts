@@ -1,4 +1,4 @@
-import { describeSuite, expect } from "@moonwall/cli";
+import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import {
   ALITH_ADDRESS,
   DEFAULT_GENESIS_BALANCE,
@@ -7,17 +7,38 @@ import {
   alith,
 } from "@moonwall/util";
 
+// When in maintenance mode:
 // A call from root (sudo) can make a transfer directly in pallet_evm
 // A signed call cannot make a transfer directly in pallet_evm
 describeSuite({
-  id: "D15",
-  title: "Pallet EVM - call",
+  id: "D16",
+  title: "Pallet EVM - maintenance mode",
   foundationMethods: "dev",
   testCases: ({ context, it }) => {
+    beforeAll(async () => {
+        const tx = context.polkadotJs().tx.maintenanceMode.enterMaintenanceMode();
+        await context.createBlock([
+          await context.polkadotJs().tx.sudo.sudo(tx).signAsync(alith),
+        ]);
+
+        const events = await context.polkadotJs().query.system.events();
+        const ev1 = events.filter(
+          (a) => {
+            return a.event.method == "EnteredMaintenanceMode";
+        });
+        expect(ev1.length).to.be.equal(1);
+
+        const enabled = (await context.polkadotJs().query.maintenanceMode.maintenanceMode()).toJSON();
+        expect(enabled).to.be.true;
+    });
+  
     it({
       id: "T01",
       title: "should fail without sudo",
       test: async function () {
+        const enabled = (await context.polkadotJs().query.maintenanceMode.maintenanceMode()).toJSON();
+        expect(enabled).to.be.true;
+
         const tx = context
         .polkadotJs()
         .tx.evm.call(
@@ -47,6 +68,9 @@ describeSuite({
       id: "T02",
       title: "should succeed with sudo",
       test: async function () {
+        const enabled = (await context.polkadotJs().query.maintenanceMode.maintenanceMode()).toJSON();
+        expect(enabled).to.be.true;
+
         const { result } = await context.createBlock(
           context
             .polkadotJs()
