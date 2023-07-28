@@ -17,23 +17,38 @@
 #[cfg(test)]
 mod tests {
     use {
-        super::*,
+        crate::{
+            consensus_orchestrator::{
+                build_orchestrator_aura_worker, BuildOrchestratorAuraWorkerParams,
+            },
+            InherentDataProviderExt, LOG_TARGET,
+        },
+        cumulus_client_consensus_common::ParachainConsensus,
+        cumulus_primitives_core::PersistedValidationData,
         futures::prelude::*,
-        nimbus_primitives::{CompatibleDigestItem, NimbusPair, NIMBUS_ENGINE_ID, NIMBUS_KEY_ID},
+        futures_timer::Delay,
+        nimbus_primitives::{
+            CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID, NIMBUS_KEY_ID,
+        },
         parking_lot::Mutex,
         sc_block_builder::BlockBuilderProvider,
-        sc_client_api::BlockchainEvents,
+        sc_client_api::{BlockchainEvents, HeaderBackend},
         sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
         sc_consensus_aura::SlotProportion,
-        sc_consensus_slots::{BackoffAuthoringOnFinalizedHeadLagging, SimpleSlotWorker},
+        sc_consensus_slots::{BackoffAuthoringOnFinalizedHeadLagging, SimpleSlotWorker, SlotInfo},
         sc_keystore::LocalKeystore,
         sc_network_test::{Block as TestBlock, *},
         sp_consensus::{
             BlockOrigin, EnableProofRecording, Environment, NoNetwork as DummyOracle, Proposal,
-            Proposer,
+            Proposer, SelectChain, SyncOracle,
         },
         sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration},
-        sp_inherents::InherentData,
+        sp_consensus_slots::Slot,
+        sp_core::{
+            crypto::{ByteArray, Pair},
+            H256,
+        },
+        sp_inherents::{CreateInherentDataProviders, InherentData},
         sp_keyring::sr25519::Keyring,
         sp_keystore::Keystore,
         sp_runtime::{
@@ -44,6 +59,8 @@ mod tests {
         std::{sync::Arc, task::Poll, time::Duration},
         substrate_test_runtime_client::TestClient,
     };
+
+    // Duration of slot time
     const SLOT_DURATION_MS: u64 = 1000;
 
     type Error = sp_blockchain::Error;
@@ -65,11 +82,12 @@ mod tests {
 
     struct MockApi;
 
+    // This is our MockAPi impl. We need these to test first_eligible_key
     sp_api::mock_impl_runtime_apis! {
         impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for MockApi {
             /// Return the current authorities assigned to a given paraId
             fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
-                // We always return Alice in this case, regardless of the paraId
+                // We always return Alice if paraId is 1000
                 if para_id == 1000u32.into() {
                     Some(vec![Keyring::Alice.public().into()])
                 }
@@ -91,12 +109,15 @@ mod tests {
 
     struct DummyProposer(u64, Arc<TestClient>);
 
+    // This is going to be our block verifier
+    // It will mimic what the Nimbus verifier does, but again, Nimbus verifier is non-public
+    // It should substract the seal from logs and put it in post_logs
     #[derive(Clone)]
-    pub struct OwnPassThroughVerifier {
+    pub struct SealExtractorVerfier {
         finalized: bool,
     }
 
-    impl OwnPassThroughVerifier {
+    impl SealExtractorVerfier {
         /// Create a new instance.
         ///
         /// Every verified block will use `finalized` for the `BlockImportParams`.
@@ -106,7 +127,7 @@ mod tests {
     }
 
     #[async_trait::async_trait]
-    impl<B: BlockT> sc_consensus::Verifier<B> for OwnPassThroughVerifier {
+    impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
         async fn verify(
             &mut self,
             mut block: sc_consensus::BlockImportParams<B, ()>,
@@ -165,6 +186,7 @@ mod tests {
         }
     }
 
+    // The test Environment
     impl Environment<TestBlock> for DummyFactory {
         type Proposer = DummyProposer;
         type CreateProposer = future::Ready<Result<DummyProposer, Error>>;
@@ -175,6 +197,7 @@ mod tests {
         }
     }
 
+    // how to propose the block by Dummy Proposer
     impl Proposer<TestBlock> for DummyProposer {
         type Error = Error;
         type Transaction =
@@ -214,7 +237,7 @@ mod tests {
     }
 
     impl TestNetFactory for AuraTestNet {
-        type Verifier = OwnPassThroughVerifier;
+        type Verifier = SealExtractorVerfier;
         type PeerData = ();
         type BlockImport = PeersClient;
 
@@ -230,7 +253,7 @@ mod tests {
         }
 
         fn make_verifier(&self, _client: PeersClient, _peer_data: &()) -> Self::Verifier {
-            OwnPassThroughVerifier::new(true)
+            SealExtractorVerfier::new(true)
         }
 
         fn peer(&mut self, i: usize) -> &mut AuraPeer {
@@ -250,6 +273,170 @@ mod tests {
         }
     }
 
+    /// A stream that returns every time there is a new slot.
+    /// TODO: this would not be necessary if Slots was public in Substrate
+    pub(crate) struct Slots<Block, SC, IDP> {
+        last_slot: Slot,
+        slot_duration: Duration,
+        until_next_slot: Option<Delay>,
+        create_inherent_data_providers: IDP,
+        select_chain: SC,
+        _phantom: std::marker::PhantomData<Block>,
+    }
+
+    impl<Block, SC, IDP> Slots<Block, SC, IDP> {
+        /// Create a new `Slots` stream.
+        pub fn new(
+            slot_duration: Duration,
+            create_inherent_data_providers: IDP,
+            select_chain: SC,
+        ) -> Self {
+            Slots {
+                last_slot: 0.into(),
+                slot_duration,
+                until_next_slot: None,
+                create_inherent_data_providers,
+                select_chain,
+                _phantom: Default::default(),
+            }
+        }
+    }
+
+    impl<Block, SC, IDP> Slots<Block, SC, IDP>
+    where
+        Block: BlockT,
+        SC: SelectChain<Block>,
+        IDP: CreateInherentDataProviders<Block, ()> + 'static,
+        IDP::InherentDataProviders: crate::InherentDataProviderExt,
+    {
+        /// Returns a future that fires when the next slot starts.
+        pub async fn next_slot(&mut self) -> SlotInfo<Block> {
+            loop {
+                // Wait for slot timeout
+                self.until_next_slot
+                    .take()
+                    .unwrap_or_else(|| {
+                        // Schedule first timeout.
+                        let wait_dur = time_until_next_slot(self.slot_duration);
+                        Delay::new(wait_dur)
+                    })
+                    .await;
+
+                // Schedule delay for next slot.
+                let wait_dur = time_until_next_slot(self.slot_duration);
+                self.until_next_slot = Some(Delay::new(wait_dur));
+
+                let chain_head = match self.select_chain.best_chain().await {
+                    Ok(x) => x,
+                    Err(e) => {
+                        log::warn!(
+                            target: LOG_TARGET,
+                            "Unable to author block in slot. No best block header: {}",
+                            e,
+                        );
+                        // Let's retry at the next slot.
+                        continue;
+                    }
+                };
+
+                let inherent_data_providers = match self
+                    .create_inherent_data_providers
+                    .create_inherent_data_providers(chain_head.hash(), ())
+                    .await
+                {
+                    Ok(x) => x,
+                    Err(e) => {
+                        log::warn!(
+                            target: LOG_TARGET,
+                            "Unable to author block in slot. Failure creating inherent data provider: {}",
+                            e,
+                        );
+                        // Let's retry at the next slot.
+                        continue;
+                    }
+                };
+
+                let slot = inherent_data_providers.slot();
+
+                // Never yield the same slot twice.
+                if slot > self.last_slot {
+                    self.last_slot = slot;
+
+                    break SlotInfo::new(
+                        slot,
+                        Box::new(inherent_data_providers),
+                        self.slot_duration,
+                        chain_head,
+                        None,
+                    );
+                }
+            }
+        }
+    }
+    /// Returns current duration since unix epoch.
+    pub fn duration_now() -> Duration {
+        use std::time::SystemTime;
+        let now = SystemTime::now();
+        now.duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_else(|e| {
+                panic!(
+                    "Current time {:?} is before unix epoch. Something is wrong: {:?}",
+                    now, e
+                )
+            })
+    }
+
+    /// Returns the duration until the next slot from now.
+    pub fn time_until_next_slot(slot_duration: Duration) -> Duration {
+        let now = duration_now().as_millis();
+
+        let next_slot = (now + slot_duration.as_millis()) / slot_duration.as_millis();
+        let remaining_millis = next_slot * slot_duration.as_millis() - now;
+        Duration::from_millis(remaining_millis as u64)
+    }
+
+    /// Start a new slot worker.
+    ///
+    /// Every time a new slot is triggered, `parachain_block_producer.produce_candidate` 
+    /// is called and the future it returns is
+    /// polled until completion, unless we are major syncing.
+    pub async fn start_orchestrator_aura_consensus_candidate_producer<B, C, SO, CIDP>(
+        slot_duration: SlotDuration,
+        client: C,
+        mut parachain_block_producer: Box<dyn ParachainConsensus<B>>,
+        sync_oracle: SO,
+        create_inherent_data_providers: CIDP,
+    ) where
+        B: BlockT,
+        C: SelectChain<B>,
+        SO: SyncOracle + Send,
+        CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
+        CIDP::InherentDataProviders: InherentDataProviderExt + Send,
+    {
+        let mut slots = Slots::new(
+            slot_duration.as_duration(),
+            create_inherent_data_providers,
+            client,
+        );
+
+        loop {
+            let slot_info = slots.next_slot().await;
+
+            if sync_oracle.is_major_syncing() {
+                continue;
+            }
+
+            let _ = parachain_block_producer
+                .produce_candidate(
+                    &slot_info.chain_head,
+                    Default::default(),
+                    &Default::default(),
+                )
+                .await;
+        }
+    }
+
+    // After all this boiler plate, tests start
     #[tokio::test]
     async fn authoring_blocks_but_producing_candidates_instead_of_calling_on_slot() {
         let net = AuraTestNet::new(3);
@@ -265,6 +452,11 @@ mod tests {
         let mut aura_futures = Vec::new();
 
         let mut keystore_paths = Vec::new();
+
+        // For each peer, we start an instance of the orchestratorAuraConsensus
+        // Only one of those peers will be able to author in each slot
+        // The tests finishes when we see a block higher than block 5 that has
+        // not being authored by us
         for (peer_id, key) in peers {
             let mut net = net.lock();
             let peer = net.peer(*peer_id);
@@ -363,6 +555,8 @@ mod tests {
         .await;
     }
 
+    // Checks node slot claim. Again for different slots, different authorities
+    // should be able to claim
     #[tokio::test]
     async fn current_node_authority_should_claim_slot() {
         let net = AuraTestNet::new(4);
@@ -522,6 +716,8 @@ mod tests {
         assert!(client.header(res.block.hash()).unwrap().is_some());
     }
 
+    // Tests authorities are correctly returned and eligibility is correctly calculated
+    // thanks to the mocked runtime-apis
     #[tokio::test]
     async fn authorities_runtime_api_tests() {
         let net = AuraTestNet::new(4);
@@ -571,194 +767,5 @@ mod tests {
             authorities_after_alice,
             Some(vec![Keyring::Alice.public().into()])
         );
-    }
-}
-
-use {
-    crate::{
-        consensus_orchestrator::{
-            build_orchestrator_aura_worker, BuildOrchestratorAuraWorkerParams,
-        },
-        InherentDataProviderExt,
-    },
-    sc_client_api::HeaderBackend,
-    sp_consensus::{SelectChain, SyncOracle},
-    sp_core::{
-        crypto::{ByteArray, Pair},
-        H256,
-    },
-    sp_inherents::CreateInherentDataProviders,
-    sp_runtime::traits::{Block as BlockT, Header as HeaderT},
-};
-
-use cumulus_primitives_core::PersistedValidationData;
-
-use {
-    crate::LOG_TARGET,
-    futures_timer::Delay,
-    sc_consensus_slots::SlotInfo,
-    sp_consensus_slots::{Slot, SlotDuration},
-    std::time::Duration,
-};
-/// A stream that returns every time there is a new slot.
-pub(crate) struct Slots<Block, SC, IDP> {
-    last_slot: Slot,
-    slot_duration: Duration,
-    until_next_slot: Option<Delay>,
-    create_inherent_data_providers: IDP,
-    select_chain: SC,
-    _phantom: std::marker::PhantomData<Block>,
-}
-
-impl<Block, SC, IDP> Slots<Block, SC, IDP> {
-    /// Create a new `Slots` stream.
-    pub fn new(
-        slot_duration: Duration,
-        create_inherent_data_providers: IDP,
-        select_chain: SC,
-    ) -> Self {
-        Slots {
-            last_slot: 0.into(),
-            slot_duration,
-            until_next_slot: None,
-            create_inherent_data_providers,
-            select_chain,
-            _phantom: Default::default(),
-        }
-    }
-}
-
-impl<Block, SC, IDP> Slots<Block, SC, IDP>
-where
-    Block: BlockT,
-    SC: SelectChain<Block>,
-    IDP: CreateInherentDataProviders<Block, ()> + 'static,
-    IDP::InherentDataProviders: crate::InherentDataProviderExt,
-{
-    /// Returns a future that fires when the next slot starts.
-    pub async fn next_slot(&mut self) -> SlotInfo<Block> {
-        loop {
-            // Wait for slot timeout
-            self.until_next_slot
-                .take()
-                .unwrap_or_else(|| {
-                    // Schedule first timeout.
-                    let wait_dur = time_until_next_slot(self.slot_duration);
-                    Delay::new(wait_dur)
-                })
-                .await;
-
-            // Schedule delay for next slot.
-            let wait_dur = time_until_next_slot(self.slot_duration);
-            self.until_next_slot = Some(Delay::new(wait_dur));
-
-            let chain_head = match self.select_chain.best_chain().await {
-                Ok(x) => x,
-                Err(e) => {
-                    log::warn!(
-                        target: LOG_TARGET,
-                        "Unable to author block in slot. No best block header: {}",
-                        e,
-                    );
-                    // Let's retry at the next slot.
-                    continue;
-                }
-            };
-
-            let inherent_data_providers = match self
-                .create_inherent_data_providers
-                .create_inherent_data_providers(chain_head.hash(), ())
-                .await
-            {
-                Ok(x) => x,
-                Err(e) => {
-                    log::warn!(
-						target: LOG_TARGET,
-						"Unable to author block in slot. Failure creating inherent data provider: {}",
-						e,
-					);
-                    // Let's retry at the next slot.
-                    continue;
-                }
-            };
-
-            let slot = inherent_data_providers.slot();
-
-            // Never yield the same slot twice.
-            if slot > self.last_slot {
-                self.last_slot = slot;
-
-                break SlotInfo::new(
-                    slot,
-                    Box::new(inherent_data_providers),
-                    self.slot_duration,
-                    chain_head,
-                    None,
-                );
-            }
-        }
-    }
-}
-
-/// Returns current duration since unix epoch.
-pub fn duration_now() -> Duration {
-    use std::time::SystemTime;
-    let now = SystemTime::now();
-    now.duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_else(|e| {
-            panic!(
-                "Current time {:?} is before unix epoch. Something is wrong: {:?}",
-                now, e
-            )
-        })
-}
-
-/// Returns the duration until the next slot from now.
-pub fn time_until_next_slot(slot_duration: Duration) -> Duration {
-    let now = duration_now().as_millis();
-
-    let next_slot = (now + slot_duration.as_millis()) / slot_duration.as_millis();
-    let remaining_millis = next_slot * slot_duration.as_millis() - now;
-    Duration::from_millis(remaining_millis as u64)
-}
-
-use {cumulus_client_consensus_common::ParachainConsensus, nimbus_primitives::NimbusId};
-/// Start a new slot worker.
-///
-/// Every time a new slot is triggered, `worker.on_slot` is called and the future it returns is
-/// polled until completion, unless we are major syncing.
-pub async fn start_orchestrator_aura_consensus_candidate_producer<B, C, SO, CIDP>(
-    slot_duration: SlotDuration,
-    client: C,
-    mut parachain_block_producer: Box<dyn ParachainConsensus<B>>,
-    sync_oracle: SO,
-    create_inherent_data_providers: CIDP,
-) where
-    B: BlockT,
-    C: SelectChain<B>,
-    SO: SyncOracle + Send,
-    CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
-    CIDP::InherentDataProviders: InherentDataProviderExt + Send,
-{
-    let mut slots = Slots::new(
-        slot_duration.as_duration(),
-        create_inherent_data_providers,
-        client,
-    );
-
-    loop {
-        let slot_info = slots.next_slot().await;
-
-        if sync_oracle.is_major_syncing() {
-            continue;
-        }
-
-        let _ = parachain_block_producer
-            .produce_candidate(
-                &slot_info.chain_head,
-                Default::default(),
-                &Default::default(),
-            )
-            .await;
     }
 }
