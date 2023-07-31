@@ -51,7 +51,7 @@ jobs:
         id: prepare
         run: |
           dancebox='{ \"runtime_name\": \"dancebox\", \"runtime_path\" : \"./runtime/dancebox/src/lib.rs\" }'
-          test={"aaa": "bbb"}
+          test='{"aaa": "bbb"}'
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
             echo "matrix_tests=[$test]" >> $GITHUB_OUTPUT
