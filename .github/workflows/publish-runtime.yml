@@ -51,8 +51,8 @@ jobs:
         run: |
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
-            matrix=${{ toJSON(fromJSON('{"FAVORITE_FRUIT": "APPLE", "FAVORITE_COLOR": "BLUE"}')) }}
-            echo "matrix=$matrix" >> $GITHUB_OUTPUT
+            matrix=${{ fromJSON('{"FAVORITE_FRUIT": "APPLE", "FAVORITE_COLOR": "BLUE"}') }}
+            echo "matrix={\"chains\":[\"dancebox\", \"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix={\"chains\":[\"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
           else
