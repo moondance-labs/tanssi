@@ -50,14 +50,23 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
+          dancebox='dancebox'
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
-            echo "matrix_tests=['dancebox']" >> $GITHUB_OUTPUT
+            echo "matrix_tests=[$dancebox]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix_tests=['simple-template', 'frontier-template']" >> $GITHUB_OUTPUT
           else
             echo "matrix_tests=['dancebox', 'simple-template', 'frontier-template']" >> $GITHUB_OUTPUT
           fi
-
+  debug:
+    name: L2 debug
+    runs-on:
+      - ubuntu-latest
+    needs: matrix_prep
+    steps:
+      - name: Read tests
+        run: |
+          echo "${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}"
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
     runs-on: self-hosted
