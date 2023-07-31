@@ -52,8 +52,10 @@ jobs:
         run: |
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
             echo "matrix_tests=['dancebox']" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
+            echo "matrix_tests=['simple-template', 'frontier-template']" >> $GITHUB_OUTPUT
           else
-            echo "matrix_tests=[\"['aaa', 'bbb', 'ccc']\",\"['ddd', 'eee', 'fff']\"]" >> $GITHUB_OUTPUT
+            echo "matrix_tests=['dancebox', 'simple-template', 'frontier-template']" >> $GITHUB_OUTPUT
           fi
   debug:
     name: L2 debug
