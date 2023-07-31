@@ -51,11 +51,11 @@ jobs:
         run: |
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
-            echo "matrix::{\"chains\":[\"dancebox\"]}" >> $GITHUB_OUTPUT
+            echo "matrix={\"chains\":[\"dancebox\"]}" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
-            echo "matrix::{\"chains\":[\"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
+            echo "matrix={\"chains\":[\"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
           else
-            echo "matrix::{\"chains\":[\"dancebox\", \"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
+            echo "matrix={\"chains\":[\"dancebox\", \"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
           fi
 
   build-srtool-runtimes:
