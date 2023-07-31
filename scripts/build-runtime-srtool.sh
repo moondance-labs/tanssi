@@ -6,6 +6,15 @@
 # $(~/srtool/uid-gid-mapping.sh 1001 | xargs) is used to map the user and group
 
 # Docker command to generate JSON blob of the runtime
+if [[ $GH_WORKFLOW_MATRIX_CHAIN == *"template"* ]]; then
+  FOLDER_NAME=$(echo $GH_WORKFLOW_MATRIX_CHAIN |sed 's/-template.*//')
+  PATH_NAME=container-chains/templates/${FOLDER_NAME}/runtime
+  PACKAGE=container-chain-template-${FOLDER_NAME}-runtime
+else
+  PATH_NAME=runtime/${GH_WORKFLOW_MATRIX_CHAIN}
+  PACKAGE=${GH_WORKFLOW_MATRIX_CHAIN}-runtime
+fi
+
 CMD="docker run \
   -i \
   --rm \
