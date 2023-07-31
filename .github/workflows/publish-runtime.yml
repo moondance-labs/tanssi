@@ -52,8 +52,7 @@ jobs:
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
             matrix=${{ toJSON(fromJSON('{"chains": ["dancebox"]}')) }}
-            echo ${matrix}
-            echo "matrix=${matrix}" >> $GITHUB_OUTPUT
+            echo "matrix=$matrix" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix={\"chains\":[\"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
           else
@@ -65,7 +64,7 @@ jobs:
     runs-on: self-hosted
     strategy:
       matrix:
-        chain:  ${{fromJson(needs.matrix_prep.outputs.matrix.chains)}}
+        chain:  ${{fromJson(needs.matrix_prep.outputs.matrix).chains}}
         srtool_image:
           - purestake/srtool
         srtool_image_tag:
