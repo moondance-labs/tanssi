@@ -151,7 +151,7 @@ jobs:
         id: generate-release-body
         working-directory: original-tools
         run: |
-          RUNTIMES=$(echo '${{needs.matrix_prep.outputs.matrix_tests}}' | jq -r '[.[] | .runtime_name]')
+          RUNTIMES=$(echo '${{needs.matrix_prep.outputs.matrix_tests}}' | jq -r '.[] | .runtime_name')
           echo $RUNTIMES
           yarn
           yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ github.event.inputs.from }}" --to "${{ github.event.inputs.to }}" --srtool-report-folder '../build/' --runtimes $RUNTIMES > ../body.md      - name: Get runtime version
