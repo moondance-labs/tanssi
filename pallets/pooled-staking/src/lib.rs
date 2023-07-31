@@ -48,9 +48,8 @@ pub mod pallet {
         super::*,
         core::marker::PhantomData,
         frame_support::{
-            pallet_prelude::OptionQuery,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
-            traits::{fungible, tokens::Balance, Currency, IsType, ReservableCurrency},
+            traits::{fungible, tokens::Balance, IsType},
             Blake2_128Concat, RuntimeDebug,
         },
         parity_scale_codec::{Decode, Encode, FullCodec},
@@ -70,8 +69,8 @@ pub mod pallet {
     /// Allow to customize when requests can be executed.
     pub trait RequestFilter<T: Config> {
         fn can_be_executed(
-            candidate: Candidate<T>,
-            delegator: Delegator<T>,
+            candidate: &Candidate<T>,
+            delegator: &Delegator<T>,
             request_block: T::BlockNumber,
         ) -> bool;
     }
@@ -134,6 +133,13 @@ pub mod pallet {
         JoiningManualRewards { candidate: A, at_block: B },
         /// Candidate requested to to leave a pool of a candidate.
         Leaving { candidate: A, at_block: B },
+    }
+
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    pub struct PendingOperationQuery<A: FullCodec, B: FullCodec> {
+        pub delegator: A,
+        pub operation: PendingOperationKey<A, B>,
     }
 
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -397,6 +403,7 @@ pub mod pallet {
         InconsistentState,
         UnsufficientSharesForTransfer,
         CandidateTransferingOwnSharesForbidden,
+        RequestCannotBeExecuted(u32),
     }
 
     #[pallet::call]

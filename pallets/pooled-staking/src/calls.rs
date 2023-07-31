@@ -18,16 +18,13 @@ use {
     crate::{
         candidate::Candidates,
         pools::{self, Pool},
-        traits::ErrAdd,
-        Candidate, Config, Error, PendingOperationKey, PendingOperations, Shares, SharesOrStake,
-        Stake, TargetPool,
+        traits::{ErrAdd, ErrSub},
+        Candidate, Config, Delegator, Error, PendingOperationKey, PendingOperationQuery,
+        PendingOperations, RequestFilter, Stake, TargetPool,
     },
     frame_support::{
         pallet_prelude::*,
-        traits::{
-            fungible::{Mutate, MutateHold},
-            tokens::Preservation,
-        },
+        traits::{fungible::MutateHold, tokens::Precision},
     },
     frame_system::pallet_prelude::*,
     sp_runtime::traits::Zero,
@@ -79,6 +76,130 @@ impl<T: Config> Calls<T> {
             .err_add(&stake.0)
             .map_err(|_| Error::<T>::MathOverflow)?;
         PendingOperations::<T>::set(&delegator, &operation_key, operation);
+
+        // TODO: Event?
+
+        Ok(().into())
+    }
+
+    pub fn execute_pending_operations(
+        origin: OriginFor<T>,
+        operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
+    ) -> DispatchResultWithPostInfo {
+        // We don't care about the sender.
+        let _ = ensure_signed(origin)?;
+
+        for (
+            index,
+            PendingOperationQuery {
+                delegator,
+                operation,
+            },
+        ) in operations.into_iter().enumerate()
+        {
+            let value = PendingOperations::<T>::get(&delegator, &operation);
+
+            if Zero::is_zero(&value) {
+                continue;
+            }
+
+            match &operation {
+                PendingOperationKey::JoiningAutoCompounding {
+                    candidate,
+                    at_block,
+                } => {
+                    ensure!(
+                        T::JoiningRequestFilter::can_be_executed(&candidate, &delegator, *at_block),
+                        Error::<T>::RequestCannotBeExecuted(index as u32)
+                    );
+
+                    Self::execute_joining(
+                        &candidate,
+                        &delegator,
+                        TargetPool::AutoCompounding,
+                        Stake(value),
+                    )?;
+
+                    PendingOperations::<T>::set(&delegator, &operation, Zero::zero());
+                }
+                PendingOperationKey::JoiningManualRewards {
+                    candidate,
+                    at_block,
+                } => {
+                    ensure!(
+                        T::JoiningRequestFilter::can_be_executed(&candidate, &delegator, *at_block),
+                        Error::<T>::RequestCannotBeExecuted(index as u32)
+                    );
+
+                    Self::execute_joining(
+                        &candidate,
+                        &delegator,
+                        TargetPool::ManualRewards,
+                        Stake(value),
+                    )?;
+
+                    PendingOperations::<T>::set(&delegator, &operation, Zero::zero());
+                }
+                _ => todo!(),
+            }
+        }
+
+        Ok(().into())
+    }
+
+    fn execute_joining(
+        candidate: &Candidate<T>,
+        delegator: &Delegator<T>,
+        pool: TargetPool,
+        stake: Stake<T>,
+    ) -> DispatchResultWithPostInfo {
+        // Convert stake into shares quantity.
+        let shares = match pool {
+            TargetPool::AutoCompounding => {
+                pools::AutoCompounding::<T>::stake_to_shares_or_init(candidate, stake.clone())?
+            }
+            TargetPool::ManualRewards => {
+                pools::ManualRewards::<T>::stake_to_shares_or_init(candidate, stake.clone())?
+            }
+        };
+
+        // If stake doesn't allow to get at least one share we release the funds.
+        if Zero::is_zero(&shares.0) {
+            T::Currency::release(
+                &T::CurrencyHoldReason::get(),
+                &delegator,
+                stake.0,
+                Precision::Exact,
+            )?;
+            return Ok(().into());
+        }
+
+        // We create the new shares. It returns the actual amount of stake those shares
+        // represents (due to rounding).
+        let actually_staked = match pool {
+            TargetPool::AutoCompounding => {
+                pools::AutoCompounding::<T>::add_shares(&candidate, &delegator, shares)?
+            }
+            TargetPool::ManualRewards => {
+                pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares)?
+            }
+        };
+
+        // We release currency that couldn't be converted to shares due to rounding.
+        // This thus can reduce slighly the total stake of the candidate.
+        let release = stake
+            .0
+            .err_sub(&actually_staked.0)
+            .map_err(|_| Error::<T>::MathUnderflow)?;
+        T::Currency::release(
+            &T::CurrencyHoldReason::get(),
+            &delegator,
+            release,
+            Precision::Exact,
+        )?;
+        Candidates::<T>::sub_total_stake(candidate, Stake(release))?;
+
+        // TODO: Event?
 
         Ok(().into())
     }

@@ -166,11 +166,14 @@ pub trait Pool<T: Config> {
 pub fn check_candidate_consistency<T: Config>(candidate: &Candidate<T>) -> Result<(), Error<T>> {
     let total0 = Pools::<T>::get(candidate, &PoolsKey::CandidateTotalStake);
 
+    let joining = Joining::<T>::total_staked(&candidate).0;
     let auto = AutoCompounding::<T>::total_staked(&candidate).0;
     let manual = ManualRewards::<T>::total_staked(&candidate).0;
     let leaving = Leaving::<T>::total_staked(&candidate).0;
 
-    let total1 = auto
+    let total1 = joining
+        .checked_add(&auto)
+        .ok_or(Error::InconsistentState)?
         .checked_add(&manual)
         .ok_or(Error::InconsistentState)?
         .checked_add(&leaving)
