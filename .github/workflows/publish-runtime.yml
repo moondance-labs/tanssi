@@ -117,7 +117,7 @@ jobs:
       - name: Archive Artifacts for ${{ matrix.chain }}
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.chain }}-runtime
+          name: runtime-info
           path: |
             ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
             ${{ matrix.chain.runtime_name }}-srtool-digest.json
@@ -145,6 +145,11 @@ jobs:
         with:
           name: original-tools
           path: original-tools 
+      - name: Download runtime-info
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: runtime-info
+          path: build  
       - name: Generate release body
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -152,7 +157,6 @@ jobs:
         working-directory: original-tools
         run: |
           RUNTIMES=$(echo '${{needs.matrix_prep.outputs.matrix_tests}}' | jq -r '.[] | .runtime_name + " "')
-          echo $RUNTIMES
           yarn
           yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ github.event.inputs.from }}" --to "${{ github.event.inputs.to }}" --srtool-report-folder '../build/' --runtimes $RUNTIMES > ../body.md      - name: Get runtime version
       - name: Create draft release
@@ -183,7 +187,7 @@ jobs:
       - name: Download ${{ matrix.chain }} runtime
         uses: actions/download-artifact@v3.0.2
         with:
-          name: ${{ matrix.chain }}-runtime
+          name: runtime-info
           path: build    
       - name: Get runtime version
         id: get-runtime-ver
