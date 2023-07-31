@@ -42,22 +42,14 @@ jobs:
   matrix_prep:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-      matrix_tests: ${{ steps.set-matrix.outputs.matrix_tests }}
+      matrix_tests: ${{ steps.prepare.outputs.matrix_tests }}
     steps:
       - uses: actions/checkout@v3
 
     # Build input dependent matrix
-      - name: set-matrix
+      - name: create matrix
+        id: prepare
         run: |
-
-          if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
-          echo "matrix=[\"['dancebox']\"]" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
-            echo "matrix={\"chains\":[\"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
-          else
-            echo "matrix={\"chains\":[\"dancebox\", \"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
-          fi
           echo "matrix_tests=[\"['aaa', 'bbb', 'ccc']\",\"['ddd', 'eee', 'fff']\"]" >> $GITHUB_OUTPUT
 
   debug:
