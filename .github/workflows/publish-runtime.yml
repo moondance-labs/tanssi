@@ -50,7 +50,7 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
-          dancebox=dancebox
+          dancebox=\"{ 'runtime-name': 'dancebox' }\"
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
             echo "matrix_tests=['$dancebox']" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
