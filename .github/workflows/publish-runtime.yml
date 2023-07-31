@@ -194,23 +194,23 @@ jobs:
         run: |
           runtime_ver="$(cat ${{ matrix.chain.runtime_path }} | grep -o 'spec_version: [0-9]*' | tail -1 | grep -o '[0-9]*')"
           echo "runtime_ver=$runtime_ver" >> $GITHUB_OUTPUT
-          mv build/${{ matrix.chain }}-runtime.compact.compressed.wasm ${{ matrix.chain }}-runtime-${runtime_ver}.wasm
-          mv build/${{ matrix.chain }}-srtool-digest.json ${{ matrix.chain }}-runtime-${runtime_ver}-srtool-digest.json
+          mv build/${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm ${{ matrix.chain.runtime_name }}-runtime-${runtime_ver}.wasm
+          mv build/${{ matrix.chain.runtime_name }}-srtool-digest.json ${{ matrix.chain.runtime_name }}-runtime-${runtime_ver}-srtool-digest.json
       - name: Upload ${{ matrix.chain }} wasm
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.prepare-draft-release.outputs.asset_upload_url }}
-          asset_path: ${{ matrix.chain }}-runtime-${{ steps.get-runtime-ver.outputs.runtime_ver }}.wasm
-          asset_name: ${{ matrix.chain }}-runtime-${{ steps.get-runtime-ver.outputs.runtime_ver }}.wasm
+          asset_path: ${{ matrix.chain.runtime_name }}-runtime-${{ steps.get-runtime-ver.outputs.runtime_ver }}.wasm
+          asset_name: ${{ matrix.chain.runtime_name }}-runtime-${{ steps.get-runtime-ver.outputs.runtime_ver }}.wasm
           asset_content_type: application/octet-stream
-      - name: Upload ${{ matrix.chain }} srtool digest
+      - name: Upload ${{ matrix.chain.runtime_name }} srtool digest
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url:  ${{ needs.prepare-draft-release.outputs.asset_upload_url }}
-          asset_path: ${{ matrix.chain }}-runtime-${{ steps.get-runtime-ver.outputs.runtime_ver }}-srtool-digest.json
-          asset_name: ${{ matrix.chain }}-runtime-${{ steps.get-runtime-ver.outputs.runtime_ver }}.srtool-digest.json
+          asset_path: ${{ matrix.chain.runtime_name }}-runtime-${{ steps.get-runtime-ver.outputs.runtime_ver }}-srtool-digest.json
+          asset_name: ${{ matrix.chain.runtime_name }}-runtime-${{ steps.get-runtime-ver.outputs.runtime_ver }}.srtool-digest.json
           asset_content_type: application/json
