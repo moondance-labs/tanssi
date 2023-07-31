@@ -50,12 +50,12 @@ jobs:
       - name: set-matrix
         run: |
 
-          if [[ ${{ github.event.inputs.to }} = "tanssi-only" ]]; then
-            echo "::set-output name=matrix::{\"chains\":[\"dancebox\"]}"
-          elif [[ ${{ github.event.inputs.to }} = "templates-only" ]]; then
-            echo "::set-output name=matrix::{\"chains\":[\"simple-template\", \"simple-template\"]}"
+          if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
+            echo "matrix::{\"chains\":[\"dancebox\"]}" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
+            echo "matrix::{\"chains\":[\"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=matrix::{\"chains\":[\"dancebox\", \"simple-template\", \"simple-template\"]}"
+            echo "matrix::{\"chains\":[\"dancebox\", \"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
           fi
 
   build-srtool-runtimes:
