@@ -70,7 +70,7 @@ jobs:
     runs-on: self-hosted
     strategy:
       matrix:
-        chain: ${{fromJson(needs.matrix_prep.outputs.matrix)}}
+        chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
         srtool_image:
           - purestake/srtool
         srtool_image_tag:
