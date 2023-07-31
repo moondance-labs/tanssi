@@ -10,6 +10,15 @@ on:
       to:
         description: tag (ex. runtime-155) to generate release note and srtool runtimes from
         required: true
+      chains:
+        description: the chains for which we should do the release (ex. dancebox)
+        required: false
+        type: choice
+        default: tanssi-only
+        options:
+          - tanssi-only
+          - templates-only
+          - run-all
 
 jobs:
   ####### Build runtimes with srtool #######
@@ -29,13 +38,32 @@ jobs:
         with:
           name: original-tools
           path: tools
+  
+  matrix_prep:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v3
+
+    # Build input dependent matrix
+      - name: set-matrix
+        run: |
+
+          if [[ ${{ github.event.inputs.to }} = "tanssi-only" ]]; then
+            echo "::set-output name=matrix::{\"chains\":[\"dancebox\"]}"
+          elif [[ ${{ github.event.inputs.to }} = "templates-only" ]]; then
+            echo "::set-output name=matrix::{\"chains\":[\"simple-template\", \"simple-template\"]}"
+          else
+            echo "::set-output name=matrix::{\"chains\":[\"dancebox\", \"simple-template\", \"simple-template\"]}"
+          fi
 
   build-srtool-runtimes:
-    needs: ["setup-scripts"]
+    needs: ["setup-scripts", "matrix_prep"]
     runs-on: self-hosted
     strategy:
       matrix:
-        chain: ["dancebox"]
+        chain:  ${{fromJson(needs.matrix_prep.outputs.matrix.chains)}}
         srtool_image:
           - purestake/srtool
         srtool_image_tag:
@@ -52,6 +80,7 @@ jobs:
       - name: Build & Push purestake/srtool image
         if: github.repository == 'moondance-labs/tanssi'
         run: |
+          echo ${{ matrix.chain }}
           docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
 
           if [[ $image_exists = "false" ]]; then
