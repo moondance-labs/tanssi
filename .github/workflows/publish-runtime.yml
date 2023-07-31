@@ -58,7 +58,7 @@ jobs:
             echo "matrix={\"chains\":[\"dancebox\", \"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
           fi
 
-   debug:
+  debug:
     name: L2 debug
     runs-on:
       - ubuntu-latest
