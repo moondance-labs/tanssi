@@ -66,7 +66,7 @@ jobs:
     steps:
       - name: Read tests
         run: |
-          echo "${{ fromJson(needs.matrix_prep.outputs.matrix_tests)[0] }}"
+          echo "${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}"
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
     runs-on: self-hosted
@@ -89,7 +89,7 @@ jobs:
       - name: Build & Push purestake/srtool image
         if: github.repository == 'moondance-labs/tanssi'
         run: |
-          echo ${{ matrix.chain.runtime_name }}
+          echo ${{ matrix.chain }}
           docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
 
           if [[ $image_exists = "false" ]]; then
