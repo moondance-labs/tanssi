@@ -54,7 +54,7 @@ jobs:
           test='{\"aaa\": \"bbb\"}'
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
-            echo "matrix_tests=[$test]" >> $GITHUB_OUTPUT
+            echo "matrix_tests=[{\"aaa\": \"bbb\"}]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix_tests=['simple-template', 'frontier-template']" >> $GITHUB_OUTPUT
           else
