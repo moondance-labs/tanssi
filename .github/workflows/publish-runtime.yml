@@ -58,6 +58,16 @@ jobs:
             echo "matrix={\"chains\":[\"dancebox\", \"simple-template\", \"simple-template\"]}" >> $GITHUB_OUTPUT
           fi
 
+  debug:
+    name: L2 debug
+    runs-on:
+      - ubuntu-latest
+    needs: matrix_prep
+    steps:
+      - name: Read tests
+        run: |
+          echo "${{ fromJson(needs.matrix_prep.outputs.matrix) }}"
+
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
     runs-on: self-hosted
