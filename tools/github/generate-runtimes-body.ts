@@ -73,8 +73,13 @@ async function main() {
         describe: "Repository name (Ex: dancebox)",
         required: true,
       },
+      runtimes: {
+        type: "array",
+        describe: "The runtimes for which it needs to be run",
+        required: true
+      }
     })
-    .demandOption(["srtool-report-folder", "from", "to"])
+    .demandOption(["srtool-report-folder", "from", "to", "runtimes"])
     .help().argv;
 
   const octokit = new Octokit({
@@ -84,8 +89,8 @@ async function main() {
   const previousTag = argv.from;
   const newTag = argv.to;
 
-  const runtimes = ["dancebox"].map((runtimeName) =>
-    getRuntimeInfo(argv["srtool-report-folder"], runtimeName)
+  const runtimes = argv.runtimes.map((runtimeName) =>
+    getRuntimeInfo(argv["srtool-report-folder"], runtimeName as string)
   );
 
   const moduleLinks = ["substrate", "polkadot", "cumulus", "frontier"].map((repoName) => ({
