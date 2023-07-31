@@ -50,7 +50,10 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
-          dancebox='{"runtime_name": "dancebox","runtime_path" : "./runtime/dancebox/src/lib.rs"}'
+          dancebox='{\
+            "runtime_name": "dancebox",
+            "runtime_path" : "./runtime/dancebox/src/lib.rs"
+          }'
           frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./container-chains/templates/frontier/runtime/src/lib.rs"}'
           simple_template='{"runtime_name": "simple-template","runtime_path" : "./container-chains/templates/simple/runtime/src/lib.rs"}'
 
@@ -112,7 +115,7 @@ jobs:
       - name: Summary
         run: |
           echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain.runtime_name }}-srtool-digest.json
-          cat ${{ matrix.chain }}-srtool-digest.json
+          cat ${{ matrix.chain.runtime_name }}-srtool-digest.json
           cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
       - name: Archive Artifacts for ${{ matrix.chain }}
         uses: actions/upload-artifact@v2
