@@ -50,9 +50,9 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
-          dancebox='\"{ 'runtime_name': 'dancebox', 'runtime_path' : './runtime/dancebox/src/lib.rs' }\"'
+          dancebox="\"{ 'runtime_name': 'dancebox', 'runtime_path' : './runtime/dancebox/src/lib.rs' }\""
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
-            echo "matrix_tests=['\"{ 'runtime_name': 'dancebox', 'runtime_path' : './runtime/dancebox/src/lib.rs' }\"']" >> $GITHUB_OUTPUT
+            echo "matrix_tests=['$dancebox']" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix_tests=['simple-template', 'frontier-template']" >> $GITHUB_OUTPUT
           else
@@ -66,8 +66,7 @@ jobs:
     steps:
       - name: Read tests
         run: |
-          echo "${{ fromJson(needs.matrix_prep.outputs.matrix_tests)[0] }}"
-          echo "${{ fromJson(needs.matrix_prep.outputs.matrix_tests)[0].runtime_name }}"
+          echo "${{ fromJson(needs.matrix_prep.outputs.matrix_tests[0].runtime_name) }}"
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
     runs-on: self-hosted
@@ -91,8 +90,6 @@ jobs:
         if: github.repository == 'moondance-labs/tanssi'
         run: |
           echo ${{ matrix.chain }}
-          echo ${{ fromJson(matrix.chain).runtime_name }}
-
           docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
 
           if [[ $image_exists = "false" ]]; then
@@ -103,7 +100,7 @@ jobs:
       - name: Build runtime using "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}"
         id: srtool_build
         env:
-          GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chain.runtime_name }}
+          GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chain }}
           GH_WORKFLOW_MATRIX_SRTOOL_IMAGE: ${{ matrix.srtool_image }}
           GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG: ${{ matrix.srtool_image_tag }}
         run: |
@@ -112,15 +109,15 @@ jobs:
       - name: Summary
         run: |
           echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain.runtime_name }}-srtool-digest.json
-          cat ${{ matrix.chain.runtime_name }}-srtool-digest.json
+          cat ${{ matrix.chain }}-srtool-digest.json
           cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
-      - name: Archive Artifacts for ${{ matrix.chain.runtime_name}}
+      - name: Archive Artifacts for ${{ matrix.chain }}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.chain }}-runtime
           path: |
             ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
-            ${{ matrix.chain.runtime_name }}-srtool-digest.json
+            ${{ matrix.chain }}-srtool-digest.json
 
           
   ####### Prepare the release draft #######
