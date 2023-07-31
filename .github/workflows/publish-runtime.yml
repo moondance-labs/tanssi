@@ -50,7 +50,7 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
-          dancebox='\"{ 'runtime-name': 'dancebox' }\"'
+          dancebox='\"{ 'runtime_name': 'dancebox', 'runtime_path' : './runtime/dancebox/src/lib.rs' }\"'
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
             echo "matrix_tests=['$dancebox']" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
@@ -89,7 +89,7 @@ jobs:
       - name: Build & Push purestake/srtool image
         if: github.repository == 'moondance-labs/tanssi'
         run: |
-          echo ${{ matrix.chain }}
+          echo ${{ matrix.chain.runtime_name }}
           docker pull "${{ matrix.srtool_image }}:${{ matrix.srtool_image_tag }}" && image_exists=true || image_exists=false
 
           if [[ $image_exists = "false" ]]; then
@@ -108,16 +108,16 @@ jobs:
           ./original-scripts/build-runtime-srtool.sh
       - name: Summary
         run: |
-          echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain }}-srtool-digest.json
-          cat ${{ matrix.chain }}-srtool-digest.json
-          cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain }}-runtime.compact.compressed.wasm
-      - name: Archive Artifacts for ${{ matrix.chain }}
+          echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain.runtime_name }}-srtool-digest.json
+          cat ${{ matrix.chain.runtime_name }}-srtool-digest.json
+          cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
+      - name: Archive Artifacts for ${{ matrix.chain.runtime_name}}
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.chain }}-runtime
           path: |
-            ${{ matrix.chain }}-runtime.compact.compressed.wasm
-            ${{ matrix.chain }}-srtool-digest.json
+            ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
+            ${{ matrix.chain.runtime_name }}-srtool-digest.json
 
           
   ####### Prepare the release draft #######
