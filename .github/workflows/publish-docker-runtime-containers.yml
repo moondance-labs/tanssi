@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: runtime tag (ex. runtime-2200) to publish on docker
+        description: runtime tag (ex. runtime-2200-templates) to publish on docker
         required: true
 
 jobs:
