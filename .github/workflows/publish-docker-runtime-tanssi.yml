@@ -1,4 +1,4 @@
-name: Publish Docker runtime
+name: Publish Docker runtime tanssi
 
 on:
   workflow_dispatch:

@@ -1,4 +1,4 @@
-name: Publish Docker runtime
+name: Publish Docker runtime containers
 
 on:
   workflow_dispatch:

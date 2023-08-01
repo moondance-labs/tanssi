@@ -34,10 +34,11 @@ async function main() {
 - [ ] Check all proxy types.
 - [ ] Re-run all extrinsics/hooks benchmarks.
 - [ ] Tag master with runtime-${newVersion} and push to github
+- [ ] Tag master with runtime-${newVersion}-templates and push to github
 - [ ] Start the github action Publish Runtime Draft
 with runtime-${previousVersion} => runtime-${newVersion}
   - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
-    `-f from=runtime-${previousVersion} -f to=runtime-${newVersion}\`
+    `-f from=runtime-${previousVersion} -f to=runtime-${newVersion} -f chains=run-all\`
 - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft)
 - [ ] Upgrade typescript API: Start the github action "Upgrade typescript API"
 - [ ] Upgrade stagenet-dancebox
@@ -59,10 +60,13 @@ with runtime-${previousVersion} => runtime-${newVersion}
 ${commonTemplate}
 
 ## Post Release
-- [ ] Publish the docker runtime image (trigger the github action "Publish Docker runtime")
+- [ ] Publish the docker runtime image (trigger the github action "Publish Docker runtime tanssi")
   - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
       `-f from=runtime-${previousVersion} -f to=runtime-${newVersion}\`
-- [ ] Create a PR that increment spec version (like #1051)
+- [ ] Publish the docker runtime image (trigger the github action "Publish Docker runtime containers")
+  - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
+      `-f from=runtime-${previousVersion}-templates -f to=runtime-${newVersion}-templates\`
+- [ ] Create a PR that increment spec version (like #1051) in both containers and tanssi runtimes
     `;
     console.log(template);
   } else {
