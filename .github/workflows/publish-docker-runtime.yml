@@ -10,6 +10,9 @@ on:
 jobs:
   tag-docker:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -22,7 +25,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Publish runtime docker image
         run: |
-            DOCKER_IMAGE=moondancelabs/tanssi
+            DOCKER_IMAGE=moondancelabs/${{matrix.image}}
             DOCKER_TAG="${{ github.event.inputs.tag }}"
             COMMIT=`git rev-list -n 1 '${{ github.event.inputs.tag }}'`
             SHA=sha-${COMMIT::8}
