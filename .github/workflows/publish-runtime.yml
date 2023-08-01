@@ -61,15 +61,6 @@ jobs:
           else
             echo "matrix_tests=[$dancebox, $simple_template, $frontier_template]" >> $GITHUB_OUTPUT
           fi
-  debug:
-    name: L2 debug
-    runs-on:
-      - ubuntu-latest
-    needs: matrix_prep
-    steps:
-      - name: Read tests
-        run: |
-          echo "${{ fromJson(needs.matrix_prep.outputs.matrix_tests)[0].runtime_name }}"
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
     runs-on: self-hosted
