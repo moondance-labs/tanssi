@@ -59,7 +59,7 @@ jobs:
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix_tests=[$simple_template, $frontier_template]" >> $GITHUB_OUTPUT
           else
-            echo "matrix_tests=[$dancebox, 'simple-template', 'frontier-template']" >> $GITHUB_OUTPUT
+            echo "matrix_tests=[$dancebox, $simple_template, $frontier_template]" >> $GITHUB_OUTPUT
           fi
   debug:
     name: L2 debug
