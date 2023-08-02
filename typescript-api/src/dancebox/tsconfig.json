@@ -2,7 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "../../build/dancebox",
+    "outDir": "../../build",
     "paths": {
       "@moonbeam/api-augment/dancebox/*": ["src/dancebox/*"],
       "@polkadot/api/augment": ["src/dancebox/interfaces/augment-api.ts"],

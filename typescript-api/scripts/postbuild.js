@@ -3,9 +3,7 @@ import { readFile } from "fs/promises";
 
 console.log("Loading package.json");
 
-const pck = JSON.parse(
-  await readFile(new URL("../package.json", import.meta.url))
-);
+const pck = JSON.parse(await readFile(new URL("../package.json", import.meta.url)));
 
 const buildPath = `${process.env.PWD}/build`;
 
@@ -20,5 +18,5 @@ copyFileSync("README.md", `${buildPath}/README.md`);
 
 console.log(`Copy ${buildPath}/README.md`);
 // Copy empty files for CommonJS modules
-copyFileSync("./src/index.cjs", `${buildPath}/dancebox/index.cjs`);
+copyFileSync("./src/index.cjs", `${buildPath}/index.cjs`);
 console.log(`Done postbuild`);

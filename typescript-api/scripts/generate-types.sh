@@ -24,19 +24,22 @@ npm install
 # Get runtimes metadata
 for CHAIN in ${CHAINS[@]}; do
   echo "Starting $CHAIN node"
-  ../build/tanssi-node --no-hardware-benchmarks --no-telemetry --no-prometheus --alice --tmp --chain=$CHAIN-local --dev-service --wasm-execution=interpreted-i-know-what-i-do --rpc-port=9933 &> /tmp/node-$CHAIN-start.log &
+  ../target/release/tanssi-node --no-hardware-benchmarks --no-telemetry --no-prometheus --alice --tmp --chain=$CHAIN-local --dev-service --wasm-execution=interpreted-i-know-what-i-do --rpc-port=9933 &> /tmp/node-$CHAIN-start.log &
   PID=$!
   echo "Waiting node..."
   ( tail -f -n0 /tmp/node-$CHAIN-start.log & ) | grep -q 'Running JSON-RPC server'
   echo "Getting $CHAIN metadata"
   curl -s -H "Content-Type: application/json" -d '{"id":"1", "jsonrpc":"2.0", "method": "state_getMetadata", "params":[]}' http://localhost:9933 > metadata-$CHAIN.json
+  npm run load:meta:local
   kill $PID
   sleep 5
 done
 
 # Generate typescript api code
 echo "Generating typescript api code..."
-npm run generate:defs && npm run generate:meta
+npm run generate:defs
+npm run generate:meta
+npm run postgenerate
 
 # We don't need anymore fix for BTreeSet
 #
@@ -49,6 +52,3 @@ npm run generate:defs && npm run generate:meta
 
 # Build the package
 npm run build
-
-# Run post build stuff (like formatter)
-npm run postgenerate
