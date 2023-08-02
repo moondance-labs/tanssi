@@ -12,9 +12,7 @@
       "composite": true,
       "declaration": true,
       "paths": {
-        "moonbeam": ["moonbeam/src"],
-        "moonriver": ["moonriver/src"],
-        "moonbase": ["moonbase/src"]
+        "dancebox": ["dancebox/src"]
       }
     },
     "exclude": ["node_modules", "build"],
