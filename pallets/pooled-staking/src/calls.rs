@@ -20,7 +20,7 @@ use {
         pools::{self, Pool},
         traits::{ErrAdd, ErrSub},
         Candidate, Config, Delegator, Error, PendingOperationKey, PendingOperationQuery,
-        PendingOperations, RequestFilter, Stake, TargetPool,
+        PendingOperations, RequestFilter, Shares, Stake, TargetPool,
     },
     frame_support::{
         pallet_prelude::*,
@@ -55,7 +55,8 @@ impl<T: Config> Calls<T> {
 
         // We hold the funds of the delegator and register its stake into the candidate stake.
         T::Currency::hold(&T::CurrencyHoldReason::get(), &delegator, stake.0)?;
-        Candidates::<T>::add_total_stake(&candidate, stake.clone())?;
+        pools::Joining::<T>::increase_hold(&candidate, &delegator, &stake)?;
+        Candidates::<T>::add_total_stake(&candidate, &stake)?;
 
         // We create/mutate a request for joining.
         let now = frame_system::Pallet::<T>::block_number();
@@ -89,17 +90,18 @@ impl<T: Config> Calls<T> {
         // We don't care about the sender.
         let _ = ensure_signed(origin)?;
 
-        for (
-            index,
-            PendingOperationQuery {
+        for (index, query) in operations.into_iter().enumerate() {
+            // We deconstruct the query and find the balance associated with it.
+            // If it is zero it may not exist or have been executed before, thus
+            // we simply skip it instead of erroring.
+            let PendingOperationQuery {
                 delegator,
                 operation,
-            },
-        ) in operations.into_iter().enumerate()
-        {
+            } = query;
+
             let value = PendingOperations::<T>::get(&delegator, &operation);
 
-            if Zero::is_zero(&value) {
+            if Zero::is_zero(&dbg!(value)) {
                 continue;
             }
 
@@ -110,14 +112,14 @@ impl<T: Config> Calls<T> {
                 } => {
                     ensure!(
                         T::JoiningRequestFilter::can_be_executed(&candidate, &delegator, *at_block),
-                        Error::<T>::RequestCannotBeExecuted(index as u32)
+                        Error::<T>::RequestCannotBeExecuted(index as u16)
                     );
 
                     Self::execute_joining(
                         &candidate,
                         &delegator,
                         TargetPool::AutoCompounding,
-                        Stake(value),
+                        Shares(value),
                     )?;
 
                     PendingOperations::<T>::set(&delegator, &operation, Zero::zero());
@@ -128,14 +130,14 @@ impl<T: Config> Calls<T> {
                 } => {
                     ensure!(
                         T::JoiningRequestFilter::can_be_executed(&candidate, &delegator, *at_block),
-                        Error::<T>::RequestCannotBeExecuted(index as u32)
+                        Error::<T>::RequestCannotBeExecuted(index as u16)
                     );
 
                     Self::execute_joining(
                         &candidate,
                         &delegator,
                         TargetPool::ManualRewards,
-                        Stake(value),
+                        Shares(value),
                     )?;
 
                     PendingOperations::<T>::set(&delegator, &operation, Zero::zero());
@@ -151,8 +153,12 @@ impl<T: Config> Calls<T> {
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
         pool: TargetPool,
-        stake: Stake<T>,
+        joining_shares: Shares<T>,
     ) -> DispatchResultWithPostInfo {
+        // Convert joining shares into stake.
+        let stake = pools::Joining::<T>::sub_shares(candidate, delegator, joining_shares)?;
+        pools::Joining::<T>::decrease_hold(candidate, delegator, &stake)?;
+
         // Convert stake into shares quantity.
         let shares = match pool {
             TargetPool::AutoCompounding => {
@@ -163,7 +169,7 @@ impl<T: Config> Calls<T> {
             }
         };
 
-        // If stake doesn't allow to get at least one share we release the funds.
+        // If stake doesn't allow to get at least one share we release all the funds.
         if Zero::is_zero(&shares.0) {
             T::Currency::release(
                 &T::CurrencyHoldReason::get(),
@@ -178,10 +184,15 @@ impl<T: Config> Calls<T> {
         // represents (due to rounding).
         let actually_staked = match pool {
             TargetPool::AutoCompounding => {
-                pools::AutoCompounding::<T>::add_shares(&candidate, &delegator, shares)?
+                let stake =
+                    pools::AutoCompounding::<T>::add_shares(&candidate, &delegator, shares)?;
+                pools::AutoCompounding::<T>::increase_hold(candidate, delegator, &stake)?;
+                stake
             }
             TargetPool::ManualRewards => {
-                pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares)?
+                let stake = pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares)?;
+                pools::ManualRewards::<T>::increase_hold(candidate, delegator, &stake)?;
+                stake
             }
         };
 

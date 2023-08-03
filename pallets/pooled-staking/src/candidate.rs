@@ -62,11 +62,7 @@ impl<T: Config> Candidates<T> {
         Stake(Pools::<T>::get(candidate, &PoolsKey::CandidateTotalStake))
     }
 
-    fn set_total_stake(candidate: &Candidate<T>, stake: Stake<T>) {
-        Pools::<T>::set(candidate, &PoolsKey::CandidateTotalStake, stake.0)
-    }
-
-    pub fn add_total_stake(candidate: &Candidate<T>, stake: Stake<T>) -> Result<(), Error<T>> {
+    pub fn add_total_stake(candidate: &Candidate<T>, stake: &Stake<T>) -> Result<(), Error<T>> {
         if Zero::is_zero(&stake.0) {
             return Ok(());
         }

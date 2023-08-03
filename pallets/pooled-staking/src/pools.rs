@@ -32,12 +32,18 @@ pub trait Pool<T: Config> {
     fn shares_supply(candidate: &Candidate<T>) -> Shares<T>;
     /// Get the total amount of currency staked for given candidate / the value of all shares.
     fn total_staked(candidate: &Candidate<T>) -> Stake<T>;
+    /// Get the amount of currency held for that pool in the delegator account.
+    fn hold(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Stake<T>;
+
     /// Set the amount of shares a delegator have for given candidate.
     fn set_shares(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Shares<T>);
     /// Set the total amount of shares all delegators have for given candidate.
     fn set_shares_supply(candidate: &Candidate<T>, value: Shares<T>);
     /// Set the total amount of currency staked for given candidate / the value of all shares.
     fn set_total_staked(candidate: &Candidate<T>, value: Stake<T>);
+    /// Set the amount of currency held for that pool in the delegator account.
+    fn set_hold(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Stake<T>);
+
     /// Get the initial value of a share in case none exist yet.
     fn initial_share_value() -> Stake<T>;
 
@@ -161,6 +167,28 @@ pub trait Pool<T: Config> {
 
         Ok(stake)
     }
+
+    fn increase_hold(
+        candidate: &Candidate<T>,
+        delegator: &Delegator<T>,
+        stake: &Stake<T>,
+    ) -> Result<(), Error<T>> {
+        let hold = Self::hold(candidate, delegator);
+        let hold = hold.0.err_add(&stake.0)?;
+        Self::set_hold(candidate, delegator, Stake(hold));
+        Ok(())
+    }
+
+    fn decrease_hold(
+        candidate: &Candidate<T>,
+        delegator: &Delegator<T>,
+        stake: &Stake<T>,
+    ) -> Result<(), Error<T>> {
+        let hold = Self::hold(candidate, delegator);
+        let hold = hold.0.err_sub(&stake.0)?;
+        Self::set_hold(candidate, delegator, Stake(hold));
+        Ok(())
+    }
 }
 
 pub fn check_candidate_consistency<T: Config>(candidate: &Candidate<T>) -> Result<(), Error<T>> {
@@ -185,7 +213,7 @@ pub fn check_candidate_consistency<T: Config>(candidate: &Candidate<T>) -> Resul
 }
 
 macro_rules! impl_pool {
-    ($name:ident, $shares:ident, $supply:ident, $total:ident, $init:expr $(,)?) => {
+    ($name:ident, $shares:ident, $supply:ident, $total:ident, $hold: ident, $init:expr $(,)?) => {
         pub struct $name<T>(PhantomData<T>);
         impl<T: Config> Pool<T> for $name<T> {
             fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T> {
@@ -203,6 +231,15 @@ macro_rules! impl_pool {
 
             fn total_staked(candidate: &Candidate<T>) -> Stake<T> {
                 Stake(Pools::<T>::get(candidate, &PoolsKey::$total))
+            }
+
+            fn hold(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Stake<T> {
+                Stake(Pools::<T>::get(
+                    candidate,
+                    &PoolsKey::$hold {
+                        delegator: delegator.clone(),
+                    },
+                ))
             }
 
             fn set_shares(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Shares<T>) {
@@ -223,6 +260,16 @@ macro_rules! impl_pool {
                 Pools::<T>::set(candidate, &PoolsKey::$total, value.0)
             }
 
+            fn set_hold(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Stake<T>) {
+                Pools::<T>::set(
+                    candidate,
+                    &PoolsKey::$hold {
+                        delegator: delegator.clone(),
+                    },
+                    value.0,
+                )
+            }
+
             fn initial_share_value() -> Stake<T> {
                 Stake($init)
             }
@@ -235,6 +282,7 @@ impl_pool!(
     JoiningShares,
     JoiningSharesSupply,
     JoiningSharesTotalStaked,
+    JoiningSharesHeldStake,
     T::Balance::one(),
 );
 
@@ -243,6 +291,7 @@ impl_pool!(
     AutoCompoundingShares,
     AutoCompoundingSharesSupply,
     AutoCompoundingSharesTotalStaked,
+    AutoCompoundingSharesHeldStake,
     T::InitialAutoCompoundingShareValue::get(),
 );
 
@@ -251,6 +300,7 @@ impl_pool!(
     ManualRewardsShares,
     ManualRewardsSharesSupply,
     ManualRewardsTotalStaked,
+    ManualRewardsSharesHeldStake,
     T::InitialManualClaimShareValue::get(),
 );
 
@@ -259,6 +309,7 @@ impl_pool!(
     LeavingShares,
     LeavingSharesSupply,
     LeavingSharesTotalStaked,
+    LeavingSharesHeldStake,
     T::Balance::one(),
 );
 

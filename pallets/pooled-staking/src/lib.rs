@@ -42,16 +42,18 @@ use frame_support::pallet;
 
 pub use pallet::*;
 
-#[pallet]
+#[pallet(dev_mode)]
 pub mod pallet {
     use {
         super::*,
         core::marker::PhantomData,
         frame_support::{
+            pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
             traits::{fungible, tokens::Balance, IsType},
             Blake2_128Concat, RuntimeDebug,
         },
+        frame_system::pallet_prelude::*,
         parity_scale_codec::{Decode, Encode, FullCodec},
         scale_info::TypeInfo,
         sp_core::Get,
@@ -59,6 +61,7 @@ pub mod pallet {
         sp_std::collections::btree_set::BTreeSet,
     };
 
+    use calls::Calls;
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
 
@@ -89,6 +92,8 @@ pub mod pallet {
         JoiningSharesSupply,
         /// Amount of currency backing all the auto compounding shares of that candidate.
         JoiningSharesTotalStaked,
+        /// Amount of currency held in the delegator account.
+        JoiningSharesHeldStake { delegator: A },
 
         /// Amount of auto compounding shares a delegator have for that candidate.
         AutoCompoundingShares { delegator: A },
@@ -96,6 +101,8 @@ pub mod pallet {
         AutoCompoundingSharesSupply,
         /// Amount of currency backing all the auto compounding shares of that candidate.
         AutoCompoundingSharesTotalStaked,
+        /// Amount of currency held in the delegator account.
+        AutoCompoundingSharesHeldStake { delegator: A },
 
         /// Amount of manual rewards shares a delegator have for that candidate.
         ManualRewardsShares { delegator: A },
@@ -111,6 +118,8 @@ pub mod pallet {
         /// The difference between the checkpoint and the counter is the amount of claimable reward per share for
         /// that delegator.
         ManualRewardsCheckpoint { delegator: A },
+        /// Amount of currency held in the delegator account.
+        ManualRewardsSharesHeldStake { delegator: A },
 
         /// Amount of shares of that delegator in the leaving pool of that candidate.
         /// When leaving delegating funds are placed in the leaving pool until the leaving period is elapsed.
@@ -120,10 +129,13 @@ pub mod pallet {
         LeavingSharesSupply,
         /// Amount of currency backing all the leaving shares of that candidate.
         LeavingSharesTotalStaked,
+        /// Amount of currency held in the delegator account.
+        LeavingSharesHeldStake { delegator: A },
     }
 
     /// Key used by the "PendingOperations" StorageDoubleMap.
     /// StorageDoubleMap first key is the account id of the delegator who made the request.
+    /// Value is the amount of shares in the joining/leaving pool.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
     pub enum PendingOperationKey<A: FullCodec, B: FullCodec> {
@@ -197,8 +209,6 @@ pub mod pallet {
 
         /// Account holding Currency of all delegators.
         type StakingAccount: Get<Self::AccountId>;
-        /// Account of the reserve.
-        type ReserveAccount: Get<Self::AccountId>;
 
         /// When creating the first Shares for a candidate the supply can be arbitrary.
         /// Picking a value too low will make an higher supply, which means each share will get
@@ -212,15 +222,6 @@ pub mod pallet {
         /// Minimum amount of stake a Candidate must delegate (stake) towards itself. Not reaching
         /// this minimum prevents from being elected.
         type MinimumSelfDelegation: Get<Self::Balance>;
-        /// When leaving staking the stake is put into leaving pools, and the share of this pool
-        /// is stored alongside the current BlockNumber. The user will be able to withdraw the stake
-        /// represented by those shares once LeavingDelay has passed.
-        /// Shares are used here to allow slashing, as while leaving stake is no longer used for
-        /// elections and rewards they must still be at stake in case the candidate misbehave.
-        type LeavingDelay: Get<Self::BlockNumber>;
-
-        /// Part of the rewards that will be sent to the reserve.
-        type RewardsReserveCommission: Get<Perbill>;
         /// Part of the rewards that will be sent exclusively to the collator.
         type RewardsCollatorCommission: Get<Perbill>;
 
@@ -403,11 +404,25 @@ pub mod pallet {
         InconsistentState,
         UnsufficientSharesForTransfer,
         CandidateTransferingOwnSharesForbidden,
-        RequestCannotBeExecuted(u32),
+        RequestCannotBeExecuted(u16),
     }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
-        // TODO: Calls
+        pub fn request_delegate(
+            origin: OriginFor<T>,
+            candidate: Candidate<T>,
+            pool: TargetPool,
+            stake: T::Balance,
+        ) -> DispatchResultWithPostInfo {
+            Calls::<T>::request_delegate(origin, candidate, pool, stake)
+        }
+
+        pub fn execute_pending_operations(
+            origin: OriginFor<T>,
+            operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
+        ) -> DispatchResultWithPostInfo {
+            Calls::<T>::execute_pending_operations(origin, operations)
+        }
     }
 }
