@@ -16,16 +16,30 @@ function capitalize(s) {
 }
 
 function getRuntimeInfo(srtoolReportFolder: string, runtimeName: string) {
-  const specVersion = execSync(
-    `cat ../runtime/${runtimeName}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
-  ).toString();
-  return {
-    name: runtimeName,
-    version: /:\s?([0-9A-z\-]*)/.exec(specVersion)[1],
-    srtool: JSON.parse(
-      readFileSync(path.join(srtoolReportFolder, `./${runtimeName}-srtool-digest.json`)).toString()
-    ),
-  };
+  if (runtimeName.includes("-template")) {
+    const specVersion = execSync(
+      `cat ../container-chains/templates/${runtimeName.split("-template")[0]}/runtime/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
+    ).toString();
+    return {
+      name: runtimeName,
+      version: /:\s?([0-9A-z\-]*)/.exec(specVersion)[1],
+      srtool: JSON.parse(
+        readFileSync(path.join(srtoolReportFolder, `./${runtimeName}-srtool-digest.json`)).toString()
+      ),
+    };
+  }
+  else {
+    const specVersion = execSync(
+      `cat ../runtime/${runtimeName}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
+    ).toString();
+    return {
+      name: runtimeName,
+      version: /:\s?([0-9A-z\-]*)/.exec(specVersion)[1],
+      srtool: JSON.parse(
+        readFileSync(path.join(srtoolReportFolder, `./${runtimeName}-srtool-digest.json`)).toString()
+      ),
+    };
+  }
 }
 
 // Srtool expects the pallet parachain_system to be at index 1. However just in case we recalculate
@@ -73,8 +87,13 @@ async function main() {
         describe: "Repository name (Ex: dancebox)",
         required: true,
       },
+      runtimes: {
+        type: "array",
+        describe: "The runtimes for which it needs to be run",
+        required: true
+      }
     })
-    .demandOption(["srtool-report-folder", "from", "to"])
+    .demandOption(["srtool-report-folder", "from", "to", "runtimes"])
     .help().argv;
 
   const octokit = new Octokit({
@@ -83,9 +102,10 @@ async function main() {
 
   const previousTag = argv.from;
   const newTag = argv.to;
-
-  const runtimes = ["dancebox"].map((runtimeName) =>
-    getRuntimeInfo(argv["srtool-report-folder"], runtimeName)
+  const injectedRuntimes = argv.runtimes;
+  
+  const runtimes = injectedRuntimes.map((runtimeName) =>
+    getRuntimeInfo(argv["srtool-report-folder"], runtimeName as string)
   );
 
   const moduleLinks = ["substrate", "polkadot", "cumulus", "frontier"].map((repoName) => ({
