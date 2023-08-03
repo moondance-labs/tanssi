@@ -38,6 +38,12 @@ mod candidate;
 mod pools;
 pub mod traits;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 use frame_support::pallet;
 
 pub use pallet::*;

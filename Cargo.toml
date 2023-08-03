@@ -199,6 +199,9 @@ thiserror = { version = "1.0.40" }
 tokio = { version = "1.26.0", default-features = false }
 tracing = { version = "0.1.37" }
 url = "2.2.2"
+similar-asserts = "1.1.0"
+num-traits = "0.2.8"
+
 [profile.production]
 codegen-units = 1
 inherits = "release"
