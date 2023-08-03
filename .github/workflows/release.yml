@@ -6,7 +6,11 @@ on:
     branches:
       - master
       - perm-*
-
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: commit for which we need to run the action
+        required: false
 jobs:
   set-tags:
     runs-on: ubuntu-latest
@@ -26,9 +30,8 @@ jobs:
           if [[ -n "${{ github.event.pull_request.head.sha }}" ]]; then
             echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
             echo "git_ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-          elif [[ -n "${{ github.event.inputs.pull_request }}" ]]; then
-            echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
-            echo "git_ref=refs/pull/${{ github.event.inputs.pull_request }}/head" >> $GITHUB_OUTPUT
+          elif [[ -n "${{ github.event.inputs.commit }}" ]]; then
+            echo "git_ref=${{ github.event.inputs.commit }}" >> $GITHUB_OUTPUT
           else
             echo "git_branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
             echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
@@ -403,7 +406,7 @@ jobs:
     strategy:
       matrix:
         image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
-    if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
+    if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
