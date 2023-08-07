@@ -44,6 +44,9 @@ runs:
     - name: Install and run
       shell: bash
       run: |
-        cd ./test
+        cd ./typescript-api
+        pnpm install --frozen-lockfile
+        ./scripts/generate-types.sh
+        cd ../test
         pnpm install --frozen-lockfile
         pnpm moonwall test dev_tanssi || [[ '${{ inputs.force-pass }}' == 'true' ]]
