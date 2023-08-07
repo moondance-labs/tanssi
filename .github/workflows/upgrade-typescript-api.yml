@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: runtime-${{ github.event.inputs.spec_version }}
+          ref: ${{ github.event.inputs.sha }}
       - name: Retrieve tanssi binary
         run: |
           COMMIT_SHA8=$(git log -1 --format="%H" | cut -c1-8)
