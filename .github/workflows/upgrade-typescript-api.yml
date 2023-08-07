@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          ref: ${{ github.event.inputs.sha }}
+          ref: runtime-${{ github.event.inputs.spec_version }}
       - name: Retrieve tanssi binary
         run: |
           COMMIT_SHA8=$(git log -1 --format="%H" | cut -c1-8)
@@ -24,6 +24,10 @@ jobs:
           mkdir -p target/release
           docker cp dummy:/tanssi/tanssi-node target/release/moonbeam
           docker rm -f dummy
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.sha }}
       - name: Use Node.js 18.x
         uses: actions/setup-node@v3
         with:
