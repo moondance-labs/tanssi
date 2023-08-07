@@ -61,7 +61,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:
-          base: girazoki-tanssi-api-generation-
+          base: girazoki-tanssi-api-generation
           branch: "typescript-api-${{ github.event.inputs.spec_version }}"
           commit-message: typescript API v0.${{ github.event.inputs.spec_version }}.0"
           draft: true
