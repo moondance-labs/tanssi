@@ -16,7 +16,7 @@ jobs:
           fetch-depth: 0
       - name: Retrieve tanssi binary
         run: |
-          COMMIT=`git rev-list -n 1 '${{ github.event.inputs.spec_version }}'`
+          COMMIT=`git rev-list -n 1 'runtime-${{ github.event.inputs.spec_version }}'`
           echo "FINISHED"
           SHA=sha-${COMMIT::8}
           DOCKER_TAG="moondancelabs/tanssi:$SHA"
@@ -61,7 +61,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:
-          base: master
+          base: girazoki-tanssi-api-generation-
           branch: "typescript-api-${{ github.event.inputs.spec_version }}"
           commit-message: typescript API v0.${{ github.event.inputs.spec_version }}.0"
           draft: true
