@@ -4,21 +4,6 @@ settings:
   autoInstallPeers: false
   excludeLinksFromLockfile: false
 
-overrides:
-  '@polkadot/api': ^10.9.1
-  '@polkadot/api-derive': ^10.9.1
-  '@polkadot/api-augment': ^10.9.1
-  '@polkadot/api-base': ^10.9.1
-  '@polkadot/rpc-augment': ^10.9.1
-  '@polkadot/rpc-core': ^10.9.1
-  '@polkadot/rpc-provider': ^10.9.1
-  '@polkadot/types-create': ^10.9.1
-  '@polkadot/types-augment': ^10.9.1
-  '@polkadot/types-support': ^10.9.1
-  '@polkadot/types-codec': ^10.9.1
-  '@polkadot/types': ^10.9.1
-  '@polkadot/types-known': ^10.9.1
-
 dependencies:
   '@polkadot/api':
     specifier: ^10.9.1

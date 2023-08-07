@@ -80,22 +80,5 @@
         "rimraf": "^3.0.2",
         "typescript": "^5.0.2",
         "tsx": "^3.12.7"
-    },
-    "pnpm": {
-        "overrides": {
-        "@polkadot/api": "$@polkadot/api",
-        "@polkadot/api-derive": "$@polkadot/api",
-        "@polkadot/api-augment": "$@polkadot/api",
-        "@polkadot/api-base": "$@polkadot/api",
-        "@polkadot/rpc-augment": "$@polkadot/api",
-        "@polkadot/rpc-core": "$@polkadot/api",
-        "@polkadot/rpc-provider": "$@polkadot/api",
-        "@polkadot/types-create": "$@polkadot/api",
-        "@polkadot/types-augment": "$@polkadot/api",
-        "@polkadot/types-support": "$@polkadot/api",
-        "@polkadot/types-codec": "$@polkadot/api",
-        "@polkadot/types": "$@polkadot/api",
-        "@polkadot/types-known": "$@polkadot/api"
-        }
     }
 }
