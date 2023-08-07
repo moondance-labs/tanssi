@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3 
         with:
-          ref: ${{ github.event.inputs.sha }}
+          fetch-depth: 0
       - name: Retrieve tanssi binary
         run: |
           COMMIT=`git rev-list -n 1 '${{ github.event.inputs.spec_version }}'`
