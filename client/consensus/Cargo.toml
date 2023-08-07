@@ -55,4 +55,4 @@ sc-keystore = { workspace = true }
 substrate-test-runtime-client = { workspace = true }
 tokio = { workspace = true }
 tempfile = { workspace = true }
-futures-timer = "3.0.1"
+futures-timer = { workspace = true }

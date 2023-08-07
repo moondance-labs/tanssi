@@ -47,7 +47,6 @@ struct DummyOrchestratorChainInterface {
 struct DummyRelayChainInterface {
     relay_client: Arc<TestClient>,
 }
-const VALUE: &[u8] = b"hello world";
 
 impl DummyOrchestratorChainInterface {
     fn new(session: u32) -> Self {
@@ -55,10 +54,6 @@ impl DummyOrchestratorChainInterface {
             .add_extra_storage(
                 well_known_keys::SESSION_INDEX.to_vec(),
                 session.encode().to_vec(),
-            )
-            .add_extra_storage(
-                well_known_keys::authority_assignment_for_session(session).to_vec(),
-                VALUE.to_vec(),
             );
 
         Self {
@@ -69,14 +64,7 @@ impl DummyOrchestratorChainInterface {
 
 impl DummyRelayChainInterface {
     fn new(orchestrator_para_id: ParaId, header: OrchestratorHeader) -> Self {
-        let builder = TestClientBuilder::new().add_extra_storage(
-            well_known_keys::para_id_head(orchestrator_para_id).to_vec(),
-            HeadData(header.encode()).encode().to_vec(),
-        );
-
-        Self {
-            relay_client: Arc::new(builder.build()),
-        }
+        Self::new_with_head_data(orchestrator_para_id, HeadData(header.encode()).encode().to_vec())
     }
 
     fn new_with_head_data(orchestrator_para_id: ParaId, head_data: Vec<u8>) -> Self {

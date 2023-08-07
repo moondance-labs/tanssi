@@ -207,6 +207,7 @@ tracing = { version = "0.1.37" }
 url = "2.2.2"
 parking_lot = "0.12.1"
 tempfile = "3.1.0"
+futures-timer = "3.0.1"
 
 [profile.production]
 codegen-units = 1
