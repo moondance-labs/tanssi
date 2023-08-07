@@ -16,11 +16,11 @@
 
 use {
     crate::{
-        candidate::Candidates,
+        candidate::{self, Candidates},
         pools::{self, Pool},
         traits::{ErrAdd, ErrSub},
-        Candidate, Config, Delegator, Error, PendingOperationKey, PendingOperationQuery,
-        PendingOperations, RequestFilter, Shares, Stake, TargetPool,
+        Candidate, Config, Delegator, Error, Event, Pallet, PendingOperationKey,
+        PendingOperationQuery, PendingOperations, RequestFilter, Shares, Stake, TargetPool,
     },
     frame_support::{
         pallet_prelude::*,
@@ -62,11 +62,11 @@ impl<T: Config> Calls<T> {
         let now = frame_system::Pallet::<T>::block_number();
         let operation_key = match pool {
             TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
-                candidate,
+                candidate: candidate.clone(),
                 at_block: now,
             },
             TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
-                candidate,
+                candidate: candidate.clone(),
                 at_block: now,
             },
         };
@@ -78,7 +78,11 @@ impl<T: Config> Calls<T> {
             .map_err(|_| Error::<T>::MathOverflow)?;
         PendingOperations::<T>::set(&delegator, &operation_key, operation);
 
-        // TODO: Event?
+        Pallet::<T>::deposit_event(Event::<T>::RequestedDelegate {
+            candidate,
+            delegator,
+            towards: pool,
+        });
 
         Ok(().into())
     }
@@ -184,13 +188,17 @@ impl<T: Config> Calls<T> {
         // represents (due to rounding).
         let actually_staked = match pool {
             TargetPool::AutoCompounding => {
-                let stake =
-                    pools::AutoCompounding::<T>::add_shares(&candidate, &delegator, shares)?;
+                let stake = pools::AutoCompounding::<T>::add_shares(
+                    &candidate,
+                    &delegator,
+                    shares.clone(),
+                )?;
                 pools::AutoCompounding::<T>::increase_hold(candidate, delegator, &stake)?;
                 stake
             }
             TargetPool::ManualRewards => {
-                let stake = pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares)?;
+                let stake =
+                    pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares.clone())?;
                 pools::ManualRewards::<T>::increase_hold(candidate, delegator, &stake)?;
                 stake
             }
@@ -210,7 +218,25 @@ impl<T: Config> Calls<T> {
         )?;
         Candidates::<T>::sub_total_stake(candidate, Stake(release))?;
 
-        // TODO: Event?
+        let candidate = candidate.clone();
+        let delegator = delegator.clone();
+
+        let event = match pool {
+            TargetPool::AutoCompounding => Event::<T>::StakedAutoCompounding {
+                candidate,
+                delegator,
+                shares: shares.0,
+                stake: actually_staked.0,
+            },
+            TargetPool::ManualRewards => Event::<T>::StakedManualRewards {
+                candidate,
+                delegator,
+                shares: shares.0,
+                stake: actually_staked.0,
+            },
+        };
+
+        Pallet::<T>::deposit_event(event);
 
         Ok(().into())
     }

@@ -52,6 +52,7 @@ pub use pallet::*;
 pub mod pallet {
     use {
         super::*,
+        calls::Calls,
         core::marker::PhantomData,
         frame_support::{
             pallet_prelude::*,
@@ -67,7 +68,6 @@ pub mod pallet {
         sp_std::collections::btree_set::BTreeSet,
     };
 
-    use calls::Calls;
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
 
@@ -300,6 +300,11 @@ pub mod pallet {
             before: Option<u32>,
             after: Option<u32>,
         },
+        RequestedDelegate {
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            towards: TargetPool,
+        },
         /// Stake of that Candidate increased.
         IncreasedStake {
             candidate: Candidate<T>,
@@ -324,15 +329,15 @@ pub mod pallet {
             shares: T::Balance,
             stake: T::Balance,
         },
-        /// Delegator staked towards a candidate for ManualClaim Shares.
-        StakedManualClaim {
+        /// Delegator staked towards a candidate for ManualRewards Shares.
+        StakedManualRewards {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
             shares: T::Balance,
             stake: T::Balance,
         },
-        /// Delegator unstaked towards a candidate with ManualClaim Shares.
-        UnstakedManualClaim {
+        /// Delegator unstaked towards a candidate with ManualRewards Shares.
+        UnstakedManualRewards {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
             shares: T::Balance,

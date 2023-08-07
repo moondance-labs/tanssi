@@ -16,10 +16,11 @@
 
 use {
     crate::{
+        assert_eq_events,
         candidate::Candidates,
         mock::*,
         pools::{self, Pool},
-        Error, PendingOperationKey, PendingOperationQuery, Shares, Stake, TargetPool,
+        Error, Event, PendingOperationKey, PendingOperationQuery, Shares, Stake, TargetPool,
     },
     frame_support::{assert_noop, assert_ok},
 };
@@ -49,6 +50,8 @@ fn manual_rewards_empty_delegation() {
             Candidates::<Runtime>::total_stake(&ACCOUNT_CANDIDATE_1).0,
             0
         );
+
+        assert_eq_events!(Vec::<Event<Runtime>>::new());
     });
 }
 
@@ -76,6 +79,25 @@ fn manual_rewards_delegation_request() {
             Candidates::<Runtime>::total_stake(&ACCOUNT_CANDIDATE_1).0,
             amount
         );
+
+        assert_eq_events!(vec![
+            Event::IncreasedStake {
+                candidate: ACCOUNT_CANDIDATE_1,
+                stake: amount,
+            },
+            Event::UpdatedCandidatePosition {
+                candidate: ACCOUNT_CANDIDATE_1,
+                stake: amount,
+                self_delegation: 0,
+                before: None,
+                after: None,
+            },
+            Event::RequestedDelegate {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                towards: TargetPool::ManualRewards,
+            },
+        ]);
     });
 }
 
@@ -143,5 +165,41 @@ fn manual_rewards_delegation_execution() {
             Candidates::<Runtime>::total_stake(&ACCOUNT_CANDIDATE_1),
             Stake(amount - 10)
         );
+
+        assert_eq_events!(vec![
+            Event::IncreasedStake {
+                candidate: ACCOUNT_CANDIDATE_1,
+                stake: amount,
+            },
+            Event::UpdatedCandidatePosition {
+                candidate: ACCOUNT_CANDIDATE_1,
+                stake: amount,
+                self_delegation: 0,
+                before: None,
+                after: None,
+            },
+            Event::RequestedDelegate {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                towards: TargetPool::ManualRewards,
+            },
+            Event::DecreasedStake {
+                candidate: ACCOUNT_CANDIDATE_1,
+                stake: 10,
+            },
+            Event::UpdatedCandidatePosition {
+                candidate: ACCOUNT_CANDIDATE_1,
+                stake: amount - 10,
+                self_delegation: 0,
+                before: None,
+                after: None,
+            },
+            Event::StakedManualRewards {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                shares: 2,
+                stake: amount - 10
+            }
+        ]);
     });
 }
