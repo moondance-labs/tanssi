@@ -37,7 +37,7 @@
     "pnpm": "^8.6.5",
     "prettier": "^2.8.8",
     "solc": "^0.8.19",
-    "@tanssi-network/api-augment": "0.1000.0",
+    "@tanssi-network/api-augment": "0.100.0",
     "tsx": "^3.12.7",
     "typescript": "^5.1.6",
     "viem": "^1.2.6",

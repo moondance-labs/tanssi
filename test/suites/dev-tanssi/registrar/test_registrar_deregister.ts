@@ -26,7 +26,7 @@ describeSuite({
               const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
               // These are registered in genesis
               expect(parasRegistered).to.contain(2000);
-              expect(parasRegistered).to.toContainEqual(2001);
+              expect(parasRegistered).to.contain(2001);
             },
         });
   
