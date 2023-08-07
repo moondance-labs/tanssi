@@ -43,7 +43,7 @@ use {
         parameter_types,
         traits::{
             ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, FindAuthor, Imbalance,
-            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
+            OnFinalize, OnUnbalanced,
         },
         weights::{
             constants::{

@@ -35,10 +35,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{
-            ConstU128, ConstU32, ConstU64, Contains, InstanceFilter, OffchainWorker, OnFinalize,
-            OnIdle, OnInitialize, OnRuntimeUpgrade,
-        },
+        traits::{ConstU128, ConstU32, ConstU64, Contains, InstanceFilter},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
