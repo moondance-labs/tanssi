@@ -3,7 +3,7 @@ import { setupLogger } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
-import "@polkadot/api-augment";
+import "@tanssi-network/api-augment";
 
 describeSuite({
   id: "D06",
@@ -26,10 +26,12 @@ describeSuite({
             await jumpSessions(context, 1);
 
             // TODO: fix once we have types
-            const blockWeight = (await polkadotJs.query.system.blockWeight()).toJSON();
-            expect(blockWeight.normal).to.deep.equal({ refTime: 0, proofSize: 0 });
-            expect(blockWeight.operational).to.deep.equal({ refTime: 0, proofSize: 0 });
-            expect(blockWeight.mandatory.refTime).to.be.greaterThan(maxBlock);
+            const blockWeight = await polkadotJs.query.system.blockWeight();
+            expect(blockWeight.normal.refTime.toBigInt()).to.equal(0n);
+            expect(blockWeight.normal.proofSize.toBigInt()).to.equal(0n);
+            expect(blockWeight.operational.refTime.toBigInt()).to.equal(0n);
+            expect(blockWeight.operational.proofSize.toBigInt()).to.equal(0n);
+            expect(blockWeight.mandatory.refTime.toNumber()).to.be.greaterThan(maxBlock);
         },
     });
 
@@ -40,10 +42,12 @@ describeSuite({
             await context.createBlock();
 
             // TODO: fix once we have types
-            const blockWeight = (await polkadotJs.query.system.blockWeight()).toJSON();
-            expect(blockWeight.normal).to.deep.equal({ refTime: 0, proofSize: 0 });
-            expect(blockWeight.operational).to.deep.equal({ refTime: 0, proofSize: 0 });
-            expect(blockWeight.mandatory.refTime).to.be.lessThan(maxBlock);
+            const blockWeight = (await polkadotJs.query.system.blockWeight());
+            expect(blockWeight.normal.refTime.toBigInt()).to.equal(0n);
+            expect(blockWeight.normal.proofSize.toBigInt()).to.equal(0n);
+            expect(blockWeight.operational.refTime.toBigInt()).to.equal(0n);
+            expect(blockWeight.operational.proofSize.toBigInt()).to.equal(0n);
+            expect(blockWeight.mandatory.refTime.toNumber()).to.be.lessThan(maxBlock);
         },
     });
     },

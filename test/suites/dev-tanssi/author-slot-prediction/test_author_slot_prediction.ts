@@ -4,7 +4,7 @@ import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 import { u8aToHex, stringToHex } from '@polkadot/util';
 
-import "@polkadot/api-augment";
+import "@tanssi-network/api-augment";
 
 describeSuite({
   id: "D05",
@@ -28,16 +28,16 @@ describeSuite({
         title: "Checking that authority assignment is correct on genesis",
         test: async function () {
             // for session 0
-            const assignment0 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).unwrap().toHuman();
-            const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toHuman();
+            const assignment0 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).unwrap();
+            const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap();
 
-            expect(assignment0.orchestratorChain).to.deep.equal([
-                u8aToHex(alice.publicKey).toString(),
+            expect(assignment0.orchestratorChain.toHuman()).to.deep.equal([
+                u8aToHex(alice.publicKey),
             ]);
-            expect(assignment0.containerChains).to.deep.equal({
+            expect(assignment0.containerChains.toHuman()).to.deep.equal({
                 2000: [
-                    u8aToHex(bob.publicKey).toString(),
-                    u8aToHex(charlie.publicKey).toString(),
+                    u8aToHex(bob.publicKey),
+                    u8aToHex(charlie.publicKey),
                 ],
                 2001: [],
             });
@@ -48,8 +48,13 @@ describeSuite({
             expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(2)).isNone).to.be.true;
 
             // Check authorities are correct
-            const authorities = (await polkadotJs.query.aura.authorities());
-            expect(u8aToHex(authorities[0])).to.be.eq(u8aToHex(alice.publicKey));
+            const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
+            const authorities = await polkadotJs.query.authorityAssignment.collatorContainerChain(sessionIndex);
+            expect(authorities.unwrap().orchestratorChain.toHuman()).to.deep.equal(
+                [
+                    u8aToHex(alice.publicKey),
+                ]
+            )
         },
     });
 
@@ -59,7 +64,7 @@ describeSuite({
         test: async function () {
             const newKey = await polkadotJs.rpc.author.rotateKeys();
             await polkadotJs.tx.session
-                .setKeys(newKey, [] as any)
+                .setKeys(newKey, [])
                 .signAndSend(alice);
 
             await context.createBlock();

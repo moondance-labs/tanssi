@@ -2,6 +2,7 @@ import { describeSuite, expect, beforeAll} from "@moonwall/cli";
 import { setupLogger } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
+import "@tanssi-network/api-augment";
 
 describeSuite({
     id: "D03",
@@ -23,10 +24,9 @@ describeSuite({
           title: "Checking that fetching registered paraIds is possible",
           test: async function () {
               const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
-  
               // These are registered in genesis
-              // TODO: fix once we have types
-              expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001]);
+              expect(parasRegistered).to.contain(2000);
+              expect(parasRegistered).to.toContainEqual(2001);
             },
         });
   

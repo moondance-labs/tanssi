@@ -4,7 +4,7 @@ import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 import { u8aToHex } from '@polkadot/util';
 
-import "@polkadot/api-augment";
+import "@tanssi-network/api-augment";
 
 describeSuite({
   id: "D04",
@@ -27,6 +27,7 @@ describeSuite({
         test: async function () {
             // for session 0
             const keys = await polkadotJs.query.authorityMapping.authorityIdMapping(0);
+            console.log(keys);
             // TODO: fix once we have types
             expect(keys.toJSON()[u8aToHex(alice.publicKey)]).to.be.eq(alice.address);
             expect(keys.toJSON()[u8aToHex(bob.publicKey)]).to.be.eq(bob.address);
@@ -44,7 +45,7 @@ describeSuite({
         test: async function () {
             const newKey = await polkadotJs.rpc.author.rotateKeys();
             await polkadotJs.tx.session
-                .setKeys(newKey, [] as any)
+                .setKeys(newKey, [])
                 .signAndSend(alice);
 
             await context.createBlock();

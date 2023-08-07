@@ -15,7 +15,7 @@ describeSuite({
       const config = await context
         .polkadotJs()
         .query.configuration.activeConfig();
-      expect(config["maxCollators"].toString()).toBe("100");
+        expect(config.maxCollators.toBigInt()).to.be.equal(100n);
 
       const { result } = await context.createBlock(
         context
@@ -37,7 +37,7 @@ describeSuite({
         const config = await context
           .polkadotJs()
           .query.configuration.activeConfig();
-        expect(config["maxCollators"].toString()).toBe("200");
+        expect(config.maxCollators.toBigInt()).to.be.equal(200n);
       },
     });
   },

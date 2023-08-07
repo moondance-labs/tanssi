@@ -15,7 +15,7 @@ describeSuite({
       const config = await context
         .polkadotJs()
         .query.configuration.activeConfig();
-      expect(config["collatorsPerContainer"].toString()).toBe("2");
+      expect(config.collatorsPerContainer.toBigInt()).to.be.equal(2n);
 
       const { result } = await context.createBlock(
         context
@@ -37,7 +37,7 @@ describeSuite({
         const config = await context
           .polkadotJs()
           .query.configuration.activeConfig();
-        expect(config["collatorsPerContainer"].toString()).toBe("5");
+        expect(config.collatorsPerContainer.toBigInt()).to.be.equal(5n);
       },
     });
   },
