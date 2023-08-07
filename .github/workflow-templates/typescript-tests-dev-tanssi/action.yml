@@ -20,12 +20,7 @@ runs:
       uses: pnpm/action-setup@v2
       with:
         version: 7
-    - name: Use Node.js 18.x
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18.x
-        cache: "pnpm"
-        cache-dependency-path: test/pnpm-lock.yaml
+        
     - name: Set binary path and number of CPUs
       shell: bash
       run: |
@@ -41,12 +36,28 @@ runs:
         echo "BINARY_PATH: $BINARY_PATH"
         echo "CPUS: $CPUS"
 
-    - name: Install and run
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+
+    - name: Install typescript-api
       shell: bash
       run: |
         cd ./typescript-api
         pnpm install --frozen-lockfile
         ./scripts/generate-types.sh
-        cd ../test
+    
+    - name: Use Node.js 18.x
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18.x
+        cache: "pnpm"
+        cache-dependency-path: test/pnpm-lock.yaml
+
+    - name: Install and run
+      shell: bash
+      run: |
+        cd ./test
         pnpm install --frozen-lockfile
         pnpm moonwall test dev_tanssi || [[ '${{ inputs.force-pass }}' == 'true' ]]
