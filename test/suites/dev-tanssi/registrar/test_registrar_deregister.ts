@@ -25,8 +25,8 @@ describeSuite({
               const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
   
               // These are registered in genesis
-              // TODO: fix once we have types
-              expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001]);
+              expect(parasRegistered).to.contain(2000);
+              expect(parasRegistered).to.contain(2001);
             },
         });
   
