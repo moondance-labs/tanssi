@@ -70,8 +70,8 @@ type Error = sp_blockchain::Error;
 
 struct DummyFactory(Arc<TestClient>);
 // We are going to create API because we need this to test runtime apis
-// We use the client normally, bnut for testing certain runtime-api calls,
-// we basically mock the runtime-api calñs
+// We use the client normally, but for testing certain runtime-api calls,
+// we basically mock the runtime-api calls
 use sp_api::{ApiRef, ProvideRuntimeApi};
 impl ProvideRuntimeApi<Block> for DummyFactory {
     type Api = MockApi;
