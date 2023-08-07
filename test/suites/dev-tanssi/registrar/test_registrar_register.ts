@@ -3,7 +3,7 @@ import { setupLogger } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
-import "@polkadot/api-augment";
+import "@tanssi-network/api-augment";
 
 describeSuite({
   id: "D02",

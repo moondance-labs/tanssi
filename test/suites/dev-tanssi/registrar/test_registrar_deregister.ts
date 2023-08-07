@@ -3,6 +3,8 @@ import { setupLogger } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
+import "@tanssi-network/api-augment";
+
 describeSuite({
     id: "D03",
     title: "Registrar test suite: de-register",

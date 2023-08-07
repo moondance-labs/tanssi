@@ -4,7 +4,7 @@ import { ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 import { u8aToHex, stringToHex } from '@polkadot/util';
 
-import "@polkadot/api-augment";
+import "@tanssi-network/api-augment";
 
 describeSuite({
   id: "D05",
@@ -60,7 +60,7 @@ describeSuite({
         test: async function () {
             const newKey = await polkadotJs.rpc.author.rotateKeys();
             await polkadotJs.tx.session
-                .setKeys(newKey, [] as any)
+                .setKeys(newKey, [])
                 .signAndSend(alice);
 
             await context.createBlock();
