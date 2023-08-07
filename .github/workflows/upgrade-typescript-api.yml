@@ -17,8 +17,10 @@ jobs:
       - name: Retrieve tanssi binary
         run: |
           COMMIT=`git rev-list -n 1 'runtime-${{ github.event.inputs.spec_version }}'`
+          echo "FINISHED"
           SHA=sha-${COMMIT::8}
           DOCKER_TAG="moondancelabs/tanssi:$SHA"
+          
           # Clear the dummy container if it wasn't properly cleaned up
           docker rm -f dummy 2> /dev/null
           docker create -ti --name dummy $DOCKER_TAG bash
