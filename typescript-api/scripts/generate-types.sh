@@ -13,8 +13,8 @@ if [[ $# -gt 0 ]]; then
   npm version --no-git-tag-version 0.$RUNTIME_CHAIN_SPEC.0
 fi
 
-if [[ ! -f ../build/tanssi-node ]]; then
-  echo "Missing ../build/tanssi binary"
+if [[ ! -f ../target/release/tanssi-node ]]; then
+  echo "Missing ../target/release/tanssi binary"
   exit 1
 fi
 
