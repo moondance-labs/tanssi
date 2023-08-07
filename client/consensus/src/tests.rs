@@ -456,7 +456,7 @@ async fn authoring_blocks_but_producing_candidates_instead_of_calling_on_slot() 
 
     // For each peer, we start an instance of the orchestratorAuraConsensus
     // Only one of those peers will be able to author in each slot
-    // The tests finishes when we see a block higher than block 5 that has
+    // The tests finishes when we see a block lower than block 5 that has
     // not being authored by us
     for (peer_id, key) in peers {
         let mut net = net.lock();
@@ -477,7 +477,7 @@ async fn authoring_blocks_but_producing_candidates_instead_of_calling_on_slot() 
             client
                 .import_notification_stream()
                 .take_while(|n| {
-                    future::ready(!(n.origin != BlockOrigin::Own && n.header.number() < &5))
+                    future::ready(n.origin == BlockOrigin::Own || n.header.number() >= &5)
                 })
                 .for_each(move |_| futures::future::ready(())),
         );
