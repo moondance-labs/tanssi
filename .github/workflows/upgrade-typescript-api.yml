@@ -38,6 +38,7 @@ jobs:
           node-version: 18.x
       - name: Upgrade polkadotjs for typescript-api
         run: |
+          ls target/release
           cd typescript-api
           pnpm add @polkadot/api@latest
           pnpm add @polkadot/api-derive@latest
