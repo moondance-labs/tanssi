@@ -22,7 +22,7 @@ jobs:
           docker rm -f dummy 2> /dev/null
           docker create -ti --name dummy $DOCKER_TAG bash
           mkdir -p target/release
-          docker cp dummy:/tanssi/tanssi-node target/release/moonbeam
+          docker cp dummy:/tanssi/tanssi-node target/release/tanssi-node
           docker rm -f dummy
       - name: Checkout
         uses: actions/checkout@v3
