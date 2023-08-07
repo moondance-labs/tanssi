@@ -20,9 +20,11 @@ smallvec = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tp-consensus = { workspace = true }
 
-# Nimbus
+# Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
+pallet-maintenance-mode = { workspace = true }
+pallet-migrations = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -84,6 +86,8 @@ std = [
 	"pallet-author-inherent/std",
 	"pallet-balances/std",
 	"pallet-cc-authorities-noting/std",
+	"pallet-maintenance-mode/std",
+	"pallet-migrations/std",
 	"pallet-session/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",

@@ -16,7 +16,10 @@
 
 use {
     cumulus_primitives_core::ParaId,
-    dancebox_runtime::{AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT},
+    dancebox_runtime::{
+        AccountId, MaintenanceModeConfig, MigrationsConfig, RegistrarConfig, Signature, SudoConfig,
+        EXISTENTIAL_DEPOSIT,
+    },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
@@ -334,6 +337,10 @@ fn testnet_genesis(
         },
         sudo: SudoConfig {
             key: Some(root_key),
+        },
+        migrations: MigrationsConfig {},
+        maintenance_mode: MaintenanceModeConfig {
+            start_in_maintenance_mode: false,
         },
     }
 }
