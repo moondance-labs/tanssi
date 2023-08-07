@@ -183,19 +183,33 @@ jobs:
         uses: pnpm/action-setup@v2
         with:
           version: 7
-        
-      - name: Node  
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18.x
-          cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
 
       - name: "Download binaries"
         uses: actions/download-artifact@v3.0.2
         with:
           name: binaries
           path: target/release
+        
+      - name: "Node typescript-api"
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18.x
+          cache: "pnpm"
+          cache-dependency-path: typescript-api/pnpm-lock.yaml
+
+      - name: "Generate typescript api"
+        run: |
+          chmod uog+x target/release/tanssi-node
+          cd typescript-api
+          pnpm install --frozen-lockfile
+          ./scripts/generate-types.sh
+          
+      - name: "Node tests" 
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18.x
+          cache: "pnpm"
+          cache-dependency-path: test/pnpm-lock.yaml
       
       - name: "Install and run upgrade test"
         run: |
