@@ -15,7 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    container_chain_template_simple_runtime::{AccountId, Signature},
+    container_chain_template_simple_runtime::{
+        AccountId, MaintenanceModeConfig, MigrationsConfig, Signature,
+    },
     cumulus_primitives_core::ParaId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_network::config::MultiaddrWithPeerId,
@@ -190,6 +192,10 @@ fn testnet_genesis(
         },
         authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
             orchestrator_para_id: ORCHESTRATOR,
+        },
+        migrations: MigrationsConfig {},
+        maintenance_mode: MaintenanceModeConfig {
+            start_in_maintenance_mode: false,
         },
     }
 }

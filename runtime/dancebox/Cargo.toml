@@ -30,9 +30,11 @@ pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 tp-core = { workspace = true }
 
-# Nimbus
+# Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
+pallet-maintenance-mode = { workspace = true }
+pallet-migrations = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -108,6 +110,8 @@ std = [
 	"pallet-collator-selection/std",
 	"pallet-configuration/std",
 	"pallet-initializer/std",
+	"pallet-maintenance-mode/std",
+	"pallet-migrations/std",
 	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",

@@ -132,6 +132,7 @@
       "foundation": {
         "type": "read_only"
       },
+      "reporters": ["basic", "html"],
       "connections": [
         {
           "name": "DBX",
