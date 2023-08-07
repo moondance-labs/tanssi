@@ -1,5 +1,5 @@
 import { describeSuite, expect, beforeAll, Web3, Signer } from "@moonwall/cli";
-import { CHARLETH_ADDRESS, BALTATHAR_ADDRESS, alith, baltathar, setupLogger,generateKeyringPair } from "@moonwall/util";
+import { CHARLETH_ADDRESS, BALTATHAR_ADDRESS, alith, baltathar, setupLogger, generateKeyringPair } from "@moonwall/util";
 import { WebSocketProvider, parseEther, formatEther } from "ethers";
 import { BN } from "@polkadot/util";
 import { ApiPromise, Keyring } from "@polkadot/api";

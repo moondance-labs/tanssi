@@ -40,7 +40,7 @@ pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-no
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface = { path = "client/orchestrator-chain-interface" }
-test-relay-sproof-builder = { path = "test-sproof-builder" }
+test-relay-sproof-builder = { path = "test-sproof-builder", default-features = false}
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-features = false }
 tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
@@ -49,10 +49,12 @@ tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-d
 tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
-# Nimbus (wasm)
-nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43" }
-nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43", default-features = false }
-pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+# Moonkit (wasm)
+nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi" }
+nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi", default-features = false }
+pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi", default-features = false }
+pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi", default-features = false }
+pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tomasz-pallet-migrations-cleanup-tanssi", default-features = false }
 
 # Substrate (wasm)
 frame-benchmarking = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
@@ -102,7 +104,7 @@ sc-consensus = { git = "https://github.com/moondance-labs/substrate", branch = "
 sc-consensus-aura = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-consensus-manual-seal = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-consensus-slots = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
-sc-executor = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
+sc-executor = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
 sc-network = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-network-common = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-network-sync = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
@@ -114,10 +116,10 @@ sc-tracing = { git = "https://github.com/moondance-labs/substrate", branch = "ta
 sc-transaction-pool = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-transaction-pool-api = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sp-blockchain = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
-sp-externalities = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
-sp-keystore = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
-sp-storage = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
-sp-timestamp = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
+sp-externalities = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
+sp-keystore = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
+sp-storage = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
+sp-timestamp = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
 substrate-build-script-utils = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 substrate-frame-rpc-system = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 substrate-prometheus-endpoint = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
@@ -131,7 +133,7 @@ polkadot-runtime-common = { git = "https://github.com/moondance-labs/polkadot", 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
 polkadot-overseer = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
-polkadot-primitives = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
+polkadot-primitives = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false}
 polkadot-service = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
 
 # Cumulus (wasm)
@@ -188,7 +190,7 @@ smallvec = "1.10.0"
 # General (client)
 async-io = "1.3"
 async-trait = "0.1"
-clap = { version = "4.1.6", features = [ "derive" ] }
+clap = { version = "4.1.6", features = [ "derive" ], default-features = false}
 exit-future = { version = "0.2.0" }
 flume = "0.10.9"
 futures = { version = "0.3.1" }
@@ -197,7 +199,7 @@ jsonrpsee = { version = "0.16.2", features = [ "server" ] }
 serde_json = { version = "1.0.96", default-features = false }
 thiserror = { version = "1.0.40" }
 tokio = { version = "1.26.0", default-features = false }
-tracing = { version = "0.1.37" }
+tracing = { version = "0.1.37", default-features = false}
 url = "2.2.2"
 [profile.production]
 codegen-units = 1
