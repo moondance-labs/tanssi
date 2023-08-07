@@ -3,7 +3,9 @@ import { readFile } from "fs/promises";
 
 console.log("Loading package.json");
 
-const pck = JSON.parse(await readFile(new URL("../package.json", import.meta.url)));
+const pck = JSON.parse(
+  await readFile(new URL("../package.json", import.meta.url))
+);
 
 const buildPath = `${process.env.PWD}/build`;
 
