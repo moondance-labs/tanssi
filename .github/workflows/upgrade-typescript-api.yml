@@ -1,10 +1,6 @@
 name: Upgrade typescript API
 on:
-  workflow_dispatch:
-    inputs:
-      spec_version:
-        description: runtime spec version (ex. 1601)
-        required: true
+  push
 
 jobs:
   upgrading-typescript-api:
