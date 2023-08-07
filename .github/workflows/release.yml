@@ -195,11 +195,11 @@ jobs:
         with:
           node-version: 18.x
 
+
       - name: "Generate typescript api"
         run: |
           chmod uog+x target/release/tanssi-node
           cd typescript-api
-          pnpm install --frozen-lockfile
           ./scripts/generate-types.sh
           
       - name: "Node tests" 

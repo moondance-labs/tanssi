@@ -45,7 +45,6 @@ runs:
       shell: bash
       run: |
         cd ./typescript-api
-        pnpm install --frozen-lockfile
         ./scripts/generate-types.sh
     
     - name: Use Node.js 18.x

@@ -18,6 +18,9 @@ if [[ ! -f ../target/release/tanssi-node ]]; then
   exit 1
 fi
 
+# Install dependencies
+pnpm install
+
 # Get runtimes metadata
 for CHAIN in ${CHAINS[@]}; do
   echo "Starting $CHAIN node"
