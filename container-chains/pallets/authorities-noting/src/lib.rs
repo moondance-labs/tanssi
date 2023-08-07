@@ -32,8 +32,8 @@
 mod mock;
 
 #[cfg(test)]
-mod test;
-mod weights;
+mod tests;
+pub mod weights;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
 mod benchmarks;
@@ -375,5 +375,21 @@ impl InherentError {
         } else {
             None
         }
+    }
+}
+
+pub struct CanAuthor<T>(PhantomData<T>);
+
+impl<T: Config> nimbus_primitives::CanAuthor<T::AuthorityId> for CanAuthor<T> {
+    fn can_author(author: &T::AuthorityId, slot: &u32) -> bool {
+        let authorities = Pallet::<T>::authorities();
+
+        if authorities.is_empty() {
+            return false;
+        }
+
+        let expected_author = &authorities[(*slot as usize) % authorities.len()];
+
+        expected_author == author
     }
 }

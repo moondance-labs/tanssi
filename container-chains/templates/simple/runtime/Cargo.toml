@@ -20,17 +20,17 @@ smallvec = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tp-consensus = { workspace = true }
 
-# Nimbus
+# Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
+pallet-maintenance-mode = { workspace = true }
+pallet-migrations = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
-pallet-aura = { workspace = true }
-pallet-authorship = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -55,7 +55,6 @@ polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
 
 # Cumulus
-cumulus-pallet-aura-ext = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-primitives-core = { workspace = true }
@@ -66,7 +65,6 @@ parachain-info = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
-
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -75,7 +73,6 @@ default = [
 	"std",
 ]
 std = [
-	"cumulus-pallet-aura-ext/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
@@ -86,11 +83,11 @@ std = [
 	"frame-try-runtime/std",
 	"log/std",
 	"nimbus-primitives/std",
-	"pallet-aura/std",
 	"pallet-author-inherent/std",
-	"pallet-authorship/std",
 	"pallet-balances/std",
 	"pallet-cc-authorities-noting/std",
+	"pallet-maintenance-mode/std",
+	"pallet-migrations/std",
 	"pallet-session/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
@@ -126,23 +123,4 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 ]
 
-try-runtime = [
-    "pallet-cc-authorities-noting/try-runtime",
-    "nimbus-primitives/try-runtime",
-    "frame-executive/try-runtime",
-    "frame-support/try-runtime",
-    "frame-system/try-runtime",
-    "pallet-aura/try-runtime",
-    "pallet-authorship/try-runtime",
-    "pallet-balances/try-runtime",
-    "pallet-session/try-runtime",
-    "pallet-sudo/try-runtime",
-    "pallet-timestamp/try-runtime",
-    "pallet-utility/try-runtime",
-    "sp-runtime/try-runtime",
-    "polkadot-runtime-common/try-runtime",
-    "cumulus-pallet-aura-ext/try-runtime",
-    "cumulus-pallet-parachain-system/try-runtime",
-    "parachain-info/try-runtime",
-    "frame-try-runtime"
-]
+try-runtime = [ "cumulus-pallet-parachain-system/try-runtime", "frame-executive/try-runtime", "frame-support/try-runtime", "frame-system/try-runtime", "frame-try-runtime", "nimbus-primitives/try-runtime", "pallet-balances/try-runtime", "pallet-cc-authorities-noting/try-runtime", "pallet-session/try-runtime", "pallet-sudo/try-runtime", "pallet-timestamp/try-runtime", "pallet-utility/try-runtime", "parachain-info/try-runtime", "polkadot-runtime-common/try-runtime", "sp-runtime/try-runtime" ]

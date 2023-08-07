@@ -35,7 +35,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything, OneSessionHandler},
+        traits::{ConstU128, ConstU32, ConstU64, Contains, InstanceFilter},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -53,9 +53,10 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
     polkadot_runtime_common::BlockHashCount,
+    scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, Get, OpaqueMetadata},
+    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{AccountIdLookup, BlakeTwo256, Block as BlockT},
@@ -103,6 +104,25 @@ pub type Executive = frame_executive::Executive<
     Runtime,
     AllPalletsWithSystem,
 >;
+
+/// DANCE, the native token, uses 12 decimals of precision.
+pub mod currency {
+    use super::Balance;
+
+    // Provide a common factor between runtimes based on a supply of 10_000_000 tokens.
+    pub const SUPPLY_FACTOR: Balance = 100;
+
+    pub const MICRODANCE: Balance = 1_000_000;
+    pub const MILLIDANCE: Balance = 1_000_000_000;
+    pub const DANCE: Balance = 1_000_000_000_000;
+    pub const KILODANCE: Balance = 1_000_000_000_000_000;
+
+    pub const STORAGE_BYTE_FEE: Balance = 100 * MICRODANCE * SUPPLY_FACTOR;
+
+    pub const fn deposit(items: u32, bytes: u32) -> Balance {
+        items as Balance * 100 * MILLIDANCE * SUPPLY_FACTOR + (bytes as Balance) * STORAGE_BYTE_FEE
+    }
+}
 
 /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
 /// node's balance type.
@@ -161,7 +181,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 100,
+    spec_version: 200,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -284,7 +304,7 @@ impl frame_system::Config for Runtime {
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = Everything;
+    type BaseCallFilter = MaintenanceMode;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// Block & extrinsics weights: base values and limits.
@@ -306,12 +326,7 @@ impl pallet_timestamp::Config for Runtime {
         ConstU64<{ SLOT_DURATION }>,
     >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = ();
-}
-
-impl pallet_authorship::Config for Runtime {
-    type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
-    type EventHandler = (CollatorSelection,);
+    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
 }
 
 pub struct CanAuthor;
@@ -325,7 +340,8 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
             return false;
         }
 
-        let expected_author = &authorities[(*slot as usize) % authorities.len()];
+        let author_index = (*slot as usize) % authorities.len();
+        let expected_author = &authorities[author_index];
 
         expected_author == author
     }
@@ -336,7 +352,7 @@ impl pallet_author_inherent::Config for Runtime {
     type AccountLookup = tp_consensus::NimbusLookUp;
     type CanAuthor = CanAuthor;
     type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -381,7 +397,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 pub struct OwnApplySession;
 impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
-        changed: bool,
+        _changed: bool,
         session_index: u32,
         all_validators: Vec<(AccountId, NimbusId)>,
         queued: Vec<(AccountId, NimbusId)>,
@@ -405,40 +421,6 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
-
-        let orchestrator_current_assignemnt = assignments.active_assignment.orchestrator_chain;
-        let orchestrator_queued_assignemnt = assignments.next_assignment.orchestrator_chain;
-
-        // We filter the accounts based on the collators assigned to the orchestrator chain (this chain)
-        // We insert these in Aura
-        let validators: Vec<_> = all_validators
-            .iter()
-            .filter_map(|(k, v)| {
-                if orchestrator_current_assignemnt.contains(k) {
-                    Some((k, v.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let queued: Vec<_> = queued
-            .iter()
-            .filter_map(|(k, v)| {
-                if orchestrator_queued_assignemnt.contains(k) {
-                    Some((k, v.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        // Then we apply Aura
-        if session_index == 0 {
-            Aura::on_genesis_session(validators.into_iter());
-        } else {
-            Aura::on_new_session(changed, validators.into_iter(), queued.into_iter());
-        }
     }
 }
 
@@ -453,10 +435,8 @@ impl pallet_initializer::Config for Runtime {
 
 impl parachain_info::Config for Runtime {}
 
-impl cumulus_pallet_aura_ext::Config for Runtime {}
-
 parameter_types! {
-    pub const Period: u32 = prod_or_fast!(6 * HOURS, 1 * MINUTES);
+    pub const Period: u32 = prod_or_fast!(1 * HOURS, 1 * MINUTES);
     pub const Offset: u32 = 0;
 }
 
@@ -471,13 +451,7 @@ impl pallet_session::Config for Runtime {
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = ();
-}
-
-impl pallet_aura::Config for Runtime {
-    type AuthorityId = NimbusId;
-    type DisabledValidators = ();
-    type MaxAuthorities = ConstU32<100_000>;
+    type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_collator_assignment::Config for Runtime {
@@ -497,7 +471,7 @@ impl pallet_author_noting::Config for Runtime {
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -525,7 +499,7 @@ impl pallet_collator_selection::Config for Runtime {
     type ValidatorId = <Self as frame_system::Config>::AccountId;
     type ValidatorIdOf = pallet_collator_selection::IdentityCollator;
     type ValidatorRegistration = Session;
-    type WeightInfo = ();
+    type WeightInfo = pallet_collator_selection::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -549,11 +523,12 @@ impl pallet_configuration::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type AuthorityId = NimbusId;
-    type WeightInfo = ();
+    type WeightInfo = pallet_configuration::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
+    pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -562,12 +537,13 @@ impl pallet_registrar::Config for Runtime {
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
+    type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
     type SessionDelay = ConstU32<2>;
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
-    type WeightInfo = ();
+    type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_mapping::Config for Runtime {
@@ -579,7 +555,7 @@ impl pallet_authority_mapping::Config for Runtime {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
+    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
@@ -587,6 +563,146 @@ impl pallet_utility::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
+/// The type used to represent the kinds of proxying allowed.
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
+)]
+#[allow(clippy::unnecessary_cast)]
+pub enum ProxyType {
+    /// All calls can be proxied. This is the trivial/most permissive filter.
+    Any = 0,
+    /// Only extrinsics that do not transfer funds.
+    NonTransfer = 1,
+    /// Only extrinsics related to governance (democracy and collectives).
+    Governance = 2,
+    /// Only extrinsics related to staking.
+    Staking = 3,
+    /// Allow to veto an announced proxy call.
+    CancelProxy = 4,
+    /// Allow extrinsic related to Balances.
+    Balances = 5,
+}
+
+impl Default for ProxyType {
+    fn default() -> Self {
+        Self::Any
+    }
+}
+
+impl InstanceFilter<RuntimeCall> for ProxyType {
+    fn filter(&self, c: &RuntimeCall) -> bool {
+        match self {
+            ProxyType::Any => true,
+            ProxyType::NonTransfer => {
+                matches!(
+                    c,
+                    RuntimeCall::System(..)
+                        | RuntimeCall::ParachainSystem(..)
+                        | RuntimeCall::Timestamp(..)
+                        | RuntimeCall::Utility(..)
+                        | RuntimeCall::Proxy(..)
+                        | RuntimeCall::Registrar(..)
+                )
+            }
+            ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
+            ProxyType::Staking => matches!(c, RuntimeCall::Session(..) | RuntimeCall::Utility(..)),
+            ProxyType::CancelProxy => matches!(
+                c,
+                RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
+            ),
+            ProxyType::Balances => {
+                matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+            }
+        }
+    }
+
+    fn is_superset(&self, o: &Self) -> bool {
+        match (self, o) {
+            (x, y) if x == y => true,
+            (ProxyType::Any, _) => true,
+            (_, ProxyType::Any) => false,
+            _ => false,
+        }
+    }
+}
+
+impl pallet_proxy::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type ProxyType = ProxyType;
+    // One storage item; key size 32, value size 8
+    type ProxyDepositBase = ConstU128<{ currency::deposit(1, 8) }>;
+    // Additional storage item size of 33 bytes (32 bytes AccountId + 1 byte sizeof(ProxyType)).
+    type ProxyDepositFactor = ConstU128<{ currency::deposit(0, 33) }>;
+    type MaxProxies = ConstU32<32>;
+    type MaxPending = ConstU32<32>;
+    type CallHasher = BlakeTwo256;
+    type AnnouncementDepositBase = ConstU128<{ currency::deposit(1, 8) }>;
+    // Additional storage item size of 68 bytes:
+    // - 32 bytes AccountId
+    // - 32 bytes Hasher (Blake2256)
+    // - 4 bytes BlockNumber (u32)
+    type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
+    type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MigrationsList = ();
+    type XcmExecutionManager = ();
+}
+
+/// Maintenance mode Call filter
+pub struct MaintenanceFilter;
+impl Contains<RuntimeCall> for MaintenanceFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            RuntimeCall::Balances(_) => false,
+            _ => true,
+        }
+    }
+}
+
+/// Normal Call Filter
+/// We dont allow to create nor mint assets, this for now is disabled
+/// We only allow transfers. For now creation of assets will go through
+/// asset-manager, while minting/burning only happens through xcm messages
+/// This can change in the future
+pub struct NormalFilter;
+impl Contains<RuntimeCall> for NormalFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            // We filter anonymous proxy as they make "reserve" inconsistent
+            // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
+            RuntimeCall::Proxy(method) => match method {
+                pallet_proxy::Call::create_pure { .. } => false,
+                pallet_proxy::Call::kill_pure { .. } => false,
+                _ => true,
+            },
+            _ => true,
+        }
+    }
+}
+
+impl pallet_maintenance_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    // TODO: enable xcm-support feature when we enable xcm
+    /*
+    type XcmExecutionManager = XcmExecutionManager;
+    type NormalDmpHandler = NormalDmpHandler;
+    type MaintenanceDmpHandler = MaintenanceDmpHandler;
+    */
+    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
+    // operation
+    type NormalExecutiveHooks = AllPalletsWithSystem;
+    type MaintenanceExecutiveHooks = AllPalletsWithSystem;
 }
 
 impl pallet_root_testing::Config for Runtime {}
@@ -605,6 +721,9 @@ construct_runtime!(
         ParachainInfo: parachain_info = 3,
         Sudo: pallet_sudo = 4,
         Utility: pallet_utility = 5,
+        Proxy: pallet_proxy = 6,
+        Migrations: pallet_migrations = 7,
+        MaintenanceMode: pallet_maintenance_mode = 8,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
@@ -618,14 +737,10 @@ construct_runtime!(
         AuthorityAssignment: pallet_authority_assignment = 25,
 
         // Collator support. The order of these 4 are important and shall not change.
-        Authorship: pallet_authorship = 30,
-        CollatorSelection: pallet_collator_selection = 31,
-        Session: pallet_session = 32,
-        Aura: pallet_aura = 33,
-        AuraExt: cumulus_pallet_aura_ext = 34,
-        AuthorityMapping: pallet_authority_mapping = 35,
-
-        AuthorInherent: pallet_author_inherent = 50,
+        CollatorSelection: pallet_collator_selection = 30,
+        Session: pallet_session = 31,
+        AuthorityMapping: pallet_authority_mapping = 32,
+        AuthorInherent: pallet_author_inherent = 33,
 
         RootTesting: pallet_root_testing = 100,
     }
@@ -634,11 +749,13 @@ construct_runtime!(
 impl_runtime_apis! {
     impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
-            sp_consensus_aura::SlotDuration::from_millis(Aura::slot_duration())
+            sp_consensus_aura::SlotDuration::from_millis(SLOT_DURATION)
         }
 
         fn authorities() -> Vec<NimbusId> {
-            Aura::authorities().into_inner()
+            pallet_authority_assignment::CollatorContainerChain::<Runtime>::get(Session::current_index())
+                .expect("authorities for current session should exist")
+                .orchestrator_chain
         }
     }
 
@@ -907,14 +1024,14 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId> for Runtime {
+    impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId, MaxLengthTokenSymbol> for Runtime {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
             Registrar::registered_para_ids().to_vec()
         }
 
         /// Fetch genesis data for this para id
-        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData> {
+        fn genesis_data(para_id: ParaId) -> Option<ContainerChainGenesisData<MaxLengthTokenSymbol>> {
             Registrar::para_genesis_data(para_id)
         }
 

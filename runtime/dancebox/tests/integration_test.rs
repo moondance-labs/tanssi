@@ -21,7 +21,7 @@ use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
-        Configuration,
+        Configuration, Proxy, ProxyType,
     },
     frame_support::{assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -39,6 +39,7 @@ use {
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
+    tp_core::well_known_keys,
 };
 
 mod common;
@@ -99,6 +100,16 @@ fn genesis_para_registrar_deregister() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -106,7 +117,7 @@ fn genesis_para_registrar_deregister() {
                 vec![1001.into(), 1002.into()]
             );
 
-            run_to_block(2, false);
+            run_to_block(2);
             assert_ok!(Registrar::deregister(root_origin(), 1002.into()), ());
 
             // Pending
@@ -115,7 +126,7 @@ fn genesis_para_registrar_deregister() {
                 vec![(2u32, BoundedVec::try_from(vec![1001u32.into()]).unwrap())]
             );
 
-            run_to_session(1, false);
+            run_to_session(1);
             assert_eq!(
                 Registrar::pending_registered_para_ids(),
                 vec![(2u32, BoundedVec::try_from(vec![1001u32.into()]).unwrap())]
@@ -125,7 +136,7 @@ fn genesis_para_registrar_deregister() {
                 vec![1001.into(), 1002.into()]
             );
 
-            run_to_session(2, false);
+            run_to_session(2);
             assert_eq!(Registrar::pending_registered_para_ids(), vec![]);
             assert_eq!(Registrar::registered_para_ids(), vec![1001.into()]);
         });
@@ -143,6 +154,16 @@ fn genesis_para_registrar_runtime_api() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -151,18 +172,18 @@ fn genesis_para_registrar_runtime_api() {
             );
             assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
 
-            run_to_block(2, false);
+            run_to_block(2);
             assert_ok!(Registrar::deregister(root_origin(), 1002.into()), ());
             assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
 
-            run_to_session(1, false);
+            run_to_session(1);
             assert_eq!(
                 Registrar::registered_para_ids(),
                 vec![1001.into(), 1002.into()]
             );
             assert_eq!(Runtime::registered_paras(), vec![1001.into(), 1002.into()]);
 
-            run_to_session(2, false);
+            run_to_session(2);
             assert_eq!(Registrar::registered_para_ids(), vec![1001.into()]);
             assert_eq!(Runtime::registered_paras(), vec![1001.into()]);
         });
@@ -189,6 +210,16 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             (1001, genesis_data_1001.clone(), vec![]),
             (1002, genesis_data_1002.clone(), vec![]),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -212,7 +243,7 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             // TODO: where is that 100 defined?
             assert_eq!(Runtime::genesis_data(100.into()).as_ref(), None);
 
-            run_to_block(2, false);
+            run_to_block(2);
             assert_ok!(Registrar::deregister(root_origin(), 1002.into()), ());
 
             // Deregistered container chains are deleted immediately
@@ -268,17 +299,17 @@ fn test_author_collation_aura() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(5, true);
+            run_to_block(5);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 4u64);
+            assert_eq!(current_slot(), 4u64);
             // slot 4, alice
-            assert!(Authorship::author().unwrap() == AccountId::from(ALICE));
+            assert!(current_author() == AccountId::from(ALICE));
 
-            run_to_block(6, true);
+            run_to_block(6);
 
-            assert_eq!(Aura::current_slot(), 5u64);
+            assert_eq!(current_slot(), 5u64);
             // slot 5, bob
-            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert!(current_author() == AccountId::from(BOB));
         });
 }
 
@@ -308,10 +339,10 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 1u64);
-            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
 
             // We change invulnerables
             // We first need to set the keys
@@ -344,18 +375,18 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             ));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
-            run_to_session(1u32, true);
+            run_to_session(1u32);
             let author = get_orchestrator_current_author().unwrap();
 
-            assert_eq!(Authorship::author().unwrap(), author);
-            assert!(Aura::authorities() == vec![alice_id, bob_id]);
+            assert_eq!(current_author(), author);
+            assert!(authorities() == vec![alice_id, bob_id]);
 
             // Invulnerables should have triggered on new session authorities change
-            run_to_session(2u32, true);
+            run_to_session(2u32);
             let author_after_changes = get_orchestrator_current_author().unwrap();
 
-            assert_eq!(Authorship::author().unwrap(), author_after_changes);
-            assert_eq!(Aura::authorities(), vec![charlie_id, dave_id]);
+            assert_eq!(current_author(), author_after_changes);
+            assert_eq!(authorities(), vec![charlie_id, dave_id]);
         });
 }
 
@@ -385,10 +416,10 @@ fn test_author_collation_aura_add_assigned_to_paras() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 1u64);
-            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
 
             // We change invulnerables
             // We first need to set the keys
@@ -417,16 +448,16 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             ));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
-            run_to_session(1u32, true);
+            run_to_session(1u32);
             let author = get_orchestrator_current_author().unwrap();
 
-            assert_eq!(Authorship::author().unwrap(), author);
-            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(current_author(), author);
+            assert_eq!(authorities(), vec![alice_id.clone(), bob_id.clone()]);
 
             // Invulnerables should have triggered on new session authorities change
             // However charlie and dave shoudl have gone to one para (1001)
-            run_to_session(2u32, true);
-            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
+            run_to_session(2u32);
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
@@ -459,10 +490,10 @@ fn test_authors_without_paras() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 1u64);
-            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
 
             // Only Alice and Bob collate for our chain
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
@@ -471,7 +502,7 @@ fn test_authors_without_paras() {
             let dave_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
 
             // It does not matter if we insert more collators, only two will be assigned
-            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(authorities(), vec![alice_id.clone(), bob_id.clone()]);
 
             // Set moondance collators to min 2 max 5
             assert_ok!(
@@ -483,11 +514,8 @@ fn test_authors_without_paras() {
                 ()
             );
 
-            run_to_session(2, true);
-            assert_eq!(
-                Aura::authorities(),
-                vec![alice_id, bob_id, charlie_id, dave_id]
-            );
+            run_to_session(2);
+            assert_eq!(authorities(), vec![alice_id, bob_id, charlie_id, dave_id]);
         });
 }
 
@@ -515,16 +543,16 @@ fn test_authors_paras_inserted_a_posteriori() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 1u64);
-            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob collate in our chain
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
             let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
 
-            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
 
             assert_ok!(
                 Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
@@ -544,10 +572,10 @@ fn test_authors_paras_inserted_a_posteriori() {
             );
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32, true);
+            run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32, true);
+            run_to_session(2u32);
 
             // Charlie and Dave should be assigne dot para 1001
             let assignment = CollatorAssignment::collator_container_chain();
@@ -582,10 +610,10 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 1u64);
-            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob collate in our chain
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
@@ -593,10 +621,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             let charlie_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
             let dave_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
 
-            assert_eq!(
-                Aura::authorities(),
-                vec![alice_id, bob_id, charlie_id, dave_id]
-            );
+            assert_eq!(authorities(), vec![alice_id, bob_id, charlie_id, dave_id]);
 
             assert_ok!(
                 Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
@@ -608,10 +633,10 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             );
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32, true);
+            run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
             assert!(assignment.container_chains.is_empty());
-            run_to_session(2u32, true);
+            run_to_session(2u32);
 
             // Charlie and Dave are now assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
@@ -654,16 +679,16 @@ fn test_parachains_deregister_collators_re_assigned() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 1u64);
-            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob are authorities
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
             let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
 
-            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
 
             // Charlie and Dave to 1001
             let assignment = CollatorAssignment::collator_container_chain();
@@ -675,7 +700,7 @@ fn test_parachains_deregister_collators_re_assigned() {
             assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32, true);
+            run_to_session(1u32);
 
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -683,7 +708,7 @@ fn test_parachains_deregister_collators_re_assigned() {
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
-            run_to_session(2u32, true);
+            run_to_session(2u32);
 
             // Charlie and Dave should be assigne dot para 1002 this time
             let assignment = CollatorAssignment::collator_container_chain();
@@ -722,16 +747,16 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 1u64);
-            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob are authorities
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
             let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
 
-            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
 
             // Set orchestrator collators to 1
             assert_ok!(
@@ -753,7 +778,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             );
 
             // Assignment should happen after 2 sessions
-            run_to_session(1u32, true);
+            run_to_session(1u32);
 
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
@@ -761,7 +786,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
-            run_to_session(2u32, true);
+            run_to_session(2u32);
 
             // Charlie, Dave and BOB should be assigne dot para 1001 this time
             let assignment = CollatorAssignment::collator_container_chain();
@@ -794,15 +819,15 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 1u64);
-            assert!(Authorship::author().unwrap() == AccountId::from(ALICE));
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(ALICE));
 
             // Alice and Bob are authorities
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
 
-            assert_eq!(Aura::authorities(), vec![alice_id]);
+            assert_eq!(authorities(), vec![alice_id]);
         });
 }
 
@@ -814,48 +839,50 @@ fn test_configuration_on_session_change() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
         .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 0,
-            min_orchestrator_collators: 0,
-            max_orchestrator_collators: 0,
-            collators_per_container: 0,
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
         })
         .build()
         .execute_with(|| {
-            run_to_block(1, false);
-            assert_eq!(Configuration::config().max_collators, 0);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-            assert_eq!(Configuration::config().collators_per_container, 0);
-            assert_ok!(Configuration::set_max_collators(root_origin(), 50), ());
+            run_to_block(1);
+            assert_eq!(Configuration::config().max_collators, 100);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+            assert_eq!(Configuration::config().collators_per_container, 2);
 
-            run_to_session(1u32, false);
+            assert_ok!(Configuration::set_max_collators(root_origin(), 50), ());
+            run_to_session(1u32);
 
             assert_ok!(
                 Configuration::set_min_orchestrator_collators(root_origin(), 20),
                 ()
             );
+            assert_eq!(Configuration::config().max_collators, 100);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+            assert_eq!(Configuration::config().collators_per_container, 2);
 
-            assert_eq!(Configuration::config().max_collators, 0);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-            assert_eq!(Configuration::config().collators_per_container, 0);
-
-            run_to_session(2u32, false);
-
+            run_to_session(2u32);
             assert_ok!(
                 Configuration::set_collators_per_container(root_origin(), 10),
                 ()
             );
             assert_eq!(Configuration::config().max_collators, 50);
-            assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-            assert_eq!(Configuration::config().collators_per_container, 0);
+            assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+            assert_eq!(Configuration::config().collators_per_container, 2);
 
-            run_to_session(3u32, false);
+            run_to_session(3u32);
 
             assert_eq!(Configuration::config().max_collators, 50);
             assert_eq!(Configuration::config().min_orchestrator_collators, 20);
-            assert_eq!(Configuration::config().collators_per_container, 0);
+            assert_eq!(Configuration::config().collators_per_container, 2);
 
-            run_to_session(4u32, false);
+            run_to_session(4u32);
 
             assert_eq!(Configuration::config().max_collators, 50);
             assert_eq!(Configuration::config().min_orchestrator_collators, 20);
@@ -889,10 +916,10 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(Aura::current_slot(), 1u64);
-            assert!(Authorship::author().unwrap() == AccountId::from(BOB));
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
             assert_eq!(
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
@@ -942,11 +969,11 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             ));
 
             // SESSION CHANGE. First session. it takes 2 sessions to see the change
-            run_to_session(1u32, true);
+            run_to_session(1u32);
             let author = get_orchestrator_current_author().unwrap();
 
-            assert_eq!(Authorship::author().unwrap(), author);
-            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(current_author(), author);
+            assert_eq!(authorities(), vec![alice_id.clone(), bob_id.clone()]);
             assert_eq!(
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
@@ -963,8 +990,8 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
 
             // Invulnerables should have triggered on new session authorities change
             // However charlie and dave shoudl have gone to one para (1001)
-            run_to_session(2u32, true);
-            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
+            run_to_session(2u32);
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
@@ -994,7 +1021,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 vec![ALICE.into(), CHARLIE.into(), DAVE.into()]
             ));
 
-            run_to_session(3u32, true);
+            run_to_session(3u32);
             assert_eq!(
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
@@ -1012,7 +1039,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 None
             );
 
-            run_to_session(4u32, true);
+            run_to_session(4u32);
             assert_eq!(
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into()])
@@ -1058,7 +1085,7 @@ fn test_consensus_runtime_api() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
 
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
             let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
@@ -1104,7 +1131,7 @@ fn test_consensus_runtime_api() {
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
 
-            run_to_session(2u32, true);
+            run_to_session(2u32);
             assert_eq!(
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
@@ -1158,7 +1185,7 @@ fn test_consensus_runtime_api_session_changes() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
 
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
             let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
@@ -1208,7 +1235,7 @@ fn test_consensus_runtime_api_session_changes() {
             // Let's run just 2 blocks before the session 2 change first
             // Prediction should still be identical, as we are not in the
             // edge of a session change
-            run_to_block(session_two_edge - 2, true);
+            run_to_block(session_two_edge - 2);
 
             assert_eq!(
                 Runtime::para_id_authorities(100.into()),
@@ -1228,7 +1255,7 @@ fn test_consensus_runtime_api_session_changes() {
 
             // Now we run to session edge -1. Here we should predict already with
             // authorities of the next block!
-            run_to_block(session_two_edge - 1, true);
+            run_to_block(session_two_edge - 1);
             assert_eq!(
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
@@ -1378,7 +1405,7 @@ fn test_session_keys_with_authority_mapping() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             let key_mapping_session_0 = AuthorityMapping::authority_id_mapping(0).unwrap();
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
             let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
@@ -1390,7 +1417,7 @@ fn test_session_keys_with_authority_mapping() {
             assert_eq!(key_mapping_session_0.get(&bob_id), Some(&BOB.into()));
 
             // Everything should match to aura
-            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(authorities(), vec![alice_id.clone(), bob_id.clone()]);
 
             // Change Alice and Bob keys to something different
             // for now lets change it to alice_2 and bob_2
@@ -1409,7 +1436,7 @@ fn test_session_keys_with_authority_mapping() {
                 vec![]
             ));
 
-            run_to_session(1u32, true);
+            run_to_session(1u32);
             let key_mapping_session_0 = AuthorityMapping::authority_id_mapping(0).unwrap();
             assert_eq!(key_mapping_session_0.len(), 2);
             assert_eq!(key_mapping_session_0.get(&alice_id), Some(&ALICE.into()));
@@ -1421,10 +1448,10 @@ fn test_session_keys_with_authority_mapping() {
             assert_eq!(key_mapping_session_1.get(&bob_id), Some(&BOB.into()));
 
             // Everything should match to aura
-            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(authorities(), vec![alice_id.clone(), bob_id.clone()]);
             //
 
-            run_to_session(2u32, true);
+            run_to_session(2u32);
             assert!(AuthorityMapping::authority_id_mapping(0).is_none());
 
             let key_mapping_session_1 = AuthorityMapping::authority_id_mapping(1).unwrap();
@@ -1438,7 +1465,7 @@ fn test_session_keys_with_authority_mapping() {
             assert_eq!(key_mapping_session_2.get(&bob_id_2), Some(&BOB.into()));
 
             // Everything should match to aura
-            assert_eq!(Aura::authorities(), vec![alice_id_2, bob_id_2]);
+            assert_eq!(authorities(), vec![alice_id_2, bob_id_2]);
         });
 }
 
@@ -1468,7 +1495,7 @@ fn test_session_keys_with_authority_assignment() {
         })
         .build()
         .execute_with(|| {
-            run_to_block(2, true);
+            run_to_block(2);
             let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
             let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
             let alice_id_2 = get_aura_id_from_seed("ALICE2");
@@ -1497,7 +1524,7 @@ fn test_session_keys_with_authority_assignment() {
             assert!(key_mapping_session_2.is_none());
 
             // Everything should match to aura
-            assert_eq!(Aura::authorities(), vec![alice_id.clone(), bob_id.clone()]);
+            assert_eq!(authorities(), vec![alice_id.clone(), bob_id.clone()]);
 
             // Change Alice and Bob keys to something different
             // for now lets change it to alice_2 and bob_2
@@ -1516,7 +1543,7 @@ fn test_session_keys_with_authority_assignment() {
                 vec![]
             ));
 
-            run_to_session(1u32, true);
+            run_to_session(1u32);
             let old_key_mapping_session_1 = key_mapping_session_1;
 
             // Session 0 got removed
@@ -1543,9 +1570,9 @@ fn test_session_keys_with_authority_assignment() {
             assert!(key_mapping_session_3.is_none());
 
             // Everything should match to aura
-            assert_eq!(Aura::authorities(), vec![alice_id, bob_id]);
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
 
-            run_to_session(2u32, true);
+            run_to_session(2u32);
 
             // Session 1 got removed
             let key_mapping_session_1 = AuthorityAssignment::collator_container_chain(1);
@@ -1574,6 +1601,137 @@ fn test_session_keys_with_authority_assignment() {
             assert!(key_mapping_session_4.is_none());
 
             // Everything should match to aura
-            assert_eq!(Aura::authorities(), vec![alice_id_2, bob_id_2]);
+            assert_eq!(authorities(), vec![alice_id_2, bob_id_2]);
         });
+}
+
+fn call_transfer(
+    dest: sp_runtime::MultiAddress<sp_runtime::AccountId32, ()>,
+    value: u128,
+) -> RuntimeCall {
+    RuntimeCall::Balances(pallet_balances::Call::transfer_allow_death { dest, value })
+}
+
+#[test]
+fn test_proxy_any() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let delay = 0;
+            assert_ok!(Proxy::add_proxy(
+                origin_of(ALICE.into()),
+                AccountId::from(BOB).into(),
+                ProxyType::Any,
+                delay
+            ));
+
+            let balance_before = System::account(AccountId::from(BOB)).data.free;
+            let call = Box::new(call_transfer(AccountId::from(BOB).into(), 200_000));
+            assert_ok!(Proxy::proxy(
+                origin_of(BOB.into()),
+                AccountId::from(ALICE).into(),
+                None,
+                call
+            ));
+            let balance_after = System::account(AccountId::from(BOB)).data.free;
+
+            assert_eq!(balance_after, balance_before + 200_000);
+        });
+}
+
+#[test]
+fn test_proxy_non_transfer() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let delay = 0;
+            assert_ok!(Proxy::add_proxy(
+                origin_of(ALICE.into()),
+                AccountId::from(BOB).into(),
+                ProxyType::NonTransfer,
+                delay
+            ));
+
+            let balance_before = System::account(AccountId::from(BOB)).data.free;
+            let call = Box::new(call_transfer(AccountId::from(BOB).into(), 200_000));
+            // The extrinsic succeeds but the call is filtered, so no transfer is actually done
+            assert_ok!(Proxy::proxy(
+                origin_of(BOB.into()),
+                AccountId::from(ALICE).into(),
+                None,
+                call
+            ));
+            let balance_after = System::account(AccountId::from(BOB)).data.free;
+
+            assert_eq!(balance_after, balance_before);
+        });
+}
+
+#[test]
+fn check_well_known_keys() {
+    use frame_support::traits::PalletInfo;
+
+    // Pallet is named "Paras" in Polkadot.
+    assert_eq!(
+        well_known_keys::PARAS_HEADS_INDEX,
+        frame_support::storage::storage_prefix(b"Paras", b"Heads")
+    );
+
+    // Tanssi storage. Since we cannot access the storages themselves,
+    // we test the pallet prefix matches and then compute manually the full prefix.
+    assert_eq!(
+        dancebox_runtime::PalletInfo::name::<AuthorityAssignment>(),
+        Some("AuthorityAssignment")
+    );
+    assert_eq!(
+        well_known_keys::AUTHORITY_ASSIGNMENT_PREFIX,
+        frame_support::storage::storage_prefix(b"AuthorityAssignment", b"CollatorContainerChain")
+    );
+
+    assert_eq!(
+        dancebox_runtime::PalletInfo::name::<Session>(),
+        Some("Session")
+    );
+    assert_eq!(
+        well_known_keys::SESSION_INDEX,
+        frame_support::storage::storage_prefix(b"Session", b"CurrentIndex")
+    );
 }

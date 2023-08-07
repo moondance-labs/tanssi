@@ -16,7 +16,7 @@
 
 use {
     crate::{mock::*, HostConfiguration, PendingConfigs},
-    frame_support::assert_ok,
+    frame_support::{assert_ok, dispatch::GetDispatchInfo},
     sp_std::vec,
 };
 
@@ -267,5 +267,38 @@ fn config_set_many_values_different_sessions() {
         assert_eq!(Configuration::config().max_collators, 50);
         assert_eq!(Configuration::config().min_orchestrator_collators, 20);
         assert_eq!(Configuration::config().collators_per_container, 10);
+    });
+}
+
+#[test]
+fn weights_assigned_to_extrinsics_are_correct() {
+    new_test_ext().execute_with(|| {
+        assert_eq!(
+            crate::Call::<Test>::set_max_collators { new: 1u32 }
+                .get_dispatch_info()
+                .weight,
+            <() as crate::weights::WeightInfo>::set_config_with_u32()
+        );
+
+        assert_eq!(
+            crate::Call::<Test>::set_min_orchestrator_collators { new: 1u32 }
+                .get_dispatch_info()
+                .weight,
+            <() as crate::weights::WeightInfo>::set_config_with_u32()
+        );
+
+        assert_eq!(
+            crate::Call::<Test>::set_collators_per_container { new: 1u32 }
+                .get_dispatch_info()
+                .weight,
+            <() as crate::weights::WeightInfo>::set_config_with_u32()
+        );
+
+        assert_eq!(
+            crate::Call::<Test>::set_max_orchestrator_collators { new: 1u32 }
+                .get_dispatch_info()
+                .weight,
+            <() as crate::weights::WeightInfo>::set_config_with_u32()
+        );
     });
 }

@@ -20,9 +20,11 @@ smallvec = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tp-consensus = { workspace = true }
 
-# Nimbus
+# Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
+pallet-maintenance-mode = { workspace = true }
+pallet-migrations = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -30,7 +32,8 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
-pallet-balances = { workspace = true, features = ["insecure_zero_ed"] }
+pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
+pallet-root-testing = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
@@ -74,7 +77,6 @@ pallet-evm-precompile-modexp = { workspace = true }
 pallet-evm-precompile-sha3fips = { workspace = true }
 pallet-evm-precompile-simple = { workspace = true }
 pallet-hotfix-sufficients = { workspace = true }
-
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -108,6 +110,8 @@ std = [
 	"pallet-evm-precompile-simple/std",
 	"pallet-evm/std",
 	"pallet-hotfix-sufficients/std",
+	"pallet-maintenance-mode/std",
+	"pallet-migrations/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-utility/std",
@@ -141,26 +145,26 @@ runtime-benchmarks = [
 ]
 
 try-runtime = [
-	"pallet-cc-authorities-noting/try-runtime",
-	"nimbus-primitives/try-runtime",
+	"cumulus-pallet-parachain-system/try-runtime",
+	"fp-self-contained/try-runtime",
 	"frame-executive/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
+	"nimbus-primitives/try-runtime",
 	"pallet-balances/try-runtime",
+	"pallet-base-fee/try-runtime",
+	"pallet-cc-authorities-noting/try-runtime",
+	"pallet-dynamic-fee/try-runtime",
+	"pallet-ethereum/try-runtime",
+	"pallet-evm-chain-id/try-runtime",
+	"pallet-evm/try-runtime",
+	"pallet-hotfix-sufficients/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"pallet-utility/try-runtime",
-	"sp-runtime/try-runtime",
-	"polkadot-runtime-common/try-runtime",
-	"cumulus-pallet-parachain-system/try-runtime",
 	"parachain-info/try-runtime",
-	"fp-self-contained/try-runtime",
-	"pallet-base-fee/try-runtime",
-	"pallet-dynamic-fee/try-runtime",
-	"pallet-ethereum/try-runtime",
-	"pallet-evm/try-runtime",
-	"pallet-evm-chain-id/try-runtime",
-	"pallet-hotfix-sufficients/try-runtime",
+	"polkadot-runtime-common/try-runtime",
+	"sp-runtime/try-runtime",
 ]

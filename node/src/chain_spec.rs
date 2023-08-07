@@ -16,14 +16,17 @@
 
 use {
     cumulus_primitives_core::ParaId,
-    dancebox_runtime::{AccountId, RegistrarConfig, Signature, SudoConfig, EXISTENTIAL_DEPOSIT},
+    dancebox_runtime::{
+        AccountId, MaintenanceModeConfig, MigrationsConfig, RegistrarConfig, Signature, SudoConfig,
+        EXISTENTIAL_DEPOSIT,
+    },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
-    sp_runtime::traits::{IdentifyAccount, Verify},
+    sp_runtime::traits::{Get, IdentifyAccount, Verify},
     std::collections::BTreeMap,
     tp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
@@ -312,10 +315,6 @@ fn testnet_genesis(
                 })
                 .collect(),
         },
-        // no need to pass anything to aura, in fact it will panic if we do. Session will take care
-        // of this.
-        aura: Default::default(),
-        aura_ext: Default::default(),
         parachain_system: Default::default(),
         configuration,
         registrar: RegistrarConfig {
@@ -339,10 +338,16 @@ fn testnet_genesis(
         sudo: SudoConfig {
             key: Some(root_key),
         },
+        migrations: MigrationsConfig {},
+        maintenance_mode: MaintenanceModeConfig {
+            start_in_maintenance_mode: false,
+        },
     }
 }
 
-fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
+fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
+    para_id: ParaId,
+) -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     ContainerChainGenesisData {
         storage: vec![],
         name: format!("Container Chain {}", para_id).into(),

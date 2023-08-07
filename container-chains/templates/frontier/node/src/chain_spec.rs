@@ -15,7 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    container_chain_template_frontier_runtime::{AccountId, EVMChainIdConfig, EVMConfig},
+    container_chain_template_frontier_runtime::{
+        AccountId, EVMChainIdConfig, EVMConfig, MaintenanceModeConfig, MigrationsConfig,
+    },
     cumulus_primitives_core::ParaId,
     hex_literal::hex,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
@@ -229,6 +231,10 @@ fn testnet_genesis(
         },
         authorities_noting: container_chain_template_frontier_runtime::AuthoritiesNotingConfig {
             orchestrator_para_id: ORCHESTRATOR,
+        },
+        migrations: MigrationsConfig {},
+        maintenance_mode: MaintenanceModeConfig {
+            start_in_maintenance_mode: false,
         },
     }
 }

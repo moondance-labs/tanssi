@@ -20,8 +20,7 @@
 use {
     crate::{Call, Config, DepositBalanceOf, Pallet},
     frame_benchmarking::{account, v2::*},
-    frame_support::traits::Currency,
-    frame_support::BoundedVec,
+    frame_support::{traits::Currency, BoundedVec},
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::vec,

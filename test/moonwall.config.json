@@ -6,7 +6,7 @@
   "environments": [
     {
       "name": "dev_tanssi",
-      "testFileDir": ["suites/dev-tanssi"],
+      "testFileDir": ["suites/dev-tanssi", "suites/common"],
       "multiThreads": true,
       "html": false,
       "foundation": {
@@ -51,7 +51,7 @@
     },
     {
       "name": "dev_frontier_template",
-      "testFileDir": ["suites/dev-frontier-template"],
+      "testFileDir": ["suites/dev-frontier-template", "suites/common"],
       "runScripts": ["pre-build-contracts.ts"],
       "multiThreads": true,
       "html": false,
@@ -72,13 +72,13 @@
       }
     },
     {
-      "name": "zombie_tanssi_ci",
+      "name": "zombie_tanssi",
       "testFileDir": ["suites/para"],
-      "runScripts": ["build-spec-ci.sh", "download-polkadot.sh"],
+      "runScripts": ["build-spec.sh", "download-polkadot.sh"],
       "foundation": {
         "type": "zombie",
         "zombieSpec": {
-          "configPath": "./configs/zombieTanssiCI.json"
+          "configPath": "./configs/zombieTanssi.json"
         }
       },
       "connections": [
@@ -115,45 +115,29 @@
       ]
     },
     {
-      "name": "zombie_tanssi",
-      "testFileDir": ["suites/para"],
+      "name": "zombie_dancebox_upgrade",
+      "testFileDir": ["suites/rt-upgrade"],
+      "runScripts": ["download-polkadot.sh"],
       "foundation": {
+        "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
         "type": "zombie",
         "zombieSpec": {
-          "configPath": "./configs/zombieTanssi.json"
+          "configPath": "./configs/zombieDanceboxUpgrade.json"
         }
+      }
+    },
+    {
+      "name": "dancebox_smoke",
+      "testFileDir": ["suites/smoke-test"],
+      "foundation": {
+        "type": "read_only"
       },
-      "runScripts": ["build-spec.sh", "download-polkadot.sh"],
+      "reporters": ["basic", "html"],
       "connections": [
         {
-          "name": "Relay",
+          "name": "DBX",
           "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9947"]
-        },
-        {
-          "name": "Tanssi",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9948"]
-        },
-        {
-          "name": "Container2000",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9949"]
-        },
-        {
-          "name": "Container2001",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        },
-        {
-          "name": "ethers",
-          "type": "ethers",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        },
-        {
-          "name": "w3",
-          "type": "web3",
-          "endpoints": ["ws://127.0.0.1:9950"]
+          "endpoints": ["wss://vira-stagenet-dancebox-rpc.a.moondev.network"]
         }
       ]
     }

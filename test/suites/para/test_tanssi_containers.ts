@@ -25,10 +25,10 @@ describeSuite({
     let ethersSigner: Signer;
 
     beforeAll(async () => {
-      paraApi = context.polkadotJs({ apiName: "Tanssi", type: "polkadotJs" });
-      relayApi = context.polkadotJs({ apiName: "Relay", type: "polkadotJs" });
-      container2000Api = context.polkadotJs({ apiName: "Container2000", type: "polkadotJs" });
-      container2001Api = context.polkadotJs({ apiName: "Container2001", type: "polkadotJs" });
+      paraApi = context.polkadotJs("Tanssi");
+      relayApi = context.polkadotJs("Relay");
+      container2000Api = context.polkadotJs("Container2000");
+      container2001Api = context.polkadotJs("Container2001");
       ethersSigner = context.ethers();
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
@@ -63,21 +63,6 @@ describeSuite({
       test: async function () {
         const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
         expect(blockNum).to.be.greaterThan(0);
-      },
-    });
-
-    it({
-      id: "T02",
-      title: "Test Tanssi assignation is correct",
-      test: async function () {
-        const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-        // TODO: fix once we have types
-        const tanssiCollators = (
-          await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-        ).toJSON().orchestratorChain;
-        const authorities = (await paraApi.query.aura.authorities()).toJSON();
-
-        expect(tanssiCollators).to.deep.equal(authorities);
       },
     });
 
@@ -184,10 +169,11 @@ describeSuite({
       id: "T09",
       title: "Test author is correct in Orchestrator",
       test: async function () {
-        const authorities = await paraApi.query.aura.authorities();
+        const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
+        const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
         const author = await getAuthorFromDigest(paraApi);
         // TODO: fix once we have types
-        expect(authorities.toJSON().includes(author.toString())).to.be.true;
+        expect(authorities.toJSON().orchestratorChain.includes(author.toString())).to.be.true;
       },
     });
 
@@ -224,13 +210,7 @@ describeSuite({
         let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
         // Read raw chain spec file
-        // Different path in CI: ./specs vs ../specs
-        let spec2002 = null;
-        try {
-          spec2002 = await fs.readFile("./specs/template-container-2002.json", "utf8");
-        } catch {
-          spec2002 = await fs.readFile("../specs/template-container-2002.json", "utf8");
-        }
+        let spec2002 = await fs.readFile("./specs/template-container-2002.json", "utf8");
 
         // Before registering container chain 2002, ensure that it has 0 blocks
         // Since the RPC doesn't exist at this point, we need to get that from the relay

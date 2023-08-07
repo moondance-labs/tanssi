@@ -35,7 +35,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything},
+        traits::{ConstU32, ConstU64, Contains},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -44,7 +44,10 @@ use {
             Weight, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
         },
     },
-    frame_system::limits::{BlockLength, BlockWeights},
+    frame_system::{
+        limits::{BlockLength, BlockWeights},
+        EnsureRoot,
+    },
     nimbus_primitives::NimbusId,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
@@ -178,7 +181,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("container-chain-template"),
     impl_name: create_runtime_str!("container-chain-template"),
     authoring_version: 1,
-    spec_version: 1,
+    spec_version: 100,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -301,7 +304,7 @@ impl frame_system::Config for Runtime {
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = Everything;
+    type BaseCallFilter = MaintenanceMode;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// Block & extrinsics weights: base values and limits.
@@ -323,7 +326,7 @@ impl pallet_timestamp::Config for Runtime {
         ConstU64<{ SLOT_DURATION }>,
     >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -375,7 +378,7 @@ parameter_types! {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = ();
+    type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
@@ -385,35 +388,66 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MigrationsList = ();
+    type XcmExecutionManager = ();
+}
+
+/// Maintenance mode Call filter
+pub struct MaintenanceFilter;
+impl Contains<RuntimeCall> for MaintenanceFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            RuntimeCall::Balances(_) => false,
+            _ => true,
+        }
+    }
+}
+
+/// Normal Call Filter
+/// We dont allow to create nor mint assets, this for now is disabled
+/// We only allow transfers. For now creation of assets will go through
+/// asset-manager, while minting/burning only happens through xcm messages
+/// This can change in the future
+pub struct NormalFilter;
+impl Contains<RuntimeCall> for NormalFilter {
+    fn contains(_c: &RuntimeCall) -> bool {
+        true
+    }
+}
+
+impl pallet_maintenance_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    // TODO: enable xcm-support feature when we enable xcm
+    /*
+    type XcmExecutionManager = XcmExecutionManager;
+    type NormalDmpHandler = NormalDmpHandler;
+    type MaintenanceDmpHandler = MaintenanceDmpHandler;
+    */
+    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
+    // operation
+    type NormalExecutiveHooks = AllPalletsWithSystem;
+    type MaintenanceExecutiveHooks = AllPalletsWithSystem;
+}
+
 impl pallet_cc_authorities_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type AuthorityId = NimbusId;
-    type WeightInfo = ();
-}
-
-pub struct CanAuthor;
-impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
-    fn can_author(author: &NimbusId, slot: &u32) -> bool {
-        let authorities = AuthoritiesNoting::authorities();
-
-        if authorities.is_empty() {
-            return false;
-        }
-
-        let expected_author = &authorities[(*slot as usize) % authorities.len()];
-
-        expected_author == author
-    }
+    type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_author_inherent::Config for Runtime {
     type AuthorId = NimbusId;
     type AccountLookup = tp_consensus::NimbusLookUp;
-    type CanAuthor = CanAuthor;
+    type CanAuthor = pallet_cc_authorities_noting::CanAuthor<Runtime>;
     type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
-    type WeightInfo = ();
+    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -430,6 +464,9 @@ construct_runtime!(
         ParachainInfo: parachain_info = 3,
         Sudo: pallet_sudo = 4,
         Utility: pallet_utility = 5,
+        // Proxy: pallet_proxy = 6,
+        Migrations: pallet_migrations = 7,
+        MaintenanceMode: pallet_maintenance_mode = 8,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,

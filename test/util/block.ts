@@ -1,4 +1,4 @@
-import { DevTestContext } from "@moonwall/cli";
+import { DevTestContext, expect } from "@moonwall/cli";
 
 export async function jumpSessions(context: DevTestContext, count: Number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex())
@@ -73,4 +73,30 @@ export function signAndSendAndInclude(tx, account): Promise<{txHash, blockHash, 
       }
     });
   });
+}
+
+export function initializeCustomCreateBlock(context): any {
+  if (!context.hasModifiedCreateBlockThatChecksExtrinsics) {
+    const originalCreateBlock = context.createBlock;
+    // Alternative implementation of context.createBlock that checks that the extrinsics have
+    // actually been included in the created block.
+    const createBlockAndCheckExtrinsics = async (tx, opt) => {
+      if (tx === undefined) {
+        return await originalCreateBlock(tx, opt);
+      } else {
+        const res = await originalCreateBlock(tx, opt);
+        // Ensure that all the extrinsics have been included
+        const expectedTxHashes = tx.map((x) => x.hash.toString());
+        let block = await context.polkadotJs().rpc.chain.getBlock(res.block.hash);
+        const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
+        // Note, the block may include some additional extrinsics
+        expectedTxHashes.forEach((a) => {
+          expect(includedTxHashes).toContain(a);
+        });
+        return res;
+      }
+    };
+    context.createBlock = createBlockAndCheckExtrinsics;
+    context.hasModifiedCreateBlockThatChecksExtrinsics = true;
+  }
 }

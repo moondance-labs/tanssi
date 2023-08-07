@@ -15,8 +15,15 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::mock::*,
+    crate::{mock::*, Event},
     cumulus_primitives_core::ParaId,
+    frame_support::{
+        assert_ok,
+        dispatch::GetDispatchInfo,
+        inherent::{InherentData, ProvideInherent},
+        traits::UnfilteredDispatchable,
+    },
+    frame_system::RawOrigin,
     hex_literal::hex,
     parity_scale_codec::Encode,
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
@@ -26,6 +33,7 @@ use {
         traits::{BlakeTwo256, HashFor},
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    tp_traits::GetCurrentContainerChains,
 };
 
 #[test]
@@ -402,4 +410,189 @@ fn encode_proof_for_benchmarks() {
     }
 
     println!("];")
+}
+
+#[test]
+fn test_set_author() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
+            assert_ok!(AuthorNoting::set_author(
+                RuntimeOrigin::root(),
+                1001.into(),
+                14u64
+            ));
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(14u64));
+            System::assert_last_event(
+                Event::LatestAuthorChanged {
+                    para_id: 1001.into(),
+                    new_author: 14u64,
+                }
+                .into(),
+            );
+        });
+}
+
+#[test]
+#[should_panic(expected = "DidSetContainerAuthorData must be updated only once in a block")]
+fn test_on_initalize_does_not_kill_and_panics() {
+    BlockTests::new()
+        .skip_author_noting_on_initialize()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                crate::DidSetContainerAuthorData::<Test>::put(true);
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {});
+}
+
+#[test]
+fn test_header_non_decodable_does_not_insert() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id = HeaderAs::AlreadyEncoded(hex!("4321").to_vec());
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
+        });
+}
+
+#[test]
+fn test_non_aura_digest_doest_not_insert_key() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        // we inject a non-aura digest
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(
+                                [b'a', b'a', b'a', b'a'],
+                                slot.encode(),
+                            )],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
+        });
+}
+
+#[test]
+fn test_non_decodable_slot_doest_not_insert_key() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: Default::default(),
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        // we inject 1u8 slot, but inherentType is expected so it should not decode
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, 1u8.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
+        });
+}
+
+#[test]
+fn weights_assigned_to_extrinsics_are_correct() {
+    new_test_ext().execute_with(|| {
+        assert_eq!(
+            crate::Call::<Test>::set_author {
+                para_id: 1.into(),
+                new: 1u64
+            }
+            .get_dispatch_info()
+            .weight,
+            <() as crate::weights::WeightInfo>::set_author()
+        );
+
+        let sproof_builder = ParaHeaderSproofBuilder::default();
+
+        let (relay_root, relay_chain_state) = sproof_builder.into_state_root_and_proof();
+        frame_support::storage::unhashed::put(MOCK_RELAY_ROOT_KEY, &relay_root);
+
+        let mut inherent_data = InherentData::default();
+        let system_inherent_data = tp_author_noting_inherent::OwnParachainInherentData {
+            relay_storage_proof: relay_chain_state,
+        };
+        inherent_data
+            .put_data(
+                tp_author_noting_inherent::INHERENT_IDENTIFIER,
+                &system_inherent_data,
+            )
+            .expect("failed to put VFP inherent");
+        let inherent_weight = AuthorNoting::create_inherent(&inherent_data)
+            .expect("got an inherent")
+            .dispatch_bypass_filter(RawOrigin::None.into())
+            .expect("dispatch succeeded");
+
+        assert_eq!(
+            inherent_weight.actual_weight.unwrap(),
+            <() as crate::weights::WeightInfo>::set_latest_author_data(
+                <Test as crate::Config>::ContainerChains::current_container_chains().len() as u32
+            )
+        );
+    });
 }

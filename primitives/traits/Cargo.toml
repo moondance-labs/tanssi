@@ -5,7 +5,6 @@ description = "Tanssi primitive traits"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
-
 [dependencies]
 sp-std = { workspace = true }
 

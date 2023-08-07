@@ -1263,6 +1263,9 @@ dependencies = [
  "pallet-evm-precompile-sha3fips",
  "pallet-evm-precompile-simple",
  "pallet-hotfix-sufficients",
+ "pallet-maintenance-mode",
+ "pallet-migrations",
+ "pallet-root-testing",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -1359,7 +1362,6 @@ dependencies = [
 name = "container-chain-template-simple-runtime"
 version = "0.1.0"
 dependencies = [
- "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
@@ -1374,11 +1376,11 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "nimbus-primitives",
- "pallet-aura",
  "pallet-author-inherent",
- "pallet-authorship",
  "pallet-balances",
  "pallet-cc-authorities-noting",
+ "pallet-maintenance-mode",
+ "pallet-migrations",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
@@ -1918,22 +1920,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cumulus-pallet-aura-ext"
-version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-aura",
- "parity-scale-codec",
- "scale-info",
- "sp-application-crypto",
- "sp-consensus-aura",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
@@ -2252,7 +2238,6 @@ dependencies = [
 name = "dancebox-runtime"
 version = "0.1.0"
 dependencies = [
- "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
@@ -2267,18 +2252,19 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "nimbus-primitives",
- "pallet-aura",
  "pallet-author-inherent",
  "pallet-author-noting",
  "pallet-authority-assignment",
  "pallet-authority-mapping",
- "pallet-authorship",
  "pallet-balances",
  "pallet-collator-assignment",
  "pallet-collator-assignment-runtime-api",
  "pallet-collator-selection",
  "pallet-configuration",
  "pallet-initializer",
+ "pallet-maintenance-mode",
+ "pallet-migrations",
+ "pallet-proxy",
  "pallet-registrar",
  "pallet-registrar-runtime-api",
  "pallet-root-testing",
@@ -2291,6 +2277,7 @@ dependencies = [
  "polkadot-parachain",
  "polkadot-runtime-common",
  "scale-info",
+ "serde",
  "smallvec",
  "sp-api",
  "sp-application-crypto",
@@ -6093,7 +6080,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.43#064843615dff3dd4592d219cce27b5364dba1ab8"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-pallet-migrations-cleanup-tanssi#c606e9b69faa15793d223d7a1d2ea887e1a60ce0"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -6123,7 +6110,7 @@ dependencies = [
 [[package]]
 name = "nimbus-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.43#064843615dff3dd4592d219cce27b5364dba1ab8"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-pallet-migrations-cleanup-tanssi#c606e9b69faa15793d223d7a1d2ea887e1a60ce0"
 dependencies = [
  "async-trait",
  "frame-support",
@@ -6460,25 +6447,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-aura"
-version = "4.0.0-dev"
-source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.43#11f2f27ba5af2d4e8eb1f73ae0056106be5bcfb2"
-dependencies = [
- "frame-support",
- "frame-system",
- "pallet-timestamp",
- "parity-scale-codec",
- "scale-info",
- "sp-application-crypto",
- "sp-consensus-aura",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/nimbus?branch=tanssi-polkadot-v0.9.43#064843615dff3dd4592d219cce27b5364dba1ab8"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-pallet-migrations-cleanup-tanssi#c606e9b69faa15793d223d7a1d2ea887e1a60ce0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -6737,6 +6708,7 @@ dependencies = [
  "hex",
  "hex-literal 0.3.4",
  "log",
+ "nimbus-primitives",
  "parity-scale-codec",
  "polkadot-parachain",
  "polkadot-primitives",
@@ -7176,6 +7148,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-maintenance-mode"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-pallet-migrations-cleanup-tanssi#c606e9b69faa15793d223d7a1d2ea887e1a60ce0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
+ "sp-std",
+ "xcm-primitives",
+]
+
+[[package]]
 name = "pallet-membership"
 version = "4.0.0-dev"
 source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.43#11f2f27ba5af2d4e8eb1f73ae0056106be5bcfb2"
@@ -7209,6 +7197,24 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-weights",
+]
+
+[[package]]
+name = "pallet-migrations"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-pallet-migrations-cleanup-tanssi#c606e9b69faa15793d223d7a1d2ea887e1a60ce0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm-primitives",
 ]
 
 [[package]]
@@ -7458,6 +7464,7 @@ dependencies = [
 name = "pallet-registrar-runtime-api"
 version = "0.1.0"
 dependencies = [
+ "frame-support",
  "pallet-registrar",
  "parity-scale-codec",
  "scale-info",
@@ -13695,6 +13702,7 @@ dependencies = [
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
  "frame-support",
+ "futures 0.3.28",
  "hex-literal 0.3.4",
  "log",
  "parity-scale-codec",
@@ -13758,6 +13766,8 @@ dependencies = [
  "scale-info",
  "sp-api",
  "sp-consensus-aura",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
@@ -15406,6 +15416,14 @@ dependencies = [
  "sp-std",
  "sp-weights",
  "xcm",
+]
+
+[[package]]
+name = "xcm-primitives"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-pallet-migrations-cleanup-tanssi#c606e9b69faa15793d223d7a1d2ea887e1a60ce0"
+dependencies = [
+ "sp-runtime",
 ]
 
 [[package]]
