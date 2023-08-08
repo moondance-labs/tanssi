@@ -66,6 +66,7 @@ pub struct ContainerChainStuff {
     /// Async callback that enables collation on the orchestrator chain
     collate_on: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     /// Handle that stops the container chain when dropped
+    #[allow(dead_code)]
     stop_handle: StopContainerChain,
 }
 
