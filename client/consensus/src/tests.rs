@@ -17,8 +17,6 @@
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
-
-#[cfg(test)]
 use {
     crate::{
         consensus_orchestrator::{
