@@ -56,10 +56,17 @@ pub struct ContainerChainSpawner {
     pub spawn_handle: SpawnTaskHandle,
 
     // State
-    pub spawned_para_ids: Arc<Mutex<HashMap<ParaId, StopContainerChain>>>,
+    pub spawned_para_ids: Arc<Mutex<HashMap<ParaId, ContainerChainStuff>>>,
 
     // Async callback that enables collation on the orchestrator chain
     pub collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+}
+
+pub struct ContainerChainStuff {
+    /// Async callback that enables collation on the orchestrator chain
+    collate_on: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    /// Handle that stops the container chain when dropped
+    stop_handle: StopContainerChain,
 }
 
 /// Stops a container chain when dropped
@@ -70,9 +77,10 @@ pub struct StopContainerChain(exit_future::Signal);
 /// `Arc<ContainerChainSpawner>` to other threads.
 #[derive(Debug)]
 pub enum CcSpawnMsg {
-    /// Start a container chain client for this ParaId. If the ParaId is the orchestrator chain id,
-    /// start collating there.
+    /// Start a container chain client for this ParaId.
     Spawn(ParaId),
+    /// Collate on this chain. If the chain is not running already, start it.
+    CollateOn(ParaId),
     /// Stop the container chain client previously started for this ParaId. If the ParaId is the
     /// orchestrator chain id, ignore this message.
     Stop(ParaId),
@@ -80,7 +88,11 @@ pub enum CcSpawnMsg {
 
 impl ContainerChainSpawner {
     /// Try to start a new container chain. In case of error, this panics and stops the node.
-    fn spawn(&self, container_chain_para_id: ParaId) -> impl Future<Output = ()> {
+    fn spawn(
+        &self,
+        container_chain_para_id: ParaId,
+        start_collation: bool,
+    ) -> impl Future<Output = ()> {
         let ContainerChainSpawner {
             orchestrator_chain_interface,
             orchestrator_client,
@@ -173,7 +185,7 @@ impl ContainerChainSpawner {
             container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
-            let (mut container_chain_task_manager, _container_chain_client) =
+            let (mut container_chain_task_manager, _container_chain_client, collate_on) =
                 start_node_impl_container(
                     container_chain_cli_config,
                     orchestrator_client.clone(),
@@ -189,11 +201,19 @@ impl ContainerChainSpawner {
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = exit_future::signal();
+            let collate_on = collate_on.unwrap();
 
-            spawned_para_ids
-                .lock()
-                .expect("poison error")
-                .insert(container_chain_para_id, StopContainerChain(signal));
+            spawned_para_ids.lock().expect("poison error").insert(
+                container_chain_para_id,
+                ContainerChainStuff {
+                    collate_on: collate_on.clone(),
+                    stop_handle: StopContainerChain(signal),
+                },
+            );
+
+            if start_collation {
+                collate_on().await;
+            }
 
             // Add the container chain task manager as a child task to the parent task manager.
             // We want to stop the node if this task manager stops, but we also want to allow a
@@ -260,17 +280,39 @@ impl ContainerChainSpawner {
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::Spawn(para_id) => {
+                    // Spawn new container chain node
+                    self.spawn_handle.spawn(
+                        "container-chain-spawner",
+                        None,
+                        self.spawn(para_id, false),
+                    );
+                }
+                CcSpawnMsg::CollateOn(para_id) => {
                     if para_id == self.orchestrator_para_id {
                         // Restart collation on orchestrator chain
                         let f = (self.collate_on_tanssi)();
                         f.await;
                     } else {
-                        // Spawn new container chain node
-                        self.spawn_handle.spawn(
-                            "container-chain-spawner",
-                            None,
-                            self.spawn(para_id),
-                        );
+                        let collate_on = self
+                            .spawned_para_ids
+                            .lock()
+                            .expect("poison error")
+                            .get(&para_id)
+                            .map(|x| x.collate_on.clone());
+
+                        match collate_on {
+                            Some(f) => {
+                                f().await;
+                            }
+                            None => {
+                                // Spawn new container chain node and start collation
+                                self.spawn_handle.spawn(
+                                    "container-chain-spawner",
+                                    None,
+                                    self.spawn(para_id, true),
+                                );
+                            }
+                        }
                     }
                 }
                 CcSpawnMsg::Stop(para_id) => {

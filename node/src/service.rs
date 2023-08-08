@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
+
 use {
     crate::{
         cli::ContainerChainCli,
@@ -26,13 +27,14 @@ use {
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
         ParachainConsensus,
     },
+    cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
     cumulus_client_service::{
         build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
         StartCollatorParams, StartFullNodeParams,
     },
     cumulus_primitives_core::{
         relay_chain::{CollatorPair, Hash as PHash},
-        ParaId,
+        CollectCollationInfo, ParaId,
     },
     cumulus_primitives_parachain_inherent::{
         MockValidationDataInherentDataProvider, MockXcmConfig,
@@ -40,12 +42,15 @@ use {
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{opaque::Block, RuntimeApi},
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
-    futures::StreamExt,
+    futures::{channel::mpsc, StreamExt},
     nimbus_primitives::NimbusPair,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
-    sc_client_api::{AuxStore, Backend, BlockchainEvents, HeaderBackend, UsageProvider},
+    sc_client_api::{
+        AuxStore, Backend as BackendT, BlockBackend, BlockchainEvents, Finalizer, HeaderBackend,
+        UsageProvider,
+    },
     sc_consensus::{BlockImport, ImportQueue},
     sc_executor::{
         HeapAllocStrategy, NativeElseWasmExecutor, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
@@ -59,10 +64,16 @@ use {
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
-    sp_core::{traits::SpawnEssentialNamed, H256},
+    sp_core::{
+        traits::{SpawnEssentialNamed, SpawnNamed},
+        H256,
+    },
     sp_keystore::KeystorePtr,
+    sp_runtime::traits::Block as BlockT,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{
+        future::Future,
+        pin::Pin,
         str::FromStr,
         sync::{Arc, Mutex},
         time::Duration,
@@ -278,7 +289,7 @@ fn check_assigned_para_id(
     if container_chain_para_id != *initial_assigned_para_id {
         if let Some(new_para_id) = container_chain_para_id {
             // Spawn new container chain node
-            cc_spawn_tx.send(CcSpawnMsg::Spawn(new_para_id))?;
+            cc_spawn_tx.send(CcSpawnMsg::CollateOn(new_para_id))?;
         }
 
         if let Some(prev_para_id) = *initial_assigned_para_id {
@@ -673,7 +684,11 @@ pub async fn start_node_impl_container(
     para_id: ParaId,
     orchestrator_para_id: ParaId,
     collator: bool,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<(
+    TaskManager,
+    Arc<ParachainClient>,
+    Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
+)> {
     let parachain_config = prepare_node_config(parachain_config);
     let block_import;
     let mut telemetry;
@@ -772,6 +787,9 @@ pub async fn start_node_impl_container(
     let overseer_handle = relay_chain_interface
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+    let mut start_collation: Option<
+        Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    > = None;
 
     if collator {
         let parachain_consensus = build_consensus_container(
@@ -808,7 +826,32 @@ pub async fn start_node_impl_container(
             sync_service,
         };
 
-        start_collator(params).await?;
+        // Need to deconstruct it because `StartCollatorParams` does not implement Clone
+        let cumulus_client_collator::StartCollatorParams {
+            para_id,
+            runtime_api,
+            block_status,
+            announce_block,
+            overseer_handle,
+            spawner,
+            key,
+            parachain_consensus,
+        } = partial_start_collator(params)?;
+
+        let collate_closure = move || async move {
+            cumulus_client_collator::start_collator(cumulus_client_collator::StartCollatorParams {
+                para_id,
+                runtime_api,
+                block_status,
+                announce_block,
+                overseer_handle,
+                spawner,
+                key,
+                parachain_consensus,
+            })
+            .await
+        };
+        start_collation = Some(Arc::new(move || Box::pin((collate_closure.clone())())));
     } else {
         let params = StartFullNodeParams {
             client: client.clone(),
@@ -827,7 +870,103 @@ pub async fn start_node_impl_container(
 
     start_network.start_network();
 
-    Ok((task_manager, client))
+    Ok((task_manager, client, start_collation))
+}
+
+// Copy of `cumulus_client_service::start_collator`, that doesn't fully start the collator: it is
+// missing the final call to `cumulus_client_collator::start_collator`.
+// Returns the params of the call to `cumulus_client_collator::start_collator`.
+pub fn partial_start_collator<'a, Block, BS, Client, Backend, RCInterface, Spawner>(
+    StartCollatorParams {
+        block_status,
+        client,
+        announce_block,
+        spawner,
+        para_id,
+        task_manager,
+        relay_chain_interface,
+        parachain_consensus,
+        import_queue,
+        collator_key,
+        relay_chain_slot_duration,
+        recovery_handle,
+        sync_service,
+    }: StartCollatorParams<'a, Block, BS, Client, RCInterface, Spawner>,
+) -> sc_service::error::Result<
+    cumulus_client_collator::StartCollatorParams<Block, Client, BS, Spawner>,
+>
+where
+    Block: BlockT,
+    BS: BlockBackend<Block> + Send + Sync + 'static,
+    Client: Finalizer<Block, Backend>
+        + UsageProvider<Block>
+        + HeaderBackend<Block>
+        + Send
+        + Sync
+        + BlockBackend<Block>
+        + BlockchainEvents<Block>
+        + ProvideRuntimeApi<Block>
+        + 'static,
+    Client::Api: CollectCollationInfo<Block>,
+    for<'b> &'b Client: BlockImport<Block>,
+    Spawner: SpawnNamed + Clone + Send + Sync + 'static,
+    RCInterface: RelayChainInterface + Clone + 'static,
+    Backend: BackendT<Block> + 'static,
+{
+    // Given the sporadic nature of the explicit recovery operation and the
+    // possibility to retry infinite times this value is more than enough.
+    // In practice here we expect no more than one queued messages.
+    const RECOVERY_CHAN_SIZE: usize = 8;
+
+    let (recovery_chan_tx, recovery_chan_rx) = mpsc::channel(RECOVERY_CHAN_SIZE);
+
+    let consensus = cumulus_client_consensus_common::run_parachain_consensus(
+        para_id,
+        client.clone(),
+        relay_chain_interface.clone(),
+        announce_block.clone(),
+        Some(recovery_chan_tx),
+    );
+
+    task_manager
+        .spawn_essential_handle()
+        .spawn_blocking("cumulus-consensus", None, consensus);
+
+    let pov_recovery = PoVRecovery::new(
+        recovery_handle,
+        // We want that collators wait at maximum the relay chain slot duration before starting
+        // to recover blocks. Additionally, we wait at least half the slot time to give the
+        // relay chain the chance to increase availability.
+        RecoveryDelayRange {
+            min: relay_chain_slot_duration / 2,
+            max: relay_chain_slot_duration,
+        },
+        client.clone(),
+        import_queue,
+        relay_chain_interface.clone(),
+        para_id,
+        recovery_chan_rx,
+        sync_service,
+    );
+
+    task_manager
+        .spawn_essential_handle()
+        .spawn("cumulus-pov-recovery", None, pov_recovery.run());
+
+    let overseer_handle = relay_chain_interface
+        .overseer_handle()
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
+    Ok(cumulus_client_collator::StartCollatorParams {
+        runtime_api: client,
+        block_status,
+        announce_block,
+        overseer_handle,
+        spawner,
+        para_id,
+        key: collator_key,
+        parachain_consensus,
+    })
 }
 
 /// Build the import queue for the parachain runtime (manual seal).
