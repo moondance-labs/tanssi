@@ -291,72 +291,7 @@ impl ContainerChainSpawner {
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
-                    let mut running_chains_before = HashSet::new();
-                    let mut running_chains_after = HashSet::new();
-                    let mut call_collate_on = None;
-
-                    // State mutex cannot be used in the same scope as `.await`, so start a new scope here
-                    {
-                        let mut state = self.state.lock().expect("poison error");
-
-                        if let Some(para_id) = state.assigned_para_id {
-                            running_chains_before.insert(para_id);
-                        }
-                        if let Some(para_id) = state.next_assigned_para_id {
-                            running_chains_before.insert(para_id);
-                        }
-                        running_chains_before.remove(&self.orchestrator_para_id);
-
-                        if let Some(para_id) = current {
-                            running_chains_after.insert(para_id);
-                        }
-                        if let Some(para_id) = next {
-                            running_chains_after.insert(para_id);
-                        }
-                        running_chains_after.remove(&self.orchestrator_para_id);
-
-                        let already_collating_there = state.assigned_para_id == current;
-
-                        if !already_collating_there {
-                            // If the assigned container chain was already running but not collating, we need to call collate_on
-                            if let Some(para_id) = current {
-                                // Check if we get assigned to orchestrator chain
-                                if para_id == self.orchestrator_para_id {
-                                    call_collate_on = Some(self.collate_on_tanssi.clone());
-                                } else {
-                                    // When we get assigned to a different container chain, only need to call collate_on if it was already
-                                    // running before
-                                    if running_chains_before.contains(&para_id) {
-                                        let c =
-                                            state.spawned_container_chains.get(&para_id).unwrap();
-                                        call_collate_on = Some(c.collate_on.clone());
-                                    }
-                                }
-                            }
-                        }
-
-                        state.assigned_para_id = current;
-                        state.next_assigned_para_id = next;
-                    }
-
-                    // Call collate_on, to start collation on a container chain that was already running before
-                    if let Some(f) = call_collate_on {
-                        f().await;
-                    }
-
-                    // Stop all container chains we are no longer assigned
-                    for para_id in running_chains_before.difference(&running_chains_after) {
-                        self.stop(*para_id);
-                    }
-
-                    // Start all new container chains (usually at most 1)
-                    for para_id in running_chains_after.difference(&running_chains_before) {
-                        // Edge case: when starting the node it may be assigned to a container chain, so we need to
-                        // start a container chain already collating.
-                        // This should only happen the first time this message is received.
-                        let start_collation = Some(*para_id) == current;
-                        self.spawn(*para_id, start_collation).await;
-                    }
+                    self.handle_update_assignment(current, next).await;
                 }
             }
         }
@@ -365,5 +300,74 @@ impl ContainerChainSpawner {
         // essential task we don't want it to stop. So await a future that never completes.
         // This should only happen when starting a full node.
         std::future::pending().await
+    }
+
+    /// Handle `CcSpawnMsg::UpdateAssignment`
+    async fn handle_update_assignment(&self, current: Option<ParaId>, next: Option<ParaId>) {
+        let mut running_chains_before = HashSet::new();
+        let mut running_chains_after = HashSet::new();
+        let mut call_collate_on = None;
+
+        // State mutex cannot be used in the same scope as `.await`, so start a new scope here
+        {
+            let mut state = self.state.lock().expect("poison error");
+
+            if let Some(para_id) = state.assigned_para_id {
+                running_chains_before.insert(para_id);
+            }
+            if let Some(para_id) = state.next_assigned_para_id {
+                running_chains_before.insert(para_id);
+            }
+            running_chains_before.remove(&self.orchestrator_para_id);
+
+            if let Some(para_id) = current {
+                running_chains_after.insert(para_id);
+            }
+            if let Some(para_id) = next {
+                running_chains_after.insert(para_id);
+            }
+            running_chains_after.remove(&self.orchestrator_para_id);
+
+            let already_collating_there = state.assigned_para_id == current;
+
+            if !already_collating_there {
+                // If the assigned container chain was already running but not collating, we need to call collate_on
+                if let Some(para_id) = current {
+                    // Check if we get assigned to orchestrator chain
+                    if para_id == self.orchestrator_para_id {
+                        call_collate_on = Some(self.collate_on_tanssi.clone());
+                    } else {
+                        // When we get assigned to a different container chain, only need to call collate_on if it was already
+                        // running before
+                        if running_chains_before.contains(&para_id) {
+                            let c = state.spawned_container_chains.get(&para_id).unwrap();
+                            call_collate_on = Some(c.collate_on.clone());
+                        }
+                    }
+                }
+            }
+
+            state.assigned_para_id = current;
+            state.next_assigned_para_id = next;
+        }
+
+        // Call collate_on, to start collation on a container chain that was already running before
+        if let Some(f) = call_collate_on {
+            f().await;
+        }
+
+        // Stop all container chains we are no longer assigned
+        for para_id in running_chains_before.difference(&running_chains_after) {
+            self.stop(*para_id);
+        }
+
+        // Start all new container chains (usually at most 1)
+        for para_id in running_chains_after.difference(&running_chains_before) {
+            // Edge case: when starting the node it may be assigned to a container chain, so we need to
+            // start a container chain already collating.
+            // This should only happen the first time this message is received.
+            let start_collation = Some(*para_id) == current;
+            self.spawn(*para_id, start_collation).await;
+        }
     }
 }

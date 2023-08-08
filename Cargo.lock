@@ -883,8 +883,11 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
+ "futures 0.3.28",
  "nimbus-primitives",
  "parity-scale-codec",
+ "polkadot-overseer",
+ "sc-client-api",
  "scale-info",
  "sp-consensus-aura",
  "sp-core",
@@ -894,9 +897,12 @@ dependencies = [
  "sp-state-machine",
  "sp-std",
  "sp-trie",
+ "substrate-test-runtime",
+ "substrate-test-runtime-client",
  "tc-consensus",
  "tc-orchestrator-chain-interface",
  "test-relay-sproof-builder",
+ "tokio",
  "tp-collator-assignment",
  "tp-core",
  "tracing",
@@ -11088,6 +11094,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "sc-network-test"
+version = "0.8.0"
+source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.43#11f2f27ba5af2d4e8eb1f73ae0056106be5bcfb2"
+dependencies = [
+ "async-trait",
+ "futures 0.3.28",
+ "futures-timer",
+ "libp2p",
+ "log",
+ "parking_lot 0.12.1",
+ "rand 0.8.5",
+ "sc-block-builder",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-network",
+ "sc-network-common",
+ "sc-network-light",
+ "sc-network-sync",
+ "sc-service",
+ "sc-utils",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-consensus-babe",
+ "sp-core",
+ "sp-runtime",
+ "sp-tracing",
+ "substrate-test-runtime",
+ "substrate-test-runtime-client",
+ "tokio",
+]
+
+[[package]]
 name = "sc-network-transactions"
 version = "0.10.0-dev"
 source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.43#11f2f27ba5af2d4e8eb1f73ae0056106be5bcfb2"
@@ -13088,6 +13126,100 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-test-client"
+version = "2.0.1"
+source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.43#11f2f27ba5af2d4e8eb1f73ae0056106be5bcfb2"
+dependencies = [
+ "array-bytes 4.2.0",
+ "async-trait",
+ "futures 0.3.28",
+ "parity-scale-codec",
+ "sc-client-api",
+ "sc-client-db",
+ "sc-consensus",
+ "sc-executor",
+ "sc-offchain",
+ "sc-service",
+ "serde",
+ "serde_json",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-keyring",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-state-machine",
+]
+
+[[package]]
+name = "substrate-test-runtime"
+version = "2.0.0"
+source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.43#11f2f27ba5af2d4e8eb1f73ae0056106be5bcfb2"
+dependencies = [
+ "array-bytes 6.1.0",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-rpc-runtime-api",
+ "log",
+ "memory-db",
+ "pallet-babe",
+ "pallet-balances",
+ "pallet-beefy-mmr",
+ "pallet-root-testing",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "sc-service",
+ "scale-info",
+ "serde",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-consensus-grandpa",
+ "sp-core",
+ "sp-debug-derive",
+ "sp-externalities",
+ "sp-inherents",
+ "sp-io",
+ "sp-keyring",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-runtime-interface",
+ "sp-session",
+ "sp-state-machine",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-version",
+ "substrate-wasm-builder",
+ "trie-db",
+]
+
+[[package]]
+name = "substrate-test-runtime-client"
+version = "2.0.0"
+source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.43#11f2f27ba5af2d4e8eb1f73ae0056106be5bcfb2"
+dependencies = [
+ "futures 0.3.28",
+ "parity-scale-codec",
+ "sc-block-builder",
+ "sc-chain-spec",
+ "sc-client-api",
+ "sc-consensus",
+ "sp-api",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-core",
+ "sp-runtime",
+ "substrate-test-client",
+ "substrate-test-runtime",
+]
+
+[[package]]
 name = "substrate-wasm-builder"
 version = "5.0.0-dev"
 source = "git+https://github.com/moondance-labs/substrate?branch=tanssi-polkadot-v0.9.43#11f2f27ba5af2d4e8eb1f73ae0056106be5bcfb2"
@@ -13274,15 +13406,20 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "futures 0.3.28",
+ "futures-timer",
  "log",
  "nimbus-consensus",
  "nimbus-primitives",
  "parity-scale-codec",
+ "parking_lot 0.12.1",
+ "sc-block-builder",
  "sc-client-api",
  "sc-consensus",
  "sc-consensus-aura",
  "sc-consensus-manual-seal",
  "sc-consensus-slots",
+ "sc-keystore",
+ "sc-network-test",
  "sc-telemetry",
  "sp-api",
  "sp-application-crypto",
@@ -13293,10 +13430,14 @@ dependencies = [
  "sp-consensus-slots",
  "sp-core",
  "sp-inherents",
+ "sp-keyring",
  "sp-keystore",
  "sp-runtime",
  "sp-timestamp",
  "substrate-prometheus-endpoint",
+ "substrate-test-runtime-client",
+ "tempfile",
+ "tokio",
  "tp-consensus",
  "tracing",
 ]
