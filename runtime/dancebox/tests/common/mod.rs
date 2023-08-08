@@ -34,6 +34,12 @@ use {
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
+mod constants;
+pub use constants::*;
+
+mod xcm_mod;
+pub use xcm_mod::*;
+
 use dancebox_runtime::MaxLengthTokenSymbol;
 pub use dancebox_runtime::{
     AccountId, Balance, Balances, Initializer, ParachainInfo, Registrar, Runtime, RuntimeCall,
@@ -128,7 +134,7 @@ impl ExtBuilder {
         self
     }
 
-    pub fn build(self) -> sp_io::TestExternalities {
+    pub fn build_storage(self) -> sp_core::storage::Storage {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();
@@ -199,7 +205,12 @@ impl ExtBuilder {
             )
             .unwrap();
         }
+        t
+    }
 
+    pub fn build(self) -> sp_io::TestExternalities {
+        
+        let t = self.build_storage();
         let mut ext = sp_io::TestExternalities::new(t);
 
         ext.execute_with(|| {
@@ -208,11 +219,6 @@ impl ExtBuilder {
         ext
     }
 }
-
-pub const ALICE: [u8; 32] = [4u8; 32];
-pub const BOB: [u8; 32] = [5u8; 32];
-pub const CHARLIE: [u8; 32] = [6u8; 32];
-pub const DAVE: [u8; 32] = [7u8; 32];
 
 pub fn root_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::root()
@@ -305,3 +311,8 @@ pub fn current_author() -> AccountId {
         .expect("there is a mapping for the current author")
         .clone()
 }
+
+pub const ALICE: [u8; 32] = [4u8; 32];
+pub const BOB: [u8; 32] = [5u8; 32];
+pub const CHARLIE: [u8; 32] = [6u8; 32];
+pub const DAVE: [u8; 32] = [7u8; 32];

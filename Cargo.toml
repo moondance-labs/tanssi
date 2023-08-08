@@ -65,9 +65,11 @@ frame-system-benchmarking = { git = "https://github.com/moondance-labs/substrate
 frame-system-rpc-runtime-api = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 frame-try-runtime = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-balances = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+pallet-im-online = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-proxy = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-root-testing = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-session = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+pallet-staking = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-sudo = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-timestamp = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
@@ -79,6 +81,7 @@ sp-application-crypto = { git = "https://github.com/moondance-labs/substrate", b
 sp-block-builder = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 sp-consensus = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 sp-consensus-aura = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+sp-consensus-babe = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 sp-consensus-slots = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 sp-core = { git = "https://github.com/moondance-labs/substrate.git", branch = "tanssi-polkadot-v0.9.43", version = "7.0.0", default-features = false }
 sp-inherents = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
@@ -102,6 +105,7 @@ sc-cli = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi
 sc-client-api = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-consensus = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-consensus-aura = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
+sc-consensus-grandpa = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-consensus-manual-seal = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-consensus-slots = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sc-executor = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
@@ -130,10 +134,12 @@ try-runtime-cli = { git = "https://github.com/moondance-labs/substrate", branch 
 pallet-xcm = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 polkadot-parachain = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 polkadot-runtime-common = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+polkadot-runtime-parachains = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 xcm = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 xcm-executor = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 xcm-builder = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
-
+westend-runtime = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+westend-runtime-constants = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }
@@ -162,6 +168,7 @@ cumulus-client-network = { git = "https://github.com/moondance-labs/cumulus", br
 cumulus-client-service = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-primitives-parachain-inherent = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-relay-chain-interface = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+xcm-emulator = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 
 # Frontier (wasm)
 fp-account = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v0.9.43", default-features = false }

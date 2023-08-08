@@ -94,6 +94,16 @@ frame-try-runtime = { workspace = true, optional = true }
 [dev-dependencies]
 sp-io = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
+westend-runtime = { workspace = true, features = ["std"] }
+westend-runtime-constants = { workspace = true }
+xcm-emulator = { workspace = true }
+pallet-staking =  { workspace = true, features = ["std"] }
+sp-consensus-babe =  { workspace = true, features = ["std"] }
+pallet-im-online =  { workspace = true, features = ["std"] }
+sc-consensus-grandpa = { workspace = true }
+polkadot-runtime-parachains = { workspace = true, features = ["std"] }
+polkadot-service = { workspace = true }
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
