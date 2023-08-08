@@ -66,12 +66,20 @@ tp-consensus = { workspace = true }
 tp-traits = { workspace = true }
 
 # Polkadot
+pallet-xcm = { workspace = true }
 polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
 
 # Cumulus
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
+cumulus-pallet-dmp-queue = { workspace = true }
+cumulus-pallet-xcm = { workspace = true }
+cumulus-pallet-xcmp-queue = { workspace = true }
+
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
 pallet-collator-selection = { workspace = true }
@@ -93,7 +101,10 @@ default = [
 	"std",
 ]
 std = [
+	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-xcm/std",
+	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
 	"frame-executive/std",
@@ -119,6 +130,7 @@ std = [
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-utility/std",
+	"pallet-xcm/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain/std",
@@ -140,6 +152,9 @@ std = [
 	"tp-author-noting-inherent/std",
 	"tp-consensus/std",
 	"tp-traits/std",
+	"xcm/std",
+	"xcm-builder/std",
+	"xcm-executor/std"
 ]
 
 runtime-benchmarks = [

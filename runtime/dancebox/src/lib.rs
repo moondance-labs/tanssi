@@ -22,6 +22,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+pub mod xcm_config;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -741,6 +743,12 @@ construct_runtime!(
         Session: pallet_session = 31,
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
+
+        //XCM
+        XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 50,
+        CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
+        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
+        PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config} = 53,
 
         RootTesting: pallet_root_testing = 100,
     }

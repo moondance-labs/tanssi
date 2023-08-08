@@ -1920,6 +1920,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "cumulus-pallet-dmp-queue"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+]
+
+[[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
@@ -1971,6 +1988,42 @@ dependencies = [
  "parity-scale-codec",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "cumulus-pallet-xcm"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+]
+
+[[package]]
+name = "cumulus-pallet-xcmp-queue"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "polkadot-runtime-common",
+ "rand_chacha 0.3.1",
+ "scale-info",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+ "xcm-executor",
 ]
 
 [[package]]
@@ -2238,8 +2291,11 @@ dependencies = [
 name = "dancebox-runtime"
 version = "0.1.0"
 dependencies = [
+ "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
+ "cumulus-pallet-xcm",
+ "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
  "frame-benchmarking",
@@ -2272,6 +2328,7 @@ dependencies = [
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-utility",
+ "pallet-xcm",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
@@ -2299,6 +2356,9 @@ dependencies = [
  "tp-consensus",
  "tp-core",
  "tp-traits",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
 ]
 
 [[package]]
