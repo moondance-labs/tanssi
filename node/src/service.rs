@@ -277,7 +277,7 @@ fn check_assigned_para_id(
     let res = tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
         client_set_aside_for_cidp.as_ref(),
         &block_hash,
-        sync_keystore,
+        sync_keystore.clone(),
     );
     let container_chain_para_id = res.map(|x| x.1);
     let mut initial_assigned_para_id = initial_assigned_para_id.lock().expect("poison error");
@@ -298,6 +298,21 @@ fn check_assigned_para_id(
         }
 
         *initial_assigned_para_id = container_chain_para_id;
+    }
+
+    // Check future assignment
+    let res2 = tc_consensus::first_eligible_key_next_session::<Block, ParachainClient, NimbusPair>(
+        client_set_aside_for_cidp.as_ref(),
+        &block_hash,
+        sync_keystore,
+    );
+
+    // If future assignment is different from current, start a container chain to allow it to sync in time
+    let future_container_chain_para_id = res2.map(|x| x.1);
+    if let Some(para_id) = future_container_chain_para_id {
+        if Some(para_id) != container_chain_para_id {
+            cc_spawn_tx.send(CcSpawnMsg::Spawn(para_id))?;
+        }
     }
 
     Ok(())

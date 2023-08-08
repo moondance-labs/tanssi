@@ -161,3 +161,59 @@ where
         }
     })
 }
+
+/// Grab the first eligible nimbus key from the keystore
+/// If multiple keys are eligible this function still only returns one
+/// and makes no guarantees which one as that depends on the keystore's iterator behavior.
+/// This is the standard way of determining which key to author with.
+/// It also returns its ParaId assignment
+pub fn first_eligible_key_next_session<B: BlockT, C, P>(
+    client: &C,
+    parent_hash: &B::Hash,
+    keystore: KeystorePtr,
+) -> Option<(AuthorityId<P>, ParaId)>
+where
+    C: ProvideRuntimeApi<B>,
+    C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    P: Pair + Send + Sync,
+    P::Public: AppPublic + Hash + Member + Encode + Decode,
+    P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
+{
+    // Get all the available keys
+    let available_keys = Keystore::keys(&*keystore, NIMBUS_KEY_ID).ok()?;
+
+    // Print a more helpful message than "not eligible" when there are no keys at all.
+    if available_keys.is_empty() {
+        log::warn!(
+            target: LOG_TARGET,
+            "🔏 No Nimbus keys available. We will not be able to author."
+        );
+        return None;
+    }
+
+    let runtime_api = client.runtime_api();
+
+    // Iterate keys until we find an eligible one, or run out of candidates.
+    // If we are skipping prediction, then we author with the first key we find.
+    // prediction skipping only really makes sense when there is a single key in the keystore.
+    available_keys.into_iter().find_map(|type_public_pair| {
+        if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
+            // If we dont find any parachain that we are assigned to, return none
+
+            if let Ok(Some(para_id)) =
+                runtime_api.check_future_para_id_assignment(*parent_hash, nimbus_id.clone().into())
+            {
+                log::debug!("Para id found for assignment {:?}", para_id);
+
+                Some((nimbus_id.into(), para_id))
+            } else {
+                log::debug!("No Para id found for assignment {:?}", nimbus_id);
+
+                None
+            }
+        } else {
+            None
+        }
+    })
+}
