@@ -64,12 +64,12 @@ pub struct ContainerChainSpawner {
 
 #[derive(Default)]
 pub struct ContainerChainSpawnerState {
-    spawned_container_chains: HashMap<ParaId, ContainerChainStuff>,
+    spawned_container_chains: HashMap<ParaId, ContainerChainState>,
     assigned_para_id: Option<ParaId>,
     next_assigned_para_id: Option<ParaId>,
 }
 
-pub struct ContainerChainStuff {
+pub struct ContainerChainState {
     /// Async callback that enables collation on the orchestrator chain
     collate_on: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     /// Handle that stops the container chain when dropped
@@ -215,7 +215,7 @@ impl ContainerChainSpawner {
                 .spawned_container_chains
                 .insert(
                     container_chain_para_id,
-                    ContainerChainStuff {
+                    ContainerChainState {
                         collate_on: collate_on.clone(),
                         stop_handle: StopContainerChain(signal),
                     },
