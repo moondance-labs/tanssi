@@ -2080,6 +2080,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "cumulus-primitives-utility"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "log",
+ "parity-scale-codec",
+ "polkadot-runtime-common",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
+]
+
+[[package]]
 name = "cumulus-relay-chain-inprocess-interface"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
@@ -2298,6 +2316,7 @@ dependencies = [
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",

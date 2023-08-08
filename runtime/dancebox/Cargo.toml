@@ -82,6 +82,7 @@ cumulus-pallet-xcmp-queue = { workspace = true }
 
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
+cumulus-primitives-utility = { workspace = true }
 pallet-collator-selection = { workspace = true }
 parachain-info = { workspace = true }
 
@@ -107,6 +108,7 @@ std = [
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
+	"cumulus-primitives-utility/std",
 	"frame-executive/std",
 	"frame-support/std",
 	"frame-system-rpc-runtime-api/std",
