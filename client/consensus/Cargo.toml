@@ -45,3 +45,14 @@ futures = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 tracing = { workspace = true }
+
+[dev-dependencies]
+sc-network-test = { workspace = true }
+parking_lot = { workspace = true }
+sc-block-builder = { workspace = true }
+sp-keyring = { workspace = true }
+sc-keystore = { workspace = true }
+substrate-test-runtime-client = { workspace = true }
+tokio = { workspace = true }
+tempfile = { workspace = true }
+futures-timer = { workspace = true }
