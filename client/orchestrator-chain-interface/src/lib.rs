@@ -60,6 +60,12 @@ impl<T: std::error::Error + Send + Sync + 'static> From<Box<T>> for Orchestrator
     }
 }
 
+impl From<Box<dyn sp_state_machine::Error>> for OrchestratorChainError {
+    fn from(r: Box<dyn sp_state_machine::Error>) -> Self {
+        OrchestratorChainError::StateMachineError(r)
+    }
+}
+
 // TODO: proper errors
 pub type OrchestratorChainResult<T> = Result<T, OrchestratorChainError>;
 
