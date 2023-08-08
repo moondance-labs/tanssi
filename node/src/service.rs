@@ -71,13 +71,7 @@ use {
     sp_keystore::KeystorePtr,
     sp_runtime::traits::Block as BlockT,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{
-        future::Future,
-        pin::Pin,
-        str::FromStr,
-        sync::{Arc, Mutex},
-        time::Duration,
-    },
+    std::{future::Future, pin::Pin, str::FromStr, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
     tc_orchestrator_chain_interface::{
@@ -234,20 +228,17 @@ pub fn build_check_assigned_para_id(
 ) {
     // Subscribe to new blocks in order to react to para id assignment
     let mut import_notifications = client.import_notification_stream();
-    let initial_assigned_para_id = Arc::new(Mutex::new(None));
 
     let check_assigned_para_id_task = async move {
         while let Some(msg) = import_notifications.next().await {
             let block_hash = msg.hash;
             let client_set_aside_for_cidp = client.clone();
             let sync_keystore = sync_keystore.clone();
-            let initial_assigned_para_id = initial_assigned_para_id.clone();
             let cc_spawn_tx = cc_spawn_tx.clone();
 
             check_assigned_para_id(
                 cc_spawn_tx,
                 sync_keystore,
-                initial_assigned_para_id,
                 client_set_aside_for_cidp,
                 block_hash,
             )
@@ -270,50 +261,29 @@ pub fn build_check_assigned_para_id(
 fn check_assigned_para_id(
     cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
     sync_keystore: KeystorePtr,
-    initial_assigned_para_id: Arc<Mutex<Option<ParaId>>>,
     client_set_aside_for_cidp: Arc<ParachainClient>,
     block_hash: H256,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Check current assignment
     let res = tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
         client_set_aside_for_cidp.as_ref(),
         &block_hash,
         sync_keystore.clone(),
     );
     let container_chain_para_id = res.map(|x| x.1);
-    let mut initial_assigned_para_id = initial_assigned_para_id.lock().expect("poison error");
-    log::info!(
-        "ContainerChain assignment: old {:?} new {:?}",
-        initial_assigned_para_id,
-        container_chain_para_id
-    );
-    if container_chain_para_id != *initial_assigned_para_id {
-        if let Some(new_para_id) = container_chain_para_id {
-            // Spawn new container chain node
-            cc_spawn_tx.send(CcSpawnMsg::CollateOn(new_para_id))?;
-        }
 
-        if let Some(prev_para_id) = *initial_assigned_para_id {
-            // Stop old container chain node
-            cc_spawn_tx.send(CcSpawnMsg::Stop(prev_para_id))?;
-        }
-
-        *initial_assigned_para_id = container_chain_para_id;
-    }
-
-    // Check future assignment
+    // Check assignment in the next session
     let res2 = tc_consensus::first_eligible_key_next_session::<Block, ParachainClient, NimbusPair>(
         client_set_aside_for_cidp.as_ref(),
         &block_hash,
         sync_keystore,
     );
-
-    // If future assignment is different from current, start a container chain to allow it to sync in time
     let future_container_chain_para_id = res2.map(|x| x.1);
-    if let Some(para_id) = future_container_chain_para_id {
-        if Some(para_id) != container_chain_para_id {
-            cc_spawn_tx.send(CcSpawnMsg::Spawn(para_id))?;
-        }
-    }
+
+    cc_spawn_tx.send(CcSpawnMsg::UpdateAssignment {
+        current: container_chain_para_id,
+        next: future_container_chain_para_id,
+    })?;
 
     Ok(())
 }
@@ -643,7 +613,10 @@ async fn start_node_impl(
             if let Some(container_chain_para_id) = container_chain_cli.base.para_id {
                 // Spawn new container chain node
                 cc_spawn_tx
-                    .send(CcSpawnMsg::Spawn(container_chain_para_id.into()))
+                    .send(CcSpawnMsg::UpdateAssignment {
+                        current: Some(container_chain_para_id.into()),
+                        next: Some(container_chain_para_id.into()),
+                    })
                     .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
             }
         }
@@ -664,7 +637,7 @@ async fn start_node_impl(
             orchestrator_para_id: para_id,
             validator,
             spawn_handle,
-            spawned_para_ids: Default::default(),
+            state: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
 
@@ -854,17 +827,32 @@ pub async fn start_node_impl_container(
         } = partial_start_collator(params)?;
 
         let collate_closure = move || async move {
-            cumulus_client_collator::start_collator(cumulus_client_collator::StartCollatorParams {
+            // Hack to fix logs, if this future is awaited by the ContainerChainSpawner thread,
+            // the logs will say "Orchestrator" instead of "Container-2000".
+            // Wrapping the future in this function fixes that.
+            #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
+            async fn wrap<F, O>(para_id: ParaId, f: F) -> O
+            where
+                F: Future<Output = O>,
+            {
+                f.await
+            }
+            wrap(
                 para_id,
-                runtime_api,
-                block_status,
-                announce_block,
-                overseer_handle,
-                spawner,
-                key,
-                parachain_consensus,
-            })
-            .await
+                cumulus_client_collator::start_collator(
+                    cumulus_client_collator::StartCollatorParams {
+                        para_id,
+                        runtime_api,
+                        block_status,
+                        announce_block,
+                        overseer_handle,
+                        spawner,
+                        key,
+                        parachain_consensus,
+                    },
+                ),
+            )
+            .await;
         };
         start_collation = Some(Arc::new(move || Box::pin((collate_closure.clone())())));
     } else {

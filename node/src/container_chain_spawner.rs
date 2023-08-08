@@ -28,7 +28,7 @@ use {
     sp_api::ProvideRuntimeApi,
     sp_keystore::KeystorePtr,
     std::{
-        collections::HashMap,
+        collections::{HashMap, HashSet},
         future::Future,
         pin::Pin,
         sync::{Arc, Mutex},
@@ -56,10 +56,17 @@ pub struct ContainerChainSpawner {
     pub spawn_handle: SpawnTaskHandle,
 
     // State
-    pub spawned_para_ids: Arc<Mutex<HashMap<ParaId, ContainerChainStuff>>>,
+    pub state: Arc<Mutex<ContainerChainSpawnerState>>,
 
     // Async callback that enables collation on the orchestrator chain
     pub collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+}
+
+#[derive(Default)]
+pub struct ContainerChainSpawnerState {
+    spawned_container_chains: HashMap<ParaId, ContainerChainStuff>,
+    assigned_para_id: Option<ParaId>,
+    next_assigned_para_id: Option<ParaId>,
 }
 
 pub struct ContainerChainStuff {
@@ -78,13 +85,11 @@ pub struct StopContainerChain(exit_future::Signal);
 /// `Arc<ContainerChainSpawner>` to other threads.
 #[derive(Debug)]
 pub enum CcSpawnMsg {
-    /// Start a container chain client for this ParaId.
-    Spawn(ParaId),
-    /// Collate on this chain. If the chain is not running already, start it.
-    CollateOn(ParaId),
-    /// Stop the container chain client previously started for this ParaId. If the ParaId is the
-    /// orchestrator chain id, ignore this message.
-    Stop(ParaId),
+    /// Update container chain assignment
+    UpdateAssignment {
+        current: Option<ParaId>,
+        next: Option<ParaId>,
+    },
 }
 
 impl ContainerChainSpawner {
@@ -107,7 +112,7 @@ impl ContainerChainSpawner {
             orchestrator_para_id,
             validator,
             spawn_handle,
-            spawned_para_ids,
+            state,
             collate_on_tanssi: _,
         } = self.clone();
 
@@ -204,13 +209,17 @@ impl ContainerChainSpawner {
             let (signal, on_exit) = exit_future::signal();
             let collate_on = collate_on.unwrap();
 
-            spawned_para_ids.lock().expect("poison error").insert(
-                container_chain_para_id,
-                ContainerChainStuff {
-                    collate_on: collate_on.clone(),
-                    stop_handle: StopContainerChain(signal),
-                },
-            );
+            state
+                .lock()
+                .expect("poison error")
+                .spawned_container_chains
+                .insert(
+                    container_chain_para_id,
+                    ContainerChainStuff {
+                        collate_on: collate_on.clone(),
+                        stop_handle: StopContainerChain(signal),
+                    },
+                );
 
             if start_collation {
                 collate_on().await;
@@ -258,9 +267,10 @@ impl ContainerChainSpawner {
     /// Stop a container chain. Prints a warning if the container chain was not running.
     fn stop(&self, container_chain_para_id: ParaId) {
         let stop_handle = self
-            .spawned_para_ids
+            .state
             .lock()
             .expect("poison error")
+            .spawned_container_chains
             .remove(&container_chain_para_id);
 
         match stop_handle {
@@ -280,48 +290,72 @@ impl ContainerChainSpawner {
     pub async fn rx_loop(self, mut rx: UnboundedReceiver<CcSpawnMsg>) {
         while let Some(msg) = rx.recv().await {
             match msg {
-                CcSpawnMsg::Spawn(para_id) => {
-                    // Spawn new container chain node
-                    self.spawn_handle.spawn(
-                        "container-chain-spawner",
-                        None,
-                        self.spawn(para_id, false),
-                    );
-                }
-                CcSpawnMsg::CollateOn(para_id) => {
-                    if para_id == self.orchestrator_para_id {
-                        // Restart collation on orchestrator chain
-                        let f = (self.collate_on_tanssi)();
-                        f.await;
-                    } else {
-                        let collate_on = self
-                            .spawned_para_ids
-                            .lock()
-                            .expect("poison error")
-                            .get(&para_id)
-                            .map(|x| x.collate_on.clone());
+                CcSpawnMsg::UpdateAssignment { current, next } => {
+                    let mut running_chains_before = HashSet::new();
+                    let mut running_chains_after = HashSet::new();
+                    let mut call_collate_on = None;
 
-                        match collate_on {
-                            Some(f) => {
-                                f().await;
-                            }
-                            None => {
-                                // Spawn new container chain node and start collation
-                                self.spawn_handle.spawn(
-                                    "container-chain-spawner",
-                                    None,
-                                    self.spawn(para_id, true),
-                                );
+                    // State mutex cannot be used in the same scope as `.await`, so start a new scope here
+                    {
+                        let mut state = self.state.lock().expect("poison error");
+
+                        if let Some(para_id) = state.assigned_para_id {
+                            running_chains_before.insert(para_id);
+                        }
+                        if let Some(para_id) = state.next_assigned_para_id {
+                            running_chains_before.insert(para_id);
+                        }
+                        running_chains_before.remove(&self.orchestrator_para_id);
+
+                        if let Some(para_id) = current {
+                            running_chains_after.insert(para_id);
+                        }
+                        if let Some(para_id) = next {
+                            running_chains_after.insert(para_id);
+                        }
+                        running_chains_after.remove(&self.orchestrator_para_id);
+
+                        let already_collating_there = state.assigned_para_id == current;
+
+                        if !already_collating_there {
+                            // If the assigned container chain was already running but not collating, we need to call collate_on
+                            if let Some(para_id) = current {
+                                // Check if we get assigned to orchestrator chain
+                                if para_id == self.orchestrator_para_id {
+                                    call_collate_on = Some(self.collate_on_tanssi.clone());
+                                } else {
+                                    // When we get assigned to a different container chain, only need to call collate_on if it was already
+                                    // running before
+                                    if running_chains_before.contains(&para_id) {
+                                        let c =
+                                            state.spawned_container_chains.get(&para_id).unwrap();
+                                        call_collate_on = Some(c.collate_on.clone());
+                                    }
+                                }
                             }
                         }
+
+                        state.assigned_para_id = current;
+                        state.next_assigned_para_id = next;
                     }
-                }
-                CcSpawnMsg::Stop(para_id) => {
-                    if para_id == self.orchestrator_para_id {
-                        // Do nothing, because currently the only way to stop collation
-                        // on the orchestrator chain is to start a new container chain.
-                    } else {
-                        self.stop(para_id);
+
+                    // Call collate_on, to start collation on a container chain that was already running before
+                    if let Some(f) = call_collate_on {
+                        f().await;
+                    }
+
+                    // Stop all container chains we are no longer assigned
+                    for para_id in running_chains_before.difference(&running_chains_after) {
+                        self.stop(*para_id);
+                    }
+
+                    // Start all new container chains (usually at most 1)
+                    for para_id in running_chains_after.difference(&running_chains_before) {
+                        // Edge case: when starting the node it may be assigned to a container chain, so we need to
+                        // start a container chain already collating.
+                        // This should only happen the first time this message is received.
+                        let start_collation = Some(*para_id) == current;
+                        self.spawn(*para_id, start_collation).await;
                     }
                 }
             }
