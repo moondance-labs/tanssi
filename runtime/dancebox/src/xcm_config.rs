@@ -181,7 +181,7 @@ impl xcm_executor::Config for XcmConfig {
     type MessageExporter = ();
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
-    type SafeCallFilter = ();
+    type SafeCallFilter = Everything;
 }
 
 impl pallet_xcm::Config for Runtime {
