@@ -162,7 +162,10 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
         assert_expected_events!(
             Dancebox,
             vec![
-                RuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward { outcome: Outcome::Incomplete(_w, error), .. }) => {
+                RuntimeEvent::DmpQueue(
+                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
+                        outcome: Outcome::Incomplete(_w, error), ..
+                    }) => {
                     error: *error == NoPermission,
                 },
             ]
