@@ -34,11 +34,7 @@ use {
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
-mod constants;
-pub use constants::*;
-
-mod xcm_mod;
-pub use xcm_mod::*;
+mod xcm;
 
 use dancebox_runtime::MaxLengthTokenSymbol;
 pub use dancebox_runtime::{
@@ -209,7 +205,6 @@ impl ExtBuilder {
     }
 
     pub fn build(self) -> sp_io::TestExternalities {
-        
         let t = self.build_storage();
         let mut ext = sp_io::TestExternalities::new(t);
 
