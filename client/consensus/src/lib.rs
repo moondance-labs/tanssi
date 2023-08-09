@@ -203,8 +203,8 @@ where
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
             // If we dont find any parachain that we are assigned to, return none
 
-            if let Ok(Some(para_id)) =
-                runtime_api.check_future_para_id_assignment(*parent_hash, nimbus_id.clone().into())
+            if let Ok(Some(para_id)) = runtime_api
+                .check_para_id_assignment_next_session(*parent_hash, nimbus_id.clone().into())
             {
                 log::debug!("Para id found for assignment {:?}", para_id);
 

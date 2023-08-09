@@ -1083,18 +1083,11 @@ impl_runtime_apis! {
             assigned_authorities.para_id_of(&authority, self_para_id)
         }
 
-        /// Return the paraId assigned to a given authority on the next session
-        fn check_future_para_id_assignment(authority: NimbusId) -> Option<ParaId> {
-            let parent_number = System::block_number();
-            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
-
-            let session_index = if should_end_session {
-                Session::current_index() +1
-            }
-            else {
-                Session::current_index()
-            };
-            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index+1)?;
+        /// Return the paraId assigned to a given authority on the next session.
+        /// On session boundary this returns the same as `check_para_id_assignment`.
+        fn check_para_id_assignment_next_session(authority: NimbusId) -> Option<ParaId> {
+            let session_index = Session::current_index() + 1;
+            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
             let self_para_id = ParachainInfo::get();
 
             assigned_authorities.para_id_of(&authority, self_para_id)
