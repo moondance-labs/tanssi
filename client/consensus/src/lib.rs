@@ -24,6 +24,8 @@ use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
 
 mod consensus_orchestrator;
 mod manual_seal;
+#[cfg(test)]
+mod tests;
 
 pub use {
     consensus_orchestrator::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},

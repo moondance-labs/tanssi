@@ -36,6 +36,14 @@ cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true, optional = true }
 cumulus-relay-chain-interface = { workspace = true, optional = true }
 
+[dev-dependencies]
+futures = { workspace = true }
+polkadot-overseer = { workspace = true }
+sc-client-api = { workspace = true }
+substrate-test-runtime = { workspace = true }
+substrate-test-runtime-client = { workspace = true }
+tokio = { workspace = true }
+
 [features]
 default = [ "std" ]
 std = [ "async-trait", "cumulus-primitives-core/std", "cumulus-primitives-parachain-inherent/std", "cumulus-relay-chain-interface", "nimbus-primitives/std", "parity-scale-codec/std", "scale-info/std", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-io/std", "sp-runtime", "sp-state-machine", "sp-trie/std", "tc-consensus", "tc-orchestrator-chain-interface", "test-relay-sproof-builder/std", "tp-collator-assignment/std", "tp-core/std", "tracing" ]
