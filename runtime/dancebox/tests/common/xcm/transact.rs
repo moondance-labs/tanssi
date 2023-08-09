@@ -18,15 +18,22 @@ use crate::common::xcm::*;
 
 use {
     crate::common::xcm::mocknets::{Dancebox, Westend, WestendPallet},
-    frame_support::{assert_ok, weights::Weight},
+    frame_support::{
+        assert_ok,
+        weights::{Weight, WeightToFee},
+    },
     parity_scale_codec::Encode,
     xcm::{
-        latest::{prelude::*, Error::Barrier},
+        latest::{
+            prelude::*,
+            Error::{Barrier, NoPermission},
+        },
         VersionedMultiLocation, VersionedXcm,
     },
 };
+
 #[test]
-fn transact_sudo_from_relay_hits_barrier_dancebox() {
+fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
     let call = <Dancebox as Para>::RuntimeCall::Configuration(pallet_configuration::Call::<
         <Dancebox as Para>::Runtime,
     >::set_max_collators {
@@ -83,6 +90,80 @@ fn transact_sudo_from_relay_hits_barrier_dancebox() {
             vec![
                 RuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward { outcome, .. }) => {
                     outcome: *outcome == Outcome::Error(Barrier),
+                },
+            ]
+        );
+    });
+}
+
+#[test]
+fn transact_sudo_from_relay_does_not_have_sudo_power() {
+    let call = <Dancebox as Para>::RuntimeCall::Configuration(pallet_configuration::Call::<
+        <Dancebox as Para>::Runtime,
+    >::set_max_collators {
+        new: 50,
+    })
+    .encode()
+    .into();
+
+    // XcmPallet send arguments
+    let sudo_origin = <Westend as Relay>::RuntimeOrigin::root();
+    let dancebox_para_destination: VersionedMultiLocation =
+        Westend::child_location_of(Dancebox::para_id()).into();
+
+    let require_weight_at_most = Weight::from_parts(1000000000, 200000);
+    let origin_kind = OriginKind::Superuser;
+
+    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
+        &Weight::from_parts(10_000_000_000_000, 300_000),
+    );
+
+    let buy_execution_fee = MultiAsset {
+        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+        fun: Fungible(buy_execution_fee_amount),
+    };
+
+    let xcm = VersionedXcm::from(Xcm(vec![
+        WithdrawAsset {
+            0: vec![buy_execution_fee.clone()].into(),
+        },
+        BuyExecution {
+            fees: buy_execution_fee.clone(),
+            weight_limit: Unlimited,
+        },
+        Transact {
+            require_weight_at_most,
+            origin_kind,
+            call,
+        },
+    ]));
+
+    // Send XCM message from Relay Chain
+    Westend::execute_with(|| {
+        assert_ok!(<Westend as WestendPallet>::XcmPallet::send(
+            sudo_origin,
+            bx!(dancebox_para_destination),
+            bx!(xcm),
+        ));
+
+        type RuntimeEvent = <Westend as Relay>::RuntimeEvent;
+
+        assert_expected_events!(
+            Westend,
+            vec![
+                RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. }) => {},
+            ]
+        );
+    });
+
+    // Receive XCM message in Assets Parachain
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward { outcome: Outcome::Incomplete(_w, error), .. }) => {
+                    error: *error == NoPermission,
                 },
             ]
         );

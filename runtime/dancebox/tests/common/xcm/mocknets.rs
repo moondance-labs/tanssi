@@ -10,6 +10,7 @@ pub use sp_core::{sr25519, storage::Storage, Get};
 use {
     crate::{AccountId, Balance},
     xcm::prelude::*,
+    xcm_builder::ParentIsPreset,
     xcm_emulator::{
         decl_test_networks, decl_test_parachains, decl_test_relay_chains, Parachain, RelayChain,
         TestExt,
@@ -47,6 +48,8 @@ decl_test_parachains! {
             // Alice gets 10k extra tokens for her mapping deposit
             (AccountId::from(crate::ALICE), 210_000 * crate::UNIT),
             (AccountId::from(crate::BOB), 100_000 * crate::UNIT),
+            // Give some balance to the relay chain account
+            (ParentIsPreset::<AccountId>::convert_ref(MultiLocation::parent()).unwrap(), 100_000 * crate::UNIT)
         ]).build_storage(),
         on_init = (),
         runtime = {
