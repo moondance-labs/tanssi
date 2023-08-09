@@ -265,24 +265,26 @@ fn check_assigned_para_id(
     block_hash: H256,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Check current assignment
-    let res = tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
-        client_set_aside_for_cidp.as_ref(),
-        &block_hash,
-        sync_keystore.clone(),
-    );
-    let container_chain_para_id = res.map(|x| x.1);
+    let current_container_chain_para_id =
+        tc_consensus::first_eligible_key::<Block, ParachainClient, NimbusPair>(
+            client_set_aside_for_cidp.as_ref(),
+            &block_hash,
+            sync_keystore.clone(),
+        )
+        .map(|(_nimbus_key, para_id)| para_id);
 
     // Check assignment in the next session
-    let res2 = tc_consensus::first_eligible_key_next_session::<Block, ParachainClient, NimbusPair>(
-        client_set_aside_for_cidp.as_ref(),
-        &block_hash,
-        sync_keystore,
-    );
-    let future_container_chain_para_id = res2.map(|x| x.1);
+    let next_container_chain_para_id =
+        tc_consensus::first_eligible_key_next_session::<Block, ParachainClient, NimbusPair>(
+            client_set_aside_for_cidp.as_ref(),
+            &block_hash,
+            sync_keystore,
+        )
+        .map(|(_nimbus_key, para_id)| para_id);
 
     cc_spawn_tx.send(CcSpawnMsg::UpdateAssignment {
-        current: container_chain_para_id,
-        next: future_container_chain_para_id,
+        current: current_container_chain_para_id,
+        next: next_container_chain_para_id,
     })?;
 
     Ok(())

@@ -312,25 +312,20 @@ impl ContainerChainSpawner {
         {
             let mut state = self.state.lock().expect("poison error");
 
-            if let Some(para_id) = state.assigned_para_id {
-                running_chains_before.insert(para_id);
+            if (state.assigned_para_id, state.next_assigned_para_id) == (current, next) {
+                // If nothing changed there is nothing to update
+                return;
             }
-            if let Some(para_id) = state.next_assigned_para_id {
-                running_chains_before.insert(para_id);
-            }
+
+            running_chains_before.extend(state.assigned_para_id);
+            running_chains_before.extend(state.next_assigned_para_id);
             running_chains_before.remove(&self.orchestrator_para_id);
 
-            if let Some(para_id) = current {
-                running_chains_after.insert(para_id);
-            }
-            if let Some(para_id) = next {
-                running_chains_after.insert(para_id);
-            }
+            running_chains_after.extend(current);
+            running_chains_after.extend(next);
             running_chains_after.remove(&self.orchestrator_para_id);
 
-            let already_collating_there = state.assigned_para_id == current;
-
-            if !already_collating_there {
+            if state.assigned_para_id != current {
                 // If the assigned container chain was already running but not collating, we need to call collate_on
                 if let Some(para_id) = current {
                     // Check if we get assigned to orchestrator chain
@@ -351,21 +346,20 @@ impl ContainerChainSpawner {
             state.next_assigned_para_id = next;
         }
 
-        // Call collate_on, to start collation on a container chain that was already running before
+        // Call collate_on, to start collation on a chain that was already running before
         if let Some(f) = call_collate_on {
             f().await;
         }
 
-        // Stop all container chains we are no longer assigned
+        // Stop all container chains that are no longer needed
         for para_id in running_chains_before.difference(&running_chains_after) {
             self.stop(*para_id);
         }
 
-        // Start all new container chains (usually at most 1)
+        // Start all new container chains (usually 1)
         for para_id in running_chains_after.difference(&running_chains_before) {
             // Edge case: when starting the node it may be assigned to a container chain, so we need to
             // start a container chain already collating.
-            // This should only happen the first time this message is received.
             let start_collation = Some(*para_id) == current;
             self.spawn(*para_id, start_collation).await;
         }
