@@ -29,6 +29,7 @@ describeSuite({
       relayApi = context.polkadotJs("Relay");
       container2000Api = context.polkadotJs("Container2000");
       container2001Api = context.polkadotJs("Container2001");
+      container2002Api = context.polkadotJs("Container2002");
       ethersSigner = context.ethers();
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
@@ -49,12 +50,19 @@ describeSuite({
       expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
       expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
 
+      const container2002Network = container2002Api.consts.system.version.specName.toString();
+      const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
+      expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
+      expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
+
       // Test block numbers in relay are 0 yet
       const header2000 = await getHeaderFromRelay(relayApi, 2000);
       const header2001 = await getHeaderFromRelay(relayApi, 2001);
+      const header2002 = await getHeaderFromRelay(relayApi, 2002);
 
       expect(header2000.number.toNumber()).to.be.equal(0);
       expect(header2001.number.toNumber()).to.be.equal(0);
+      expect(header2002.number.toNumber()).to.be.equal(0);
     }, 120000);
 
     it({
@@ -231,31 +239,40 @@ describeSuite({
         const tx3 = paraApi.tx.registrar.markValidForCollating(2002);
         const tx2tx3 = paraApi.tx.utility.batchAll([tx2, tx3]);
         await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx2tx3), alice);
-        const session1 = (await paraApi.query.session.currentIndex()).toNumber();
-        await waitSessions(context, paraApi, 2);
-        const session2 = (await paraApi.query.session.currentIndex()).toNumber();
-        // Sanity check because waitSessions sometimes doesn't work
-        expect(session1 + 2).to.be.equal(session2);
+        // Check that pending para ids contains 2002
+        const registered2 = await paraApi.query.registrar.pendingParaIds();
+        const registered3 = await paraApi.query.registrar.registeredParaIds();
+
+        // TODO: fix once we have types
+        expect(registered2.toJSON()[0][1].includes(2002)).to.be.true;
+        // But registered does not contain 2002 yet
+        // TODO: fix once we have types
+        expect(registered3.toJSON().includes(2002)).to.be.false;
+
+        // The node should be syncing the container 2002, but not collating yet
+        // so it should still try to produce blocks in orchestrator chain.
+        // Use database path to check that the container chain started
+        // TODO: use collator rpc instead to check if the container chain is running,
+        // that's not possible now because we would need to guess the port number
+
+        const container2002DbPath = getTmpZombiePath() + "/Collator2002-01/data/containers/chains/simple_container_2002/db";
+        expect(await directoryExists(container2002DbPath)).to.be.false;
+        // The node starts one session before the container chain is in registered list
+        await waitSessions(context, paraApi, 1);
+        expect(await directoryExists(container2002DbPath)).to.be.true;
+        // Not registered yet, still pending
+        const registered4 = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
+        expect(registered4.toJSON().includes(2002)).to.be.false;
+
+        await waitSessions(context, paraApi, 1);
+        // Check that registered para ids contains 2002
+        const registered5 = await paraApi.query.registrar.registeredParaIds();
+        // TODO: fix once we have types
+        expect(registered5.toJSON().includes(2002)).to.be.true;
+
         let blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
         blockNumber2002Start = blockNum;
-
-        // Check that pending para ids contains 2002
-        const registered = await paraApi.query.registrar.registeredParaIds();
-        // TODO: fix once we have types
-        expect(registered.toJSON().includes(2002)).to.be.true;
-
-        // This ws api is only available after the node detects its assignment
-        if (!container2002Api) {
-          const wsProvider = new WsProvider("ws://127.0.0.1:9951");
-          // If this fails, wait up to 30 seconds after a new block is created
-          // to ensure this port is available
-          container2002Api = await ApiPromise.create({ provider: wsProvider });
-        }
-
-        const container2002Network = container2002Api.consts.system.version.specName.toString();
-        const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
-        expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
-        expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
       },
     });
 
@@ -392,4 +409,26 @@ async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors
     );
     expect(false).to.be.true;
   }
+}
+
+async function directoryExists(directoryPath) {
+  try {
+      await fs.access(directoryPath, fs.constants.F_OK);
+      return true;
+  } catch (err) {
+      return false;
+  }
+}
+
+/// Returns the /tmp/zombie-52234... path
+function getTmpZombiePath() {
+  const logFilePath = process.env.MOON_MONITORED_NODE;
+
+  if (logFilePath) {
+    const lastIndex = logFilePath.lastIndexOf('/');
+    return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
+  }
+
+  // Return null if the environment variable is not set
+  return null;
 }
