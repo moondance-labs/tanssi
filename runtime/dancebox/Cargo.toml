@@ -183,7 +183,9 @@ runtime-benchmarks = [
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
+	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks"
 ]
 
 try-runtime = [
