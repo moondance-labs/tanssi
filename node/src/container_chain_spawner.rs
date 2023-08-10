@@ -172,6 +172,11 @@ impl ContainerChainSpawner {
             db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
             container_chain_cli_config.database.set_path(&db_path);
 
+            // Delete existing database
+            if db_path.exists() {
+                std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");
+            }
+
             // Start container chain node
             let (mut container_chain_task_manager, _container_chain_client) =
                 start_node_impl_container(
@@ -217,6 +222,10 @@ impl ContainerChainSpawner {
                     }
                     _ = on_exit_future => {
                         // Graceful shutdown
+                        // Delete existing database
+                        if db_path.exists() {
+                            std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");
+                        }
                     }
                 }
             });

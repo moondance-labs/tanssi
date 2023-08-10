@@ -45,6 +45,7 @@ use {
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
+    sc_cli::SyncMode,
     sc_client_api::{AuxStore, Backend, BlockchainEvents, HeaderBackend, UsageProvider},
     sc_consensus::{BlockImport, ImportQueue},
     sc_executor::{
@@ -609,7 +610,7 @@ async fn start_node_impl(
 
     start_network.start_network();
 
-    if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
+    if let Some((mut container_chain_cli, tokio_handle)) = container_chain_config {
         // If the orchestrator chain is running as a full-node, we start a full node for the
         // container chain immediately, because only collator nodes detect their container chain
         // assignment so otherwise it will never start.
@@ -621,6 +622,9 @@ async fn start_node_impl(
                     .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
             }
         }
+
+        // Force warp sync for container chains
+        container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
 
         // Start container chain spawner task. This will start and stop container chains on demand.
         let orchestrator_client = client.clone();
