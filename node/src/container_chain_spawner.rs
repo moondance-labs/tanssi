@@ -475,7 +475,7 @@ mod tests {
             let currently_collating_on2 = self.currently_collating_on.clone();
             let collate_closure = move || async move {
                 let mut cco = currently_collating_on2.lock().unwrap();
-                // TODO: this is also wrong, see comment in test fuzz2
+                // TODO: this is also wrong, see comment in test keep_collating_on_container
                 /*
                 assert_ne!(
                     *cco,
