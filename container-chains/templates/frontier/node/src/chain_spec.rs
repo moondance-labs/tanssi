@@ -16,7 +16,8 @@
 
 use {
     container_chain_template_frontier_runtime::{
-        AccountId, EVMChainIdConfig, EVMConfig, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig
+        AccountId, EVMChainIdConfig, EVMConfig, MaintenanceModeConfig, MigrationsConfig,
+        PolkadotXcmConfig,
     },
     cumulus_primitives_core::ParaId,
     hex_literal::hex,

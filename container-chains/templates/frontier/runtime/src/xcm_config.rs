@@ -19,6 +19,7 @@ use {
         AccountId, AllPalletsWithSystem, Balances, ParachainInfo, ParachainSystem, PolkadotXcm,
         Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
     },
+    ccp_xcm::SignedToAccountKey20,
     frame_support::{
         parameter_types,
         traits::{Everything, Nothing, PalletInfoAccess},
@@ -32,11 +33,10 @@ use {
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, CurrencyAdapter, EnsureXcmOrigin, FixedWeightBounds,
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
-        SiblingParachainConvertsVia, SignedAccountKey20AsNative,
-        SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WithComputedOrigin,
+        SiblingParachainConvertsVia, SignedAccountKey20AsNative, SovereignSignedViaLocation,
+        TakeWeightCredit, UsingComponents, WithComputedOrigin,
     },
     xcm_executor::XcmExecutor,
-    ccp_xcm::SignedToAccountKey20
 };
 
 parameter_types! {
