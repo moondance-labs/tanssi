@@ -207,7 +207,12 @@ impl ContainerChainSpawner {
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = exit_future::signal();
-            let collate_on = collate_on.unwrap();
+            let collate_on = collate_on.unwrap_or_else(|| {
+                assert!(!validator, "collate_on should be Some if validator flag is true");
+
+                // When running a full node we don't need to send any collate_on messages, so make this a noop
+                Arc::new(move || Box::pin(std::future::ready(())))
+            });
 
             state
                 .lock()
