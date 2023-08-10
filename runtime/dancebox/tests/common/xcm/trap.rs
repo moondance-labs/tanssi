@@ -36,9 +36,8 @@ fn trapping_asserts_works_with_polkadot_xcm() {
     let dancebox_para_destination: VersionedMultiLocation =
         Westend::child_location_of(Dancebox::para_id()).into();
 
-    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
-        &Weight::from_parts(10_000_000_000_000, 300_000),
-    );
+    let buy_execution_fee_amount =
+        dancebox_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
 
     let buy_execution_fee = MultiAsset {
         id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),

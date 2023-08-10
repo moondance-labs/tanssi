@@ -101,6 +101,7 @@ pallet-staking =  { workspace = true, features = ["std"] }
 sp-consensus-babe =  { workspace = true, features = ["std"] }
 pallet-im-online =  { workspace = true, features = ["std"] }
 sc-consensus-grandpa = { workspace = true }
+pallet-message-queue = { workspace = true }
 polkadot-runtime-parachains = { workspace = true, features = ["std"] }
 polkadot-service = { workspace = true }
 

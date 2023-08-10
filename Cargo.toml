@@ -66,6 +66,7 @@ frame-system-rpc-runtime-api = { git = "https://github.com/moondance-labs/substr
 frame-try-runtime = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-balances = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-im-online = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+pallet-message-queue = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-proxy = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-root-testing = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-session = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }

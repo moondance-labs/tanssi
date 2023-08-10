@@ -59,6 +59,7 @@ pub mod accounts {
     pub const DAVE_STASH: &str = "Dave//stash";
     pub const EVE_STASH: &str = "Eve//stash";
     pub const FERDIE_STASH: &str = "Ferdie//stash";
+    pub const RANDOM: &str = "Random//stash";
 
     pub fn init_balances() -> Vec<AccountId> {
         vec![

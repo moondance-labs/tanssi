@@ -2557,6 +2557,7 @@ dependencies = [
  "pallet-im-online",
  "pallet-initializer",
  "pallet-maintenance-mode",
+ "pallet-message-queue",
  "pallet-migrations",
  "pallet-proxy",
  "pallet-registrar",

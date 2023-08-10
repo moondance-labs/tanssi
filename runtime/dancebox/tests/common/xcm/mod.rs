@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 mod constants;
+mod foreign_sovereigns;
 mod mocknets;
 mod transact;
 mod trap;

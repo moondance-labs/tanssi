@@ -100,6 +100,7 @@ pub struct ExtBuilder {
     )>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
+    safe_xcm_version: Option<u32>,
 }
 
 impl ExtBuilder {
@@ -127,6 +128,11 @@ impl ExtBuilder {
 
     pub fn with_config(mut self, config: pallet_configuration::HostConfiguration) -> Self {
         self.config = config;
+        self
+    }
+
+    pub fn with_safe_xcm_version(mut self, safe_xcm_version: u32) -> Self {
+        self.safe_xcm_version = Some(safe_xcm_version);
         self
     }
 
@@ -160,6 +166,14 @@ impl ExtBuilder {
         <pallet_configuration::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
             &pallet_configuration::GenesisConfig {
                 config: self.config,
+            },
+            &mut t,
+        )
+        .unwrap();
+
+        <pallet_xcm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+            &pallet_xcm::GenesisConfig {
+                safe_xcm_version: self.safe_xcm_version,
             },
             &mut t,
         )

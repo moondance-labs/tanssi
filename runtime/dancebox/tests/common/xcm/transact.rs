@@ -116,9 +116,8 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
     let require_weight_at_most = Weight::from_parts(1000000000, 200000);
     let origin_kind = OriginKind::Superuser;
 
-    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
-        &Weight::from_parts(10_000_000_000_000, 300_000),
-    );
+    let buy_execution_fee_amount =
+        dancebox_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
 
     let buy_execution_fee = MultiAsset {
         id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),

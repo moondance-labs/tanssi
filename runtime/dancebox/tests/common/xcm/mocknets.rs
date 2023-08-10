@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
     super::constants::{
-        accounts::{ALICE, BOB},
+        accounts::{ALICE, BOB, RANDOM},
         westend,
     },
     frame_support::{parameter_types, sp_tracing},
@@ -65,7 +65,8 @@ decl_test_parachains! {
             (AccountId::from(crate::BOB), 100_000 * crate::UNIT),
             // Give some balance to the relay chain account
             (ParentIsPreset::<AccountId>::convert_ref(MultiLocation::parent()).unwrap(), 100_000 * crate::UNIT)
-        ]).build_storage(),
+        ])
+        .with_safe_xcm_version(3).build_storage(),
         on_init = (),
         runtime = {
             Runtime: dancebox_runtime::Runtime,
@@ -96,10 +97,11 @@ decl_test_networks! {
 }
 
 parameter_types! {
-    // Polkadot
-    pub PolkadotSender: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(ALICE);
-    pub PolkadotReceiver: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(BOB);
-    // Statemint
+    // Westend
+    pub WestendSender: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(ALICE);
+    pub WestendReceiver: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(BOB);
+    pub WestendEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(RANDOM);
+    // Dancebox
     pub DanceboxSender: dancebox_runtime::AccountId = Dancebox::account_id_of(ALICE);
     pub DanceboxReceiver: dancebox_runtime::AccountId = Dancebox::account_id_of(BOB);
 }
