@@ -317,7 +317,7 @@ impl ContainerChainSpawner {
             chains_to_stop,
             chains_to_start,
         } = handle_update_assignment_state_change(
-            self.state.lock().expect("poison error"),
+            &mut self.state.lock().expect("poison error"),
             self.orchestrator_para_id,
             self.collate_on_tanssi.clone(),
             current,
