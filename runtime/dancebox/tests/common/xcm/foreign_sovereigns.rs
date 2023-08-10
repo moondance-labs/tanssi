@@ -16,22 +16,16 @@
 
 use {
     crate::common::xcm::{
-        mocknets::{
-            Dancebox, DanceboxPallet, Westend, WestendEmptyReceiver, WestendPallet, WestendSender,
-        },
+        mocknets::{Dancebox, DanceboxPallet, Westend, WestendEmptyReceiver, WestendSender},
         *,
     },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    parity_scale_codec::Encode,
     sp_core::Get,
     westend_runtime_constants::currency::UNITS as WND,
-    xcm::{
-        latest::{prelude::*, Error::Trap as TrapError},
-        VersionedMultiLocation, VersionedXcm,
-    },
+    xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
     xcm_executor::traits::Convert,
 };
 

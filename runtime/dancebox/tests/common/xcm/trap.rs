@@ -22,7 +22,6 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    parity_scale_codec::Encode,
     xcm::{
         latest::{prelude::*, Error::Trap as TrapError},
         VersionedMultiLocation, VersionedXcm,
