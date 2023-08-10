@@ -322,8 +322,12 @@ impl ContainerChainSpawner {
                 return;
             }
 
+            // Create a set with the container chains that were running before, and the container
+            // chains that should be running after the updated assignment. This is used to calculate
+            // the difference, and stop and start the required container chains.
             running_chains_before.extend(state.assigned_para_id);
             running_chains_before.extend(state.next_assigned_para_id);
+            // Ignore orchestrator_para_id because it cannot be stopped or started, it is always running
             running_chains_before.remove(&self.orchestrator_para_id);
 
             running_chains_after.extend(current);
