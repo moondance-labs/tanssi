@@ -1532,7 +1532,7 @@ fn test_author_noting_not_self_para() {
             s.para_id = other_para;
             s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                 parent_hash: Default::default(),
-                number: Default::default(),
+                number: 1,
                 state_root: Default::default(),
                 extrinsics_root: Default::default(),
                 digest: sp_runtime::generic::Digest {
@@ -1545,7 +1545,7 @@ fn test_author_noting_not_self_para() {
 
             assert_eq!(
                 AuthorNoting::latest_author(other_para),
-                Some(AccountId::from(DAVE))
+                Some((1, AccountId::from(DAVE)))
             );
         });
 }

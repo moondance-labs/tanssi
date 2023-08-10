@@ -177,13 +177,15 @@ pub mod pallet {
         pub fn set_author(
             origin: OriginFor<T>,
             para_id: ParaId,
-            new: T::AccountId,
+            block_number: BlockNumber,
+            author: T::AccountId,
         ) -> DispatchResult {
             ensure_root(origin)?;
-            LatestAuthor::<T>::insert(para_id, &new);
+            LatestAuthor::<T>::insert(para_id, (block_number, &author));
             Self::deposit_event(Event::LatestAuthorChanged {
                 para_id,
-                new_author: new,
+                block_number,
+                new_author: author,
             });
             Ok(())
         }
@@ -195,6 +197,7 @@ pub mod pallet {
         /// Latest author changed
         LatestAuthorChanged {
             para_id: ParaId,
+            block_number: BlockNumber,
             new_author: T::AccountId,
         },
     }
@@ -202,7 +205,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn latest_author)]
     pub(super) type LatestAuthor<T: Config> =
-        StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, ParaId, (BlockNumber, T::AccountId), OptionQuery>;
 
     /// Was the containerAuthorData set?
     #[pallet::storage]
@@ -244,7 +247,7 @@ impl<T: Config> Pallet<T> {
     fn fetch_author_slot_from_proof(
         relay_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
-    ) -> Result<T::AccountId, Error<T>> {
+    ) -> Result<(BlockNumber, T::AccountId), Error<T>> {
         let bytes = para_id.twox_64_concat();
         // CONCAT
         let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
@@ -289,7 +292,7 @@ impl<T: Config> Pallet<T> {
             let author = T::ContainerChainAuthor::author_for_slot(slot, para_id)
                 .ok_or(Error::<T>::AuthorNotFound)?;
 
-            Ok(author)
+            Ok((author_header.number, author))
         } else {
             Err(Error::<T>::NonAuraDigest)
         }

@@ -168,8 +168,8 @@ describeSuite({
         const author2000 = await paraApi.query.authorNoting.latestAuthor(paraId2000);
         const author2001 = await paraApi.query.authorNoting.latestAuthor(paraId2001);
 
-        expect(containerChainCollators2000.includes(author2000.toString())).to.be.true;
-        expect(containerChainCollators2001.includes(author2001.toString())).to.be.true;
+        expect(containerChainCollators2000.includes(author2000.toJSON()[1])).to.be.true;
+        expect(containerChainCollators2001.includes(author2001.toJSON()[1])).to.be.true;
       },
     });
 
