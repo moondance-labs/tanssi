@@ -394,7 +394,7 @@ fn handle_update_assignment_state_change(
                 // When we get assigned to a different container chain, only need to call collate_on if it was already
                 // running before
                 if running_chains_before.contains(&para_id) {
-                    let c = state.spawned_container_chains.get(&para_id).unwrap();
+                    let c = state.spawned_container_chains.get(&para_id).expect("container chain was running before so it should exist in spawned_container_chains");
                     call_collate_on = Some(c.collate_on.clone());
                 }
             }
