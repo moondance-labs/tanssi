@@ -32,6 +32,7 @@ pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 
 ccp-authorities-noting-inherent = { path = "container-chains/primitives/authorities-noting-inherent", default-features = false }
+ccp-xcm = { path = "container-chains/primitives/xcm", default-features = false }
 
 container-chain-template-frontier-runtime = { path = "container-chains/templates/frontier/runtime", default-features = false }
 container-chain-template-simple-runtime = { path = "container-chains/templates/simple/runtime", default-features = false }

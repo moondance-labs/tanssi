@@ -930,6 +930,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "ccp-xcm"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-std",
+ "xcm",
+ "xcm-executor",
+]
+
+[[package]]
 name = "cexpr"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1289,10 +1303,15 @@ dependencies = [
 name = "container-chain-template-frontier-runtime"
 version = "0.1.0"
 dependencies = [
+ "ccp-xcm",
+ "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
+ "cumulus-pallet-xcm",
+ "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
  "fp-account",
  "fp-evm",
  "fp-rpc",
@@ -1324,6 +1343,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-utility",
+ "pallet-xcm",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
@@ -1344,6 +1364,9 @@ dependencies = [
  "sp-version",
  "substrate-wasm-builder",
  "tp-consensus",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
 ]
 
 [[package]]

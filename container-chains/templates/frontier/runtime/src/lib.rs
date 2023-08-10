@@ -29,6 +29,7 @@ use sp_version::NativeVersion;
 pub use sp_runtime::BuildStorage;
 
 mod precompiles;
+pub mod xcm_config;
 
 use {
     crate::precompiles::FrontierPrecompiles,
@@ -724,6 +725,12 @@ construct_runtime!(
         BaseFee: pallet_base_fee = 64,
         HotfixSufficients: pallet_hotfix_sufficients = 65,
         TransactionPayment: pallet_transaction_payment = 66,
+
+        // XCM
+        XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 70,
+        CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
+        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
+        PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config} = 73,
 
         RootTesting: pallet_root_testing = 100,
     }

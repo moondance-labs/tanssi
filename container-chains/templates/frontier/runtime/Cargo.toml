@@ -17,6 +17,7 @@ scale-info = { workspace = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Local
+ccp-xcm = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tp-consensus = { workspace = true }
 
@@ -53,14 +54,22 @@ sp-trie = { workspace = true }
 sp-version = { workspace = true }
 
 # Polkadot
+pallet-xcm = { workspace = true }
 polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
 
 # Cumulus
 cumulus-pallet-parachain-system = { workspace = true }
+cumulus-pallet-dmp-queue = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
+cumulus-pallet-xcm = { workspace = true }
+cumulus-pallet-xcmp-queue = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
+cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
 
 # Frontier
@@ -85,9 +94,14 @@ default = [
 	"std",
 ]
 std = [
+	"ccp-xcm/std",
+	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-xcm/std",
+	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
+	"cumulus-primitives-utility/std",
 	"fp-account/std",
 	"fp-evm/std",
 	"fp-rpc/std",
@@ -115,6 +129,7 @@ std = [
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-utility/std",
+	"pallet-xcm/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain/std",
@@ -131,6 +146,9 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-version/std",
 	"tp-consensus/std",
+	"xcm/std",
+	"xcm-builder/std",
+	"xcm-executor/std"
 ]
 
 runtime-benchmarks = [
