@@ -1,3 +1,31 @@
+# -----------------------------------------------------------------------------
+# GitHub Workflow: Upgrade TypeScript API
+#
+# Description:
+# This workflow handles the upgrade process of the PolkadotJs ApiAugment package for Tanssi.
+# It is triggered manually via the `workflow_dispatch` event, where the user must provide
+# the runtime specification version they wish to generate interfaces for.
+#
+# Note: This will not publish the generated interfaces, that is instead done by other workflow:
+#        "publish-typescript-api.yml"
+#
+# Workflow Steps:
+# 1. Checkout the entire repository.
+# 2. Retrieve the Tanssi binary associated with the specified runtime spec version.
+# 3. Set up the required Node.js and pnpm versions.
+# 4. Upgrade the PolkadotJs packages in the `typescript-api` directory.
+# 5. Build the TypeScript API with the newly upgraded packages.
+# 6. Regenerate the TypeScript API with the new runtime metadata.
+# 7. Create a new pull request for the upgraded TypeScript API.
+#
+# Important:
+# - Ensure that the required Node.js and pnpm versions are installed.
+# - The new pull request is created on the branch: girazoki-tanssi-api-generation
+#   and will be in draft status initially.
+# - Reviewers "girazoki" and "tmpolaczyk" are automatically assigned to the pull request.
+# -----------------------------------------------------------------------------
+
+
 name: Upgrade typescript API
 on:
   workflow_dispatch:
@@ -32,10 +60,10 @@ jobs:
         uses: pnpm/action-setup@v2
         with:
           version: 7
-      - name: Use Node.js 18.x
+      - name: Use Node.js 20.x
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 20.x
       - name: Upgrade polkadotjs for typescript-api
         run: |
           ls target/release
@@ -66,5 +94,5 @@ jobs:
           commit-message: typescript API v0.${{ github.event.inputs.spec_version }}.0"
           draft: true
           title: "Upgrade typescript API for runtime  ${{ github.event.inputs.spec_version }}"
-          reviewers: "librelois,crystalin"
+          reviewers: "girazoki,tmpolaczyk"
           labels: "B0-silent,D2-notlive"
