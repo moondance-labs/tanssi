@@ -15,9 +15,5 @@
         "dancebox": ["dancebox/src"]
       }
     },
-    "exclude": ["node_modules", "build"],
-    "ts-node": {
-      "esm": true,
-      "experimentalSpecifierResolution": "node"
-    }
+    "exclude": ["node_modules", "build"]
   }

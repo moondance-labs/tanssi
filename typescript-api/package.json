@@ -17,6 +17,7 @@
     },
     "scripts": {
         "generate": "pnpm run load:meta && npm run generate:defs && npm run generate:meta",
+        "clean": "pnpm exec rm -rf node_modules && pnpm exec rm -rf build",
         "postgenerate": "pnpm run pretty",
         "load:meta:local": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' http://localhost:9933 > metadata-dancebox.json",
         "generate:defs": "pnpm run generate:defs:dancebox",
@@ -25,7 +26,7 @@
         "generate:meta:dancebox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-dancebox.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/dancebox/interfaces",
         "prebuild": "rimraf build",
         "build": "tsc -b --verbose",
-        "postbuild": "pnpm tsx ./scripts/postbuild.js",
+        "postbuild": "pnpm tsx ./scripts/postbuild.ts",
         "publish": "cd build && npm publish",
         "deploy": "pnpm run generate && pnpm run build && pnpm run publish",
         "pretty": "prettier --write --ignore-unknown --plugin prettier-plugin-jsdoc 'src/**/*' 'scripts/**/*'"
@@ -59,26 +60,25 @@
         "api"
     ],
     "dependencies": {
-        "@polkadot/api": "^10.9.1",
-        "@polkadot/api-derive": "^10.9.1",
-        "@polkadot/api-augment": "^10.9.1",
-        "@polkadot/api-base": "^10.9.1",
-        "@polkadot/rpc-augment": "^10.9.1",
-        "@polkadot/rpc-core": "^10.9.1",
-        "@polkadot/rpc-provider": "^10.9.1",
-        "@polkadot/types-create": "^10.9.1",
-        "@polkadot/types-augment": "^10.9.1",
-        "@polkadot/types-support": "^10.9.1",
-        "@polkadot/types-codec": "^10.9.1",
-        "@polkadot/types": "^10.9.1",
-        "@polkadot/types-known": "^10.9.1"
+        "@polkadot/api": "latest",
+        "@polkadot/api-augment": "latest",
+        "@polkadot/api-base": "latest",
+        "@polkadot/api-derive": "latest",
+        "@polkadot/rpc-augment": "latest",
+        "@polkadot/rpc-core": "latest",
+        "@polkadot/rpc-provider": "latest",
+        "@polkadot/types": "latest",
+        "@polkadot/types-augment": "latest",
+        "@polkadot/types-codec": "latest",
+        "@polkadot/types-create": "latest",
+        "@polkadot/types-known": "latest",
+        "@polkadot/types-support": "latest"
     },
     "devDependencies": {
-        "@polkadot/typegen": "^10.9.1",
+        "@polkadot/typegen": "latest",
         "prettier": "^2.7.1",
         "prettier-plugin-jsdoc": "^0.3.38",
-        "rimraf": "^3.0.2",
-        "typescript": "^5.0.2",
-        "tsx": "^3.12.7"
+        "tsx": "^3.12.7",
+        "typescript": "^5.1.6"
     }
 }

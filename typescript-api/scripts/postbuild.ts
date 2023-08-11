@@ -1,10 +1,10 @@
-import { writeFileSync, copyFileSync } from "fs";
-import { readFile } from "fs/promises";
+import { writeFileSync, copyFileSync, readFileSync } from "fs";
+import path from "path";
 
 console.log("Loading package.json");
 
 const pck = JSON.parse(
-  await readFile(new URL("../package.json", import.meta.url))
+  readFileSync(path.join(process.cwd(), "package.json"), "utf-8")
 );
 
 const buildPath = `${process.env.PWD}/build`;

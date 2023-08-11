@@ -64,25 +64,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20.x
-      - name: Upgrade polkadotjs for typescript-api
+      - name: Install Typescript Packages for PolkadotJs
         run: |
-          ls target/release
           cd typescript-api
-          pnpm add @polkadot/api@latest
-          pnpm add @polkadot/api-derive@latest
-          pnpm add @polkadot/api-augment@latest
-          pnpm add @polkadot/api-base@latest
-          pnpm add @polkadot/rpc-augment@latest
-          pnpm add @polkadot/rpc-core@latest
-          pnpm add @polkadot/rpc-provider@latest
-          pnpm add @polkadot/types-create@latest
-          pnpm add @polkadot/types-augment@latest
-          pnpm add @polkadot/types-support@latest
-          pnpm add @polkadot/types-codec@latest
-          pnpm add @polkadot/types@latest
-          pnpm add @polkadot/types-known@latest
-          pnpm run build
-      - name: regenerate typescript api with new runtime metadata
+          pnpm install
+      - name: Regenerate typescript api with new runtime metadata
         run: |
           cd typescript-api
           ./scripts/runtime-upgrade.sh ${{ github.event.inputs.spec_version }}
