@@ -1043,6 +1043,16 @@ impl_runtime_apis! {
         }
     }
 
+    impl pallet_author_noting_runtime_api::AuthorNotingApi<Block, AccountId, ParaId> for Runtime
+        where
+        AccountId: parity_scale_codec::Codec,
+        ParaId: parity_scale_codec::Codec,
+    {
+        fn latest_author(para_id: ParaId) -> Option<AccountId> {
+            AuthorNoting::latest_author(para_id)
+        }
+    }
+
     impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {

@@ -22,8 +22,10 @@ use {
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     futures::FutureExt,
+    pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
+    sc_cli::SyncMode,
     sc_service::SpawnTaskHandle,
     sp_api::ProvideRuntimeApi,
     sp_keystore::KeystorePtr,
@@ -154,6 +156,18 @@ impl ContainerChainSpawner {
 
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
+
+            // Force container chains to use warp sync
+            // If the container chain is still at genesis block, use full sync because warp sync is broken
+            let container_chain_is_at_genesis = orchestrator_runtime_api
+                .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
+                .map_err(|e| format!("Failed to read latest author: {}", e))?
+                .is_none();
+            if container_chain_is_at_genesis {
+                container_chain_cli.base.base.network_params.sync = SyncMode::Full;
+            } else {
+                container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
+            }
 
             let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
                 &container_chain_cli,
