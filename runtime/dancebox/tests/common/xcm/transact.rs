@@ -17,7 +17,10 @@
 use crate::common::xcm::*;
 
 use {
-    crate::common::xcm::mocknets::{Dancebox, Westend, WestendPallet},
+    crate::common::xcm::mocknets::{
+        Dancebox, FrontierTemplate, FrontierTemplatePallet, SimpleTemplate, SimpleTemplatePallet,
+        Westend, WestendPallet,
+    },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
@@ -30,7 +33,7 @@ use {
         },
         VersionedMultiLocation, VersionedXcm,
     },
-    xcm_builder::ParentIsPreset,
+    xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     xcm_executor::traits::Convert,
 };
 
@@ -263,9 +266,97 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     .into();
 
     // XcmPallet send arguments
-    let sudo_origin = <FrontierTemplate as Parachain>::RuntimeOrigin::root();
-    let dancebox_para_destination: VersionedMultiLocation =
-        FrontierTemplate::sibling_location_of(Dancebox::para_id()).into();
+    let sudo_origin = <FrontierTemplate as Para>::RuntimeOrigin::root();
+    let dancebox_para_destination: VersionedMultiLocation = MultiLocation {
+        parents: 1,
+        interior: X1(Parachain(Dancebox::para_id().into())),
+    }
+    .into();
+
+    let require_weight_at_most = Weight::from_parts(1000000000, 200000);
+    let origin_kind = OriginKind::SovereignAccount;
+
+    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
+        &Weight::from_parts(10_000_000_000_000, 300_000),
+    );
+
+    let buy_execution_fee = MultiAsset {
+        id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
+        fun: Fungible(buy_execution_fee_amount),
+    };
+
+    let xcm = VersionedXcm::from(Xcm(vec![
+        WithdrawAsset {
+            0: vec![buy_execution_fee.clone()].into(),
+        },
+        BuyExecution {
+            fees: buy_execution_fee.clone(),
+            weight_limit: Unlimited,
+        },
+        Transact {
+            require_weight_at_most,
+            origin_kind,
+            call,
+        },
+    ]));
+
+    // Send XCM message from Frontier Template
+    FrontierTemplate::execute_with(|| {
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplatePallet>::PolkadotXcm::send(
+                sudo_origin,
+                bx!(dancebox_para_destination),
+                bx!(xcm),
+            )
+        );
+
+        type RuntimeEvent = <FrontierTemplate as Para>::RuntimeEvent;
+
+        assert_expected_events!(
+            FrontierTemplate,
+            vec![
+                RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
+            ]
+        );
+    });
+
+    // Receive XCM message in Assets Parachain
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::System(
+                    frame_system::Event::Remarked {
+                        sender,
+                        ..
+                    }) => {
+                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
+                        MultiLocation{ parents: 1, interior: X1(Parachain(2001u32))}
+                    ).unwrap(),
+                },
+            ]
+        );
+    });
+}
+
+#[test]
+fn transact_sudo_from_simple_has_signed_origin_powers() {
+    let call = <Dancebox as Para>::RuntimeCall::System(frame_system::Call::<
+        <Dancebox as Para>::Runtime,
+    >::remark_with_event {
+        remark: b"Test".to_vec(),
+    })
+    .encode()
+    .into();
+
+    // XcmPallet send arguments
+    let sudo_origin = <SimpleTemplate as Para>::RuntimeOrigin::root();
+    let dancebox_para_destination: VersionedMultiLocation = MultiLocation {
+        parents: 1,
+        interior: X1(Parachain(Dancebox::para_id().into())),
+    }
+    .into();
 
     let require_weight_at_most = Weight::from_parts(1000000000, 200000);
     let origin_kind = OriginKind::SovereignAccount;
@@ -295,19 +386,19 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     ]));
 
     // Send XCM message from Relay Chain
-    Westend::execute_with(|| {
-        assert_ok!(<Westend as WestendPallet>::XcmPallet::send(
+    SimpleTemplate::execute_with(|| {
+        assert_ok!(<SimpleTemplate as SimpleTemplatePallet>::PolkadotXcm::send(
             sudo_origin,
             bx!(dancebox_para_destination),
             bx!(xcm),
         ));
 
-        type RuntimeEvent = <Westend as Relay>::RuntimeEvent;
+        type RuntimeEvent = <SimpleTemplate as Para>::RuntimeEvent;
 
         assert_expected_events!(
-            Westend,
+            SimpleTemplate,
             vec![
-                RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. }) => {},
+                RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
             ]
         );
     });
@@ -323,7 +414,9 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
                         sender,
                         ..
                     }) => {
-                    sender: *sender == ParentIsPreset::<dancebox_runtime::AccountId>::convert_ref(MultiLocation::parent()).unwrap(),
+                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
+                        MultiLocation{ parents: 1, interior: X1(Parachain(2002u32))}
+                    ).unwrap(),
                 },
             ]
         );

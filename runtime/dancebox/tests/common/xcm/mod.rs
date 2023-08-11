@@ -15,10 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 mod constants;
-//mod foreign_sovereigns;
+mod foreign_sovereigns;
 mod mocknets;
-//mod transact;
-//mod trap;
+mod transact;
+mod trap;
 
 pub use xcm_emulator::{
     assert_expected_events, bx, cumulus_pallet_dmp_queue, helpers::weight_within_threshold,

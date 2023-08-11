@@ -210,8 +210,8 @@ pub mod frontier_template {
         container_chain_template_frontier_runtime::AccountId, hex_literal::hex,
         sp_runtime::BuildStorage,
     };
-    pub const PARA_ID: u32 = 1001;
-    pub const ORCHESTRATOR: u32 = 1000;
+    pub const PARA_ID: u32 = 2001;
+    pub const ORCHESTRATOR: u32 = 2000;
     pub fn genesis() -> sp_core::storage::Storage {
         let genesis_config = container_chain_template_frontier_runtime::GenesisConfig {
             system: container_chain_template_frontier_runtime::SystemConfig {
@@ -259,5 +259,46 @@ pub mod frontier_template {
             AccountId::from(hex!("798d4Ba9baf0064Ec19eB4F0a1a45785ae9D6DFc")), // Charleth
             AccountId::from(hex!("773539d4Ac0e786233D90A233654ccEE26a613D9")), // Dorothy
         ]
+    }
+}
+
+// Simple template
+pub mod simple_template {
+    use {
+        super::*, container_chain_template_simple_runtime::UNIT as DEV, sp_runtime::BuildStorage,
+    };
+    pub const PARA_ID: u32 = 2002;
+    pub const ORCHESTRATOR: u32 = 2000;
+    const ENDOWMENT: u128 = 1_000_000 * DEV;
+
+    pub fn genesis() -> sp_core::storage::Storage {
+        let genesis_config = container_chain_template_simple_runtime::GenesisConfig {
+            system: container_chain_template_simple_runtime::SystemConfig {
+                code: container_chain_template_simple_runtime::WASM_BINARY
+                    .expect("WASM binary was not build, please build it!")
+                    .to_vec(),
+                ..Default::default()
+            },
+            balances: container_chain_template_simple_runtime::BalancesConfig {
+                balances: accounts::init_balances()
+                    .iter()
+                    .cloned()
+                    .map(|k| (k, ENDOWMENT))
+                    .collect(),
+            },
+            parachain_info: container_chain_template_simple_runtime::ParachainInfoConfig {
+                parachain_id: PARA_ID.into(),
+                ..Default::default()
+            },
+            sudo: container_chain_template_simple_runtime::SudoConfig {
+                key: Some(accounts::init_balances()[0].clone()),
+            },
+            authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
+                orchestrator_para_id: ORCHESTRATOR.into(),
+            },
+            ..Default::default()
+        };
+
+        genesis_config.build_storage().unwrap()
     }
 }

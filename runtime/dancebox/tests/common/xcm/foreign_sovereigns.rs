@@ -16,14 +16,17 @@
 
 use {
     crate::common::xcm::{
-        mocknets::{Dancebox, DanceboxPallet, Westend, WestendEmptyReceiver, WestendSender},
+        mocknets::{
+            Dancebox, DanceboxPallet, EthereumEmptyReceiver, EthereumSender, FrontierTemplate,
+            Westend, WestendEmptyReceiver, WestendSender,
+        },
         *,
     },
+    container_chain_template_frontier_runtime::UNIT as FRONTIER_DEV,
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    sp_core::Get,
     westend_runtime_constants::currency::UNITS as WND,
     xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
     xcm_executor::traits::Convert,
@@ -67,7 +70,7 @@ fn using_sovereign_works_from_tanssi() {
         let sovereign_account =
             westend_runtime::xcm_config::LocationConverter::convert_ref(MultiLocation {
                 parents: 0,
-                interior: X1(Parachain(<Dancebox as Para>::ParachainInfo::get().into())),
+                interior: X1(Parachain(2000u32.into())),
             })
             .unwrap();
 
@@ -133,14 +136,17 @@ fn using_sovereign_works_from_tanssi() {
 fn using_sovereign_works_from_tanssi_frontier_template() {
     // XcmPallet send arguments
     let sudo_origin = <Dancebox as Para>::RuntimeOrigin::root();
-    let frontier_destination: VersionedMultiLocation = MultiLocation{
+    let frontier_destination: VersionedMultiLocation = MultiLocation {
         parents: 1,
-        interior: X1(Parachain(1001))
-    }.into();
+        interior: X1(Parachain(2001)),
+    }
+    .into();
 
-    let buy_execution_fee_amount = container_chain_template_frontier_runtime::WeightToFee::weight_to_fee(
-        &Weight::from_parts(10_000_000_000, 300_000),
-    );
+    let buy_execution_fee_amount =
+        container_chain_template_frontier_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(
+            10_000_000_000,
+            300_000,
+        ));
 
     let buy_execution_fee = MultiAsset {
         id: Concrete(container_chain_template_frontier_runtime::xcm_config::SelfReserve::get()),
@@ -159,7 +165,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
             assets: Wild(AllCounted(1)),
             beneficiary: AccountKey20 {
                 network: None,
-                id: EthereumEmptyReceiver::get().into(),
+                key: EthereumEmptyReceiver::get().into(),
             }
             .into(),
         },
@@ -168,17 +174,17 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
     FrontierTemplate::execute_with(|| {
         // We also need to transfer first sufficient amount to the sovereign
         let sovereign_account =
-            container_chain_template_frontier_runtime::xcm_config::LocationConverter::convert_ref(MultiLocation {
+            container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_ref(MultiLocation {
                 parents: 1,
-                interior: X1(Parachain(<Dancebox as Para>::ParachainInfo::get().into())),
+                interior: X1(Parachain(2000u32.into())),
             })
             .unwrap();
 
         let origin = <FrontierTemplate as Para>::RuntimeOrigin::signed(EthereumSender::get());
         assert_ok!(<FrontierTemplate as Para>::Balances::transfer(
             origin,
-            sp_runtime::MultiAddress::Id(sovereign_account),
-            100 * WND
+            sovereign_account,
+            100 * FRONTIER_DEV
         ));
         // Assert empty receiver has 0 funds
         assert_eq!(
@@ -203,23 +209,20 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
             Dancebox,
             vec![
                 RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
+                RuntimeEvent::XcmpQueue(cumulus_pallet_xcmp_queue::Event::XcmpMessageSent { .. }) => {},
             ]
         );
     });
 
-    // Receive XCM message in Relay
     FrontierTemplate::execute_with(|| {
         type RuntimeEvent = <FrontierTemplate as Para>::RuntimeEvent;
         assert_expected_events!(
             FrontierTemplate,
             vec![
-                RuntimeEvent::MessageQueue(
-                    pallet_message_queue::Event::Processed {
-                        success,
-                        ..
-                    }) => {
-                    success: *success == true,
-                },
+                RuntimeEvent::XcmpQueue(
+                cumulus_pallet_xcmp_queue::Event::Success {
+                    ..
+                }) => {},
             ]
         );
         // Assert empty receiver received funds

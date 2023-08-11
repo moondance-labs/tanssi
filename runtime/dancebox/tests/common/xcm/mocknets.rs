@@ -16,7 +16,7 @@
 use {
     super::constants::{
         accounts::{ALICE, BOB, RANDOM},
-        frontier_template, westend,
+        frontier_template, simple_template, westend,
     },
     frame_support::{parameter_types, sp_tracing},
 };
@@ -67,12 +67,20 @@ decl_test_parachains! {
             // And to sovereigns
             (
                 SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
-                    MultiLocation{ parents: 1, interior: X1(Parachain(1001u32))}
+                    MultiLocation{ parents: 1, interior: X1(Parachain(2001u32))}
                 ).unwrap(), 100_000 * crate::UNIT
-            )
+            ),
+            (
+                SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
+                    MultiLocation{ parents: 1, interior: X1(Parachain(2002u32))}
+                ).unwrap(), 100_000 * crate::UNIT
+            ),
+
 
         ])
-        .with_safe_xcm_version(3).build_storage(),
+        .with_safe_xcm_version(3)
+        .with_own_para_id(2000u32.into())
+        .build_storage(),
         on_init = (),
         runtime = {
             Runtime: dancebox_runtime::Runtime,
@@ -110,6 +118,26 @@ decl_test_parachains! {
         pallets_extra = {
             PolkadotXcm: container_chain_template_frontier_runtime::PolkadotXcm,
         }
+    },
+    pub struct SimpleTemplate {
+        genesis = simple_template::genesis(),
+        on_init = (),
+        runtime = {
+            Runtime: container_chain_template_simple_runtime::Runtime,
+            RuntimeOrigin: container_chain_template_simple_runtime::RuntimeOrigin,
+            RuntimeCall: container_chain_template_simple_runtime::RuntimeCall,
+            RuntimeEvent: container_chain_template_simple_runtime::RuntimeEvent,
+            XcmpMessageHandler: container_chain_template_simple_runtime::XcmpQueue,
+            DmpMessageHandler: container_chain_template_simple_runtime::DmpQueue,
+            LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
+            System: container_chain_template_simple_runtime::System,
+            Balances: container_chain_template_simple_runtime::Balances,
+            ParachainSystem: container_chain_template_simple_runtime::ParachainSystem,
+            ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
+        },
+        pallets_extra = {
+            PolkadotXcm: container_chain_template_simple_runtime::PolkadotXcm,
+        }
     }
 }
 
@@ -119,6 +147,7 @@ decl_test_networks! {
         parachains = vec![
             Dancebox,
             FrontierTemplate,
+            SimpleTemplate,
         ],
     }
 }
@@ -131,6 +160,10 @@ parameter_types! {
     // Dancebox
     pub DanceboxSender: dancebox_runtime::AccountId = Dancebox::account_id_of(ALICE);
     pub DanceboxReceiver: dancebox_runtime::AccountId = Dancebox::account_id_of(BOB);
+
+    // SimpleTemplate
+    pub SimpleTemplateSender: container_chain_template_simple_runtime::AccountId = SimpleTemplate::account_id_of(ALICE);
+    pub SimpleTemplateReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplate::account_id_of(BOB);
 
     pub EthereumSender: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[0];
     pub EthereumReceiver: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[1];
