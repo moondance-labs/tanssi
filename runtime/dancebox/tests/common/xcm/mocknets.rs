@@ -24,7 +24,7 @@ use {
 pub use sp_core::{sr25519, storage::Storage, Get};
 use {
     xcm::prelude::*,
-    xcm_builder::ParentIsPreset,
+    xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     xcm_emulator::{
         decl_test_networks, decl_test_parachains, decl_test_relay_chains, Parachain, RelayChain,
         TestExt,
@@ -63,7 +63,13 @@ decl_test_parachains! {
             (crate::AccountId::from(crate::ALICE), 210_000 * crate::UNIT),
             (crate::AccountId::from(crate::BOB), 100_000 * crate::UNIT),
             // Give some balance to the relay chain account
-            (ParentIsPreset::<crate::AccountId>::convert_ref(MultiLocation::parent()).unwrap(), 100_000 * crate::UNIT)
+            (ParentIsPreset::<crate::AccountId>::convert_ref(MultiLocation::parent()).unwrap(), 100_000 * crate::UNIT),
+            // And to sovereigns
+            (
+                SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
+                    MultiLocation{ parents: 1, interior: X1(Parachain(1001u32))}
+                ).unwrap(), 100_000 * crate::UNIT)
+
         ])
         .with_safe_xcm_version(3).build_storage(),
         on_init = (),
