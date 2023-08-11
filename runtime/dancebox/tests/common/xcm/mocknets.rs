@@ -68,7 +68,8 @@ decl_test_parachains! {
             (
                 SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
                     MultiLocation{ parents: 1, interior: X1(Parachain(1001u32))}
-                ).unwrap(), 100_000 * crate::UNIT)
+                ).unwrap(), 100_000 * crate::UNIT
+            )
 
         ])
         .with_safe_xcm_version(3).build_storage(),
