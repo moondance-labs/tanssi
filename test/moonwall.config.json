@@ -78,7 +78,8 @@
       "foundation": {
         "type": "zombie",
         "zombieSpec": {
-          "configPath": "./configs/zombieTanssi.json"
+          "configPath": "./configs/zombieTanssi.json",
+          "skipBlockCheck": ["Container2002"]
         }
       },
       "connections": [
@@ -101,6 +102,11 @@
           "name": "Container2001",
           "type": "polkadotJs",
           "endpoints": ["ws://127.0.0.1:9950"]
+        },
+        {
+          "name": "Container2002",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9951"]
         },
         {
           "name": "ethers",
