@@ -62,6 +62,8 @@ use {
     sp_version::RuntimeVersion,
 };
 
+pub mod xcm_config;
+
 // Polkadot imports
 use polkadot_runtime_common::BlockHashCount;
 
@@ -474,6 +476,12 @@ construct_runtime!(
         // ContainerChain Author Verification
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
         AuthorInherent: pallet_author_inherent = 51,
+
+        // XCM
+        XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 70,
+        CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
+        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
+        PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config} = 73,
 
     }
 );

@@ -1439,10 +1439,14 @@ dependencies = [
 name = "container-chain-template-simple-runtime"
 version = "0.1.0"
 dependencies = [
+ "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
+ "cumulus-pallet-xcm",
+ "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -1462,6 +1466,7 @@ dependencies = [
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-utility",
+ "pallet-xcm",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain",
@@ -1482,6 +1487,9 @@ dependencies = [
  "sp-version",
  "substrate-wasm-builder",
  "tp-consensus",
+ "xcm",
+ "xcm-builder",
+ "xcm-executor",
 ]
 
 [[package]]

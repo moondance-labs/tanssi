@@ -108,7 +108,7 @@ jobs:
           echo "Executing grcov"
           ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html --branch --ignore-not-existing --ignore "target/release/build/*" \
-            --ignore "*mock.rs" --ignore "*tests.rs" \
+            --ignore "*mock.rs" --ignore "*tests.rs" --ignore "runtime/dancebox/src/tests" \
             -o coverage/ --llvm 2>&1 \
             | tee grcov.log
 
