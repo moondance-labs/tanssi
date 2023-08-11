@@ -1838,7 +1838,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-cli"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "clap",
  "parity-scale-codec",
@@ -1853,7 +1853,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-collator"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-client-consensus-common",
  "cumulus-client-network",
@@ -1876,7 +1876,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-consensus-aura"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "cumulus-client-collator",
@@ -1914,7 +1914,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-consensus-common"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "cumulus-client-pov-recovery",
@@ -1940,7 +1940,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-consensus-proposer"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1955,7 +1955,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-consensus-relay-chain"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -1978,7 +1978,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-network"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "cumulus-relay-chain-interface",
@@ -2001,7 +2001,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-pov-recovery"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -2025,7 +2025,7 @@ dependencies = [
 [[package]]
 name = "cumulus-client-service"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-client-cli",
  "cumulus-client-collator",
@@ -2060,7 +2060,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-dmp-queue"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -2077,7 +2077,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-parachain-system"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "bytes",
  "cumulus-pallet-parachain-system-proc-macro",
@@ -2106,7 +2106,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-parachain-system-proc-macro"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -2117,7 +2117,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-session-benchmarking"
 version = "3.0.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -2131,7 +2131,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-xcm"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -2147,7 +2147,7 @@ dependencies = [
 [[package]]
 name = "cumulus-pallet-xcmp-queue"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -2167,7 +2167,7 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-core"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "parity-scale-codec",
  "polkadot-core-primitives",
@@ -2184,7 +2184,7 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-parachain-inherent"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -2207,7 +2207,7 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-timestamp"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-primitives-core",
  "futures 0.3.28",
@@ -2220,7 +2220,7 @@ dependencies = [
 [[package]]
 name = "cumulus-primitives-utility"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -2238,7 +2238,7 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-inprocess-interface"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -2263,7 +2263,7 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-interface"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -2281,7 +2281,7 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-minimal-node"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "array-bytes 6.1.0",
  "async-trait",
@@ -2319,7 +2319,7 @@ dependencies = [
 [[package]]
 name = "cumulus-relay-chain-rpc-interface"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
@@ -2349,7 +2349,7 @@ dependencies = [
 [[package]]
 name = "cumulus-test-relay-sproof-builder"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-primitives-core",
  "parity-scale-codec",
@@ -2362,7 +2362,7 @@ dependencies = [
 [[package]]
 name = "cumulus-test-relay-validation-worker-provider"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "polkadot-node-core-pvf-worker",
  "toml 0.7.4",
@@ -2371,7 +2371,7 @@ dependencies = [
 [[package]]
 name = "cumulus-test-runtime"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -2403,7 +2403,7 @@ dependencies = [
 [[package]]
 name = "cumulus-test-service"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "async-trait",
  "clap",
@@ -2550,6 +2550,7 @@ dependencies = [
 name = "dancebox-runtime"
 version = "0.1.0"
 dependencies = [
+ "container-chain-template-frontier-runtime",
  "cumulus-pallet-dmp-queue",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
@@ -7154,7 +7155,7 @@ dependencies = [
 [[package]]
 name = "pallet-collator-selection"
 version = "3.0.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -8218,7 +8219,7 @@ dependencies = [
 [[package]]
 name = "parachain-info"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -8230,7 +8231,7 @@ dependencies = [
 [[package]]
 name = "parachains-common"
 version = "1.0.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "cumulus-primitives-utility",
  "frame-support",
@@ -16094,7 +16095,7 @@ dependencies = [
 [[package]]
 name = "xcm-emulator"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#23fbedfbe8887e09eb6f098a8cae72f0615c96a8"
+source = "git+https://github.com/moondance-labs/cumulus?branch=tanssi-polkadot-v0.9.43#52fbdc77dddbc9702866541270299ec09ff1c35a"
 dependencies = [
  "casey",
  "cumulus-pallet-dmp-queue",

@@ -104,6 +104,8 @@ sc-consensus-grandpa = { workspace = true }
 pallet-message-queue = { workspace = true }
 polkadot-runtime-parachains = { workspace = true, features = ["std"] }
 polkadot-service = { workspace = true }
+container-chain-template-frontier-runtime  = { workspace = true, features = ["std"] }
+hex-literal = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }

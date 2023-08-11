@@ -203,3 +203,61 @@ pub mod westend {
         genesis_config.build_storage().unwrap()
     }
 }
+
+
+// Frontier template
+pub mod frontier_template {
+    use container_chain_template_frontier_runtime::AccountId;
+    use hex_literal::hex;
+    use sp_runtime::BuildStorage;
+    pub const PARA_ID: u32 = 1001;
+    pub const ORCHESTRATOR: u32 = 1000;
+    pub fn genesis() -> sp_core::storage::Storage {
+        let genesis_config = container_chain_template_frontier_runtime::GenesisConfig {
+            system: container_chain_template_frontier_runtime::SystemConfig {
+                code: container_chain_template_frontier_runtime::WASM_BINARY
+                    .expect("WASM binary was not build, please build it!")
+                    .to_vec(),
+                    ..Default::default()
+            },
+            balances: container_chain_template_frontier_runtime::BalancesConfig {
+                balances: pre_funded_accounts()
+                    .iter()
+                    .cloned()
+                    .map(|k| (k, 1 << 80))
+                    .collect(),
+            },
+            parachain_info: container_chain_template_frontier_runtime::ParachainInfoConfig {
+                parachain_id: PARA_ID.into(),
+				..Default::default()
+            },
+            // EVM compatibility
+            // We should change this to something different than Moonbeam
+            // For now moonwall is very tailored for moonbeam so we need it for tests
+            evm_chain_id: container_chain_template_frontier_runtime::EVMChainIdConfig {
+                chain_id: 1281u32 as u64,
+            },
+            sudo: container_chain_template_frontier_runtime::SudoConfig {
+                key: Some(pre_funded_accounts()[0]),
+            },
+            authorities_noting: container_chain_template_frontier_runtime::AuthoritiesNotingConfig {
+                orchestrator_para_id: ORCHESTRATOR.into(),
+            },
+            ..Default::default()
+        };
+        
+        genesis_config.build_storage().unwrap()
+    }
+    /// Get pre-funded accounts
+    pub fn pre_funded_accounts() -> Vec<AccountId> {
+        // These addresses are derived from Substrate's canonical mnemonic:
+        // bottom drive obey lake curtain smoke basket hold race lonely fit walk
+        vec![
+            AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")), // Alith
+            AccountId::from(hex!("3Cd0A705a2DC65e5b1E1205896BaA2be8A07c6e0")), // Baltathar
+            AccountId::from(hex!("798d4Ba9baf0064Ec19eB4F0a1a45785ae9D6DFc")), // Charleth
+            AccountId::from(hex!("773539d4Ac0e786233D90A233654ccEE26a613D9")), // Dorothy
+        ]
+    }
+}
+

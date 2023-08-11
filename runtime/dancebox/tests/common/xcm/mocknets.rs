@@ -16,14 +16,13 @@
 use {
     super::constants::{
         accounts::{ALICE, BOB, RANDOM},
-        westend,
+        westend, frontier_template,
     },
     frame_support::{parameter_types, sp_tracing},
 };
 
 pub use sp_core::{sr25519, storage::Storage, Get};
 use {
-    crate::{AccountId, Balance},
     xcm::prelude::*,
     xcm_builder::ParentIsPreset,
     xcm_emulator::{
@@ -61,10 +60,10 @@ decl_test_parachains! {
         genesis = crate::ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(crate::ALICE), 210_000 * crate::UNIT),
-            (AccountId::from(crate::BOB), 100_000 * crate::UNIT),
+            (crate::AccountId::from(crate::ALICE), 210_000 * crate::UNIT),
+            (crate::AccountId::from(crate::BOB), 100_000 * crate::UNIT),
             // Give some balance to the relay chain account
-            (ParentIsPreset::<AccountId>::convert_ref(MultiLocation::parent()).unwrap(), 100_000 * crate::UNIT)
+            (ParentIsPreset::<crate::AccountId>::convert_ref(MultiLocation::parent()).unwrap(), 100_000 * crate::UNIT)
         ])
         .with_safe_xcm_version(3).build_storage(),
         on_init = (),
@@ -84,6 +83,26 @@ decl_test_parachains! {
         pallets_extra = {
             PolkadotXcm: dancebox_runtime::PolkadotXcm,
         }
+    },
+    pub struct FrontierTemplate {
+        genesis = frontier_template::genesis(),
+        on_init = (),
+        runtime = {
+            Runtime: container_chain_template_frontier_runtime::Runtime,
+            RuntimeOrigin: container_chain_template_frontier_runtime::RuntimeOrigin,
+            RuntimeCall: container_chain_template_frontier_runtime::RuntimeCall,
+            RuntimeEvent: container_chain_template_frontier_runtime::RuntimeEvent,
+            XcmpMessageHandler: container_chain_template_frontier_runtime::XcmpQueue,
+            DmpMessageHandler: container_chain_template_frontier_runtime::DmpQueue,
+            LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
+            System: container_chain_template_frontier_runtime::System,
+            Balances: container_chain_template_frontier_runtime::Balances,
+            ParachainSystem: container_chain_template_frontier_runtime::ParachainSystem,
+            ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
+        },
+        pallets_extra = {
+            PolkadotXcm: container_chain_template_frontier_runtime::PolkadotXcm,
+        }
     }
 }
 
@@ -92,6 +111,7 @@ decl_test_networks! {
         relay_chain = Westend,
         parachains = vec![
             Dancebox,
+            FrontierTemplate,
         ],
     }
 }
@@ -104,4 +124,6 @@ parameter_types! {
     // Dancebox
     pub DanceboxSender: dancebox_runtime::AccountId = Dancebox::account_id_of(ALICE);
     pub DanceboxReceiver: dancebox_runtime::AccountId = Dancebox::account_id_of(BOB);
+
+    pub EthereumSender: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[0];
 }
