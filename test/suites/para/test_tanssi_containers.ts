@@ -9,6 +9,7 @@ import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts
 import { getKeyringNimbusIdHex } from "../../util/keys.js";
 import { getHeaderFromRelay } from "../../util/relayInterface.js";
 import fs from "fs/promises";
+import { exec, spawn } from 'child_process';
 
 describeSuite({
   id: "ZTN",
@@ -67,10 +68,27 @@ describeSuite({
 
     it({
       id: "T01",
+      timeout: 300000,
       title: "Blocks are being produced on parachain",
       test: async function () {
         const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
         expect(blockNum).to.be.greaterThan(0);
+
+        const a = await getCollatorProcessPid("Collator2000-01");
+        console.log("collator PID: ", a);
+
+        expect(a.length).to.be.equal(1);
+
+        const pr1 = await restartProcessWithSameCommand(a[0]);
+
+        const b = await getCollatorProcessPid("Collator2000-02");
+        console.log("collator PID: ", b);
+
+        expect(b.length).to.be.equal(1);
+
+        const pr2 = await restartProcessWithSameCommand(b[0]);
+
+        await new Promise(resolve => setTimeout(resolve, 2 * 60 * 1000));
       },
     });
 
@@ -431,4 +449,55 @@ function getTmpZombiePath() {
 
   // Return null if the environment variable is not set
   return null;
+}
+
+async function getCollatorProcessPid(collatorName) {
+  return new Promise((resolve, reject) => {
+      const zombiePath = getTmpZombiePath(); // Make sure to define this function
+      const psCommand = `ps aux | grep tanssi-node |grep "${zombiePath}" | grep "${collatorName}" | grep -v grep | awk '{print $2}'`;
+
+      exec(psCommand, (error, stdout, stderr) => {
+          if (error) {
+              reject(error);
+              return;
+          }
+
+          const pids = stdout.trim().split('\n');
+          if (pids.length > 0) {
+              resolve(pids);
+          } else {
+              reject(new Error(`No process found for ${collatorName}`));
+          }
+      });
+  });
+}
+
+async function restartProcessWithSameCommand(pid) {
+  // Get the command used to start the existing process
+  const cmd = (await fs.readFile(`/proc/${pid}/cmdline`, 'utf8')).split('\0')[0];
+
+  try {
+      // Kill the existing process
+      process.kill(pid, 'SIGTERM');
+  } catch (killError) {
+      throw new Error(`Failed to kill process with PID ${pid}: ${killError.message}`);
+  }
+
+  // Wait for a specified delay before starting the new process
+  const delayMilliseconds = 5000;
+  await new Promise(resolve => setTimeout(resolve, delayMilliseconds));
+
+  try {
+      
+      // Start the process with the same command
+      const restartedProcess = spawn(cmd, [], {
+          detached: true,
+          stdio: 'ignore' // Change this if you want to capture the output
+      });
+
+      restartedProcess.unref(); // Allow the parent process to exit without waiting for the child
+      return restartedProcess;
+  } catch (startError) {
+      throw new Error(`Failed to start process with the same command: ${startError.message}`);
+  }
 }
