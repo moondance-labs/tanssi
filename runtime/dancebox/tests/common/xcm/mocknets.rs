@@ -16,7 +16,7 @@
 use {
     super::constants::{
         accounts::{ALICE, BOB, RANDOM},
-        westend, frontier_template,
+        frontier_template, westend,
     },
     frame_support::{parameter_types, sp_tracing},
 };
@@ -126,4 +126,6 @@ parameter_types! {
     pub DanceboxReceiver: dancebox_runtime::AccountId = Dancebox::account_id_of(BOB);
 
     pub EthereumSender: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[0];
+    pub EthereumReceiver: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[1];
+    pub EthereumEmptyReceiver: container_chain_template_frontier_runtime::AccountId = [1u8; 20].into();
 }

@@ -204,12 +204,12 @@ pub mod westend {
     }
 }
 
-
 // Frontier template
 pub mod frontier_template {
-    use container_chain_template_frontier_runtime::AccountId;
-    use hex_literal::hex;
-    use sp_runtime::BuildStorage;
+    use {
+        container_chain_template_frontier_runtime::AccountId, hex_literal::hex,
+        sp_runtime::BuildStorage,
+    };
     pub const PARA_ID: u32 = 1001;
     pub const ORCHESTRATOR: u32 = 1000;
     pub fn genesis() -> sp_core::storage::Storage {
@@ -218,7 +218,7 @@ pub mod frontier_template {
                 code: container_chain_template_frontier_runtime::WASM_BINARY
                     .expect("WASM binary was not build, please build it!")
                     .to_vec(),
-                    ..Default::default()
+                ..Default::default()
             },
             balances: container_chain_template_frontier_runtime::BalancesConfig {
                 balances: pre_funded_accounts()
@@ -229,7 +229,7 @@ pub mod frontier_template {
             },
             parachain_info: container_chain_template_frontier_runtime::ParachainInfoConfig {
                 parachain_id: PARA_ID.into(),
-				..Default::default()
+                ..Default::default()
             },
             // EVM compatibility
             // We should change this to something different than Moonbeam
@@ -240,12 +240,13 @@ pub mod frontier_template {
             sudo: container_chain_template_frontier_runtime::SudoConfig {
                 key: Some(pre_funded_accounts()[0]),
             },
-            authorities_noting: container_chain_template_frontier_runtime::AuthoritiesNotingConfig {
-                orchestrator_para_id: ORCHESTRATOR.into(),
-            },
+            authorities_noting:
+                container_chain_template_frontier_runtime::AuthoritiesNotingConfig {
+                    orchestrator_para_id: ORCHESTRATOR.into(),
+                },
             ..Default::default()
         };
-        
+
         genesis_config.build_storage().unwrap()
     }
     /// Get pre-funded accounts
@@ -260,4 +261,3 @@ pub mod frontier_template {
         ]
     }
 }
-

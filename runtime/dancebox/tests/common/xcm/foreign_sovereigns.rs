@@ -128,3 +128,106 @@ fn using_sovereign_works_from_tanssi() {
         );
     });
 }
+
+#[test]
+fn using_sovereign_works_from_tanssi_frontier_template() {
+    // XcmPallet send arguments
+    let sudo_origin = <Dancebox as Para>::RuntimeOrigin::root();
+    let frontier_destination: VersionedMultiLocation = MultiLocation{
+        parents: 1,
+        interior: X1(Parachain(1001))
+    }.into();
+
+    let buy_execution_fee_amount = container_chain_template_frontier_runtime::WeightToFee::weight_to_fee(
+        &Weight::from_parts(10_000_000_000, 300_000),
+    );
+
+    let buy_execution_fee = MultiAsset {
+        id: Concrete(container_chain_template_frontier_runtime::xcm_config::SelfReserve::get()),
+        fun: Fungible(buy_execution_fee_amount),
+    };
+
+    let xcm = VersionedXcm::from(Xcm(vec![
+        WithdrawAsset {
+            0: vec![buy_execution_fee.clone()].into(),
+        },
+        BuyExecution {
+            fees: buy_execution_fee.clone(),
+            weight_limit: Unlimited,
+        },
+        DepositAsset {
+            assets: Wild(AllCounted(1)),
+            beneficiary: AccountKey20 {
+                network: None,
+                id: EthereumEmptyReceiver::get().into(),
+            }
+            .into(),
+        },
+    ]));
+
+    FrontierTemplate::execute_with(|| {
+        // We also need to transfer first sufficient amount to the sovereign
+        let sovereign_account =
+            container_chain_template_frontier_runtime::xcm_config::LocationConverter::convert_ref(MultiLocation {
+                parents: 1,
+                interior: X1(Parachain(<Dancebox as Para>::ParachainInfo::get().into())),
+            })
+            .unwrap();
+
+        let origin = <FrontierTemplate as Para>::RuntimeOrigin::signed(EthereumSender::get());
+        assert_ok!(<FrontierTemplate as Para>::Balances::transfer(
+            origin,
+            sp_runtime::MultiAddress::Id(sovereign_account),
+            100 * WND
+        ));
+        // Assert empty receiver has 0 funds
+        assert_eq!(
+            <FrontierTemplate as Para>::System::account(EthereumEmptyReceiver::get())
+                .data
+                .free,
+            0
+        );
+    });
+
+    // Send XCM message from Dancebox
+    Dancebox::execute_with(|| {
+        assert_ok!(<Dancebox as DanceboxPallet>::PolkadotXcm::send(
+            sudo_origin,
+            bx!(frontier_destination),
+            bx!(xcm),
+        ));
+
+        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::PolkadotXcm(pallet_xcm::Event::Sent { .. }) => {},
+            ]
+        );
+    });
+
+    // Receive XCM message in Relay
+    FrontierTemplate::execute_with(|| {
+        type RuntimeEvent = <FrontierTemplate as Para>::RuntimeEvent;
+        assert_expected_events!(
+            FrontierTemplate,
+            vec![
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success,
+                        ..
+                    }) => {
+                    success: *success == true,
+                },
+            ]
+        );
+        // Assert empty receiver received funds
+        assert!(
+            <FrontierTemplate as Para>::System::account(EthereumEmptyReceiver::get())
+                .data
+                .free
+                > 0
+        );
+    });
+}
