@@ -126,7 +126,7 @@ jobs:
             cd ..
             ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html --branch --ignore-not-existing --ignore "target/release/build/*" \
-            --ignore "*mock.rs" --ignore "*tests.rs" \
+            --ignore "*mock.rs" --ignore "*tests.rs" --ignore "runtime/src/dancebox/tests" \
             -o coverage/ --llvm
           fi
 
