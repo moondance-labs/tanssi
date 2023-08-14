@@ -193,19 +193,21 @@ jobs:
       - name: "Node typescript-api"
         uses: actions/setup-node@v2
         with:
-          node-version: 18.x
+          node-version: 20.x
+          cache: "pnpm"
+          cache-dependency-path: typescript-api/pnpm-lock.yaml
 
 
       - name: "Generate typescript api"
         run: |
           chmod uog+x target/release/tanssi-node
           cd typescript-api
-          ./scripts/generate-types.sh
+          pnpm tsx ./scripts/generate-types.ts
           
       - name: "Node tests" 
         uses: actions/setup-node@v2
         with:
-          node-version: 18.x
+          node-version: 20.x
           cache: "pnpm"
           cache-dependency-path: test/pnpm-lock.yaml
       
