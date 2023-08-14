@@ -6,22 +6,20 @@
 # It is triggered manually via the `workflow_dispatch` event, where the user must provide
 # the runtime specification version they wish to generate interfaces for.
 #
-# Note: This will not publish the generated interfaces, that is instead done by other workflow:
+# Note: 
+# - This will not publish the generated interfaces, that is instead done by other workflow:
 #        "publish-typescript-api.yml"
 #
 # Workflow Steps:
 # 1. Checkout the entire repository.
 # 2. Retrieve the Tanssi binary associated with the specified runtime spec version.
 # 3. Set up the required Node.js and pnpm versions.
-# 4. Upgrade the PolkadotJs packages in the `typescript-api` directory.
-# 5. Build the TypeScript API with the newly upgraded packages.
-# 6. Regenerate the TypeScript API with the new runtime metadata.
-# 7. Create a new pull request for the upgraded TypeScript API.
+# 4. Install the latest PolkadotJs packages in the `typescript-api` directory.
+# 5. Regenerate the TypeScript API with the new runtime metadata.
+# 6. Create a new pull request for the upgraded TypeScript API.
 #
-# Important:
-# - Ensure that the required Node.js and pnpm versions are installed.
-# - The new pull request is created on the branch: girazoki-tanssi-api-generation
-#   and will be in draft status initially.
+# Note:
+# - The new pull request is created on the branch: master and will be in draft status.
 # - Reviewers "girazoki" and "tmpolaczyk" are automatically assigned to the pull request.
 # -----------------------------------------------------------------------------
 
@@ -59,19 +57,16 @@ jobs:
       - name: Pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7
+          version: 8
       - name: Use Node.js 20.x
         uses: actions/setup-node@v3
         with:
           node-version: 20.x
-      - name: Install Typescript Packages for PolkadotJs
-        run: |
-          cd typescript-api
-          pnpm install
       - name: Regenerate typescript api with new runtime metadata
         run: |
           cd typescript-api
-          ./scripts/runtime-upgrade.sh ${{ github.event.inputs.spec_version }}
+          pnpm install
+          pnpm tsx ./scripts/runtime-upgrade.ts ${{ github.event.inputs.spec_version }}
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:

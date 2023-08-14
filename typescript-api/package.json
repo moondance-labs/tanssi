@@ -29,7 +29,7 @@
         "postbuild": "pnpm tsx ./scripts/postbuild.ts",
         "publish": "cd build && npm publish",
         "deploy": "pnpm run generate && pnpm run build && pnpm run publish",
-        "pretty": "prettier --write --ignore-unknown --plugin prettier-plugin-jsdoc 'src/**/*' 'scripts/**/*'"
+        "pretty": "prettier --write --ignore-unknown --plugin prettier-plugin-jsdoc 'src/**/*'"
     },
     "main": "./index.cjs",
     "module": "./index.js",
