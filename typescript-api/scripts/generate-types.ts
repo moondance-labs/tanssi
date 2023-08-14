@@ -1,5 +1,6 @@
 import { execSync, spawn } from "child_process";
 import { existsSync, writeFileSync } from "fs";
+import path from "path";
 
 async function main() {
   const CHAINS = ["dancebox"];
@@ -23,48 +24,57 @@ async function main() {
   // Get runtimes metadata
   for (const CHAIN of CHAINS) {
     console.log(`Starting ${CHAIN} node`);
-    const nodeProcess = spawn(
-      "../target/release/tanssi-node",
-      [
-        "--no-hardware-benchmarks",
-        "--no-telemetry",
-        "--no-prometheus",
-        "--alice",
-        "--tmp",
-        `--chain=${CHAIN}-local`,
-        "--dev-service",
-        "--wasm-execution=interpreted-i-know-what-i-do",
-        "--rpc-port=9933",
-      ],
-      { stdio: ["ignore", "pipe", "pipe"] }
-    );
+    const nodeProcess = spawn("../target/release/tanssi-node", [
+      "--no-hardware-benchmarks",
+      "--no-telemetry",
+      "--no-prometheus",
+      "--alice",
+      "--tmp",
+      `--chain=${CHAIN}-local`,
+      "--dev-service",
+      "--wasm-execution=interpreted-i-know-what-i-do",
+      "--rpc-port=9933",
+    ]);
 
-    const logStream = nodeProcess.stdout;
-    logStream.on("data", (data) => {
-      if (data.includes("Running JSON-RPC server")) {
-        console.log(`Getting ${CHAIN} metadata`);
+    await new Promise(async (resolve, reject) => {
+      const onData = async (data: any) => {
+        if (data.includes("Running JSON-RPC server")) {
+          console.log(`Getting ${CHAIN} metadata`);
 
-        const requestOptions = {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: "1",
-            jsonrpc: "2.0",
-            method: "state_getMetadata",
-            params: [],
-          }),
-        };
+          const requestOptions = {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: "1",
+              jsonrpc: "2.0",
+              method: "state_getMetadata",
+              params: [],
+            }),
+          };
 
-        fetch("http://localhost:9933", requestOptions)
-          .then((response) => response.json())
-          .then((data) => {
-            writeFileSync(`metadata-${CHAIN}.json`, JSON.stringify(data));
+          fetch("http://localhost:9933", requestOptions)
+            .then((response) => response.json())
+            .then((data) => {
+              writeFileSync(path.join(process.cwd(), `metadata-${CHAIN}.json`), JSON.stringify(data));
 
-            execSync("pnpm run load:meta:local", { stdio: "inherit" });
-            nodeProcess.kill();
-            setTimeout(() => {}, 5000); // Sleep for 5 seconds
-          });
-      }
+              execSync("pnpm run load:meta:local", { stdio: "inherit" });
+              nodeProcess.kill();
+              setTimeout(() => {}, 5000); // Sleep for 5 seconds
+              resolve("success");
+            });
+        }
+      };
+
+      nodeProcess.stderr!.on("data", onData);
+      nodeProcess.stdout!.on("data", onData);
+      nodeProcess.stderr.on("error", (error) => {
+        console.error(error);
+        reject(error);
+      });
+      nodeProcess.stdout.on("error", (error) => {
+        console.error(error);
+        reject(error);
+      });
     });
   }
 
