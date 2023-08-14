@@ -41,7 +41,6 @@ runs:
       with:
         node-version: 20.x
         cache: "pnpm"
-        # cache-dependency-path: "./typescript-api/pnpm-lock.yaml"
 
     - name: Install typescript-api
       shell: bash
@@ -49,13 +48,6 @@ runs:
         cd ./typescript-api
         pnpm install
         pnpm create-local-interfaces
-
-    # - name: Tests node cache
-    #   uses: actions/setup-node@v3
-    #   with:
-    #     node-version: 20.x
-    #     cache: "pnpm"
-    #     cache-dependency-path: "./test/pnpm-lock.yaml"
 
     - name: Install and run
       shell: bash
