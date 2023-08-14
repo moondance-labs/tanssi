@@ -195,8 +195,6 @@ jobs:
         with:
           node-version: 20.x
           cache: "pnpm"
-          cache-dependency-path: typescript-api/pnpm-lock.yaml
-
 
       - name: "Generate typescript api"
         run: |
