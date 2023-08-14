@@ -1,6 +1,6 @@
 {
     "name": "@tanssi/api-augment",
-    "version": "0.200.0",
+    "version": "0.201.0",
     "type": "module",
     "private": true,
     "description": "Tanssi types augment for @polkadot/api",
@@ -13,9 +13,10 @@
         "directory": "typescript-api"
     },
     "engines": {
-        "node": ">=14.0.0"
+        "node": ">=20.0.0"
     },
     "scripts": {
+        "create-local-package": "pnpm tsx ./scripts/runtime-upgrade.ts",
         "generate": "pnpm run load:meta && npm run generate:defs && npm run generate:meta",
         "clean": "pnpm exec rm -rf node_modules && pnpm exec rm -rf build",
         "postgenerate": "pnpm run pretty",
@@ -31,25 +32,25 @@
         "deploy": "pnpm run generate && pnpm run build && pnpm run publish",
         "pretty": "prettier --write --ignore-unknown --plugin prettier-plugin-jsdoc 'src/**/*'"
     },
-    "main": "./index.cjs",
-    "module": "./index.js",
-    "types": "./index.d.ts",
+    "main": "./build/index.cjs",
+    "module": "./build/index.js",
+    "types": "./build/index.d.ts",
     "exports": {
         ".": {
-            "types": "./index.d.ts",
-            "require": "./index.cjs",
-            "default": "./index.js"
+            "types": "./build/index.d.ts",
+            "require": "./build/index.cjs",
+            "default": "./build/index.js"
         },
         "./dancebox": {
-            "types": "./dancebox/index.d.ts",
-            "require": "./dancebox/index.cjs",
-            "default": "./dancebox/index.js"
+            "types": "./build/dancebox/index.d.ts",
+            "require": "./build/dancebox/index.cjs",
+            "default": "./build/dancebox/index.js"
         }
     },
     "typesVersions": {
         "*": {
             "dancebox": [
-                "dancebox/index.d.ts"
+                "./build/dancebox/index.d.ts"
             ]
         }
     },
@@ -58,6 +59,11 @@
         "types",
         "polkadot",
         "api"
+    ],
+    "files": [
+        "/build",
+        "README.md",
+        "LICENSE"
     ],
     "dependencies": {
         "@polkadot/api": "latest",
@@ -72,7 +78,8 @@
         "@polkadot/types-codec": "latest",
         "@polkadot/types-create": "latest",
         "@polkadot/types-known": "latest",
-        "@polkadot/types-support": "latest"
+        "@polkadot/types-support": "latest",
+        "chalk": "^5.3.0"
     },
     "devDependencies": {
         "@polkadot/typegen": "latest",

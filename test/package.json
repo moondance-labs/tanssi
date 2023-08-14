@@ -37,18 +37,12 @@
     "pnpm": "^8.6.5",
     "prettier": "^2.8.8",
     "solc": "^0.8.19",
-    "@tanssi-network/api-augment": "0.0100.0",
+    "@tanssi/api-augment": "workspace:*",
     "tsx": "^3.12.7",
     "typescript": "^5.1.6",
     "viem": "^1.2.6",
     "web3": "4.0.2",
     "web3-providers-ws": "4.0.2",
     "yargs": "^17.7.2"
-  },
-  "pnpm": {
-    "overrides": {
-      "@polkadot/util": "$@polkadot/util",
-      "@tanssi-network/api-augment": "../typescript-api/build"
-    }
   }
 }

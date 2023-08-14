@@ -1,5 +1,6 @@
 import { execSync, spawn } from "child_process";
 import { existsSync, writeFileSync } from "fs";
+import chalk from "chalk";
 
 async function main() {
   const CHAINS = ["dancebox"];
@@ -14,7 +15,7 @@ async function main() {
     });
   }
 
-  if (!existsSync("../target/release/tanssi-node2")) {
+  if (!existsSync("../target/release/tanssi-node")) {
     console.error("Missing ../target/release/tanssi binary");
     process.exit(1);
   }
@@ -72,8 +73,13 @@ async function main() {
   execSync("pnpm run generate:meta", { stdio: "inherit" });
 
   // Build the package
+  console.log("Building package...");
   execSync("pnpm run build", { stdio: "inherit" });
+  console.log("Post build...");
+  execSync("pnpm run postbuild", { stdio: "inherit" });
   execSync("pnpm run postgenerate", { stdio: "inherit" });
+
+  console.log(`Script complete ${chalk.bgBlackBright.greenBright("api-augment")} package built successfully ✅`);
 }
 
 main()

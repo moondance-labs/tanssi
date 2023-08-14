@@ -6,9 +6,10 @@
   "environments": [
     {
       "name": "dev_tanssi",
+      "envVars": ["DEBUG_COLORS=1"],
       "testFileDir": ["suites/dev-tanssi", "suites/common"],
       "multiThreads": true,
-      "html": false,
+      "reporters": ["basic"],
       "foundation": {
         "type": "dev",
         "launchSpec": [

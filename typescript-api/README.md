@@ -5,7 +5,7 @@
 ## Installation
 
 ```bash
-npm i @tanssi-network/api-augment
+npm i @tanssi/api-augment
 ```
 
 > :warning: `@polkadot/api` should be installed in your project!
@@ -14,8 +14,8 @@ npm i @tanssi-network/api-augment
 
 Add to your codebase entry point before any imports from the API itself.
 
-- `import '@tanssi-network/api-augment'` - applies Moonbeam types and endpoint augmentation
-- `import '@tanssi-network/api-augment/dancebox'` - applies Dancebox types and endpoint augmentation
+- `import '@tanssi/api-augment'` - applies Moonbeam types and endpoint augmentation
+- `import '@tanssi/api-augment/dancebox'` - applies Dancebox types and endpoint augmentation
 
 ## Docs
 
