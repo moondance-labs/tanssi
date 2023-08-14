@@ -182,7 +182,7 @@ jobs:
       - name: Pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7
+          version: 8
 
       - name: "Download binaries"
         uses: actions/download-artifact@v3.0.2
@@ -202,6 +202,7 @@ jobs:
         run: |
           chmod uog+x target/release/tanssi-node
           cd typescript-api
+          pnpm install
           pnpm tsx ./scripts/generate-types.ts
           
       - name: "Node tests" 
@@ -209,13 +210,13 @@ jobs:
         with:
           node-version: 20.x
           cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
+          
       
       - name: "Install and run upgrade test"
         run: |
           chmod uog+x target/release/tanssi-node
           cd test
-          pnpm install --frozen-lockfile
+          pnpm install
           pnpm moonwall test dev_tanssi
 
   typescript-tests-frontier:
@@ -230,14 +231,13 @@ jobs:
       - name: Pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7
+          version: 8
         
       - name: Node  
         uses: actions/setup-node@v2
         with:
-          node-version: 18.x
+          node-version: 20.x
           cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
 
       - name: "Download binaries"
         uses: actions/download-artifact@v3.0.2
@@ -249,7 +249,7 @@ jobs:
         run: |
           chmod uog+x target/release/container-chain-template-frontier-node
           cd test
-          pnpm install --frozen-lockfile
+          pnpm install
           pnpm moonwall test dev_frontier_template
 
   typescript-dancebox-specs:
@@ -264,14 +264,14 @@ jobs:
       - name: Pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7
+          version: 8
         
       - name: Node  
         uses: actions/setup-node@v2
         with:
-          node-version: 18.x
+          node-version: 20.x
           cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
+          
 
       - name: "Download binaries"
         uses: actions/download-artifact@v3.0.2
@@ -283,7 +283,7 @@ jobs:
         run: |
           chmod uog+x target/release/tanssi-node
           cd test
-          pnpm install --frozen-lockfile
+          pnpm install
           pnpm moonwall test dev_dancebox_specs
 
   zombienet-tests:
@@ -298,14 +298,14 @@ jobs:
       - name: Pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7
+          version: 8
         
       - name: Node  
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 20.x
           cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
+          
 
       - name: "Download binaries"
         uses: actions/download-artifact@v3.0.2
@@ -320,7 +320,7 @@ jobs:
           chmod uog+x target/release/container-chain-template-frontier-node
 
           cd test
-          pnpm install --frozen-lockfile
+          pnpm install
 
           ## Run tests
 
@@ -358,14 +358,14 @@ jobs:
       - name: Pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 7
+          version: 8
         
       - name: Node  
         uses: actions/setup-node@v3
         with:
-          node-version: 18.x
+          node-version: 20.x
           cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
+          
 
       - name: Create local folders
         run: |
@@ -399,7 +399,7 @@ jobs:
 
           cd test
 
-          pnpm install --frozen-lockfile
+          pnpm install
 
           chmod uog+x tmp/tanssi_rt
           tmp/tanssi_rt build-spec --chain ${{ matrix.chain }}-local > tmp/${{ matrix.chain }}-plain-spec.json
