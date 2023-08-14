@@ -16,7 +16,7 @@
         "node": ">=20.0.0"
     },
     "scripts": {
-        "create-local-package": "pnpm tsx ./scripts/runtime-upgrade.ts",
+        "create-local-interfaces": "pnpm tsx ./scripts/runtime-upgrade.ts",
         "generate": "pnpm run load:meta && npm run generate:defs && npm run generate:meta",
         "clean": "pnpm exec rm -rf node_modules && pnpm exec rm -rf build",
         "postgenerate": "pnpm run pretty",
