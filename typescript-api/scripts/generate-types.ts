@@ -1,6 +1,8 @@
-import { execSync, spawn } from "child_process";
+import { execSync, spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { existsSync, writeFileSync } from "fs";
 import path from "path";
+
+let nodeProcess: ChildProcessWithoutNullStreams | undefined = undefined;
 
 async function main() {
   const CHAINS = ["dancebox"];
@@ -24,7 +26,7 @@ async function main() {
   // Get runtimes metadata
   for (const CHAIN of CHAINS) {
     console.log(`Starting ${CHAIN} node`);
-    const nodeProcess = spawn("../target/release/tanssi-node", [
+    nodeProcess = spawn("../target/release/tanssi-node", [
       "--no-hardware-benchmarks",
       "--no-telemetry",
       "--no-prometheus",
@@ -35,6 +37,18 @@ async function main() {
       "--wasm-execution=interpreted-i-know-what-i-do",
       "--rpc-port=9933",
     ]);
+
+    const onProcessExit = () => {
+      nodeProcess && nodeProcess.kill();
+    };
+
+    process.once("exit", onProcessExit);
+    process.once("SIGINT", onProcessExit);
+
+    nodeProcess.once("exit", () => {
+      process.removeListener("exit", onProcessExit);
+      process.removeListener("SIGINT", onProcessExit);
+    });
 
     await new Promise(async (resolve, reject) => {
       const onData = async (data: any) => {
@@ -58,20 +72,20 @@ async function main() {
               writeFileSync(path.join(process.cwd(), `metadata-${CHAIN}.json`), JSON.stringify(data));
 
               execSync("pnpm run load:meta:local", { stdio: "inherit" });
-              nodeProcess.kill();
+              nodeProcess!.kill();
               setTimeout(() => {}, 5000); // Sleep for 5 seconds
               resolve("success");
             });
         }
       };
 
-      nodeProcess.stderr!.on("data", onData);
-      nodeProcess.stdout!.on("data", onData);
-      nodeProcess.stderr.on("error", (error) => {
+      nodeProcess!.stderr!.on("data", onData);
+      nodeProcess!.stdout!.on("data", onData);
+      nodeProcess!.stderr.on("error", (error) => {
         console.error(error);
         reject(error);
       });
-      nodeProcess.stdout.on("error", (error) => {
+      nodeProcess!.stdout.on("error", (error) => {
         console.error(error);
         reject(error);
       });
@@ -91,8 +105,10 @@ async function main() {
 main()
   .catch((error) => {
     console.error(error);
+    nodeProcess?.kill();
     process.exit(1);
   })
   .then(() => {
+    nodeProcess?.kill();
     process.exit(0);
   });
