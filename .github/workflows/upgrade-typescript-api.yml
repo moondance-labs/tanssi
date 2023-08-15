@@ -68,7 +68,7 @@ jobs:
           pnpm install
           pnpm tsx ./scripts/runtime-upgrade.ts ${{ github.event.inputs.spec_version }}
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v5
         with:
           base: girazoki-tanssi-api-generation
           branch: "typescript-api-${{ github.event.inputs.spec_version }}"
