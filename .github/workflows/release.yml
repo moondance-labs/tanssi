@@ -168,7 +168,7 @@ jobs:
           path: binaries
   
   rust-test:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: ["set-tags", "build"]
     env:
       RUSTFLAGS: "-C opt-level=3 -D warnings"
