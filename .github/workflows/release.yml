@@ -168,8 +168,8 @@ jobs:
           path: binaries
   
   rust-test:
-    runs-on: self-hosted
-    needs: ["set-tags"]
+    runs-on: ubuntu-latest
+    needs: ["set-tags", "build"]
     env:
       RUSTFLAGS: "-C opt-level=3 -D warnings"
       TMP_TARGET: "/tmp/target"
