@@ -1,6 +1,8 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
+import { u8aToHex } from "@polkadot/util";
+import { decodeAddress } from "@polkadot/util-crypto";
 import { Signer } from "ethers";
 import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author.js";
 import { signAndSendAndInclude, waitSessions } from "../../util/block.js";
@@ -11,17 +13,14 @@ import { getHeaderFromRelay } from "../../util/relayInterface.js";
 import fs from "fs/promises";
 
 describeSuite({
-  id: "ZTN",
-  title: "Zombie Tanssi Test",
+  id: "ZTW",
+  title: "Zombie Tanssi Warp Sync Test",
   foundationMethods: "zombie",
   testCases: function ({ it, context, log }) {
     let paraApi: ApiPromise;
     let relayApi: ApiPromise;
     let container2000Api: ApiPromise;
     let container2001Api: ApiPromise;
-    let container2002Api: ApiPromise;
-    let blockNumber2002Start;
-    let blockNumber2002End;
     let ethersSigner: Signer;
 
     beforeAll(async () => {
@@ -29,7 +28,6 @@ describeSuite({
       relayApi = context.polkadotJs("Relay");
       container2000Api = context.polkadotJs("Container2000");
       container2001Api = context.polkadotJs("Container2001");
-      container2002Api = context.polkadotJs("Container2002");
       ethersSigner = context.ethers();
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
@@ -50,19 +48,12 @@ describeSuite({
       expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
       expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
 
-      const container2002Network = container2002Api.consts.system.version.specName.toString();
-      const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
-      expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
-      expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
-
       // Test block numbers in relay are 0 yet
       const header2000 = await getHeaderFromRelay(relayApi, 2000);
       const header2001 = await getHeaderFromRelay(relayApi, 2001);
-      const header2002 = await getHeaderFromRelay(relayApi, 2002);
 
       expect(header2000.number.toNumber()).to.be.equal(0);
       expect(header2001.number.toNumber()).to.be.equal(0);
-      expect(header2002.number.toNumber()).to.be.equal(0);
     }, 120000);
 
     it({
@@ -85,8 +76,7 @@ describeSuite({
           orchestratorChain: [
             getKeyringNimbusIdHex("Collator1000-01"),
             getKeyringNimbusIdHex("Collator1000-02"),
-            getKeyringNimbusIdHex("Collator2002-01"),
-            getKeyringNimbusIdHex("Collator2002-02"),
+            getKeyringNimbusIdHex("Collator1000-03"),
           ],
           containerChains: {
             "2000": [getKeyringNimbusIdHex("Collator2000-01"), getKeyringNimbusIdHex("Collator2000-02")],
@@ -211,161 +201,55 @@ describeSuite({
 
     it({
       id: "T12",
-      title: "Test live registration of container chain 2002",
+      title: "Test warp sync: collator rotation from tanssi to container with blocks",
       timeout: 300000,
       test: async function () {
         const keyring = new Keyring({ type: "sr25519" });
         let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-        // Read raw chain spec file
-        let spec2002 = await fs.readFile("./specs/template-container-2002.json", "utf8");
+        // Deregister Collator2000-02, it should delete the db
+        const invuln = (await paraApi.query.collatorSelection.invulnerables()).toJSON();
 
-        // Before registering container chain 2002, ensure that it has 0 blocks
-        // Since the RPC doesn't exist at this point, we need to get that from the relay
-        const header2002 = await getHeaderFromRelay(relayApi, 2002);
-        expect(header2002.number.toNumber()).to.be.equal(0);
-        const registered1 = await paraApi.query.registrar.registeredParaIds();
-        // TODO: fix once we have types
-        expect(registered1.toJSON().includes(2002)).to.be.false;
+        const newInvuln = invuln.filter((addr) => {
+          return u8aToHex(decodeAddress(addr)) != getKeyringNimbusIdHex("Collator2000-02");
+        });
+        // It must have changed
+        expect(newInvuln).to.not.deep.equal(invuln);
 
-        const chainSpec2002 = JSON.parse(spec2002);
-        const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
-        const tx = paraApi.tx.registrar.register(2002, containerChainGenesisData);
-        await signAndSendAndInclude(tx, alice);
-        const bootNodes = [
-            "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw"
-        ];
-        const tx2 = paraApi.tx.registrar.setBootNodes(2002, bootNodes);
-        const tx3 = paraApi.tx.registrar.markValidForCollating(2002);
-        const tx2tx3 = paraApi.tx.utility.batchAll([tx2, tx3]);
-        await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx2tx3), alice);
-        // Check that pending para ids contains 2002
-        const registered2 = await paraApi.query.registrar.pendingParaIds();
-        const registered3 = await paraApi.query.registrar.registeredParaIds();
-
-        // TODO: fix once we have types
-        expect(registered2.toJSON()[0][1].includes(2002)).to.be.true;
-        // But registered does not contain 2002 yet
-        // TODO: fix once we have types
-        expect(registered3.toJSON().includes(2002)).to.be.false;
-
-        // The node should be syncing the container 2002, but not collating yet
-        // so it should still try to produce blocks in orchestrator chain.
-        // Use database path to check that the container chain started
-        // TODO: use collator rpc instead to check if the container chain is running,
-        // that's not possible now because we would need to guess the port number
-
-        const container2002DbPath = getTmpZombiePath() + "/Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002";
-        expect(await directoryExists(container2002DbPath)).to.be.false;
-        // The node starts one session before the container chain is in registered list
-        await waitSessions(context, paraApi, 1);
-        expect(await directoryExists(container2002DbPath)).to.be.true;
-        // Not registered yet, still pending
-        const registered4 = await paraApi.query.registrar.registeredParaIds();
-        // TODO: fix once we have types
-        expect(registered4.toJSON().includes(2002)).to.be.false;
-
-        await waitSessions(context, paraApi, 1);
-        // Check that registered para ids contains 2002
-        const registered5 = await paraApi.query.registrar.registeredParaIds();
-        // TODO: fix once we have types
-        expect(registered5.toJSON().includes(2002)).to.be.true;
-
-        let blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        blockNumber2002Start = blockNum;
-      },
-    });
-
-    it({
-      id: "T13",
-      title: "Blocks are being produced on container 2002",
-      timeout: 60000,
-      test: async function () {
-        let blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
-
-        // Wait 3 blocks because the next test needs to get a non empty value from
-        // container2002Api.query.authoritiesNoting()
-        while (blockNum < 3) {
-          // Wait a bit
-          // Cannot use context.waitBlock because the container2002Api is not part of moonwall
-          const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-          await sleep(1_000);
-
-          blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
-        }
-        expect(blockNum).to.be.greaterThan(0);
-      },
-    });
-
-    it({
-      id: "T14",
-      title: "Test container chain 2002 assignation is correct",
-      test: async function () {
-        const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-        const paraId = (await container2002Api.query.parachainInfo.parachainId()).toString();
-        // TODO: fix once we have types
-        const containerChainCollators = (
-          await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-        ).toJSON().containerChains[paraId];
-
-        const writtenCollators = (await container2002Api.query.authoritiesNoting.authorities()).toJSON();
-
-        expect(containerChainCollators).to.deep.equal(writtenCollators);
-      },
-    });
-
-    it({
-      id: "T15",
-      title: "Deregister container chain 2002, collators should move to tanssi",
-      timeout: 300000,
-      test: async function () {
-        const keyring = new Keyring({ type: "sr25519" });
-        let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
-        const registered1 = await paraApi.query.registrar.registeredParaIds();
-        // TODO: fix once we have types
-        expect(registered1.toJSON().includes(2002)).to.be.true;
-
-        const tx = paraApi.tx.registrar.deregister(2002);
+        const tx = paraApi.tx.collatorSelection.setInvulnerables(newInvuln);
         await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
+
+        // Collator2000-02 should have a container 2000 db, and Collator1000-03 should not
+        const collator100003DbPath = getTmpZombiePath() + "/Collator1000-03/data/containers/chains/simple_container_2000/db/full-container-2000";
+        const container200002DbPath = getTmpZombiePath() + "/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000";
+        expect(await directoryExists(container200002DbPath)).to.be.true;
+        expect(await directoryExists(collator100003DbPath)).to.be.false;
+
         await waitSessions(context, paraApi, 2);
-        let blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
-        blockNumber2002End = blockNum;
 
-        // Check that pending para ids removes 2002
-        const registered = await paraApi.query.registrar.registeredParaIds();
+        // Collator1000-03 should rotate to container chain 2000
+
+        const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         // TODO: fix once we have types
-        expect(registered.toJSON().includes(2002)).to.be.false;
-      },
-    });
+        const allCollators = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
+        const expectedAllCollators = {
+          orchestratorChain: [
+            getKeyringNimbusIdHex("Collator1000-01"),
+            getKeyringNimbusIdHex("Collator1000-02"),
+          ],
+          containerChains: {
+            "2000": [getKeyringNimbusIdHex("Collator2000-01"), getKeyringNimbusIdHex("Collator1000-03")],
+            "2001": [getKeyringNimbusIdHex("Collator2001-01"), getKeyringNimbusIdHex("Collator2001-02")],
+          },
+        };
 
-    it({
-      id: "T16",
-      title: "Count number of tanssi collators before, during, and after 2002 chain",
-      timeout: 150000,
-      test: async function () {
-        // This test depends on T12 and T15 to set blockNumber2002Start and blockNumber2002End
-        // TODO: don't hardcode the period here
-        let sessionPeriod = 5;
-        // The block range must start and end on session boundaries
-        expect(blockNumber2002Start % sessionPeriod).to.be.equal(0);
-        expect(blockNumber2002End % sessionPeriod).to.be.equal(0);
-        expect(sessionPeriod < blockNumber2002Start).to.be.true;
-        expect(blockNumber2002Start < blockNumber2002End).to.be.true;
-        // Start from block 5 because block 0 has no author
-        let blockNumber = sessionPeriod;
-        // Before 2002 registration: 4 authors
-        // TODO: this passes if only 2 authors are creating blocks, think a way to test that case
-        await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start - 1, 4);
+        expect(allCollators).to.deep.equal(expectedAllCollators);
 
-        // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
-        await countUniqueBlockAuthors(paraApi, blockNumber2002Start, blockNumber2002End - 1, 2);
+        // Collator2000-02 container chain db should have been deleted
+        expect(await directoryExists(container200002DbPath)).to.be.false;
 
-        // Need to wait one session because the following blocks don't exist yet
-        await waitSessions(context, paraApi, 1);
-        // After 2002 deregistration: 4 authors
-        // TODO: this passes if only 2 authors are creating blocks, think a way to test that case
-        await countUniqueBlockAuthors(paraApi, blockNumber2002End, blockNumber2002End + sessionPeriod - 1, 4);
+        // Collator1000-03 container chain db should be created
+        expect(await directoryExists(collator100003DbPath)).to.be.true;
       },
     });
   },
