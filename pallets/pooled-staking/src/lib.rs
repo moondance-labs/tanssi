@@ -167,6 +167,24 @@ pub mod pallet {
         ManualRewards,
     }
 
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    pub enum AllTargetPool {
+        Joining,
+        AutoCompounding,
+        ManualRewards,
+        Leaving,
+    }
+
+    impl From<TargetPool> for AllTargetPool {
+        fn from(value: TargetPool) -> Self {
+            match value {
+                TargetPool::AutoCompounding => AllTargetPool::AutoCompounding,
+                TargetPool::ManualRewards => AllTargetPool::ManualRewards,
+            }
+        }
+    }
+
     /// Allow calls to be performed using either share amounts or stake.
     /// When providing stake, calls will convert them into share amounts that are
     /// worth up to the provided stake. The amount of stake thus will be at most the provided
@@ -201,6 +219,7 @@ pub mod pallet {
         /// Shares will use the same Balance type.
         type Currency: fungible::Inspect<Self::AccountId, Balance = Self::Balance>
             + fungible::Mutate<Self::AccountId>
+            + fungible::Balanced<Self::AccountId>
             + fungible::hold::Mutate<Self::AccountId>;
 
         /// Same as Currency::Balance. Must impl `MulDiv` which perform
@@ -420,6 +439,15 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        pub fn rebalance_hold(
+            origin: OriginFor<T>,
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            pool: AllTargetPool,
+        ) -> DispatchResultWithPostInfo {
+            Calls::<T>::rebalance_hold(origin, candidate, delegator, pool)
+        }
+
         pub fn request_delegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,

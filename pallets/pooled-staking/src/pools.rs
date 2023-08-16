@@ -80,6 +80,18 @@ pub trait Pool<T: Config> {
         Ok(Shares(stake.0.mul_div(supply, total_staked)?))
     }
 
+    fn computed_stake(
+        candidate: &Candidate<T>,
+        delegator: &Delegator<T>,
+    ) -> Result<Stake<T>, Error<T>> {
+        let shares = Self::shares(candidate, delegator);
+        if shares.0.is_zero() {
+            return Ok(Stake(Zero::zero()));
+        }
+
+        Self::shares_to_stake(candidate, shares)
+    }
+
     /// Convert an amount of staked currency to an amount of shares for given candidate.
     /// If this candidate have no shares then it uses `initial_share_value` to compute the value.
     fn stake_to_shares_or_init(
@@ -100,7 +112,7 @@ pub trait Pool<T: Config> {
 
     /// Increase the total stake of a pool without creating new shares, which basically increase
     /// the value of each share.
-    fn share_stake_amoung_holders(
+    fn share_stake_among_holders(
         candidate: &Candidate<T>,
         stake: Stake<T>,
     ) -> Result<(), Error<T>> {

@@ -16,23 +16,113 @@
 
 use {
     crate::{
-        candidate::{self, Candidates},
+        candidate::Candidates,
         pools::{self, Pool},
         traits::{ErrAdd, ErrSub},
-        Candidate, Config, Delegator, Error, Event, Pallet, PendingOperationKey,
-        PendingOperationQuery, PendingOperations, RequestFilter, Shares, Stake, TargetPool,
+        AllTargetPool, Candidate, Config, Delegator, Error, Event, Pallet, PendingOperationKey,
+        PendingOperationQuery, PendingOperations, RequestFilter, Shares, SharesOrStake, Stake,
+        TargetPool,
     },
     frame_support::{
         pallet_prelude::*,
-        traits::{fungible::MutateHold, tokens::Precision},
+        traits::{
+            fungible::{Balanced, Mutate, MutateHold},
+            tokens::{Fortitude, Precision, Preservation},
+        },
     },
     frame_system::pallet_prelude::*,
-    sp_runtime::traits::Zero,
+    sp_runtime::traits::{CheckedSub, Zero},
 };
 
 pub struct Calls<T>(PhantomData<T>);
 
 impl<T: Config> Calls<T> {
+    pub fn rebalance_hold(
+        _: OriginFor<T>,
+        candidate: Candidate<T>,
+        delegator: Delegator<T>,
+        pool: AllTargetPool,
+    ) -> DispatchResultWithPostInfo {
+        let (held, stake) = match pool {
+            AllTargetPool::Joining => {
+                let held = pools::Joining::<T>::hold(&candidate, &delegator);
+                let shares = pools::Joining::<T>::shares(&candidate, &delegator);
+                let stake = pools::Joining::<T>::shares_to_stake(&candidate, shares)?;
+                pools::Joining::<T>::set_hold(&candidate, &delegator, stake.clone());
+                (held, stake)
+            }
+            AllTargetPool::AutoCompounding => {
+                let held = pools::AutoCompounding::<T>::hold(&candidate, &delegator);
+                let shares = pools::AutoCompounding::<T>::shares(&candidate, &delegator);
+                let stake = pools::AutoCompounding::<T>::shares_to_stake(&candidate, shares)?;
+                pools::AutoCompounding::<T>::set_hold(&candidate, &delegator, stake.clone());
+                (held, stake)
+            }
+            AllTargetPool::ManualRewards => {
+                let held = pools::ManualRewards::<T>::hold(&candidate, &delegator);
+                let shares = pools::ManualRewards::<T>::shares(&candidate, &delegator);
+                let stake = pools::ManualRewards::<T>::shares_to_stake(&candidate, shares)?;
+                pools::ManualRewards::<T>::set_hold(&candidate, &delegator, stake.clone());
+                (held, stake)
+            }
+            AllTargetPool::Leaving => {
+                let held = pools::Leaving::<T>::hold(&candidate, &delegator);
+                let shares = pools::Leaving::<T>::shares(&candidate, &delegator);
+                let stake = pools::Leaving::<T>::shares_to_stake(&candidate, shares)?;
+                pools::Leaving::<T>::set_hold(&candidate, &delegator, stake.clone());
+                (held, stake)
+            }
+        };
+
+        // Transfer is done using withdraw to ensure it works regardless of ED.
+        if let Some(diff) = stake.0.checked_sub(&held.0) {
+            println!("transfer");
+            T::Currency::transfer(
+                &T::StakingAccount::get(),
+                &delegator,
+                dbg!(diff),
+                Preservation::Preserve,
+            )?;
+
+            // println!("withdraw");
+            // let credit = T::Currency::withdraw(
+            //     &T::StakingAccount::get(),
+            //     dbg!(diff),
+            //     Precision::Exact,
+            //     Preservation::Preserve,
+            //     Fortitude::Force,
+            // )?;
+            // println!("resolve");
+            // T::Currency::resolve(
+            //     &delegator,
+            //     credit
+            // ).map_err(|_| TokenError::BelowMinimum)?;
+
+            println!("hold");
+            T::Currency::hold(&T::CurrencyHoldReason::get(), &delegator, diff)?;
+            println!("done");
+            return Ok(().into());
+        }
+
+        if let Some(diff) = held.0.checked_sub(&stake.0) {
+            T::Currency::release(
+                &T::CurrencyHoldReason::get(),
+                &delegator,
+                diff,
+                Precision::Exact,
+            )?;
+            T::Currency::transfer(
+                &delegator,
+                &T::StakingAccount::get(),
+                diff,
+                Preservation::Preserve,
+            )?;
+            return Ok(().into());
+        }
+
+        return Ok(().into());
+    }
+
     pub fn request_delegate(
         origin: OriginFor<T>,
         candidate: Candidate<T>,
@@ -87,6 +177,47 @@ impl<T: Config> Calls<T> {
         Ok(().into())
     }
 
+    pub fn request_undelegate(
+        origin: OriginFor<T>,
+        candidate: Candidate<T>,
+        pool: TargetPool,
+        amount: SharesOrStake<T::Balance>,
+    ) -> DispatchResultWithPostInfo {
+        let delegator = ensure_signed(origin)?;
+
+        // Converts amount to shares of the correct pool
+        let shares = match (amount, pool) {
+            (SharesOrStake::Shares(s), _) => s,
+            (SharesOrStake::Stake(s), TargetPool::AutoCompounding) => {
+                pools::AutoCompounding::<T>::stake_to_shares(&candidate, Stake(s))?.0
+            }
+            (SharesOrStake::Stake(s), TargetPool::ManualRewards) => {
+                pools::ManualRewards::<T>::stake_to_shares(&candidate, Stake(s))?.0
+            }
+        };
+
+        // Destroy shares
+        let stake = match pool {
+            TargetPool::AutoCompounding => {
+                let stake = pools::AutoCompounding::<T>::sub_shares(
+                    &candidate,
+                    &delegator,
+                    Shares(shares),
+                )?;
+                pools::AutoCompounding::<T>::decrease_hold(&candidate, &delegator, &stake)?;
+                stake
+            }
+            TargetPool::ManualRewards => {
+                let stake =
+                    pools::ManualRewards::<T>::sub_shares(&candidate, &delegator, Shares(shares))?;
+                pools::ManualRewards::<T>::decrease_hold(&candidate, &delegator, &stake)?;
+                stake
+            }
+        };
+
+        todo!()
+    }
+
     pub fn execute_pending_operations(
         origin: OriginFor<T>,
         operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
@@ -105,7 +236,7 @@ impl<T: Config> Calls<T> {
 
             let value = PendingOperations::<T>::get(&delegator, &operation);
 
-            if Zero::is_zero(&dbg!(value)) {
+            if Zero::is_zero(&value) {
                 continue;
             }
 

@@ -15,7 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{self as pallet_pooled_staking, Candidate, Delegator, RequestFilter},
+    crate::{
+        self as pallet_pooled_staking, pools::Pool, Candidate, Delegator, PendingOperationKey,
+        RequestFilter, TargetPool,
+    },
     frame_support::{
         parameter_types,
         traits::{
@@ -167,6 +170,101 @@ impl pallet_pooled_staking::Config for Runtime {
     type LeavingRequestFilter = DummyRequestFilter;
     // low value so we can test vec bounding, in practice it should be bigger
     type EligibleCandidatesBufferSize = ConstU32<4>;
+}
+
+pub trait PoolExt<T: crate::Config>: Pool<T> {
+    fn target_pool() -> TargetPool;
+    fn event_staked(
+        candidate: Candidate<T>,
+        delegator: Delegator<T>,
+        shares: T::Balance,
+        stake: T::Balance,
+    ) -> crate::Event<T>;
+    fn joining_operation_key(
+        candidate: Candidate<T>,
+        at_block: T::BlockNumber,
+    ) -> PendingOperationKey<Candidate<T>, T::BlockNumber>;
+}
+
+impl<T: crate::Config> PoolExt<T> for crate::pools::ManualRewards<T> {
+    fn target_pool() -> TargetPool {
+        TargetPool::ManualRewards
+    }
+
+    fn event_staked(
+        candidate: Candidate<T>,
+        delegator: Delegator<T>,
+        shares: T::Balance,
+        stake: T::Balance,
+    ) -> crate::Event<T> {
+        crate::Event::StakedManualRewards {
+            candidate,
+            delegator,
+            shares,
+            stake,
+        }
+    }
+
+    fn joining_operation_key(
+        candidate: Candidate<T>,
+        at_block: T::BlockNumber,
+    ) -> PendingOperationKey<Candidate<T>, T::BlockNumber> {
+        PendingOperationKey::JoiningManualRewards {
+            candidate,
+            at_block,
+        }
+    }
+}
+
+impl<T: crate::Config> PoolExt<T> for crate::pools::AutoCompounding<T> {
+    fn target_pool() -> TargetPool {
+        TargetPool::AutoCompounding
+    }
+    fn event_staked(
+        candidate: Candidate<T>,
+        delegator: Delegator<T>,
+        shares: T::Balance,
+        stake: T::Balance,
+    ) -> crate::Event<T> {
+        crate::Event::StakedAutoCompounding {
+            candidate,
+            delegator,
+            shares,
+            stake,
+        }
+    }
+
+    fn joining_operation_key(
+        candidate: Candidate<T>,
+        at_block: T::BlockNumber,
+    ) -> PendingOperationKey<Candidate<T>, T::BlockNumber> {
+        PendingOperationKey::JoiningAutoCompounding {
+            candidate,
+            at_block,
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! pool_test {
+    (fn $name:ident<$pool:ident>() { $body:expr }) => {
+        mod $name {
+            use super::*;
+            fn generic<$pool: PoolExt<Runtime>>() {
+                $body
+            }
+
+            #[test]
+            fn manual() {
+                generic::<pools::ManualRewards<Runtime>>();
+            }
+
+            #[test]
+            fn auto() {
+                generic::<pools::AutoCompounding<Runtime>>();
+            }
+        }
+    };
 }
 
 pub fn total_balance(who: &AccountId) -> Balance {
