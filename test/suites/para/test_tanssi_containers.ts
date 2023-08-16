@@ -68,27 +68,10 @@ describeSuite({
 
     it({
       id: "T01",
-      timeout: 300000,
       title: "Blocks are being produced on parachain",
       test: async function () {
         const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
         expect(blockNum).to.be.greaterThan(0);
-
-        const a = await getCollatorProcessPid("Collator2000-01");
-        console.log("collator PID: ", a);
-
-        expect(a.length).to.be.equal(1);
-
-        const pr1 = await restartProcessWithSameCommand(a[0]);
-
-        const b = await getCollatorProcessPid("Collator2000-02");
-        console.log("collator PID: ", b);
-
-        expect(b.length).to.be.equal(1);
-
-        const pr2 = await restartProcessWithSameCommand(b[0]);
-
-        await new Promise(resolve => setTimeout(resolve, 2 * 60 * 1000));
       },
     });
 
@@ -386,6 +369,31 @@ describeSuite({
         await countUniqueBlockAuthors(paraApi, blockNumber2002End, blockNumber2002End + sessionPeriod - 1, 4);
       },
     });
+
+    it({
+      id: "T17",
+      title: "Restart collator 2000 and check chain 2000 keeps producing blocks",
+      timeout: 150000,
+      test: async function () {
+        const a = await getCollatorProcessPid("Collator2000-01");
+        console.log("collator PID: ", a);
+    
+        expect(a.length).to.be.equal(1);
+    
+        const pr1 = await restartProcessWithSameCommand(a[0], "/tmp/tanssi-collator-2000-a.log");
+    
+        const b = await getCollatorProcessPid("Collator2000-02");
+        console.log("collator PID: ", b);
+    
+        expect(b.length).to.be.equal(1);
+    
+        const pr2 = await restartProcessWithSameCommand(b[0], "/tmp/tanssi-collator-2000-b.log");
+    
+        await context.waitBlock(5, "Container2000");
+
+        // TODO: kill started processes!
+      },
+    });
   },
 });
 
@@ -472,9 +480,9 @@ async function getCollatorProcessPid(collatorName) {
   });
 }
 
-async function restartProcessWithSameCommand(pid) {
+async function restartProcessWithSameCommand(pid, outputFile = null) {
   // Get the command used to start the existing process
-  const cmd = (await fs.readFile(`/proc/${pid}/cmdline`, 'utf8')).split('\0')[0];
+  const [cmd, ...args] = (await fs.readFile(`/proc/${pid}/cmdline`, 'utf8')).split('\0').filter(arg => arg !== '');
 
   try {
       // Kill the existing process
@@ -488,11 +496,15 @@ async function restartProcessWithSameCommand(pid) {
   await new Promise(resolve => setTimeout(resolve, delayMilliseconds));
 
   try {
-      
+      // Redirect output to a file if outputFile is provided
+      const stdioOptions = outputFile
+        ? ['ignore', await fs.open(outputFile, 'a'), await fs.open(outputFile, 'a')]
+        : 'ignore';
+
       // Start the process with the same command
-      const restartedProcess = spawn(cmd, [], {
+      const restartedProcess = spawn(cmd, args, {
           detached: true,
-          stdio: 'ignore' // Change this if you want to capture the output
+          stdio: stdioOptions,
       });
 
       restartedProcess.unref(); // Allow the parent process to exit without waiting for the child
