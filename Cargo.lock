@@ -5969,6 +5969,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "manual-xcm-rpc"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "flume",
+ "futures 0.3.28",
+ "hex-literal 0.3.4",
+ "jsonrpsee",
+ "parity-scale-codec",
+ "tokio",
+ "xcm",
+]
+
+[[package]]
 name = "maplit"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13873,11 +13887,13 @@ dependencies = [
  "cumulus-relay-chain-interface",
  "dancebox-runtime",
  "exit-future",
+ "flume",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.28",
  "jsonrpsee",
  "log",
+ "manual-xcm-rpc",
  "nimbus-consensus",
  "nimbus-primitives",
  "pallet-collator-assignment-runtime-api",

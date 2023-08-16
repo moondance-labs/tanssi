@@ -39,6 +39,7 @@ container-chain-template-simple-runtime = { path = "container-chains/templates/s
 pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
 
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
+manual-xcm-rpc = { path = "client/manual-xcm" }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface = { path = "client/orchestrator-chain-interface" }
 test-relay-sproof-builder = { path = "test-sproof-builder", default-features = false}
