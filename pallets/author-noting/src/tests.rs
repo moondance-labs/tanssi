@@ -59,7 +59,10 @@ fn test_author_id_insertion() {
             _ => unreachable!(),
         })
         .add(1, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some((1, 13u64)));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some((1, 13u64))
+            );
         });
 }
 
@@ -159,12 +162,21 @@ fn test_author_id_insertion_many_paras() {
             MockData::mutate(|m| {
                 m.container_chains = vec![1001.into(), 1002.into()];
             });
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some((1, 10u64)));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some((1, 10u64))
+            );
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1002)), None);
         })
         .add(2, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some((2, 13u64)));
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1002)), Some((1, 14u64)));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some((2, 13u64))
+            );
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1002)),
+                Some((1, 14u64))
+            );
         });
 }
 
@@ -194,7 +206,10 @@ fn test_should_panic_with_invalid_proof_root() {
         // Insert an invalid root, not matching the proof generated
         .with_overriden_state_root(H256::default())
         .add(1, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some((1, 13u64)));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some((1, 13u64))
+            );
         });
 }
 
@@ -227,7 +242,10 @@ fn test_should_panic_with_invalid_proof_state() {
         // Insert a proof, not matching the root generated
         .with_overriden_state_proof(relay_chain_state)
         .add(1, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some((1, 13u64)));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some((1, 13u64))
+            );
         });
 }
 
@@ -435,14 +453,20 @@ fn test_set_author() {
             _ => unreachable!(),
         })
         .add(1, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some((1, 13u64)));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some((1, 13u64))
+            );
             assert_ok!(AuthorNoting::set_author(
                 RuntimeOrigin::root(),
                 1001.into(),
                 1,
                 14u64,
             ));
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some((1, 14u64)));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some((1, 14u64))
+            );
             System::assert_last_event(
                 Event::LatestAuthorChanged {
                     para_id: 1001.into(),
