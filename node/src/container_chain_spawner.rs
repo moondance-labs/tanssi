@@ -204,9 +204,9 @@ impl ContainerChainSpawner {
             db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
             container_chain_cli_config.database.set_path(&db_path);
 
-            // Delete existing database
-            if db_path.exists() {
-                std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");
+            // Delete existing database if running as collator
+            if validator {
+                delete_container_chain_db(db_path);
             }
 
             // Start container chain node
@@ -274,9 +274,9 @@ impl ContainerChainSpawner {
                     }
                     _ = on_exit_future => {
                         // Graceful shutdown
-                        // Delete existing database
-                        if db_path.exists() {
-                            std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");
+                        // Delete existing database if running as collator
+                        if validator {
+                            delete_container_chain_db(db_path);
                         }
                     }
                 }
@@ -440,6 +440,16 @@ fn handle_update_assignment_state_change(
         call_collate_on,
         chains_to_stop,
         chains_to_start,
+    }
+}
+
+// TODO: this leaves some empty folders behind, because it is called with db_path:
+//     Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002
+// but we want to delete everything under
+//     Collator2002-01/data/containers/chains/simple_container_2002
+fn delete_container_chain_db(db_path: Path) {
+    if db_path.exists() {
+        std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");
     }
 }
 
