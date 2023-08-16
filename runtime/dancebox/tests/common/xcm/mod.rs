@@ -16,6 +16,7 @@
 
 mod constants;
 mod foreign_sovereigns;
+mod foreign_signed_based_sovereign;
 mod mocknets;
 mod transact;
 mod trap;

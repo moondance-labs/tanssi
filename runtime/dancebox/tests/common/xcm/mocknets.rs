@@ -158,8 +158,9 @@ parameter_types! {
     pub WestendReceiver: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(BOB);
     pub WestendEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(RANDOM);
     // Dancebox
-    pub DanceboxSender: dancebox_runtime::AccountId = Dancebox::account_id_of(ALICE);
-    pub DanceboxReceiver: dancebox_runtime::AccountId = Dancebox::account_id_of(BOB);
+    pub DanceboxSender: dancebox_runtime::AccountId = crate::AccountId::from(crate::ALICE);
+    pub DanceboxReceiver: dancebox_runtime::AccountId = crate::AccountId::from(crate::BOB);
+    pub DanceboxEmptyReceiver: dancebox_runtime::AccountId = Dancebox::account_id_of(RANDOM);
 
     // SimpleTemplate
     pub SimpleTemplateSender: container_chain_template_simple_runtime::AccountId = SimpleTemplate::account_id_of(ALICE);
