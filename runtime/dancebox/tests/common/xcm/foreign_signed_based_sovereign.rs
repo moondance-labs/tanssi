@@ -17,8 +17,9 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxPallet, EthereumEmptyReceiver, EthereumSender, FrontierTemplate,
-            Westend, WestendEmptyReceiver, WestendSender, DanceboxSender, WestendPallet, DanceboxEmptyReceiver
+            Dancebox, DanceboxEmptyReceiver, DanceboxPallet, DanceboxSender, EthereumEmptyReceiver,
+            EthereumSender, FrontierTemplate, Westend, WestendEmptyReceiver, WestendPallet,
+            WestendSender,
         },
         *,
     },
@@ -39,9 +40,9 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     let alice_origin = <Westend as Relay>::RuntimeOrigin::signed(WestendSender::get());
     let dancebox_dest: VersionedMultiLocation = MultiLocation {
         parents: 0,
-        interior: X1(Parachain(2000u32))
-    }.into();
-
+        interior: X1(Parachain(2000u32)),
+    }
+    .into();
 
     let buy_execution_fee = MultiAsset {
         id: Concrete(dancebox_runtime::xcm_config::SelfReserve::get()),
@@ -66,15 +67,16 @@ fn using_signed_based_sovereign_works_in_tanssi() {
         },
     ]));
 
-    let alice_westend_account_dancebox = xcm_builder::HashedDescriptionDescribeFamilyAllTerminal::<crate::AccountId>::convert_ref(
-        MultiLocation {
-            parents: 1,
-            interior: X1(AccountId32 {
-                network:Some(NetworkId::Westend),
-                id: WestendSender::get().into()
-            })
-        }
-    ).unwrap();
+    let alice_westend_account_dancebox = xcm_builder::HashedDescriptionDescribeFamilyAllTerminal::<
+        crate::AccountId,
+    >::convert_ref(MultiLocation {
+        parents: 1,
+        interior: X1(AccountId32 {
+            network: Some(NetworkId::Westend),
+            id: WestendSender::get().into(),
+        }),
+    })
+    .unwrap();
 
     // Send some tokens to the account derived fromt the signed origin
     Dancebox::execute_with(|| {
@@ -84,12 +86,11 @@ fn using_signed_based_sovereign_works_in_tanssi() {
             origin,
             sp_runtime::MultiAddress::Id(alice_westend_account_dancebox),
             100 * DANCE
-        ));       
+        ));
     });
 
     // Send XCM message from Westend
     Westend::execute_with(|| {
-
         assert_ok!(<Westend as WestendPallet>::XcmPallet::send(
             alice_origin,
             bx!(dancebox_dest),
@@ -119,5 +120,4 @@ fn using_signed_based_sovereign_works_in_tanssi() {
                 > 0
         );
     });
-
 }
