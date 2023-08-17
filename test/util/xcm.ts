@@ -93,7 +93,7 @@ export function descendOriginFromAddress20(
   };
 }
 
-export function descendOriginFromAddress32(
+export function descendSiblingOriginFromAddress32(
   context: DevModeContext,
   address: `0x${string}` = "0x0101010101010101010101010101010101010101010101010101010101010101",
   paraId: number = 1
@@ -101,6 +101,27 @@ export function descendOriginFromAddress32(
   const toHash = new Uint8Array([
     ...new TextEncoder().encode("SiblingChain"),
     ...context.polkadotJs().createType("Compact<u32>", paraId).toU8a(),
+    ...context
+      .polkadotJs()
+      .createType("Compact<u32>", "AccountId32".length + 32)
+      .toU8a(),
+    ...new TextEncoder().encode("AccountId32"),
+    ...context.polkadotJs().createType("AccountId", address).toU8a(),
+  ]);
+  
+  return {
+    originAddress: address,
+    descendOriginAddress: u8aToHex(context.polkadotJs().registry.hash(toHash).slice(0, 32)),
+  };
+}
+
+export function descendParentOriginFromAddress32(
+  context: DevModeContext,
+  address: `0x${string}` = "0x0101010101010101010101010101010101010101010101010101010101010101",
+  paraId: number = 1
+) {
+  const toHash = new Uint8Array([
+    ...new TextEncoder().encode("ParentChain"),
     ...context
       .polkadotJs()
       .createType("Compact<u32>", "AccountId32".length + 32)
@@ -143,6 +164,15 @@ export function buildXcmpMessage(context: DevModeContext, message: RawXcmMessage
   return [...xcmpFormat.toU8a(), ...receivedMessage.toU8a()];
 }
 
+export function buildDmpMessage(context: DevModeContext, message: RawXcmMessage): number[] {
+
+  const receivedMessage: XcmVersionedXcm = context
+    .polkadotJs()
+    .createType("XcmVersionedXcm", message.payload) as any;
+
+  return [...receivedMessage.toU8a()];
+}
+
 export async function injectHrmpMessage(
   context: DevModeContext,
   paraId: number,
@@ -152,6 +182,16 @@ export async function injectHrmpMessage(
   // Send RPC call to inject XCM message
   await customDevRpcRequest("xcm_injectHrmpMessage", [paraId, totalMessage]);
 }
+
+export async function injectDmpMessage(
+  context: DevModeContext,
+  message?: RawXcmMessage
+) {
+  let totalMessage = message != null ? buildDmpMessage(context, message) : [];
+  // Send RPC call to inject XCM message
+  await customDevRpcRequest("xcm_injectDownwardMessage", [totalMessage]);
+}
+
 // Weight a particular message using the xcm utils precompile
 export async function weightMessage(context: DevModeContext, message: XcmVersionedXcm) {
   return (await context.readPrecompile!({
@@ -160,14 +200,6 @@ export async function weightMessage(context: DevModeContext, message: XcmVersion
     args: [message.toHex()],
   })) as bigint;
 }
-
-// export async function weightMessage(context: DevModeContext, message?: XcmVersionedXcm) {
-//   const result = await web3EthCall(context.web3, {
-//     to: PRECOMPILE_XCM_UTILS_ADDRESS,
-//     data: XCM_UTILSTRANSACTOR_INTERFACE.encodeFunctionData("weightMessage", [message.toU8a()]),
-//   });
-//   return BigInt(result.result);
-// }
 
 export async function injectHrmpMessageAndSeal(
   context: DevModeContext,
@@ -178,6 +210,16 @@ export async function injectHrmpMessageAndSeal(
   // Create a block in which the XCM will be executed
   await context.createBlock();
 }
+
+export async function injectDmpMessageAndSeal(
+  context: DevModeContext,
+  message?: RawXcmMessage
+) {
+  await injectDmpMessage(context, message);
+  // Create a block in which the XCM will be executed
+  await context.createBlock();
+}
+
 
 interface Junction {
   Parachain?: number;
