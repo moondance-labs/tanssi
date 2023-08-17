@@ -1050,11 +1050,11 @@ impl_runtime_apis! {
         ParaId: parity_scale_codec::Codec,
     {
         fn latest_block_number(para_id: ParaId) -> Option<BlockNumber> {
-            AuthorNoting::latest_author(para_id).map(|(block_number, _author)| block_number)
+            AuthorNoting::latest_author(para_id).map(|info| info.block_number)
         }
 
         fn latest_author(para_id: ParaId) -> Option<AccountId> {
-            AuthorNoting::latest_author(para_id).map(|(_block_number, author)| author)
+            AuthorNoting::latest_author(para_id).map(|info| info.author)
         }
     }
 

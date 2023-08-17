@@ -153,8 +153,8 @@ pub mod pallet {
             let total_weight =
                 T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
             for para_id in registered_para_ids {
-                match Self::fetch_author_slot_from_proof(&relay_storage_rooted_proof, para_id) {
-                    Ok(author) => LatestAuthor::<T>::insert(para_id, author),
+                match Self::fetch_block_info_from_proof(&relay_storage_rooted_proof, para_id) {
+                    Ok(block_info) => LatestAuthor::<T>::insert(para_id, block_info),
                     Err(e) => log::warn!(
                         "Author-noting error {:?} found in para {:?}",
                         e,
@@ -181,7 +181,13 @@ pub mod pallet {
             author: T::AccountId,
         ) -> DispatchResult {
             ensure_root(origin)?;
-            LatestAuthor::<T>::insert(para_id, (block_number, &author));
+            LatestAuthor::<T>::insert(
+                para_id,
+                ContainerChainBlockInfo {
+                    block_number,
+                    author: author.clone(),
+                },
+            );
             Self::deposit_event(Event::LatestAuthorChanged {
                 para_id,
                 block_number,
@@ -205,7 +211,17 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn latest_author)]
     pub(super) type LatestAuthor<T: Config> =
-        StorageMap<_, Blake2_128Concat, ParaId, (BlockNumber, T::AccountId), OptionQuery>;
+        StorageMap<_, Blake2_128Concat, ParaId, ContainerChainBlockInfo<T>, OptionQuery>;
+
+    /// Information extracted from the lastest container chain header
+    #[derive(
+        Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
+    )]
+    #[scale_info(skip_type_params(T))]
+    pub struct ContainerChainBlockInfo<T: Config> {
+        pub block_number: BlockNumber,
+        pub author: T::AccountId,
+    }
 
     /// Was the containerAuthorData set?
     #[pallet::storage]
@@ -243,11 +259,11 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
-    /// Fetch author slot from a proof of header
-    fn fetch_author_slot_from_proof(
+    /// Fetch author and block number from a proof of header
+    fn fetch_block_info_from_proof(
         relay_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
-    ) -> Result<(BlockNumber, T::AccountId), Error<T>> {
+    ) -> Result<ContainerChainBlockInfo<T>, Error<T>> {
         let bytes = para_id.twox_64_concat();
         // CONCAT
         let key = [PARAS_HEADS_INDEX, bytes.as_slice()].concat();
@@ -292,7 +308,10 @@ impl<T: Config> Pallet<T> {
             let author = T::ContainerChainAuthor::author_for_slot(slot, para_id)
                 .ok_or(Error::<T>::AuthorNotFound)?;
 
-            Ok((author_header.number, author))
+            Ok(ContainerChainBlockInfo {
+                block_number: author_header.number,
+                author,
+            })
         } else {
             Err(Error::<T>::NonAuraDigest)
         }

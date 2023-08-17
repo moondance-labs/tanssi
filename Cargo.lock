@@ -6510,12 +6510,8 @@ dependencies = [
 name = "pallet-author-noting-runtime-api"
 version = "0.1.0"
 dependencies = [
- "frame-support",
- "pallet-registrar",
  "parity-scale-codec",
- "scale-info",
  "sp-api",
- "tp-container-chain-genesis-data",
 ]
 
 [[package]]

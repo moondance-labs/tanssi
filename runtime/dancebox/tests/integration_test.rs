@@ -25,6 +25,8 @@ use {
     },
     frame_support::{assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
+    pallet_author_noting::ContainerChainBlockInfo,
+    pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -1545,8 +1547,75 @@ fn test_author_noting_not_self_para() {
 
             assert_eq!(
                 AuthorNoting::latest_author(other_para),
-                Some((1, AccountId::from(DAVE)))
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: AccountId::from(DAVE)
+                })
             );
+        });
+}
+
+#[test]
+fn test_author_noting_runtime_api() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .build()
+        .execute_with(|| {
+            let mut sproof = ParaHeaderSproofBuilder::default();
+            let slot: u64 = 5;
+            let other_para: ParaId = 1001u32.into();
+
+            // Charlie and Dave to 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            let mut s = ParaHeaderSproofBuilderItem::default();
+            s.para_id = other_para;
+            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: 1,
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                },
+            });
+            sproof.items.push(s);
+
+            set_author_noting_inherent_data(sproof);
+
+            assert_eq!(
+                AuthorNoting::latest_author(other_para),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: AccountId::from(DAVE)
+                })
+            );
+
+            assert_eq!(
+                Runtime::latest_author(other_para),
+                Some(AccountId::from(DAVE))
+            );
+            assert_eq!(Runtime::latest_block_number(other_para), Some(1));
         });
 }
 

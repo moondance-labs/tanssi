@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{mock::*, Event},
+    crate::{mock::*, ContainerChainBlockInfo, Event},
     cumulus_primitives_core::ParaId,
     frame_support::{
         assert_ok,
@@ -61,7 +61,10 @@ fn test_author_id_insertion() {
         .add(1, || {
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
-                Some((1, 13u64))
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
             );
         });
 }
@@ -96,7 +99,10 @@ fn test_author_id_insertion_real_data() {
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 // Our mock author fetcher will just note the slot
-                Some((3511063, 140006956))
+                Some(ContainerChainBlockInfo {
+                    block_number: 3511063,
+                    author: 140006956
+                })
             );
         });
 }
@@ -164,18 +170,27 @@ fn test_author_id_insertion_many_paras() {
             });
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
-                Some((1, 10u64))
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 10u64
+                })
             );
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1002)), None);
         })
         .add(2, || {
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
-                Some((2, 13u64))
+                Some(ContainerChainBlockInfo {
+                    block_number: 2,
+                    author: 13u64
+                })
             );
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1002)),
-                Some((1, 14u64))
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 14u64
+                })
             );
         });
 }
@@ -208,7 +223,10 @@ fn test_should_panic_with_invalid_proof_root() {
         .add(1, || {
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
-                Some((1, 13u64))
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
             );
         });
 }
@@ -244,7 +262,10 @@ fn test_should_panic_with_invalid_proof_state() {
         .add(1, || {
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
-                Some((1, 13u64))
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
             );
         });
 }
@@ -455,7 +476,10 @@ fn test_set_author() {
         .add(1, || {
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
-                Some((1, 13u64))
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
             );
             assert_ok!(AuthorNoting::set_author(
                 RuntimeOrigin::root(),
@@ -465,7 +489,10 @@ fn test_set_author() {
             ));
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
-                Some((1, 14u64))
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 14u64
+                })
             );
             System::assert_last_event(
                 Event::LatestAuthorChanged {
