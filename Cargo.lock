@@ -1250,6 +1250,7 @@ dependencies = [
  "hex-literal 0.3.4",
  "jsonrpsee",
  "log",
+ "manual-xcm-rpc",
  "nimbus-consensus",
  "nimbus-primitives",
  "pallet-ethereum",

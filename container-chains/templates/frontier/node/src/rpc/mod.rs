@@ -49,6 +49,8 @@ use {
     sp_core::H256,
     sp_runtime::traits::{BlakeTwo256, Block as BlockT},
     std::{sync::Arc, time::Duration},
+    cumulus_primitives_core::ParaId,
+    manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
 };
 
 mod eth;
@@ -88,6 +90,8 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     pub is_authority: bool,
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
+    /// Channels for manual xcm messages (downward, hrmp)
+    pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
 }
 
 /// Instantiate all Full RPC extensions.
@@ -139,6 +143,7 @@ where
         block_data_cache,
         is_authority,
         command_sink,
+        xcm_senders,
     } = deps;
 
     io.merge(System::new(Arc::clone(&client), Arc::clone(&pool), deny_unsafe).into_rpc())?;
@@ -224,6 +229,16 @@ where
         .into_rpc(),
     )?;
     io.merge(tx_pool.into_rpc())?;
+
+    if let Some((downward_message_channel, hrmp_message_channel)) = xcm_senders {
+        io.merge(
+            ManualXcm {
+                downward_message_channel,
+                hrmp_message_channel,
+            }
+            .into_rpc(),
+        )?;
+    }
 
     Ok(io)
 }
