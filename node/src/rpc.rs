@@ -23,6 +23,7 @@
 
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 use {
+    cumulus_primitives_core::ParaId,
     dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
     manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
     polkadot_primitives::Hash,
@@ -36,7 +37,6 @@ use {
     sp_block_builder::BlockBuilder,
     sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata},
     std::sync::Arc,
-    cumulus_primitives_core::ParaId
 };
 
 /// A type representing all RPC extensions.
@@ -53,7 +53,7 @@ pub struct FullDeps<C, P> {
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for manual xcm messages (downward, hrmp)
-	pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
+    pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
 }
 
 /// Instantiate all RPC extensions.
@@ -80,7 +80,7 @@ where
         pool,
         deny_unsafe,
         command_sink,
-        xcm_senders
+        xcm_senders,
     } = deps;
 
     module.merge(System::new(client, pool, deny_unsafe).into_rpc())?;
@@ -94,14 +94,14 @@ where
     };
 
     if let Some((downward_message_channel, hrmp_message_channel)) = xcm_senders {
-		module.merge(
-			ManualXcm {
-				downward_message_channel,
-				hrmp_message_channel,
-			}
-			.into_rpc(),
-		)?;
-	}
+        module.merge(
+            ManualXcm {
+                downward_message_channel,
+                hrmp_message_channel,
+            }
+            .into_rpc(),
+        )?;
+    }
 
     Ok(module)
 }

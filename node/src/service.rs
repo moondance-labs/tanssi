@@ -1198,7 +1198,7 @@ pub fn new_dev(
     let prometheus_registry = config.prometheus_registry().cloned();
     let collator = config.role.is_authority();
     let mut command_sink = None;
-	let mut xcm_senders = None;
+    let mut xcm_senders = None;
 
     if collator {
         let mut env = sc_basic_authorship::ProposerFactory::new(
@@ -1309,7 +1309,7 @@ pub fn new_dev(
                         .collect();
 
                     let downward_xcm_receiver = downward_xcm_receiver.clone();
-					let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
+                    let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {
@@ -1329,7 +1329,7 @@ pub fn new_dev(
                                 Default::default(),
                             ),
                             raw_downward_messages: downward_xcm_receiver.drain().collect(),
-							raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
+                            raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                         };
 
                         let mocked_author_noting =
@@ -1347,7 +1347,6 @@ pub fn new_dev(
             }),
         );
     }
-
 
     let rpc_builder = {
         let client = client.clone();
