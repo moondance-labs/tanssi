@@ -124,7 +124,7 @@ pub trait Pool<T: Config> {
 
     /// Decrease the total stake of a pool without creating new shares, which basically decrease
     /// the value of each share.
-    fn slash_stake_amoung_holders(
+    fn slash_stake_among_holders(
         candidate: &Candidate<T>,
         stake: Stake<T>,
     ) -> Result<(), Error<T>> {

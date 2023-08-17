@@ -134,11 +134,11 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-    pub const StakingAccount: u64 = 0xffffffffffffffffu64;
+    pub const StakingAccount: u64 = ACCOUNT_STAKING;
     pub const CurrencyHoldReason: HoldIdentifier = HoldIdentifier::Staking;
-    pub const InitialManualClaimShareValue: u128 = KILO;
-    pub const InitialAutoCompoundingShareValue: u128 = KILO;
-    pub const MinimumSelfDelegation: u128 = 10 * KILO;
+    pub const InitialManualClaimShareValue: u128 = MEGA;
+    pub const InitialAutoCompoundingShareValue: u128 = MEGA;
+    pub const MinimumSelfDelegation: u128 = 10 * MEGA;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
 }
 
@@ -297,6 +297,7 @@ impl Default for ExtBuilder {
     fn default() -> ExtBuilder {
         ExtBuilder {
             balances: vec![
+                (ACCOUNT_STAKING, 1 * DEFAULT_BALANCE),
                 (ACCOUNT_CANDIDATE_1, 1 * DEFAULT_BALANCE),
                 (ACCOUNT_CANDIDATE_2, 1 * DEFAULT_BALANCE),
                 (ACCOUNT_DELEGATOR_1, 1 * DEFAULT_BALANCE),

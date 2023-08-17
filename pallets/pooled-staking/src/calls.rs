@@ -26,8 +26,8 @@ use {
     frame_support::{
         pallet_prelude::*,
         traits::{
-            fungible::{Balanced, Mutate, MutateHold},
-            tokens::{Fortitude, Precision, Preservation},
+            fungible::{Mutate, MutateHold},
+            tokens::{Precision, Preservation},
         },
     },
     frame_system::pallet_prelude::*,
@@ -76,31 +76,13 @@ impl<T: Config> Calls<T> {
 
         // Transfer is done using withdraw to ensure it works regardless of ED.
         if let Some(diff) = stake.0.checked_sub(&held.0) {
-            println!("transfer");
             T::Currency::transfer(
                 &T::StakingAccount::get(),
                 &delegator,
                 dbg!(diff),
                 Preservation::Preserve,
             )?;
-
-            // println!("withdraw");
-            // let credit = T::Currency::withdraw(
-            //     &T::StakingAccount::get(),
-            //     dbg!(diff),
-            //     Precision::Exact,
-            //     Preservation::Preserve,
-            //     Fortitude::Force,
-            // )?;
-            // println!("resolve");
-            // T::Currency::resolve(
-            //     &delegator,
-            //     credit
-            // ).map_err(|_| TokenError::BelowMinimum)?;
-
-            println!("hold");
             T::Currency::hold(&T::CurrencyHoldReason::get(), &delegator, diff)?;
-            println!("done");
             return Ok(().into());
         }
 
