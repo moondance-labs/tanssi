@@ -134,8 +134,8 @@ jobs:
         run: cargo fmt --all --check
       - name: Build
         run: cargo build --features=fast-runtime --release --all
-      # - name: Test
-      #   run: cargo test --release --all
+      - name: Check runtime benchmarks
+        run: cargo check --features=runtime-benchmarks --release --all
       - name: Save runtime wasm
         run: |
           mkdir -p runtimes
@@ -158,8 +158,6 @@ jobs:
         with:
           name: binaries
           path: binaries
-      - name: Check runtime benchmarks
-        run: cargo check --features=runtime-benchmarks --release --all
 
   rust-test:
     runs-on: self-hosted
@@ -383,18 +381,15 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ steps.check-git-ref.outputs.git_ref }}
-
       - name: Pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
-
       - name: Setup node
         uses: actions/setup-node@v3
         with:
           node-version: 20.x
           cache: "pnpm"
-
       - name: Create local folders
         run: |
           mkdir -p target/release/wbuild/${{ matrix.chain }}-runtime/
@@ -404,13 +399,11 @@ jobs:
         with:
           name: binaries
           path: target/release
-
       - name: "Download branch built runtime"
         uses: actions/download-artifact@v3.0.2
         with:
           name: runtimes
           path: target/release/wbuild/${{ matrix.chain }}-runtime/
-
       - name: Retrieve tanssi binary from docker (for plainSpec generation)
         run: |
           TANSSI_COMMIT=${{ needs.set-tags.outputs.latest_rt_sha8 }}
@@ -420,21 +413,17 @@ jobs:
           docker create --name tanssi_container $DOCKER_TAG bash
           docker cp tanssi_container:tanssi/tanssi-node test/tmp/tanssi_rt
           docker rm -f tanssi_container
-
       - name: "Run zombie upgrade test"
         run: |
           chmod uog+x target/release/tanssi-node
 
           cd test
-
           pnpm install
 
           chmod uog+x tmp/tanssi_rt
           tmp/tanssi_rt build-spec --chain ${{ matrix.chain }}-local > tmp/${{ matrix.chain }}-plain-spec.json
           pnpm tsx scripts/modify-plain-specs.ts process tmp/${{ matrix.chain }}-plain-spec.json tmp/${{ matrix.chain }}-modified-spec.json 
           tmp/tanssi_rt build-spec --chain tmp/${{ matrix.chain }}-modified-spec.json --raw > tmp/${{ matrix.chain }}-raw-spec.json
-
-          ## Run tests
 
           pnpm moonwall test zombie_${{ matrix.chain }}_upgrade
 
