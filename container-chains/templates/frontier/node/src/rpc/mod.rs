@@ -25,11 +25,13 @@ pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 
 use {
     container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
+    cumulus_primitives_core::ParaId,
     fc_rpc::{EthTask, TxPool},
     fc_rpc_core::TxPoolApiServer,
     fp_rpc::EthereumRuntimeRPCApi,
     futures::StreamExt,
     jsonrpsee::RpcModule,
+    manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
     sc_client_api::{
         backend::{Backend, StateBackend},
         client::BlockchainEvents,
@@ -49,8 +51,6 @@ use {
     sp_core::H256,
     sp_runtime::traits::{BlakeTwo256, Block as BlockT},
     std::{sync::Arc, time::Duration},
-    cumulus_primitives_core::ParaId,
-    manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
 };
 
 mod eth;
