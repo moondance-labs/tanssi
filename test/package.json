@@ -23,13 +23,9 @@
     "@moonwall/cli": "4.0.14",
     "@moonwall/util": "4.0.14",
     "@polkadot/api": "^10.9.1",
-    "@polkadot/api-augment": "^10.9.1",
-    "@polkadot/api-derive": "^10.9.1",
-    "@polkadot/keyring": "^12.3.2",
-    "@polkadot/rpc-provider": "^10.9.1",
+    "@polkadot/keyring": "^12.4.1",
     "@polkadot/types": "^10.9.1",
-    "@polkadot/types-codec": "^10.9.1",
-    "@polkadot/util": "^12.3.2",
+    "@polkadot/util": "^12.4.1",
     "@tanssi/api-augment": "workspace:*",
     "@types/debug": "^4.1.8",
     "@types/node": "^20.5.0",
@@ -50,5 +46,8 @@
     "web3": "4.0.3",
     "web3-providers-ws": "4.0.3",
     "yargs": "^17.7.2"
+  },
+  "dependencies": {
+    "@zombienet/orchestrator": "^0.0.52"
   }
 }
