@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
-import { u8aToHex } from "@polkadot/util";
+import { u8aToHex, stringToHex } from '@polkadot/util';
 import { decodeAddress } from "@polkadot/util-crypto";
 import { Signer } from "ethers";
 import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author.js";
@@ -207,6 +207,12 @@ describeSuite({
         const keyring = new Keyring({ type: "sr25519" });
         let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
+        // Collator2000-02 should have a container 2000 db, and Collator1000-03 should not
+        const collator100003DbPath = getTmpZombiePath() + "/Collator1000-03/data/containers/chains/simple_container_2000/db/full-container-2000";
+        const container200002DbPath = getTmpZombiePath() + "/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000";
+        expect(await directoryExists(container200002DbPath)).to.be.true;
+        expect(await directoryExists(collator100003DbPath)).to.be.false;        
+
         // Deregister Collator2000-02, it should delete the db
         const invuln = (await paraApi.query.collatorSelection.invulnerables()).toJSON();
 
@@ -218,12 +224,6 @@ describeSuite({
 
         const tx = paraApi.tx.collatorSelection.setInvulnerables(newInvuln);
         await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-
-        // Collator2000-02 should have a container 2000 db, and Collator1000-03 should not
-        const collator100003DbPath = getTmpZombiePath() + "/Collator1000-03/data/containers/chains/simple_container_2000/db/full-container-2000";
-        const container200002DbPath = getTmpZombiePath() + "/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000";
-        expect(await directoryExists(container200002DbPath)).to.be.true;
-        expect(await directoryExists(collator100003DbPath)).to.be.false;
 
         await waitSessions(context, paraApi, 2);
 
@@ -250,6 +250,35 @@ describeSuite({
 
         // Collator1000-03 container chain db should be created
         expect(await directoryExists(collator100003DbPath)).to.be.true;
+      },
+    });
+
+    it({
+      id: "T13",
+      title: "Collator1000-03 is producing blocks on Container 2000",
+      test: async function () {
+        const blockStart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
+        // Wait up to 8 blocks, giving the new collator 4 chances to build a block
+        const blockEnd = blockStart + 8;
+        const authors = [];
+
+        for (let blockNumber = blockStart; blockNumber <= blockEnd; blockNumber += 1) {
+            // Get the latest author from Digest
+            const blockHash = await container2000Api.rpc.chain.getBlockHash(blockNumber);
+            const apiAt = await container2000Api.at(blockHash);
+            const digests = (await apiAt.query.system.digest()).logs;
+            const filtered = digests.filter(log => 
+                log.isPreRuntime === true && log.asPreRuntime[0].toHex() == stringToHex('nmbs')
+            );
+            const author = filtered[0].asPreRuntime[1].toHex();
+            authors.push(author);
+            if (author == getKeyringNimbusIdHex("Collator1000-03")) {
+                break;
+            }
+            await context.waitBlock(1, "Tanssi");
+        }
+
+        expect(authors).to.contain(getKeyringNimbusIdHex("Collator1000-03"))
       },
     });
   },
