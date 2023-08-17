@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block.js";
+import { jumpSessions } from "../../../util/block";
 import { u8aToHex, stringToHex } from "@polkadot/util";
 
 describeSuite({
@@ -32,7 +32,6 @@ describeSuite({
         // for session 0
         const assignment0 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).unwrap().toHuman();
         const assignment1 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(1)).unwrap().toHuman();
-
         expect(assignment0.orchestratorChain).to.deep.equal([u8aToHex(alice.publicKey)]);
         expect(assignment0.containerChains).to.deep.equal({
           2000: [u8aToHex(bob.publicKey), u8aToHex(charlie.publicKey)],
@@ -46,7 +45,7 @@ describeSuite({
 
         // Check authorities are correct
         const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
-        const authorities = await polkadotJs.query.authorityAssignment.collatorContainerChain(sessionIndex);
+        const authorities = await context.polkadotJs().query.authorityAssignment.collatorContainerChain(sessionIndex);
         expect(authorities.unwrap().orchestratorChain[0].toString()).to.be.eq(u8aToHex(alice.publicKey));
       },
     });

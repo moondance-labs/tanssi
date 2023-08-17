@@ -4,8 +4,8 @@ import { Keyring } from "@polkadot/api";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { hideBin } from "yargs/helpers";
 import jsonBg from "json-bigint";
-import { chainSpecToContainerChainGenesisData } from "../util/genesis_data.ts";
-import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network.js";
+import { chainSpecToContainerChainGenesisData } from "../util/genesis_data";
+import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 yargs(hideBin(process.argv))
