@@ -23,6 +23,7 @@
     "@moonwall/cli": "4.0.14",
     "@moonwall/util": "4.0.14",
     "@polkadot/api": "^10.9.1",
+    "@polkadot/api-augment": "^10.9.1",
     "@polkadot/keyring": "^12.4.1",
     "@polkadot/types": "^10.9.1",
     "@polkadot/util": "^12.4.1",
