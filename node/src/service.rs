@@ -1325,7 +1325,7 @@ pub fn new_dev(
                             xcm_config: MockXcmConfig::new(
                                 &*client_for_xcm,
                                 block,
-                                Default::default(),
+                                para_id,
                                 Default::default(),
                             ),
                             raw_downward_messages: downward_xcm_receiver.drain().collect(),

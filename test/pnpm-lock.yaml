@@ -29,6 +29,9 @@ devDependencies:
   '@polkadot/util':
     specifier: ^12.3.2
     version: 12.3.2
+  '@polkadot/util-crypto':
+    specifier: ^12.3.2
+    version: 12.3.2(@polkadot/util@12.3.2)
   '@types/debug':
     specifier: ^4.1.8
     version: 4.1.8
