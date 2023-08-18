@@ -1,6 +1,6 @@
 import { expect, beforeAll, describeSuite } from "@moonwall/cli";
 import { Keyring } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block.ts";
+import { jumpSessions } from "../../../util/block";
 
 describeSuite({
   id: "D0515",

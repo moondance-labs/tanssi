@@ -1,6 +1,7 @@
-import { DevTestContext, expect } from "@moonwall/cli";
+import { DevModeContext, expect } from "@moonwall/cli";
+import { ApiPromise } from "@polkadot/api";
 
-export async function jumpSessions(context: DevTestContext, count: Number): Promise<string | null> {
+export async function jumpSessions(context: DevModeContext, count: Number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex())
       .addn(count.valueOf())
       .toNumber();
@@ -8,7 +9,7 @@ export async function jumpSessions(context: DevTestContext, count: Number): Prom
     return jumpToSession(context, session);
 }
 
-export async function jumpToSession(context: DevTestContext, session: number): Promise<string | null> {
+export async function jumpToSession(context: DevModeContext, session: number): Promise<string | null> {
     let lastBlockHash = null;
     while (true) {
       const currentSession = (
@@ -23,7 +24,7 @@ export async function jumpToSession(context: DevTestContext, session: number): P
     }
 }
 
-export async function jumpBlocks(context: DevTestContext, blockCount: number) {
+export async function jumpBlocks(context: DevModeContext, blockCount: number) {
     while (blockCount > 0) {
       await context.createBlock();
       blockCount--;
@@ -44,7 +45,7 @@ export async function waitToSession(context, paraApi: ApiPromise, session: numbe
       await paraApi.query.session.currentIndex()).toNumber();
     if (currentSession === session) {
       const signedBlock = await paraApi.rpc.chain.getBlock();
-      return signedBlock.block.header.hash;
+      return signedBlock.block.header.hash.toString();
     } else if (currentSession > session) {
       return null;
     }
