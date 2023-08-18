@@ -71,7 +71,7 @@ export function mockHrmpChannelExistanceTx(
     .tx.system.setStorage([[u8aToHex(overallKey), u8aToHex(stateToInsert.toU8a())]]);
 }
 
-export function descendOriginFromAddress20(
+export function descendSiblingOriginFromAddress20(
   context: DevModeContext,
   address: `0x${string}` = "0x0101010101010101010101010101010101010101",
   paraId: number = 1
@@ -113,7 +113,7 @@ export function descendSiblingOriginFromAddress32(
     originAddress: address,
     descendOriginAddress: u8aToHex(context.polkadotJs().registry.hash(toHash).slice(0, 32)),
   };
-}
+} 
 
 export function descendParentOriginFromAddress32(
   context: DevModeContext,
@@ -155,12 +155,22 @@ export function descendParentOriginForAddress20(
   };
 }
 
-export function sovereignAccountOfSibling(context: DevModeContext, paraId: number): string {
+export function sovereignAccountOfSiblingForAddress32(context: DevModeContext, paraId: number): string {
   return u8aToHex(
     new Uint8Array([
       ...new TextEncoder().encode("sibl"),
       ...context.polkadotJs().createType("u32", paraId).toU8a(),
       ...new Uint8Array(24),
+    ])
+  );
+}
+
+export function sovereignAccountOfSiblingForAddress20(context: DevModeContext, paraId: number): string {
+  return u8aToHex(
+    new Uint8Array([
+      ...new TextEncoder().encode("sibl"),
+      ...context.polkadotJs().createType("u32", paraId).toU8a(),
+      ...new Uint8Array(12),
     ])
   );
 }

@@ -3,13 +3,16 @@ import { ApiPromise } from "@polkadot/api";
 import {
   XcmFragment,
   injectHrmpMessageAndSeal,
-  sovereignAccountOfSibling,
+  sovereignAccountOfSiblingForAddress32,
+  sovereignAccountOfSiblingForAddress20,
   descendSiblingOriginFromAddress32,
+  descendSiblingOriginFromAddress20
 } from "../../../util/xcm.ts";
 import { generateKeyringPair } from "@moonwall/util";
 import { expectOk } from "../../../util/expect.ts";
 import { Keyring } from "@polkadot/api";
 import { BN } from "@polkadot/util";
+import { alith } from "@moonwall/util";
 
 describeSuite({
   id: "D1",
@@ -21,14 +24,19 @@ describeSuite({
     let sendingAddress;
     let descendAddress;
     let alice;
+    let chain;
 
 
     beforeAll(async function () {
-        const keyring = new Keyring({ type: 'sr25519' });
-        alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+        polkadotJs = context.polkadotJs();
+        chain = polkadotJs.consts.system.version.specName.toString();
+        alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
 
-        const { originAddress, descendOriginAddress } = descendSiblingOriginFromAddress32(context);
-        const sovereign = sovereignAccountOfSibling(context, 1);
+        let descendFunction = chain == 'frontier-template' ? descendSiblingOriginFromAddress20 : descendSiblingOriginFromAddress32;
+        let sovereignFunction = chain == 'frontier-template' ? sovereignAccountOfSiblingForAddress20 : sovereignAccountOfSiblingForAddress32;
+
+        const { originAddress, descendOriginAddress } = descendFunction(context);
+        const sovereign = sovereignFunction(context, 1);
 
         sendingAddress = originAddress;
         descendAddress = descendOriginAddress;
@@ -65,7 +73,7 @@ describeSuite({
       test: async function () {
         // Generate random receiver address
         let random: KeyringPair;
-        random = generateKeyringPair("sr25519");
+        random = chain == 'frontier-template' ? generateKeyringPair() : generateKeyringPair("sr25519");
 
         // Get Pallet balances index
         const metadata = await polkadotJs.rpc.state.getMetadata();
@@ -131,10 +139,9 @@ describeSuite({
         id: "T02",
         title: "Should succeed using sovereign account from root origin",
         test: async function () {
-
             // Generate random receiver address
             let random: KeyringPair;
-            random = generateKeyringPair("sr25519");
+            random = chain == 'frontier-template' ? generateKeyringPair() : generateKeyringPair("sr25519");
 
             // Get Pallet balances index
             const metadata = await polkadotJs.rpc.state.getMetadata();

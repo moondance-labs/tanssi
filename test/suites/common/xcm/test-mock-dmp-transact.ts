@@ -26,8 +26,6 @@ describeSuite({
     let chain;
 
     beforeAll(async function () {
-        const keyring = new Keyring({ type: 'sr25519' });
-        alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
         polkadotJs = context.polkadotJs();
         chain = polkadotJs.consts.system.version.specName.toString();
         alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
@@ -59,8 +57,6 @@ describeSuite({
       test: async function () {
         // Generate random receiver address
         let random: KeyringPair;
-                let descendFunction = chain == 'frontier-template' ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
-
         random = chain == 'frontier-template' ? generateKeyringPair() : generateKeyringPair("sr25519");
         // Get Pallet balances index
         const metadata = await polkadotJs.rpc.state.getMetadata();
