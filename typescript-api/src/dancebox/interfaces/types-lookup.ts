@@ -593,6 +593,7 @@ declare module "@polkadot/types/lookup" {
     readonly isLatestAuthorChanged: boolean;
     readonly asLatestAuthorChanged: {
       readonly paraId: u32;
+      readonly blockNumber: u32;
       readonly newAuthor: AccountId32;
     } & Struct;
     readonly type: "LatestAuthorChanged";
@@ -1244,7 +1245,8 @@ declare module "@polkadot/types/lookup" {
     readonly isSetAuthor: boolean;
     readonly asSetAuthor: {
       readonly paraId: u32;
-      readonly new_: AccountId32;
+      readonly blockNumber: u32;
+      readonly author: AccountId32;
     } & Struct;
     readonly type: "SetLatestAuthorData" | "SetAuthor";
   }
@@ -1492,7 +1494,13 @@ declare module "@polkadot/types/lookup" {
     readonly sessionIndex: u32;
   }
 
-  /** @name PalletAuthorNotingError (188) */
+  /** @name PalletAuthorNotingContainerChainBlockInfo (188) */
+  interface PalletAuthorNotingContainerChainBlockInfo extends Struct {
+    readonly blockNumber: u32;
+    readonly author: AccountId32;
+  }
+
+  /** @name PalletAuthorNotingError (189) */
   interface PalletAuthorNotingError extends Enum {
     readonly isFailedReading: boolean;
     readonly isFailedDecodingHeader: boolean;
@@ -1511,7 +1519,7 @@ declare module "@polkadot/types/lookup" {
       | "NonAuraDigest";
   }
 
-  /** @name TpCollatorAssignmentAssignedCollatorsPublic (189) */
+  /** @name TpCollatorAssignmentAssignedCollatorsPublic (190) */
   interface TpCollatorAssignmentAssignedCollatorsPublic extends Struct {
     readonly orchestratorChain: Vec<NimbusPrimitivesNimbusCryptoPublic>;
     readonly containerChains: BTreeMap<
@@ -1520,13 +1528,13 @@ declare module "@polkadot/types/lookup" {
     >;
   }
 
-  /** @name PalletCollatorSelectionCandidateInfo (196) */
+  /** @name PalletCollatorSelectionCandidateInfo (197) */
   interface PalletCollatorSelectionCandidateInfo extends Struct {
     readonly who: AccountId32;
     readonly deposit: u128;
   }
 
-  /** @name PalletCollatorSelectionError (198) */
+  /** @name PalletCollatorSelectionError (199) */
   interface PalletCollatorSelectionError extends Enum {
     readonly isTooManyCandidates: boolean;
     readonly isTooFewCandidates: boolean;
@@ -1551,10 +1559,10 @@ declare module "@polkadot/types/lookup" {
       | "ValidatorNotRegistered";
   }
 
-  /** @name SpCoreCryptoKeyTypeId (203) */
+  /** @name SpCoreCryptoKeyTypeId (204) */
   interface SpCoreCryptoKeyTypeId extends U8aFixed {}
 
-  /** @name PalletSessionError (204) */
+  /** @name PalletSessionError (205) */
   interface PalletSessionError extends Enum {
     readonly isInvalidProof: boolean;
     readonly isNoAssociatedValidatorId: boolean;
@@ -1569,7 +1577,7 @@ declare module "@polkadot/types/lookup" {
       | "NoAccount";
   }
 
-  /** @name PalletAuthorInherentError (208) */
+  /** @name PalletAuthorInherentError (209) */
   interface PalletAuthorInherentError extends Enum {
     readonly isAuthorAlreadySet: boolean;
     readonly isNoAccountId: boolean;
@@ -1577,7 +1585,7 @@ declare module "@polkadot/types/lookup" {
     readonly type: "AuthorAlreadySet" | "NoAccountId" | "CannotBeAuthor";
   }
 
-  /** @name SpRuntimeMultiSignature (210) */
+  /** @name SpRuntimeMultiSignature (211) */
   interface SpRuntimeMultiSignature extends Enum {
     readonly isEd25519: boolean;
     readonly asEd25519: SpCoreEd25519Signature;
@@ -1588,33 +1596,33 @@ declare module "@polkadot/types/lookup" {
     readonly type: "Ed25519" | "Sr25519" | "Ecdsa";
   }
 
-  /** @name SpCoreEd25519Signature (211) */
+  /** @name SpCoreEd25519Signature (212) */
   interface SpCoreEd25519Signature extends U8aFixed {}
 
-  /** @name SpCoreSr25519Signature (213) */
+  /** @name SpCoreSr25519Signature (214) */
   interface SpCoreSr25519Signature extends U8aFixed {}
 
-  /** @name SpCoreEcdsaSignature (214) */
+  /** @name SpCoreEcdsaSignature (215) */
   interface SpCoreEcdsaSignature extends U8aFixed {}
 
-  /** @name FrameSystemExtensionsCheckNonZeroSender (217) */
+  /** @name FrameSystemExtensionsCheckNonZeroSender (218) */
   type FrameSystemExtensionsCheckNonZeroSender = Null;
 
-  /** @name FrameSystemExtensionsCheckSpecVersion (218) */
+  /** @name FrameSystemExtensionsCheckSpecVersion (219) */
   type FrameSystemExtensionsCheckSpecVersion = Null;
 
-  /** @name FrameSystemExtensionsCheckTxVersion (219) */
+  /** @name FrameSystemExtensionsCheckTxVersion (220) */
   type FrameSystemExtensionsCheckTxVersion = Null;
 
-  /** @name FrameSystemExtensionsCheckGenesis (220) */
+  /** @name FrameSystemExtensionsCheckGenesis (221) */
   type FrameSystemExtensionsCheckGenesis = Null;
 
-  /** @name FrameSystemExtensionsCheckNonce (223) */
+  /** @name FrameSystemExtensionsCheckNonce (224) */
   interface FrameSystemExtensionsCheckNonce extends Compact<u32> {}
 
-  /** @name FrameSystemExtensionsCheckWeight (224) */
+  /** @name FrameSystemExtensionsCheckWeight (225) */
   type FrameSystemExtensionsCheckWeight = Null;
 
-  /** @name DanceboxRuntimeRuntime (225) */
+  /** @name DanceboxRuntimeRuntime (226) */
   type DanceboxRuntimeRuntime = Null;
 } // declare module
