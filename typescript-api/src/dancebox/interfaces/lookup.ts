@@ -394,6 +394,7 @@ export default {
     _enum: {
       LatestAuthorChanged: {
         paraId: "u32",
+        blockNumber: "u32",
         newAuthor: "AccountId32",
       },
     },
@@ -952,11 +953,9 @@ export default {
         data: "TpAuthorNotingInherentOwnParachainInherentData",
       },
       set_author: {
-        _alias: {
-          new_: "new",
-        },
         paraId: "u32",
-        new_: "AccountId32",
+        blockNumber: "u32",
+        author: "AccountId32",
       },
     },
   },
@@ -1144,7 +1143,12 @@ export default {
     queued: "Vec<(AccountId32,NimbusPrimitivesNimbusCryptoPublic)>",
     sessionIndex: "u32",
   },
-  /** Lookup188: pallet_author_noting::pallet::Error<T> */
+  /** Lookup188: pallet_author_noting::pallet::ContainerChainBlockInfo<T> */
+  PalletAuthorNotingContainerChainBlockInfo: {
+    blockNumber: "u32",
+    author: "AccountId32",
+  },
+  /** Lookup189: pallet_author_noting::pallet::Error<T> */
   PalletAuthorNotingError: {
     _enum: [
       "FailedReading",
@@ -1157,7 +1161,7 @@ export default {
     ],
   },
   /**
-   * Lookup189:
+   * Lookup190:
    * tp_collator_assignment::AssignedCollators<nimbus_primitives::nimbus_crypto::Public>
    */
   TpCollatorAssignmentAssignedCollatorsPublic: {
@@ -1165,7 +1169,7 @@ export default {
     containerChains: "BTreeMap<u32, Vec<NimbusPrimitivesNimbusCryptoPublic>>",
   },
   /**
-   * Lookup196:
+   * Lookup197:
    * pallet_collator_selection::pallet::CandidateInfo<sp_core::crypto::AccountId32,
    * Balance>
    */
@@ -1173,7 +1177,7 @@ export default {
     who: "AccountId32",
     deposit: "u128",
   },
-  /** Lookup198: pallet_collator_selection::pallet::Error<T> */
+  /** Lookup199: pallet_collator_selection::pallet::Error<T> */
   PalletCollatorSelectionError: {
     _enum: [
       "TooManyCandidates",
@@ -1188,9 +1192,9 @@ export default {
       "ValidatorNotRegistered",
     ],
   },
-  /** Lookup203: sp_core::crypto::KeyTypeId */
+  /** Lookup204: sp_core::crypto::KeyTypeId */
   SpCoreCryptoKeyTypeId: "[u8;4]",
-  /** Lookup204: pallet_session::pallet::Error<T> */
+  /** Lookup205: pallet_session::pallet::Error<T> */
   PalletSessionError: {
     _enum: [
       "InvalidProof",
@@ -1200,11 +1204,11 @@ export default {
       "NoAccount",
     ],
   },
-  /** Lookup208: pallet_author_inherent::pallet::Error<T> */
+  /** Lookup209: pallet_author_inherent::pallet::Error<T> */
   PalletAuthorInherentError: {
     _enum: ["AuthorAlreadySet", "NoAccountId", "CannotBeAuthor"],
   },
-  /** Lookup210: sp_runtime::MultiSignature */
+  /** Lookup211: sp_runtime::MultiSignature */
   SpRuntimeMultiSignature: {
     _enum: {
       Ed25519: "SpCoreEd25519Signature",
@@ -1212,24 +1216,24 @@ export default {
       Ecdsa: "SpCoreEcdsaSignature",
     },
   },
-  /** Lookup211: sp_core::ed25519::Signature */
+  /** Lookup212: sp_core::ed25519::Signature */
   SpCoreEd25519Signature: "[u8;64]",
-  /** Lookup213: sp_core::sr25519::Signature */
+  /** Lookup214: sp_core::sr25519::Signature */
   SpCoreSr25519Signature: "[u8;64]",
-  /** Lookup214: sp_core::ecdsa::Signature */
+  /** Lookup215: sp_core::ecdsa::Signature */
   SpCoreEcdsaSignature: "[u8;65]",
-  /** Lookup217: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
+  /** Lookup218: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
   FrameSystemExtensionsCheckNonZeroSender: "Null",
-  /** Lookup218: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
+  /** Lookup219: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
   FrameSystemExtensionsCheckSpecVersion: "Null",
-  /** Lookup219: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
+  /** Lookup220: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
   FrameSystemExtensionsCheckTxVersion: "Null",
-  /** Lookup220: frame_system::extensions::check_genesis::CheckGenesis<T> */
+  /** Lookup221: frame_system::extensions::check_genesis::CheckGenesis<T> */
   FrameSystemExtensionsCheckGenesis: "Null",
-  /** Lookup223: frame_system::extensions::check_nonce::CheckNonce<T> */
+  /** Lookup224: frame_system::extensions::check_nonce::CheckNonce<T> */
   FrameSystemExtensionsCheckNonce: "Compact<u32>",
-  /** Lookup224: frame_system::extensions::check_weight::CheckWeight<T> */
+  /** Lookup225: frame_system::extensions::check_weight::CheckWeight<T> */
   FrameSystemExtensionsCheckWeight: "Null",
-  /** Lookup225: dancebox_runtime::Runtime */
+  /** Lookup226: dancebox_runtime::Runtime */
   DanceboxRuntimeRuntime: "Null",
 };
