@@ -112,6 +112,23 @@ fn do_execute_delegation<P: PoolExt<Runtime>>(
     assert_eq!(pool_before.stake + expected_increase, pool_after.stake);
 }
 
+fn do_full_delegation<P: PoolExt<Runtime>>(
+    candidate: AccountId,
+    delegator: AccountId,
+    request_amount: Balance,
+    expected_increase: Balance,
+) {
+    let block_number = block_number();
+    do_request_delegation(candidate, delegator, P::target_pool(), request_amount);
+    roll_to(block_number + 2);
+    do_execute_delegation::<P>(
+        ACCOUNT_CANDIDATE_1,
+        ACCOUNT_DELEGATOR_1,
+        block_number,
+        expected_increase,
+    );
+}
+
 fn do_rebalance_hold<P: Pool<Runtime>>(
     candidate: AccountId,
     delegator: AccountId,
@@ -222,24 +239,13 @@ pool_test!(
 pool_test!(
     fn delegation_execution<P>() {
         ExtBuilder::default().build().execute_with(|| {
-            let block_number = block_number();
             let final_amount = 2 * InitialManualClaimShareValue::get();
-            let requested_amount = final_amount + 10;
-            // test share rounding
+            let requested_amount = final_amount + 10; // test share rounding
 
-            do_request_delegation(
+            do_full_delegation::<P>(
                 ACCOUNT_CANDIDATE_1,
                 ACCOUNT_DELEGATOR_1,
-                P::target_pool(),
                 requested_amount,
-            );
-
-            // ---- Execution
-            roll_to(block_number + 2);
-            do_execute_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                block_number,
                 final_amount,
             );
 
@@ -282,24 +288,14 @@ pool_test!(
         ExtBuilder::default().build().execute_with(|| {
             // Preparation:
             // We naturaly delegate towards a candidate.
-            let block_number = block_number();
             let initial_amount = 2 * InitialManualClaimShareValue::get();
             let rewards = 5 * KILO;
             let final_amount = initial_amount + rewards;
 
-            do_request_delegation(
+            do_full_delegation::<P>(
                 ACCOUNT_CANDIDATE_1,
                 ACCOUNT_DELEGATOR_1,
-                P::target_pool(),
                 initial_amount,
-            );
-
-            // ---- Execution
-            roll_to(block_number + 2);
-            do_execute_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                block_number,
                 initial_amount,
             );
 
