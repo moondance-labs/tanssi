@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::{assert_fields_eq, AllTargetPool, TargetPool};
+
 use {
     crate::{
         assert_eq_events,
@@ -27,6 +29,125 @@ use {
 };
 
 type Joining = pools::Joining<Runtime>;
+
+fn do_request_delegation(
+    candidate: AccountId,
+    delegator: AccountId,
+    pool: TargetPool,
+    amount: Balance,
+) {
+    let before = State::extract(candidate, delegator);
+    let pool_before = PoolState::extract::<Joining>(candidate, delegator);
+
+    assert_ok!(Staking::request_delegate(
+        RuntimeOrigin::signed(delegator),
+        candidate,
+        pool,
+        amount,
+    ));
+
+    let after = State::extract(candidate, delegator);
+    let pool_after = PoolState::extract::<Joining>(candidate, delegator);
+
+    // Actual balances don't change
+    assert_fields_eq!(before, after, [delegator_balance, staking_balance]);
+    assert_eq!(before.delegator_hold + amount, after.delegator_hold);
+    assert_eq!(pool_before.hold + amount, pool_after.hold);
+    assert_eq!(pool_before.stake + amount, pool_after.stake);
+    assert_eq!(
+        before.candidate_total_stake + amount,
+        after.candidate_total_stake
+    );
+}
+
+fn do_execute_delegation<P: PoolExt<Runtime>>(
+    candidate: AccountId,
+    delegator: AccountId,
+    block_number: u64,
+    expected_increase: Balance,
+) {
+    let before = State::extract(candidate, delegator);
+    let joining_before = PoolState::extract::<Joining>(candidate, delegator);
+    let pool_before = PoolState::extract::<P>(candidate, delegator);
+    let request_before = crate::PendingOperations::<Runtime>::get(
+        delegator,
+        P::joining_operation_key(candidate, block_number),
+    );
+
+    let refund = request_before
+        .checked_sub(expected_increase)
+        .expect("expected increase should be <= requested amount");
+
+    assert_ok!(Staking::execute_pending_operations(
+        RuntimeOrigin::signed(delegator),
+        vec![PendingOperationQuery {
+            delegator: delegator,
+            operation: P::joining_operation_key(candidate, block_number)
+        }]
+    ));
+
+    let after = State::extract(candidate, delegator);
+    let joining_after = PoolState::extract::<Joining>(candidate, delegator);
+    let pool_after = PoolState::extract::<P>(candidate, delegator);
+    let request_after = crate::PendingOperations::<Runtime>::get(
+        delegator,
+        P::joining_operation_key(candidate, block_number),
+    );
+
+    // Actual balances don't change
+    assert_fields_eq!(before, after, [delegator_balance, staking_balance]);
+    // However funds are held (with share rounding released)
+    assert_eq!(request_after, 0);
+
+    assert_eq!(before.delegator_hold - refund, after.delegator_hold);
+    assert_eq!(
+        before.candidate_total_stake - refund,
+        after.candidate_total_stake
+    );
+
+    assert_eq!(joining_before.hold - request_before, joining_after.hold);
+    assert_eq!(joining_before.stake - request_before, joining_after.stake);
+
+    assert_eq!(pool_before.hold + expected_increase, pool_after.hold);
+    assert_eq!(pool_before.stake + expected_increase, pool_after.stake);
+}
+
+fn do_rebalance_hold<P: Pool<Runtime>>(
+    candidate: AccountId,
+    delegator: AccountId,
+    target_pool: AllTargetPool,
+    expected_rebalance: SignedBalance,
+) {
+    let before = State::extract(candidate, delegator);
+    let pool_before = PoolState::extract::<P>(candidate, delegator);
+
+    assert_ok!(Staking::rebalance_hold(
+        RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+        ACCOUNT_CANDIDATE_1,
+        ACCOUNT_DELEGATOR_1,
+        target_pool
+    ));
+
+    let after = State::extract(candidate, delegator);
+    let pool_after = PoolState::extract::<P>(candidate, delegator);
+
+    // Balances should update
+    match expected_rebalance {
+        SignedBalance::Positive(balance) => {
+            assert_eq!(pool_before.hold + balance, pool_after.hold);
+            assert_eq!(before.delegator_balance + balance, after.delegator_balance);
+            assert_eq!(before.staking_balance - balance, after.staking_balance);
+        }
+        SignedBalance::Negative(balance) => {
+            assert_eq!(pool_before.hold - balance, pool_after.hold);
+            assert_eq!(before.delegator_balance - balance, after.delegator_balance);
+            assert_eq!(before.staking_balance + balance, after.staking_balance);
+        }
+    }
+
+    // Stake stay the same.
+    assert_fields_eq!(pool_before, pool_after, stake);
+}
 
 pool_test!(
     fn empty_delegation<P>() {
@@ -69,31 +190,11 @@ pool_test!(
     fn delegation_request<P>() {
         ExtBuilder::default().build().execute_with(|| {
             let amount = 4949;
-            assert_ok!(Staking::request_delegate(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+            do_request_delegation(
                 ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
                 P::target_pool(),
                 amount,
-            ),);
-
-            // Actual balances don't change
-            assert_eq!(total_balance(&ACCOUNT_DELEGATOR_1), 1 * DEFAULT_BALANCE);
-            assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE);
-            // However funds are held
-            assert_eq!(balance_hold(&ACCOUNT_DELEGATOR_1), amount);
-            assert_eq!(
-                Joining::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1).0,
-                amount
-            );
-            assert_eq!(
-                Joining::computed_stake(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1)
-                    .unwrap()
-                    .0,
-                amount
-            );
-            assert_eq!(
-                Candidates::<Runtime>::total_stake(&ACCOUNT_CANDIDATE_1).0,
-                amount
             );
 
             assert_eq_events!(vec![
@@ -125,67 +226,21 @@ pool_test!(
             let final_amount = 2 * InitialManualClaimShareValue::get();
             let requested_amount = final_amount + 10;
             // test share rounding
-            assert_ok!(Staking::request_delegate(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+
+            do_request_delegation(
                 ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
                 P::target_pool(),
                 requested_amount,
-            ),);
-
-            // Actual balances don't change
-            assert_eq!(total_balance(&ACCOUNT_DELEGATOR_1), 1 * DEFAULT_BALANCE);
-            assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE);
-            // However funds are held
-            assert_eq!(balance_hold(&ACCOUNT_DELEGATOR_1), requested_amount);
-            assert_eq!(
-                Joining::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(requested_amount)
-            );
-            assert_eq!(
-                P::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(0)
-            );
-            assert_eq!(
-                Candidates::<Runtime>::total_stake(&ACCOUNT_CANDIDATE_1),
-                Stake(requested_amount)
             );
 
             // ---- Execution
             roll_to(block_number + 2);
-            assert_ok!(Staking::execute_pending_operations(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-                vec![PendingOperationQuery {
-                    delegator: ACCOUNT_DELEGATOR_1,
-                    operation: P::joining_operation_key(ACCOUNT_CANDIDATE_1, block_number,)
-                }]
-            ),);
-
-            // Actual balances don't change
-            assert_eq!(total_balance(&ACCOUNT_DELEGATOR_1), 1 * DEFAULT_BALANCE);
-            assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE);
-            // However funds are held (with share rounding released)
-            assert_eq!(balance_hold(&ACCOUNT_DELEGATOR_1), final_amount);
-            assert_eq!(
-                Joining::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(0)
-            );
-            assert_eq!(
-                P::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(final_amount)
-            );
-            assert_eq!(
-                P::shares(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Shares(2)
-            );
-            assert_eq!(
-                P::computed_stake(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1)
-                    .unwrap()
-                    .0,
-                final_amount
-            );
-            assert_eq!(
-                Candidates::<Runtime>::total_stake(&ACCOUNT_CANDIDATE_1),
-                Stake(final_amount)
+            do_execute_delegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                block_number,
+                final_amount,
             );
 
             assert_eq_events!(vec![
@@ -232,46 +287,20 @@ pool_test!(
             let rewards = 5 * KILO;
             let final_amount = initial_amount + rewards;
 
-            assert_ok!(Staking::request_delegate(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+            do_request_delegation(
                 ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
                 P::target_pool(),
                 initial_amount,
-            ));
-            roll_to(block_number + 2);
-            assert_ok!(Staking::execute_pending_operations(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-                vec![PendingOperationQuery {
-                    delegator: ACCOUNT_DELEGATOR_1,
-                    operation: P::joining_operation_key(ACCOUNT_CANDIDATE_1, block_number,)
-                }]
-            ),);
+            );
 
-            // Pre-check
-            assert_eq!(total_balance(&ACCOUNT_DELEGATOR_1), 1 * DEFAULT_BALANCE);
-            assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE);
-            assert_eq!(balance_hold(&ACCOUNT_DELEGATOR_1), initial_amount);
-            assert_eq!(
-                Joining::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(0)
-            );
-            assert_eq!(
-                P::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(initial_amount)
-            );
-            assert_eq!(
-                P::shares(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Shares(2)
-            );
-            assert_eq!(
-                P::computed_stake(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1)
-                    .unwrap()
-                    .0,
-                initial_amount
-            );
-            assert_eq!(
-                Candidates::<Runtime>::total_stake(&ACCOUNT_CANDIDATE_1),
-                Stake(initial_amount)
+            // ---- Execution
+            roll_to(block_number + 2);
+            do_execute_delegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                block_number,
+                initial_amount,
             );
 
             // We then artificialy distribute rewards by increasing the value of the pool
@@ -311,31 +340,11 @@ pool_test!(
             );
 
             // We perform the rebalancing and check it works.
-            assert_ok!(Staking::rebalance_hold(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+            do_rebalance_hold::<P>(
                 ACCOUNT_CANDIDATE_1,
                 ACCOUNT_DELEGATOR_1,
-                P::target_pool().into()
-            ));
-            assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE,);
-            assert_eq!(
-                total_balance(&ACCOUNT_DELEGATOR_1),
-                DEFAULT_BALANCE + rewards
-            );
-            assert_eq!(balance_hold(&ACCOUNT_DELEGATOR_1), initial_amount + rewards);
-            assert_eq!(
-                P::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(initial_amount + rewards)
-            );
-            assert_eq!(
-                P::shares(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Shares(2)
-            );
-            assert_eq!(
-                P::computed_stake(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1)
-                    .unwrap()
-                    .0,
-                final_amount
+                P::target_pool().into(),
+                SignedBalance::Positive(rewards),
             );
         })
     }
@@ -351,46 +360,20 @@ pool_test!(
             let slash = 5 * KILO;
             let final_amount = initial_amount - slash;
 
-            assert_ok!(Staking::request_delegate(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+            do_request_delegation(
                 ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
                 P::target_pool(),
                 initial_amount,
-            ));
-            roll_to(block_number + 2);
-            assert_ok!(Staking::execute_pending_operations(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-                vec![PendingOperationQuery {
-                    delegator: ACCOUNT_DELEGATOR_1,
-                    operation: P::joining_operation_key(ACCOUNT_CANDIDATE_1, block_number,)
-                }]
-            ),);
+            );
 
-            // Pre-check
-            assert_eq!(total_balance(&ACCOUNT_DELEGATOR_1), 1 * DEFAULT_BALANCE);
-            assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE);
-            assert_eq!(balance_hold(&ACCOUNT_DELEGATOR_1), initial_amount);
-            assert_eq!(
-                Joining::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(0)
-            );
-            assert_eq!(
-                P::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(initial_amount)
-            );
-            assert_eq!(
-                P::shares(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Shares(2)
-            );
-            assert_eq!(
-                P::computed_stake(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1)
-                    .unwrap()
-                    .0,
-                initial_amount
-            );
-            assert_eq!(
-                Candidates::<Runtime>::total_stake(&ACCOUNT_CANDIDATE_1),
-                Stake(initial_amount)
+            // ---- Execution
+            roll_to(block_number + 2);
+            do_execute_delegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                block_number,
+                initial_amount,
             );
 
             // We then artificialy slash by decreasing the value of the pool.
@@ -427,28 +410,11 @@ pool_test!(
             );
 
             // We perform the rebalancing and check it works.
-            assert_ok!(Staking::rebalance_hold(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+            do_rebalance_hold::<P>(
                 ACCOUNT_CANDIDATE_1,
                 ACCOUNT_DELEGATOR_1,
-                P::target_pool().into()
-            ));
-            assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE + slash,);
-            assert_eq!(total_balance(&ACCOUNT_DELEGATOR_1), DEFAULT_BALANCE - slash);
-            assert_eq!(balance_hold(&ACCOUNT_DELEGATOR_1), initial_amount - slash);
-            assert_eq!(
-                P::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Stake(initial_amount - slash)
-            );
-            assert_eq!(
-                P::shares(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1),
-                Shares(2)
-            );
-            assert_eq!(
-                P::computed_stake(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1)
-                    .unwrap()
-                    .0,
-                final_amount
+                P::target_pool().into(),
+                SignedBalance::Negative(slash),
             );
         })
     }

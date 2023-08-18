@@ -16,8 +16,8 @@
 
 use {
     crate::{
-        self as pallet_pooled_staking, pools::Pool, Candidate, Delegator, PendingOperationKey,
-        RequestFilter, TargetPool,
+        self as pallet_pooled_staking, candidate::Candidates, pools::Pool, Candidate, Delegator,
+        PendingOperationKey, RequestFilter, TargetPool,
     },
     frame_support::{
         parameter_types,
@@ -57,8 +57,8 @@ pub enum HoldIdentifier {
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
-type AccountId = u64;
-type Balance = u128;
+pub type AccountId = u64;
+pub type Balance = u128;
 
 pub const ACCOUNT_STAKING: u64 = 0;
 pub const ACCOUNT_CANDIDATE_1: u64 = 1;
@@ -279,6 +279,48 @@ pub fn block_number() -> BlockNumberFor<Runtime> {
     System::block_number()
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct State {
+    pub delegator_balance: Balance,
+    pub delegator_hold: Balance,
+    pub staking_balance: Balance,
+    pub candidate_total_stake: Balance,
+}
+
+impl State {
+    pub fn extract(candidate: AccountId, delegator: AccountId) -> Self {
+        Self {
+            delegator_balance: total_balance(&delegator),
+            delegator_hold: balance_hold(&delegator),
+            staking_balance: total_balance(&ACCOUNT_STAKING),
+            candidate_total_stake: Candidates::<Runtime>::total_stake(&candidate).0,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct PoolState {
+    pub hold: Balance,
+    pub stake: Balance,
+}
+
+impl PoolState {
+    pub fn extract<P: Pool<Runtime>>(candidate: AccountId, delegator: AccountId) -> Self {
+        Self {
+            hold: P::hold(&candidate, &delegator).0,
+            stake: P::computed_stake(&candidate, &delegator)
+                .expect("invalid state")
+                .0,
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum SignedBalance {
+    Positive(Balance),
+    Negative(Balance),
+}
+
 #[allow(dead_code)]
 pub fn round_down<T: Num + Copy>(value: T, increment: T) -> T {
     if (value % increment).is_zero() {
@@ -469,6 +511,18 @@ macro_rules! assert_event_not_emitted {
                 );
             }
         }
+    };
+}
+
+#[macro_export]
+macro_rules! assert_fields_eq {
+    ($left:expr, $right:expr, $field:ident) => {
+        assert_eq!($left.$field, $right.$field);
+    };
+    ($left:expr, $right:expr, [$( $field:ident ),+ $(,)?] ) => {
+        $(
+            assert_eq!($left.$field, $right.$field);
+        )+
     };
 }
 
