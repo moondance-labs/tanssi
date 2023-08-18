@@ -657,7 +657,7 @@ pub async fn start_dev_node(
                             xcm_config: MockXcmConfig::new(
                                 &*client_for_xcm,
                                 block,
-                                Default::default(),
+                                para_id,
                                 Default::default(),
                             ),
                             raw_downward_messages: downward_xcm_receiver.drain().collect(),

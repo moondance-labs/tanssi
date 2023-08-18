@@ -1,11 +1,13 @@
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect, customDevRpcRequest } from "@moonwall/cli";
+import { alith } from "@moonwall/util";
+
 import { ApiPromise } from "@polkadot/api";
 import {
   XcmFragment,
-  injectHrmpMessageAndSeal,
-  sovereignAccountOfSibling,
-  descendSiblingOriginFromAddress32,
-} from "../../../util/xcm.js";
+  injectDmpMessageAndSeal,
+  descendParentOriginFromAddress32,
+  descendParentOriginForAddress20
+} from "../../../util/xcm.ts";
 import { generateKeyringPair } from "@moonwall/util";
 import { expectOk } from "../../../util/expect.ts";
 import { Keyring } from "@polkadot/api";
@@ -21,42 +23,34 @@ describeSuite({
     let sendingAddress;
     let descendAddress;
     let alice;
-
+    let chain;
 
     beforeAll(async function () {
         const keyring = new Keyring({ type: 'sr25519' });
         alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+        polkadotJs = context.polkadotJs();
+        chain = polkadotJs.consts.system.version.specName.toString();
+        alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
+        let descendFunction = chain == 'frontier-template' ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
 
-        const { originAddress, descendOriginAddress } = descendSiblingOriginFromAddress32(context);
-        const sovereign = sovereignAccountOfSibling(context, 1);
+        const { originAddress, descendOriginAddress } = descendFunction(context);
 
         sendingAddress = originAddress;
         descendAddress = descendOriginAddress;
 
         transferredBalance = 10_000_000_000_000n;
-        polkadotJs = context.polkadotJs();
 
         const txSigned = polkadotJs.tx.balances.transfer(descendOriginAddress, transferredBalance);
-        const txRoot = polkadotJs.tx.balances.transfer(sovereign, transferredBalance);
 
         await expectOk(
           context.createBlock(
             await txSigned.signAsync(alice)
           )
         );
-        await expectOk(
-            context.createBlock(
-              await txRoot.signAsync(alice)
-            )
-        );
         const balanceSigned = (
           (await polkadotJs.query.system.account(descendOriginAddress)) as any
         ).data.free.toBigInt();
         expect(balanceSigned).to.eq(transferredBalance);
-        const balanceRoot = (
-            (await polkadotJs.query.system.account(sovereign)) as any
-          ).data.free.toBigInt();
-        expect(balanceRoot).to.eq(transferredBalance);
     });
 
     it({
@@ -65,8 +59,9 @@ describeSuite({
       test: async function () {
         // Generate random receiver address
         let random: KeyringPair;
-        random = generateKeyringPair("sr25519");
+                let descendFunction = chain == 'frontier-template' ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
 
+        random = chain == 'frontier-template' ? generateKeyringPair() : generateKeyringPair("sr25519");
         // Get Pallet balances index
         const metadata = await polkadotJs.rpc.state.getMetadata();
         const balancesPalletIndex = (metadata.asLatest.toHuman().pallets as Array<any>).find(
@@ -111,9 +106,8 @@ describeSuite({
         })
         .as_v2();
 
-
         // Send an XCM and create block to execute it
-        await injectHrmpMessageAndSeal(context, 1, {
+        await injectDmpMessageAndSeal(context, {
             type: "XcmVersionedXcm",
             payload: xcmMessage,
         } as RawXcmMessage);
@@ -126,72 +120,5 @@ describeSuite({
         expect(testAccountBalance).to.eq(transferredBalance / 10n);
         },
     });
-
-    it({
-        id: "T02",
-        title: "Should succeed using sovereign account from root origin",
-        test: async function () {
-
-            // Generate random receiver address
-            let random: KeyringPair;
-            random = generateKeyringPair("sr25519");
-
-            // Get Pallet balances index
-            const metadata = await polkadotJs.rpc.state.getMetadata();
-            const balancesPalletIndex = (metadata.asLatest.toHuman().pallets as Array<any>).find(
-            (pallet) => {
-                return pallet.name === "Balances";
-            }
-            ).index;
-    
-            const transferCall = polkadotJs.tx.balances.transfer(
-            random.address,
-            transferredBalance / 10n
-            );
-            const transferCallEncoded = transferCall?.method.toHex();
-            // We are going to test that we can receive a transact operation from parachain 1
-            
-            // using descendOrigin first
-            const xcmMessage = new XcmFragment({
-                assets: [
-                    {
-                    multilocation: {
-                        parents: 0,
-                        interior: {
-                        X1: { PalletInstance: balancesPalletIndex },
-                        },
-                    },
-                    fungible: transferredBalance / 4n,
-                    },
-                ]
-            })
-            .withdraw_asset()
-            .buy_execution()
-            .push_any({
-                Transact: {
-                originType: "SovereignAccount",
-                requireWeightAtMost: new BN(1000000000),
-                call: {
-                    encoded: transferCallEncoded,
-                },
-                },
-            })
-            .as_v2();
-    
-    
-            // Send an XCM and create block to execute it
-            await injectHrmpMessageAndSeal(context, 1, {
-                type: "XcmVersionedXcm",
-                payload: xcmMessage,
-            } as RawXcmMessage);
-    
-            // Make sure the state has ALITH's foreign parachain tokens
-            const testAccountBalance = (
-            await polkadotJs.query.system.account(random.address)
-            ).data.free.toBigInt();
-    
-            expect(testAccountBalance).to.eq(transferredBalance / 10n);
-            },
-      });
   },
 });

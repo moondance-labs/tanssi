@@ -6,7 +6,7 @@ import {
   XcmV3JunctionNetworkId,
   XcmVersionedXcm,
 } from "@polkadot/types/lookup";
-import { BN, stringToU8a, u8aToHex } from "@polkadot/util";
+import { BN, hexToU8a, stringToU8a, u8aToHex } from "@polkadot/util";
 import { xxhashAsU8a } from "@polkadot/util-crypto";
 
 // Creates and returns the tx that overrides the paraHRMP existence
@@ -106,7 +106,7 @@ export function descendSiblingOriginFromAddress32(
       .createType("Compact<u32>", "AccountId32".length + 32)
       .toU8a(),
     ...new TextEncoder().encode("AccountId32"),
-    ...context.polkadotJs().createType("AccountId", address).toU8a(),
+    ...context.polkadotJs().createType("AccountId32", address).toU8a(),
   ]);
   
   return {
@@ -118,7 +118,6 @@ export function descendSiblingOriginFromAddress32(
 export function descendParentOriginFromAddress32(
   context: DevModeContext,
   address: `0x${string}` = "0x0101010101010101010101010101010101010101010101010101010101010101",
-  paraId: number = 1
 ) {
   const toHash = new Uint8Array([
     ...new TextEncoder().encode("ParentChain"),
@@ -127,12 +126,32 @@ export function descendParentOriginFromAddress32(
       .createType("Compact<u32>", "AccountId32".length + 32)
       .toU8a(),
     ...new TextEncoder().encode("AccountId32"),
-    ...context.polkadotJs().createType("AccountId", address).toU8a(),
+    ...context.polkadotJs().createType("AccountId32", address).toU8a(),
+  ]);
+
+  return {
+    originAddress: address,
+    descendOriginAddress: u8aToHex(context.polkadotJs().registry.hash(toHash).slice(0, 32)),
+  };
+}
+
+export function descendParentOriginForAddress20(
+  context: DevModeContext,
+  address: `0x${string}` = "0x0101010101010101010101010101010101010101010101010101010101010101",
+) {
+  const toHash = new Uint8Array([
+    ...new TextEncoder().encode("ParentChain"),
+    ...context
+      .polkadotJs()
+      .createType("Compact<u32>", "AccountId32".length + 32)
+      .toU8a(),
+    ...new TextEncoder().encode("AccountId32"),
+    ...context.polkadotJs().createType("AccountId32", address).toU8a(),
   ]);
   
   return {
     originAddress: address,
-    descendOriginAddress: u8aToHex(context.polkadotJs().registry.hash(toHash).slice(0, 32)),
+    descendOriginAddress: u8aToHex(context.polkadotJs().registry.hash(toHash).slice(0, 20)),
   };
 }
 
@@ -367,16 +386,30 @@ export class XcmFragment {
   // Add a `DescendOrigin` instruction
   descend_origin(): this {
     if (this.config.descend_origin != null) {
-      this.instructions.push({
-        DescendOrigin: {
-          X1: {
-            AccountId32: {
-              network: "Any",
-              id: this.config.descend_origin,
+      if (hexToU8a(this.config.descend_origin).length == 32) {
+        this.instructions.push({
+          DescendOrigin: {
+            X1: {
+              AccountId32: {
+                network: "Any",
+                id: this.config.descend_origin,
+              },
             },
           },
-        },
-      });
+        });
+      }
+      else {
+        this.instructions.push({
+          DescendOrigin: {
+            X1: {
+              AccountKey20: {
+                network: "Any",
+                key: this.config.descend_origin,
+              },
+            },
+          },
+        });
+      }
     } else {
       console.warn("!Building a DescendOrigin instruction without a configured descend_origin");
     }
@@ -391,16 +424,33 @@ export class XcmFragment {
     if (this.config.beneficiary == null) {
       console.warn("!Building a DepositAsset instruction without a configured beneficiary");
     }
-    this.instructions.push({
-      DepositAsset: {
-        assets: { Wild: "All" },
-        maxAssets: max_assets,
-        beneficiary: {
-          parents: 0,
-          interior: { X1: { AccountKey20: { network, key: this.config.beneficiary } } },
-        },
-      },
-    });
+
+    else {
+      if (hexToU8a(this.config.beneficiary).length == 20) {
+        this.instructions.push({
+          DepositAsset: {
+            assets: { Wild: "All" },
+            maxAssets: max_assets,
+            beneficiary: {
+              parents: 0,
+              interior: { X1: { AccountKey20: { network, key: this.config.beneficiary } } },
+            },
+          },
+        });
+      }
+      else {
+        this.instructions.push({
+          DepositAsset: {
+            assets: { Wild: "All" },
+            maxAssets: max_assets,
+            beneficiary: {
+              parents: 0,
+              interior: { X1: { AccountId32: { network, id: this.config.beneficiary } } },
+            },
+          },
+        });
+      }
+    }
     return this;
   }
 
@@ -412,15 +462,30 @@ export class XcmFragment {
     if (this.config.beneficiary == null) {
       console.warn("!Building a DepositAsset instruction without a configured beneficiary");
     }
-    this.instructions.push({
-      DepositAsset: {
-        assets: { Wild: { AllCounted: max_assets } },
-        beneficiary: {
-          parents: 0,
-          interior: { X1: { AccountKey20: { network, key: this.config.beneficiary } } },
-        },
-      },
-    });
+    else {
+      if (hexToU8a(this.config.beneficiary).length == 20) {
+        this.instructions.push({
+          DepositAsset: {
+            assets: { Wild: { AllCounted: max_assets } },
+            beneficiary: {
+              parents: 0,
+              interior: { X1: { AccountKey20: { network, key: this.config.beneficiary } } },
+            },
+          },
+        });
+      }
+      else {
+        this.instructions.push({
+          DepositAsset: {
+            assets: { Wild: { AllCounted: max_assets } },
+            beneficiary: {
+              parents: 0,
+              interior: { X1: { AccountId32: { network, id: this.config.beneficiary } } },
+            },
+          },
+        });
+      }
+    }
     return this;
   }
 
