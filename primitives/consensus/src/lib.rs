@@ -35,6 +35,10 @@ sp_api::decl_runtime_apis! {
 
         /// Returns the paraId for which an authority is assigned (if any)
         fn check_para_id_assignment(authority: AuthorityId) -> Option<ParaId>;
+
+        /// Return the paraId assigned to a given authority on the next session.
+        /// On session boundary this returns the same as `check_para_id_assignment`.
+        fn check_para_id_assignment_next_session(authority: AuthorityId) -> Option<ParaId>;
     }
 }
 

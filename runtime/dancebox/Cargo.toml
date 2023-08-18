@@ -19,6 +19,7 @@ smallvec = { workspace = true }
 
 # Own
 pallet-author-noting = { workspace = true }
+pallet-author-noting-runtime-api = { workspace = true }
 pallet-authority-assignment = { workspace = true }
 pallet-authority-mapping = { workspace = true }
 pallet-collator-assignment = { workspace = true }

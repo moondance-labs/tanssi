@@ -22,6 +22,7 @@ repository = "https://github.com/moondance-labs/tanssi"
 [workspace.dependencies]
 # Members
 pallet-author-noting = { path = "pallets/author-noting", default-features = false }
+pallet-author-noting-runtime-api = { path = "pallets/author-noting/rpc/runtime-api", default-features = false }
 pallet-authority-assignment = { path = "pallets/authority-assignment", default-features = false }
 pallet-authority-mapping = { path = "pallets/authority-mapping", default-features = false }
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
@@ -174,6 +175,7 @@ cumulus-client-collator = { git = "https://github.com/moondance-labs/cumulus", b
 cumulus-client-consensus-aura = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-client-consensus-common = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-client-network = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+cumulus-client-pov-recovery = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-client-service = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-primitives-parachain-inherent = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-relay-chain-interface = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }

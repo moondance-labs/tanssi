@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{mock::*, Event},
+    crate::{mock::*, ContainerChainBlockInfo, Event},
     cumulus_primitives_core::ParaId,
     frame_support::{
         assert_ok,
@@ -47,7 +47,7 @@ fn test_author_id_insertion() {
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
-                        number: Default::default(),
+                        number: 1,
                         state_root: Default::default(),
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest {
@@ -59,7 +59,13 @@ fn test_author_id_insertion() {
             _ => unreachable!(),
         })
         .add(1, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
+            );
         });
 }
 
@@ -93,7 +99,10 @@ fn test_author_id_insertion_real_data() {
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
                 // Our mock author fetcher will just note the slot
-                Some(140006956u64)
+                Some(ContainerChainBlockInfo {
+                    block_number: 3511063,
+                    author: 140006956
+                })
             );
         });
 }
@@ -111,7 +120,7 @@ fn test_author_id_insertion_many_paras() {
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
-                        number: Default::default(),
+                        number: 1,
                         state_root: Default::default(),
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest {
@@ -127,7 +136,7 @@ fn test_author_id_insertion_many_paras() {
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
-                        number: Default::default(),
+                        number: 2,
                         state_root: Default::default(),
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest {
@@ -142,7 +151,7 @@ fn test_author_id_insertion_many_paras() {
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
-                        number: Default::default(),
+                        number: 1,
                         state_root: Default::default(),
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest {
@@ -159,12 +168,30 @@ fn test_author_id_insertion_many_paras() {
             MockData::mutate(|m| {
                 m.container_chains = vec![1001.into(), 1002.into()];
             });
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(10u64));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 10u64
+                })
+            );
             assert_eq!(AuthorNoting::latest_author(ParaId::from(1002)), None);
         })
         .add(2, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1002)), Some(14u64));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 2,
+                    author: 13u64
+                })
+            );
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1002)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 14u64
+                })
+            );
         });
 }
 
@@ -180,7 +207,7 @@ fn test_should_panic_with_invalid_proof_root() {
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
-                        number: Default::default(),
+                        number: 1,
                         state_root: Default::default(),
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest {
@@ -194,7 +221,13 @@ fn test_should_panic_with_invalid_proof_root() {
         // Insert an invalid root, not matching the proof generated
         .with_overriden_state_root(H256::default())
         .add(1, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
+            );
         });
 }
 
@@ -213,7 +246,7 @@ fn test_should_panic_with_invalid_proof_state() {
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
-                        number: Default::default(),
+                        number: 1,
                         state_root: Default::default(),
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest {
@@ -227,7 +260,13 @@ fn test_should_panic_with_invalid_proof_state() {
         // Insert a proof, not matching the root generated
         .with_overriden_state_proof(relay_chain_state)
         .add(1, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
+            );
         });
 }
 
@@ -423,7 +462,7 @@ fn test_set_author() {
                 s.author_id =
                     HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                         parent_hash: Default::default(),
-                        number: Default::default(),
+                        number: 1,
                         state_root: Default::default(),
                         extrinsics_root: Default::default(),
                         digest: sp_runtime::generic::Digest {
@@ -435,16 +474,30 @@ fn test_set_author() {
             _ => unreachable!(),
         })
         .add(1, || {
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(13u64));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
+            );
             assert_ok!(AuthorNoting::set_author(
                 RuntimeOrigin::root(),
                 1001.into(),
-                14u64
+                1,
+                14u64,
             ));
-            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), Some(14u64));
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 14u64
+                })
+            );
             System::assert_last_event(
                 Event::LatestAuthorChanged {
                     para_id: 1001.into(),
+                    block_number: 1,
                     new_author: 14u64,
                 }
                 .into(),
@@ -561,7 +614,8 @@ fn weights_assigned_to_extrinsics_are_correct() {
         assert_eq!(
             crate::Call::<Test>::set_author {
                 para_id: 1.into(),
-                new: 1u64
+                block_number: 1,
+                author: 1u64
             }
             .get_dispatch_info()
             .weight,

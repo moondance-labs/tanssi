@@ -1051,6 +1051,21 @@ impl_runtime_apis! {
         }
     }
 
+    impl pallet_author_noting_runtime_api::AuthorNotingApi<Block, AccountId, BlockNumber, ParaId> for Runtime
+        where
+        AccountId: parity_scale_codec::Codec,
+        BlockNumber: parity_scale_codec::Codec,
+        ParaId: parity_scale_codec::Codec,
+    {
+        fn latest_block_number(para_id: ParaId) -> Option<BlockNumber> {
+            AuthorNoting::latest_author(para_id).map(|info| info.block_number)
+        }
+
+        fn latest_author(para_id: ParaId) -> Option<AccountId> {
+            AuthorNoting::latest_author(para_id).map(|info| info.author)
+        }
+    }
+
     impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
@@ -1085,6 +1100,16 @@ impl_runtime_apis! {
             else {
                 Session::current_index()
             };
+            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+            let self_para_id = ParachainInfo::get();
+
+            assigned_authorities.para_id_of(&authority, self_para_id)
+        }
+
+        /// Return the paraId assigned to a given authority on the next session.
+        /// On session boundary this returns the same as `check_para_id_assignment`.
+        fn check_para_id_assignment_next_session(authority: NimbusId) -> Option<ParaId> {
+            let session_index = Session::current_index() + 1;
             let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
             let self_para_id = ParachainInfo::get();
 

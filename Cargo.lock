@@ -2581,6 +2581,7 @@ dependencies = [
  "nimbus-primitives",
  "pallet-author-inherent",
  "pallet-author-noting",
+ "pallet-author-noting-runtime-api",
  "pallet-authority-assignment",
  "pallet-authority-mapping",
  "pallet-balances",
@@ -6897,6 +6898,14 @@ dependencies = [
  "tp-chain-state-snapshot",
  "tp-core",
  "tp-traits",
+]
+
+[[package]]
+name = "pallet-author-noting-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "sp-api",
 ]
 
 [[package]]
@@ -13882,6 +13891,7 @@ dependencies = [
  "cumulus-client-consensus-aura",
  "cumulus-client-consensus-common",
  "cumulus-client-network",
+ "cumulus-client-pov-recovery",
  "cumulus-client-service",
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
@@ -13897,6 +13907,7 @@ dependencies = [
  "manual-xcm-rpc",
  "nimbus-consensus",
  "nimbus-primitives",
+ "pallet-author-noting-runtime-api",
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
  "pallet-registrar-runtime-api",
