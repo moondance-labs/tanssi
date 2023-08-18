@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
+      git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
       sha: ${{ steps.get-sha.outputs.sha }}
       sha8: ${{ steps.get-sha.outputs.sha8 }}
       latest_rt: ${{ steps.get-sha.outputs.latest_rt }}
@@ -367,7 +368,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          ref: ${{ steps.check-git-ref.outputs.git_ref }}
+          ref: ${{ needs.set-tags.outputs.git_ref }}
 
       - name: Pnpm
         uses: pnpm/action-setup@v2
