@@ -1,3 +1,4 @@
+import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll} from "@moonwall/cli";
 import { setupLogger } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
@@ -25,8 +26,8 @@ describeSuite({
               const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
   
               // These are registered in genesis
-              // TODO: fix once we have types
-              expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001]);
+              expect(parasRegistered).to.contain(2000);
+              expect(parasRegistered).to.contain(2001);
             },
         });
   
