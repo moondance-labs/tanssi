@@ -21,7 +21,7 @@ use {
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
-    dancebox_runtime::{AccountId, Block},
+    dancebox_runtime::{AccountId, Block, BlockNumber},
     futures::FutureExt,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
@@ -180,7 +180,7 @@ impl ContainerChainSpawner {
             // Force container chains to use warp sync
             // If the container chain is still at genesis block, use full sync because warp sync is broken
             let container_chain_is_at_genesis = if !orchestrator_runtime_api
-                .has_api::<dyn AuthorNotingApi<Block, AccountId, ParaId>>(
+                .has_api::<dyn AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>>(
                     orchestrator_chain_info.best_hash,
                 )
                 .map_err(|e| format!("Failed to check if runtime has AuthorNotingApi: {}", e))?

@@ -9,17 +9,12 @@ version = "0.1.0"
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
 [dependencies]
-frame-support = { workspace = true }
-pallet-registrar = { workspace = true }
 parity-scale-codec = { workspace = true }
-scale-info = { workspace = true }
 sp-api = { workspace = true }
-tp-container-chain-genesis-data = { workspace = true }
 
 [features]
 default = [ "std" ]
 std = [
 	"parity-scale-codec/std",
 	"sp-api/std",
-	"tp-container-chain-genesis-data/std",
 ]

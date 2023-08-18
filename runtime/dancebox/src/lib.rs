@@ -1043,13 +1043,18 @@ impl_runtime_apis! {
         }
     }
 
-    impl pallet_author_noting_runtime_api::AuthorNotingApi<Block, AccountId, ParaId> for Runtime
+    impl pallet_author_noting_runtime_api::AuthorNotingApi<Block, AccountId, BlockNumber, ParaId> for Runtime
         where
         AccountId: parity_scale_codec::Codec,
+        BlockNumber: parity_scale_codec::Codec,
         ParaId: parity_scale_codec::Codec,
     {
+        fn latest_block_number(para_id: ParaId) -> Option<BlockNumber> {
+            AuthorNoting::latest_author(para_id).map(|info| info.block_number)
+        }
+
         fn latest_author(para_id: ParaId) -> Option<AccountId> {
-            AuthorNoting::latest_author(para_id)
+            AuthorNoting::latest_author(para_id).map(|info| info.author)
         }
     }
 

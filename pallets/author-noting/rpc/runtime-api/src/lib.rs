@@ -19,11 +19,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 sp_api::decl_runtime_apis! {
-    pub trait AuthorNotingApi<AccountId, ParaId>
+    pub trait AuthorNotingApi<AccountId, BlockNumber, ParaId>
     where
         AccountId: parity_scale_codec::Codec,
+        BlockNumber: parity_scale_codec::Codec,
         ParaId: parity_scale_codec::Codec,
     {
+        fn latest_block_number(para_id: ParaId) -> Option<BlockNumber>;
         fn latest_author(para_id: ParaId) -> Option<AccountId>;
     }
 }
