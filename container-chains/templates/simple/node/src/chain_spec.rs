@@ -197,6 +197,7 @@ fn testnet_genesis(
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
         },
+        transaction_payment: Default::default(),
     }
 }
 

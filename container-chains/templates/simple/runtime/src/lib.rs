@@ -35,13 +35,14 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU32, ConstU64, Contains},
+        traits::{ConstU32, ConstU64, ConstU8, Contains},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
                 WEIGHT_REF_TIME_PER_SECOND,
             },
-            Weight, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
+            ConstantMultiplier, IdentityFee, Weight, WeightToFeeCoefficient,
+            WeightToFeeCoefficients, WeightToFeePolynomial,
         },
     },
     frame_system::{
@@ -49,6 +50,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
+    pallet_transaction_payment::CurrencyAdapter,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_core::OpaqueMetadata,
@@ -108,6 +110,7 @@ pub type SignedExtra = (
     frame_system::CheckEra<Runtime>,
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
+    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -352,6 +355,19 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
+    pub const TransactionByteFee: Balance = 1;
+}
+
+impl pallet_transaction_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OperationalFeeMultiplier = ConstU8<5>;
+    type WeightToFee = IdentityFee<Balance>;
+    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+    type FeeMultiplierUpdate = ();
+}
+
+parameter_types! {
     pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
@@ -470,6 +486,7 @@ construct_runtime!(
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
+        TransactionPayment: pallet_transaction_payment = 11,
 
         // ContainerChain Author Verification
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,
