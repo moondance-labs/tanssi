@@ -6,19 +6,17 @@
   "environments": [
     {
       "name": "dev_tanssi",
+      "envVars": ["DEBUG_COLORS=1"],
       "testFileDir": ["suites/dev-tanssi", "suites/common"],
       "multiThreads": true,
-      "html": false,
+      "reporters": ["basic"],
       "foundation": {
         "type": "dev",
         "launchSpec": [
           {
             "name": "tanssi",
             "binPath": "../target/release/tanssi-node",
-            "options": [
-                "--dev",
-                "--sealing=manual"
-            ],
+            "options": ["--dev", "--sealing=manual"],
             "disableDefaultEthProviders": true,
             "newRpcBehaviour": true
           }
@@ -36,13 +34,7 @@
           {
             "name": "tanssi",
             "binPath": "../target/release/tanssi-node",
-            "options": [
-                "--chain=dancebox-local",
-                "--sealing=manual",
-                "--collator",
-                "--dev-service",
-                "--tmp"
-            ],
+            "options": ["--chain=dancebox-local", "--sealing=manual", "--collator", "--dev-service", "--tmp"],
             "disableDefaultEthProviders": true,
             "newRpcBehaviour": true
           }
@@ -54,7 +46,7 @@
       "testFileDir": ["suites/dev-frontier-template", "suites/common"],
       "runScripts": ["pre-build-contracts.ts"],
       "multiThreads": true,
-      "html": false,
+      "reporters": ["basic"],
       "contracts": "helpers/",
       "foundation": {
         "type": "dev",
@@ -62,10 +54,7 @@
           {
             "name": "frontier-template",
             "binPath": "../target/release/container-chain-template-frontier-node",
-            "options": [
-                "--dev",
-                "--sealing=manual"
-            ],
+            "options": ["--dev", "--sealing=manual"],
             "newRpcBehaviour": true
           }
         ]
@@ -171,7 +160,8 @@
         "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
         "type": "zombie",
         "zombieSpec": {
-          "configPath": "./configs/zombieDanceboxUpgrade.json"
+          "configPath": "./configs/zombieDanceboxUpgrade.json",
+          "disableDefaultEthProviders": true
         }
       }
     },

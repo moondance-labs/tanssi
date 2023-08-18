@@ -2,12 +2,12 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { Signer } from "ethers";
-import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author.js";
-import { signAndSendAndInclude, waitSessions } from "../../util/block.js";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum.js";
-import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts";
-import { getKeyringNimbusIdHex } from "../../util/keys.js";
-import { getHeaderFromRelay } from "../../util/relayInterface.js";
+import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
+import { signAndSendAndInclude, waitSessions } from "../../util/block";
+import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
+import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data";
+import { getKeyringNimbusIdHex } from "../../util/keys";
+import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
 
 describeSuite({

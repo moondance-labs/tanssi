@@ -1,7 +1,7 @@
 import { describeSuite, expect, beforeAll} from "@moonwall/cli";
 import { setupLogger } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
-import { chainSpecToContainerChainGenesisData, containerChainGenesisDataToChainSpec} from "../../../util/genesis_data.ts";
+import { chainSpecToContainerChainGenesisData, containerChainGenesisDataToChainSpec} from "../../../util/genesis_data";
 import "@polkadot/api-augment";
 
 describeSuite({

@@ -6,6 +6,7 @@ settings:
 
 overrides:
   '@polkadot/util': ^12.3.2
+  '@tanssi-network/api-augment': ../typescript-api/build
 
 devDependencies:
   '@moonwall/cli':
@@ -32,6 +33,9 @@ devDependencies:
   '@polkadot/util-crypto':
     specifier: ^12.3.2
     version: 12.3.2(@polkadot/util@12.3.2)
+  '@tanssi-network/api-augment':
+    specifier: ../typescript-api/build
+    version: link:../typescript-api/build
   '@types/debug':
     specifier: ^4.1.8
     version: 4.1.8

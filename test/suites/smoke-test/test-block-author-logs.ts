@@ -1,12 +1,11 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { getBlockTime } from "@moonwall/util";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { getBlockArray } from "@moonwall/util";
+import { ApiPromise } from "@polkadot/api";
 import { GenericExtrinsic } from "@polkadot/types";
 import { FrameSystemEventRecord } from "@polkadot/types/lookup";
 import { AnyTuple } from "@polkadot/types/types";
-import { TWO_MINS, getBlockArray } from "@moonwall/util";
+import { hexToNumber, stringToHex } from '@polkadot/util';
 import Bottleneck from "bottleneck";
-import { ApiPromise } from "@polkadot/api";
-import { stringToHex, hexToNumber } from '@polkadot/util';
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
 const timeout = Math.max(Math.floor(timePeriod / 12), 5000);
