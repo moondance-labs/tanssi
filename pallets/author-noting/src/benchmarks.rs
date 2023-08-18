@@ -85,8 +85,9 @@ benchmarks! {
 
     set_author {
         let para_id = 1000.into();
+        let block_number = 1;
         let author: T::AccountId = account("account id", 0u32, 0u32);
-    }: _(RawOrigin::Root, para_id, author)
+    }: _(RawOrigin::Root, para_id, block_number, author)
 
     impl_benchmark_test_suite!(
         Pallet,
