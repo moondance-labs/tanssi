@@ -28,6 +28,7 @@ use {
         traits::{
             fungible::{Mutate, MutateHold},
             tokens::{Precision, Preservation},
+            OriginTrait,
         },
     },
     frame_system::pallet_prelude::*,
@@ -179,25 +180,78 @@ impl<T: Config> Calls<T> {
         };
 
         // Destroy shares
-        let stake = match pool {
+        let removed_stake = match pool {
             TargetPool::AutoCompounding => {
                 let stake = pools::AutoCompounding::<T>::sub_shares(
                     &candidate,
                     &delegator,
                     Shares(shares),
                 )?;
+
+                if stake.0 > pools::AutoCompounding::<T>::hold(&candidate, &delegator).0 {
+                    Self::rebalance_hold(
+                        OriginFor::<T>::none(),
+                        candidate.clone(),
+                        delegator.clone(),
+                        AllTargetPool::AutoCompounding,
+                    )?;
+                }
+
                 pools::AutoCompounding::<T>::decrease_hold(&candidate, &delegator, &stake)?;
                 stake
             }
             TargetPool::ManualRewards => {
                 let stake =
                     pools::ManualRewards::<T>::sub_shares(&candidate, &delegator, Shares(shares))?;
+
+                if stake.0 > pools::ManualRewards::<T>::hold(&candidate, &delegator).0 {
+                    Self::rebalance_hold(
+                        OriginFor::<T>::none(),
+                        candidate.clone(),
+                        delegator.clone(),
+                        AllTargetPool::ManualRewards,
+                    )?;
+                }
+
                 pools::ManualRewards::<T>::decrease_hold(&candidate, &delegator, &stake)?;
                 stake
             }
         };
 
-        todo!()
+        // Create leaving shares.
+        // As with all pools there will be some rounding error, this amount
+        // should be small enough so that it is safe to directly release it
+        // in the delegator account.
+        let leaving_shares =
+            pools::Leaving::<T>::stake_to_shares_or_init(&candidate, removed_stake.clone())?;
+        let leaving_stake =
+            pools::Leaving::<T>::add_shares(&candidate, &delegator, leaving_shares.clone())?;
+        pools::Leaving::<T>::increase_hold(&candidate, &delegator, &leaving_stake)?;
+
+        // We create/mutate a request for leaving.
+        let now = frame_system::Pallet::<T>::block_number();
+        let operation_key = PendingOperationKey::Leaving {
+            candidate: candidate.clone(),
+            at_block: now,
+        };
+        let operation = PendingOperations::<T>::get(&delegator, &operation_key);
+        let operation = operation
+            .err_add(&leaving_shares.0)
+            .map_err(|_| Error::<T>::MathOverflow)?;
+        PendingOperations::<T>::set(&delegator, &operation_key, operation);
+
+        // We release the dust if non-zero.
+        if let Some(dust) = removed_stake.0.checked_sub(&leaving_stake.0) {
+            T::Currency::release(
+                &T::CurrencyHoldReason::get(),
+                &delegator,
+                dust,
+                Precision::Exact,
+            )?;
+            Candidates::<T>::sub_total_stake(&candidate, Stake(dust))?;
+        }
+
+        Ok(().into())
     }
 
     pub fn execute_pending_operations(

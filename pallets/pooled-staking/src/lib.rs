@@ -464,5 +464,14 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             Calls::<T>::execute_pending_operations(origin, operations)
         }
+
+        pub fn request_undelegate(
+            origin: OriginFor<T>,
+            candidate: Candidate<T>,
+            pool: TargetPool,
+            amount: SharesOrStake<T::Balance>,
+        ) -> DispatchResultWithPostInfo {
+            Calls::<T>::request_undelegate(origin, candidate, pool, amount)
+        }
     }
 }
