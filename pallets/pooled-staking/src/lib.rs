@@ -297,6 +297,7 @@ pub mod pallet {
     >;
 
     /// Pending operations balances.
+    /// Balances are expressed in joining/leaving shares amounts.
     #[pallet::storage]
     pub type PendingOperations<T: Config> = StorageDoubleMap<
         _,

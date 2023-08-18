@@ -123,7 +123,7 @@ impl<T: Config> Calls<T> {
 
         // We create the new joining shares. It returns the actual amount of stake those shares
         // represents (due to rounding).
-        let stake = pools::Joining::<T>::add_shares(&candidate, &delegator, shares)?;
+        let stake = pools::Joining::<T>::add_shares(&candidate, &delegator, shares.clone())?;
 
         // We hold the funds of the delegator and register its stake into the candidate stake.
         T::Currency::hold(&T::CurrencyHoldReason::get(), &delegator, stake.0)?;
@@ -146,7 +146,7 @@ impl<T: Config> Calls<T> {
         // We store/mutate the operation in storage.
         let operation = PendingOperations::<T>::get(&delegator, &operation_key);
         let operation = operation
-            .err_add(&stake.0)
+            .err_add(&shares.0)
             .map_err(|_| Error::<T>::MathOverflow)?;
         PendingOperations::<T>::set(&delegator, &operation_key, operation);
 
