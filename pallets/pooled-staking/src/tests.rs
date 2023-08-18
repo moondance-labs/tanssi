@@ -14,18 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::{assert_fields_eq, AllTargetPool, TargetPool};
-
 use {
     crate::{
-        assert_eq_events,
+        assert_eq_events, assert_fields_eq,
         candidate::Candidates,
         mock::*,
         pool_test,
         pools::{self, Pool},
-        Error, Event, PendingOperationQuery, Shares, Stake,
+        AllTargetPool, Error, Event, PendingOperationQuery, Shares, Stake, TargetPool,
     },
     frame_support::{assert_noop, assert_ok, traits::tokens::fungible::Mutate},
+    sp_runtime::TokenError,
 };
 
 type Joining = pools::Joining<Runtime>;
@@ -169,6 +168,10 @@ fn do_rebalance_hold<P: Pool<Runtime>>(
 pool_test!(
     fn empty_delegation<P>() {
         ExtBuilder::default().build().execute_with(|| {
+            let before = State::extract(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1);
+            let pool_before =
+                PoolState::extract::<Joining>(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1);
+
             assert_noop!(
                 Staking::request_delegate(
                     RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
@@ -179,24 +182,12 @@ pool_test!(
                 Error::<Runtime>::StakeMustBeNonZero
             );
 
-            // No change
-            assert_eq!(total_balance(&ACCOUNT_DELEGATOR_1), 1 * DEFAULT_BALANCE);
-            assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE);
-            assert_eq!(balance_hold(&ACCOUNT_DELEGATOR_1), 0);
-            assert_eq!(
-                Joining::hold(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1).0,
-                0
-            );
-            assert_eq!(
-                Joining::computed_stake(&ACCOUNT_CANDIDATE_1, &ACCOUNT_DELEGATOR_1)
-                    .unwrap()
-                    .0,
-                0
-            );
-            assert_eq!(
-                Candidates::<Runtime>::total_stake(&ACCOUNT_CANDIDATE_1).0,
-                0
-            );
+            let after = State::extract(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1);
+            let pool_after =
+                PoolState::extract::<Joining>(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1);
+
+            assert_eq!(before, after);
+            assert_eq!(pool_before, pool_after);
 
             assert_eq_events!(Vec::<Event<Runtime>>::new());
         })
@@ -232,6 +223,37 @@ pool_test!(
                     towards: P::target_pool(),
                 },
             ]);
+        })
+    }
+);
+
+pool_test!(
+    fn delegation_request_more_than_available<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            let amount = DEFAULT_BALANCE + 1;
+
+            let before = State::extract(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1);
+            let pool_before =
+                PoolState::extract::<Joining>(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1);
+
+            assert_noop!(
+                Staking::request_delegate(
+                    RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                    ACCOUNT_CANDIDATE_1,
+                    P::target_pool(),
+                    amount,
+                ),
+                TokenError::FundsUnavailable
+            );
+
+            let after = State::extract(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1);
+            let pool_after =
+                PoolState::extract::<Joining>(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1);
+
+            assert_eq!(before, after);
+            assert_eq!(pool_before, pool_after);
+
+            assert_eq_events!(Vec::<Event<Runtime>>::new());
         })
     }
 );
@@ -351,24 +373,14 @@ pool_test!(
         ExtBuilder::default().build().execute_with(|| {
             // Preparation:
             // We naturaly delegate towards a candidate.
-            let block_number = block_number();
             let initial_amount = 2 * InitialManualClaimShareValue::get();
             let slash = 5 * KILO;
             let final_amount = initial_amount - slash;
 
-            do_request_delegation(
+            do_full_delegation::<P>(
                 ACCOUNT_CANDIDATE_1,
                 ACCOUNT_DELEGATOR_1,
-                P::target_pool(),
                 initial_amount,
-            );
-
-            // ---- Execution
-            roll_to(block_number + 2);
-            do_execute_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                block_number,
                 initial_amount,
             );
 
