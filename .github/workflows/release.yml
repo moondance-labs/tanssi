@@ -134,8 +134,6 @@ jobs:
         run: cargo fmt --all --check
       - name: Build
         run: cargo build --features=fast-runtime --release --all
-      # - name: Test
-      #   run: cargo test --release --all
       - name: Save runtime wasm
         run: |
           mkdir -p runtimes
@@ -373,7 +371,7 @@ jobs:
           path: logs
 
   zombienet-test-upgrade:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: ["set-tags", "build"]
     strategy:
       matrix:
@@ -437,6 +435,19 @@ jobs:
           ## Run tests
 
           pnpm moonwall test zombie_${{ matrix.chain }}_upgrade
+      - name: Zip and Upload Node Logs on Failure
+        if: failure()
+        run: |
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          export NODE_LOGS_ZIP="node_logs_$TIMESTAMP.zip"
+          MOST_RECENT_ZOMBIE_DIR=$(ls -td /tmp/zombie-* | head -n 1)
+          find $MOST_RECENT_ZOMBIE_DIR -maxdepth 1 -type f -name '*.log' -exec zip -r $NODE_LOGS_ZIP {} \;
+          echo "NODE_LOGS_ZIP=${NODE_LOGS_ZIP}" >> $GITHUB_ENV
+      - uses: actions/upload-artifact@v3.1.2
+        if: failure()
+        with:
+          name: failed-node-logs
+          path: ${{ env.NODE_LOGS_ZIP }}
 
   docker-tanssi:
     runs-on: ubuntu-latest
