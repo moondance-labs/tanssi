@@ -63,7 +63,7 @@ describeSuite({
         test: async function () {
             const newKey = await polkadotJs.rpc.author.rotateKeys();
             await polkadotJs.tx.session
-                .setKeys(newKey, [] as any)
+                .setKeys(newKey, [])
                 .signAndSend(alice);
 
             await context.createBlock();

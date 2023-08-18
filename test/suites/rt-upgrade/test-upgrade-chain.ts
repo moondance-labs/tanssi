@@ -1,11 +1,8 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { BALTATHAR_ADDRESS, KeyringPair, charleth } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { Signer, ethers } from "ethers";
-import fs from "node:fs";
+import { KeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
+import fs from "node:fs";
 
-const ALICE_ADDRESS = "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY";
 describeSuite({
   id: "ZAN",
   title: "Zombie AlphaNet Upgrade Test",
@@ -13,15 +10,13 @@ describeSuite({
   testCases: function ({ it, context, log }) {
     let paraApi: ApiPromise;
     let relayApi: ApiPromise;
-    let ethersSigner: Signer;
     let alice: KeyringPair;
 
     beforeAll(async () => {
-      const keyring = new Keyring({ type: 'sr25519' });
-      alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
+      const keyring = new Keyring({ type: "sr25519" });
+      alice = keyring.addFromUri("//Alice", { name: "Alice default" });
       paraApi = context.polkadotJs("parachain");
-      relayApi = context.polkadotJs(  "relaychain");
-      ethersSigner = context.ethers();
+      relayApi = context.polkadotJs("relaychain");
 
       const relayNetwork = relayApi.consts.system.version.specName.toString();
       expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
@@ -47,9 +42,7 @@ describeSuite({
       title: "Chain can be upgraded",
       timeout: 600000,
       test: async function () {
-        const blockNumberBefore = (
-          await paraApi.rpc.chain.getBlock()
-        ).block.header.number.toNumber();
+        const blockNumberBefore = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
         const currentCode = await paraApi.rpc.state.getStorage(":code");
         const codeString = currentCode.toString();
 
@@ -65,15 +58,11 @@ describeSuite({
           log("New runtime hash: " + codeString.slice(0, 10) + "..." + codeString.slice(-10));
         }
 
-        await context.upgradeRuntime({ from: alice, logger: log});
+        await context.upgradeRuntime({ from: alice, logger: log });
         await context.waitBlock(2);
-        const blockNumberAfter = (
-          await paraApi.rpc.chain.getBlock()
-        ).block.header.number.toNumber();
+        const blockNumberAfter = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
         log(`Before: #${blockNumberBefore}, After: #${blockNumberAfter}`);
-        expect(blockNumberAfter, "Block number did not increase").to.be.greaterThan(
-          blockNumberBefore
-        );
+        expect(blockNumberAfter, "Block number did not increase").to.be.greaterThan(blockNumberBefore);
       },
     });
   },

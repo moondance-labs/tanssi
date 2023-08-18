@@ -1,0 +1,59 @@
+# -----------------------------------------------------------------------------
+# GitHub Workflow: Publish Typescript API
+#
+# Description:
+# This workflow manually publishes the PolkadotJs ApiAugment package for Tanssi to npm.
+# It is triggered by the `workflow_dispatch` event, which requires the user to provide
+# the full SHA of the commit they want to publish the pre-build package from.
+#
+# Note: This job will not build new interfaces, that is instead done by other workflow:
+#        "upgrade-typescript-api.yml"
+#
+# Workflow Steps:
+# 1. Checkout the repository at the specified SHA.
+# 2. Setup Node.js version 20.x.
+# 3. Navigate to the `typescript-api` directory, install dependencies, and transpile to JS
+# 4. Publish the built TypeScript API to npm using the provided NPM token.
+#
+# Important:
+# Make sure to configure the NPM_TOKEN secret in the repository settings
+# for authentication with npm.
+# -----------------------------------------------------------------------------
+
+name: Publish Typescript API
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'SHA of the commit to publish the pre-built package from'
+        required: true
+
+jobs:
+  publish-typescript-api:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.sha }}
+      - name: Pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      - name: Build typescript API
+        run: |
+          cd typescript-api
+          pnpm install
+
+          # Transpile to JS
+          pnpm run build
+      - name: Publish typescript API
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}
+          package: typescript-api/package.json
