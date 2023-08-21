@@ -1,5 +1,5 @@
 import { describeSuite, expect, beforeAll} from "@moonwall/cli";
-import { setupLogger } from "@moonwall/util";
+import { extractFee, setupLogger } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import "@polkadot/api-augment";
 import { initializeCustomCreateBlock } from "../../../util/block";
@@ -65,7 +65,7 @@ describeSuite({
       id: "E03",
       title: "Delegate account can call proxy.proxy",
       test: async function () {
-        const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
+        const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free.toBigInt();
         const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(bob.address, 200_000));
         await context.createBlock([
           await tx.signAsync(bob),
@@ -79,10 +79,12 @@ describeSuite({
         expect(ev1.length).to.be.equal(1);
         expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
 
-        const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
+        const fee = extractFee(events).amount.toBigInt();
+        const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free.toBigInt();
 
         // Balance of Bob account increased
-        expect(balanceBefore.lt(balanceAfter)).to.be.true;
+        // (balanceBefore - fee) is the balance that the account would have if the extrinsic failed
+        expect(balanceAfter > (balanceBefore - fee)).to.be.true;
       },
     });
 
@@ -92,7 +94,7 @@ describeSuite({
       test: async function () {
         await context.createBlock();
 
-        const balanceBefore = (await polkadotJs.query.system.account(charlie.address)).data.free;
+        const balanceBefore = (await polkadotJs.query.system.account(charlie.address)).data.free.toBigInt();
         const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(charlie.address, 200_000));
         await context.createBlock([
           await tx.signAsync(charlie),
@@ -105,10 +107,11 @@ describeSuite({
         });
         expect(ev1.length).to.be.equal(1);
 
-        const balanceAfter = (await polkadotJs.query.system.account(charlie.address)).data.free;
+        const fee = extractFee(events).amount.toBigInt();
+        const balanceAfter = (await polkadotJs.query.system.account(charlie.address)).data.free.toBigInt();
 
-        // Balance of Charlie account must be the same
-        expect(balanceBefore.eq(balanceAfter)).to.be.true;
+        // Balance of Charlie account must be the same (minus fee)
+        expect(balanceBefore - fee).to.equal(balanceAfter);
       },
     });
 
@@ -149,7 +152,7 @@ describeSuite({
       title: "Account with no balance proxy cannot call balances.transfer",
       test: async function () {
         // Dave has multiple proxy types, but none of them allows to call balances.transfer
-        const balanceBefore = (await polkadotJs.query.system.account(dave.address)).data.free;
+        const balanceBefore = (await polkadotJs.query.system.account(dave.address)).data.free.toBigInt();
         const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(dave.address, 200_000));
         await context.createBlock([
           await tx.signAsync(dave),
@@ -163,10 +166,11 @@ describeSuite({
         expect(ev1.length).to.be.equal(1);
         expect(ev1[0].event.data[0].toString()).to.not.be.eq("Ok");
 
-        const balanceAfter = (await polkadotJs.query.system.account(dave.address)).data.free;
+        const fee = extractFee(events).amount.toBigInt();
+        const balanceAfter = (await polkadotJs.query.system.account(dave.address)).data.free.toBigInt();
 
-        // Balance of Dave account must be the same
-        expect(balanceBefore.eq(balanceAfter)).to.be.true;
+        // Balance of Dave account must be the same (minus fee)
+        expect(balanceBefore - fee).to.equal(balanceAfter);
       },
     });
 
