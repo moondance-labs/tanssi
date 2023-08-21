@@ -177,9 +177,8 @@ impl ContainerChainSpawner {
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
 
-            // Force container chains to use warp sync
-            // If the container chain is still at genesis block, use full sync because warp sync is broken
-            let container_chain_is_at_genesis = if !orchestrator_runtime_api
+            // Force container chains to use warp sync, unless full sync is needed for some reason
+            let full_sync_needed = if !orchestrator_runtime_api
                 .has_api::<dyn AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>>(
                     orchestrator_chain_info.best_hash,
                 )
@@ -189,12 +188,14 @@ impl ContainerChainSpawner {
                 // so use full sync because that always works
                 true
             } else {
+                // If the container chain is still at genesis block, use full sync because warp sync is broken
                 orchestrator_runtime_api
                     .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
                     .map_err(|e| format!("Failed to read latest author: {}", e))?
                     .is_none()
             };
-            if container_chain_is_at_genesis {
+
+            if full_sync_needed {
                 container_chain_cli.base.base.network_params.sync = SyncMode::Full;
             } else {
                 container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
