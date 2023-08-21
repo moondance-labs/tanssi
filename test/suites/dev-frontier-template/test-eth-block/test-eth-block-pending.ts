@@ -9,7 +9,7 @@ import {
 } from "@moonwall/util";
 
 describeSuite({
-  id: "D1304",
+  id: "DF0201",
   title: "Ethereum Block - Pending",
   foundationMethods: "dev",
   testCases: ({ context, it, log }) => {

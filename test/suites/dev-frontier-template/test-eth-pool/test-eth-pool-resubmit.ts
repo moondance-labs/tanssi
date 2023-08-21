@@ -4,7 +4,7 @@ import { parseGwei } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 describeSuite({
-  id: "D1105",
+  id: "DF0402",
   title: "Resubmit transations",
   foundationMethods: "dev",
   testCases: ({ context, it, log }) => {

@@ -4,7 +4,7 @@ import { PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 describeSuite({
-  id: "D0301",
+  id: "DF0101",
   title: "Existential Deposit disabled",
   foundationMethods: "dev",
   testCases: ({ context, log, it }) => {

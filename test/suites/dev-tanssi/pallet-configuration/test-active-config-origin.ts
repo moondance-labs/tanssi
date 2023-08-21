@@ -1,7 +1,7 @@
 import { expect, describeSuite } from "@moonwall/cli";
 
 describeSuite({
-  id: "D0520",
+  id: "DT0205",
   title: "Configuration - ActiveConfig - Origin",
   foundationMethods: "dev",
   testCases: ({ context, log, it }) => {

@@ -7,7 +7,7 @@ import { u8aToHex } from "@polkadot/util";
 
 
 describeSuite({
-  id: "D05",
+  id: "DT0301",
   title: "Session keys assignment test suite",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {

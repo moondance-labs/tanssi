@@ -4,7 +4,7 @@ import { getBlockTime } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-  id: "R02",
+  id: "S04",
   title: "Sample suite that only runs on Dancebox chains",
   foundationMethods: "read_only",
   testCases: ({ it, context, log }) => {

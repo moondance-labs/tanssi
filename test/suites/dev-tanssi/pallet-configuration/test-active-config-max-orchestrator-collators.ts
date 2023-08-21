@@ -3,7 +3,7 @@ import { Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-  id: "D0517",
+  id: "DT0203",
   title: "Configuration - ActiveConfig - MaxOrchestratorCollators",
   foundationMethods: "dev",
   testCases: ({ context, log, it }) => {

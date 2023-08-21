@@ -3,7 +3,7 @@ import { jumpSessions } from "../../../util/block";
 import { KeyringPair } from "@moonwall/util";
 
 describeSuite({
-  id: "D0517",
+  id: "DT0201",
   title: "Configuration - ActiveConfig - CollatorsPerContainer",
   foundationMethods: "dev",
   testCases: ({ context, log, it }) => {

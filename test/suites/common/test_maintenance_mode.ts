@@ -5,7 +5,7 @@ import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../util/block";
 
 describeSuite({
-  id: "D10",
+  id: "C02",
   title: "Maintenance mode test suite",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {

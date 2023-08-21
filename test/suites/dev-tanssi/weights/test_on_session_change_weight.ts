@@ -4,7 +4,7 @@ import { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-  id: "D06",
+  id: "DT0601",
   title: "On session change weights suite",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
