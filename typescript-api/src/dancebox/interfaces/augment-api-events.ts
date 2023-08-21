@@ -45,8 +45,8 @@ declare module "@polkadot/api-base/types/events" {
       /** Latest author changed */
       LatestAuthorChanged: AugmentedEvent<
         ApiType,
-        [paraId: u32, newAuthor: AccountId32],
-        { paraId: u32; newAuthor: AccountId32 }
+        [paraId: u32, blockNumber: u32, newAuthor: AccountId32],
+        { paraId: u32; blockNumber: u32; newAuthor: AccountId32 }
       >;
       /** Generic event */
       [key: string]: AugmentedEvent<ApiType>;

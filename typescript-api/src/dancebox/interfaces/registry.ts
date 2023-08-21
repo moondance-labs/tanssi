@@ -60,6 +60,7 @@ import type {
   PalletAuthorInherentCall,
   PalletAuthorInherentError,
   PalletAuthorNotingCall,
+  PalletAuthorNotingContainerChainBlockInfo,
   PalletAuthorNotingError,
   PalletAuthorNotingEvent,
   PalletAuthorityAssignmentCall,
@@ -253,6 +254,7 @@ declare module "@polkadot/types/types/registry" {
     PalletAuthorInherentCall: PalletAuthorInherentCall;
     PalletAuthorInherentError: PalletAuthorInherentError;
     PalletAuthorNotingCall: PalletAuthorNotingCall;
+    PalletAuthorNotingContainerChainBlockInfo: PalletAuthorNotingContainerChainBlockInfo;
     PalletAuthorNotingError: PalletAuthorNotingError;
     PalletAuthorNotingEvent: PalletAuthorNotingEvent;
     PalletAuthorityAssignmentCall: PalletAuthorityAssignmentCall;
