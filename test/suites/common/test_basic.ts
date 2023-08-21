@@ -14,6 +14,7 @@ describeSuite({
 
     beforeAll(() => {
       polkadotJs = context.pjsApi;
+      log(`This chain is ${context.isEthereumChain ? "Ethereum" : "Substrate"}`)
       alice = context.keyring.alice;
       bob = context.keyring.bob;
     });
@@ -37,6 +38,7 @@ describeSuite({
       timeout: 20000,
       test: async function () {
         const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
+
 
         await polkadotJs.tx.balances.transfer(bob.address, 1000).signAndSend(alice);
 

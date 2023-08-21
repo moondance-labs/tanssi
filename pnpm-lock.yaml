@@ -19,8 +19,8 @@ importers:
         specifier: ^0.2400.0
         version: 0.2400.0
       '@moonwall/cli':
-        specifier: ^4.0.15
-        version: 4.0.15(@types/node@20.5.1)(@vitest/ui@0.33.0)(typescript@5.1.6)
+        specifier: ^4.0.16
+        version: 4.0.16(@types/node@20.5.1)(@vitest/ui@0.33.0)(typescript@5.1.6)
       '@moonwall/util':
         specifier: ^4.0.15
         version: 4.0.15(@vitest/ui@0.33.0)(typescript@5.1.6)
@@ -873,8 +873,8 @@ packages:
     engines: {node: '>=14.0.0'}
     dev: true
 
-  /@moonwall/cli@4.0.15(@types/node@20.5.1)(@vitest/ui@0.33.0)(typescript@5.1.6):
-    resolution: {integrity: sha512-yskaqsSL7IoAW8+zO3d8GP0HkzmtZSUL4tDaJZc5dExqmvv/fYo1AIjdByizz8BSFl7dBdnQJS2fwc/iDiZxXg==}
+  /@moonwall/cli@4.0.16(@types/node@20.5.1)(@vitest/ui@0.33.0)(typescript@5.1.6):
+    resolution: {integrity: sha512-bl8Y0RH40mX5XBZMdmP2WBpvMYcmZNgMT6I/qtJINt9rjHQReO2zw/YpEo5+CqPg05wGIf/yP4Sug39T0bXriA==}
     engines: {node: '>=14.16.0', pnpm: '>=7'}
     hasBin: true
     dependencies:
