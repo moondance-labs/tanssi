@@ -1,8 +1,7 @@
-import { describeSuite, expect, beforeAll, Web3, Signer } from "@moonwall/cli";
-import { CHARLETH_ADDRESS, BALTATHAR_ADDRESS, alith, baltathar, setupLogger, generateKeyringPair } from "@moonwall/util";
-import { WebSocketProvider, parseEther, formatEther } from "ethers";
-import { BN } from "@polkadot/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import "@polkadot/api-augment";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { KeyringPair } from "@moonwall/util";
+import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
   id: "D01",
@@ -10,13 +9,13 @@ describeSuite({
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
-    const anotherLogger = setupLogger("anotherLogger");
-    let alice, bob;
+    let alice: KeyringPair;
+    let bob: KeyringPair;
+
     beforeAll(() => {
-      polkadotJs = context.polkadotJs();
-      const chain = polkadotJs.consts.system.version.specName.toString();
-      alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
-      bob = chain == 'frontier-template' ? baltathar : (new Keyring({ type: 'sr25519' }).addFromUri('//Bob', { name: 'Bob default' }));
+      polkadotJs = context.pjsApi;
+      alice = context.keyring.alice;
+      bob = context.keyring.bob;
     });
 
     it({
@@ -39,13 +38,11 @@ describeSuite({
       test: async function () {
         const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
 
-        await polkadotJs.tx.balances
-          .transfer(bob.address, 1000)
-          .signAndSend(alice);
+        await polkadotJs.tx.balances.transfer(bob.address, 1000).signAndSend(alice);
 
         await context.createBlock();
         const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
-        
+
         expect(balanceBefore.lt(balanceAfter)).to.be.true;
       },
     });
@@ -60,7 +57,7 @@ describeSuite({
 
         await context.createBlock();
         const blockFill = await polkadotJs.query.system.blockWeight();
-        expect(blockFill.normal.refTime.unwrap().gt(new BN(0))).to.be.true;
+        expect(blockFill.normal.refTime.unwrap().toBigInt()).toBeGreaterThan(0n);
       },
     });
   },

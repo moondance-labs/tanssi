@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { ApiPromise, } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 import { u8aToHex, stringToHex } from "@polkadot/util";
 
@@ -14,14 +14,11 @@ describeSuite({
     let alice: KeyringPair;
     let bob: KeyringPair;
     let charlie: KeyringPair;
-    let dave: KeyringPair;
 
     beforeAll(() => {
-      const keyring = new Keyring({ type: "sr25519" });
-      alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-      bob = keyring.addFromUri("//Bob", { name: "Bob default" });
-      charlie = keyring.addFromUri("//Charlie", { name: "Charlie default" });
-      dave = keyring.addFromUri("//Dave", { name: "Dave default" });
+      alice = context.keyring.alice;
+      bob = context.keyring.bob;
+      charlie = context.keyring.charlie;
       polkadotJs = context.polkadotJs();
     });
 

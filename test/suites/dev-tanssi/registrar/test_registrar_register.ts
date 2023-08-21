@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll} from "@moonwall/cli";
-import { setupLogger } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+import { KeyringPair } from "@moonwall/util";
+import { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
@@ -10,26 +10,24 @@ describeSuite({
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
-    const anotherLogger = setupLogger("anotherLogger");
-    let alice, bob;
+    let alice: KeyringPair;
+
     beforeAll(() => {
-      const keyring = new Keyring({ type: 'sr25519' });
-      alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-      bob = keyring.addFromUri('//Bob', { name: 'Bob default' });
+      alice = context.keyring.alice;
       polkadotJs = context.polkadotJs();
     });
 
     it({
-        id: "E01",
-        title: "Checking that fetching registered paraIds is possible",
-        test: async function () {
-            const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
+      id: "E01",
+      title: "Checking that fetching registered paraIds is possible",
+      test: async function () {
+        const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
-            // These are registered in genesis
-            // TODO: fix once we have types
-            expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001]);
-        },
-      });
+        // These are registered in genesis
+        // TODO: fix once we have types
+        expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001]);
+      },
+    });
 
     it({
       id: "E02",
@@ -42,27 +40,27 @@ describeSuite({
         const expectedScheduledOnboarding = BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
         const emptyGenesisData = () => {
-            let g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
-              "storage": [
-                {
-                  "key": "0x636f6465",
-                  "value": "0x010203040506"
-                }
-              ],
-              "name": "0x436f6e7461696e657220436861696e2032303030",
-              "id": "0x636f6e7461696e65722d636861696e2d32303030",
-              "forkId": null,
-              "extensions": "0x",
-              "properties": {
-                "tokenMetadata": {
-                  "tokenSymbol": "0x61626364",
-                  "ss58Format": 42,
-                  "tokenDecimals": 12
-                },
-                "isEthereum": false
-              }
-            });
-            return g;
+          let g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+            storage: [
+              {
+                key: "0x636f6465",
+                value: "0x010203040506",
+              },
+            ],
+            name: "0x436f6e7461696e657220436861696e2032303030",
+            id: "0x636f6e7461696e65722d636861696e2d32303030",
+            forkId: null,
+            extensions: "0x",
+            properties: {
+              tokenMetadata: {
+                tokenSymbol: "0x61626364",
+                ss58Format: 42,
+                tokenDecimals: 12,
+              },
+              isEthereum: false,
+            },
+          });
+          return g;
         };
         const containerChainGenesisData = emptyGenesisData();
 
@@ -91,7 +89,7 @@ describeSuite({
         expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
         // Checking that in session 2 paras are registered
-        await jumpSessions(context, 2)
+        await jumpSessions(context, 2);
 
         // Expect now paraIds to be registered
         const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
@@ -99,5 +97,5 @@ describeSuite({
         expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001, 2002]);
       },
     });
-    },
+  },
 });

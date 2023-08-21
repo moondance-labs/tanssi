@@ -7,11 +7,7 @@ describeSuite({
   title: "Configuration - ActiveConfig - MaxOrchestratorCollators",
   foundationMethods: "dev",
   testCases: ({ context, log, it }) => {
-    let alice;
     beforeAll(async function () {
-      const keyring = new Keyring({ type: "sr25519" });
-      alice = keyring.addFromUri("//Alice", { name: "Alice  default" });
-
       const config = await context
         .polkadotJs()
         .query.configuration.activeConfig();
@@ -23,7 +19,7 @@ describeSuite({
           .tx.sudo.sudo(
             context.polkadotJs().tx.configuration.setMaxOrchestratorCollators(2)
           )
-          .signAsync(alice)
+          .signAsync(context.keyring.alice)
       );
       expect(result!.successful, result!.error?.name).to.be.true;
 
