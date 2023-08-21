@@ -41,8 +41,8 @@ use {
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
                 WEIGHT_REF_TIME_PER_SECOND,
             },
-            ConstantMultiplier, IdentityFee, Weight, WeightToFeeCoefficient,
-            WeightToFeeCoefficients, WeightToFeePolynomial,
+            ConstantMultiplier, Weight, WeightToFeeCoefficient, WeightToFeeCoefficients,
+            WeightToFeePolynomial,
         },
         PalletId,
     },
@@ -386,9 +386,10 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    // This will burn the fees
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
     type OperationalFeeMultiplier = ConstU8<5>;
-    type WeightToFee = IdentityFee<Balance>;
+    type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
 }
