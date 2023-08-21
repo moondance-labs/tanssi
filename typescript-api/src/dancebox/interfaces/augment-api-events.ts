@@ -16,6 +16,8 @@ import type {
   u128,
   u16,
   u32,
+  u64,
+  u8,
 } from "@polkadot/types-codec";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -24,6 +26,14 @@ import type {
   FrameSupportTokensMiscBalanceStatus,
   SpRuntimeDispatchError,
   SpWeightsWeightV2Weight,
+  XcmV3MultiLocation,
+  XcmV3MultiassetMultiAssets,
+  XcmV3Response,
+  XcmV3TraitsError,
+  XcmV3TraitsOutcome,
+  XcmV3Xcm,
+  XcmVersionedMultiAssets,
+  XcmVersionedMultiLocation,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedEvent<ApiType extends ApiTypes> =
@@ -208,6 +218,78 @@ declare module "@polkadot/api-base/types/events" {
       /** Generic event */
       [key: string]: AugmentedEvent<ApiType>;
     };
+    cumulusXcm: {
+      /** Downward message executed with the given outcome. [ id, outcome ] */
+      ExecutedDownward: AugmentedEvent<ApiType, [U8aFixed, XcmV3TraitsOutcome]>;
+      /** Downward message is invalid XCM. [ id ] */
+      InvalidFormat: AugmentedEvent<ApiType, [U8aFixed]>;
+      /** Downward message is unsupported version of XCM. [ id ] */
+      UnsupportedVersion: AugmentedEvent<ApiType, [U8aFixed]>;
+      /** Generic event */
+      [key: string]: AugmentedEvent<ApiType>;
+    };
+    dmpQueue: {
+      /** Downward message executed with the given outcome. */
+      ExecutedDownward: AugmentedEvent<
+        ApiType,
+        [messageId: U8aFixed, outcome: XcmV3TraitsOutcome],
+        { messageId: U8aFixed; outcome: XcmV3TraitsOutcome }
+      >;
+      /** Downward message is invalid XCM. */
+      InvalidFormat: AugmentedEvent<
+        ApiType,
+        [messageId: U8aFixed],
+        { messageId: U8aFixed }
+      >;
+      /** The maximum number of downward messages was. */
+      MaxMessagesExhausted: AugmentedEvent<
+        ApiType,
+        [messageId: U8aFixed],
+        { messageId: U8aFixed }
+      >;
+      /** Downward message is overweight and was placed in the overweight queue. */
+      OverweightEnqueued: AugmentedEvent<
+        ApiType,
+        [
+          messageId: U8aFixed,
+          overweightIndex: u64,
+          requiredWeight: SpWeightsWeightV2Weight
+        ],
+        {
+          messageId: U8aFixed;
+          overweightIndex: u64;
+          requiredWeight: SpWeightsWeightV2Weight;
+        }
+      >;
+      /** Downward message from the overweight queue was executed. */
+      OverweightServiced: AugmentedEvent<
+        ApiType,
+        [overweightIndex: u64, weightUsed: SpWeightsWeightV2Weight],
+        { overweightIndex: u64; weightUsed: SpWeightsWeightV2Weight }
+      >;
+      /** Downward message is unsupported version of XCM. */
+      UnsupportedVersion: AugmentedEvent<
+        ApiType,
+        [messageId: U8aFixed],
+        { messageId: U8aFixed }
+      >;
+      /** The weight limit for handling downward messages was reached. */
+      WeightExhausted: AugmentedEvent<
+        ApiType,
+        [
+          messageId: U8aFixed,
+          remainingWeight: SpWeightsWeightV2Weight,
+          requiredWeight: SpWeightsWeightV2Weight
+        ],
+        {
+          messageId: U8aFixed;
+          remainingWeight: SpWeightsWeightV2Weight;
+          requiredWeight: SpWeightsWeightV2Weight;
+        }
+      >;
+      /** Generic event */
+      [key: string]: AugmentedEvent<ApiType>;
+    };
     maintenanceMode: {
       /** The chain was put into Maintenance Mode */
       EnteredMaintenanceMode: AugmentedEvent<ApiType, []>;
@@ -299,6 +381,234 @@ declare module "@polkadot/api-base/types/events" {
       ValidationFunctionDiscarded: AugmentedEvent<ApiType, []>;
       /** The validation function has been scheduled to apply. */
       ValidationFunctionStored: AugmentedEvent<ApiType, []>;
+      /** Generic event */
+      [key: string]: AugmentedEvent<ApiType>;
+    };
+    polkadotXcm: {
+      /**
+       * Some assets have been claimed from an asset trap
+       *
+       * [ hash, origin, assets ]
+       */
+      AssetsClaimed: AugmentedEvent<
+        ApiType,
+        [H256, XcmV3MultiLocation, XcmVersionedMultiAssets]
+      >;
+      /**
+       * Some assets have been placed in an asset trap.
+       *
+       * [ hash, origin, assets ]
+       */
+      AssetsTrapped: AugmentedEvent<
+        ApiType,
+        [H256, XcmV3MultiLocation, XcmVersionedMultiAssets]
+      >;
+      /**
+       * Execution of an XCM message was attempted.
+       *
+       * [ outcome ]
+       */
+      Attempted: AugmentedEvent<ApiType, [XcmV3TraitsOutcome]>;
+      /**
+       * Fees were paid from a location for an operation (often for using `SendXcm`).
+       *
+       * [ paying location, fees ]
+       */
+      FeesPaid: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, XcmV3MultiassetMultiAssets]
+      >;
+      /**
+       * Expected query response has been received but the querier location of
+       * the response does not match the expected. The query remains registered
+       * for a later, valid, response to be received and acted upon.
+       *
+       * [ origin location, id, expected querier, maybe actual querier ]
+       */
+      InvalidQuerier: AugmentedEvent<
+        ApiType,
+        [
+          XcmV3MultiLocation,
+          u64,
+          XcmV3MultiLocation,
+          Option<XcmV3MultiLocation>
+        ]
+      >;
+      /**
+       * Expected query response has been received but the expected querier
+       * location placed in storage by this runtime previously cannot be
+       * decoded. The query remains registered.
+       *
+       * This is unexpected (since a location placed in storage in a previously
+       * executing runtime should be readable prior to query timeout) and
+       * dangerous since the possibly valid response will be dropped. Manual
+       * governance intervention is probably going to be needed.
+       *
+       * [ origin location, id ]
+       */
+      InvalidQuerierVersion: AugmentedEvent<ApiType, [XcmV3MultiLocation, u64]>;
+      /**
+       * Expected query response has been received but the origin location of
+       * the response does not match that expected. The query remains registered
+       * for a later, valid, response to be received and acted upon.
+       *
+       * [ origin location, id, expected location ]
+       */
+      InvalidResponder: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, u64, Option<XcmV3MultiLocation>]
+      >;
+      /**
+       * Expected query response has been received but the expected origin
+       * location placed in storage by this runtime previously cannot be
+       * decoded. The query remains registered.
+       *
+       * This is unexpected (since a location placed in storage in a previously
+       * executing runtime should be readable prior to query timeout) and
+       * dangerous since the possibly valid response will be dropped. Manual
+       * governance intervention is probably going to be needed.
+       *
+       * [ origin location, id ]
+       */
+      InvalidResponderVersion: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, u64]
+      >;
+      /**
+       * Query response has been received and query is removed. The registered
+       * notification has been dispatched and executed successfully.
+       *
+       * [ id, pallet index, call index ]
+       */
+      Notified: AugmentedEvent<ApiType, [u64, u8, u8]>;
+      /**
+       * Query response has been received and query is removed. The dispatch was
+       * unable to be decoded into a `Call`; this might be due to dispatch
+       * function having a signature which is not `(origin, QueryId, Response)`.
+       *
+       * [ id, pallet index, call index ]
+       */
+      NotifyDecodeFailed: AugmentedEvent<ApiType, [u64, u8, u8]>;
+      /**
+       * Query response has been received and query is removed. There was a
+       * general error with dispatching the notification call.
+       *
+       * [ id, pallet index, call index ]
+       */
+      NotifyDispatchError: AugmentedEvent<ApiType, [u64, u8, u8]>;
+      /**
+       * Query response has been received and query is removed. The registered
+       * notification could not be dispatched because the dispatch weight is
+       * greater than the maximum weight originally budgeted by this runtime for
+       * the query result.
+       *
+       * [ id, pallet index, call index, actual weight, max budgeted weight ]
+       */
+      NotifyOverweight: AugmentedEvent<
+        ApiType,
+        [u64, u8, u8, SpWeightsWeightV2Weight, SpWeightsWeightV2Weight]
+      >;
+      /**
+       * A given location which had a version change subscription was dropped
+       * owing to an error migrating the location to our new XCM format.
+       *
+       * [ location, query ID ]
+       */
+      NotifyTargetMigrationFail: AugmentedEvent<
+        ApiType,
+        [XcmVersionedMultiLocation, u64]
+      >;
+      /**
+       * A given location which had a version change subscription was dropped
+       * owing to an error sending the notification to it.
+       *
+       * [ location, query ID, error ]
+       */
+      NotifyTargetSendFail: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, u64, XcmV3TraitsError]
+      >;
+      /**
+       * Query response has been received and is ready for taking with
+       * `take_response`. There is no registered notification call.
+       *
+       * [ id, response ]
+       */
+      ResponseReady: AugmentedEvent<ApiType, [u64, XcmV3Response]>;
+      /**
+       * Received query response has been read and removed.
+       *
+       * [ id ]
+       */
+      ResponseTaken: AugmentedEvent<ApiType, [u64]>;
+      /**
+       * A XCM message was sent.
+       *
+       * [ origin, destination, message ]
+       */
+      Sent: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, XcmV3MultiLocation, XcmV3Xcm]
+      >;
+      /**
+       * The supported version of a location has been changed. This might be
+       * through an automatic notification or a manual intervention.
+       *
+       * [ location, XCM version ]
+       */
+      SupportedVersionChanged: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, u32]
+      >;
+      /**
+       * Query response received which does not match a registered query. This
+       * may be because a matching query was never registered, it may be because
+       * it is a duplicate response, or because the query timed out.
+       *
+       * [ origin location, id ]
+       */
+      UnexpectedResponse: AugmentedEvent<ApiType, [XcmV3MultiLocation, u64]>;
+      /**
+       * An XCM version change notification message has been attempted to be sent.
+       *
+       * The cost of sending it (borne by the chain) is included.
+       *
+       * [ destination, result, cost ]
+       */
+      VersionChangeNotified: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, u32, XcmV3MultiassetMultiAssets]
+      >;
+      /**
+       * We have requested that a remote chain sends us XCM version change notifications.
+       *
+       * [ destination location, cost ]
+       */
+      VersionNotifyRequested: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, XcmV3MultiassetMultiAssets]
+      >;
+      /**
+       * A remote has requested XCM version change notification from us and we
+       * have honored it. A version information message is sent to them and its
+       * cost is included.
+       *
+       * [ destination location, cost ]
+       */
+      VersionNotifyStarted: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, XcmV3MultiassetMultiAssets]
+      >;
+      /**
+       * We have requested that a remote chain stops sending us XCM version
+       * change notifications.
+       *
+       * [ destination location, cost ]
+       */
+      VersionNotifyUnrequested: AugmentedEvent<
+        ApiType,
+        [XcmV3MultiLocation, XcmV3MultiassetMultiAssets]
+      >;
       /** Generic event */
       [key: string]: AugmentedEvent<ApiType>;
     };
@@ -493,6 +803,70 @@ declare module "@polkadot/api-base/types/events" {
         ApiType,
         [error: SpRuntimeDispatchError],
         { error: SpRuntimeDispatchError }
+      >;
+      /** Generic event */
+      [key: string]: AugmentedEvent<ApiType>;
+    };
+    xcmpQueue: {
+      /** Bad XCM format used. */
+      BadFormat: AugmentedEvent<
+        ApiType,
+        [messageHash: Option<U8aFixed>],
+        { messageHash: Option<U8aFixed> }
+      >;
+      /** Bad XCM version used. */
+      BadVersion: AugmentedEvent<
+        ApiType,
+        [messageHash: Option<U8aFixed>],
+        { messageHash: Option<U8aFixed> }
+      >;
+      /** Some XCM failed. */
+      Fail: AugmentedEvent<
+        ApiType,
+        [
+          messageHash: Option<U8aFixed>,
+          error: XcmV3TraitsError,
+          weight: SpWeightsWeightV2Weight
+        ],
+        {
+          messageHash: Option<U8aFixed>;
+          error: XcmV3TraitsError;
+          weight: SpWeightsWeightV2Weight;
+        }
+      >;
+      /** An XCM exceeded the individual message weight budget. */
+      OverweightEnqueued: AugmentedEvent<
+        ApiType,
+        [
+          sender: u32,
+          sentAt: u32,
+          index: u64,
+          required: SpWeightsWeightV2Weight
+        ],
+        {
+          sender: u32;
+          sentAt: u32;
+          index: u64;
+          required: SpWeightsWeightV2Weight;
+        }
+      >;
+      /** An XCM from the overweight queue was executed with the given actual weight used. */
+      OverweightServiced: AugmentedEvent<
+        ApiType,
+        [index: u64, used: SpWeightsWeightV2Weight],
+        { index: u64; used: SpWeightsWeightV2Weight }
+      >;
+      /** Some XCM was executed ok. */
+      Success: AugmentedEvent<
+        ApiType,
+        [messageHash: Option<U8aFixed>, weight: SpWeightsWeightV2Weight],
+        { messageHash: Option<U8aFixed>; weight: SpWeightsWeightV2Weight }
+      >;
+      /** An HRMP message was sent to a sibling parachain. */
+      XcmpMessageSent: AugmentedEvent<
+        ApiType,
+        [messageHash: Option<U8aFixed>],
+        { messageHash: Option<U8aFixed> }
       >;
       /** Generic event */
       [key: string]: AugmentedEvent<ApiType>;

@@ -38,6 +38,11 @@ import type {
   SpWeightsWeightV2Weight,
   TpAuthorNotingInherentOwnParachainInherentData,
   TpContainerChainGenesisDataContainerChainGenesisData,
+  XcmV3MultiLocation,
+  XcmV3WeightLimit,
+  XcmVersionedMultiAssets,
+  XcmVersionedMultiLocation,
+  XcmVersionedXcm,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedSubmittable = AugmentedSubmittable<() => unknown>;
@@ -390,6 +395,22 @@ declare module "@polkadot/api-base/types/submittable" {
       /** Generic tx */
       [key: string]: SubmittableExtrinsicFunction<ApiType>;
     };
+    dmpQueue: {
+      /** Service a single overweight message. */
+      serviceOverweight: AugmentedSubmittable<
+        (
+          index: u64 | AnyNumber | Uint8Array,
+          weightLimit:
+            | SpWeightsWeightV2Weight
+            | { refTime?: any; proofSize?: any }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [u64, SpWeightsWeightV2Weight]
+      >;
+      /** Generic tx */
+      [key: string]: SubmittableExtrinsicFunction<ApiType>;
+    };
     maintenanceMode: {
       /**
        * Place the chain in maintenance mode
@@ -486,6 +507,347 @@ declare module "@polkadot/api-base/types/submittable" {
       sudoSendUpwardMessage: AugmentedSubmittable<
         (message: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
         [Bytes]
+      >;
+      /** Generic tx */
+      [key: string]: SubmittableExtrinsicFunction<ApiType>;
+    };
+    polkadotXcm: {
+      /**
+       * Execute an XCM message from a local, signed, origin.
+       *
+       * An event is deposited indicating whether `msg` could be executed
+       * completely or only partially.
+       *
+       * No more than `max_weight` will be used in its attempted execution. If
+       * this is less than the maximum amount of weight that the message could
+       * take to be executed, then no execution attempt will be made.
+       *
+       * NOTE: A successful return to this does _not_ imply that the `msg` was
+       * executed successfully to completion; only that _some_ of it was executed.
+       */
+      execute: AugmentedSubmittable<
+        (
+          message:
+            | XcmVersionedXcm
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          maxWeight:
+            | SpWeightsWeightV2Weight
+            | { refTime?: any; proofSize?: any }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [XcmVersionedXcm, SpWeightsWeightV2Weight]
+      >;
+      /**
+       * Set a safe XCM version (the version that XCM should be encoded with if
+       * the most recent version a destination can accept is unknown).
+       *
+       * - `origin`: Must be an origin specified by AdminOrigin.
+       * - `maybe_xcm_version`: The default XCM encoding version, or `None` to disable.
+       */
+      forceDefaultXcmVersion: AugmentedSubmittable<
+        (
+          maybeXcmVersion: Option<u32> | null | Uint8Array | u32 | AnyNumber
+        ) => SubmittableExtrinsic<ApiType>,
+        [Option<u32>]
+      >;
+      /**
+       * Ask a location to notify us regarding their XCM version and any changes to it.
+       *
+       * - `origin`: Must be an origin specified by AdminOrigin.
+       * - `location`: The location to which we should subscribe for XCM version
+       *   notifications.
+       */
+      forceSubscribeVersionNotify: AugmentedSubmittable<
+        (
+          location:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [XcmVersionedMultiLocation]
+      >;
+      /**
+       * Set or unset the global suspension state of the XCM executor.
+       *
+       * - `origin`: Must be an origin specified by AdminOrigin.
+       * - `suspended`: `true` to suspend, `false` to resume.
+       */
+      forceSuspension: AugmentedSubmittable<
+        (
+          suspended: bool | boolean | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [bool]
+      >;
+      /**
+       * Require that a particular destination should no longer notify us
+       * regarding any XCM version changes.
+       *
+       * - `origin`: Must be an origin specified by AdminOrigin.
+       * - `location`: The location to which we are currently subscribed for XCM
+       *   version notifications which we no longer desire.
+       */
+      forceUnsubscribeVersionNotify: AugmentedSubmittable<
+        (
+          location:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [XcmVersionedMultiLocation]
+      >;
+      /**
+       * Extoll that a particular destination can be communicated with through a
+       * particular version of XCM.
+       *
+       * - `origin`: Must be an origin specified by AdminOrigin.
+       * - `location`: The destination that is being described.
+       * - `xcm_version`: The latest version of XCM that `location` supports.
+       */
+      forceXcmVersion: AugmentedSubmittable<
+        (
+          location:
+            | XcmV3MultiLocation
+            | { parents?: any; interior?: any }
+            | string
+            | Uint8Array,
+          xcmVersion: u32 | AnyNumber | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [XcmV3MultiLocation, u32]
+      >;
+      /**
+       * Transfer some assets from the local chain to the sovereign account of a
+       * destination chain and forward a notification XCM.
+       *
+       * Fee payment on the destination side is made from the asset in the
+       * `assets` vector of index `fee_asset_item`, up to enough to pay for
+       * `weight_limit` of weight. If more weight is needed than `weight_limit`,
+       * then the operation will fail and the assets send may be at risk.
+       *
+       * - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
+       * - `dest`: Destination context for the assets. Will typically be
+       *   `X2(Parent, Parachain(..))` to send from parachain to parachain, or
+       *   `X1(Parachain(..))` to send from relay to parachain.
+       * - `beneficiary`: A beneficiary location for the assets in the context of
+       *   `dest`. Will generally be an `AccountId32` value.
+       * - `assets`: The assets to be withdrawn. This should include the assets
+       *   used to pay the fee on the `dest` side.
+       * - `fee_asset_item`: The index into `assets` of the item which should be
+       *   used to pay fees.
+       * - `weight_limit`: The remote-side weight limit, if any, for the XCM fee purchase.
+       */
+      limitedReserveTransferAssets: AugmentedSubmittable<
+        (
+          dest:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          beneficiary:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          assets:
+            | XcmVersionedMultiAssets
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          feeAssetItem: u32 | AnyNumber | Uint8Array,
+          weightLimit:
+            | XcmV3WeightLimit
+            | { Unlimited: any }
+            | { Limited: any }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [
+          XcmVersionedMultiLocation,
+          XcmVersionedMultiLocation,
+          XcmVersionedMultiAssets,
+          u32,
+          XcmV3WeightLimit
+        ]
+      >;
+      /**
+       * Teleport some assets from the local chain to some destination chain.
+       *
+       * Fee payment on the destination side is made from the asset in the
+       * `assets` vector of index `fee_asset_item`, up to enough to pay for
+       * `weight_limit` of weight. If more weight is needed than `weight_limit`,
+       * then the operation will fail and the assets send may be at risk.
+       *
+       * - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
+       * - `dest`: Destination context for the assets. Will typically be
+       *   `X2(Parent, Parachain(..))` to send from parachain to parachain, or
+       *   `X1(Parachain(..))` to send from relay to parachain.
+       * - `beneficiary`: A beneficiary location for the assets in the context of
+       *   `dest`. Will generally be an `AccountId32` value.
+       * - `assets`: The assets to be withdrawn. The first item should be the
+       *   currency used to to pay the fee on the `dest` side. May not be empty.
+       * - `fee_asset_item`: The index into `assets` of the item which should be
+       *   used to pay fees.
+       * - `weight_limit`: The remote-side weight limit, if any, for the XCM fee purchase.
+       */
+      limitedTeleportAssets: AugmentedSubmittable<
+        (
+          dest:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          beneficiary:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          assets:
+            | XcmVersionedMultiAssets
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          feeAssetItem: u32 | AnyNumber | Uint8Array,
+          weightLimit:
+            | XcmV3WeightLimit
+            | { Unlimited: any }
+            | { Limited: any }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [
+          XcmVersionedMultiLocation,
+          XcmVersionedMultiLocation,
+          XcmVersionedMultiAssets,
+          u32,
+          XcmV3WeightLimit
+        ]
+      >;
+      /**
+       * Transfer some assets from the local chain to the sovereign account of a
+       * destination chain and forward a notification XCM.
+       *
+       * Fee payment on the destination side is made from the asset in the
+       * `assets` vector of index `fee_asset_item`. The weight limit for fees is
+       * not provided and thus is unlimited, with all fees taken as needed from
+       * the asset.
+       *
+       * - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
+       * - `dest`: Destination context for the assets. Will typically be
+       *   `X2(Parent, Parachain(..))` to send from parachain to parachain, or
+       *   `X1(Parachain(..))` to send from relay to parachain.
+       * - `beneficiary`: A beneficiary location for the assets in the context of
+       *   `dest`. Will generally be an `AccountId32` value.
+       * - `assets`: The assets to be withdrawn. This should include the assets
+       *   used to pay the fee on the `dest` side.
+       * - `fee_asset_item`: The index into `assets` of the item which should be
+       *   used to pay fees.
+       */
+      reserveTransferAssets: AugmentedSubmittable<
+        (
+          dest:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          beneficiary:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          assets:
+            | XcmVersionedMultiAssets
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          feeAssetItem: u32 | AnyNumber | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [
+          XcmVersionedMultiLocation,
+          XcmVersionedMultiLocation,
+          XcmVersionedMultiAssets,
+          u32
+        ]
+      >;
+      send: AugmentedSubmittable<
+        (
+          dest:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          message:
+            | XcmVersionedXcm
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [XcmVersionedMultiLocation, XcmVersionedXcm]
+      >;
+      /**
+       * Teleport some assets from the local chain to some destination chain.
+       *
+       * Fee payment on the destination side is made from the asset in the
+       * `assets` vector of index `fee_asset_item`. The weight limit for fees is
+       * not provided and thus is unlimited, with all fees taken as needed from
+       * the asset.
+       *
+       * - `origin`: Must be capable of withdrawing the `assets` and executing XCM.
+       * - `dest`: Destination context for the assets. Will typically be
+       *   `X2(Parent, Parachain(..))` to send from parachain to parachain, or
+       *   `X1(Parachain(..))` to send from relay to parachain.
+       * - `beneficiary`: A beneficiary location for the assets in the context of
+       *   `dest`. Will generally be an `AccountId32` value.
+       * - `assets`: The assets to be withdrawn. The first item should be the
+       *   currency used to to pay the fee on the `dest` side. May not be empty.
+       * - `fee_asset_item`: The index into `assets` of the item which should be
+       *   used to pay fees.
+       */
+      teleportAssets: AugmentedSubmittable<
+        (
+          dest:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          beneficiary:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          assets:
+            | XcmVersionedMultiAssets
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array,
+          feeAssetItem: u32 | AnyNumber | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [
+          XcmVersionedMultiLocation,
+          XcmVersionedMultiLocation,
+          XcmVersionedMultiAssets,
+          u32
+        ]
       >;
       /** Generic tx */
       [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -1221,6 +1583,8 @@ declare module "@polkadot/api-base/types/submittable" {
             | DanceboxRuntimeOriginCaller
             | { system: any }
             | { Void: any }
+            | { CumulusXcm: any }
+            | { PolkadotXcm: any }
             | string
             | Uint8Array,
           call: Call | IMethod | string | Uint8Array
