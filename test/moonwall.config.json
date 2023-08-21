@@ -110,6 +110,34 @@
       ]
     },
     {
+      "name": "zombie_tanssi_warp_sync",
+      "testFileDir": ["suites/warp-sync"],
+      "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+      "foundation": {
+        "type": "zombie",
+        "zombieSpec": {
+          "configPath": "./configs/zombieTanssiWarpSync.json"
+        }
+      },
+      "connections": [
+        {
+          "name": "Relay",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9947"]
+        },
+        {
+          "name": "Tanssi",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9948"]
+        },
+        {
+          "name": "Container2000",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9949"]
+        }
+      ]
+    },
+    {
       "name": "zombie_dancebox_upgrade",
       "testFileDir": ["suites/rt-upgrade"],
       "runScripts": ["download-polkadot.sh"],
