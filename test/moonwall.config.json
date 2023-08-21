@@ -112,7 +112,7 @@
     {
       "name": "zombie_tanssi_warp_sync",
       "testFileDir": ["suites/warp-sync"],
-      "runScripts": ["build-spec.sh", "download-polkadot.sh"],
+      "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
       "foundation": {
         "type": "zombie",
         "zombieSpec": {
@@ -134,21 +134,6 @@
           "name": "Container2000",
           "type": "polkadotJs",
           "endpoints": ["ws://127.0.0.1:9949"]
-        },
-        {
-          "name": "Container2001",
-          "type": "polkadotJs",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        },
-        {
-          "name": "ethers",
-          "type": "ethers",
-          "endpoints": ["ws://127.0.0.1:9950"]
-        },
-        {
-          "name": "w3",
-          "type": "web3",
-          "endpoints": ["ws://127.0.0.1:9950"]
         }
       ]
     },

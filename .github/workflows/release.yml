@@ -359,7 +359,7 @@ jobs:
           path: logs
 
   zombienet-tests-warp-sync:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     needs: ["set-tags", "build"]
     steps:
       - name: Checkout
