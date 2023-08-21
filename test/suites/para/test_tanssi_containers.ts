@@ -255,7 +255,7 @@ describeSuite({
         // TODO: use collator rpc instead to check if the container chain is running,
         // that's not possible now because we would need to guess the port number
 
-        const container2002DbPath = getTmpZombiePath() + "/Collator2002-01/data/containers/chains/simple_container_2002/db";
+        const container2002DbPath = getTmpZombiePath() + "/Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002";
         expect(await directoryExists(container2002DbPath)).to.be.false;
         // The node starts one session before the container chain is in registered list
         await waitSessions(context, paraApi, 1);

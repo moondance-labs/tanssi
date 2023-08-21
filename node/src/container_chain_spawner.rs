@@ -21,15 +21,19 @@ use {
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
+    dancebox_runtime::{AccountId, Block, BlockNumber},
     futures::FutureExt,
+    pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
+    sc_cli::SyncMode,
     sc_service::SpawnTaskHandle,
-    sp_api::ProvideRuntimeApi,
+    sp_api::{ApiExt, ProvideRuntimeApi},
     sp_keystore::KeystorePtr,
     std::{
         collections::{HashMap, HashSet},
         future::Future,
+        path::Path,
         pin::Pin,
         sync::{Arc, Mutex},
     },
@@ -173,6 +177,30 @@ impl ContainerChainSpawner {
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
 
+            // Force container chains to use warp sync, unless full sync is needed for some reason
+            let full_sync_needed = if !orchestrator_runtime_api
+                .has_api::<dyn AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>>(
+                    orchestrator_chain_info.best_hash,
+                )
+                .map_err(|e| format!("Failed to check if runtime has AuthorNotingApi: {}", e))?
+            {
+                // Before runtime API was implemented we don't know if the container chain has any blocks,
+                // so use full sync because that always works
+                true
+            } else {
+                // If the container chain is still at genesis block, use full sync because warp sync is broken
+                orchestrator_runtime_api
+                    .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
+                    .map_err(|e| format!("Failed to read latest author: {}", e))?
+                    .is_none()
+            };
+
+            if full_sync_needed {
+                container_chain_cli.base.base.network_params.sync = SyncMode::Full;
+            } else {
+                container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
+            }
+
             let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
                 &container_chain_cli,
                 &container_chain_cli,
@@ -189,6 +217,11 @@ impl ContainerChainSpawner {
                 .to_owned();
             db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
             container_chain_cli_config.database.set_path(&db_path);
+
+            // Delete existing database if running as collator
+            if validator {
+                delete_container_chain_db(&db_path);
+            }
 
             // Start container chain node
             let (mut container_chain_task_manager, _container_chain_client, collate_on) =
@@ -255,6 +288,10 @@ impl ContainerChainSpawner {
                     }
                     _ = on_exit_future => {
                         // Graceful shutdown
+                        // Delete existing database if running as collator
+                        if validator {
+                            delete_container_chain_db(&db_path);
+                        }
                     }
                 }
             });
@@ -417,6 +454,16 @@ fn handle_update_assignment_state_change(
         call_collate_on,
         chains_to_stop,
         chains_to_start,
+    }
+}
+
+// TODO: this leaves some empty folders behind, because it is called with db_path:
+//     Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002
+// but we want to delete everything under
+//     Collator2002-01/data/containers/chains/simple_container_2002
+fn delete_container_chain_db(db_path: &Path) {
+    if db_path.exists() {
+        std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");
     }
 }
 
