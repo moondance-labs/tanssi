@@ -320,11 +320,34 @@ pub mod pallet {
             before: Option<u32>,
             after: Option<u32>,
         },
+
         RequestedDelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
             towards: TargetPool,
+            pending: T::Balance,
         },
+        RequestedUndelegate {
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            from: TargetPool,
+            pending: T::Balance,
+            released: T::Balance,
+        },
+        ExecutedDelegate {
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            towards: TargetPool,
+            staked: T::Balance,
+            released: T::Balance,
+        },
+        ExecutedUndelegate {
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            towards: TargetPool,
+            released: T::Balance,
+        },
+
         /// Stake of that Candidate increased.
         IncreasedStake {
             candidate: Candidate<T>,
@@ -380,44 +403,6 @@ pub mod pallet {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
             rewards: T::Balance,
-        },
-        /// Registered delayed leaving from staking towards this candidate.
-        RegisteredLeaving {
-            candidate: Candidate<T>,
-            delegator: Delegator<T>,
-            stake: T::Balance,
-            leaving_shares: T::Balance,
-            total_leaving_shares: T::Balance,
-        },
-        /// Executed delayed leaving from staking towards this candidate.
-        ExecutedLeaving {
-            candidate: Candidate<T>,
-            delegator: Delegator<T>,
-            stake: T::Balance,
-            leaving_shares: T::Balance,
-            requested_at: T::BlockNumber,
-        },
-        /// Canceled delayed leaving from staking towards this candidate.
-        CanceledLeaving {
-            candidate: Candidate<T>,
-            delegator: Delegator<T>,
-            stake: T::Balance,
-            leaving_shares: T::Balance,
-            requested_at: T::BlockNumber,
-        },
-        /// Transfered AutoCompounding shares to another account.
-        TransferedAutoCompounding {
-            candidate: Candidate<T>,
-            sender: Delegator<T>,
-            recipient: Delegator<T>,
-            shares: T::Balance,
-        },
-        /// Transfered ManualClaim shares to another account.
-        TransferedManualClaim {
-            candidate: Candidate<T>,
-            sender: Delegator<T>,
-            recipient: Delegator<T>,
-            shares: T::Balance,
         },
     }
 

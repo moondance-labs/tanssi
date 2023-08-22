@@ -155,6 +155,7 @@ impl<T: Config> Calls<T> {
             candidate,
             delegator,
             towards: pool,
+            pending: stake.0,
         });
 
         Ok(().into())
@@ -241,7 +242,12 @@ impl<T: Config> Calls<T> {
         PendingOperations::<T>::set(&delegator, &operation_key, operation);
 
         // We release the dust if non-zero.
-        if let Some(dust) = removed_stake.0.checked_sub(&leaving_stake.0) {
+        let dust = removed_stake
+            .0
+            .err_sub(&leaving_stake.0)
+            .map_err(Error::<T>::from)?;
+
+        if dust.is_zero() {
             T::Currency::release(
                 &T::CurrencyHoldReason::get(),
                 &delegator,
@@ -250,6 +256,14 @@ impl<T: Config> Calls<T> {
             )?;
             Candidates::<T>::sub_total_stake(&candidate, Stake(dust))?;
         }
+
+        Pallet::<T>::deposit_event(Event::<T>::RequestedUndelegate {
+            candidate,
+            delegator,
+            from: pool,
+            pending: leaving_stake.0,
+            released: dust,
+        });
 
         Ok(().into())
     }
@@ -287,13 +301,11 @@ impl<T: Config> Calls<T> {
                     );
 
                     Self::execute_joining(
-                        &candidate,
-                        &delegator,
+                        candidate.clone(),
+                        delegator.clone(),
                         TargetPool::AutoCompounding,
                         Shares(value),
                     )?;
-
-                    PendingOperations::<T>::set(&delegator, &operation, Zero::zero());
                 }
                 PendingOperationKey::JoiningManualRewards {
                     candidate,
@@ -305,38 +317,48 @@ impl<T: Config> Calls<T> {
                     );
 
                     Self::execute_joining(
-                        &candidate,
-                        &delegator,
+                        candidate.clone(),
+                        delegator.clone(),
                         TargetPool::ManualRewards,
                         Shares(value),
                     )?;
-
-                    PendingOperations::<T>::set(&delegator, &operation, Zero::zero());
                 }
-                _ => todo!(),
+                PendingOperationKey::Leaving {
+                    candidate,
+                    at_block,
+                } => {
+                    ensure!(
+                        T::LeavingRequestFilter::can_be_executed(&candidate, &delegator, *at_block),
+                        Error::<T>::RequestCannotBeExecuted(index as u16)
+                    );
+
+                    Self::execute_leaving(candidate.clone(), delegator.clone(), Shares(value))?;
+                }
             }
+
+            PendingOperations::<T>::set(&delegator, &operation, Zero::zero());
         }
 
         Ok(().into())
     }
 
     fn execute_joining(
-        candidate: &Candidate<T>,
-        delegator: &Delegator<T>,
+        candidate: Candidate<T>,
+        delegator: Delegator<T>,
         pool: TargetPool,
         joining_shares: Shares<T>,
     ) -> DispatchResultWithPostInfo {
         // Convert joining shares into stake.
-        let stake = pools::Joining::<T>::sub_shares(candidate, delegator, joining_shares)?;
-        pools::Joining::<T>::decrease_hold(candidate, delegator, &stake)?;
+        let stake = pools::Joining::<T>::sub_shares(&candidate, &delegator, joining_shares)?;
+        pools::Joining::<T>::decrease_hold(&candidate, &delegator, &stake)?;
 
         // Convert stake into shares quantity.
         let shares = match pool {
             TargetPool::AutoCompounding => {
-                pools::AutoCompounding::<T>::stake_to_shares_or_init(candidate, stake.clone())?
+                pools::AutoCompounding::<T>::stake_to_shares_or_init(&candidate, stake.clone())?
             }
             TargetPool::ManualRewards => {
-                pools::ManualRewards::<T>::stake_to_shares_or_init(candidate, stake.clone())?
+                pools::ManualRewards::<T>::stake_to_shares_or_init(&candidate, stake.clone())?
             }
         };
 
@@ -360,13 +382,13 @@ impl<T: Config> Calls<T> {
                     &delegator,
                     shares.clone(),
                 )?;
-                pools::AutoCompounding::<T>::increase_hold(candidate, delegator, &stake)?;
+                pools::AutoCompounding::<T>::increase_hold(&candidate, &delegator, &stake)?;
                 stake
             }
             TargetPool::ManualRewards => {
                 let stake =
                     pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares.clone())?;
-                pools::ManualRewards::<T>::increase_hold(candidate, delegator, &stake)?;
+                pools::ManualRewards::<T>::increase_hold(&candidate, &delegator, &stake)?;
                 stake
             }
         };
@@ -383,27 +405,54 @@ impl<T: Config> Calls<T> {
             release,
             Precision::Exact,
         )?;
-        Candidates::<T>::sub_total_stake(candidate, Stake(release))?;
+        Candidates::<T>::sub_total_stake(&candidate, Stake(release))?;
 
-        let candidate = candidate.clone();
-        let delegator = delegator.clone();
-
+        // Events
         let event = match pool {
             TargetPool::AutoCompounding => Event::<T>::StakedAutoCompounding {
-                candidate,
-                delegator,
+                candidate: candidate.clone(),
+                delegator: delegator.clone(),
                 shares: shares.0,
                 stake: actually_staked.0,
             },
             TargetPool::ManualRewards => Event::<T>::StakedManualRewards {
-                candidate,
-                delegator,
+                candidate: candidate.clone(),
+                delegator: delegator.clone(),
                 shares: shares.0,
                 stake: actually_staked.0,
             },
         };
 
         Pallet::<T>::deposit_event(event);
+
+        Pallet::<T>::deposit_event(Event::<T>::ExecutedDelegate {
+            candidate,
+            delegator,
+            towards: pool,
+            staked: actually_staked.0,
+            released: release,
+        });
+
+        Ok(().into())
+    }
+
+    fn execute_leaving(
+        candidate: Candidate<T>,
+        delegator: Delegator<T>,
+        leavinig_shares: Shares<T>,
+    ) -> DispatchResultWithPostInfo {
+        // Convert leaving shares into stake.
+        let stake = pools::Leaving::<T>::sub_shares(&candidate, &delegator, leavinig_shares)?;
+        pools::Leaving::<T>::decrease_hold(&candidate, &delegator, &stake)?;
+
+        // We release the funds and consider them unstaked.
+        T::Currency::release(
+            &T::CurrencyHoldReason::get(),
+            &delegator,
+            stake.0,
+            Precision::Exact,
+        )?;
+        Candidates::<T>::sub_total_stake(&candidate, stake)?;
 
         Ok(().into())
     }

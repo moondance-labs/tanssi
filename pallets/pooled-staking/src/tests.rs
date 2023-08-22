@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::{PendingOperationKey, SharesOrStake};
+
 use {
     crate::{
         assert_eq_events, assert_fields_eq,
@@ -28,6 +30,7 @@ use {
 };
 
 type Joining = pools::Joining<Runtime>;
+type Leaving = pools::Leaving<Runtime>;
 
 fn do_request_delegation(
     candidate: AccountId,
@@ -128,6 +131,122 @@ fn do_full_delegation<P: PoolExt<Runtime>>(
     );
 }
 
+fn do_request_undelegation<P: PoolExt<Runtime>>(
+    candidate: AccountId,
+    delegator: AccountId,
+    request_amount: Balance,
+    expected_removed: Balance,
+    expected_leaving: Balance,
+) {
+    let dust = expected_removed
+        .checked_sub(expected_leaving)
+        .expect("should removed >= leaving");
+
+    let before = State::extract(candidate, delegator);
+    let pool_before = PoolState::extract::<P>(candidate, delegator);
+    let leaving_before = PoolState::extract::<Leaving>(candidate, delegator);
+
+    assert_ok!(Staking::request_undelegate(
+        RuntimeOrigin::signed(delegator),
+        candidate,
+        P::target_pool(),
+        SharesOrStake::Stake(request_amount),
+    ));
+
+    let after = State::extract(candidate, delegator);
+    let pool_after = PoolState::extract::<P>(candidate, delegator);
+    let leaving_after = PoolState::extract::<Leaving>(candidate, delegator);
+
+    // Actual balances don't change
+    assert_fields_eq!(before, after, [delegator_balance, staking_balance]);
+    // Dust is released immediately.
+    assert_eq!(before.delegator_hold - dust, after.delegator_hold);
+    assert_eq!(
+        before.candidate_total_stake - dust,
+        after.candidate_total_stake
+    );
+    // Pool decrease.
+    assert_eq!(pool_before.stake - expected_removed, pool_after.stake);
+    assert_eq!(pool_before.hold - expected_removed, pool_after.stake);
+    // Leaving increase.
+    assert_eq!(leaving_before.stake + expected_leaving, leaving_after.stake);
+    assert_eq!(leaving_before.hold + expected_leaving, leaving_after.stake);
+}
+
+fn do_execute_undelegation(
+    candidate: AccountId,
+    delegator: AccountId,
+    block_number: u64,
+    expected_decrease: Balance,
+) {
+    let before = State::extract(candidate, delegator);
+    let leaving_before = PoolState::extract::<Leaving>(candidate, delegator);
+    let request_before = crate::PendingOperations::<Runtime>::get(
+        delegator,
+        PendingOperationKey::Leaving {
+            candidate,
+            at_block: block_number,
+        },
+    );
+
+    assert_ok!(Staking::execute_pending_operations(
+        RuntimeOrigin::signed(delegator),
+        vec![PendingOperationQuery {
+            delegator: delegator,
+            operation: PendingOperationKey::Leaving {
+                candidate,
+                at_block: block_number
+            }
+        }]
+    ));
+
+    let after = State::extract(candidate, delegator);
+    let leaving_after = PoolState::extract::<Joining>(candidate, delegator);
+    let request_after = crate::PendingOperations::<Runtime>::get(
+        delegator,
+        PendingOperationKey::Leaving {
+            candidate,
+            at_block: block_number,
+        },
+    );
+
+    // Actual balances don't change
+    assert_fields_eq!(before, after, [delegator_balance, staking_balance]);
+    assert_eq!(request_after, 0);
+    assert_eq!(
+        before.delegator_hold - expected_decrease,
+        after.delegator_hold
+    );
+    assert_eq!(
+        before.candidate_total_stake - expected_decrease,
+        after.candidate_total_stake
+    );
+    assert_eq!(leaving_before.hold - expected_decrease, leaving_after.hold);
+    assert_eq!(
+        leaving_before.stake - expected_decrease,
+        leaving_after.stake
+    );
+}
+
+fn do_full_undelegation<P: PoolExt<Runtime>>(
+    candidate: AccountId,
+    delegator: AccountId,
+    request_amount: Balance,
+    expected_removed: Balance,
+    expected_leaving: Balance,
+) {
+    let block_number = block_number();
+    do_request_undelegation::<P>(
+        candidate,
+        delegator,
+        request_amount,
+        expected_removed,
+        expected_leaving,
+    );
+    roll_to(block_number + 2);
+    do_execute_undelegation(candidate, delegator, block_number, expected_leaving);
+}
+
 fn do_rebalance_hold<P: Pool<Runtime>>(
     candidate: AccountId,
     delegator: AccountId,
@@ -221,6 +340,7 @@ pool_test!(
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
                     towards: P::target_pool(),
+                    pending: amount
                 },
             ]);
         })
@@ -287,6 +407,7 @@ pool_test!(
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
                     towards: P::target_pool(),
+                    pending: requested_amount,
                 },
                 Event::DecreasedStake {
                     candidate: ACCOUNT_CANDIDATE_1,
@@ -299,7 +420,95 @@ pool_test!(
                     before: None,
                     after: None,
                 },
-                P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1, 2, final_amount)
+                P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1, 2, final_amount),
+                Event::ExecutedDelegate {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    towards: P::target_pool(),
+                    staked: final_amount,
+                    released: 10,
+                },
+            ]);
+        })
+    }
+);
+
+pool_test!(
+    fn undelegation_execution<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            let final_amount = 2 * InitialManualClaimShareValue::get();
+            let requested_amount = final_amount + 10; // test share rounding
+
+            do_full_delegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                requested_amount,
+                final_amount,
+            );
+
+            do_full_undelegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                final_amount,
+                final_amount,
+                final_amount,
+            );
+
+            assert_eq_events!(vec![
+                Event::IncreasedStake {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake: requested_amount,
+                },
+                Event::UpdatedCandidatePosition {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake: requested_amount,
+                    self_delegation: 0,
+                    before: None,
+                    after: None,
+                },
+                Event::RequestedDelegate {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    towards: P::target_pool(),
+                    pending: requested_amount
+                },
+                Event::DecreasedStake {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake: 10,
+                },
+                Event::UpdatedCandidatePosition {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake: final_amount,
+                    self_delegation: 0,
+                    before: None,
+                    after: None,
+                },
+                P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1, 2, final_amount),
+                Event::ExecutedDelegate {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    towards: P::target_pool(),
+                    staked: final_amount,
+                    released: 10,
+                },
+                Event::RequestedUndelegate {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    from: P::target_pool(),
+                    pending: final_amount,
+                    released: 0
+                },
+                Event::DecreasedStake {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake: final_amount,
+                },
+                Event::UpdatedCandidatePosition {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake: 0,
+                    self_delegation: 0,
+                    before: None,
+                    after: None,
+                }
             ]);
         })
     }
