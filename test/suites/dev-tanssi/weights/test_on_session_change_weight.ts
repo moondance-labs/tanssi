@@ -1,18 +1,16 @@
+import "@polkadot/api-augment";
 import { describeSuite, expect, beforeAll} from "@moonwall/cli";
-import { setupLogger } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
-import "@polkadot/api-augment";
-
 describeSuite({
-  id: "D06",
+  id: "DT0601",
   title: "On session change weights suite",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
     let maxBlock: number;
-    const anotherLogger = setupLogger("anotherLogger");
+
     beforeAll(() => {
       polkadotJs = context.polkadotJs();
       maxBlock = polkadotJs.consts.system.blockWeights.maxBlock.refTime.toNumber();
