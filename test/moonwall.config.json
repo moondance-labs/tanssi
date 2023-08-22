@@ -123,6 +123,29 @@
       }
     },
     {
+      "name": "chopsticks_dancebox",
+      "testFileDir": ["suites/rt-ugprade-chopsticks"],
+      "foundation": {
+        "type": "chopsticks",
+        "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
+        "launchSpec": [
+          {
+            "name": "db",
+            "type": "parachain",
+            "wasmOverride": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
+            "configPath": "./configs/stagenet-dancebox.yml"
+          }
+        ]
+      },
+      "connections": [
+        {
+          "name": "DB",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:8000"]
+        }
+      ]
+    },
+    {
       "name": "dancebox_smoke",
       "testFileDir": ["suites/smoke-test"],
       "foundation": {
