@@ -26,10 +26,12 @@ use {
 pub struct SignedToAccountKey20<Origin, AccountId, Network>(
     sp_std::marker::PhantomData<(Origin, AccountId, Network)>,
 );
-impl<Origin: OriginTrait + Clone, AccountId: Into<[u8; 20]>, Network: Get<NetworkId>>
+impl<Origin, AccountId, Network: Get<NetworkId>>
     xcm_executor::traits::Convert<Origin, MultiLocation>
     for SignedToAccountKey20<Origin, AccountId, Network>
 where
+    Origin: OriginTrait + Clone,
+    AccountId: Into<[u8; 20],
     Origin::PalletsOrigin: From<frame_system::RawOrigin<AccountId>>
         + TryInto<frame_system::RawOrigin<AccountId>, Error = Origin::PalletsOrigin>,
 {
