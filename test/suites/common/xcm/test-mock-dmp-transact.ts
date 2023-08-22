@@ -94,14 +94,17 @@ describeSuite({
         .buy_execution()
         .push_any({
             Transact: {
-            originType: "SovereignAccount",
-            requireWeightAtMost: new BN(1000000000),
+            originKind: "SovereignAccount",
+            requireWeightAtMost: {
+              refTime: 1000000000,
+              proofSize: 32000,
+            },
             call: {
                 encoded: transferCallEncoded,
             },
             },
         })
-        .as_v2();
+        .as_v3();
 
         // Send an XCM and create block to execute it
         await injectDmpMessageAndSeal(context, {
