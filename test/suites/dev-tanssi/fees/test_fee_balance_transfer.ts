@@ -4,7 +4,7 @@ import { KeyringPair, extractFee } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 
 describeSuite({
-  id: "D14",
+  id: "DT0401",
   title: "Fee test suite",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
@@ -15,11 +15,10 @@ describeSuite({
     let dave: KeyringPair;
 
     beforeAll(async () => {
-      const keyring = new Keyring({ type: "sr25519" });
-      alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-      bob = keyring.addFromUri("//Bob", { name: "Bob default" });
-      charlie = keyring.addFromUri("//Charlie", { name: "Charlie default" });
-      dave = keyring.addFromUri("//Dave", { name: "Dave default" });
+      alice = context.keyring.alice;
+      bob = context.keyring.bob;
+      charlie = context.keyring.charlie;
+      dave = context.keyring.dave;
       polkadotJs = context.polkadotJs();
 
       // We must create an empty block before any tests, otherwise the fee of the first test will be
