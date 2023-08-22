@@ -1,3 +1,4 @@
+import "@tanssi/api-augment"
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import {
@@ -57,13 +58,12 @@ describeSuite({
               await txRoot.signAsync(alice)
             )
         );
-        const balanceSigned = (
-          (await polkadotJs.query.system.account(descendOriginAddress)) as any
-        ).data.free.toBigInt();
+        const balanceSigned = 
+          (await polkadotJs.query.system.account(descendOriginAddress))
+        .data.free.toBigInt();
         expect(balanceSigned).to.eq(transferredBalance);
-        const balanceRoot = (
-            (await polkadotJs.query.system.account(sovereign)) as any
-          ).data.free.toBigInt();
+        const balanceRoot = 
+            (await polkadotJs.query.system.account(sovereign)).data.free.toBigInt();
         expect(balanceRoot).to.eq(transferredBalance);
     });
 

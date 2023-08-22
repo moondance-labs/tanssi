@@ -1,3 +1,4 @@
+import "@tanssi/api-augment"
 import { beforeAll, describeSuite, expect, customDevRpcRequest } from "@moonwall/cli";
 import { alith } from "@moonwall/util";
 
@@ -45,8 +46,8 @@ describeSuite({
             await txSigned.signAsync(alice)
           )
         );
-        const balanceSigned = (
-          (await polkadotJs.query.system.account(descendOriginAddress)) as any
+        const balanceSigned = 
+          (await polkadotJs.query.system.account(descendOriginAddress)
         ).data.free.toBigInt();
         expect(balanceSigned).to.eq(transferredBalance);
     });
