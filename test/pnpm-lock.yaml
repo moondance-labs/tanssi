@@ -30,6 +30,9 @@ devDependencies:
   '@polkadot/util':
     specifier: ^12.3.2
     version: 12.3.2
+  '@polkadot/util-crypto':
+    specifier: ^12.3.2
+    version: 12.3.2(@polkadot/util@12.3.2)
   '@tanssi-network/api-augment':
     specifier: ../typescript-api/build
     version: link:../typescript-api/build

@@ -3,7 +3,7 @@ import { TransactionReceipt } from "viem";
 import { customWeb3Request } from "@moonwall/util";
 
 describeSuite({
-  id: "D1203",
+  id: "DF0503",
   title: "Ethereum RPC - Filtering non-matching logs",
   foundationMethods: "dev",
   testCases: ({ context, it, log }) => {

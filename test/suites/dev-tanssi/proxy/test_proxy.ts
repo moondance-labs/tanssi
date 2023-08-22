@@ -1,25 +1,28 @@
-import { describeSuite, expect, beforeAll} from "@moonwall/cli";
-import { setupLogger } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
 import "@polkadot/api-augment";
+import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+import { KeyringPair } from "@moonwall/util";
+import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
 
 describeSuite({
-  id: "D06",
+  id: "DT0403",
   title: "Proxy test suite",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
-    const anotherLogger = setupLogger("anotherLogger");
-    let alice, bob, charlie, dave;
-    initializeCustomCreateBlock(context);
+    let alice: KeyringPair;
+    let bob: KeyringPair;
+    let charlie: KeyringPair;
+    let dave: KeyringPair;
 
     beforeAll(() => {
-      const keyring = new Keyring({ type: 'sr25519' });
-      alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-      bob = keyring.addFromUri('//Bob', { name: 'Bob default' });
-      charlie = keyring.addFromUri('//Charlie', { name: 'Charlie default' });
-      dave = keyring.addFromUri('//Dave', { name: 'Dave default' });
+      initializeCustomCreateBlock(context);
+
+      alice = context.keyring.alice;
+      bob = context.keyring.bob;
+      charlie = context.keyring.charlie;
+      dave = context.keyring.dave;
+
       polkadotJs = context.polkadotJs();
     });
 
@@ -40,24 +43,23 @@ describeSuite({
         await context.createBlock();
 
         const delegate = bob.address;
-        const tx = polkadotJs.tx.proxy.addProxy(delegate, 'Any', 0);
-        await context.createBlock([
-          await tx.signAsync(alice),
-        ]);
+        const tx = polkadotJs.tx.proxy.addProxy(delegate, "Any", 0);
+        await context.createBlock([await tx.signAsync(alice)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyAdded";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ProxyAdded";
         });
         expect(ev1.length).to.be.equal(1);
 
         const proxies = await polkadotJs.query.proxy.proxies(alice.address);
-        expect(proxies.toJSON()[0]).to.deep.equal([{
-          delegate,
-          proxyType: 'Any',
-          delay: 0,
-        }]);
+        expect(proxies.toJSON()[0]).to.deep.equal([
+          {
+            delegate,
+            proxyType: "Any",
+            delay: 0,
+          },
+        ]);
       },
     });
 
@@ -66,15 +68,16 @@ describeSuite({
       title: "Delegate account can call proxy.proxy",
       test: async function () {
         const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
-        const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(bob.address, 200_000));
-        await context.createBlock([
-          await tx.signAsync(bob),
-        ]);
+        const tx = polkadotJs.tx.proxy.proxy(
+          alice.address,
+          null,
+          polkadotJs.tx.balances.transfer(bob.address, 200_000)
+        );
+        await context.createBlock([await tx.signAsync(bob)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyExecuted";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ProxyExecuted";
         });
         expect(ev1.length).to.be.equal(1);
         expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
@@ -93,15 +96,16 @@ describeSuite({
         await context.createBlock();
 
         const balanceBefore = (await polkadotJs.query.system.account(charlie.address)).data.free;
-        const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(charlie.address, 200_000));
-        await context.createBlock([
-          await tx.signAsync(charlie),
-        ]);
+        const tx = polkadotJs.tx.proxy.proxy(
+          alice.address,
+          null,
+          polkadotJs.tx.balances.transfer(charlie.address, 200_000)
+        );
+        await context.createBlock([await tx.signAsync(charlie)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ExtrinsicFailed";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ExtrinsicFailed";
         });
         expect(ev1.length).to.be.equal(1);
 
@@ -123,7 +127,7 @@ describeSuite({
         // All proxy types that do not allow balance transfer
         const proxyTypes = [
           // NonTransfer = 1, Governance = 2, Staking = 3, CancelProxy = 4
-          1, 2, 3, 4
+          1, 2, 3, 4,
         ];
         const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
         for (let [i, proxyType] of proxyTypes.entries()) {
@@ -133,9 +137,8 @@ describeSuite({
         await context.createBlock(txs);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyAdded";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ProxyAdded";
         });
         expect(ev1.length).to.be.equal(proxyTypes.length);
 
@@ -150,15 +153,16 @@ describeSuite({
       test: async function () {
         // Dave has multiple proxy types, but none of them allows to call balances.transfer
         const balanceBefore = (await polkadotJs.query.system.account(dave.address)).data.free;
-        const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(dave.address, 200_000));
-        await context.createBlock([
-          await tx.signAsync(dave),
-        ]);
+        const tx = polkadotJs.tx.proxy.proxy(
+          alice.address,
+          null,
+          polkadotJs.tx.balances.transfer(dave.address, 200_000)
+        );
+        await context.createBlock([await tx.signAsync(dave)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyExecuted";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ProxyExecuted";
         });
         expect(ev1.length).to.be.equal(1);
         expect(ev1[0].event.data[0].toString()).to.not.be.eq("Ok");
@@ -178,25 +182,25 @@ describeSuite({
 
         // Dave has multiple proxy types, but none of them allows to call balances.transfer
         const balanceBefore = (await polkadotJs.query.system.account(dave.address)).data.free;
-        const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.system.remarkWithEvent('I was called through using proxy.proxy'));
-        await context.createBlock([
-          await tx.signAsync(dave),
-        ]);
+        const tx = polkadotJs.tx.proxy.proxy(
+          alice.address,
+          null,
+          polkadotJs.tx.system.remarkWithEvent("I was called through using proxy.proxy")
+        );
+        await context.createBlock([await tx.signAsync(dave)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyExecuted";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ProxyExecuted";
         });
         expect(ev1.length).to.be.equal(1);
         expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
 
-        const ev2 = events.filter(
-          (a) => {
-            return a.event.method == "Remarked";
+        const ev2 = events.filter((a) => {
+          return a.event.method == "Remarked";
         });
         expect(ev2.length).to.be.equal(1);
       },
     });
-    },
+  },
 });

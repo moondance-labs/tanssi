@@ -16,7 +16,7 @@
           {
             "name": "tanssi",
             "binPath": "../target/release/tanssi-node",
-            "options": ["--dev", "--sealing=manual"],
+            "options": ["--dev", "--sealing=manual", "--no-hardware-benchmarks"],
             "disableDefaultEthProviders": true,
             "newRpcBehaviour": true
           }
@@ -106,6 +106,34 @@
           "name": "w3",
           "type": "web3",
           "endpoints": ["ws://127.0.0.1:9950"]
+        }
+      ]
+    },
+    {
+      "name": "zombie_tanssi_warp_sync",
+      "testFileDir": ["suites/warp-sync"],
+      "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+      "foundation": {
+        "type": "zombie",
+        "zombieSpec": {
+          "configPath": "./configs/zombieTanssiWarpSync.json"
+        }
+      },
+      "connections": [
+        {
+          "name": "Relay",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9947"]
+        },
+        {
+          "name": "Tanssi",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9948"]
+        },
+        {
+          "name": "Container2000",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:9949"]
         }
       ]
     },
