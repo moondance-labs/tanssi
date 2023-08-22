@@ -10,7 +10,6 @@ import {
   descendSiblingOriginFromAddress20
 } from "../../../util/xcm.ts";
 import { generateKeyringPair } from "@moonwall/util";
-import { expectOk } from "../../../util/expect.ts";
 import { Keyring } from "@polkadot/api";
 import { BN } from "@polkadot/util";
 import { alith } from "@moonwall/util";
@@ -32,6 +31,7 @@ describeSuite({
         polkadotJs = context.polkadotJs();
         chain = polkadotJs.consts.system.version.specName.toString();
         alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
+        let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce;
 
         let descendFunction = chain == 'frontier-template' ? descendSiblingOriginFromAddress20 : descendSiblingOriginFromAddress32;
         let sovereignFunction = chain == 'frontier-template' ? sovereignAccountOfSiblingForAddress20 : sovereignAccountOfSiblingForAddress32;
@@ -48,16 +48,14 @@ describeSuite({
         const txSigned = polkadotJs.tx.balances.transfer(descendOriginAddress, transferredBalance);
         const txRoot = polkadotJs.tx.balances.transfer(sovereign, transferredBalance);
 
-        await expectOk(
-          context.createBlock(
-            await txSigned.signAsync(alice)
-          )
-        );
-        await expectOk(
-            context.createBlock(
-              await txRoot.signAsync(alice)
-            )
-        );
+        await context.createBlock(
+            await txSigned.signAsync(alice, { nonce: aliceNonce++ }),
+            { allowFailures: false }
+        )
+        await context.createBlock(
+            await txRoot.signAsync(alice, { nonce: aliceNonce++ }),
+            { allowFailures: false }
+        )
         const balanceSigned = 
           (await polkadotJs.query.system.account(descendOriginAddress))
         .data.free.toBigInt();

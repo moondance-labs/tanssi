@@ -10,9 +10,9 @@ import {
   descendParentOriginForAddress20
 } from "../../../util/xcm.ts";
 import { generateKeyringPair } from "@moonwall/util";
-import { expectOk } from "../../../util/expect.ts";
 import { Keyring } from "@polkadot/api";
 import { BN } from "@polkadot/util";
+import { expectOk } from "../../../util/expect.ts";
 
 describeSuite({
   id: "D1",
@@ -31,6 +31,8 @@ describeSuite({
         chain = polkadotJs.consts.system.version.specName.toString();
         alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
         let descendFunction = chain == 'frontier-template' ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
+        let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce;
+    
 
         const { originAddress, descendOriginAddress } = descendFunction(context);
 
@@ -41,11 +43,11 @@ describeSuite({
 
         const txSigned = polkadotJs.tx.balances.transfer(descendOriginAddress, transferredBalance);
 
-        await expectOk(
-          context.createBlock(
-            await txSigned.signAsync(alice)
-          )
-        );
+        await context.createBlock(
+          await txSigned.signAsync(alice, { nonce: aliceNonce++ }),
+          { allowFailures: false }
+        )
+
         const balanceSigned = 
           (await polkadotJs.query.system.account(descendOriginAddress)
         ).data.free.toBigInt();
