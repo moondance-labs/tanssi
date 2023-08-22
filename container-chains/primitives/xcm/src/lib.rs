@@ -31,7 +31,7 @@ impl<Origin, AccountId, Network: Get<NetworkId>>
     for SignedToAccountKey20<Origin, AccountId, Network>
 where
     Origin: OriginTrait + Clone,
-    AccountId: Into<[u8; 20],
+    AccountId: Into<[u8; 20]>,
     Origin::PalletsOrigin: From<frame_system::RawOrigin<AccountId>>
         + TryInto<frame_system::RawOrigin<AccountId>, Error = Origin::PalletsOrigin>,
 {
