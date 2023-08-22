@@ -60,11 +60,9 @@ describeSuite({
         random = chain == 'frontier-template' ? generateKeyringPair() : generateKeyringPair("sr25519");
         // Get Pallet balances index
         const metadata = await polkadotJs.rpc.state.getMetadata();
-        const balancesPalletIndex = (metadata.asLatest.toHuman().pallets as Array<any>).find(
-        (pallet) => {
-            return pallet.name === "Balances";
-        }
-        ).index;
+        const balancesPalletIndex = metadata.asLatest.pallets
+          .find(({ name }) => name.toString() == "Balances")!
+          .index.toNumber();
 
         const transferCall = polkadotJs.tx.balances.transfer(
         random.address,
