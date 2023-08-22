@@ -3,15 +3,11 @@ import { Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-  id: "D0516",
+  id: "DT0204",
   title: "Configuration - ActiveConfig - MinOrchestratorCollators",
   foundationMethods: "dev",
   testCases: ({ context, log, it }) => {
-    let alice;
     beforeAll(async function () {
-      const keyring = new Keyring({ type: "sr25519" });
-      alice = keyring.addFromUri("//Alice", { name: "Alice  default" });
-
       const config = await context
         .polkadotJs()
         .query.configuration.activeConfig();
@@ -23,7 +19,7 @@ describeSuite({
           .tx.sudo.sudo(
             context.polkadotJs().tx.configuration.setMinOrchestratorCollators(2)
           )
-          .signAsync(alice)
+          .signAsync(context.keyring.alice)
       );
       expect(result!.successful, result!.error?.name).to.be.true;
 
