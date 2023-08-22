@@ -1,26 +1,16 @@
-import { expect, describeSuite, beforeAll } from "@moonwall/cli";
-import { Keyring } from "@polkadot/api";
+import { expect, describeSuite } from "@moonwall/cli";
 
 describeSuite({
-  id: "D0520",
+  id: "DT0205",
   title: "Configuration - ActiveConfig - Origin",
   foundationMethods: "dev",
   testCases: ({ context, log, it }) => {
-    let bob;
-    beforeAll(() => {
-      const keyring = new Keyring({ type: "sr25519" });
-      bob = keyring.addFromUri("//Bob", { name: "Bob  default" });
-    });
-
     it({
       id: "T01",
       title: "should fail on setMaxCollators if not sudo",
       test: async function () {
         const { result } = await context.createBlock(
-          context
-            .polkadotJs()
-            .tx.configuration.setMaxCollators(200)
-            .signAsync(bob),
+          context.polkadotJs().tx.configuration.setMaxCollators(200).signAsync(context.keyring.bob),
           { allowFailures: true }
         );
 
@@ -33,10 +23,7 @@ describeSuite({
       title: "should fail on setMinOrchestratorCollators if not sudo",
       test: async function () {
         const { result } = await context.createBlock(
-          context
-            .polkadotJs()
-            .tx.configuration.setMinOrchestratorCollators(2)
-            .signAsync(bob),
+          context.polkadotJs().tx.configuration.setMinOrchestratorCollators(2).signAsync(context.keyring.bob),
           { allowFailures: true }
         );
 
@@ -49,10 +36,7 @@ describeSuite({
       title: "should fail on setMaxOrchestratorCollators if not sudo",
       test: async function () {
         const { result } = await context.createBlock(
-          context
-            .polkadotJs()
-            .tx.configuration.setMaxOrchestratorCollators(2)
-            .signAsync(bob),
+          context.polkadotJs().tx.configuration.setMaxOrchestratorCollators(2).signAsync(context.keyring.bob),
           { allowFailures: true }
         );
 
@@ -65,10 +49,7 @@ describeSuite({
       title: "should fail on setCollatorsPerContainer if not sudo",
       test: async function () {
         const { result } = await context.createBlock(
-          context
-            .polkadotJs()
-            .tx.configuration.setCollatorsPerContainer(5)
-            .signAsync(bob),
+          context.polkadotJs().tx.configuration.setCollatorsPerContainer(5).signAsync(context.keyring.bob),
           { allowFailures: true }
         );
 

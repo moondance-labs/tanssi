@@ -16,7 +16,7 @@
           {
             "name": "tanssi",
             "binPath": "../target/release/tanssi-node",
-            "options": ["--dev", "--sealing=manual"],
+            "options": ["--dev", "--sealing=manual", "--no-hardware-benchmarks"],
             "disableDefaultEthProviders": true,
             "newRpcBehaviour": true
           }

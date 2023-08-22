@@ -1,26 +1,26 @@
-import { describeSuite, expect, beforeAll} from "@moonwall/cli";
-import { setupLogger } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
 import "@polkadot/api-augment";
+import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+import { KeyringPair } from "@moonwall/util";
+import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
 
-
 describeSuite({
-  id: "D07",
+  id: "DT0402",
   title: "Proxy test suite - ProxyType::CancelProxy",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
-    const anotherLogger = setupLogger("anotherLogger");
-    let alice, bob, charlie, dave;
-    initializeCustomCreateBlock(context);
+    let alice: KeyringPair;
+    let bob: KeyringPair;
+    let charlie: KeyringPair;
+    let dave: KeyringPair;
 
     beforeAll(() => {
-      const keyring = new Keyring({ type: 'sr25519' });
-      alice = keyring.addFromUri('//Alice', { name: 'Alice default' });
-      bob = keyring.addFromUri('//Bob', { name: 'Bob default' });
-      charlie = keyring.addFromUri('//Charlie', { name: 'Charlie default' });
-      dave = keyring.addFromUri('//Dave', { name: 'Dave default' });
+      initializeCustomCreateBlock(context);
+      alice = context.keyring.alice;
+      bob = context.keyring.bob;
+      charlie = context.keyring.charlie;
+      dave = context.keyring.dave;
       polkadotJs = context.polkadotJs();
     });
 
@@ -42,24 +42,23 @@ describeSuite({
 
         const delegate = bob.address;
         const delay = 3;
-        const tx = polkadotJs.tx.proxy.addProxy(delegate, 'Any', delay);
-        await context.createBlock([
-          await tx.signAsync(alice),
-        ]);
+        const tx = polkadotJs.tx.proxy.addProxy(delegate, "Any", delay);
+        await context.createBlock([await tx.signAsync(alice)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyAdded";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ProxyAdded";
         });
         expect(ev1.length).to.be.equal(1);
 
         const proxies = await polkadotJs.query.proxy.proxies(alice.address);
-        expect(proxies.toJSON()[0]).to.deep.equal([{
-          delegate,
-          proxyType: 'Any',
-          delay,
-        }]);
+        expect(proxies.toJSON()[0]).to.deep.equal([
+          {
+            delegate,
+            proxyType: "Any",
+            delay,
+          },
+        ]);
       },
     });
 
@@ -71,27 +70,27 @@ describeSuite({
         const cancelProxy = 4;
         const delay = 0;
         const tx = polkadotJs.tx.proxy.addProxy(delegate, cancelProxy, delay);
-        await context.createBlock([
-          await tx.signAsync(alice),
-        ]);
+        await context.createBlock([await tx.signAsync(alice)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyAdded";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ProxyAdded";
         });
         expect(ev1.length).to.be.equal(1);
 
         const proxies = await polkadotJs.query.proxy.proxies(alice.address);
-        expect(proxies.toJSON()[0]).to.deep.equal([{
-          delegate: bob.address,
-          proxyType: 'Any',
-          delay: 3,
-        },{
-          delegate: charlie.address,
-          proxyType: 'CancelProxy',
-          delay: 0,
-        }]);
+        expect(proxies.toJSON()[0]).to.deep.equal([
+          {
+            delegate: bob.address,
+            proxyType: "Any",
+            delay: 3,
+          },
+          {
+            delegate: charlie.address,
+            proxyType: "CancelProxy",
+            delay: 0,
+          },
+        ]);
       },
     });
 
@@ -105,29 +104,27 @@ describeSuite({
         const balanceCall = polkadotJs.tx.balances.transfer(bob.address, 200_000);
         const callHash = balanceCall.method.hash.toString();
         const tx1 = polkadotJs.tx.proxy.announce(alice.address, callHash);
-        await context.createBlock([
-          await tx1.signAsync(bob),
-        ]);
+        await context.createBlock([await tx1.signAsync(bob)]);
         let events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "Announced";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "Announced";
         });
         expect(ev1.length).to.be.equal(1);
 
         // Charlie can reject the announcement
-        const tx2 = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.proxy.rejectAnnouncement(bob.address, callHash));
-        await context.createBlock([
-          await tx2.signAsync(charlie),
-        ]);
+        const tx2 = polkadotJs.tx.proxy.proxy(
+          alice.address,
+          null,
+          polkadotJs.tx.proxy.rejectAnnouncement(bob.address, callHash)
+        );
+        await context.createBlock([await tx2.signAsync(charlie)]);
         events = await polkadotJs.query.system.events();
-        const ev2 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyExecuted";
+        const ev2 = events.filter((a) => {
+          return a.event.method == "ProxyExecuted";
         });
         expect(ev2.length).to.be.equal(1);
         expect(ev2[0].event.data[0].toString()).to.be.eq("Ok");
-        
+
         // Wait for the proxy delay
         await context.createBlock();
         await context.createBlock();
@@ -136,14 +133,11 @@ describeSuite({
 
         // Anyone can try to execute the announced call, but it will fail since it has been rejected
         const tx3 = polkadotJs.tx.proxy.proxyAnnounced(bob.address, alice.address, null, balanceCall);
-        await context.createBlock([
-          await tx3.signAsync(dave),
-        ]);
+        await context.createBlock([await tx3.signAsync(dave)]);
 
         events = await polkadotJs.query.system.events();
-        const ev3 = events.filter(
-          (a) => {
-            return a.event.method == "ExtrinsicFailed";
+        const ev3 = events.filter((a) => {
+          return a.event.method == "ExtrinsicFailed";
         });
         expect(ev3.length).to.be.equal(1);
       },
@@ -157,25 +151,23 @@ describeSuite({
         const balanceCall = polkadotJs.tx.balances.transfer(bob.address, 200_000);
         const callHash = balanceCall.method.hash.toString();
         const tx1 = polkadotJs.tx.proxy.announce(alice.address, callHash);
-        await context.createBlock([
-          await tx1.signAsync(bob),
-        ]);
+        await context.createBlock([await tx1.signAsync(bob)]);
         let events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "Announced";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "Announced";
         });
         expect(ev1.length).to.be.equal(1);
 
         // Dave cannot reject the announcement
-        const tx2 = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.proxy.rejectAnnouncement(bob.address, callHash));
-        await context.createBlock([
-          await tx2.signAsync(dave),
-        ]);
+        const tx2 = polkadotJs.tx.proxy.proxy(
+          alice.address,
+          null,
+          polkadotJs.tx.proxy.rejectAnnouncement(bob.address, callHash)
+        );
+        await context.createBlock([await tx2.signAsync(dave)]);
         events = await polkadotJs.query.system.events();
-        const ev2 = events.filter(
-          (a) => {
-            return a.event.method == "ExtrinsicFailed";
+        const ev2 = events.filter((a) => {
+          return a.event.method == "ExtrinsicFailed";
         });
         expect(ev2.length).to.be.equal(1);
 
@@ -187,14 +179,11 @@ describeSuite({
 
         // Anyone can try to execute the announced call
         const tx3 = polkadotJs.tx.proxy.proxyAnnounced(bob.address, alice.address, null, balanceCall);
-        await context.createBlock([
-          await tx3.signAsync(dave),
-        ]);
+        await context.createBlock([await tx3.signAsync(dave)]);
 
         events = await polkadotJs.query.system.events();
-        const ev3 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyExecuted";
+        const ev3 = events.filter((a) => {
+          return a.event.method == "ProxyExecuted";
         });
         expect(ev3.length).to.be.equal(1);
         expect(ev3[0].event.data[0].toString()).to.be.eq("Ok");
@@ -207,18 +196,19 @@ describeSuite({
       test: async function () {
         await context.createBlock();
 
-        const tx = polkadotJs.tx.proxy.proxy(alice.address, null, polkadotJs.tx.balances.transfer(charlie.address, 200_000));
-        await context.createBlock([
-          await tx.signAsync(charlie),
-        ]);
+        const tx = polkadotJs.tx.proxy.proxy(
+          alice.address,
+          null,
+          polkadotJs.tx.balances.transfer(charlie.address, 200_000)
+        );
+        await context.createBlock([await tx.signAsync(charlie)]);
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ProxyExecuted";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ProxyExecuted";
         });
         expect(ev1.length).to.be.equal(1);
         expect(ev1[0].event.data[0].toString()).to.not.be.eq("Ok");
       },
     });
-    },
+  },
 });

@@ -11,7 +11,7 @@ import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
 
 describeSuite({
-  id: "ZTN",
+  id: "P01",
   title: "Zombie Tanssi Test",
   foundationMethods: "zombie",
   testCases: function ({ it, context, log }) {

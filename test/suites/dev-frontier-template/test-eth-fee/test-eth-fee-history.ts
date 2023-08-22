@@ -11,7 +11,7 @@ import { getCompiled } from "../../../util/ethereum-contracts";
 // We use ethers library in this test as apparently web3js's types are not fully EIP-1559
 // compliant yet.
 describeSuite({
-  id: "D1001",
+  id: "DF0301",
   title: "Fee History",
   foundationMethods: "dev",
   testCases: ({ context, it, log }) => {

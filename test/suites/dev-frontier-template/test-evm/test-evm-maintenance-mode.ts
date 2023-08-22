@@ -11,7 +11,7 @@ import {
 // A call from root (sudo) can make a transfer directly in pallet_evm
 // A signed call cannot make a transfer directly in pallet_evm
 describeSuite({
-  id: "D16",
+  id: "DF0701",
   title: "Pallet EVM - maintenance mode",
   foundationMethods: "dev",
   testCases: ({ context, it }) => {

@@ -1,24 +1,26 @@
-import { describeSuite, expect, beforeAll} from "@moonwall/cli";
-import { CHARLETH_ADDRESS, BALTATHAR_ADDRESS, alith, baltathar, setupLogger, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
 import "@polkadot/api-augment";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { KeyringPair } from "@moonwall/util";
+import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../util/block";
 
 describeSuite({
-  id: "D10",
+  id: "C02",
   title: "Maintenance mode test suite",
   foundationMethods: "dev",
   testCases: ({ it, context, log }) => {
     let polkadotJs: ApiPromise;
-    let alice, bob, charlie, dave;
-    let chain;
-    initializeCustomCreateBlock(context);
+    let alice: KeyringPair;
+    let bob: KeyringPair;
+    let chain: string;
 
     beforeAll(() => {
-      polkadotJs = context.polkadotJs();
+      initializeCustomCreateBlock(context);
+
+      polkadotJs = context.pjsApi;
       chain = polkadotJs.consts.system.version.specName.toString();
-      alice = chain == 'frontier-template' ? alith : (new Keyring({ type: 'sr25519' }).addFromUri('//Alice', { name: 'Alice default' }));
-      bob = chain == 'frontier-template' ? baltathar : (new Keyring({ type: 'sr25519' }).addFromUri('//Bob', { name: 'Bob default' }));
+      alice = context.keyring.alice;
+      bob = context.keyring.bob;
     });
 
     it({
@@ -38,14 +40,11 @@ describeSuite({
         await context.createBlock();
 
         const tx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
-        await context.createBlock([
-          await tx.signAsync(alice),
-        ]);
+        await context.createBlock([await tx.signAsync(alice)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ExtrinsicFailed";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ExtrinsicFailed";
         });
         expect(ev1.length).to.be.equal(1);
 
@@ -62,14 +61,11 @@ describeSuite({
         await context.createBlock();
 
         const tx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
-        await context.createBlock([
-          await polkadotJs.tx.sudo.sudo(tx).signAsync(alice),
-        ]);
+        await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "EnteredMaintenanceMode";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "EnteredMaintenanceMode";
         });
         expect(ev1.length).to.be.equal(1);
 
@@ -91,16 +87,12 @@ describeSuite({
 
         const tx = polkadotJs.tx.balances.transfer(bob.address, 1000);
 
-        if (chain == 'frontier-template') {
-          expect(
-            await context
-              .createBlock([await tx.signAsync(alice)])
-              .catch((e) => e.toString())
-          ).to.equal("RpcError: 1010: Invalid Transaction: Transaction call is not expected");
+        if (chain == "frontier-template") {
+          expect(await context.createBlock([await tx.signAsync(alice)]).catch((e) => e.toString())).to.equal(
+            "RpcError: 1010: Invalid Transaction: Transaction call is not expected"
+          );
         } else {
-          await context.createBlock([
-            await tx.signAsync(alice),
-          ]);
+          await context.createBlock([await tx.signAsync(alice)]);
         }
 
         const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
@@ -124,9 +116,7 @@ describeSuite({
         // We need to use forceTransfer because transfer doesn't work with sudo
         const tx = polkadotJs.tx.balances.forceTransfer(alice.address, bob.address, 1000);
 
-        await context.createBlock([
-          await polkadotJs.tx.sudo.sudo(tx).signAsync(alice),
-        ]);
+        await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
         const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
 
         expect(balanceBefore.lt(balanceAfter)).to.be.true;
@@ -141,14 +131,11 @@ describeSuite({
         await context.createBlock();
 
         const tx = polkadotJs.tx.maintenanceMode.resumeNormalOperation();
-        await context.createBlock([
-          await tx.signAsync(alice),
-        ]);
+        await context.createBlock([await tx.signAsync(alice)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "ExtrinsicFailed";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "ExtrinsicFailed";
         });
         expect(ev1.length).to.be.equal(1);
 
@@ -164,14 +151,11 @@ describeSuite({
         await context.createBlock();
 
         const tx = polkadotJs.tx.maintenanceMode.resumeNormalOperation();
-        await context.createBlock([
-          await polkadotJs.tx.sudo.sudo(tx).signAsync(alice),
-        ]);
+        await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
         const events = await polkadotJs.query.system.events();
-        const ev1 = events.filter(
-          (a) => {
-            return a.event.method == "NormalOperationResumed";
+        const ev1 = events.filter((a) => {
+          return a.event.method == "NormalOperationResumed";
         });
         expect(ev1.length).to.be.equal(1);
 
@@ -193,13 +177,11 @@ describeSuite({
 
         const tx = polkadotJs.tx.balances.transfer(bob.address, 1000);
 
-        await context.createBlock([
-            await tx.signAsync(alice),
-        ]);
+        await context.createBlock([await tx.signAsync(alice)]);
         const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;
 
         expect(balanceBefore.lt(balanceAfter)).to.be.true;
       },
     });
-    },
+  },
 });

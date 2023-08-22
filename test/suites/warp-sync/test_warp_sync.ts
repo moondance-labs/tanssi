@@ -9,7 +9,7 @@ import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
 
 describeSuite({
-  id: "ZTW",
+  id: "W01",
   title: "Zombie Tanssi Warp Sync Test",
   foundationMethods: "zombie",
   testCases: function ({ it, context, log }) {
