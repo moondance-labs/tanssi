@@ -49,13 +49,13 @@ macro_rules! impl_mul_div {
     ($type:ty, $bigger:ty) => {
         impl MulDiv for $type {
             fn mul_div(self, a: Self, b: Self) -> Result<Self, OverflowError> {
-                if self.is_zero() {
-                    return Ok(<$type>::zero());
-                }
-
                 if b.is_zero() {
                     return Err(OverflowError);
                 }
+
+                if self.is_zero() {
+                    return Ok(<$type>::zero());
+                }                
 
                 let s: $bigger = self.into();
                 let a: $bigger = a.into();
