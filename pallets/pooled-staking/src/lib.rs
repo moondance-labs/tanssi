@@ -262,15 +262,6 @@ pub mod pallet {
         type EligibleCandidatesBufferSize: Get<u32>;
     }
 
-    /// The final set of collators.
-    /// Is the top `MaxCollatorSetSize` of `SortedEligibleCandidates`.
-    #[pallet::storage]
-    pub type CollatorSet<T: Config> = StorageValue<_, BTreeSet<Candidate<T>>, ValueQuery>;
-
-    /// Maximum size of the collator set.
-    #[pallet::storage]
-    pub type MaxCollatorSetSize<T: Config> = StorageValue<_, u32, ValueQuery>;
-
     /// Keeps a list of all eligible candidates, sorted by the amount of stake backing them.
     /// This can be quickly updated using a binary search, and allow to easily take the top
     /// `MaxCollatorSetSize`.

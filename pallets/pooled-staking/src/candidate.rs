@@ -18,7 +18,7 @@ use {
     crate::{
         pools::{self, Pool},
         traits::{ErrAdd, ErrSub},
-        Candidate, CollatorSet, Config, Error, Event, MaxCollatorSetSize, Pallet, Pools, PoolsKey,
+        Candidate, Config, Error, Event, Pallet, Pools, PoolsKey,
         SortedEligibleCandidates, Stake,
     },
     core::{cmp::Ordering, marker::PhantomData},
@@ -26,7 +26,6 @@ use {
     scale_info::TypeInfo,
     sp_core::{Get, RuntimeDebug},
     sp_runtime::traits::Zero,
-    sp_std::collections::btree_set::BTreeSet,
 };
 
 #[cfg(feature = "std")]
@@ -168,21 +167,6 @@ impl<T: Config> Candidates<T> {
         } else {
             None
         };
-
-        // If candidate was or is now in the top we need to update
-        // the collator set.
-        let set_size = MaxCollatorSetSize::<T>::get();
-        match (old_position, new_position) {
-            (Some(pos), _) | (_, Some(pos)) if pos < set_size => {
-                let set: BTreeSet<_> = list
-                    .iter()
-                    .take(set_size as usize)
-                    .map(|c| c.candidate.clone())
-                    .collect();
-                CollatorSet::<T>::put(set);
-            }
-            _ => (),
-        }
 
         Pallet::<T>::deposit_event(Event::<T>::UpdatedCandidatePosition {
             candidate: candidate.clone(),
