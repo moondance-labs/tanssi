@@ -503,6 +503,14 @@ parameter_types! {
 }
 
 // We allow root only to execute privileged collator selection operations.
+
+impl pallet_invulnerables::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type UpdateOrigin = EnsureRoot<AccountId>;
+    type MaxInvulnerables = MaxInvulnerables;
+    type WeightInfo = pallet_invulnerables::weights::SubstrateWeight<Runtime>;
+}
+
 pub type CollatorSelectionUpdateOrigin = EnsureRoot<AccountId>;
 
 impl pallet_collator_selection::Config for Runtime {
@@ -761,6 +769,7 @@ construct_runtime!(
         Session: pallet_session = 31,
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
+        Invulnerables: pallet_invulnerables = 34,
 
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 50,
@@ -888,6 +897,7 @@ impl_runtime_apis! {
             use pallet_author_noting::Pallet as PalletAuthorNotingBench;
             use pallet_configuration::Pallet as PalletConfigurationBench;
             use pallet_registrar::Pallet as PalletRegistrarBench;
+            use pallet_invulnerables::Pallet as PalletInvulnerablesBench;
 
             let mut list = Vec::<BenchmarkList>::new();
 
@@ -910,6 +920,12 @@ impl_runtime_apis! {
                 pallet_registrar,
                 PalletRegistrarBench::<Runtime>
             );
+            list_benchmark!(
+                list,
+                extra,
+                pallet_invulnerables,
+                PalletInvulnerablesBench::<Runtime>
+            );
 
             let storage_info = AllPalletsWithSystem::storage_info();
 
@@ -926,6 +942,7 @@ impl_runtime_apis! {
             use pallet_author_noting::Pallet as PalletAuthorNotingBench;
             use pallet_configuration::Pallet as PalletConfigurationBench;
             use pallet_registrar::Pallet as PalletRegistrarBench;
+            use pallet_invulnerables::Pallet as PalletInvulnerablesBench;
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -980,6 +997,12 @@ impl_runtime_apis! {
                 batches,
                 pallet_registrar,
                 PalletRegistrarBench::<Runtime>
+            );
+            add_benchmark!(
+                params,
+                batches,
+                pallet_invulnerables,
+                PalletInvulnerablesBench::<Runtime>
             );
             if batches.is_empty() {
                 return Err("Benchmark not found for this pallet.".into());
