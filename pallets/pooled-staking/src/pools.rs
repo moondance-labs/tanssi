@@ -311,7 +311,7 @@ impl_pool!(
     ManualRewards,
     ManualRewardsShares,
     ManualRewardsSharesSupply,
-    ManualRewardsTotalStaked,
+    ManualRewardsSharesTotalStaked,
     ManualRewardsSharesHeldStake,
     T::InitialManualClaimShareValue::get(),
 );
