@@ -21,6 +21,7 @@ use {
     sp_std::convert::TryInto,
 };
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct OverflowError;
 
 impl<T: Config> From<OverflowError> for Error<T> {
@@ -29,6 +30,7 @@ impl<T: Config> From<OverflowError> for Error<T> {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UnderflowError;
 
 impl<T: Config> From<UnderflowError> for Error<T> {
@@ -55,7 +57,7 @@ macro_rules! impl_mul_div {
 
                 if self.is_zero() {
                     return Ok(<$type>::zero());
-                }                
+                }
 
                 let s: $bigger = self.into();
                 let a: $bigger = a.into();
@@ -98,3 +100,18 @@ pub trait ErrMul: CheckedMul {
 }
 
 impl<T: CheckedMul> ErrMul for T {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mul_div() {
+        assert_eq!(42u128.mul_div(0, 0), Err(OverflowError));
+        assert_eq!(42u128.mul_div(1, 0), Err(OverflowError));
+
+        assert_eq!(u128::MAX.mul_div(2, 4), Ok(u128::MAX / 2));
+        assert_eq!(u128::MAX.mul_div(2, 2), Ok(u128::MAX));
+        assert_eq!(u128::MAX.mul_div(4, 2), Err(OverflowError));
+    }
+}
