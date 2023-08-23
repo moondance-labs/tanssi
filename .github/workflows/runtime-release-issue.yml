@@ -1,0 +1,54 @@
+name: Create runtime release ticket
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Previous runtime version (example: 100)"
+        required: true
+      to:
+        description: "Next runtime version (example: 200)"
+        required: true
+      client:
+        description: "Last client release version"
+        required: true
+
+jobs:
+  setup-scripts:
+    runs-on: bare-metal
+    steps:
+      - uses: actions/checkout@v3
+      - name: Upload tools
+        uses: actions/upload-artifact@v3
+        with:
+          name: original-tools
+          path: tools
+
+  create_runtime_ticket:
+    needs: ["setup-scripts"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+      - name: Download Original Tools
+        uses: actions/download-artifact@v3
+        with:
+          name: original-tools
+          path: original-tools
+      - name: Generate runtime release issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: original-tools
+        run: |
+          npm i
+          npm run --silent print-runtime-release-issue -- --from ${{ github.event.inputs.from }} --to ${{ github.event.inputs.to }} --client ${{ github.event.inputs.client }} | tee ../runtime-release-issue.md
+      - name: Create version bump issue
+        uses: peter-evans/create-issue-from-file@v3
+        with:
+          title: runtime-${{ github.event.inputs.to }} release
+          content-filepath: ./runtime-release-issue.md
+          labels: |
+            automated issue

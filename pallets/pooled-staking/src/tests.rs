@@ -181,13 +181,6 @@ fn do_execute_undelegation(
 ) {
     let before = State::extract(candidate, delegator);
     let leaving_before = PoolState::extract::<Leaving>(candidate, delegator);
-    let request_before = crate::PendingOperations::<Runtime>::get(
-        delegator,
-        PendingOperationKey::Leaving {
-            candidate,
-            at_block: block_number,
-        },
-    );
 
     assert_ok!(Staking::execute_pending_operations(
         RuntimeOrigin::signed(delegator),

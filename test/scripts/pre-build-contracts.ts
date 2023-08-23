@@ -2,7 +2,7 @@ import solc from "solc";
 import chalk from "chalk";
 import fs from "fs/promises";
 import path from "path";
-import { Compiled } from "../util/ethereum-contracts.ts";
+import { Compiled } from "../util/ethereum-contracts";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 

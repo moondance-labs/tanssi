@@ -25,6 +25,8 @@ use {
     },
     frame_support::{assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
+    pallet_author_noting::ContainerChainBlockInfo,
+    pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -1281,6 +1283,185 @@ fn test_consensus_runtime_api_session_changes() {
 }
 
 #[test]
+fn test_consensus_runtime_api_next_session() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            let charlie_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+
+            assert_eq!(
+                Runtime::para_id_authorities(100.into()),
+                Some(vec![alice_id.clone(), bob_id.clone()])
+            );
+            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(
+                Runtime::check_para_id_assignment(alice_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(bob_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(Runtime::check_para_id_assignment(charlie_id.clone()), None);
+            assert_eq!(Runtime::check_para_id_assignment(dave_id.clone()), None);
+
+            // In the next session the assignment will not change
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(alice_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(bob_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(charlie_id.clone()),
+                None,
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(dave_id.clone()),
+                None,
+            );
+
+            // Set CHARLIE and DAVE keys
+            assert_ok!(Session::set_keys(
+                origin_of(CHARLIE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: charlie_id.clone(),
+                },
+                vec![]
+            ));
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: dave_id.clone(),
+                },
+                vec![]
+            ));
+
+            // Set new invulnerables
+            assert_ok!(CollatorSelection::set_invulnerables(
+                root_origin(),
+                vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
+            ));
+
+            let session_two_edge = dancebox_runtime::Period::get() * 2;
+            // Let's run just 2 blocks before the session 2 change first
+            // Prediction should still be identical, as we are not in the
+            // edge of a session change
+            run_to_block(session_two_edge - 2);
+
+            assert_eq!(
+                Runtime::para_id_authorities(100.into()),
+                Some(vec![alice_id.clone(), bob_id.clone()])
+            );
+            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(
+                Runtime::check_para_id_assignment(alice_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(bob_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(Runtime::check_para_id_assignment(charlie_id.clone()), None);
+            assert_eq!(Runtime::check_para_id_assignment(dave_id.clone()), None);
+
+            // But in the next session the assignment will change, so future api returns different value
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(alice_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(bob_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(charlie_id.clone()),
+                Some(1001.into()),
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(dave_id.clone()),
+                Some(1001.into()),
+            );
+
+            // Now we run to session edge -1. Here we should predict already with
+            // authorities of the next block!
+            run_to_block(session_two_edge - 1);
+            assert_eq!(
+                Runtime::para_id_authorities(100.into()),
+                Some(vec![alice_id.clone(), bob_id.clone()])
+            );
+            assert_eq!(
+                Runtime::para_id_authorities(1001.into()),
+                Some(vec![charlie_id.clone(), dave_id.clone()])
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(alice_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(bob_id.clone()),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(charlie_id.clone()),
+                Some(1001.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment(dave_id.clone()),
+                Some(1001.into())
+            );
+
+            // check_para_id_assignment_next_session returns the same value as check_para_id_assignment
+            // because we are on a session boundary
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(alice_id),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(bob_id),
+                Some(100.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(charlie_id),
+                Some(1001.into())
+            );
+            assert_eq!(
+                Runtime::check_para_id_assignment_next_session(dave_id),
+                Some(1001.into())
+            );
+        });
+}
+
+#[test]
 fn test_author_noting_self_para_id_not_noting() {
     ExtBuilder::default()
         .with_balances(vec![
@@ -1353,7 +1534,7 @@ fn test_author_noting_not_self_para() {
             s.para_id = other_para;
             s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                 parent_hash: Default::default(),
-                number: Default::default(),
+                number: 1,
                 state_root: Default::default(),
                 extrinsics_root: Default::default(),
                 digest: sp_runtime::generic::Digest {
@@ -1366,8 +1547,75 @@ fn test_author_noting_not_self_para() {
 
             assert_eq!(
                 AuthorNoting::latest_author(other_para),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: AccountId::from(DAVE)
+                })
+            );
+        });
+}
+
+#[test]
+fn test_author_noting_runtime_api() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .build()
+        .execute_with(|| {
+            let mut sproof = ParaHeaderSproofBuilder::default();
+            let slot: u64 = 5;
+            let other_para: ParaId = 1001u32.into();
+
+            // Charlie and Dave to 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            let mut s = ParaHeaderSproofBuilderItem::default();
+            s.para_id = other_para;
+            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: 1,
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                },
+            });
+            sproof.items.push(s);
+
+            set_author_noting_inherent_data(sproof);
+
+            assert_eq!(
+                AuthorNoting::latest_author(other_para),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: AccountId::from(DAVE)
+                })
+            );
+
+            assert_eq!(
+                Runtime::latest_author(other_para),
                 Some(AccountId::from(DAVE))
             );
+            assert_eq!(Runtime::latest_block_number(other_para), Some(1));
         });
 }
 

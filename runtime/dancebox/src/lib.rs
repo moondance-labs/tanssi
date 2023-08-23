@@ -35,7 +35,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, Everything, InstanceFilter},
+        traits::{ConstU128, ConstU32, ConstU64, Contains, InstanceFilter},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -304,7 +304,7 @@ impl frame_system::Config for Runtime {
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = Everything;
+    type BaseCallFilter = MaintenanceMode;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// Block & extrinsics weights: base values and limits.
@@ -436,7 +436,7 @@ impl pallet_initializer::Config for Runtime {
 impl parachain_info::Config for Runtime {}
 
 parameter_types! {
-    pub const Period: u32 = prod_or_fast!(6 * HOURS, 1 * MINUTES);
+    pub const Period: u32 = prod_or_fast!(1 * HOURS, 1 * MINUTES);
     pub const Offset: u32 = 0;
 }
 
@@ -650,6 +650,61 @@ impl pallet_proxy::Config for Runtime {
     type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MigrationsList = ();
+    type XcmExecutionManager = ();
+}
+
+/// Maintenance mode Call filter
+pub struct MaintenanceFilter;
+impl Contains<RuntimeCall> for MaintenanceFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            RuntimeCall::Balances(_) => false,
+            _ => true,
+        }
+    }
+}
+
+/// Normal Call Filter
+/// We dont allow to create nor mint assets, this for now is disabled
+/// We only allow transfers. For now creation of assets will go through
+/// asset-manager, while minting/burning only happens through xcm messages
+/// This can change in the future
+pub struct NormalFilter;
+impl Contains<RuntimeCall> for NormalFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            // We filter anonymous proxy as they make "reserve" inconsistent
+            // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
+            RuntimeCall::Proxy(method) => match method {
+                pallet_proxy::Call::create_pure { .. } => false,
+                pallet_proxy::Call::kill_pure { .. } => false,
+                _ => true,
+            },
+            _ => true,
+        }
+    }
+}
+
+impl pallet_maintenance_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    // TODO: enable xcm-support feature when we enable xcm
+    /*
+    type XcmExecutionManager = XcmExecutionManager;
+    type NormalDmpHandler = NormalDmpHandler;
+    type MaintenanceDmpHandler = MaintenanceDmpHandler;
+    */
+    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
+    // operation
+    type NormalExecutiveHooks = AllPalletsWithSystem;
+    type MaintenanceExecutiveHooks = AllPalletsWithSystem;
+}
+
 impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -667,6 +722,8 @@ construct_runtime!(
         Sudo: pallet_sudo = 4,
         Utility: pallet_utility = 5,
         Proxy: pallet_proxy = 6,
+        Migrations: pallet_migrations = 7,
+        MaintenanceMode: pallet_maintenance_mode = 8,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
@@ -986,6 +1043,21 @@ impl_runtime_apis! {
         }
     }
 
+    impl pallet_author_noting_runtime_api::AuthorNotingApi<Block, AccountId, BlockNumber, ParaId> for Runtime
+        where
+        AccountId: parity_scale_codec::Codec,
+        BlockNumber: parity_scale_codec::Codec,
+        ParaId: parity_scale_codec::Codec,
+    {
+        fn latest_block_number(para_id: ParaId) -> Option<BlockNumber> {
+            AuthorNoting::latest_author(para_id).map(|info| info.block_number)
+        }
+
+        fn latest_author(para_id: ParaId) -> Option<AccountId> {
+            AuthorNoting::latest_author(para_id).map(|info| info.author)
+        }
+    }
+
     impl tp_consensus::TanssiAuthorityAssignmentApi<Block, NimbusId> for Runtime {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
@@ -1020,6 +1092,16 @@ impl_runtime_apis! {
             else {
                 Session::current_index()
             };
+            let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+            let self_para_id = ParachainInfo::get();
+
+            assigned_authorities.para_id_of(&authority, self_para_id)
+        }
+
+        /// Return the paraId assigned to a given authority on the next session.
+        /// On session boundary this returns the same as `check_para_id_assignment`.
+        fn check_para_id_assignment_next_session(authority: NimbusId) -> Option<ParaId> {
+            let session_index = Session::current_index() + 1;
             let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
             let self_para_id = ParachainInfo::get();
 

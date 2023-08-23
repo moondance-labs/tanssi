@@ -42,8 +42,8 @@ use {
         dispatch::{DispatchClass, GetDispatchInfo},
         parameter_types,
         traits::{
-            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Everything, FindAuthor,
-            Imbalance, OnFinalize, OnUnbalanced,
+            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, FindAuthor, Imbalance,
+            OnFinalize, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -55,12 +55,15 @@ use {
         },
         ConsensusEngineId,
     },
-    frame_system::limits::{BlockLength, BlockWeights},
+    frame_system::{
+        limits::{BlockLength, BlockWeights},
+        EnsureRoot,
+    },
     nimbus_primitives::NimbusId,
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
-        Account as EVMAccount, EVMCurrencyAdapter, EnsureAccountId20, FeeCalculator,
-        GasWeightMapping, IdentityAddressMapping,
+        Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot,
+        FeeCalculator, GasWeightMapping, IdentityAddressMapping,
         OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
     pallet_transaction_payment::CurrencyAdapter,
@@ -294,7 +297,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("frontier-template"),
     impl_name: create_runtime_str!("frontier-template"),
     authoring_version: 1,
-    spec_version: 1,
+    spec_version: 100,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -419,7 +422,7 @@ impl frame_system::Config for Runtime {
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = Everything;
+    type BaseCallFilter = MaintenanceMode;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// Block & extrinsics weights: base values and limits.
@@ -516,6 +519,62 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MigrationsList = ();
+    type XcmExecutionManager = ();
+}
+
+/// Maintenance mode Call filter
+pub struct MaintenanceFilter;
+impl Contains<RuntimeCall> for MaintenanceFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            RuntimeCall::Balances(_) => false,
+            RuntimeCall::Ethereum(_) => false,
+            RuntimeCall::EVM(_) => false,
+            _ => true,
+        }
+    }
+}
+
+/// Normal Call Filter
+/// We dont allow to create nor mint assets, this for now is disabled
+/// We only allow transfers. For now creation of assets will go through
+/// asset-manager, while minting/burning only happens through xcm messages
+/// This can change in the future
+pub struct NormalFilter;
+impl Contains<RuntimeCall> for NormalFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            // Filtering the EVM prevents possible re-entrancy from the precompiles which could
+            // lead to unexpected scenarios.
+            // See https://github.com/PureStake/sr-moonbeam/issues/30
+            // Note: It is also assumed that EVM calls are only allowed through `Origin::Root` so
+            // this can be seen as an additional security
+            RuntimeCall::EVM(_) => false,
+            _ => true,
+        }
+    }
+}
+
+impl pallet_maintenance_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    // TODO: enable xcm-support feature when we enable xcm
+    /*
+    type XcmExecutionManager = XcmExecutionManager;
+    type NormalDmpHandler = NormalDmpHandler;
+    type MaintenanceDmpHandler = MaintenanceDmpHandler;
+    */
+    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
+    // operation
+    type NormalExecutiveHooks = AllPalletsWithSystem;
+    type MaintenanceExecutiveHooks = AllPalletsWithSystem;
+}
+
 impl pallet_cc_authorities_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type SelfParaId = parachain_info::Pallet<Runtime>;
@@ -554,8 +613,8 @@ impl pallet_evm::Config for Runtime {
     type GasWeightMapping = pallet_evm::FixedGasWeightMapping<Self>;
     type WeightPerGas = WeightPerGas;
     type BlockHashMapping = pallet_ethereum::EthereumBlockHashMapping<Self>;
-    type CallOrigin = EnsureAccountId20;
-    type WithdrawOrigin = EnsureAccountId20;
+    type CallOrigin = EnsureAddressRoot<AccountId>;
+    type WithdrawOrigin = EnsureAddressNever<AccountId>;
     type AddressMapping = IdentityAddressMapping;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
@@ -646,6 +705,9 @@ construct_runtime!(
         ParachainInfo: parachain_info = 3,
         Sudo: pallet_sudo = 4,
         Utility: pallet_utility = 5,
+        // Proxy: pallet_proxy = 6,
+        Migrations: pallet_migrations = 7,
+        MaintenanceMode: pallet_maintenance_mode = 8,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
