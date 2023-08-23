@@ -88,15 +88,13 @@ declare module "@polkadot/api-base/types/errors" {
       /** Generic error */
       [key: string]: AugmentedError<ApiType>;
     };
-    cumulusXcm: {
-      /** Generic error */
-      [key: string]: AugmentedError<ApiType>;
-    };
-    dmpQueue: {
-      /** The amount of weight given is possibly not enough for executing the message. */
-      OverLimit: AugmentedError<ApiType>;
-      /** The message index given is unknown. */
-      Unknown: AugmentedError<ApiType>;
+    invulnerables: {
+      /** Account is already an Invulnerable. */
+      AlreadyInvulnerable: AugmentedError<ApiType>;
+      /** Account is not an Invulnerable. */
+      NotInvulnerable: AugmentedError<ApiType>;
+      /** There are too many Invulnerables. */
+      TooManyInvulnerables: AugmentedError<ApiType>;
       /** Generic error */
       [key: string]: AugmentedError<ApiType>;
     };

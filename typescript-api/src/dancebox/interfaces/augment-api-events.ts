@@ -218,74 +218,24 @@ declare module "@polkadot/api-base/types/events" {
       /** Generic event */
       [key: string]: AugmentedEvent<ApiType>;
     };
-    cumulusXcm: {
-      /** Downward message executed with the given outcome. [ id, outcome ] */
-      ExecutedDownward: AugmentedEvent<ApiType, [U8aFixed, XcmV3TraitsOutcome]>;
-      /** Downward message is invalid XCM. [ id ] */
-      InvalidFormat: AugmentedEvent<ApiType, [U8aFixed]>;
-      /** Downward message is unsupported version of XCM. [ id ] */
-      UnsupportedVersion: AugmentedEvent<ApiType, [U8aFixed]>;
-      /** Generic event */
-      [key: string]: AugmentedEvent<ApiType>;
-    };
-    dmpQueue: {
-      /** Downward message executed with the given outcome. */
-      ExecutedDownward: AugmentedEvent<
+    invulnerables: {
+      /** A new Invulnerable was added. */
+      InvulnerableAdded: AugmentedEvent<
         ApiType,
-        [messageId: U8aFixed, outcome: XcmV3TraitsOutcome],
-        { messageId: U8aFixed; outcome: XcmV3TraitsOutcome }
+        [accountId: AccountId32],
+        { accountId: AccountId32 }
       >;
-      /** Downward message is invalid XCM. */
-      InvalidFormat: AugmentedEvent<
+      /** An Invulnerable was removed. */
+      InvulnerableRemoved: AugmentedEvent<
         ApiType,
-        [messageId: U8aFixed],
-        { messageId: U8aFixed }
+        [accountId: AccountId32],
+        { accountId: AccountId32 }
       >;
-      /** The maximum number of downward messages was. */
-      MaxMessagesExhausted: AugmentedEvent<
+      /** New Invulnerables were set. */
+      NewInvulnerables: AugmentedEvent<
         ApiType,
-        [messageId: U8aFixed],
-        { messageId: U8aFixed }
-      >;
-      /** Downward message is overweight and was placed in the overweight queue. */
-      OverweightEnqueued: AugmentedEvent<
-        ApiType,
-        [
-          messageId: U8aFixed,
-          overweightIndex: u64,
-          requiredWeight: SpWeightsWeightV2Weight
-        ],
-        {
-          messageId: U8aFixed;
-          overweightIndex: u64;
-          requiredWeight: SpWeightsWeightV2Weight;
-        }
-      >;
-      /** Downward message from the overweight queue was executed. */
-      OverweightServiced: AugmentedEvent<
-        ApiType,
-        [overweightIndex: u64, weightUsed: SpWeightsWeightV2Weight],
-        { overweightIndex: u64; weightUsed: SpWeightsWeightV2Weight }
-      >;
-      /** Downward message is unsupported version of XCM. */
-      UnsupportedVersion: AugmentedEvent<
-        ApiType,
-        [messageId: U8aFixed],
-        { messageId: U8aFixed }
-      >;
-      /** The weight limit for handling downward messages was reached. */
-      WeightExhausted: AugmentedEvent<
-        ApiType,
-        [
-          messageId: U8aFixed,
-          remainingWeight: SpWeightsWeightV2Weight,
-          requiredWeight: SpWeightsWeightV2Weight
-        ],
-        {
-          messageId: U8aFixed;
-          remainingWeight: SpWeightsWeightV2Weight;
-          requiredWeight: SpWeightsWeightV2Weight;
-        }
+        [invulnerables: Vec<AccountId32>],
+        { invulnerables: Vec<AccountId32> }
       >;
       /** Generic event */
       [key: string]: AugmentedEvent<ApiType>;
