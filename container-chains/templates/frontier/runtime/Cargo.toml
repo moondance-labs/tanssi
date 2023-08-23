@@ -38,6 +38,7 @@ pallet-root-testing = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
+pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-utility = { workspace = true }
 sp-api = { workspace = true }
 sp-block-builder = { workspace = true }
@@ -128,6 +129,7 @@ std = [
 	"pallet-migrations/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
+	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-utility/std",
 	"pallet-xcm/std",
 	"parachain-info/std",

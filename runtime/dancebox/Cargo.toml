@@ -47,6 +47,8 @@ pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
+pallet-transaction-payment = { workspace = true }
+pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-utility = { workspace = true }
 sp-api = { workspace = true }
 sp-application-crypto = { workspace = true }
@@ -132,6 +134,7 @@ std = [
 	"log/std",
 	"nimbus-primitives/std",
 	"pallet-author-noting/std",
+	"pallet-author-noting-runtime-api/std",
 	"pallet-authority-assignment/std",
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
@@ -146,6 +149,7 @@ std = [
 	"pallet-session/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
+	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-utility/std",
 	"pallet-xcm/std",
 	"parachain-info/std",
@@ -200,6 +204,7 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
+	"pallet-author-inherent/try-runtime",
 	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
 	"pallet-authority-mapping/try-runtime",
@@ -207,7 +212,10 @@ try-runtime = [
 	"pallet-collator-assignment/try-runtime",
 	"pallet-collator-selection/try-runtime",
 	"pallet-configuration/try-runtime",
+	"pallet-maintenance-mode/try-runtime",
+	"pallet-migrations/try-runtime",
 	"pallet-initializer/try-runtime",
+	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-session/try-runtime",
