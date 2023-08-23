@@ -35,10 +35,7 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
-pub mod migration;
 pub mod weights;
-
-const LOG_TARGET: &str = "runtime::invulnerables";
 
 #[frame_support::pallet]
 pub mod pallet {

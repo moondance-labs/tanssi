@@ -219,6 +219,7 @@ try-runtime = [
 	"pallet-migrations/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
+	"pallet-migrations/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-session/try-runtime",
