@@ -130,5 +130,35 @@ describeSuite({
         expect(balanceBefore - fee - 200_000n).to.equal(balanceAfter);
       },
     });
+
+    it({
+      id: "E04",
+      title: "Fees are burned",
+      test: async function () {
+        await context.createBlock([]);
+        const totalSupplyBefore = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
+        const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
+        const tx = polkadotJs.tx.balances.transfer(bob.address, 200_000);
+        const signedTx = await tx.signAsync(alice);
+
+        await context.createBlock([
+          signedTx
+        ]);
+
+        const events = await polkadotJs.query.system.events();
+        const fee = extractFee(events).amount.toBigInt();
+        const expectedFee = 1000000n + BigInt(signedTx.encodedLength);
+        expect(fee).to.equal(expectedFee);
+
+        const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
+
+        // Balance must be old balance minus fee minus transfered value
+        expect(balanceBefore - fee - 200_000n).to.equal(balanceAfter);
+
+        const totalSupplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
+
+        expect(totalSupplyBefore - totalSupplyAfter).to.equal(fee);
+      },
+    });
   },
 });
