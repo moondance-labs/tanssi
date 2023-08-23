@@ -11,7 +11,6 @@ import {
 import { generateKeyringPair } from "@moonwall/util";
 import { Keyring } from "@polkadot/api";
 import { BN } from "@polkadot/util";
-import { expectOk } from "../../../util/expect.ts";
 
 describeSuite({
   id: "D1",
