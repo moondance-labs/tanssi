@@ -28,7 +28,6 @@ use {
         traits::{
             fungible::{Mutate, MutateHold},
             tokens::{Precision, Preservation},
-            OriginTrait,
         },
     },
     frame_system::pallet_prelude::*,
@@ -39,7 +38,6 @@ pub struct Calls<T>(PhantomData<T>);
 
 impl<T: Config> Calls<T> {
     pub fn rebalance_hold(
-        _: OriginFor<T>,
         candidate: Candidate<T>,
         delegator: Delegator<T>,
         pool: AllTargetPool,
@@ -155,6 +153,8 @@ impl<T: Config> Calls<T> {
             .map_err(|_| Error::<T>::MathOverflow)?;
         PendingOperations::<T>::set(&delegator, &operation_key, operation);
 
+        pools::check_candidate_consistency::<T>(&candidate)?;
+
         Pallet::<T>::deposit_event(Event::<T>::RequestedDelegate {
             candidate,
             delegator,
@@ -195,7 +195,6 @@ impl<T: Config> Calls<T> {
 
                 if stake.0 > pools::AutoCompounding::<T>::hold(&candidate, &delegator).0 {
                     Self::rebalance_hold(
-                        OriginFor::<T>::none(),
                         candidate.clone(),
                         delegator.clone(),
                         AllTargetPool::AutoCompounding,
@@ -211,7 +210,6 @@ impl<T: Config> Calls<T> {
 
                 if stake.0 > pools::ManualRewards::<T>::hold(&candidate, &delegator).0 {
                     Self::rebalance_hold(
-                        OriginFor::<T>::none(),
                         candidate.clone(),
                         delegator.clone(),
                         AllTargetPool::ManualRewards,
@@ -260,6 +258,8 @@ impl<T: Config> Calls<T> {
             )?;
             Candidates::<T>::sub_total_stake(&candidate, Stake(dust))?;
         }
+
+        pools::check_candidate_consistency::<T>(&candidate)?;
 
         Pallet::<T>::deposit_event(Event::<T>::RequestedUndelegate {
             candidate,
@@ -354,6 +354,9 @@ impl<T: Config> Calls<T> {
     ) -> DispatchResultWithPostInfo {
         // Convert joining shares into stake.
         let stake = pools::Joining::<T>::sub_shares(&candidate, &delegator, joining_shares)?;
+
+        // No rewards are distributed to the Joining pools, so there should always
+        // be enough hold. Thus no need to rebalance.
         pools::Joining::<T>::decrease_hold(&candidate, &delegator, &stake)?;
 
         // Convert stake into shares quantity.
@@ -375,6 +378,7 @@ impl<T: Config> Calls<T> {
                 Precision::Exact,
             )?;
             Candidates::<T>::sub_total_stake(&candidate, Stake(stake.0))?;
+            pools::check_candidate_consistency::<T>(&candidate)?;
             return Ok(().into());
         }
 
@@ -428,8 +432,9 @@ impl<T: Config> Calls<T> {
             },
         };
 
-        Pallet::<T>::deposit_event(event);
+        pools::check_candidate_consistency::<T>(&candidate)?;
 
+        Pallet::<T>::deposit_event(event);
         Pallet::<T>::deposit_event(Event::<T>::ExecutedDelegate {
             candidate,
             delegator,
@@ -448,6 +453,9 @@ impl<T: Config> Calls<T> {
     ) -> DispatchResultWithPostInfo {
         // Convert leaving shares into stake.
         let stake = pools::Leaving::<T>::sub_shares(&candidate, &delegator, leavinig_shares)?;
+
+        // No rewards are distributed to the Leaving pools, so there should always
+        // be enough hold. Thus no need to rebalance.
         pools::Leaving::<T>::decrease_hold(&candidate, &delegator, &stake)?;
 
         // We release the funds and consider them unstaked.
@@ -458,6 +466,7 @@ impl<T: Config> Calls<T> {
             Precision::Exact,
         )?;
         Candidates::<T>::sub_total_stake(&candidate, stake)?;
+        pools::check_candidate_consistency::<T>(&candidate)?;
 
         Ok(().into())
     }

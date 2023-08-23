@@ -92,14 +92,16 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::{AuraDigestSlotBeacon, NimbusLookUp, OnTimestampSet};
-    use crate::mock::{new_test_ext, Test};
-    use frame_support::traits::OnTimestampSet as OnTimestampSetT;
-    use nimbus_primitives::{AccountLookup, NimbusId, SlotBeacon};
-    use parity_scale_codec::Encode;
-    use sp_consensus_aura::AURA_ENGINE_ID;
-    use sp_core::ByteArray;
-    use sp_runtime::traits::ConstU64;
+    use {
+        super::{AuraDigestSlotBeacon, NimbusLookUp, OnTimestampSet},
+        crate::mock::{new_test_ext, Test},
+        frame_support::traits::OnTimestampSet as OnTimestampSetT,
+        nimbus_primitives::{AccountLookup, NimbusId, SlotBeacon},
+        parity_scale_codec::Encode,
+        sp_consensus_aura::AURA_ENGINE_ID,
+        sp_core::ByteArray,
+        sp_runtime::traits::ConstU64,
+    };
 
     #[test]
     fn test_on_timestamp_set() {

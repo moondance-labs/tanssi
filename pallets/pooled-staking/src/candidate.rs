@@ -18,8 +18,7 @@ use {
     crate::{
         pools::{self, Pool},
         traits::{ErrAdd, ErrSub},
-        Candidate, Config, Error, Event, Pallet, Pools, PoolsKey,
-        SortedEligibleCandidates, Stake,
+        Candidate, Config, Error, Event, Pallet, Pools, PoolsKey, SortedEligibleCandidates, Stake,
     },
     core::{cmp::Ordering, marker::PhantomData},
     parity_scale_codec::{Decode, Encode},

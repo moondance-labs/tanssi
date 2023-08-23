@@ -65,7 +65,6 @@ pub mod pallet {
         scale_info::TypeInfo,
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
-        sp_std::collections::btree_set::BTreeSet,
     };
 
     #[cfg(feature = "std")]
@@ -422,7 +421,8 @@ pub mod pallet {
             delegator: Delegator<T>,
             pool: AllTargetPool,
         ) -> DispatchResultWithPostInfo {
-            Calls::<T>::rebalance_hold(origin, candidate, delegator, pool)
+            let _ = ensure_signed(origin)?;
+            Calls::<T>::rebalance_hold(candidate, delegator, pool)
         }
 
         pub fn request_delegate(
