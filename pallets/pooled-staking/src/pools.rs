@@ -295,7 +295,7 @@ impl_pool!(
     JoiningSharesSupply,
     JoiningSharesTotalStaked,
     JoiningSharesHeldStake,
-    T::Balance::one(),
+    T::InitialJoiningShareValue::get(),
 );
 
 impl_pool!(
@@ -322,7 +322,7 @@ impl_pool!(
     LeavingSharesSupply,
     LeavingSharesTotalStaked,
     LeavingSharesHeldStake,
-    T::Balance::one(),
+    T::InitialLeavingShareValue::get(),
 );
 
 impl<T: Config> ManualRewards<T> {

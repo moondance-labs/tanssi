@@ -243,6 +243,12 @@ pub mod pallet {
         /// Picking a value too high is a barrier of entry for staking, which will increase overtime
         /// as the value of each share will increase due to auto compounding.
         type InitialAutoCompoundingShareValue: Get<Self::Balance>;
+
+        /// Should be 1 to avoid rounding. (configurable for tests)
+        type InitialJoiningShareValue: Get<Self::Balance>;
+        /// Should be 1 to avoid rounding. (configurable for tests)
+        type InitialLeavingShareValue: Get<Self::Balance>;
+
         /// Minimum amount of stake a Candidate must delegate (stake) towards itself. Not reaching
         /// this minimum prevents from being elected.
         type MinimumSelfDelegation: Get<Self::Balance>;

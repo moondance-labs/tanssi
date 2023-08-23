@@ -249,7 +249,7 @@ impl<T: Config> Calls<T> {
             .err_sub(&leaving_stake.0)
             .map_err(Error::<T>::from)?;
 
-        if dust.is_zero() {
+        if !dust.is_zero() {
             T::Currency::release(
                 &T::CurrencyHoldReason::get(),
                 &delegator,
