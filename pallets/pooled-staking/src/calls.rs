@@ -75,6 +75,10 @@ impl<T: Config> Calls<T> {
             }
         };
 
+        if stake == held {
+            return Ok(().into());
+        }
+
         // Transfer is done using withdraw to ensure it works regardless of ED.
         if let Some(diff) = stake.0.checked_sub(&held.0) {
             T::Currency::transfer(
@@ -336,7 +340,7 @@ impl<T: Config> Calls<T> {
                 }
             }
 
-            PendingOperations::<T>::set(&delegator, &operation, Zero::zero());
+            PendingOperations::<T>::remove(&delegator, &operation);
         }
 
         Ok(().into())
@@ -370,6 +374,7 @@ impl<T: Config> Calls<T> {
                 stake.0,
                 Precision::Exact,
             )?;
+            Candidates::<T>::sub_total_stake(&candidate, Stake(stake.0))?;
             return Ok(().into());
         }
 
