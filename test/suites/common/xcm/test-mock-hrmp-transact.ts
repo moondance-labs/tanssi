@@ -1,4 +1,3 @@
-import "@tanssi/api-augment"
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import {
@@ -106,15 +105,17 @@ describeSuite({
         .buy_execution()
         .push_any({
             Transact: {
-            originType: "SovereignAccount",
-            requireWeightAtMost: new BN(1000000000),
+            originKind: "SovereignAccount",
+            requireWeightAtMost: {
+                refTime: 1000000000,
+                proofSize: 32000,
+            },
             call: {
                 encoded: transferCallEncoded,
             },
             },
         })
-        .as_v2();
-
+        .as_v3();
 
         // Send an XCM and create block to execute it
         await injectHrmpMessageAndSeal(context, 1, {
@@ -170,14 +171,17 @@ describeSuite({
             .buy_execution()
             .push_any({
                 Transact: {
-                originType: "SovereignAccount",
-                requireWeightAtMost: new BN(1000000000),
+                originKind: "SovereignAccount",
+                requireWeightAtMost: {
+                    refTime: 1000000000,
+                    proofSize: 32000,
+                },
                 call: {
                     encoded: transferCallEncoded,
                 },
                 },
             })
-            .as_v2();
+            .as_v3();
     
     
             // Send an XCM and create block to execute it

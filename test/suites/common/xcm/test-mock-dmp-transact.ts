@@ -1,4 +1,3 @@
-import "@tanssi/api-augment"
 import { beforeAll, describeSuite, expect, customDevRpcRequest } from "@moonwall/cli";
 import { alith } from "@moonwall/util";
 
