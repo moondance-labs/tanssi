@@ -341,7 +341,7 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
     cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
 
-/// We allow for 2000ms of compute with a 6 second average block time.
+/// We allow for 500ms of compute with a 12 second average block time.
 pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 500;
 
 /// The version information used to identify this runtime when compiled natively.
