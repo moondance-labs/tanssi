@@ -89,8 +89,8 @@ where
     Runtime: pallet_collator_selection::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        let preimage_migration_hash_to_bounded_call =
-            MigrateInvulnerables::<Runtime>(Default::default());
-        vec![Box::new(preimage_migration_hash_to_bounded_call)]
+        let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
+
+        vec![Box::new(migrate_invulnerables)]
     }
 }
