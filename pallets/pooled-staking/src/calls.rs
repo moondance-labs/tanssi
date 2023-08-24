@@ -115,14 +115,14 @@ impl<T: Config> Calls<T> {
         stake: T::Balance,
     ) -> DispatchResultWithPostInfo {
         let delegator = ensure_signed(origin)?;
-        ensure!(!Zero::is_zero(&stake), Error::<T>::StakeMustBeNonZero);
+        ensure!(!stake.is_zero(), Error::<T>::StakeMustBeNonZero);
 
         // Convert stake into joining shares quantity.
         let shares = pools::Joining::<T>::stake_to_shares_or_init(&candidate, Stake(stake))?;
 
         // If the amount was stake and is less than the value of 1 share it will round down to
         // 0 share. We avoid doing any work for 0 shares.
-        ensure!(!Zero::is_zero(&shares.0), Error::<T>::StakeMustBeNonZero);
+        ensure!(!shares.0.is_zero(), Error::<T>::StakeMustBeNonZero);
 
         // We create the new joining shares. It returns the actual amount of stake those shares
         // represents (due to rounding).
@@ -290,7 +290,7 @@ impl<T: Config> Calls<T> {
 
             let value = PendingOperations::<T>::get(&delegator, &operation);
 
-            if Zero::is_zero(&value) {
+            if value.is_zero() {
                 continue;
             }
 
@@ -370,7 +370,7 @@ impl<T: Config> Calls<T> {
         };
 
         // If stake doesn't allow to get at least one share we release all the funds.
-        if Zero::is_zero(&shares.0) {
+        if shares.0.is_zero() {
             T::Currency::release(
                 &T::CurrencyHoldReason::get(),
                 &delegator,

@@ -22,7 +22,7 @@ use {
     core::marker::PhantomData,
     frame_support::ensure,
     sp_core::Get,
-    sp_runtime::traits::{CheckedAdd, CheckedDiv, One, Zero},
+    sp_runtime::traits::{CheckedAdd, CheckedDiv, Zero},
 };
 
 pub trait Pool<T: Config> {
@@ -63,7 +63,7 @@ pub trait Pool<T: Config> {
         candidate: &Candidate<T>,
         shares: Shares<T>,
     ) -> Result<Stake<T>, Error<T>> {
-        if Zero::is_zero(&Self::total_staked(candidate).0) {
+        if Self::total_staked(candidate).0.is_zero() {
             Ok(Stake(shares.0.err_mul(&Self::initial_share_value().0)?))
         } else {
             Self::shares_to_stake(candidate, shares)
@@ -98,7 +98,7 @@ pub trait Pool<T: Config> {
         candidate: &Candidate<T>,
         stake: Stake<T>,
     ) -> Result<Shares<T>, Error<T>> {
-        if Zero::is_zero(&Self::total_staked(candidate).0) {
+        if Self::total_staked(candidate).0.is_zero() {
             Ok(Shares(
                 stake
                     .0
@@ -142,7 +142,7 @@ pub trait Pool<T: Config> {
         delegator: &Delegator<T>,
         shares: Shares<T>,
     ) -> Result<Stake<T>, Error<T>> {
-        ensure!(!Zero::is_zero(&shares.0), Error::StakeMustBeNonZero);
+        ensure!(!shares.0.is_zero(), Error::StakeMustBeNonZero);
 
         let stake = Self::shares_to_stake_or_init(candidate, shares.clone())?;
 
@@ -165,7 +165,7 @@ pub trait Pool<T: Config> {
         delegator: &Delegator<T>,
         shares: Shares<T>,
     ) -> Result<Stake<T>, Error<T>> {
-        ensure!(!Zero::is_zero(&shares.0), Error::StakeMustBeNonZero);
+        ensure!(!shares.0.is_zero(), Error::StakeMustBeNonZero);
 
         let stake = Self::shares_to_stake_or_init(candidate, shares.clone())?;
 
@@ -332,7 +332,7 @@ impl<T: Config> ManualRewards<T> {
     ) -> Result<Stake<T>, Error<T>> {
         let shares = Self::shares(candidate, delegator);
 
-        if Zero::is_zero(&shares.0) {
+        if shares.0.is_zero() {
             return Ok(Stake(0u32.into()));
         }
 
@@ -355,7 +355,7 @@ impl<T: Config> ManualRewards<T> {
     ) -> Result<Stake<T>, Error<T>> {
         let shares = Self::shares(candidate, delegator);
 
-        if Zero::is_zero(&shares.0) {
+        if shares.0.is_zero() {
             return Ok(Stake(0u32.into()));
         }
 
@@ -370,7 +370,7 @@ impl<T: Config> ManualRewards<T> {
         // TODO: Should be safe to wrap around.
         let diff = counter.err_sub(&checkpoint)?;
 
-        if Zero::is_zero(&diff) {
+        if diff.is_zero() {
             return Ok(Stake(0u32.into()));
         }
 

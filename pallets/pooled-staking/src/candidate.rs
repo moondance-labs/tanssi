@@ -61,7 +61,7 @@ impl<T: Config> Candidates<T> {
     }
 
     pub fn add_total_stake(candidate: &Candidate<T>, stake: &Stake<T>) -> Result<(), Error<T>> {
-        if Zero::is_zero(&stake.0) {
+        if stake.0.is_zero() {
             return Ok(());
         }
 
@@ -78,7 +78,7 @@ impl<T: Config> Candidates<T> {
     }
 
     pub fn sub_total_stake(candidate: &Candidate<T>, stake: Stake<T>) -> Result<(), Error<T>> {
-        if Zero::is_zero(&stake.0) {
+        if stake.0.is_zero() {
             return Ok(());
         }
 
