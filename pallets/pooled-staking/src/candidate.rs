@@ -43,7 +43,7 @@ impl<C: Ord, S: Ord> Ord for EligibleCandidate<C, S> {
         self.stake
             .cmp(&other.stake)
             .reverse()
-            .then(self.candidate.cmp(&self.candidate))
+            .then_with(|| self.candidate.cmp(&other.candidate))
     }
 }
 
