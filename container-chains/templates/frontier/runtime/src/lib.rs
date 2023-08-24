@@ -41,8 +41,8 @@ use {
         dispatch::{DispatchClass, GetDispatchInfo},
         parameter_types,
         traits::{
-            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Everything, Imbalance, OnFinalize,
-            OnUnbalanced,
+            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Everything, Imbalance,
+            OnFinalize, OnUnbalanced,
         },
         weights::{
             constants::{

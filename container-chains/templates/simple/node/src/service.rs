@@ -15,15 +15,12 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
-use sc_executor::HeapAllocStrategy;
-use sc_executor::WasmExecutor;
-use sc_executor::DEFAULT_HEAP_ALLOC_STRATEGY;
+use sc_executor::{HeapAllocStrategy, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY};
 
 // std
 use std::{sync::Arc, time::Duration};
 
-use cumulus_client_cli::CollatorOptions;
-use sc_network::config::FullNetworkConfiguration;
+use {cumulus_client_cli::CollatorOptions, sc_network::config::FullNetworkConfiguration};
 // Local Runtime Types
 use container_chain_template_simple_runtime::{opaque::Block, RuntimeApi};
 
