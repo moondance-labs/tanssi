@@ -55,7 +55,10 @@ where
 
     /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
-    fn post_upgrade(number_of_invulnerables: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+    fn post_upgrade(
+        &self,
+        number_of_invulnerables: Vec<u8>,
+    ) -> Result<(), sp_runtime::DispatchError> {
         use parity_scale_codec::Decode;
 
         let stored_invulnerables = Invulnerables::invulnerables().to_vec();
