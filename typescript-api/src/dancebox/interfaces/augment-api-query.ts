@@ -50,6 +50,7 @@ import type {
   PalletProxyAnnouncement,
   PalletProxyProxyDefinition,
   PalletRegistrarDepositInfo,
+  PalletTransactionPaymentReleases,
   PolkadotCorePrimitivesOutboundHrmpMessage,
   PolkadotPrimitivesV4AbridgedHostConfiguration,
   PolkadotPrimitivesV4PersistedValidationData,
@@ -1091,6 +1092,18 @@ declare module "@polkadot/api-base/types/storage" {
         QueryableStorageEntry<ApiType, []>;
       /** Current time for the current block. */
       now: AugmentedQuery<ApiType, () => Observable<u64>, []> &
+        QueryableStorageEntry<ApiType, []>;
+      /** Generic query */
+      [key: string]: QueryableStorageEntry<ApiType>;
+    };
+    transactionPayment: {
+      nextFeeMultiplier: AugmentedQuery<ApiType, () => Observable<u128>, []> &
+        QueryableStorageEntry<ApiType, []>;
+      storageVersion: AugmentedQuery<
+        ApiType,
+        () => Observable<PalletTransactionPaymentReleases>,
+        []
+      > &
         QueryableStorageEntry<ApiType, []>;
       /** Generic query */
       [key: string]: QueryableStorageEntry<ApiType>;
