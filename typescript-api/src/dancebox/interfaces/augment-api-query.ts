@@ -50,10 +50,10 @@ import type {
   PalletProxyAnnouncement,
   PalletProxyProxyDefinition,
   PalletRegistrarDepositInfo,
+  PalletTransactionPaymentReleases,
   PalletXcmQueryStatus,
   PalletXcmRemoteLockedFungibleRecord,
   PalletXcmVersionMigrationStage,
-  PalletTransactionPaymentReleases,
   PolkadotCorePrimitivesOutboundHrmpMessage,
   PolkadotPrimitivesV4AbridgedHostConfiguration,
   PolkadotPrimitivesV4PersistedValidationData,
@@ -1088,6 +1088,18 @@ declare module "@polkadot/api-base/types/storage" {
       /** Generic query */
       [key: string]: QueryableStorageEntry<ApiType>;
     };
+    transactionPayment: {
+      nextFeeMultiplier: AugmentedQuery<ApiType, () => Observable<u128>, []> &
+        QueryableStorageEntry<ApiType, []>;
+      storageVersion: AugmentedQuery<
+        ApiType,
+        () => Observable<PalletTransactionPaymentReleases>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /** Generic query */
+      [key: string]: QueryableStorageEntry<ApiType>;
+    };
     xcmpQueue: {
       /** Counter for the related counted storage map */
       counterForOverweight: AugmentedQuery<ApiType, () => Observable<u32>, []> &
@@ -1171,15 +1183,6 @@ declare module "@polkadot/api-base/types/storage" {
         [u32]
       > &
         QueryableStorageEntry<ApiType, [u32]>;
-    transactionPayment: {
-      nextFeeMultiplier: AugmentedQuery<ApiType, () => Observable<u128>, []> &
-        QueryableStorageEntry<ApiType, []>;
-      storageVersion: AugmentedQuery<
-        ApiType,
-        () => Observable<PalletTransactionPaymentReleases>,
-        []
-      > &
-        QueryableStorageEntry<ApiType, []>;
       /** Generic query */
       [key: string]: QueryableStorageEntry<ApiType>;
     };
