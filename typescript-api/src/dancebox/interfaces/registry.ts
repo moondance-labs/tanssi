@@ -6,12 +6,27 @@
 import "@polkadot/types/types/registry";
 
 import type {
+  CumulusPalletDmpQueueCall,
+  CumulusPalletDmpQueueConfigData,
+  CumulusPalletDmpQueueError,
+  CumulusPalletDmpQueueEvent,
+  CumulusPalletDmpQueuePageIndexData,
   CumulusPalletParachainSystemCall,
   CumulusPalletParachainSystemCodeUpgradeAuthorization,
   CumulusPalletParachainSystemError,
   CumulusPalletParachainSystemEvent,
   CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
   CumulusPalletParachainSystemRelayStateSnapshotRelayDispachQueueSize,
+  CumulusPalletXcmError,
+  CumulusPalletXcmEvent,
+  CumulusPalletXcmOrigin,
+  CumulusPalletXcmpQueueError,
+  CumulusPalletXcmpQueueEvent,
+  CumulusPalletXcmpQueueInboundChannelDetails,
+  CumulusPalletXcmpQueueInboundState,
+  CumulusPalletXcmpQueueOutboundChannelDetails,
+  CumulusPalletXcmpQueueOutboundState,
+  CumulusPalletXcmpQueueQueueConfigData,
   CumulusPrimitivesParachainInherentParachainInherentData,
   DanceboxRuntimeOriginCaller,
   DanceboxRuntimeProxyType,
@@ -94,10 +109,18 @@ import type {
   PalletUtilityCall,
   PalletUtilityError,
   PalletUtilityEvent,
+  PalletXcmCall,
+  PalletXcmError,
+  PalletXcmEvent,
+  PalletXcmOrigin,
+  PalletXcmQueryStatus,
+  PalletXcmRemoteLockedFungibleRecord,
+  PalletXcmVersionMigrationStage,
   ParachainInfoCall,
   PolkadotCorePrimitivesInboundDownwardMessage,
   PolkadotCorePrimitivesInboundHrmpMessage,
   PolkadotCorePrimitivesOutboundHrmpMessage,
+  PolkadotParachainPrimitivesXcmpMessageFormat,
   PolkadotPrimitivesV4AbridgedHostConfiguration,
   PolkadotPrimitivesV4AbridgedHrmpChannel,
   PolkadotPrimitivesV4PersistedValidationData,
@@ -127,16 +150,80 @@ import type {
   TpContainerChainGenesisDataContainerChainGenesisDataItem,
   TpContainerChainGenesisDataProperties,
   TpContainerChainGenesisDataTokenMetadata,
+  XcmDoubleEncoded,
+  XcmV2BodyId,
+  XcmV2BodyPart,
+  XcmV2Instruction,
+  XcmV2Junction,
+  XcmV2MultiAsset,
+  XcmV2MultiLocation,
+  XcmV2MultiassetAssetId,
+  XcmV2MultiassetAssetInstance,
+  XcmV2MultiassetFungibility,
+  XcmV2MultiassetMultiAssetFilter,
+  XcmV2MultiassetMultiAssets,
+  XcmV2MultiassetWildFungibility,
+  XcmV2MultiassetWildMultiAsset,
+  XcmV2MultilocationJunctions,
+  XcmV2NetworkId,
+  XcmV2OriginKind,
+  XcmV2Response,
+  XcmV2TraitsError,
+  XcmV2WeightLimit,
+  XcmV2Xcm,
+  XcmV3Instruction,
+  XcmV3Junction,
+  XcmV3JunctionBodyId,
+  XcmV3JunctionBodyPart,
+  XcmV3JunctionNetworkId,
+  XcmV3Junctions,
+  XcmV3MaybeErrorCode,
+  XcmV3MultiAsset,
+  XcmV3MultiLocation,
+  XcmV3MultiassetAssetId,
+  XcmV3MultiassetAssetInstance,
+  XcmV3MultiassetFungibility,
+  XcmV3MultiassetMultiAssetFilter,
+  XcmV3MultiassetMultiAssets,
+  XcmV3MultiassetWildFungibility,
+  XcmV3MultiassetWildMultiAsset,
+  XcmV3PalletInfo,
+  XcmV3QueryResponseInfo,
+  XcmV3Response,
+  XcmV3TraitsError,
+  XcmV3TraitsOutcome,
+  XcmV3WeightLimit,
+  XcmV3Xcm,
+  XcmVersionedAssetId,
+  XcmVersionedMultiAssets,
+  XcmVersionedMultiLocation,
+  XcmVersionedResponse,
+  XcmVersionedXcm,
 } from "@polkadot/types/lookup";
 
 declare module "@polkadot/types/types/registry" {
   interface InterfaceTypes {
+    CumulusPalletDmpQueueCall: CumulusPalletDmpQueueCall;
+    CumulusPalletDmpQueueConfigData: CumulusPalletDmpQueueConfigData;
+    CumulusPalletDmpQueueError: CumulusPalletDmpQueueError;
+    CumulusPalletDmpQueueEvent: CumulusPalletDmpQueueEvent;
+    CumulusPalletDmpQueuePageIndexData: CumulusPalletDmpQueuePageIndexData;
     CumulusPalletParachainSystemCall: CumulusPalletParachainSystemCall;
     CumulusPalletParachainSystemCodeUpgradeAuthorization: CumulusPalletParachainSystemCodeUpgradeAuthorization;
     CumulusPalletParachainSystemError: CumulusPalletParachainSystemError;
     CumulusPalletParachainSystemEvent: CumulusPalletParachainSystemEvent;
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot: CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot;
     CumulusPalletParachainSystemRelayStateSnapshotRelayDispachQueueSize: CumulusPalletParachainSystemRelayStateSnapshotRelayDispachQueueSize;
+    CumulusPalletXcmError: CumulusPalletXcmError;
+    CumulusPalletXcmEvent: CumulusPalletXcmEvent;
+    CumulusPalletXcmOrigin: CumulusPalletXcmOrigin;
+    CumulusPalletXcmpQueueError: CumulusPalletXcmpQueueError;
+    CumulusPalletXcmpQueueEvent: CumulusPalletXcmpQueueEvent;
+    CumulusPalletXcmpQueueInboundChannelDetails: CumulusPalletXcmpQueueInboundChannelDetails;
+    CumulusPalletXcmpQueueInboundState: CumulusPalletXcmpQueueInboundState;
+    CumulusPalletXcmpQueueOutboundChannelDetails: CumulusPalletXcmpQueueOutboundChannelDetails;
+    CumulusPalletXcmpQueueOutboundState: CumulusPalletXcmpQueueOutboundState;
+    CumulusPalletXcmpQueueQueueConfigData: CumulusPalletXcmpQueueQueueConfigData;
     CumulusPrimitivesParachainInherentParachainInherentData: CumulusPrimitivesParachainInherentParachainInherentData;
     DanceboxRuntimeOriginCaller: DanceboxRuntimeOriginCaller;
     DanceboxRuntimeProxyType: DanceboxRuntimeProxyType;
@@ -219,10 +306,18 @@ declare module "@polkadot/types/types/registry" {
     PalletUtilityCall: PalletUtilityCall;
     PalletUtilityError: PalletUtilityError;
     PalletUtilityEvent: PalletUtilityEvent;
+    PalletXcmCall: PalletXcmCall;
+    PalletXcmError: PalletXcmError;
+    PalletXcmEvent: PalletXcmEvent;
+    PalletXcmOrigin: PalletXcmOrigin;
+    PalletXcmQueryStatus: PalletXcmQueryStatus;
+    PalletXcmRemoteLockedFungibleRecord: PalletXcmRemoteLockedFungibleRecord;
+    PalletXcmVersionMigrationStage: PalletXcmVersionMigrationStage;
     ParachainInfoCall: ParachainInfoCall;
     PolkadotCorePrimitivesInboundDownwardMessage: PolkadotCorePrimitivesInboundDownwardMessage;
     PolkadotCorePrimitivesInboundHrmpMessage: PolkadotCorePrimitivesInboundHrmpMessage;
     PolkadotCorePrimitivesOutboundHrmpMessage: PolkadotCorePrimitivesOutboundHrmpMessage;
+    PolkadotParachainPrimitivesXcmpMessageFormat: PolkadotParachainPrimitivesXcmpMessageFormat;
     PolkadotPrimitivesV4AbridgedHostConfiguration: PolkadotPrimitivesV4AbridgedHostConfiguration;
     PolkadotPrimitivesV4AbridgedHrmpChannel: PolkadotPrimitivesV4AbridgedHrmpChannel;
     PolkadotPrimitivesV4PersistedValidationData: PolkadotPrimitivesV4PersistedValidationData;
@@ -252,5 +347,54 @@ declare module "@polkadot/types/types/registry" {
     TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
     TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
     TpContainerChainGenesisDataTokenMetadata: TpContainerChainGenesisDataTokenMetadata;
+    XcmDoubleEncoded: XcmDoubleEncoded;
+    XcmV2BodyId: XcmV2BodyId;
+    XcmV2BodyPart: XcmV2BodyPart;
+    XcmV2Instruction: XcmV2Instruction;
+    XcmV2Junction: XcmV2Junction;
+    XcmV2MultiAsset: XcmV2MultiAsset;
+    XcmV2MultiLocation: XcmV2MultiLocation;
+    XcmV2MultiassetAssetId: XcmV2MultiassetAssetId;
+    XcmV2MultiassetAssetInstance: XcmV2MultiassetAssetInstance;
+    XcmV2MultiassetFungibility: XcmV2MultiassetFungibility;
+    XcmV2MultiassetMultiAssetFilter: XcmV2MultiassetMultiAssetFilter;
+    XcmV2MultiassetMultiAssets: XcmV2MultiassetMultiAssets;
+    XcmV2MultiassetWildFungibility: XcmV2MultiassetWildFungibility;
+    XcmV2MultiassetWildMultiAsset: XcmV2MultiassetWildMultiAsset;
+    XcmV2MultilocationJunctions: XcmV2MultilocationJunctions;
+    XcmV2NetworkId: XcmV2NetworkId;
+    XcmV2OriginKind: XcmV2OriginKind;
+    XcmV2Response: XcmV2Response;
+    XcmV2TraitsError: XcmV2TraitsError;
+    XcmV2WeightLimit: XcmV2WeightLimit;
+    XcmV2Xcm: XcmV2Xcm;
+    XcmV3Instruction: XcmV3Instruction;
+    XcmV3Junction: XcmV3Junction;
+    XcmV3JunctionBodyId: XcmV3JunctionBodyId;
+    XcmV3JunctionBodyPart: XcmV3JunctionBodyPart;
+    XcmV3JunctionNetworkId: XcmV3JunctionNetworkId;
+    XcmV3Junctions: XcmV3Junctions;
+    XcmV3MaybeErrorCode: XcmV3MaybeErrorCode;
+    XcmV3MultiAsset: XcmV3MultiAsset;
+    XcmV3MultiLocation: XcmV3MultiLocation;
+    XcmV3MultiassetAssetId: XcmV3MultiassetAssetId;
+    XcmV3MultiassetAssetInstance: XcmV3MultiassetAssetInstance;
+    XcmV3MultiassetFungibility: XcmV3MultiassetFungibility;
+    XcmV3MultiassetMultiAssetFilter: XcmV3MultiassetMultiAssetFilter;
+    XcmV3MultiassetMultiAssets: XcmV3MultiassetMultiAssets;
+    XcmV3MultiassetWildFungibility: XcmV3MultiassetWildFungibility;
+    XcmV3MultiassetWildMultiAsset: XcmV3MultiassetWildMultiAsset;
+    XcmV3PalletInfo: XcmV3PalletInfo;
+    XcmV3QueryResponseInfo: XcmV3QueryResponseInfo;
+    XcmV3Response: XcmV3Response;
+    XcmV3TraitsError: XcmV3TraitsError;
+    XcmV3TraitsOutcome: XcmV3TraitsOutcome;
+    XcmV3WeightLimit: XcmV3WeightLimit;
+    XcmV3Xcm: XcmV3Xcm;
+    XcmVersionedAssetId: XcmVersionedAssetId;
+    XcmVersionedMultiAssets: XcmVersionedMultiAssets;
+    XcmVersionedMultiLocation: XcmVersionedMultiLocation;
+    XcmVersionedResponse: XcmVersionedResponse;
+    XcmVersionedXcm: XcmVersionedXcm;
   } // InterfaceTypes
 } // declare module

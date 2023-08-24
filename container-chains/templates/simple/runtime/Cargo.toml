@@ -53,14 +53,22 @@ sp-trie = { workspace = true }
 sp-version = { workspace = true }
 
 # Polkadot
+pallet-xcm = { workspace = true }
 polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
 
 # Cumulus
 cumulus-pallet-parachain-system = { workspace = true }
+cumulus-pallet-dmp-queue = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
+cumulus-pallet-xcm = { workspace = true }
+cumulus-pallet-xcmp-queue = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
+cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
 
 # Benchmarking
@@ -75,9 +83,13 @@ default = [
 	"std",
 ]
 std = [
+	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-xcm/std",
+	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
+	"cumulus-primitives-utility/std",
 	"frame-executive/std",
 	"frame-support/std",
 	"frame-system-rpc-runtime-api/std",
@@ -95,6 +107,7 @@ std = [
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-utility/std",
+	"pallet-xcm/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain/std",
@@ -111,6 +124,9 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-version/std",
 	"tp-consensus/std",
+	"xcm/std",
+	"xcm-builder/std",
+	"xcm-executor/std"
 ]
 
 runtime-benchmarks = [
@@ -123,7 +139,9 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-cc-authorities-noting/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
+	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks"
 ]
 
 try-runtime = [ "cumulus-pallet-parachain-system/try-runtime", "frame-executive/try-runtime", "frame-support/try-runtime", "frame-system/try-runtime", "frame-try-runtime", "nimbus-primitives/try-runtime", "pallet-balances/try-runtime", "pallet-cc-authorities-noting/try-runtime", "pallet-session/try-runtime", "pallet-sudo/try-runtime", "pallet-timestamp/try-runtime", "pallet-utility/try-runtime", "parachain-info/try-runtime", "polkadot-runtime-common/try-runtime", "sp-runtime/try-runtime" ]

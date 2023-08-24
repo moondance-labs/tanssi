@@ -88,6 +88,18 @@ declare module "@polkadot/api-base/types/errors" {
       /** Generic error */
       [key: string]: AugmentedError<ApiType>;
     };
+    cumulusXcm: {
+      /** Generic error */
+      [key: string]: AugmentedError<ApiType>;
+    };
+    dmpQueue: {
+      /** The amount of weight given is possibly not enough for executing the message. */
+      OverLimit: AugmentedError<ApiType>;
+      /** The message index given is unknown. */
+      Unknown: AugmentedError<ApiType>;
+      /** Generic error */
+      [key: string]: AugmentedError<ApiType>;
+    };
     maintenanceMode: {
       /** The chain cannot enter maintenance mode because it is already in maintenance mode */
       AlreadyInMaintenanceMode: AugmentedError<ApiType>;
@@ -131,6 +143,62 @@ declare module "@polkadot/api-base/types/errors" {
       Unauthorized: AugmentedError<ApiType>;
       /** The inherent which supplies the validation data did not run this block. */
       ValidationDataNotAvailable: AugmentedError<ApiType>;
+      /** Generic error */
+      [key: string]: AugmentedError<ApiType>;
+    };
+    polkadotXcm: {
+      /** The given account is not an identifiable sovereign account for any location. */
+      AccountNotSovereign: AugmentedError<ApiType>;
+      /** The location is invalid since it already has a subscription from us. */
+      AlreadySubscribed: AugmentedError<ApiType>;
+      /**
+       * The given location could not be used (e.g. because it cannot be
+       * expressed in the desired version of XCM).
+       */
+      BadLocation: AugmentedError<ApiType>;
+      /** The version of the `Versioned` value used is not able to be interpreted. */
+      BadVersion: AugmentedError<ApiType>;
+      /** Could not re-anchor the assets to declare the fees for the destination chain. */
+      CannotReanchor: AugmentedError<ApiType>;
+      /** The destination `MultiLocation` provided cannot be inverted. */
+      DestinationNotInvertible: AugmentedError<ApiType>;
+      /** The assets to be sent are empty. */
+      Empty: AugmentedError<ApiType>;
+      /** The operation required fees to be paid which the initiator could not meet. */
+      FeesNotMet: AugmentedError<ApiType>;
+      /** The message execution fails the filter. */
+      Filtered: AugmentedError<ApiType>;
+      /**
+       * The unlock operation cannot succeed because there are still consumers
+       * of the lock.
+       */
+      InUse: AugmentedError<ApiType>;
+      /** Invalid asset for the operation. */
+      InvalidAsset: AugmentedError<ApiType>;
+      /** Origin is invalid for sending. */
+      InvalidOrigin: AugmentedError<ApiType>;
+      /** A remote lock with the corresponding data could not be found. */
+      LockNotFound: AugmentedError<ApiType>;
+      /** The owner does not own (all) of the asset that they wish to do the operation on. */
+      LowBalance: AugmentedError<ApiType>;
+      /** The referenced subscription could not be found. */
+      NoSubscription: AugmentedError<ApiType>;
+      /**
+       * There was some other issue (i.e. not to do with routing) in sending the
+       * message. Perhaps a lack of space for buffering the message.
+       */
+      SendFailure: AugmentedError<ApiType>;
+      /** Too many assets have been attempted for transfer. */
+      TooManyAssets: AugmentedError<ApiType>;
+      /** The asset owner has too many locks on the asset. */
+      TooManyLocks: AugmentedError<ApiType>;
+      /**
+       * The desired destination was unreachable, generally because there is a
+       * no way of routing to it.
+       */
+      Unreachable: AugmentedError<ApiType>;
+      /** The message's weight could not be determined. */
+      UnweighableMessage: AugmentedError<ApiType>;
       /** Generic error */
       [key: string]: AugmentedError<ApiType>;
     };
@@ -222,6 +290,20 @@ declare module "@polkadot/api-base/types/errors" {
     utility: {
       /** Too many calls batched. */
       TooManyCalls: AugmentedError<ApiType>;
+      /** Generic error */
+      [key: string]: AugmentedError<ApiType>;
+    };
+    xcmpQueue: {
+      /** Bad overweight index. */
+      BadOverweightIndex: AugmentedError<ApiType>;
+      /** Bad XCM data. */
+      BadXcm: AugmentedError<ApiType>;
+      /** Bad XCM origin. */
+      BadXcmOrigin: AugmentedError<ApiType>;
+      /** Failed to send XCM message. */
+      FailedToSend: AugmentedError<ApiType>;
+      /** Provided weight is possibly not enough to execute the message. */
+      WeightOverLimit: AugmentedError<ApiType>;
       /** Generic error */
       [key: string]: AugmentedError<ApiType>;
     };
