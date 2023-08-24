@@ -33,7 +33,6 @@ pub mod xcm_config;
 
 use {
     crate::precompiles::FrontierPrecompiles,
-    core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
@@ -43,8 +42,8 @@ use {
         dispatch::{DispatchClass, GetDispatchInfo},
         parameter_types,
         traits::{
-            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, FindAuthor, Imbalance,
-            OnFinalize, OnUnbalanced,
+            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Imbalance, OnFinalize,
+            OnUnbalanced,
         },
         weights::{
             constants::{
@@ -54,7 +53,6 @@ use {
             ConstantMultiplier, Weight, WeightToFeeCoefficient, WeightToFeeCoefficients,
             WeightToFeePolynomial,
         },
-        ConsensusEngineId,
     },
     frame_system::{
         limits::{BlockLength, BlockWeights},
@@ -71,7 +69,7 @@ use {
     parity_scale_codec::{Decode, Encode},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::ByteArray, Get, OpaqueMetadata, H160, H256, U256},
+    sp_core::{Get, OpaqueMetadata, H160, H256, U256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -298,7 +296,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("frontier-template"),
     impl_name: create_runtime_str!("frontier-template"),
     authoring_version: 1,
-    spec_version: 100,
+    spec_version: 101,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -344,8 +342,8 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
     cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
 
-/// We allow for 2000ms of compute with a 6 second average block time.
-pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 2000;
+/// We allow for 500ms of compute with a 12 second average block time.
+pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 500;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -585,23 +583,10 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
 }
 
-const BLOCK_GAS_LIMIT: u64 = 75_000_000;
+// To match ethereum expectations
+const BLOCK_GAS_LIMIT: u64 = 15_000_000;
 
 impl pallet_evm_chain_id::Config for Runtime {}
-
-pub struct FindAuthorTruncated<F>(PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
-    fn find_author<'a, I>(digests: I) -> Option<H160>
-    where
-        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
-    {
-        if let Some(author_index) = F::find_author(digests) {
-            let authority_id = AuthoritiesNoting::authorities()[author_index as usize].clone();
-            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
-        }
-        None
-    }
-}
 
 parameter_types! {
     pub BlockGasLimit: U256 = U256::from(BLOCK_GAS_LIMIT);
@@ -654,7 +639,7 @@ impl pallet_dynamic_fee::Config for Runtime {
 }
 
 parameter_types! {
-    pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
+    pub DefaultBaseFeePerGas: U256 = U256::from(2_000_000_000);
     pub DefaultElasticity: Permill = Permill::from_parts(125_000);
 }
 
