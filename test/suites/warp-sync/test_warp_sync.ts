@@ -213,7 +213,7 @@ describeSuite({
             if (author == getKeyringNimbusIdHex("Collator1000-03")) {
                 break;
             }
-            await context.waitBlock(1, "Tanssi");
+            await context.waitBlock(1, "Container2000");
         }
 
         expect(authors).to.contain(getKeyringNimbusIdHex("Collator1000-03"))
