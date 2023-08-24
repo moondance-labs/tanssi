@@ -461,6 +461,7 @@ async fn start_node_impl(
                 pool: transaction_pool.clone(),
                 deny_unsafe,
                 command_sink: None,
+                xcm_senders: None,
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -746,6 +747,7 @@ pub async fn start_node_impl_container(
                 pool: transaction_pool.clone(),
                 deny_unsafe,
                 command_sink: None,
+                xcm_senders: None,
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -1340,6 +1342,7 @@ pub fn new_dev(
     let prometheus_registry = config.prometheus_registry().cloned();
     let collator = config.role.is_authority();
     let mut command_sink = None;
+    let mut xcm_senders = None;
 
     if collator {
         let mut env = sc_basic_authorship::ProposerFactory::new(
@@ -1349,6 +1352,11 @@ pub fn new_dev(
             prometheus_registry.as_ref(),
             telemetry.as_ref().map(|x| x.handle()),
         );
+        // Create channels for mocked XCM messages.
+        let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
+        let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
+        xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
+
         env.set_soft_deadline(SOFT_DEADLINE_PERCENT);
         let commands_stream: Box<dyn Stream<Item = EngineCommand<H256>> + Send + Sync + Unpin> =
             match sealing {
@@ -1444,6 +1452,9 @@ pub fn new_dev(
                         .into_iter()
                         .collect();
 
+                    let downward_xcm_receiver = downward_xcm_receiver.clone();
+                    let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
+
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {
                         //let time = sp_timestamp::InherentDataProvider::from_system_time();
@@ -1458,11 +1469,11 @@ pub fn new_dev(
                             xcm_config: MockXcmConfig::new(
                                 &*client_for_xcm,
                                 block,
-                                Default::default(),
+                                para_id,
                                 Default::default(),
                             ),
-                            raw_downward_messages: vec![],
-                            raw_horizontal_messages: vec![],
+                            raw_downward_messages: downward_xcm_receiver.drain().collect(),
+                            raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                         };
 
                         let mocked_author_noting =
@@ -1491,6 +1502,7 @@ pub fn new_dev(
                 pool: transaction_pool.clone(),
                 deny_unsafe,
                 command_sink: command_sink.clone(),
+                xcm_senders: xcm_senders.clone(),
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)

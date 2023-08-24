@@ -16,7 +16,7 @@
 
 use {
     container_chain_template_simple_runtime::{
-        AccountId, MaintenanceModeConfig, MigrationsConfig, Signature,
+        AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, Signature,
     },
     cumulus_primitives_core::ParaId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
@@ -197,6 +197,8 @@ fn testnet_genesis(
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
         },
+        // This should initialize it to whatever we have set in the pallet
+        polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
     }
 }

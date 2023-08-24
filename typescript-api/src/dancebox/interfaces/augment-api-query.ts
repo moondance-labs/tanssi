@@ -18,14 +18,20 @@ import type {
   Vec,
   bool,
   u128,
+  u16,
   u32,
   u64,
 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
+  CumulusPalletDmpQueueConfigData,
+  CumulusPalletDmpQueuePageIndexData,
   CumulusPalletParachainSystemCodeUpgradeAuthorization,
   CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
+  CumulusPalletXcmpQueueInboundChannelDetails,
+  CumulusPalletXcmpQueueOutboundChannelDetails,
+  CumulusPalletXcmpQueueQueueConfigData,
   DanceboxRuntimeSessionKeys,
   FrameSupportDispatchPerDispatchClassWeight,
   FrameSystemAccountInfo,
@@ -45,6 +51,9 @@ import type {
   PalletProxyProxyDefinition,
   PalletRegistrarDepositInfo,
   PalletTransactionPaymentReleases,
+  PalletXcmQueryStatus,
+  PalletXcmRemoteLockedFungibleRecord,
+  PalletXcmVersionMigrationStage,
   PolkadotCorePrimitivesOutboundHrmpMessage,
   PolkadotPrimitivesV4AbridgedHostConfiguration,
   PolkadotPrimitivesV4PersistedValidationData,
@@ -56,6 +65,8 @@ import type {
   TpCollatorAssignmentAssignedCollatorsAccountId32,
   TpCollatorAssignmentAssignedCollatorsPublic,
   TpContainerChainGenesisDataContainerChainGenesisData,
+  XcmVersionedAssetId,
+  XcmVersionedMultiLocation,
 } from "@polkadot/types/lookup";
 import type { Observable } from "@polkadot/types/types";
 
@@ -312,6 +323,45 @@ declare module "@polkadot/api-base/types/storage" {
         []
       > &
         QueryableStorageEntry<ApiType, []>;
+      /** Generic query */
+      [key: string]: QueryableStorageEntry<ApiType>;
+    };
+    dmpQueue: {
+      /** The configuration. */
+      configuration: AugmentedQuery<
+        ApiType,
+        () => Observable<CumulusPalletDmpQueueConfigData>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /** Counter for the related counted storage map */
+      counterForOverweight: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+        QueryableStorageEntry<ApiType, []>;
+      /** The overweight messages. */
+      overweight: AugmentedQuery<
+        ApiType,
+        (
+          arg: u64 | AnyNumber | Uint8Array
+        ) => Observable<Option<ITuple<[u32, Bytes]>>>,
+        [u64]
+      > &
+        QueryableStorageEntry<ApiType, [u64]>;
+      /** The page index. */
+      pageIndex: AugmentedQuery<
+        ApiType,
+        () => Observable<CumulusPalletDmpQueuePageIndexData>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /** The queue pages. */
+      pages: AugmentedQuery<
+        ApiType,
+        (
+          arg: u32 | AnyNumber | Uint8Array
+        ) => Observable<Vec<ITuple<[u32, Bytes]>>>,
+        [u32]
+      > &
+        QueryableStorageEntry<ApiType, [u32]>;
       /** Generic query */
       [key: string]: QueryableStorageEntry<ApiType>;
     };
@@ -603,6 +653,139 @@ declare module "@polkadot/api-base/types/storage" {
       validationData: AugmentedQuery<
         ApiType,
         () => Observable<Option<PolkadotPrimitivesV4PersistedValidationData>>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /** Generic query */
+      [key: string]: QueryableStorageEntry<ApiType>;
+    };
+    polkadotXcm: {
+      /**
+       * The existing asset traps.
+       *
+       * Key is the blake2 256 hash of (origin, versioned `MultiAssets`) pair.
+       * Value is the number of times this pair has been trapped (usually just 1
+       * if it exists at all).
+       */
+      assetTraps: AugmentedQuery<
+        ApiType,
+        (arg: H256 | string | Uint8Array) => Observable<u32>,
+        [H256]
+      > &
+        QueryableStorageEntry<ApiType, [H256]>;
+      /** The current migration's stage, if any. */
+      currentMigration: AugmentedQuery<
+        ApiType,
+        () => Observable<Option<PalletXcmVersionMigrationStage>>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /** Fungible assets which we know are locked on this chain. */
+      lockedFungibles: AugmentedQuery<
+        ApiType,
+        (
+          arg: AccountId32 | string | Uint8Array
+        ) => Observable<Option<Vec<ITuple<[u128, XcmVersionedMultiLocation]>>>>,
+        [AccountId32]
+      > &
+        QueryableStorageEntry<ApiType, [AccountId32]>;
+      /** The ongoing queries. */
+      queries: AugmentedQuery<
+        ApiType,
+        (
+          arg: u64 | AnyNumber | Uint8Array
+        ) => Observable<Option<PalletXcmQueryStatus>>,
+        [u64]
+      > &
+        QueryableStorageEntry<ApiType, [u64]>;
+      /** The latest available query index. */
+      queryCounter: AugmentedQuery<ApiType, () => Observable<u64>, []> &
+        QueryableStorageEntry<ApiType, []>;
+      /** Fungible assets which we know are locked on a remote chain. */
+      remoteLockedFungibles: AugmentedQuery<
+        ApiType,
+        (
+          arg1: u32 | AnyNumber | Uint8Array,
+          arg2: AccountId32 | string | Uint8Array,
+          arg3: XcmVersionedAssetId | { V3: any } | string | Uint8Array
+        ) => Observable<Option<PalletXcmRemoteLockedFungibleRecord>>,
+        [u32, AccountId32, XcmVersionedAssetId]
+      > &
+        QueryableStorageEntry<ApiType, [u32, AccountId32, XcmVersionedAssetId]>;
+      /**
+       * Default version to encode XCM when latest version of destination is
+       * unknown. If `None`, then the destinations whose XCM version is unknown
+       * are considered unreachable.
+       */
+      safeXcmVersion: AugmentedQuery<
+        ApiType,
+        () => Observable<Option<u32>>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /** The Latest versions that we know various locations support. */
+      supportedVersion: AugmentedQuery<
+        ApiType,
+        (
+          arg1: u32 | AnyNumber | Uint8Array,
+          arg2:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array
+        ) => Observable<Option<u32>>,
+        [u32, XcmVersionedMultiLocation]
+      > &
+        QueryableStorageEntry<ApiType, [u32, XcmVersionedMultiLocation]>;
+      /**
+       * Destinations whose latest XCM version we would like to know. Duplicates
+       * not allowed, and the `u32` counter is the number of times that a send
+       * to the destination has been attempted, which is used as a prioritization.
+       */
+      versionDiscoveryQueue: AugmentedQuery<
+        ApiType,
+        () => Observable<Vec<ITuple<[XcmVersionedMultiLocation, u32]>>>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /** All locations that we have requested version notifications from. */
+      versionNotifiers: AugmentedQuery<
+        ApiType,
+        (
+          arg1: u32 | AnyNumber | Uint8Array,
+          arg2:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array
+        ) => Observable<Option<u64>>,
+        [u32, XcmVersionedMultiLocation]
+      > &
+        QueryableStorageEntry<ApiType, [u32, XcmVersionedMultiLocation]>;
+      /**
+       * The target locations that are subscribed to our version changes, as
+       * well as the most recent of our versions we informed them of.
+       */
+      versionNotifyTargets: AugmentedQuery<
+        ApiType,
+        (
+          arg1: u32 | AnyNumber | Uint8Array,
+          arg2:
+            | XcmVersionedMultiLocation
+            | { V2: any }
+            | { V3: any }
+            | string
+            | Uint8Array
+        ) => Observable<Option<ITuple<[u64, SpWeightsWeightV2Weight, u32]>>>,
+        [u32, XcmVersionedMultiLocation]
+      > &
+        QueryableStorageEntry<ApiType, [u32, XcmVersionedMultiLocation]>;
+      /** Global suspension state of the XCM executor. */
+      xcmExecutionSuspended: AugmentedQuery<
+        ApiType,
+        () => Observable<bool>,
         []
       > &
         QueryableStorageEntry<ApiType, []>;
@@ -914,6 +1097,92 @@ declare module "@polkadot/api-base/types/storage" {
         []
       > &
         QueryableStorageEntry<ApiType, []>;
+      /** Generic query */
+      [key: string]: QueryableStorageEntry<ApiType>;
+    };
+    xcmpQueue: {
+      /** Counter for the related counted storage map */
+      counterForOverweight: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+        QueryableStorageEntry<ApiType, []>;
+      /** Inbound aggregate XCMP messages. It can only be one per ParaId/block. */
+      inboundXcmpMessages: AugmentedQuery<
+        ApiType,
+        (
+          arg1: u32 | AnyNumber | Uint8Array,
+          arg2: u32 | AnyNumber | Uint8Array
+        ) => Observable<Bytes>,
+        [u32, u32]
+      > &
+        QueryableStorageEntry<ApiType, [u32, u32]>;
+      /** Status of the inbound XCMP channels. */
+      inboundXcmpStatus: AugmentedQuery<
+        ApiType,
+        () => Observable<Vec<CumulusPalletXcmpQueueInboundChannelDetails>>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /** The messages outbound in a given XCMP channel. */
+      outboundXcmpMessages: AugmentedQuery<
+        ApiType,
+        (
+          arg1: u32 | AnyNumber | Uint8Array,
+          arg2: u16 | AnyNumber | Uint8Array
+        ) => Observable<Bytes>,
+        [u32, u16]
+      > &
+        QueryableStorageEntry<ApiType, [u32, u16]>;
+      /**
+       * The non-empty XCMP channels in order of becoming non-empty, and the
+       * index of the first and last outbound message. If the two indices are
+       * equal, then it indicates an empty queue and there must be a non-`Ok`
+       * `OutboundStatus`. We assume queues grow no greater than 65535 items.
+       * Queue indices for normal messages begin at one; zero is reserved in
+       * case of the need to send a high-priority signal message this block. The
+       * bool is true if there is a signal message waiting to be sent.
+       */
+      outboundXcmpStatus: AugmentedQuery<
+        ApiType,
+        () => Observable<Vec<CumulusPalletXcmpQueueOutboundChannelDetails>>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /**
+       * The messages that exceeded max individual message weight budget.
+       *
+       * These message stay in this storage map until they are manually
+       * dispatched via `service_overweight`.
+       */
+      overweight: AugmentedQuery<
+        ApiType,
+        (
+          arg: u64 | AnyNumber | Uint8Array
+        ) => Observable<Option<ITuple<[u32, u32, Bytes]>>>,
+        [u64]
+      > &
+        QueryableStorageEntry<ApiType, [u64]>;
+      /**
+       * The number of overweight messages ever recorded in `Overweight`. Also
+       * doubles as the next available free overweight index.
+       */
+      overweightCount: AugmentedQuery<ApiType, () => Observable<u64>, []> &
+        QueryableStorageEntry<ApiType, []>;
+      /** The configuration which controls the dynamics of the outbound queue. */
+      queueConfig: AugmentedQuery<
+        ApiType,
+        () => Observable<CumulusPalletXcmpQueueQueueConfigData>,
+        []
+      > &
+        QueryableStorageEntry<ApiType, []>;
+      /** Whether or not the XCMP queue is suspended from executing incoming XCMs or not. */
+      queueSuspended: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+        QueryableStorageEntry<ApiType, []>;
+      /** Any signal messages waiting to be sent. */
+      signalMessages: AugmentedQuery<
+        ApiType,
+        (arg: u32 | AnyNumber | Uint8Array) => Observable<Bytes>,
+        [u32]
+      > &
+        QueryableStorageEntry<ApiType, [u32]>;
       /** Generic query */
       [key: string]: QueryableStorageEntry<ApiType>;
     };

@@ -1,0 +1,29 @@
+[package]
+name = "ccp-xcm"
+
+authors = { workspace = true }
+description = "container-chain xcm primitives"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+[dependencies]
+
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+
+
+# Substrate
+sp-core = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+
+sp-io = { workspace = true }
+sp-std = { workspace = true }
+
+
+# Polkadot
+xcm = { workspace = true }
+xcm-executor = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = ["sp-core/std", "frame-support/std", "frame-system/std", "sp-io/std", "sp-std/std", "xcm/std", "xcm-executor/std"]
