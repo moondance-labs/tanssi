@@ -396,6 +396,22 @@ declare module "@polkadot/api-base/types/submittable" {
       /** Generic tx */
       [key: string]: SubmittableExtrinsicFunction<ApiType>;
     };
+    dmpQueue: {
+      /** Service a single overweight message. */
+      serviceOverweight: AugmentedSubmittable<
+        (
+          index: u64 | AnyNumber | Uint8Array,
+          weightLimit:
+            | SpWeightsWeightV2Weight
+            | { refTime?: any; proofSize?: any }
+            | string
+            | Uint8Array
+        ) => SubmittableExtrinsic<ApiType>,
+        [u64, SpWeightsWeightV2Weight]
+      >;
+      /** Generic tx */
+      [key: string]: SubmittableExtrinsicFunction<ApiType>;
+    };
     invulnerables: {
       /**
        * Add a new account `who` to the list of `Invulnerables` collators.
