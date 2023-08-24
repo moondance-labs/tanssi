@@ -376,9 +376,9 @@ impl pallet_balances::Config for Runtime {
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = [u8; 8];
-    type MaxFreezes = ConstU32<50>;
+    type MaxFreezes = ConstU32<0>;
     type HoldIdentifier = [u8; 8];
-    type MaxHolds = ConstU32<50>;
+    type MaxHolds = ConstU32<1>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
