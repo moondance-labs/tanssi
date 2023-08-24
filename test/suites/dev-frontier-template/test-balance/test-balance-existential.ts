@@ -58,14 +58,16 @@ describeSuite({
         title: "should not reap on tiny balance",
         test: async function () {
           let randomAccountBalance = await context.viem("public").getBalance({ address: randomAccount.address })
-          await context.createBlock(
-            createRawTransfer(context, baltathar.address, randomAccountBalance - 1n - 21000n * MIN_GAS_PRICE, {
+          const gasPrice = (await context.polkadotJs().rpc.eth.gasPrice()).toBigInt();
+          const { result } = await context.createBlock(
+            createRawTransfer(context, baltathar.address, randomAccountBalance - 1n - 21000n * gasPrice, {
               privateKey,
               type: "legacy",
               gas: 21000n,
-              gasPrice: MIN_GAS_PRICE,
+              gasPrice: gasPrice,
             })
           );
+          expect(result!.successful, result!.error?.name).toBe(true);
           expect(
             await context.viem("public").getBalance({ address: randomAccount.address })
           ).toBe(1n);
