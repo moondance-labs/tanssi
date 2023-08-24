@@ -81,9 +81,9 @@ where
     }
 }
 
-pub struct CommonMigrations<Runtime>(PhantomData<Runtime>);
+pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 
-impl<Runtime> GetMigrations for CommonMigrations<Runtime>
+impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
 where
     Runtime: pallet_invulnerables::Config,
     Runtime: pallet_collator_selection::Config,

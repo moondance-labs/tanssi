@@ -681,7 +681,7 @@ impl pallet_proxy::Config for Runtime {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = (migrations::CommonMigrations<Runtime>,);
+    type MigrationsList = (migrations::DanceboxMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
 
