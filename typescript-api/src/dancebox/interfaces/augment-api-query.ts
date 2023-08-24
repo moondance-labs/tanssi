@@ -50,10 +50,6 @@ import type {
   PalletProxyAnnouncement,
   PalletProxyProxyDefinition,
   PalletRegistrarDepositInfo,
-  PalletTransactionPaymentReleases,
-  PalletXcmQueryStatus,
-  PalletXcmRemoteLockedFungibleRecord,
-  PalletXcmVersionMigrationStage,
   PolkadotCorePrimitivesOutboundHrmpMessage,
   PolkadotPrimitivesV4AbridgedHostConfiguration,
   PolkadotPrimitivesV4PersistedValidationData,
@@ -1096,104 +1092,6 @@ declare module "@polkadot/api-base/types/storage" {
       /** Current time for the current block. */
       now: AugmentedQuery<ApiType, () => Observable<u64>, []> &
         QueryableStorageEntry<ApiType, []>;
-      /** Generic query */
-      [key: string]: QueryableStorageEntry<ApiType>;
-    };
-    transactionPayment: {
-      nextFeeMultiplier: AugmentedQuery<ApiType, () => Observable<u128>, []> &
-        QueryableStorageEntry<ApiType, []>;
-      storageVersion: AugmentedQuery<
-        ApiType,
-        () => Observable<PalletTransactionPaymentReleases>,
-        []
-      > &
-        QueryableStorageEntry<ApiType, []>;
-      /** Generic query */
-      [key: string]: QueryableStorageEntry<ApiType>;
-    };
-    xcmpQueue: {
-      /** Counter for the related counted storage map */
-      counterForOverweight: AugmentedQuery<ApiType, () => Observable<u32>, []> &
-        QueryableStorageEntry<ApiType, []>;
-      /** Inbound aggregate XCMP messages. It can only be one per ParaId/block. */
-      inboundXcmpMessages: AugmentedQuery<
-        ApiType,
-        (
-          arg1: u32 | AnyNumber | Uint8Array,
-          arg2: u32 | AnyNumber | Uint8Array
-        ) => Observable<Bytes>,
-        [u32, u32]
-      > &
-        QueryableStorageEntry<ApiType, [u32, u32]>;
-      /** Status of the inbound XCMP channels. */
-      inboundXcmpStatus: AugmentedQuery<
-        ApiType,
-        () => Observable<Vec<CumulusPalletXcmpQueueInboundChannelDetails>>,
-        []
-      > &
-        QueryableStorageEntry<ApiType, []>;
-      /** The messages outbound in a given XCMP channel. */
-      outboundXcmpMessages: AugmentedQuery<
-        ApiType,
-        (
-          arg1: u32 | AnyNumber | Uint8Array,
-          arg2: u16 | AnyNumber | Uint8Array
-        ) => Observable<Bytes>,
-        [u32, u16]
-      > &
-        QueryableStorageEntry<ApiType, [u32, u16]>;
-      /**
-       * The non-empty XCMP channels in order of becoming non-empty, and the
-       * index of the first and last outbound message. If the two indices are
-       * equal, then it indicates an empty queue and there must be a non-`Ok`
-       * `OutboundStatus`. We assume queues grow no greater than 65535 items.
-       * Queue indices for normal messages begin at one; zero is reserved in
-       * case of the need to send a high-priority signal message this block. The
-       * bool is true if there is a signal message waiting to be sent.
-       */
-      outboundXcmpStatus: AugmentedQuery<
-        ApiType,
-        () => Observable<Vec<CumulusPalletXcmpQueueOutboundChannelDetails>>,
-        []
-      > &
-        QueryableStorageEntry<ApiType, []>;
-      /**
-       * The messages that exceeded max individual message weight budget.
-       *
-       * These message stay in this storage map until they are manually
-       * dispatched via `service_overweight`.
-       */
-      overweight: AugmentedQuery<
-        ApiType,
-        (
-          arg: u64 | AnyNumber | Uint8Array
-        ) => Observable<Option<ITuple<[u32, u32, Bytes]>>>,
-        [u64]
-      > &
-        QueryableStorageEntry<ApiType, [u64]>;
-      /**
-       * The number of overweight messages ever recorded in `Overweight`. Also
-       * doubles as the next available free overweight index.
-       */
-      overweightCount: AugmentedQuery<ApiType, () => Observable<u64>, []> &
-        QueryableStorageEntry<ApiType, []>;
-      /** The configuration which controls the dynamics of the outbound queue. */
-      queueConfig: AugmentedQuery<
-        ApiType,
-        () => Observable<CumulusPalletXcmpQueueQueueConfigData>,
-        []
-      > &
-        QueryableStorageEntry<ApiType, []>;
-      /** Whether or not the XCMP queue is suspended from executing incoming XCMs or not. */
-      queueSuspended: AugmentedQuery<ApiType, () => Observable<bool>, []> &
-        QueryableStorageEntry<ApiType, []>;
-      /** Any signal messages waiting to be sent. */
-      signalMessages: AugmentedQuery<
-        ApiType,
-        (arg: u32 | AnyNumber | Uint8Array) => Observable<Bytes>,
-        [u32]
-      > &
-        QueryableStorageEntry<ApiType, [u32]>;
       /** Generic query */
       [key: string]: QueryableStorageEntry<ApiType>;
     };

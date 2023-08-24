@@ -372,17 +372,7 @@ export default {
   FrameSupportTokensMiscBalanceStatus: {
     _enum: ["Free", "Reserved"],
   },
-  /** Lookup44: pallet_transaction_payment::pallet::Event<T> */
-  PalletTransactionPaymentEvent: {
-    _enum: {
-      TransactionFeePaid: {
-        who: "AccountId32",
-        actualFee: "u128",
-        tip: "u128",
-      },
-    },
-  },
-  /** Lookup45: pallet_registrar::pallet::Event<T> */
+  /** Lookup44: pallet_registrar::pallet::Event<T> */
   PalletRegistrarEvent: {
     _enum: {
       ParaIdRegistered: {
@@ -399,7 +389,7 @@ export default {
       },
     },
   },
-  /** Lookup47: pallet_author_noting::pallet::Event<T> */
+  /** Lookup46: pallet_author_noting::pallet::Event<T> */
   PalletAuthorNotingEvent: {
     _enum: {
       LatestAuthorChanged: {
@@ -409,7 +399,7 @@ export default {
       },
     },
   },
-  /** Lookup48: pallet_collator_selection::pallet::Event<T> */
+  /** Lookup47: pallet_collator_selection::pallet::Event<T> */
   PalletCollatorSelectionEvent: {
     _enum: {
       NewInvulnerables: {
@@ -430,7 +420,7 @@ export default {
       },
     },
   },
-  /** Lookup50: pallet_session::pallet::Event */
+  /** Lookup49: pallet_session::pallet::Event */
   PalletSessionEvent: {
     _enum: {
       NewSession: {

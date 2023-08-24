@@ -563,18 +563,7 @@ declare module "@polkadot/types/lookup" {
     readonly type: "Free" | "Reserved";
   }
 
-  /** @name PalletTransactionPaymentEvent (44) */
-  interface PalletTransactionPaymentEvent extends Enum {
-    readonly isTransactionFeePaid: boolean;
-    readonly asTransactionFeePaid: {
-      readonly who: AccountId32;
-      readonly actualFee: u128;
-      readonly tip: u128;
-    } & Struct;
-    readonly type: "TransactionFeePaid";
-  }
-
-  /** @name PalletRegistrarEvent (45) */
+  /** @name PalletRegistrarEvent (44) */
   interface PalletRegistrarEvent extends Enum {
     readonly isParaIdRegistered: boolean;
     readonly asParaIdRegistered: {
@@ -599,7 +588,7 @@ declare module "@polkadot/types/lookup" {
       | "BootNodesChanged";
   }
 
-  /** @name PalletAuthorNotingEvent (47) */
+  /** @name PalletAuthorNotingEvent (46) */
   interface PalletAuthorNotingEvent extends Enum {
     readonly isLatestAuthorChanged: boolean;
     readonly asLatestAuthorChanged: {
@@ -610,7 +599,7 @@ declare module "@polkadot/types/lookup" {
     readonly type: "LatestAuthorChanged";
   }
 
-  /** @name PalletCollatorSelectionEvent (48) */
+  /** @name PalletCollatorSelectionEvent (47) */
   interface PalletCollatorSelectionEvent extends Enum {
     readonly isNewInvulnerables: boolean;
     readonly asNewInvulnerables: {
@@ -641,7 +630,7 @@ declare module "@polkadot/types/lookup" {
       | "CandidateRemoved";
   }
 
-  /** @name PalletSessionEvent (50) */
+  /** @name PalletSessionEvent (49) */
   interface PalletSessionEvent extends Enum {
     readonly isNewSession: boolean;
     readonly asNewSession: {
