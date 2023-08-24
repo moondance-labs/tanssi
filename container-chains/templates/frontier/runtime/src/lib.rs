@@ -806,7 +806,6 @@ impl pallet_evm::Config for Runtime {
     type OnChargeTransaction = OnChargeEVMTransaction<()>;
     type OnCreate = ();
     type FindAuthor = FindAuthorAdapter;
-    // TODO: update in the future
     type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
     type Timestamp = Timestamp;
     type WeightInfo = ();
