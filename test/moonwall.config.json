@@ -151,7 +151,7 @@
       }
     },
     {
-      "name": "chopsticks_dancebox",
+      "name": "chopsticks_dancebox_upgrade",
       "testFileDir": ["suites/rt-ugprade-chopsticks"],
       "foundation": {
         "type": "chopsticks",
