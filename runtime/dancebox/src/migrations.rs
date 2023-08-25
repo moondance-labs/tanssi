@@ -19,18 +19,19 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
-use frame_support::weights::Weight;
+use frame_support::{storage::types::StorageValue, weights::Weight};
 
 use pallet_invulnerables::WeightInfo;
 use pallet_migrations::{GetMigrations, Migration};
+use sp_runtime::BoundedVec;
 use sp_std::{marker::PhantomData, prelude::*};
 
-use crate::{CollatorSelection, Invulnerables, RuntimeOrigin, LOG_TARGET};
+use crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET};
 
 pub struct MigrateInvulnerables<T>(pub PhantomData<T>);
 impl<T> Migration for MigrateInvulnerables<T>
 where
-    T: pallet_invulnerables::Config + pallet_collator_selection::Config,
+    T: pallet_invulnerables::Config,
 {
     fn friendly_name(&self) -> &str {
         "TM_MigrateInvulnerables"
@@ -38,7 +39,24 @@ where
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
         log::info!(target: LOG_TARGET, "migrate");
-        let invulnerables = CollatorSelection::invulnerables();
+        struct CollatorSelectionStorageValuePrefix;
+        impl frame_support::traits::StorageInstance for CollatorSelectionStorageValuePrefix {
+            const STORAGE_PREFIX: &'static str = "Invulnerables";
+            fn pallet_prefix() -> &'static str {
+                "CollatorSelection"
+            }
+        }
+        type CollatorSelectionInvulnerablesValue<T> = StorageValue<
+            CollatorSelectionStorageValuePrefix,
+            BoundedVec<
+                <T as frame_system::Config>::AccountId,
+                <T as pallet_invulnerables::Config>::MaxInvulnerables,
+            >,
+        >;
+
+        // let invulnerables = CollatorSelection::invulnerables();
+        let invulnerables = CollatorSelectionInvulnerablesValue::<Runtime>::get()
+            .expect("Failed to get invulnerables from CollaterSelection pallet storage.");
         let invulnerables_len = invulnerables.len();
         Invulnerables::set_invulnerables(RuntimeOrigin::root(), invulnerables.to_vec())
             .expect("Failed to set invulnerables");
