@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::{PendingOperationKey, SharesOrStake};
-
 use {
     crate::{
         assert_eq_events, assert_fields_eq,
@@ -23,7 +21,8 @@ use {
         mock::*,
         pool_test,
         pools::{self, Pool},
-        AllTargetPool, Error, Event, PendingOperationQuery, Shares, Stake, TargetPool,
+        AllTargetPool, Error, Event, PendingOperationKey, PendingOperationQuery, PendingOperations,
+        Shares, SharesOrStake, Stake, TargetPool,
     },
     frame_support::{assert_noop, assert_ok, traits::tokens::fungible::Mutate},
     sp_runtime::TokenError,
@@ -32,6 +31,33 @@ use {
 type Joining = pools::Joining<Runtime>;
 type Leaving = pools::Leaving<Runtime>;
 
+fn operation_stake(
+    candidate: AccountId,
+    delegator: AccountId,
+    pool: TargetPool,
+    at_block: u64,
+) -> Balance {
+    let operation_key = match pool {
+        TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
+            candidate: candidate.clone(),
+            at_block,
+        },
+        TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
+            candidate: candidate.clone(),
+            at_block,
+        },
+    };
+
+    let shares = PendingOperations::<Runtime>::get(&delegator, &operation_key);
+    if shares == 0 {
+        return 0;
+    }
+
+    Joining::shares_to_stake(&candidate, Shares(shares))
+        .unwrap()
+        .0
+}
+
 fn do_request_delegation(
     candidate: AccountId,
     delegator: AccountId,
@@ -39,8 +65,11 @@ fn do_request_delegation(
     amount: Balance,
     expected_joining: Balance,
 ) {
+    let now = block_number();
+
     let before = State::extract(candidate, delegator);
     let pool_before = PoolState::extract::<Joining>(candidate, delegator);
+    let operation_before = operation_stake(candidate, delegator, pool, now);
 
     assert_ok!(Staking::request_delegate(
         RuntimeOrigin::signed(delegator),
@@ -51,6 +80,7 @@ fn do_request_delegation(
 
     let after = State::extract(candidate, delegator);
     let pool_after = PoolState::extract::<Joining>(candidate, delegator);
+    let operation_after = operation_stake(candidate, delegator, pool, now);
 
     // Actual balances don't change
     assert_fields_eq!(before, after, [delegator_balance, staking_balance]);
@@ -64,6 +94,7 @@ fn do_request_delegation(
         before.candidate_total_stake + expected_joining,
         after.candidate_total_stake
     );
+    assert_eq!(operation_before + expected_joining, operation_after);
 }
 
 fn do_execute_delegation<P: PoolExt<Runtime>>(
@@ -136,7 +167,7 @@ fn do_full_delegation<P: PoolExt<Runtime>>(
         request_amount,
         round_down(request_amount, 2),
     );
-    roll_to(block_number + 2);
+    roll_to(block_number + BLOCKS_TO_WAIT);
     do_execute_delegation::<P>(
         ACCOUNT_CANDIDATE_1,
         ACCOUNT_DELEGATOR_1,
@@ -248,7 +279,7 @@ fn do_full_undelegation<P: PoolExt<Runtime>>(
         expected_removed,
         expected_leaving,
     );
-    roll_to(block_number + 2);
+    roll_to(block_number + BLOCKS_TO_WAIT);
     do_execute_undelegation(candidate, delegator, block_number, expected_leaving);
 }
 
@@ -435,6 +466,68 @@ pool_test!(
                     released: 10,
                 },
             ]);
+        })
+    }
+);
+
+pool_test!(
+    fn delegation_execution_too_soon<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            let final_amount = 2 * InitialManualClaimShareValue::get();
+            let block_number = block_number();
+            do_request_delegation(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                P::target_pool(),
+                final_amount,
+                final_amount,
+            );
+            roll_to(block_number + BLOCKS_TO_WAIT - 1); // too soon
+
+            assert_noop!(
+                Staking::execute_pending_operations(
+                    RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                    vec![PendingOperationQuery {
+                        delegator: ACCOUNT_DELEGATOR_1,
+                        operation: P::joining_operation_key(ACCOUNT_CANDIDATE_1, block_number)
+                    }]
+                ),
+                Error::<Runtime>::RequestCannotBeExecuted(0)
+            );
+        })
+    }
+);
+
+pool_test!(
+    fn undelegation_execution_too_soon<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            let final_amount = 2 * InitialManualClaimShareValue::get();
+            let leaving_amount = round_down(final_amount, 3); // test leaving rounding
+            
+            do_full_delegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                final_amount,
+                final_amount,
+            );
+
+            let block_number = block_number();
+            do_request_undelegation::<P>(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1, final_amount, final_amount, leaving_amount);
+
+            roll_to(block_number + BLOCKS_TO_WAIT - 1); // too soon
+            assert_noop!(
+                Staking::execute_pending_operations(
+                    RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                    vec![PendingOperationQuery {
+                        delegator: ACCOUNT_DELEGATOR_1,
+                        operation: PendingOperationKey::Leaving {
+                            candidate: ACCOUNT_CANDIDATE_1,
+                            at_block: block_number,
+                        }
+                    }]
+                ),
+                Error::<Runtime>::RequestCannotBeExecuted(0)
+            );
         })
     }
 );

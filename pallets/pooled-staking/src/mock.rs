@@ -144,6 +144,7 @@ parameter_types! {
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
 }
 
+pub const BLOCKS_TO_WAIT: u64 = 2;
 pub struct DummyRequestFilter;
 
 impl RequestFilter<Runtime> for DummyRequestFilter {
@@ -154,7 +155,7 @@ impl RequestFilter<Runtime> for DummyRequestFilter {
             return false;
         };
 
-        diff >= 2 // must wait 2 blocks
+        diff >= BLOCKS_TO_WAIT // must wait 2 blocks
     }
 }
 
@@ -173,7 +174,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type JoiningRequestFilter = DummyRequestFilter;
     type LeavingRequestFilter = DummyRequestFilter;
     // low value so we can test vec bounding, in practice it should be bigger
-    type EligibleCandidatesBufferSize = ConstU32<4>;
+    type EligibleCandidatesBufferSize = ConstU32<3>;
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {

@@ -82,7 +82,7 @@ impl<T: Config> Calls<T> {
             T::Currency::transfer(
                 &T::StakingAccount::get(),
                 &delegator,
-                dbg!(diff),
+                diff,
                 Preservation::Preserve,
             )?;
             T::Currency::hold(&T::CurrencyHoldReason::get(), &delegator, diff)?;
