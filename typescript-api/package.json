@@ -27,7 +27,7 @@
         "prebuild": "rimraf build",
         "build": "tsc -b --verbose",
         "postbuild": "pnpm tsx ./scripts/postbuild.ts",
-        "publish": "cd build && npm publish",
+        "publish": "npm publish",
         "deploy": "pnpm run generate && pnpm run build && pnpm run publish",
         "pretty": "prettier --write --ignore-unknown --plugin prettier-plugin-jsdoc 'src/**/*'"
     },
