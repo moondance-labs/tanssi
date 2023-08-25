@@ -27,7 +27,7 @@ use sp_std::{marker::PhantomData, prelude::*};
 
 use crate::{CollatorSelection, Invulnerables, RuntimeOrigin, LOG_TARGET};
 
-pub struct MigrateInvulnerables<T>(PhantomData<T>);
+pub struct MigrateInvulnerables<T>(pub PhantomData<T>);
 impl<T> Migration for MigrateInvulnerables<T>
 where
     T: pallet_invulnerables::Config + pallet_collator_selection::Config,
