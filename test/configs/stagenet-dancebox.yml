@@ -13,13 +13,3 @@ import-storage:
   
   Registrar:
     registeredParaIds: []
-
-  AuthorInherent:
-    Author: "0x0101010101010101010101010101010101010101010101010101010101010101"
-  
-  AuthorityAssignment:
-    collatorContainerChain:
-      - - - 65535
-        - orchestratorChain: ["0x0101010101010101010101010101010101010101010101010101010101010101"]
-  Session:
-    currentIndex: 0xffff0000
