@@ -17,6 +17,7 @@ scale-info = { workspace = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Local
+ccp-runtime-common = { workspace = true }
 ccp-xcm = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tp-consensus = { workspace = true }
@@ -95,6 +96,7 @@ default = [
 	"std",
 ]
 std = [
+	"ccp-runtime-common/std",
 	"ccp-xcm/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",

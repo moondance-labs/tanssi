@@ -58,7 +58,6 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    nimbus_primitives::NimbusId,
     pallet_ethereum::{Call::transact, PostLogContent, Transaction as EthereumTransaction},
     pallet_evm::{
         Account as EVMAccount, EVMCurrencyAdapter, EnsureAddressNever, EnsureAddressRoot,
@@ -311,10 +310,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
 /// Change this to adjust the block time.
 pub const MILLISECS_PER_BLOCK: u64 = 12000;
 
-// NOTE: Currently it is not possible to change the slot duration after the chain has started.
-//       Attempting to do so will brick block production.
-pub const SLOT_DURATION: u64 = MILLISECS_PER_BLOCK;
-
 // Time is measured by number of blocks.
 pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
@@ -449,17 +444,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = ();
 }
 
-impl pallet_timestamp::Config for Runtime {
-    /// A timestamp: milliseconds since the unix epoch.
-    type Moment = u64;
-    type OnTimestampSet = tp_consensus::OnTimestampSet<
-        <Self as pallet_author_inherent::Config>::SlotBeacon,
-        ConstU64<{ SLOT_DURATION }>,
-    >;
-    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
-}
-
 parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
 }
@@ -575,14 +559,6 @@ impl pallet_maintenance_mode::Config for Runtime {
     type MaintenanceExecutiveHooks = AllPalletsWithSystem;
 }
 
-impl pallet_cc_authorities_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type SelfParaId = parachain_info::Pallet<Runtime>;
-    type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type AuthorityId = NimbusId;
-    type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
-}
-
 // To match ethereum expectations
 const BLOCK_GAS_LIMIT: u64 = 15_000_000;
 
@@ -668,14 +644,7 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_author_inherent::Config for Runtime {
-    type AuthorId = NimbusId;
-    type AccountLookup = tp_consensus::NimbusLookUp;
-    type CanAuthor = pallet_cc_authorities_noting::CanAuthor<Runtime>;
-    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
-    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
-}
-
+ccp_runtime_common::impl_consensus_pallets!();
 impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
