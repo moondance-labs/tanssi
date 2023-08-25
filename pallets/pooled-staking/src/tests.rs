@@ -175,16 +175,17 @@ fn do_request_undelegation<P: PoolExt<Runtime>>(
     assert_fields_eq!(before, after, [delegator_balance, staking_balance]);
     // Dust is released immediately.
     assert_eq!(before.delegator_hold - dust, after.delegator_hold);
-    assert_eq!(
-        before.candidate_total_stake - dust,
-        after.candidate_total_stake
-    );
     // Pool decrease.
     assert_eq!(pool_before.stake - expected_removed, pool_after.stake);
     assert_eq!(pool_before.hold - expected_removed, pool_after.stake);
     // Leaving increase.
     assert_eq!(leaving_before.stake + expected_leaving, leaving_after.stake);
     assert_eq!(leaving_before.hold + expected_leaving, leaving_after.stake);
+    // Stake no longer contribute to election
+    assert_eq!(
+        before.candidate_total_stake - expected_removed,
+        after.candidate_total_stake
+    );
 }
 
 fn do_execute_undelegation(
@@ -224,10 +225,7 @@ fn do_execute_undelegation(
         before.delegator_hold - expected_decrease,
         after.delegator_hold
     );
-    assert_eq!(
-        before.candidate_total_stake - expected_decrease,
-        after.candidate_total_stake
-    );
+    assert_fields_eq!(before, after, candidate_total_stake);
     assert_eq!(leaving_before.hold - expected_decrease, leaving_after.hold);
     assert_eq!(
         leaving_before.stake - expected_decrease,
@@ -358,7 +356,7 @@ pool_test!(
 pool_test!(
     fn delegation_request_more_than_available<P>() {
         ExtBuilder::default().build().execute_with(|| {
-            let amount = DEFAULT_BALANCE + 1;
+            let amount = DEFAULT_BALANCE; // not enough to keep ED
 
             let before = State::extract(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1);
             let pool_before =
@@ -507,11 +505,11 @@ pool_test!(
                 // undelegate request
                 Event::DecreasedStake {
                     candidate: ACCOUNT_CANDIDATE_1,
-                    stake: 2,
+                    stake: final_amount,
                 },
                 Event::UpdatedCandidatePosition {
                     candidate: ACCOUNT_CANDIDATE_1,
-                    stake: leaving_amount,
+                    stake: 0,
                     self_delegation: 0,
                     before: None,
                     after: None,
@@ -524,17 +522,11 @@ pool_test!(
                     released: 2
                 },
                 // undelegate exec
-                Event::DecreasedStake {
+                Event::ExecutedUndelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
-                    stake: leaving_amount,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    released: leaving_amount,
                 },
-                Event::UpdatedCandidatePosition {
-                    candidate: ACCOUNT_CANDIDATE_1,
-                    stake: 0,
-                    self_delegation: 0,
-                    before: None,
-                    after: None,
-                }
             ]);
         })
     }

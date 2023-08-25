@@ -323,13 +323,6 @@ pub mod pallet {
             towards: TargetPool,
             pending: T::Balance,
         },
-        RequestedUndelegate {
-            candidate: Candidate<T>,
-            delegator: Delegator<T>,
-            from: TargetPool,
-            pending: T::Balance,
-            released: T::Balance,
-        },
         ExecutedDelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
@@ -337,10 +330,16 @@ pub mod pallet {
             staked: T::Balance,
             released: T::Balance,
         },
+        RequestedUndelegate {
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            from: TargetPool,
+            pending: T::Balance,
+            released: T::Balance,
+        },
         ExecutedUndelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            towards: TargetPool,
             released: T::Balance,
         },
 

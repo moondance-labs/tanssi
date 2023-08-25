@@ -221,6 +221,9 @@ impl<T: Config> Calls<T> {
             }
         };
 
+        // All this stake no longer contribute to the election of the candidate.
+        Candidates::<T>::sub_total_stake(&candidate, removed_stake.clone())?;
+
         // Create leaving shares.
         // As with all pools there will be some rounding error, this amount
         // should be small enough so that it is safe to directly release it
@@ -256,7 +259,6 @@ impl<T: Config> Calls<T> {
                 dust,
                 Precision::Exact,
             )?;
-            Candidates::<T>::sub_total_stake(&candidate, Stake(dust))?;
         }
 
         pools::check_candidate_consistency::<T>(&candidate)?;
@@ -465,8 +467,12 @@ impl<T: Config> Calls<T> {
             stake.0,
             Precision::Exact,
         )?;
-        Candidates::<T>::sub_total_stake(&candidate, stake)?;
-        pools::check_candidate_consistency::<T>(&candidate)?;
+
+        Pallet::<T>::deposit_event(Event::<T>::ExecutedUndelegate {
+            candidate,
+            delegator,
+            released: stake.0,
+        });
 
         Ok(().into())
     }
