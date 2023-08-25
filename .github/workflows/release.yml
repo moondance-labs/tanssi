@@ -317,11 +317,15 @@ jobs:
           cd typescript-api
           pnpm install
           pnpm tsx ./scripts/generate-types.ts
-      - name: "Install and run upgrade test"
+      - name: "Generate typescript api"
+        run: |
+          cd typescript-api
+          pnpm install
+          pnpm create-local-interfaces
+      - name: "Run Dev tests"
         run: |
           chmod uog+x target/release/tanssi-node
           cd test
-          pnpm install
           pnpm moonwall test dev_tanssi
 
   typescript-tests-frontier:
@@ -346,11 +350,15 @@ jobs:
         with:
           name: binaries
           path: target/release
-      - name: "Install and run upgrade test"
+      - name: "Generate typescript api"
+        run: |
+          cd typescript-api
+          pnpm install
+          pnpm create-local-interfaces
+      - name: "Run Frontier tests"
         run: |
           chmod uog+x target/release/container-chain-template-frontier-node
           cd test
-          pnpm install
           pnpm moonwall test dev_frontier_template
 
   typescript-dancebox-specs:
