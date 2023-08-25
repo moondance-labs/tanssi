@@ -160,7 +160,6 @@
           {
             "name": "db",
             "type": "parachain",
-            "wasmOverride": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
             "configPath": "./configs/stagenet-dancebox.yml"
           }
         ]
