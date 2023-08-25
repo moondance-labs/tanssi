@@ -57,4 +57,3 @@ jobs:
         with:
           token: ${{ secrets.NPM_TOKEN }}
           package: typescript-api/package.json
-          access: public
