@@ -1,4 +1,4 @@
-import "@tanssi/api-augment/dancebox";
+import "@tanssi/api-augment";
 import { DevModeContext, customDevRpcRequest } from "@moonwall/cli";
 import { XcmpMessageFormat } from "@polkadot/types/interfaces";
 import {
