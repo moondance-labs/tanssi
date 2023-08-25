@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+        image: ["container-chain-simple-template", "container-chain-evm-template"]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
