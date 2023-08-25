@@ -19,10 +19,12 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+flume = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
+manual-xcm-rpc = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-configuration = { workspace = true, features = [ "std" ] }

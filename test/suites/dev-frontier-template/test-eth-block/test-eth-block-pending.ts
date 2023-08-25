@@ -21,12 +21,13 @@ describeSuite({
       test: async function () {
         let nonce = 0;
         let sendTransaction = async () => {
+          const gasPrice = (await context.polkadotJs().rpc.eth.gasPrice()).toBigInt();
           const tx = await context.web3().eth.accounts.signTransaction(
             {
               from: ALITH_ADDRESS,
               to: TEST_ACCOUNT,
               value: "0x200", // Must be higher than ExistentialDeposit
-              gasPrice: "0x3B9ACA00",
+              gasPrice: gasPrice,
               gas: "0x100000",
               nonce: nonce,
             },

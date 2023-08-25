@@ -29,10 +29,10 @@ use sp_version::NativeVersion;
 pub use sp_runtime::BuildStorage;
 
 mod precompiles;
+pub mod xcm_config;
 
 use {
     crate::precompiles::FrontierPrecompiles,
-    core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
@@ -42,18 +42,17 @@ use {
         dispatch::{DispatchClass, GetDispatchInfo},
         parameter_types,
         traits::{
-            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, FindAuthor, Imbalance,
-            OnFinalize, OnUnbalanced,
+            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Imbalance, OnFinalize,
+            OnUnbalanced,
         },
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
                 WEIGHT_REF_TIME_PER_SECOND,
             },
-            ConstantMultiplier, IdentityFee, Weight, WeightToFeeCoefficient,
-            WeightToFeeCoefficients, WeightToFeePolynomial,
+            ConstantMultiplier, Weight, WeightToFeeCoefficient, WeightToFeeCoefficients,
+            WeightToFeePolynomial,
         },
-        ConsensusEngineId,
     },
     frame_system::{
         limits::{BlockLength, BlockWeights},
@@ -70,7 +69,7 @@ use {
     parity_scale_codec::{Decode, Encode},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::ByteArray, Get, OpaqueMetadata, H160, H256, U256},
+    sp_core::{Get, OpaqueMetadata, H160, H256, U256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -297,7 +296,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("frontier-template"),
     impl_name: create_runtime_str!("frontier-template"),
     authoring_version: 1,
-    spec_version: 100,
+    spec_version: 101,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -343,8 +342,8 @@ const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
     cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
 
-/// We allow for 2000ms of compute with a 6 second average block time.
-pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 2000;
+/// We allow for 500ms of compute with a 12 second average block time.
+pub const WEIGHT_MILLISECS_PER_BLOCK: u64 = 500;
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -442,9 +441,10 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    // This will burn the fees
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
     type OperationalFeeMultiplier = ConstU8<5>;
-    type WeightToFee = IdentityFee<Balance>;
+    type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = ();
 }
@@ -475,10 +475,10 @@ impl pallet_balances::Config for Runtime {
     type AccountStore = System;
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
-    type FreezeIdentifier = ();
-    type MaxFreezes = ();
-    type HoldIdentifier = ();
-    type MaxHolds = ();
+    type FreezeIdentifier = [u8; 8];
+    type MaxFreezes = ConstU32<0>;
+    type HoldIdentifier = [u8; 8];
+    type MaxHolds = ConstU32<0>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
@@ -491,10 +491,10 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
-    type OutboundXcmpMessageSource = ();
-    type DmpMessageHandler = ();
+    type OutboundXcmpMessageSource = XcmpQueue;
+    type DmpMessageHandler = DmpQueue;
     type ReservedDmpWeight = ReservedDmpWeight;
-    type XcmpMessageHandler = ();
+    type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
@@ -583,23 +583,10 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
 }
 
-const BLOCK_GAS_LIMIT: u64 = 75_000_000;
+// To match ethereum expectations
+const BLOCK_GAS_LIMIT: u64 = 15_000_000;
 
 impl pallet_evm_chain_id::Config for Runtime {}
-
-pub struct FindAuthorTruncated<F>(PhantomData<F>);
-impl<F: FindAuthor<u32>> FindAuthor<H160> for FindAuthorTruncated<F> {
-    fn find_author<'a, I>(digests: I) -> Option<H160>
-    where
-        I: 'a + IntoIterator<Item = (ConsensusEngineId, &'a [u8])>,
-    {
-        if let Some(author_index) = F::find_author(digests) {
-            let authority_id = AuthoritiesNoting::authorities()[author_index as usize].clone();
-            return Some(H160::from_slice(&authority_id.to_raw_vec()[4..24]));
-        }
-        None
-    }
-}
 
 parameter_types! {
     pub BlockGasLimit: U256 = U256::from(BLOCK_GAS_LIMIT);
@@ -652,7 +639,7 @@ impl pallet_dynamic_fee::Config for Runtime {
 }
 
 parameter_types! {
-    pub DefaultBaseFeePerGas: U256 = U256::from(1_000_000_000);
+    pub DefaultBaseFeePerGas: U256 = U256::from(2_000_000_000);
     pub DefaultElasticity: Permill = Permill::from_parts(125_000);
 }
 
@@ -724,6 +711,12 @@ construct_runtime!(
         BaseFee: pallet_base_fee = 64,
         HotfixSufficients: pallet_hotfix_sufficients = 65,
         TransactionPayment: pallet_transaction_payment = 66,
+
+        // XCM
+        XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 70,
+        CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
+        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
+        PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config} = 73,
 
         RootTesting: pallet_root_testing = 100,
     }
@@ -1045,6 +1038,31 @@ impl_runtime_apis! {
             UncheckedExtrinsic::new_unsigned(
                 pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
             )
+        }
+    }
+
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
+    for Runtime {
+        fn query_info(
+            uxt: <Block as BlockT>::Extrinsic,
+            len: u32,
+        ) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<Balance> {
+            TransactionPayment::query_info(uxt, len)
+        }
+
+        fn query_fee_details(
+            uxt: <Block as BlockT>::Extrinsic,
+            len: u32,
+        ) -> pallet_transaction_payment::FeeDetails<Balance> {
+            TransactionPayment::query_fee_details(uxt, len)
+        }
+
+        fn query_weight_to_fee(weight: Weight) -> Balance {
+            TransactionPayment::weight_to_fee(weight)
+        }
+
+        fn query_length_to_fee(length: u32) -> Balance {
+            TransactionPayment::length_to_fee(length)
         }
     }
 }

@@ -22,6 +22,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+pub mod xcm_config;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -35,13 +37,14 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, Contains, InstanceFilter},
+        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
                 WEIGHT_REF_TIME_PER_SECOND,
             },
-            Weight, WeightToFeeCoefficient, WeightToFeeCoefficients, WeightToFeePolynomial,
+            ConstantMultiplier, Weight, WeightToFeeCoefficient, WeightToFeeCoefficients,
+            WeightToFeePolynomial,
         },
         PalletId,
     },
@@ -52,6 +55,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
+    pallet_transaction_payment::CurrencyAdapter,
     polkadot_runtime_common::BlockHashCount,
     scale_info::TypeInfo,
     smallvec::smallvec,
@@ -87,6 +91,7 @@ pub type SignedExtra = (
     frame_system::CheckEra<Runtime>,
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
+    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -370,11 +375,25 @@ impl pallet_balances::Config for Runtime {
     type AccountStore = System;
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
-    type FreezeIdentifier = ();
-    type MaxFreezes = ();
-    type HoldIdentifier = ();
-    type MaxHolds = ();
+    type FreezeIdentifier = [u8; 8];
+    type MaxFreezes = ConstU32<0>;
+    type HoldIdentifier = [u8; 8];
+    type MaxHolds = ConstU32<1>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub const TransactionByteFee: Balance = 1;
+}
+
+impl pallet_transaction_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    // This will burn the fees
+    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OperationalFeeMultiplier = ConstU8<5>;
+    type WeightToFee = WeightToFee;
+    type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+    type FeeMultiplierUpdate = ();
 }
 
 parameter_types! {
@@ -386,10 +405,10 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
-    type OutboundXcmpMessageSource = ();
-    type DmpMessageHandler = ();
+    type OutboundXcmpMessageSource = XcmpQueue;
+    type DmpMessageHandler = DmpQueue;
     type ReservedDmpWeight = ReservedDmpWeight;
-    type XcmpMessageHandler = ();
+    type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
@@ -727,6 +746,7 @@ construct_runtime!(
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
+        TransactionPayment: pallet_transaction_payment = 11,
 
         // ContainerChain management. It should go before Session for Genesis
         Registrar: pallet_registrar = 20,
@@ -741,6 +761,12 @@ construct_runtime!(
         Session: pallet_session = 31,
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
+
+        //XCM
+        XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 50,
+        CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
+        DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
+        PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config} = 53,
 
         RootTesting: pallet_root_testing = 100,
     }
@@ -1106,6 +1132,31 @@ impl_runtime_apis! {
             let self_para_id = ParachainInfo::get();
 
             assigned_authorities.para_id_of(&authority, self_para_id)
+        }
+    }
+
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
+    for Runtime {
+        fn query_info(
+            uxt: <Block as BlockT>::Extrinsic,
+            len: u32,
+        ) -> pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo<Balance> {
+            TransactionPayment::query_info(uxt, len)
+        }
+
+        fn query_fee_details(
+            uxt: <Block as BlockT>::Extrinsic,
+            len: u32,
+        ) -> pallet_transaction_payment::FeeDetails<Balance> {
+            TransactionPayment::query_fee_details(uxt, len)
+        }
+
+        fn query_weight_to_fee(weight: Weight) -> Balance {
+            TransactionPayment::weight_to_fee(weight)
+        }
+
+        fn query_length_to_fee(length: u32) -> Balance {
+            TransactionPayment::length_to_fee(length)
         }
     }
 }

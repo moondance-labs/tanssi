@@ -194,6 +194,7 @@ describeSuite({
     it({
       id: "T13",
       title: "Collator1000-03 is producing blocks on Container 2000",
+      timeout: 300000,
       test: async function () {
         const blockStart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
         // Wait up to 8 blocks, giving the new collator 4 chances to build a block
@@ -213,7 +214,7 @@ describeSuite({
             if (author == getKeyringNimbusIdHex("Collator1000-03")) {
                 break;
             }
-            await context.waitBlock(1, "Tanssi");
+            await context.waitBlock(1, "Container2000");
         }
 
         expect(authors).to.contain(getKeyringNimbusIdHex("Collator1000-03"))

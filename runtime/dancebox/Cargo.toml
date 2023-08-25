@@ -47,6 +47,8 @@ pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
+pallet-transaction-payment = { workspace = true }
+pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-utility = { workspace = true }
 sp-api = { workspace = true }
 sp-application-crypto = { workspace = true }
@@ -67,14 +69,23 @@ tp-consensus = { workspace = true }
 tp-traits = { workspace = true }
 
 # Polkadot
+pallet-xcm = { workspace = true }
 polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
 
 # Cumulus
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
+cumulus-pallet-dmp-queue = { workspace = true }
+cumulus-pallet-xcm = { workspace = true }
+cumulus-pallet-xcmp-queue = { workspace = true }
+
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
+cumulus-primitives-utility = { workspace = true }
 pallet-collator-selection = { workspace = true }
 parachain-info = { workspace = true }
 
@@ -86,6 +97,20 @@ frame-try-runtime = { workspace = true, optional = true }
 [dev-dependencies]
 sp-io = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
+westend-runtime = { workspace = true, features = ["std"] }
+westend-runtime-constants = { workspace = true }
+xcm-emulator = { workspace = true }
+pallet-staking =  { workspace = true, features = ["std"] }
+sp-consensus-babe =  { workspace = true, features = ["std"] }
+pallet-im-online =  { workspace = true, features = ["std"] }
+sc-consensus-grandpa = { workspace = true }
+pallet-message-queue = { workspace = true }
+polkadot-runtime-parachains = { workspace = true, features = ["std"] }
+polkadot-service = { workspace = true }
+container-chain-template-frontier-runtime  = { workspace = true, features = ["std"] }
+container-chain-template-simple-runtime  = { workspace = true, features = ["std"] }
+hex-literal = { workspace = true }
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -94,9 +119,13 @@ default = [
 	"std",
 ]
 std = [
+	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-xcm/std",
+	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-timestamp/std",
+	"cumulus-primitives-utility/std",
 	"frame-executive/std",
 	"frame-support/std",
 	"frame-system-rpc-runtime-api/std",
@@ -105,6 +134,7 @@ std = [
 	"log/std",
 	"nimbus-primitives/std",
 	"pallet-author-noting/std",
+	"pallet-author-noting-runtime-api/std",
 	"pallet-authority-assignment/std",
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
@@ -119,7 +149,9 @@ std = [
 	"pallet-session/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
+	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-utility/std",
+	"pallet-xcm/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain/std",
@@ -141,6 +173,9 @@ std = [
 	"tp-author-noting-inherent/std",
 	"tp-consensus/std",
 	"tp-traits/std",
+	"xcm/std",
+	"xcm-builder/std",
+	"xcm-executor/std"
 ]
 
 runtime-benchmarks = [
@@ -157,7 +192,9 @@ runtime-benchmarks = [
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
+	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -167,6 +204,7 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
+	"pallet-author-inherent/try-runtime",
 	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
 	"pallet-authority-mapping/try-runtime",
@@ -174,7 +212,10 @@ try-runtime = [
 	"pallet-collator-assignment/try-runtime",
 	"pallet-collator-selection/try-runtime",
 	"pallet-configuration/try-runtime",
+	"pallet-maintenance-mode/try-runtime",
+	"pallet-migrations/try-runtime",
 	"pallet-initializer/try-runtime",
+	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-session/try-runtime",
