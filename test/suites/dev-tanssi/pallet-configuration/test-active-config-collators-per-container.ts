@@ -3,33 +3,32 @@ import { jumpSessions } from "../../../util/block";
 import { KeyringPair } from "@moonwall/util";
 
 describeSuite({
-  id: "DT0201",
-  title: "Configuration - ActiveConfig - CollatorsPerContainer",
-  foundationMethods: "dev",
-  testCases: ({ context, log, it }) => {
+    id: "DT0201",
+    title: "Configuration - ActiveConfig - CollatorsPerContainer",
+    foundationMethods: "dev",
+    testCases: ({ context, log, it }) => {
+        beforeAll(async function () {
+            const config = await context.polkadotJs().query.configuration.activeConfig();
+            expect(config["collatorsPerContainer"].toString()).toBe("2");
 
-    beforeAll(async function () {
-      const config = await context.polkadotJs().query.configuration.activeConfig();
-      expect(config["collatorsPerContainer"].toString()).toBe("2");
+            const { result } = await context.createBlock(
+                context
+                    .polkadotJs()
+                    .tx.sudo.sudo(context.polkadotJs().tx.configuration.setCollatorsPerContainer(5))
+                    .signAsync(context.keyring.alice)
+            );
+            expect(result!.successful, result!.error?.name).to.be.true;
 
-      const { result } = await context.createBlock(
-        context
-          .polkadotJs()
-          .tx.sudo.sudo(context.polkadotJs().tx.configuration.setCollatorsPerContainer(5))
-          .signAsync(context.keyring.alice)
-      );
-      expect(result!.successful, result!.error?.name).to.be.true;
+            await jumpSessions(context, 2);
+        });
 
-      await jumpSessions(context, 2);
-    });
-
-    it({
-      id: "T01",
-      title: "should set collators per container after 2 sessions",
-      test: async function () {
-        const config = await context.polkadotJs().query.configuration.activeConfig();
-        expect(config["collatorsPerContainer"].toString()).toBe("5");
-      },
-    });
-  },
+        it({
+            id: "T01",
+            title: "should set collators per container after 2 sessions",
+            test: async function () {
+                const config = await context.polkadotJs().query.configuration.activeConfig();
+                expect(config["collatorsPerContainer"].toString()).toBe("5");
+            },
+        });
+    },
 });
