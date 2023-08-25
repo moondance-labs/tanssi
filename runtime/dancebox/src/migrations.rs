@@ -56,7 +56,7 @@ where
         log::info!(target: LOG_TARGET, "migrate");
 
         let invulnerables = CollatorSelectionInvulnerablesValue::<Runtime>::get()
-            .expect("Failed to get invulnerables from CollaterSelection pallet storage.");
+            .expect("Failed to get invulnerables from CollatorSelection pallet storage.");
         let invulnerables_len = invulnerables.len();
         Invulnerables::set_invulnerables(RuntimeOrigin::root(), invulnerables.to_vec())
             .expect("Failed to set invulnerables");
@@ -71,7 +71,7 @@ where
         use parity_scale_codec::Encode;
 
         let number_of_invulnerables = CollatorSelectionInvulnerablesValue::<Runtime>::get()
-            .expect("Failed to get invulnerables from CollaterSelection pallet storage.")
+            .expect("Failed to get invulnerables from CollatorSelection pallet storage.")
             .to_vec()
             .len();
         Ok((number_of_invulnerables as u32).encode())
