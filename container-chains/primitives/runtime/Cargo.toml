@@ -1,0 +1,39 @@
+[package]
+name = "ccp-runtime-common"
+authors = { workspace = true }
+description = "primtivies common to all container-chains"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[dependencies]
+
+# Local
+pallet-cc-authorities-noting = { workspace = true }
+tp-consensus = { workspace = true }
+
+# Moonkit
+nimbus-primitives = { workspace = true }
+pallet-author-inherent = { workspace = true }
+
+# Substrate
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+pallet-timestamp = { workspace = true }
+
+# Cumulus
+cumulus-pallet-parachain-system = { workspace = true }
+
+[features]
+default = [
+	"std",
+]
+std = [
+	"cumulus-pallet-parachain-system/std",
+	"frame-support/std",
+	"frame-system/std",
+    "nimbus-primitives/std",
+    "pallet-author-inherent/std",
+	"pallet-cc-authorities-noting/std",
+	"pallet-timestamp/std",
+]
