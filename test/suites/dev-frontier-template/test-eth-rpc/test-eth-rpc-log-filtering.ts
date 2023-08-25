@@ -6,7 +6,7 @@ describeSuite({
     id: "DF0503",
     title: "Ethereum RPC - Filtering non-matching logs",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         let nonMatchingCases: ReturnType<typeof getNonMatchingCases>;
 
         const getNonMatchingCases = (receipt: TransactionReceipt) => {
@@ -51,9 +51,9 @@ describeSuite({
             title: "EthFilterApi::getFilterLogs - should filter out non-matching cases.",
             test: async function () {
                 let create_filter;
-                for (var item of nonMatchingCases) {
+                for (const item of nonMatchingCases) {
                     create_filter = await customWeb3Request(context.web3(), "eth_newFilter", [item]);
-                    let poll = await customWeb3Request(context.web3(), "eth_getFilterLogs", [create_filter.result]);
+                    const poll = await customWeb3Request(context.web3(), "eth_getFilterLogs", [create_filter.result]);
                     expect(poll.result.length).to.be.eq(0);
                 }
             },
@@ -62,8 +62,8 @@ describeSuite({
             id: "T02",
             title: "EthApi::getLogs - should filter out non-matching cases.",
             test: async function () {
-                for (var item of nonMatchingCases) {
-                    let request = await customWeb3Request(context.web3(), "eth_getLogs", [item]);
+                for (const item of nonMatchingCases) {
+                    const request = await customWeb3Request(context.web3(), "eth_getLogs", [item]);
                     expect(request.result.length).to.be.eq(0);
                 }
             },

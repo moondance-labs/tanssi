@@ -8,7 +8,7 @@ describeSuite({
     id: "DT0601",
     title: "Registrar test suite: de-register",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         beforeAll(() => {

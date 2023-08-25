@@ -1,9 +1,8 @@
-import fs from "fs/promises";
-import yargs from "yargs";
 import { Keyring } from "@polkadot/api";
-import { KeyringPair } from "@polkadot/keyring/types";
-import { hideBin } from "yargs/helpers";
+import fs from "fs/promises";
 import jsonBg from "json-bigint";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import { chainSpecToContainerChainGenesisData } from "../util/genesis_data";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
 const JSONbig = jsonBg({ useNativeBigInt: true });
@@ -46,9 +45,8 @@ yargs(hideBin(process.argv))
                     );
                 }
 
-                let account: KeyringPair;
                 const privKey = argv["account-priv-key"];
-                account = keyring.addFromUri(privKey);
+                const account = keyring.addFromUri(privKey);
 
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
                 const tx = api.tx.registrar.register(rawSpec.para_id, containerChainGenesisData);

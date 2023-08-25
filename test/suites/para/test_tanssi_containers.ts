@@ -1,20 +1,20 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
+import { ApiPromise, Keyring } from "@polkadot/api";
 import { Signer } from "ethers";
+import fs from "fs/promises";
 import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
 import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
-import fs from "fs/promises";
 
 describeSuite({
     id: "P01",
     title: "Zombie Tanssi Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context, log }) {
+    testCases: function ({ it, context }) {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
@@ -204,10 +204,10 @@ describeSuite({
             timeout: 30000,
             test: async function () {
                 const randomAccount = generateKeyringPair();
-                let tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
+                const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
                     gasPrice: MIN_GAS_PRICE,
                 });
-                let txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [tx]);
+                const txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [tx]);
                 await waitUntilEthTxIncluded(
                     () => context.waitBlock(1, "Container2001"),
                     context.web3(),
@@ -223,10 +223,10 @@ describeSuite({
             timeout: 300000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
-                let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 // Read raw chain spec file
-                let spec2002 = await fs.readFile("./specs/template-container-2002.json", "utf8");
+                const spec2002 = await fs.readFile("./specs/template-container-2002.json", "utf8");
 
                 // Before registering container chain 2002, ensure that it has 0 blocks
                 // Since the RPC doesn't exist at this point, we need to get that from the relay
@@ -281,7 +281,7 @@ describeSuite({
                 // TODO: fix once we have types
                 expect(registered5.toJSON().includes(2002)).to.be.true;
 
-                let blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+                const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 blockNumber2002Start = blockNum;
             },
         });
@@ -330,7 +330,7 @@ describeSuite({
             timeout: 300000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
-                let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 const registered1 = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
@@ -339,7 +339,7 @@ describeSuite({
                 const tx = paraApi.tx.registrar.deregister(2002);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
                 await waitSessions(context, paraApi, 2);
-                let blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+                const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 blockNumber2002End = blockNum;
 
                 // Check that pending para ids removes 2002
@@ -356,14 +356,14 @@ describeSuite({
             test: async function () {
                 // This test depends on T12 and T15 to set blockNumber2002Start and blockNumber2002End
                 // TODO: don't hardcode the period here
-                let sessionPeriod = 5;
+                const sessionPeriod = 5;
                 // The block range must start and end on session boundaries
                 expect(blockNumber2002Start % sessionPeriod).to.be.equal(0);
                 expect(blockNumber2002End % sessionPeriod).to.be.equal(0);
                 expect(sessionPeriod < blockNumber2002Start).to.be.true;
                 expect(blockNumber2002Start < blockNumber2002End).to.be.true;
                 // Start from block 5 because block 0 has no author
-                let blockNumber = sessionPeriod;
+                const blockNumber = sessionPeriod;
                 // Before 2002 registration: 4 authors
                 // TODO: this passes if only 2 authors are creating blocks, think a way to test that case
                 await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start - 1, 4);
@@ -406,7 +406,7 @@ async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors
         actualAuthors.push(author);
     }
 
-    let uniq = [...new Set(actualAuthors)];
+    const uniq = [...new Set(actualAuthors)];
 
     if (uniq.length > numAuthors || (uniq.length == 1 && numAuthors > 1)) {
         console.error(

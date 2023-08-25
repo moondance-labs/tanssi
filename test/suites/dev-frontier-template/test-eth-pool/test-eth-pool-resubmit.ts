@@ -7,7 +7,7 @@ describeSuite({
     id: "DF0402",
     title: "Resubmit transations",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         let randomAddress: `0x${string}`;
         let currentNonce: number;
 

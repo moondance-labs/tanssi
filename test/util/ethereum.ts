@@ -1,10 +1,10 @@
-import { Signer, ethers } from "ethers";
-import { alith, BALTATHAR_ADDRESS, TransactionOptions, customWeb3Request } from "@moonwall/util";
-import { DevModeContext, MoonwallContext, EthTransactionType } from "@moonwall/cli";
-import { ALITH_PRIVATE_KEY, CHARLETH_ADDRESS } from "@moonwall/util";
+import { DevModeContext, EthTransactionType, MoonwallContext } from "@moonwall/cli";
+import { ALITH_PRIVATE_KEY, TransactionOptions, alith, customWeb3Request } from "@moonwall/util";
+import { ethers } from "ethers";
 import { FMT_BYTES, FMT_NUMBER } from "web3";
 
-const debug = require("debug")("test:transaction");
+import Debug from "debug";
+const debug = Debug("test:transaction");
 
 export const createTransaction = async (
     context: DevModeContext,
@@ -165,7 +165,7 @@ export const createTransaction = async (
 export const createTransfer = async (
     context: DevModeContext,
     to: string,
-    value: number | string | BigInt,
+    value: number | string | bigint,
     options: TransactionOptions = ALITH_TRANSACTION_TEMPLATE
 ): Promise<string> => {
     return await createTransaction(context, {

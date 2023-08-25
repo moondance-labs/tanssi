@@ -1,5 +1,4 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { getBlockTime } from "@moonwall/util";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
 
@@ -7,7 +6,7 @@ describeSuite({
     id: "S01",
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let api: ApiPromise;
 
         beforeAll(() => {
@@ -29,7 +28,7 @@ describeSuite({
                 const authorityKeyMapping = (
                     await api.query.authorityMapping.authorityIdMapping(sessionIndex)
                 ).toJSON();
-                for (let key of assignmentCollatorKey["orchestratorChain"]) {
+                for (const key of assignmentCollatorKey["orchestratorChain"]) {
                     const assignedAccount = authorityKeyMapping[key.toString()];
                     expect(assignmentCollatorAccount["orchestratorChain"].includes(assignedAccount.toString())).to.be
                         .true;
@@ -51,8 +50,8 @@ describeSuite({
                 const authorityKeyMapping = (
                     await api.query.authorityMapping.authorityIdMapping(sessionIndex)
                 ).toJSON();
-                for (let container of Object.keys(assignmentCollatorKey["containerChains"])) {
-                    for (let key of assignmentCollatorKey["containerChains"][container]) {
+                for (const container of Object.keys(assignmentCollatorKey["containerChains"])) {
+                    for (const key of assignmentCollatorKey["containerChains"][container]) {
                         const assignedAccount = authorityKeyMapping[key.toString()];
                         expect(
                             assignmentCollatorAccount["containerChains"][container].includes(assignedAccount.toString())

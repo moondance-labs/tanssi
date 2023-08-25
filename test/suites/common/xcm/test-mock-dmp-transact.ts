@@ -1,27 +1,24 @@
-import { beforeAll, describeSuite, expect, customDevRpcRequest } from "@moonwall/cli";
-import { alith } from "@moonwall/util";
-
-import { ApiPromise } from "@polkadot/api";
-import {
-    XcmFragment,
-    injectDmpMessageAndSeal,
-    descendParentOriginFromAddress32,
-    descendParentOriginForAddress20,
-} from "../../../util/xcm.ts";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { KeyringPair, alith } from "@moonwall/util";
 import { generateKeyringPair } from "@moonwall/util";
-import { Keyring } from "@polkadot/api";
-import { BN } from "@polkadot/util";
+import { ApiPromise, Keyring } from "@polkadot/api";
+import {
+    RawXcmMessage,
+    XcmFragment,
+    descendParentOriginForAddress20,
+    descendParentOriginFromAddress32,
+    injectDmpMessageAndSeal,
+} from "../../../util/xcm.ts";
 
 describeSuite({
     id: "C0101",
     title: "Mock XCM - Succeeds using sovereign accounts",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let transferredBalance;
         let sendingAddress;
-        let descendAddress;
-        let alice;
+        let alice: KeyringPair;
         let chain;
 
         beforeAll(async function () {
@@ -33,15 +30,12 @@ describeSuite({
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
-            let descendFunction =
+            const descendFunction =
                 chain == "frontier-template" ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
-            let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce;
-
+            let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce.toNumber();
             const { originAddress, descendOriginAddress } = descendFunction(context);
 
             sendingAddress = originAddress;
-            descendAddress = descendOriginAddress;
-
             transferredBalance = 10_000_000_000_000n;
 
             const txSigned = polkadotJs.tx.balances.transfer(descendOriginAddress, transferredBalance);
@@ -59,8 +53,7 @@ describeSuite({
             title: "Should succeed using sovereign account from signed origin",
             test: async function () {
                 // Generate random receiver address
-                let random: KeyringPair;
-                random = chain == "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
+                const random = chain == "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
                 // Get Pallet balances index
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets

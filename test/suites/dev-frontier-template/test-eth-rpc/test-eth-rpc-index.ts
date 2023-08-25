@@ -5,7 +5,7 @@ describeSuite({
     id: "DF0502",
     title: "Transaction Index",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         beforeAll(async () => {
             await context.createBlock(createRawTransfer(context, BALTATHAR_ADDRESS, 0));
         });

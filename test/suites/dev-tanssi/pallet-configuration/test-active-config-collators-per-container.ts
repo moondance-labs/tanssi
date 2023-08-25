@@ -1,12 +1,11 @@
 import { expect, beforeAll, describeSuite } from "@moonwall/cli";
 import { jumpSessions } from "../../../util/block";
-import { KeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "DT0201",
     title: "Configuration - ActiveConfig - CollatorsPerContainer",
     foundationMethods: "dev",
-    testCases: ({ context, log, it }) => {
+    testCases: ({ context, it }) => {
         beforeAll(async function () {
             const config = await context.polkadotJs().query.configuration.activeConfig();
             expect(config["collatorsPerContainer"].toString()).toBe("2");

@@ -8,7 +8,7 @@ describeSuite({
     id: "DT0502",
     title: "Proxy test suite - ProxyType::CancelProxy",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;

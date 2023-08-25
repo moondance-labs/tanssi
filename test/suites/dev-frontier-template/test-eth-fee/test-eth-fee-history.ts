@@ -11,7 +11,7 @@ describeSuite({
     id: "DF0301",
     title: "Fee History",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         interface FeeHistory {
             oldestBlock: string;
             baseFeePerGas: string[];
@@ -50,7 +50,7 @@ describeSuite({
             array.sort(function (a, b) {
                 return a - b;
             });
-            let index = (percentile / 100) * array.length - 1;
+            const index = (percentile / 100) * array.length - 1;
             if (Math.floor(index) == index) {
                 return array[index];
             } else {
@@ -68,7 +68,7 @@ describeSuite({
                 const priority_fees = [1, 2, 3];
                 const startingBlock = await context.viem("public").getBlockNumber();
 
-                const feeHistory = new Promise<FeeHistory>((resolve, reject) => {
+                const feeHistory = new Promise<FeeHistory>((resolve) => {
                     const unwatch = context.viem("public").watchBlocks({
                         onBlock: async (block) => {
                             if (Number(block.number! - startingBlock) == block_count) {
@@ -111,13 +111,13 @@ describeSuite({
             title: "should calculate percentiles",
             timeout: 60000,
             test: async function () {
-                let max_fee_per_gas = parseGwei("10").toString();
-                let block_count = 11;
-                let reward_percentiles = [20, 50, 70, 85, 100];
-                let priority_fees = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+                const max_fee_per_gas = parseGwei("10").toString();
+                const block_count = 11;
+                const reward_percentiles = [20, 50, 70, 85, 100];
+                const priority_fees = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
                 const startingBlock = await context.viem("public").getBlockNumber();
 
-                const feeHistory = new Promise<FeeHistory>((resolve, reject) => {
+                const feeHistory = new Promise<FeeHistory>((resolve) => {
                     const unwatch = context.viem("public").watchBlocks({
                         onBlock: async (block) => {
                             if (Number(block.number! - startingBlock) == block_count) {

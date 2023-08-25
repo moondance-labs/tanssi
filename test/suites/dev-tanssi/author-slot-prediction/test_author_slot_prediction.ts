@@ -9,7 +9,7 @@ describeSuite({
     id: "DT0101",
     title: "Session keys assignment test suite",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;

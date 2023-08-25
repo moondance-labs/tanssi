@@ -1,18 +1,11 @@
 import { describeSuite, expect } from "@moonwall/cli";
-import {
-    ALITH_ADDRESS,
-    ALITH_PRIVATE_KEY,
-    BALTATHAR_ADDRESS,
-    CHARLETH_ADDRESS,
-    createRawTransfer,
-    customWeb3Request,
-} from "@moonwall/util";
+import { ALITH_ADDRESS, ALITH_PRIVATE_KEY, customWeb3Request } from "@moonwall/util";
 
 describeSuite({
     id: "DF0201",
     title: "Ethereum Block - Pending",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         const TEST_ACCOUNT = "0x1111111111111111111111111111111111111111";
 
         it({
@@ -20,7 +13,7 @@ describeSuite({
             title: "should return pending block",
             test: async function () {
                 let nonce = 0;
-                let sendTransaction = async () => {
+                const sendTransaction = async () => {
                     const gasPrice = (await context.polkadotJs().rpc.eth.gasPrice()).toBigInt();
                     const tx = await context.web3().eth.accounts.signTransaction(
                         {
@@ -40,7 +33,8 @@ describeSuite({
 
                 // block 1 send 5 transactions
                 const expectedXtsNumber = 5;
-                for (let _ of Array(expectedXtsNumber)) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                for (const _ of Array(expectedXtsNumber)) {
                     await sendTransaction();
                 }
 

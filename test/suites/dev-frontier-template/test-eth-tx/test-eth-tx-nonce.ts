@@ -11,7 +11,7 @@ describeSuite({
     id: "DF0601",
     title: "Ethereum Transaction - Nonce",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should be at 0 before using it",
@@ -59,7 +59,6 @@ describeSuite({
             id: "T05",
             title: "pending transaction nonce",
             test: async function () {
-                const blockNumber = await context.viem("public").getBlockNumber();
                 const nonce = await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS });
 
                 await customWeb3Request(context.web3(), "eth_sendRawTransaction", [

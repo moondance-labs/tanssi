@@ -5,7 +5,7 @@ describeSuite({
     id: "DF0401",
     title: "Transaction Cost discards",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should take transaction cost into account and not submit it to the pool",
@@ -23,7 +23,7 @@ describeSuite({
             ea04dec8017ebddd1e87cc108d1df1ef1bf69ba35606efad4df2dfdbae2a07ac9edffaa0fd7c91fa5688b5e36a\
             1944944bca22b8ff367e4094be21f7d85a3",
                 ]);
-                let msg = "intrinsic gas too low";
+                const msg = "intrinsic gas too low";
                 expect(tx.error).to.include({
                     message: msg,
                 });

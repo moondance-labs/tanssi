@@ -1,24 +1,20 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair, extractFee } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "DT0401",
     title: "Fee test suite",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
-        let charlie: KeyringPair;
-        let dave: KeyringPair;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
             bob = context.keyring.bob;
-            charlie = context.keyring.charlie;
-            dave = context.keyring.dave;
             polkadotJs = context.polkadotJs();
 
             // We must create an empty block before any tests, otherwise the fee of the first test will be
@@ -90,7 +86,7 @@ describeSuite({
             id: "E03",
             title: "Fee of balances.transfer does not increase after 100 full blocks",
             test: async function () {
-                let fillAmount = 600_000_000; // equal to 60% Perbill
+                const fillAmount = 600_000_000; // equal to 60% Perbill
 
                 for (let i = 0; i < 100; i++) {
                     const tx = polkadotJs.tx.rootTesting.fillBlock(fillAmount);

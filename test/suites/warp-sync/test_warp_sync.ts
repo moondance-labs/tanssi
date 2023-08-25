@@ -12,7 +12,7 @@ describeSuite({
     id: "W01",
     title: "Zombie Tanssi Warp Sync Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context, log }) {
+    testCases: function ({ it, context }) {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
@@ -146,7 +146,7 @@ describeSuite({
             timeout: 300000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
-                let alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 // Collator2000-02 should have a container 2000 db, and Collator1000-03 should not
                 const collator100003DbPath =

@@ -4,7 +4,7 @@ describeSuite({
     id: "DF0801",
     title: "AuthoritiesNoting - OrchestratorParaId",
     foundationMethods: "dev",
-    testCases: ({ context, log, it }) => {
+    testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should not set storage item if not sudo",

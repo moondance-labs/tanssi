@@ -75,7 +75,7 @@ function generatePrefix(directory: string, usedPrefixes: Set<string>): string {
 }
 
 function generateId(directory: string, rootDir: string, prefix: string): void {
-    let contents = fs.readdirSync(directory);
+    const contents = fs.readdirSync(directory);
 
     contents.sort((a, b) => {
         const aIsDir = fs.statSync(path.join(directory, a)).isDirectory();
@@ -112,7 +112,7 @@ function generateId(directory: string, rootDir: string, prefix: string): void {
 }
 
 function hasSpecialCharacters(filename: string): boolean {
-    return /[ \t!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(filename);
+    return /[ \t!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/.test(filename);
 }
 
 function customFileSort(a: string, b: string): number {

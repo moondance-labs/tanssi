@@ -5,7 +5,7 @@ describeSuite({
     id: "DT0202",
     title: "Configuration - ActiveConfig - MaxCollators",
     foundationMethods: "dev",
-    testCases: ({ context, log, it }) => {
+    testCases: ({ context, it }) => {
         beforeAll(async function () {
             const config = await context.polkadotJs().query.configuration.activeConfig();
             expect(config["maxCollators"].toString()).toBe("100");

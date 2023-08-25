@@ -7,7 +7,7 @@ describeSuite({
     id: "DT0603",
     title: "Test ContainerChainGenesisData utils",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
 
         beforeAll(() => {

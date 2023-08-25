@@ -4,7 +4,7 @@ describeSuite({
     id: "DT0205",
     title: "Configuration - ActiveConfig - Origin",
     foundationMethods: "dev",
-    testCases: ({ context, log, it }) => {
+    testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should fail on setMaxCollators if not sudo",

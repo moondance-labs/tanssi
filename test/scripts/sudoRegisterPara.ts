@@ -1,9 +1,8 @@
-import fs from "fs/promises";
-import yargs from "yargs";
 import { Keyring } from "@polkadot/api";
-import { KeyringPair } from "@polkadot/keyring/types";
-import { hideBin } from "yargs/helpers";
+import fs from "fs/promises";
 import jsonBg from "json-bigint";
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 import { chainSpecToContainerChainGenesisData } from "../util/genesis_data";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
 const JSONbig = jsonBg({ useNativeBigInt: true });
@@ -38,9 +37,8 @@ yargs(hideBin(process.argv))
                 process.stdout.write(`Reading chainSpec from: ${argv.chain}\n`);
                 const rawSpec = JSONbig.parse(await fs.readFile(argv.chain!, "utf8"));
 
-                let account: KeyringPair;
                 const privKey = argv["account-priv-key"];
-                account = keyring.addFromUri(privKey);
+                const account = keyring.addFromUri(privKey);
 
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
                 const txs = [];
@@ -96,9 +94,8 @@ yargs(hideBin(process.argv))
             const keyring = new Keyring({ type: "sr25519" });
 
             try {
-                let account: KeyringPair;
                 const privKey = argv["account-priv-key"];
-                account = keyring.addFromUri(privKey);
+                const account = keyring.addFromUri(privKey);
 
                 let tx = api.tx.registrar.markValidForCollating(argv.paraId);
                 tx = api.tx.sudo.sudo(tx);
@@ -148,9 +145,8 @@ yargs(hideBin(process.argv))
             const keyring = new Keyring({ type: "sr25519" });
 
             try {
-                let account: KeyringPair;
                 const privKey = argv["account-priv-key"];
-                account = keyring.addFromUri(privKey);
+                const account = keyring.addFromUri(privKey);
 
                 let bootnodes = [];
                 if (argv.keepExisting) {
@@ -163,15 +159,15 @@ yargs(hideBin(process.argv))
                 }
                 bootnodes = [...bootnodes, ...argv.bootnode];
 
-                let tx1 = api.tx.registrar.setBootNodes(argv.paraId, bootnodes);
-                let tx1s = api.tx.sudo.sudo(tx1);
+                const tx1 = api.tx.registrar.setBootNodes(argv.paraId, bootnodes);
+                const tx1s = api.tx.sudo.sudo(tx1);
                 let tx2s = null;
                 if (argv.markValidForCollating) {
                     // Check if not already valid, and only in that case call markValidForCollating
                     const notValidParas = (await api.query.registrar.pendingVerification()) as any;
                     if (notValidParas.toJSON().includes(argv.paraId)) {
                         process.stdout.write(`Will set container chain valid for collating\n`);
-                        let tx2 = api.tx.registrar.markValidForCollating(argv.paraId);
+                        const tx2 = api.tx.registrar.markValidForCollating(argv.paraId);
                         tx2s = api.tx.sudo.sudo(tx2);
                     } else {
                         // ParaId already valid, or not registered at all
@@ -218,9 +214,8 @@ yargs(hideBin(process.argv))
             const keyring = new Keyring({ type: "sr25519" });
 
             try {
-                let account: KeyringPair;
                 const privKey = argv["account-priv-key"];
-                account = keyring.addFromUri(privKey);
+                const account = keyring.addFromUri(privKey);
 
                 let tx = api.tx.registrar.deregister(argv.paraId);
                 tx = api.tx.sudo.sudo(tx);

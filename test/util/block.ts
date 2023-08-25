@@ -1,7 +1,7 @@
 import { DevModeContext, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 
-export async function jumpSessions(context: DevModeContext, count: Number): Promise<string | null> {
+export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
 
     return jumpToSession(context, session);
@@ -9,7 +9,7 @@ export async function jumpSessions(context: DevModeContext, count: Number): Prom
 
 export async function jumpToSession(context: DevModeContext, session: number): Promise<string | null> {
     let lastBlockHash = null;
-    while (true) {
+    for (;;) {
         const currentSession = (await context.polkadotJs().query.session.currentIndex()).toNumber();
         if (currentSession === session) {
             return lastBlockHash;
@@ -28,14 +28,14 @@ export async function jumpBlocks(context: DevModeContext, blockCount: number) {
     }
 }
 
-export async function waitSessions(context, paraApi: ApiPromise, count: Number): Promise<string | null> {
+export async function waitSessions(context, paraApi: ApiPromise, count: number): Promise<string | null> {
     const session = (await paraApi.query.session.currentIndex()).addn(count.valueOf()).toNumber();
 
     return waitToSession(context, paraApi, session);
 }
 
 export async function waitToSession(context, paraApi: ApiPromise, session: number): Promise<string | null> {
-    while (true) {
+    for (;;) {
         const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
         if (currentSession === session) {
             const signedBlock = await paraApi.rpc.chain.getBlock();
@@ -57,8 +57,8 @@ export async function waitToSession(context, paraApi: ApiPromise, session: numbe
 /// // We know the blockHash of the block that includes this transaction
 /// ```
 export function signAndSendAndInclude(tx, account): Promise<{ txHash; blockHash; status }> {
-    return new Promise((resolve, reject) => {
-        const unsub = tx.signAndSend(account, ({ status, txHash }) => {
+    return new Promise((resolve) => {
+        tx.signAndSend(account, ({ status, txHash }) => {
             if (status.isInBlock) {
                 resolve({
                     txHash,
@@ -82,7 +82,7 @@ export function initializeCustomCreateBlock(context): any {
                 const res = await originalCreateBlock(tx, opt);
                 // Ensure that all the extrinsics have been included
                 const expectedTxHashes = tx.map((x) => x.hash.toString());
-                let block = await context.polkadotJs().rpc.chain.getBlock(res.block.hash);
+                const block = await context.polkadotJs().rpc.chain.getBlock(res.block.hash);
                 const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
                 // Note, the block may include some additional extrinsics
                 expectedTxHashes.forEach((a) => {

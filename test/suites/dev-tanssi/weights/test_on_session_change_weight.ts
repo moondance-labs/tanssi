@@ -7,7 +7,7 @@ describeSuite({
     id: "DT0701",
     title: "On session change weights suite",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let maxBlock: number;
 

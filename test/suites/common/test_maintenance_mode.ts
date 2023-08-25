@@ -8,7 +8,7 @@ describeSuite({
     id: "C02",
     title: "Maintenance mode test suite",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;

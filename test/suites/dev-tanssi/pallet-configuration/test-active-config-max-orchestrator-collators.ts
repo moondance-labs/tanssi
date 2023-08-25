@@ -1,12 +1,11 @@
 import { expect, beforeAll, describeSuite } from "@moonwall/cli";
-import { Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
     id: "DT0203",
     title: "Configuration - ActiveConfig - MaxOrchestratorCollators",
     foundationMethods: "dev",
-    testCases: ({ context, log, it }) => {
+    testCases: ({ context, it }) => {
         beforeAll(async function () {
             const config = await context.polkadotJs().query.configuration.activeConfig();
             expect(config["maxOrchestratorCollators"].toString()).toBe("1");

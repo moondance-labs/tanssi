@@ -1,5 +1,4 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { getBlockTime } from "@moonwall/util";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { ApiPromise } from "@polkadot/api";
 
@@ -7,7 +6,7 @@ describeSuite({
     id: "S04",
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let api: ApiPromise;
 
         beforeAll(() => {
@@ -64,11 +63,11 @@ describeSuite({
                 if (
                     Object.keys(authorities["orchestratorChain"]).length > config["minOrchestratorCollators"].toNumber()
                 ) {
-                    let liveContainers = await api.query.registrar.registeredParaIds();
+                    const liveContainers = await api.query.registrar.registeredParaIds();
 
                     expect(Object.keys(authorities["containerChains"]).length).to.be.equal(liveContainers.length);
 
-                    for (let container of liveContainers) {
+                    for (const container of liveContainers) {
                         expect(authorities["containerChains"][container.toString()].length).to.be.equal(
                             config["collatorsPerContainer"].toNumber()
                         );

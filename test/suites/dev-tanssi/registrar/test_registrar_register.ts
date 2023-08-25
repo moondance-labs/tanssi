@@ -8,7 +8,7 @@ describeSuite({
     id: "DT0602",
     title: "Registrar test suite",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
 
@@ -41,7 +41,7 @@ describeSuite({
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
                 const emptyGenesisData = () => {
-                    let g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
+                    const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
                         storage: [
                             {
                                 key: "0x636f6465",

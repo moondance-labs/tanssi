@@ -55,6 +55,6 @@ export async function deployContractManualSeal(
         privateKey
     );
     await customWeb3Request(web3, "eth_sendRawTransaction", [tx.rawTransaction]);
-    let rcpt: TransactionReceipt = await web3.eth.getTransactionReceipt(tx.transactionHash);
+    const rcpt: TransactionReceipt = await web3.eth.getTransactionReceipt(tx.transactionHash);
     return new web3.eth.Contract(contractABI, rcpt.contractAddress);
 }

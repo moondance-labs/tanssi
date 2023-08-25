@@ -7,14 +7,14 @@ describeSuite({
     id: "DF0101",
     title: "Existential Deposit disabled",
     foundationMethods: "dev",
-    testCases: ({ context, log, it }) => {
+    testCases: ({ context, it }) => {
         let randomAccount: PrivateKeyAccount;
         let privateKey: `0x${string}`;
 
         beforeEach(async function () {
             privateKey = generatePrivateKey();
             randomAccount = privateKeyToAccount(privateKey);
-            const { result, block } = await context.createBlock(
+            const { result } = await context.createBlock(
                 context.polkadotJs().tx.balances.transferKeepAlive(randomAccount.address, 10_000_000_000_000_000_000n)
             );
             expect(result!.successful, result!.error?.name).to.be.true;

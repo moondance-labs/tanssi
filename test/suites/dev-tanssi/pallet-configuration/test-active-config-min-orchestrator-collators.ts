@@ -1,12 +1,11 @@
 import { expect, beforeAll, describeSuite } from "@moonwall/cli";
-import { Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
     id: "DT0204",
     title: "Configuration - ActiveConfig - MinOrchestratorCollators",
     foundationMethods: "dev",
-    testCases: ({ context, log, it }) => {
+    testCases: ({ context, it }) => {
         beforeAll(async function () {
             const config = await context.polkadotJs().query.configuration.activeConfig();
             expect(config["minOrchestratorCollators"].toString()).toBe("1");

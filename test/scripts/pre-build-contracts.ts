@@ -6,9 +6,9 @@ import { Compiled } from "../util/ethereum-contracts";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
-let sourceByReference = {} as { [ref: string]: string };
-let countByReference = {} as { [ref: string]: number };
-let refByContract = {} as { [contract: string]: string };
+const sourceByReference = {} as { [ref: string]: string };
+const countByReference = {} as { [ref: string]: number };
+const refByContract = {} as { [contract: string]: string };
 
 // For some reasons, solc doesn't provide the relative path to imports :(
 const getImports = (fileRef: string) => (dependency: string) => {
@@ -130,7 +130,7 @@ const main = async () => {
     const sourceToCompile = {};
     for (const contractPath of contractSourcePaths) {
         const contracts = (await getFiles(contractPath.filepath)).filter((filename) => filename.endsWith(".sol"));
-        for (let filepath of contracts) {
+        for (const filepath of contracts) {
             const ref = filepath.replace(contractPath.filepath, contractPath.importPath).replace(/^\//, "");
             sourceByReference[ref] = (await fs.readFile(filepath)).toString();
             if (contractPath.compile) {

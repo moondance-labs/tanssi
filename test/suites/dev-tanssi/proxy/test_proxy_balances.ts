@@ -1,14 +1,14 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair, setupLogger } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
 import "@polkadot/api-augment";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { KeyringPair } from "@moonwall/util";
+import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
 
 describeSuite({
     id: "DT0501",
     title: "Proxy test suite - ProxyType::Balances",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let charlie: KeyringPair;

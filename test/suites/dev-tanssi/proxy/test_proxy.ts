@@ -1,6 +1,6 @@
 import "@polkadot/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { extractFee, setupLogger } from "@moonwall/util";
+import { KeyringPair, extractFee } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
 
@@ -8,7 +8,7 @@ describeSuite({
     id: "DT0503",
     title: "Proxy test suite",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
@@ -133,7 +133,7 @@ describeSuite({
                     1, 2, 3, 4,
                 ];
                 const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
-                for (let [i, proxyType] of proxyTypes.entries()) {
+                for (const [i, proxyType] of proxyTypes.entries()) {
                     const tx = polkadotJs.tx.proxy.addProxy(delegate, proxyType, 0);
                     txs.push(await tx.signAsync(alice, { nonce: nonce.addn(i) }));
                 }
