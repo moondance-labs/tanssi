@@ -77,6 +77,8 @@ pub use {
     tp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
 };
 
+const LOG_TARGET: &str = "runtime::moonbeam";
+
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// A Block signed with a Justification

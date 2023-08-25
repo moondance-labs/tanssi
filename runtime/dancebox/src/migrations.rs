@@ -25,7 +25,7 @@ use pallet_invulnerables::WeightInfo;
 use pallet_migrations::{GetMigrations, Migration};
 use sp_std::{marker::PhantomData, prelude::*};
 
-use crate::{CollatorSelection, Invulnerables, RuntimeOrigin};
+use crate::{CollatorSelection, Invulnerables, RuntimeOrigin, LOG_TARGET};
 
 pub struct MigrateInvulnerables<T>(PhantomData<T>);
 impl<T> Migration for MigrateInvulnerables<T>
@@ -37,6 +37,7 @@ where
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
+        log::info!(target: LOG_TARGET, "migrate");
         let invulnerables = CollatorSelection::invulnerables();
         let invulnerables_len = invulnerables.len();
         Invulnerables::set_invulnerables(RuntimeOrigin::root(), invulnerables.to_vec())
@@ -47,6 +48,8 @@ where
     /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        log::info!(target: LOG_TARGET, "pre_upgrade");
+
         use parity_scale_codec::Encode;
 
         let number_of_invulnerables = CollatorSelection::invulnerables().to_vec().len();
@@ -59,6 +62,7 @@ where
         &self,
         number_of_invulnerables: Vec<u8>,
     ) -> Result<(), sp_runtime::DispatchError> {
+        log::info!(target: LOG_TARGET, "post_upgrade");
         use parity_scale_codec::Decode;
 
         let stored_invulnerables = Invulnerables::invulnerables().to_vec();
