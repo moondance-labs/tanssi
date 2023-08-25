@@ -28,6 +28,21 @@ use sp_std::{marker::PhantomData, prelude::*};
 
 use crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET};
 
+struct CollatorSelectionStorageValuePrefix;
+impl frame_support::traits::StorageInstance for CollatorSelectionStorageValuePrefix {
+    const STORAGE_PREFIX: &'static str = "Invulnerables";
+    fn pallet_prefix() -> &'static str {
+        "CollatorSelection"
+    }
+}
+type CollatorSelectionInvulnerablesValue<T> = StorageValue<
+    CollatorSelectionStorageValuePrefix,
+    BoundedVec<
+        <T as frame_system::Config>::AccountId,
+        <T as pallet_invulnerables::Config>::MaxInvulnerables,
+    >,
+>;
+
 pub struct MigrateInvulnerables<T>(pub PhantomData<T>);
 impl<T> Migration for MigrateInvulnerables<T>
 where
@@ -39,22 +54,7 @@ where
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
         log::info!(target: LOG_TARGET, "migrate");
-        struct CollatorSelectionStorageValuePrefix;
-        impl frame_support::traits::StorageInstance for CollatorSelectionStorageValuePrefix {
-            const STORAGE_PREFIX: &'static str = "Invulnerables";
-            fn pallet_prefix() -> &'static str {
-                "CollatorSelection"
-            }
-        }
-        type CollatorSelectionInvulnerablesValue<T> = StorageValue<
-            CollatorSelectionStorageValuePrefix,
-            BoundedVec<
-                <T as frame_system::Config>::AccountId,
-                <T as pallet_invulnerables::Config>::MaxInvulnerables,
-            >,
-        >;
 
-        // let invulnerables = CollatorSelection::invulnerables();
         let invulnerables = CollatorSelectionInvulnerablesValue::<Runtime>::get()
             .expect("Failed to get invulnerables from CollaterSelection pallet storage.");
         let invulnerables_len = invulnerables.len();
@@ -70,7 +70,10 @@ where
 
         use parity_scale_codec::Encode;
 
-        let number_of_invulnerables = CollatorSelection::invulnerables().to_vec().len();
+        let number_of_invulnerables = CollatorSelectionInvulnerablesValue::<Runtime>::get()
+            .expect("Failed to get invulnerables from CollaterSelection pallet storage.")
+            .to_vec()
+            .len();
         Ok((number_of_invulnerables as u32).encode())
     }
 
