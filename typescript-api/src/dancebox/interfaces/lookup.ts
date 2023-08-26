@@ -438,7 +438,21 @@ export default {
       },
     },
   },
-  /** Lookup51: cumulus_pallet_xcmp_queue::pallet::Event<T> */
+  /** Lookup51: pallet_invulnerables::pallet::Event<T> */
+  PalletInvulnerablesEvent: {
+    _enum: {
+      NewInvulnerables: {
+        invulnerables: "Vec<AccountId32>",
+      },
+      InvulnerableAdded: {
+        accountId: "AccountId32",
+      },
+      InvulnerableRemoved: {
+        accountId: "AccountId32",
+      },
+    },
+  },
+  /** Lookup52: cumulus_pallet_xcmp_queue::pallet::Event<T> */
   CumulusPalletXcmpQueueEvent: {
     _enum: {
       Success: {
@@ -471,7 +485,7 @@ export default {
       },
     },
   },
-  /** Lookup52: xcm::v3::traits::Error */
+  /** Lookup53: xcm::v3::traits::Error */
   XcmV3TraitsError: {
     _enum: {
       Overflow: "Null",
@@ -516,7 +530,7 @@ export default {
       ExceedsStackLimit: "Null",
     },
   },
-  /** Lookup53: cumulus_pallet_xcm::pallet::Event<T> */
+  /** Lookup54: cumulus_pallet_xcm::pallet::Event<T> */
   CumulusPalletXcmEvent: {
     _enum: {
       InvalidFormat: "[u8;32]",
@@ -524,7 +538,7 @@ export default {
       ExecutedDownward: "([u8;32],XcmV3TraitsOutcome)",
     },
   },
-  /** Lookup54: xcm::v3::traits::Outcome */
+  /** Lookup55: xcm::v3::traits::Outcome */
   XcmV3TraitsOutcome: {
     _enum: {
       Complete: "SpWeightsWeightV2Weight",
@@ -532,7 +546,7 @@ export default {
       Error: "XcmV3TraitsError",
     },
   },
-  /** Lookup55: cumulus_pallet_dmp_queue::pallet::Event<T> */
+  /** Lookup56: cumulus_pallet_dmp_queue::pallet::Event<T> */
   CumulusPalletDmpQueueEvent: {
     _enum: {
       InvalidFormat: {
@@ -564,7 +578,7 @@ export default {
       },
     },
   },
-  /** Lookup56: pallet_xcm::pallet::Event<T> */
+  /** Lookup57: pallet_xcm::pallet::Event<T> */
   PalletXcmEvent: {
     _enum: {
       Attempted: "XcmV3TraitsOutcome",
@@ -596,12 +610,12 @@ export default {
       AssetsClaimed: "(H256,XcmV3MultiLocation,XcmVersionedMultiAssets)",
     },
   },
-  /** Lookup57: xcm::v3::multilocation::MultiLocation */
+  /** Lookup58: xcm::v3::multilocation::MultiLocation */
   XcmV3MultiLocation: {
     parents: "u8",
     interior: "XcmV3Junctions",
   },
-  /** Lookup58: xcm::v3::junctions::Junctions */
+  /** Lookup59: xcm::v3::junctions::Junctions */
   XcmV3Junctions: {
     _enum: {
       Here: "Null",
@@ -615,7 +629,7 @@ export default {
       X8: "(XcmV3Junction,XcmV3Junction,XcmV3Junction,XcmV3Junction,XcmV3Junction,XcmV3Junction,XcmV3Junction,XcmV3Junction)",
     },
   },
-  /** Lookup59: xcm::v3::junction::Junction */
+  /** Lookup60: xcm::v3::junction::Junction */
   XcmV3Junction: {
     _enum: {
       Parachain: "Compact<u32>",
@@ -645,7 +659,7 @@ export default {
       GlobalConsensus: "XcmV3JunctionNetworkId",
     },
   },
-  /** Lookup62: xcm::v3::junction::NetworkId */
+  /** Lookup63: xcm::v3::junction::NetworkId */
   XcmV3JunctionNetworkId: {
     _enum: {
       ByGenesis: "[u8;32]",
@@ -665,7 +679,7 @@ export default {
       BitcoinCash: "Null",
     },
   },
-  /** Lookup65: xcm::v3::junction::BodyId */
+  /** Lookup66: xcm::v3::junction::BodyId */
   XcmV3JunctionBodyId: {
     _enum: {
       Unit: "Null",
@@ -680,7 +694,7 @@ export default {
       Treasury: "Null",
     },
   },
-  /** Lookup66: xcm::v3::junction::BodyPart */
+  /** Lookup67: xcm::v3::junction::BodyPart */
   XcmV3JunctionBodyPart: {
     _enum: {
       Voice: "Null",
@@ -701,9 +715,9 @@ export default {
       },
     },
   },
-  /** Lookup67: xcm::v3::Xcm<Call> */
+  /** Lookup68: xcm::v3::Xcm<Call> */
   XcmV3Xcm: "Vec<XcmV3Instruction>",
-  /** Lookup69: xcm::v3::Instruction<Call> */
+  /** Lookup70: xcm::v3::Instruction<Call> */
   XcmV3Instruction: {
     _enum: {
       WithdrawAsset: "XcmV3MultiassetMultiAssets",
@@ -843,28 +857,28 @@ export default {
       },
     },
   },
-  /** Lookup70: xcm::v3::multiasset::MultiAssets */
+  /** Lookup71: xcm::v3::multiasset::MultiAssets */
   XcmV3MultiassetMultiAssets: "Vec<XcmV3MultiAsset>",
-  /** Lookup72: xcm::v3::multiasset::MultiAsset */
+  /** Lookup73: xcm::v3::multiasset::MultiAsset */
   XcmV3MultiAsset: {
     id: "XcmV3MultiassetAssetId",
     fun: "XcmV3MultiassetFungibility",
   },
-  /** Lookup73: xcm::v3::multiasset::AssetId */
+  /** Lookup74: xcm::v3::multiasset::AssetId */
   XcmV3MultiassetAssetId: {
     _enum: {
       Concrete: "XcmV3MultiLocation",
       Abstract: "[u8;32]",
     },
   },
-  /** Lookup74: xcm::v3::multiasset::Fungibility */
+  /** Lookup75: xcm::v3::multiasset::Fungibility */
   XcmV3MultiassetFungibility: {
     _enum: {
       Fungible: "Compact<u128>",
       NonFungible: "XcmV3MultiassetAssetInstance",
     },
   },
-  /** Lookup75: xcm::v3::multiasset::AssetInstance */
+  /** Lookup76: xcm::v3::multiasset::AssetInstance */
   XcmV3MultiassetAssetInstance: {
     _enum: {
       Undefined: "Null",
@@ -875,7 +889,7 @@ export default {
       Array32: "[u8;32]",
     },
   },
-  /** Lookup78: xcm::v3::Response */
+  /** Lookup79: xcm::v3::Response */
   XcmV3Response: {
     _enum: {
       Null: "Null",
@@ -886,7 +900,7 @@ export default {
       DispatchResult: "XcmV3MaybeErrorCode",
     },
   },
-  /** Lookup82: xcm::v3::PalletInfo */
+  /** Lookup83: xcm::v3::PalletInfo */
   XcmV3PalletInfo: {
     index: "Compact<u32>",
     name: "Bytes",
@@ -895,7 +909,7 @@ export default {
     minor: "Compact<u32>",
     patch: "Compact<u32>",
   },
-  /** Lookup85: xcm::v3::MaybeErrorCode */
+  /** Lookup86: xcm::v3::MaybeErrorCode */
   XcmV3MaybeErrorCode: {
     _enum: {
       Success: "Null",
@@ -903,28 +917,28 @@ export default {
       TruncatedError: "Bytes",
     },
   },
-  /** Lookup88: xcm::v2::OriginKind */
+  /** Lookup89: xcm::v2::OriginKind */
   XcmV2OriginKind: {
     _enum: ["Native", "SovereignAccount", "Superuser", "Xcm"],
   },
-  /** Lookup89: xcm::double_encoded::DoubleEncoded<T> */
+  /** Lookup90: xcm::double_encoded::DoubleEncoded<T> */
   XcmDoubleEncoded: {
     encoded: "Bytes",
   },
-  /** Lookup90: xcm::v3::QueryResponseInfo */
+  /** Lookup91: xcm::v3::QueryResponseInfo */
   XcmV3QueryResponseInfo: {
     destination: "XcmV3MultiLocation",
     queryId: "Compact<u64>",
     maxWeight: "SpWeightsWeightV2Weight",
   },
-  /** Lookup91: xcm::v3::multiasset::MultiAssetFilter */
+  /** Lookup92: xcm::v3::multiasset::MultiAssetFilter */
   XcmV3MultiassetMultiAssetFilter: {
     _enum: {
       Definite: "XcmV3MultiassetMultiAssets",
       Wild: "XcmV3MultiassetWildMultiAsset",
     },
   },
-  /** Lookup92: xcm::v3::multiasset::WildMultiAsset */
+  /** Lookup93: xcm::v3::multiasset::WildMultiAsset */
   XcmV3MultiassetWildMultiAsset: {
     _enum: {
       All: "Null",
@@ -940,18 +954,18 @@ export default {
       },
     },
   },
-  /** Lookup93: xcm::v3::multiasset::WildFungibility */
+  /** Lookup94: xcm::v3::multiasset::WildFungibility */
   XcmV3MultiassetWildFungibility: {
     _enum: ["Fungible", "NonFungible"],
   },
-  /** Lookup95: xcm::v3::WeightLimit */
+  /** Lookup96: xcm::v3::WeightLimit */
   XcmV3WeightLimit: {
     _enum: {
       Unlimited: "Null",
       Limited: "SpWeightsWeightV2Weight",
     },
   },
-  /** Lookup96: xcm::VersionedMultiAssets */
+  /** Lookup97: xcm::VersionedMultiAssets */
   XcmVersionedMultiAssets: {
     _enum: {
       __Unused0: "Null",
@@ -960,26 +974,26 @@ export default {
       V3: "XcmV3MultiassetMultiAssets",
     },
   },
-  /** Lookup97: xcm::v2::multiasset::MultiAssets */
+  /** Lookup98: xcm::v2::multiasset::MultiAssets */
   XcmV2MultiassetMultiAssets: "Vec<XcmV2MultiAsset>",
-  /** Lookup99: xcm::v2::multiasset::MultiAsset */
+  /** Lookup100: xcm::v2::multiasset::MultiAsset */
   XcmV2MultiAsset: {
     id: "XcmV2MultiassetAssetId",
     fun: "XcmV2MultiassetFungibility",
   },
-  /** Lookup100: xcm::v2::multiasset::AssetId */
+  /** Lookup101: xcm::v2::multiasset::AssetId */
   XcmV2MultiassetAssetId: {
     _enum: {
       Concrete: "XcmV2MultiLocation",
       Abstract: "Bytes",
     },
   },
-  /** Lookup101: xcm::v2::multilocation::MultiLocation */
+  /** Lookup102: xcm::v2::multilocation::MultiLocation */
   XcmV2MultiLocation: {
     parents: "u8",
     interior: "XcmV2MultilocationJunctions",
   },
-  /** Lookup102: xcm::v2::multilocation::Junctions */
+  /** Lookup103: xcm::v2::multilocation::Junctions */
   XcmV2MultilocationJunctions: {
     _enum: {
       Here: "Null",
@@ -993,7 +1007,7 @@ export default {
       X8: "(XcmV2Junction,XcmV2Junction,XcmV2Junction,XcmV2Junction,XcmV2Junction,XcmV2Junction,XcmV2Junction,XcmV2Junction)",
     },
   },
-  /** Lookup103: xcm::v2::junction::Junction */
+  /** Lookup104: xcm::v2::junction::Junction */
   XcmV2Junction: {
     _enum: {
       Parachain: "Compact<u32>",
@@ -1019,7 +1033,7 @@ export default {
       },
     },
   },
-  /** Lookup104: xcm::v2::NetworkId */
+  /** Lookup105: xcm::v2::NetworkId */
   XcmV2NetworkId: {
     _enum: {
       Any: "Null",
@@ -1028,7 +1042,7 @@ export default {
       Kusama: "Null",
     },
   },
-  /** Lookup106: xcm::v2::BodyId */
+  /** Lookup107: xcm::v2::BodyId */
   XcmV2BodyId: {
     _enum: {
       Unit: "Null",
@@ -1043,7 +1057,7 @@ export default {
       Treasury: "Null",
     },
   },
-  /** Lookup107: xcm::v2::BodyPart */
+  /** Lookup108: xcm::v2::BodyPart */
   XcmV2BodyPart: {
     _enum: {
       Voice: "Null",
@@ -1064,14 +1078,14 @@ export default {
       },
     },
   },
-  /** Lookup108: xcm::v2::multiasset::Fungibility */
+  /** Lookup109: xcm::v2::multiasset::Fungibility */
   XcmV2MultiassetFungibility: {
     _enum: {
       Fungible: "Compact<u128>",
       NonFungible: "XcmV2MultiassetAssetInstance",
     },
   },
-  /** Lookup109: xcm::v2::multiasset::AssetInstance */
+  /** Lookup110: xcm::v2::multiasset::AssetInstance */
   XcmV2MultiassetAssetInstance: {
     _enum: {
       Undefined: "Null",
@@ -1083,7 +1097,7 @@ export default {
       Blob: "Bytes",
     },
   },
-  /** Lookup110: xcm::VersionedMultiLocation */
+  /** Lookup111: xcm::VersionedMultiLocation */
   XcmVersionedMultiLocation: {
     _enum: {
       __Unused0: "Null",
@@ -1092,7 +1106,7 @@ export default {
       V3: "XcmV3MultiLocation",
     },
   },
-  /** Lookup111: frame_system::Phase */
+  /** Lookup112: frame_system::Phase */
   FrameSystemPhase: {
     _enum: {
       ApplyExtrinsic: "u32",
@@ -1100,12 +1114,12 @@ export default {
       Initialization: "Null",
     },
   },
-  /** Lookup115: frame_system::LastRuntimeUpgradeInfo */
+  /** Lookup116: frame_system::LastRuntimeUpgradeInfo */
   FrameSystemLastRuntimeUpgradeInfo: {
     specVersion: "Compact<u32>",
     specName: "Text",
   },
-  /** Lookup117: frame_system::pallet::Call<T> */
+  /** Lookup118: frame_system::pallet::Call<T> */
   FrameSystemCall: {
     _enum: {
       remark: {
@@ -1138,14 +1152,14 @@ export default {
       },
     },
   },
-  /** Lookup121: frame_system::limits::BlockWeights */
+  /** Lookup122: frame_system::limits::BlockWeights */
   FrameSystemLimitsBlockWeights: {
     baseBlock: "SpWeightsWeightV2Weight",
     maxBlock: "SpWeightsWeightV2Weight",
     perClass: "FrameSupportDispatchPerDispatchClassWeightsPerClass",
   },
   /**
-   * Lookup122:
+   * Lookup123:
    * frame_support::dispatch::PerDispatchClass<frame_system::limits::WeightsPerClass>
    */
   FrameSupportDispatchPerDispatchClassWeightsPerClass: {
@@ -1153,29 +1167,29 @@ export default {
     operational: "FrameSystemLimitsWeightsPerClass",
     mandatory: "FrameSystemLimitsWeightsPerClass",
   },
-  /** Lookup123: frame_system::limits::WeightsPerClass */
+  /** Lookup124: frame_system::limits::WeightsPerClass */
   FrameSystemLimitsWeightsPerClass: {
     baseExtrinsic: "SpWeightsWeightV2Weight",
     maxExtrinsic: "Option<SpWeightsWeightV2Weight>",
     maxTotal: "Option<SpWeightsWeightV2Weight>",
     reserved: "Option<SpWeightsWeightV2Weight>",
   },
-  /** Lookup125: frame_system::limits::BlockLength */
+  /** Lookup126: frame_system::limits::BlockLength */
   FrameSystemLimitsBlockLength: {
     max: "FrameSupportDispatchPerDispatchClassU32",
   },
-  /** Lookup126: frame_support::dispatch::PerDispatchClass<T> */
+  /** Lookup127: frame_support::dispatch::PerDispatchClass<T> */
   FrameSupportDispatchPerDispatchClassU32: {
     normal: "u32",
     operational: "u32",
     mandatory: "u32",
   },
-  /** Lookup127: sp_weights::RuntimeDbWeight */
+  /** Lookup128: sp_weights::RuntimeDbWeight */
   SpWeightsRuntimeDbWeight: {
     read: "u64",
     write: "u64",
   },
-  /** Lookup128: sp_version::RuntimeVersion */
+  /** Lookup129: sp_version::RuntimeVersion */
   SpVersionRuntimeVersion: {
     specName: "Text",
     implName: "Text",
@@ -1186,7 +1200,7 @@ export default {
     transactionVersion: "u32",
     stateVersion: "u8",
   },
-  /** Lookup132: frame_system::pallet::Error<T> */
+  /** Lookup133: frame_system::pallet::Error<T> */
   FrameSystemError: {
     _enum: [
       "InvalidSpecName",
@@ -1197,23 +1211,23 @@ export default {
       "CallFiltered",
     ],
   },
-  /** Lookup133: polkadot_primitives::v4::PersistedValidationData<primitive_types::H256, N> */
+  /** Lookup134: polkadot_primitives::v4::PersistedValidationData<primitive_types::H256, N> */
   PolkadotPrimitivesV4PersistedValidationData: {
     parentHead: "Bytes",
     relayParentNumber: "u32",
     relayParentStorageRoot: "H256",
     maxPovSize: "u32",
   },
-  /** Lookup136: polkadot_primitives::v4::UpgradeRestriction */
+  /** Lookup137: polkadot_primitives::v4::UpgradeRestriction */
   PolkadotPrimitivesV4UpgradeRestriction: {
     _enum: ["Present"],
   },
-  /** Lookup137: sp_trie::storage_proof::StorageProof */
+  /** Lookup138: sp_trie::storage_proof::StorageProof */
   SpTrieStorageProof: {
     trieNodes: "BTreeSet<Bytes>",
   },
   /**
-   * Lookup139:
+   * Lookup140:
    * cumulus_pallet_parachain_system::relay_state_snapshot::MessagingStateSnapshot
    */
   CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot: {
@@ -1224,14 +1238,14 @@ export default {
     egressChannels: "Vec<(u32,PolkadotPrimitivesV4AbridgedHrmpChannel)>",
   },
   /**
-   * Lookup140:
+   * Lookup141:
    * cumulus_pallet_parachain_system::relay_state_snapshot::RelayDispachQueueSize
    */
   CumulusPalletParachainSystemRelayStateSnapshotRelayDispachQueueSize: {
     remainingCount: "u32",
     remainingSize: "u32",
   },
-  /** Lookup143: polkadot_primitives::v4::AbridgedHrmpChannel */
+  /** Lookup144: polkadot_primitives::v4::AbridgedHrmpChannel */
   PolkadotPrimitivesV4AbridgedHrmpChannel: {
     maxCapacity: "u32",
     maxTotalSize: "u32",
@@ -1240,7 +1254,7 @@ export default {
     totalSize: "u32",
     mqcHead: "Option<H256>",
   },
-  /** Lookup145: polkadot_primitives::v4::AbridgedHostConfiguration */
+  /** Lookup146: polkadot_primitives::v4::AbridgedHostConfiguration */
   PolkadotPrimitivesV4AbridgedHostConfiguration: {
     maxCodeSize: "u32",
     maxHeadDataSize: "u32",
@@ -1253,19 +1267,19 @@ export default {
     validationUpgradeDelay: "u32",
   },
   /**
-   * Lookup151:
+   * Lookup152:
    * polkadot_core_primitives::OutboundHrmpMessage<polkadot_parachain::primitives::Id>
    */
   PolkadotCorePrimitivesOutboundHrmpMessage: {
     recipient: "u32",
     data: "Bytes",
   },
-  /** Lookup152: cumulus_pallet_parachain_system::CodeUpgradeAuthorization<T> */
+  /** Lookup153: cumulus_pallet_parachain_system::CodeUpgradeAuthorization<T> */
   CumulusPalletParachainSystemCodeUpgradeAuthorization: {
     codeHash: "H256",
     checkVersion: "bool",
   },
-  /** Lookup153: cumulus_pallet_parachain_system::pallet::Call<T> */
+  /** Lookup154: cumulus_pallet_parachain_system::pallet::Call<T> */
   CumulusPalletParachainSystemCall: {
     _enum: {
       set_validation_data: {
@@ -1283,7 +1297,7 @@ export default {
       },
     },
   },
-  /** Lookup154: cumulus_primitives_parachain_inherent::ParachainInherentData */
+  /** Lookup155: cumulus_primitives_parachain_inherent::ParachainInherentData */
   CumulusPrimitivesParachainInherentParachainInherentData: {
     validationData: "PolkadotPrimitivesV4PersistedValidationData",
     relayChainState: "SpTrieStorageProof",
@@ -1291,17 +1305,17 @@ export default {
     horizontalMessages:
       "BTreeMap<u32, Vec<PolkadotCorePrimitivesInboundHrmpMessage>>",
   },
-  /** Lookup156: polkadot_core_primitives::InboundDownwardMessage<BlockNumber> */
+  /** Lookup157: polkadot_core_primitives::InboundDownwardMessage<BlockNumber> */
   PolkadotCorePrimitivesInboundDownwardMessage: {
     sentAt: "u32",
     msg: "Bytes",
   },
-  /** Lookup159: polkadot_core_primitives::InboundHrmpMessage<BlockNumber> */
+  /** Lookup160: polkadot_core_primitives::InboundHrmpMessage<BlockNumber> */
   PolkadotCorePrimitivesInboundHrmpMessage: {
     sentAt: "u32",
     data: "Bytes",
   },
-  /** Lookup162: cumulus_pallet_parachain_system::pallet::Error<T> */
+  /** Lookup163: cumulus_pallet_parachain_system::pallet::Error<T> */
   CumulusPalletParachainSystemError: {
     _enum: [
       "OverlappingUpgrades",
@@ -1314,7 +1328,7 @@ export default {
       "Unauthorized",
     ],
   },
-  /** Lookup163: pallet_timestamp::pallet::Call<T> */
+  /** Lookup164: pallet_timestamp::pallet::Call<T> */
   PalletTimestampCall: {
     _enum: {
       set: {
@@ -1322,9 +1336,9 @@ export default {
       },
     },
   },
-  /** Lookup164: parachain_info::pallet::Call<T> */
+  /** Lookup165: parachain_info::pallet::Call<T> */
   ParachainInfoCall: "Null",
-  /** Lookup165: pallet_sudo::pallet::Call<T> */
+  /** Lookup166: pallet_sudo::pallet::Call<T> */
   PalletSudoCall: {
     _enum: {
       sudo: {
@@ -1346,7 +1360,7 @@ export default {
       },
     },
   },
-  /** Lookup167: pallet_utility::pallet::Call<T> */
+  /** Lookup168: pallet_utility::pallet::Call<T> */
   PalletUtilityCall: {
     _enum: {
       batch: {
@@ -1372,7 +1386,7 @@ export default {
       },
     },
   },
-  /** Lookup169: dancebox_runtime::OriginCaller */
+  /** Lookup170: dancebox_runtime::OriginCaller */
   DanceboxRuntimeOriginCaller: {
     _enum: {
       system: "FrameSupportDispatchRawOrigin",
@@ -1431,7 +1445,7 @@ export default {
       PolkadotXcm: "PalletXcmOrigin",
     },
   },
-  /** Lookup170: frame_support::dispatch::RawOrigin<sp_core::crypto::AccountId32> */
+  /** Lookup171: frame_support::dispatch::RawOrigin<sp_core::crypto::AccountId32> */
   FrameSupportDispatchRawOrigin: {
     _enum: {
       Root: "Null",
@@ -1439,23 +1453,23 @@ export default {
       None: "Null",
     },
   },
-  /** Lookup171: cumulus_pallet_xcm::pallet::Origin */
+  /** Lookup172: cumulus_pallet_xcm::pallet::Origin */
   CumulusPalletXcmOrigin: {
     _enum: {
       Relay: "Null",
       SiblingParachain: "u32",
     },
   },
-  /** Lookup172: pallet_xcm::pallet::Origin */
+  /** Lookup173: pallet_xcm::pallet::Origin */
   PalletXcmOrigin: {
     _enum: {
       Xcm: "XcmV3MultiLocation",
       Response: "XcmV3MultiLocation",
     },
   },
-  /** Lookup173: sp_core::Void */
+  /** Lookup174: sp_core::Void */
   SpCoreVoid: "Null",
-  /** Lookup174: pallet_proxy::pallet::Call<T> */
+  /** Lookup175: pallet_proxy::pallet::Call<T> */
   PalletProxyCall: {
     _enum: {
       proxy: {
@@ -1506,11 +1520,11 @@ export default {
       },
     },
   },
-  /** Lookup178: pallet_maintenance_mode::pallet::Call<T> */
+  /** Lookup179: pallet_maintenance_mode::pallet::Call<T> */
   PalletMaintenanceModeCall: {
     _enum: ["enter_maintenance_mode", "resume_normal_operation"],
   },
-  /** Lookup179: pallet_balances::pallet::Call<T, I> */
+  /** Lookup180: pallet_balances::pallet::Call<T, I> */
   PalletBalancesCall: {
     _enum: {
       transfer_allow_death: {
@@ -1552,7 +1566,7 @@ export default {
       },
     },
   },
-  /** Lookup180: pallet_registrar::pallet::Call<T> */
+  /** Lookup181: pallet_registrar::pallet::Call<T> */
   PalletRegistrarCall: {
     _enum: {
       register: {
@@ -1572,7 +1586,7 @@ export default {
     },
   },
   /**
-   * Lookup181:
+   * Lookup182:
    * tp_container_chain_genesis_data::ContainerChainGenesisData<MaxLengthTokenSymbol>
    */
   TpContainerChainGenesisDataContainerChainGenesisData: {
@@ -1583,23 +1597,23 @@ export default {
     extensions: "Bytes",
     properties: "TpContainerChainGenesisDataProperties",
   },
-  /** Lookup183: tp_container_chain_genesis_data::ContainerChainGenesisDataItem */
+  /** Lookup184: tp_container_chain_genesis_data::ContainerChainGenesisDataItem */
   TpContainerChainGenesisDataContainerChainGenesisDataItem: {
     key: "Bytes",
     value: "Bytes",
   },
-  /** Lookup185: tp_container_chain_genesis_data::Properties<MaxLengthTokenSymbol> */
+  /** Lookup186: tp_container_chain_genesis_data::Properties<MaxLengthTokenSymbol> */
   TpContainerChainGenesisDataProperties: {
     tokenMetadata: "TpContainerChainGenesisDataTokenMetadata",
     isEthereum: "bool",
   },
-  /** Lookup186: tp_container_chain_genesis_data::TokenMetadata<MaxLengthTokenSymbol> */
+  /** Lookup187: tp_container_chain_genesis_data::TokenMetadata<MaxLengthTokenSymbol> */
   TpContainerChainGenesisDataTokenMetadata: {
     tokenSymbol: "Bytes",
     ss58Format: "u32",
     tokenDecimals: "u32",
   },
-  /** Lookup191: pallet_configuration::pallet::Call<T> */
+  /** Lookup192: pallet_configuration::pallet::Call<T> */
   PalletConfigurationCall: {
     _enum: {
       set_max_collators: {
@@ -1674,9 +1688,9 @@ export default {
       },
     },
   },
-  /** Lookup192: pallet_collator_assignment::pallet::Call<T> */
+  /** Lookup193: pallet_collator_assignment::pallet::Call<T> */
   PalletCollatorAssignmentCall: "Null",
-  /** Lookup193: pallet_author_noting::pallet::Call<T> */
+  /** Lookup194: pallet_author_noting::pallet::Call<T> */
   PalletAuthorNotingCall: {
     _enum: {
       set_latest_author_data: {
@@ -1689,13 +1703,13 @@ export default {
       },
     },
   },
-  /** Lookup194: tp_author_noting_inherent::OwnParachainInherentData */
+  /** Lookup195: tp_author_noting_inherent::OwnParachainInherentData */
   TpAuthorNotingInherentOwnParachainInherentData: {
     relayStorageProof: "SpTrieStorageProof",
   },
-  /** Lookup195: pallet_authority_assignment::pallet::Call<T> */
+  /** Lookup196: pallet_authority_assignment::pallet::Call<T> */
   PalletAuthorityAssignmentCall: "Null",
-  /** Lookup196: pallet_collator_selection::pallet::Call<T> */
+  /** Lookup197: pallet_collator_selection::pallet::Call<T> */
   PalletCollatorSelectionCall: {
     _enum: {
       set_invulnerables: {
@@ -1714,7 +1728,7 @@ export default {
       leave_intent: "Null",
     },
   },
-  /** Lookup197: pallet_session::pallet::Call<T> */
+  /** Lookup198: pallet_session::pallet::Call<T> */
   PalletSessionCall: {
     _enum: {
       set_keys: {
@@ -1727,19 +1741,36 @@ export default {
       purge_keys: "Null",
     },
   },
-  /** Lookup198: dancebox_runtime::SessionKeys */
+  /** Lookup199: dancebox_runtime::SessionKeys */
   DanceboxRuntimeSessionKeys: {
     nimbus: "NimbusPrimitivesNimbusCryptoPublic",
   },
-  /** Lookup199: nimbus_primitives::nimbus_crypto::Public */
+  /** Lookup200: nimbus_primitives::nimbus_crypto::Public */
   NimbusPrimitivesNimbusCryptoPublic: "SpCoreSr25519Public",
-  /** Lookup200: sp_core::sr25519::Public */
+  /** Lookup201: sp_core::sr25519::Public */
   SpCoreSr25519Public: "[u8;32]",
-  /** Lookup201: pallet_author_inherent::pallet::Call<T> */
+  /** Lookup202: pallet_author_inherent::pallet::Call<T> */
   PalletAuthorInherentCall: {
     _enum: ["kick_off_authorship_validation"],
   },
-  /** Lookup202: cumulus_pallet_dmp_queue::pallet::Call<T> */
+  /** Lookup203: pallet_invulnerables::pallet::Call<T> */
+  PalletInvulnerablesCall: {
+    _enum: {
+      set_invulnerables: {
+        _alias: {
+          new_: "new",
+        },
+        new_: "Vec<AccountId32>",
+      },
+      add_invulnerable: {
+        who: "AccountId32",
+      },
+      remove_invulnerable: {
+        who: "AccountId32",
+      },
+    },
+  },
+  /** Lookup204: cumulus_pallet_dmp_queue::pallet::Call<T> */
   CumulusPalletDmpQueueCall: {
     _enum: {
       service_overweight: {
@@ -1748,7 +1779,7 @@ export default {
       },
     },
   },
-  /** Lookup203: pallet_xcm::pallet::Call<T> */
+  /** Lookup205: pallet_xcm::pallet::Call<T> */
   PalletXcmCall: {
     _enum: {
       send: {
@@ -1803,7 +1834,7 @@ export default {
       },
     },
   },
-  /** Lookup204: xcm::VersionedXcm<RuntimeCall> */
+  /** Lookup206: xcm::VersionedXcm<RuntimeCall> */
   XcmVersionedXcm: {
     _enum: {
       __Unused0: "Null",
@@ -1812,9 +1843,9 @@ export default {
       V3: "XcmV3Xcm",
     },
   },
-  /** Lookup205: xcm::v2::Xcm<RuntimeCall> */
+  /** Lookup207: xcm::v2::Xcm<RuntimeCall> */
   XcmV2Xcm: "Vec<XcmV2Instruction>",
-  /** Lookup207: xcm::v2::Instruction<RuntimeCall> */
+  /** Lookup209: xcm::v2::Instruction<RuntimeCall> */
   XcmV2Instruction: {
     _enum: {
       WithdrawAsset: "XcmV2MultiassetMultiAssets",
@@ -1910,7 +1941,7 @@ export default {
       UnsubscribeVersion: "Null",
     },
   },
-  /** Lookup208: xcm::v2::Response */
+  /** Lookup210: xcm::v2::Response */
   XcmV2Response: {
     _enum: {
       Null: "Null",
@@ -1919,7 +1950,7 @@ export default {
       Version: "u32",
     },
   },
-  /** Lookup211: xcm::v2::traits::Error */
+  /** Lookup213: xcm::v2::traits::Error */
   XcmV2TraitsError: {
     _enum: {
       Overflow: "Null",
@@ -1950,14 +1981,14 @@ export default {
       WeightNotComputable: "Null",
     },
   },
-  /** Lookup212: xcm::v2::multiasset::MultiAssetFilter */
+  /** Lookup214: xcm::v2::multiasset::MultiAssetFilter */
   XcmV2MultiassetMultiAssetFilter: {
     _enum: {
       Definite: "XcmV2MultiassetMultiAssets",
       Wild: "XcmV2MultiassetWildMultiAsset",
     },
   },
-  /** Lookup213: xcm::v2::multiasset::WildMultiAsset */
+  /** Lookup215: xcm::v2::multiasset::WildMultiAsset */
   XcmV2MultiassetWildMultiAsset: {
     _enum: {
       All: "Null",
@@ -1967,18 +1998,18 @@ export default {
       },
     },
   },
-  /** Lookup214: xcm::v2::multiasset::WildFungibility */
+  /** Lookup216: xcm::v2::multiasset::WildFungibility */
   XcmV2MultiassetWildFungibility: {
     _enum: ["Fungible", "NonFungible"],
   },
-  /** Lookup215: xcm::v2::WeightLimit */
+  /** Lookup217: xcm::v2::WeightLimit */
   XcmV2WeightLimit: {
     _enum: {
       Unlimited: "Null",
       Limited: "Compact<u64>",
     },
   },
-  /** Lookup225: pallet_root_testing::pallet::Call<T> */
+  /** Lookup227: pallet_root_testing::pallet::Call<T> */
   PalletRootTestingCall: {
     _enum: {
       fill_block: {
@@ -1986,16 +2017,16 @@ export default {
       },
     },
   },
-  /** Lookup227: pallet_sudo::pallet::Error<T> */
+  /** Lookup229: pallet_sudo::pallet::Error<T> */
   PalletSudoError: {
     _enum: ["RequireSudo"],
   },
-  /** Lookup228: pallet_utility::pallet::Error<T> */
+  /** Lookup230: pallet_utility::pallet::Error<T> */
   PalletUtilityError: {
     _enum: ["TooManyCalls"],
   },
   /**
-   * Lookup231: pallet_proxy::ProxyDefinition<sp_core::crypto::AccountId32,
+   * Lookup233: pallet_proxy::ProxyDefinition<sp_core::crypto::AccountId32,
    * dancebox_runtime::ProxyType, BlockNumber>
    */
   PalletProxyProxyDefinition: {
@@ -2004,7 +2035,7 @@ export default {
     delay: "u32",
   },
   /**
-   * Lookup235: pallet_proxy::Announcement<sp_core::crypto::AccountId32,
+   * Lookup237: pallet_proxy::Announcement<sp_core::crypto::AccountId32,
    * primitive_types::H256, BlockNumber>
    */
   PalletProxyAnnouncement: {
@@ -2012,7 +2043,7 @@ export default {
     callHash: "H256",
     height: "u32",
   },
-  /** Lookup237: pallet_proxy::pallet::Error<T> */
+  /** Lookup239: pallet_proxy::pallet::Error<T> */
   PalletProxyError: {
     _enum: [
       "TooMany",
@@ -2025,7 +2056,7 @@ export default {
       "NoSelfProxy",
     ],
   },
-  /** Lookup238: pallet_migrations::pallet::Error<T> */
+  /** Lookup240: pallet_migrations::pallet::Error<T> */
   PalletMigrationsError: {
     _enum: [
       "PreimageMissing",
@@ -2034,31 +2065,31 @@ export default {
       "PreimageAlreadyExists",
     ],
   },
-  /** Lookup239: pallet_maintenance_mode::pallet::Error<T> */
+  /** Lookup241: pallet_maintenance_mode::pallet::Error<T> */
   PalletMaintenanceModeError: {
     _enum: ["AlreadyInMaintenanceMode", "NotInMaintenanceMode"],
   },
-  /** Lookup241: pallet_balances::types::BalanceLock<Balance> */
+  /** Lookup243: pallet_balances::types::BalanceLock<Balance> */
   PalletBalancesBalanceLock: {
     id: "[u8;8]",
     amount: "u128",
     reasons: "PalletBalancesReasons",
   },
-  /** Lookup242: pallet_balances::types::Reasons */
+  /** Lookup244: pallet_balances::types::Reasons */
   PalletBalancesReasons: {
     _enum: ["Fee", "Misc", "All"],
   },
-  /** Lookup245: pallet_balances::types::ReserveData<ReserveIdentifier, Balance> */
+  /** Lookup247: pallet_balances::types::ReserveData<ReserveIdentifier, Balance> */
   PalletBalancesReserveData: {
     id: "[u8;8]",
     amount: "u128",
   },
-  /** Lookup248: pallet_balances::types::IdAmount<Id, Balance> */
+  /** Lookup250: pallet_balances::types::IdAmount<Id, Balance> */
   PalletBalancesIdAmount: {
     id: "[u8;8]",
     amount: "u128",
   },
-  /** Lookup251: pallet_balances::pallet::Error<T, I> */
+  /** Lookup253: pallet_balances::pallet::Error<T, I> */
   PalletBalancesError: {
     _enum: [
       "VestingBalance",
@@ -2073,16 +2104,16 @@ export default {
       "TooManyFreezes",
     ],
   },
-  /** Lookup253: pallet_transaction_payment::Releases */
+  /** Lookup255: pallet_transaction_payment::Releases */
   PalletTransactionPaymentReleases: {
     _enum: ["V1Ancient", "V2"],
   },
-  /** Lookup258: pallet_registrar::pallet::DepositInfo<T> */
+  /** Lookup260: pallet_registrar::pallet::DepositInfo<T> */
   PalletRegistrarDepositInfo: {
     creator: "AccountId32",
     deposit: "u128",
   },
-  /** Lookup259: pallet_registrar::pallet::Error<T> */
+  /** Lookup261: pallet_registrar::pallet::Error<T> */
   PalletRegistrarError: {
     _enum: [
       "ParaIdAlreadyRegistered",
@@ -2093,35 +2124,35 @@ export default {
       "NotSufficientDeposit",
     ],
   },
-  /** Lookup260: pallet_configuration::HostConfiguration */
+  /** Lookup262: pallet_configuration::HostConfiguration */
   PalletConfigurationHostConfiguration: {
     maxCollators: "u32",
     minOrchestratorCollators: "u32",
     maxOrchestratorCollators: "u32",
     collatorsPerContainer: "u32",
   },
-  /** Lookup263: pallet_configuration::pallet::Error<T> */
+  /** Lookup265: pallet_configuration::pallet::Error<T> */
   PalletConfigurationError: {
     _enum: ["InvalidNewValue"],
   },
-  /** Lookup264: tp_collator_assignment::AssignedCollators<sp_core::crypto::AccountId32> */
+  /** Lookup266: tp_collator_assignment::AssignedCollators<sp_core::crypto::AccountId32> */
   TpCollatorAssignmentAssignedCollatorsAccountId32: {
     orchestratorChain: "Vec<AccountId32>",
     containerChains: "BTreeMap<u32, Vec<AccountId32>>",
   },
-  /** Lookup269: pallet_initializer::pallet::BufferedSessionChange<T> */
+  /** Lookup271: pallet_initializer::pallet::BufferedSessionChange<T> */
   PalletInitializerBufferedSessionChange: {
     changed: "bool",
     validators: "Vec<(AccountId32,NimbusPrimitivesNimbusCryptoPublic)>",
     queued: "Vec<(AccountId32,NimbusPrimitivesNimbusCryptoPublic)>",
     sessionIndex: "u32",
   },
-  /** Lookup272: pallet_author_noting::pallet::ContainerChainBlockInfo<T> */
+  /** Lookup274: pallet_author_noting::pallet::ContainerChainBlockInfo<T> */
   PalletAuthorNotingContainerChainBlockInfo: {
     blockNumber: "u32",
     author: "AccountId32",
   },
-  /** Lookup273: pallet_author_noting::pallet::Error<T> */
+  /** Lookup275: pallet_author_noting::pallet::Error<T> */
   PalletAuthorNotingError: {
     _enum: [
       "FailedReading",
@@ -2134,7 +2165,7 @@ export default {
     ],
   },
   /**
-   * Lookup274:
+   * Lookup276:
    * tp_collator_assignment::AssignedCollators<nimbus_primitives::nimbus_crypto::Public>
    */
   TpCollatorAssignmentAssignedCollatorsPublic: {
@@ -2142,7 +2173,7 @@ export default {
     containerChains: "BTreeMap<u32, Vec<NimbusPrimitivesNimbusCryptoPublic>>",
   },
   /**
-   * Lookup281:
+   * Lookup283:
    * pallet_collator_selection::pallet::CandidateInfo<sp_core::crypto::AccountId32,
    * Balance>
    */
@@ -2150,7 +2181,7 @@ export default {
     who: "AccountId32",
     deposit: "u128",
   },
-  /** Lookup283: pallet_collator_selection::pallet::Error<T> */
+  /** Lookup285: pallet_collator_selection::pallet::Error<T> */
   PalletCollatorSelectionError: {
     _enum: [
       "TooManyCandidates",
@@ -2165,9 +2196,9 @@ export default {
       "ValidatorNotRegistered",
     ],
   },
-  /** Lookup288: sp_core::crypto::KeyTypeId */
+  /** Lookup290: sp_core::crypto::KeyTypeId */
   SpCoreCryptoKeyTypeId: "[u8;4]",
-  /** Lookup289: pallet_session::pallet::Error<T> */
+  /** Lookup291: pallet_session::pallet::Error<T> */
   PalletSessionError: {
     _enum: [
       "InvalidProof",
@@ -2177,25 +2208,29 @@ export default {
       "NoAccount",
     ],
   },
-  /** Lookup293: pallet_author_inherent::pallet::Error<T> */
+  /** Lookup295: pallet_author_inherent::pallet::Error<T> */
   PalletAuthorInherentError: {
     _enum: ["AuthorAlreadySet", "NoAccountId", "CannotBeAuthor"],
   },
-  /** Lookup295: cumulus_pallet_xcmp_queue::InboundChannelDetails */
+  /** Lookup296: pallet_invulnerables::pallet::Error<T> */
+  PalletInvulnerablesError: {
+    _enum: ["TooManyInvulnerables", "AlreadyInvulnerable", "NotInvulnerable"],
+  },
+  /** Lookup298: cumulus_pallet_xcmp_queue::InboundChannelDetails */
   CumulusPalletXcmpQueueInboundChannelDetails: {
     sender: "u32",
     state: "CumulusPalletXcmpQueueInboundState",
     messageMetadata: "Vec<(u32,PolkadotParachainPrimitivesXcmpMessageFormat)>",
   },
-  /** Lookup296: cumulus_pallet_xcmp_queue::InboundState */
+  /** Lookup299: cumulus_pallet_xcmp_queue::InboundState */
   CumulusPalletXcmpQueueInboundState: {
     _enum: ["Ok", "Suspended"],
   },
-  /** Lookup299: polkadot_parachain::primitives::XcmpMessageFormat */
+  /** Lookup302: polkadot_parachain::primitives::XcmpMessageFormat */
   PolkadotParachainPrimitivesXcmpMessageFormat: {
     _enum: ["ConcatenatedVersionedXcm", "ConcatenatedEncodedBlob", "Signals"],
   },
-  /** Lookup302: cumulus_pallet_xcmp_queue::OutboundChannelDetails */
+  /** Lookup305: cumulus_pallet_xcmp_queue::OutboundChannelDetails */
   CumulusPalletXcmpQueueOutboundChannelDetails: {
     recipient: "u32",
     state: "CumulusPalletXcmpQueueOutboundState",
@@ -2203,11 +2238,11 @@ export default {
     firstIndex: "u16",
     lastIndex: "u16",
   },
-  /** Lookup303: cumulus_pallet_xcmp_queue::OutboundState */
+  /** Lookup306: cumulus_pallet_xcmp_queue::OutboundState */
   CumulusPalletXcmpQueueOutboundState: {
     _enum: ["Ok", "Suspended"],
   },
-  /** Lookup305: cumulus_pallet_xcmp_queue::QueueConfigData */
+  /** Lookup308: cumulus_pallet_xcmp_queue::QueueConfigData */
   CumulusPalletXcmpQueueQueueConfigData: {
     suspendThreshold: "u32",
     dropThreshold: "u32",
@@ -2216,7 +2251,7 @@ export default {
     weightRestrictDecay: "SpWeightsWeightV2Weight",
     xcmpMaxIndividualWeight: "SpWeightsWeightV2Weight",
   },
-  /** Lookup307: cumulus_pallet_xcmp_queue::pallet::Error<T> */
+  /** Lookup310: cumulus_pallet_xcmp_queue::pallet::Error<T> */
   CumulusPalletXcmpQueueError: {
     _enum: [
       "FailedToSend",
@@ -2226,23 +2261,23 @@ export default {
       "WeightOverLimit",
     ],
   },
-  /** Lookup308: cumulus_pallet_xcm::pallet::Error<T> */
+  /** Lookup311: cumulus_pallet_xcm::pallet::Error<T> */
   CumulusPalletXcmError: "Null",
-  /** Lookup309: cumulus_pallet_dmp_queue::ConfigData */
+  /** Lookup312: cumulus_pallet_dmp_queue::ConfigData */
   CumulusPalletDmpQueueConfigData: {
     maxIndividual: "SpWeightsWeightV2Weight",
   },
-  /** Lookup310: cumulus_pallet_dmp_queue::PageIndexData */
+  /** Lookup313: cumulus_pallet_dmp_queue::PageIndexData */
   CumulusPalletDmpQueuePageIndexData: {
     beginUsed: "u32",
     endUsed: "u32",
     overweightCount: "u64",
   },
-  /** Lookup313: cumulus_pallet_dmp_queue::pallet::Error<T> */
+  /** Lookup316: cumulus_pallet_dmp_queue::pallet::Error<T> */
   CumulusPalletDmpQueueError: {
     _enum: ["Unknown", "OverLimit"],
   },
-  /** Lookup314: pallet_xcm::pallet::QueryStatus<BlockNumber> */
+  /** Lookup317: pallet_xcm::pallet::QueryStatus<BlockNumber> */
   PalletXcmQueryStatus: {
     _enum: {
       Pending: {
@@ -2261,7 +2296,7 @@ export default {
       },
     },
   },
-  /** Lookup318: xcm::VersionedResponse */
+  /** Lookup321: xcm::VersionedResponse */
   XcmVersionedResponse: {
     _enum: {
       __Unused0: "Null",
@@ -2270,7 +2305,7 @@ export default {
       V3: "XcmV3Response",
     },
   },
-  /** Lookup324: pallet_xcm::pallet::VersionMigrationStage */
+  /** Lookup327: pallet_xcm::pallet::VersionMigrationStage */
   PalletXcmVersionMigrationStage: {
     _enum: {
       MigrateSupportedVersion: "Null",
@@ -2279,7 +2314,7 @@ export default {
       MigrateAndNotifyOldTargets: "Null",
     },
   },
-  /** Lookup326: xcm::VersionedAssetId */
+  /** Lookup329: xcm::VersionedAssetId */
   XcmVersionedAssetId: {
     _enum: {
       __Unused0: "Null",
@@ -2289,7 +2324,7 @@ export default {
     },
   },
   /**
-   * Lookup327:
+   * Lookup330:
    * pallet_xcm::pallet::RemoteLockedFungibleRecord<ConsumerIdentifier, MaxConsumers>
    */
   PalletXcmRemoteLockedFungibleRecord: {
@@ -2298,7 +2333,7 @@ export default {
     locker: "XcmVersionedMultiLocation",
     consumers: "Vec<(Null,u128)>",
   },
-  /** Lookup334: pallet_xcm::pallet::Error<T> */
+  /** Lookup337: pallet_xcm::pallet::Error<T> */
   PalletXcmError: {
     _enum: [
       "Unreachable",
@@ -2323,7 +2358,7 @@ export default {
       "InUse",
     ],
   },
-  /** Lookup336: sp_runtime::MultiSignature */
+  /** Lookup339: sp_runtime::MultiSignature */
   SpRuntimeMultiSignature: {
     _enum: {
       Ed25519: "SpCoreEd25519Signature",
@@ -2331,26 +2366,26 @@ export default {
       Ecdsa: "SpCoreEcdsaSignature",
     },
   },
-  /** Lookup337: sp_core::ed25519::Signature */
+  /** Lookup340: sp_core::ed25519::Signature */
   SpCoreEd25519Signature: "[u8;64]",
-  /** Lookup339: sp_core::sr25519::Signature */
+  /** Lookup342: sp_core::sr25519::Signature */
   SpCoreSr25519Signature: "[u8;64]",
-  /** Lookup340: sp_core::ecdsa::Signature */
+  /** Lookup343: sp_core::ecdsa::Signature */
   SpCoreEcdsaSignature: "[u8;65]",
-  /** Lookup343: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
+  /** Lookup346: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
   FrameSystemExtensionsCheckNonZeroSender: "Null",
-  /** Lookup344: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
+  /** Lookup347: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
   FrameSystemExtensionsCheckSpecVersion: "Null",
-  /** Lookup345: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
+  /** Lookup348: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
   FrameSystemExtensionsCheckTxVersion: "Null",
-  /** Lookup346: frame_system::extensions::check_genesis::CheckGenesis<T> */
+  /** Lookup349: frame_system::extensions::check_genesis::CheckGenesis<T> */
   FrameSystemExtensionsCheckGenesis: "Null",
-  /** Lookup349: frame_system::extensions::check_nonce::CheckNonce<T> */
+  /** Lookup352: frame_system::extensions::check_nonce::CheckNonce<T> */
   FrameSystemExtensionsCheckNonce: "Compact<u32>",
-  /** Lookup350: frame_system::extensions::check_weight::CheckWeight<T> */
+  /** Lookup353: frame_system::extensions::check_weight::CheckWeight<T> */
   FrameSystemExtensionsCheckWeight: "Null",
-  /** Lookup351: pallet_transaction_payment::ChargeTransactionPayment<T> */
+  /** Lookup354: pallet_transaction_payment::ChargeTransactionPayment<T> */
   PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-  /** Lookup352: dancebox_runtime::Runtime */
+  /** Lookup355: dancebox_runtime::Runtime */
   DanceboxRuntimeRuntime: "Null",
 };
