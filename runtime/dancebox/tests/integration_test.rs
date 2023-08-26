@@ -16,7 +16,7 @@
 
 #![cfg(test)]
 
-use dancebox_runtime::migrations::MigrateInvulnerables;
+use dancebox_runtime::migrations::{CollatorSelectionInvulnerablesValue, MigrateInvulnerables};
 
 use {
     common::*,
@@ -2007,13 +2007,24 @@ fn test_invulnerables_migration() {
         })
         .build()
         .execute_with(|| {
-            let invulnerables_collator_selection = CollatorSelection::invulnerables();
+            // Populate the invulnerables storage
+            let collators = vec![AccountId::from(ALICE), AccountId::from(BOB)];
+            CollatorSelectionInvulnerablesValue::<Runtime>::put(
+                BoundedVec::try_from(collators).expect("Failed to create BoundedVec"),
+            );
+
+            let invulnerables_before_migration = CollatorSelection::invulnerables();
+            assert_eq!(
+                invulnerables_before_migration.len(),
+                2,
+                "invulnerables has wrong length"
+            );
             let migration = MigrateInvulnerables::<Runtime>(Default::default());
             migration.migrate(Default::default());
-            let invulnerables_pallet_invulnerables = Invulnerables::invulnerables();
+            let invulnerables_after_migration = Invulnerables::invulnerables();
             assert_eq!(
-                invulnerables_collator_selection,
-                invulnerables_pallet_invulnerables
+                invulnerables_before_migration,
+                invulnerables_after_migration
             )
         });
 }

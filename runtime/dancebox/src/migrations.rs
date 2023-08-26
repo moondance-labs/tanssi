@@ -28,14 +28,14 @@ use sp_std::{marker::PhantomData, prelude::*};
 
 use crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET};
 
-struct CollatorSelectionStorageValuePrefix;
+pub struct CollatorSelectionStorageValuePrefix;
 impl frame_support::traits::StorageInstance for CollatorSelectionStorageValuePrefix {
     const STORAGE_PREFIX: &'static str = "Invulnerables";
     fn pallet_prefix() -> &'static str {
         "CollatorSelection"
     }
 }
-type CollatorSelectionInvulnerablesValue<T> = StorageValue<
+pub type CollatorSelectionInvulnerablesValue<T> = StorageValue<
     CollatorSelectionStorageValuePrefix,
     BoundedVec<
         <T as frame_system::Config>::AccountId,
