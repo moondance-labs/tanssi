@@ -24,6 +24,7 @@ frame-system = { workspace = true }
 frame-benchmarking = { workspace = true }
 
 pallet-session = { workspace = true }
+pallet-balances = { workspace = true }
 
 [dev-dependencies]
 sp-core = { workspace = true }
@@ -45,6 +46,8 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"frame-benchmarking/std",
+	"pallet-balances/std",
+	"pallet-session/std",
 ]
 
 try-runtime = [ "frame-support/try-runtime" ]
