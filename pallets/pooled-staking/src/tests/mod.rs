@@ -196,6 +196,7 @@ pub(crate) fn do_request_undelegation<P: PoolExt<Runtime>>(
     expected_removed: Balance,
     expected_leaving: Balance,
     expected_manual_rewards: Balance,
+    expected_hold_rebalance: Balance,
 ) {
     let dust = expected_removed
         .checked_sub(expected_leaving)
@@ -216,20 +217,26 @@ pub(crate) fn do_request_undelegation<P: PoolExt<Runtime>>(
     let pool_after = PoolState::extract::<P>(candidate, delegator);
     let leaving_after = PoolState::extract::<Leaving>(candidate, delegator);
 
-    // Actual balances changes only due to manuyal rewards.
+    // Actual balances changes due to manual rewards and hold rebalance.
     assert_eq!(
-        before.delegator_balance + expected_manual_rewards,
+        before.delegator_balance + expected_manual_rewards + expected_hold_rebalance,
         after.delegator_balance
     );
     assert_eq!(
-        before.staking_balance - expected_manual_rewards,
+        before.staking_balance - expected_manual_rewards - expected_hold_rebalance,
         after.staking_balance
     );
     // Dust is released immediately.
-    assert_eq!(before.delegator_hold - dust, after.delegator_hold);
+    assert_eq!(
+        before.delegator_hold - dust + expected_hold_rebalance,
+        after.delegator_hold
+    );
     // Pool decrease.
     assert_eq!(pool_before.stake - expected_removed, pool_after.stake);
-    assert_eq!(pool_before.hold - expected_removed, pool_after.stake);
+    assert_eq!(
+        pool_before.hold + expected_hold_rebalance - expected_removed,
+        pool_after.stake
+    );
     // Leaving increase.
     assert_eq!(leaving_before.stake + expected_leaving, leaving_after.stake);
     assert_eq!(leaving_before.hold + expected_leaving, leaving_after.stake);
@@ -291,6 +298,7 @@ pub(crate) fn do_full_undelegation<P: PoolExt<Runtime>>(
     request_amount: SharesOrStake<Balance>,
     expected_removed: Balance,
     expected_leaving: Balance,
+    expected_hold_rebalance: Balance,
 ) {
     let block_number = block_number();
     do_request_undelegation::<P>(
@@ -300,6 +308,7 @@ pub(crate) fn do_full_undelegation<P: PoolExt<Runtime>>(
         expected_removed,
         expected_leaving,
         0,
+        expected_hold_rebalance,
     );
     roll_to(block_number + BLOCKS_TO_WAIT);
     do_execute_undelegation(candidate, delegator, block_number, expected_leaving);

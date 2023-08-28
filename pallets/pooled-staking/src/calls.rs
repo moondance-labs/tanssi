@@ -193,11 +193,8 @@ impl<T: Config> Calls<T> {
         // Destroy shares
         let removed_stake = match pool {
             TargetPool::AutoCompounding => {
-                let stake = pools::AutoCompounding::<T>::sub_shares(
-                    &candidate,
-                    &delegator,
-                    Shares(shares),
-                )?;
+                let stake =
+                    pools::AutoCompounding::<T>::shares_to_stake(&candidate, Shares(shares))?;
 
                 if stake.0 > pools::AutoCompounding::<T>::hold(&candidate, &delegator).0 {
                     Self::rebalance_hold(
@@ -207,12 +204,18 @@ impl<T: Config> Calls<T> {
                     )?;
                 }
 
+                // This should be the same `stake` as before.
+                let stake = pools::AutoCompounding::<T>::sub_shares(
+                    &candidate,
+                    &delegator,
+                    Shares(shares),
+                )?;
+
                 pools::AutoCompounding::<T>::decrease_hold(&candidate, &delegator, &stake)?;
                 stake
             }
             TargetPool::ManualRewards => {
-                let stake =
-                    pools::ManualRewards::<T>::sub_shares(&candidate, &delegator, Shares(shares))?;
+                let stake = pools::ManualRewards::<T>::shares_to_stake(&candidate, Shares(shares))?;
 
                 if stake.0 > pools::ManualRewards::<T>::hold(&candidate, &delegator).0 {
                     Self::rebalance_hold(
@@ -221,6 +224,10 @@ impl<T: Config> Calls<T> {
                         AllTargetPool::ManualRewards,
                     )?;
                 }
+
+                // This should be the same `stake` as before.
+                let stake =
+                    pools::ManualRewards::<T>::sub_shares(&candidate, &delegator, Shares(shares))?;
 
                 pools::ManualRewards::<T>::decrease_hold(&candidate, &delegator, &stake)?;
                 stake

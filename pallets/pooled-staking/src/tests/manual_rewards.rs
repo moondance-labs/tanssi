@@ -138,6 +138,7 @@ fn undelegation_transfer_rewards() {
             final_amount,
             leaving_amount,
             expected_rewards,
+            0,
         );
 
         let checkpoint = crate::Pools::<Runtime>::get(

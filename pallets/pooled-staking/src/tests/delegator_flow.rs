@@ -217,6 +217,7 @@ pool_test!(
                 final_amount,
                 leaving_amount,
                 0,
+                0,
             );
 
             roll_to(block_number + BLOCKS_TO_WAIT - 1); // too soon
@@ -260,6 +261,7 @@ pool_test!(
                 SharesOrStake::Stake(final_amount),
                 final_amount,
                 leaving_amount,
+                0,
             );
 
             assert_eq_events!(vec![
@@ -356,6 +358,7 @@ pool_test!(
                 SharesOrStake::Shares(1),
                 leaving_requested_amount,
                 leaving_amount,
+                0,
             );
 
             assert_eq_events!(vec![
@@ -573,6 +576,50 @@ pool_test!(
                 ACCOUNT_DELEGATOR_1,
                 P::target_pool().into(),
                 SignedBalance::Positive(0),
+            );
+        })
+    }
+);
+
+pool_test!(
+    fn rebalance_in_undelegation_request<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            let joining_amount = 2 * InitialManualClaimShareValue::get();
+            let rewards = 5 * KILO;
+            let leaving_requested_amount = joining_amount + rewards;
+            let leaving_amount = round_down(leaving_requested_amount, 3); // test leaving rounding
+
+            do_full_delegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                joining_amount,
+                joining_amount,
+                0,
+            );
+
+            // We then artificialy distribute rewards by increasing the value of the pool
+            // and minting currency to the staking account (this is not how manual rewards would
+            // be distributed but whatever).
+            assert_ok!(Balances::mint_into(&ACCOUNT_STAKING, rewards));
+            assert_ok!(P::share_stake_among_holders(
+                &ACCOUNT_CANDIDATE_1,
+                Stake(rewards)
+            ));
+            assert_ok!(Candidates::<Runtime>::add_total_stake(
+                &ACCOUNT_CANDIDATE_1,
+                &Stake(rewards)
+            ));
+            assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE + rewards);
+
+            // We then do the undelegation
+            do_request_undelegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                SharesOrStake::Stake(leaving_requested_amount),
+                leaving_requested_amount,
+                leaving_amount,
+                0,
+                rewards,
             );
         })
     }
