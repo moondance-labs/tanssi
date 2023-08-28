@@ -14,9 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::PoolsKey;
+use {super::*, crate::PoolsKey};
 
-use super::*;
+fn pending_rewards(candicate: AccountId, delegator: AccountId) -> Balance {
+    pools::ManualRewards::<Runtime>::pending_rewards(&candicate, &delegator)
+        .unwrap()
+        .0
+}
 
 #[test]
 fn first_delegation_init_checkpoint() {
@@ -30,6 +34,8 @@ fn first_delegation_init_checkpoint() {
             &PoolsKey::ManualRewardsCounter,
             counter,
         );
+
+        assert_eq!(pending_rewards(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1), 0);
 
         let amount = 2 * InitialManualClaimShareValue::get();
         do_full_delegation::<pools::ManualRewards<Runtime>>(
@@ -47,6 +53,7 @@ fn first_delegation_init_checkpoint() {
             },
         );
         assert_eq!(checkpoint, counter);
+        assert_eq!(pending_rewards(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1), 0);
     });
 }
 
@@ -71,6 +78,11 @@ fn second_delegation_transfer_rewards() {
         );
 
         let expected_rewards = 20; // 10 coins (counter) * 2 shares
+        assert_eq!(
+            pending_rewards(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1),
+            expected_rewards
+        );
+
         do_full_delegation::<pools::ManualRewards<Runtime>>(
             ACCOUNT_CANDIDATE_1,
             ACCOUNT_DELEGATOR_1,
@@ -86,6 +98,7 @@ fn second_delegation_transfer_rewards() {
             },
         );
         assert_eq!(checkpoint, counter);
+        assert_eq!(pending_rewards(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1), 0);
     });
 }
 
@@ -110,6 +123,10 @@ fn undelegation_transfer_rewards() {
         );
 
         let expected_rewards = 20; // 10 coins (counter) * 2 shares
+        assert_eq!(
+            pending_rewards(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1),
+            expected_rewards
+        );
 
         let final_amount = 2 * InitialManualClaimShareValue::get();
         let leaving_amount = round_down(final_amount, 3); // test leaving rounding
@@ -130,5 +147,6 @@ fn undelegation_transfer_rewards() {
             },
         );
         assert_eq!(checkpoint, counter);
+        assert_eq!(pending_rewards(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1), 0);
     });
 }
