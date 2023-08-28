@@ -290,6 +290,28 @@ declare module "@polkadot/api-base/types/events" {
       /** Generic event */
       [key: string]: AugmentedEvent<ApiType>;
     };
+    invulnerables: {
+      /** A new Invulnerable was added. */
+      InvulnerableAdded: AugmentedEvent<
+        ApiType,
+        [accountId: AccountId32],
+        { accountId: AccountId32 }
+      >;
+      /** An Invulnerable was removed. */
+      InvulnerableRemoved: AugmentedEvent<
+        ApiType,
+        [accountId: AccountId32],
+        { accountId: AccountId32 }
+      >;
+      /** New Invulnerables were set. */
+      NewInvulnerables: AugmentedEvent<
+        ApiType,
+        [invulnerables: Vec<AccountId32>],
+        { invulnerables: Vec<AccountId32> }
+      >;
+      /** Generic event */
+      [key: string]: AugmentedEvent<ApiType>;
+    };
     maintenanceMode: {
       /** The chain was put into Maintenance Mode */
       EnteredMaintenanceMode: AugmentedEvent<ApiType, []>;

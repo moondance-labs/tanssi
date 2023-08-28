@@ -100,6 +100,16 @@ declare module "@polkadot/api-base/types/errors" {
       /** Generic error */
       [key: string]: AugmentedError<ApiType>;
     };
+    invulnerables: {
+      /** Account is already an Invulnerable. */
+      AlreadyInvulnerable: AugmentedError<ApiType>;
+      /** Account is not an Invulnerable. */
+      NotInvulnerable: AugmentedError<ApiType>;
+      /** There are too many Invulnerables. */
+      TooManyInvulnerables: AugmentedError<ApiType>;
+      /** Generic error */
+      [key: string]: AugmentedError<ApiType>;
+    };
     maintenanceMode: {
       /** The chain cannot enter maintenance mode because it is already in maintenance mode */
       AlreadyInMaintenanceMode: AugmentedError<ApiType>;
