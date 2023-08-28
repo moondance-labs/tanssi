@@ -17,7 +17,7 @@
 use {
     crate::{
         traits::{ErrAdd, ErrMul, ErrSub, MulDiv},
-        Candidate, Config, Delegator, Error, Event, Pallet, Pools, PoolsKey, Shares, Stake,
+        Candidate, Config, Delegator, Error, Pools, PoolsKey, Shares, Stake,
     },
     core::marker::PhantomData,
     frame_support::ensure,
@@ -323,6 +323,7 @@ impl_pool!(
 );
 
 impl<T: Config> ManualRewards<T> {
+    #[allow(dead_code)]
     pub fn pending_rewards(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
@@ -352,10 +353,6 @@ impl<T: Config> ManualRewards<T> {
     ) -> Result<Stake<T>, Error<T>> {
         let shares = Self::shares(candidate, delegator);
 
-        if shares.0.is_zero() {
-            return Ok(Stake(0u32.into()));
-        }
-
         let counter = Pools::<T>::get(candidate, &PoolsKey::ManualRewardsCounter);
         let checkpoint = Pools::<T>::get(
             candidate,
@@ -379,14 +376,8 @@ impl<T: Config> ManualRewards<T> {
             &PoolsKey::ManualRewardsCheckpoint {
                 delegator: delegator.clone(),
             },
-            checkpoint,
+            counter,
         );
-
-        Pallet::<T>::deposit_event(Event::<T>::ClaimedManualRewards {
-            candidate: candidate.clone(),
-            delegator: delegator.clone(),
-            rewards,
-        });
 
         Ok(Stake(rewards))
     }

@@ -184,6 +184,11 @@ impl<T: Config> Calls<T> {
             }
         };
 
+        // Any change in the amount of Manual Rewards shares requires to claim manual rewards.
+        if let TargetPool::ManualRewards = pool {
+            Self::claim_manual_rewards(candidate.clone(), delegator.clone())?;
+        }
+
         // Destroy shares
         let removed_stake = match pool {
             TargetPool::AutoCompounding => {
@@ -361,6 +366,11 @@ impl<T: Config> Calls<T> {
         // be enough hold. Thus no need to rebalance.
         pools::Joining::<T>::decrease_hold(&candidate, &delegator, &stake)?;
 
+        // Any change in the amount of Manual Rewards shares requires to claim manual rewards.
+        if let TargetPool::ManualRewards = pool {
+            Self::claim_manual_rewards(candidate.clone(), delegator.clone())?;
+        }
+
         // Convert stake into shares quantity.
         let shares = match pool {
             TargetPool::AutoCompounding => {
@@ -472,6 +482,32 @@ impl<T: Config> Calls<T> {
             candidate,
             delegator,
             released: stake.0,
+        });
+
+        Ok(().into())
+    }
+
+    fn claim_manual_rewards(
+        candidate: Candidate<T>,
+        delegator: Delegator<T>,
+    ) -> DispatchResultWithPostInfo {
+        let Stake(rewards) = pools::ManualRewards::<T>::claim_rewards(&candidate, &delegator)?;
+
+        if rewards.is_zero() {
+            return Ok(().into());
+        }
+
+        T::Currency::transfer(
+            &T::StakingAccount::get(),
+            &delegator,
+            rewards,
+            Preservation::Preserve,
+        )?;
+
+        Pallet::<T>::deposit_event(Event::<T>::ClaimedManualRewards {
+            candidate: candidate.clone(),
+            delegator: delegator.clone(),
+            rewards,
         });
 
         Ok(().into())
