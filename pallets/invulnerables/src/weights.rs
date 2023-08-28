@@ -53,6 +53,7 @@ pub trait WeightInfo {
 	fn set_invulnerables(_b: u32) -> Weight;
 	fn add_invulnerable(_b: u32) -> Weight;
 	fn remove_invulnerable(_b: u32) -> Weight;
+	fn new_session(_b: u32) -> Weight;
 }
 
 /// Weight functions for `pallet_invulnerables`.
@@ -102,6 +103,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
+
+	fn new_session(_b: u32) -> Weight {
+		Default::default()
+	}
 }
 
 // For backwards compatibility and tests
@@ -150,4 +155,9 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(1))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
+
+	fn new_session(_b: u32) -> Weight {
+		Default::default()
+	}
+
 }

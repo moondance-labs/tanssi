@@ -91,11 +91,19 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .unwrap();
     let invulnerables = vec![2, 1]; // unsorted
 
+    let balances = vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)];
+	let keys = balances
+		.iter()
+		.map(|&(i, _)| (i, i, MockSessionKeys { aura: UintAuthorityId(i) }))
+		.collect::<Vec<_>>();
+	let session = pallet_session::GenesisConfig::<Test> { keys };
+	session.assimilate_storage(&mut t).unwrap();
+fff
     GenesisBuild::<Test>::assimilate_storage(
         &invulnerables::GenesisConfig { invulnerables },
         &mut t,
     )
-    .expect("failed assimilating strorage for 'authorities_noting_pallet'");
+    .unwrap();
 
     t.into()
 }

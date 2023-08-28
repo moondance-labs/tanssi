@@ -41,10 +41,14 @@ pub mod weights;
 pub mod pallet {
     pub use crate::weights::WeightInfo;
     use frame_support::{
-        dispatch::DispatchResultWithPostInfo, pallet_prelude::*, traits::EnsureOrigin, BoundedVec,
-        DefaultNoBound,
+        dispatch::DispatchResultWithPostInfo,
+        pallet_prelude::*,
+        traits::EnsureOrigin,
+        traits::{ReservableCurrency, ValidatorRegistration},
+        BoundedVec, DefaultNoBound,
     };
     use frame_system::pallet_prelude::*;
+    use sp_runtime::traits::Convert;
     use sp_std::vec::Vec;
 
     /// The current storage version.
@@ -56,11 +60,25 @@ pub mod pallet {
         /// Overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
+        /// The currency mechanism.
+        type Currency: ReservableCurrency<Self::AccountId>;
+
         /// Origin that can dictate updating parameters of this pallet.
         type UpdateOrigin: EnsureOrigin<Self::RuntimeOrigin>;
 
         /// Maximum number of invulnerables.
         type MaxInvulnerables: Get<u32>;
+
+        /// A stable ID for a validator.
+        type ValidatorId: Member + Parameter;
+
+        /// A conversion from account ID to validator ID.
+        ///
+        /// Its cost must be at most one storage read.
+        type ValidatorIdOf: Convert<Self::AccountId, Option<Self::ValidatorId>>;
+
+        /// Validate a user is registered
+        type ValidatorRegistration: ValidatorRegistration<Self::ValidatorId>;
 
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
@@ -113,6 +131,9 @@ pub mod pallet {
         InvulnerableAdded { account_id: T::AccountId },
         /// An Invulnerable was removed.
         InvulnerableRemoved { account_id: T::AccountId },
+        /// An account was unable to be added to the Invulnerables because they did not have keys
+        /// registered. Other Invulnerables may have been set.
+        InvalidInvulnerableSkipped { account_id: T::AccountId },
     }
 
     #[pallet::error]
@@ -142,9 +163,39 @@ pub mod pallet {
                 Error::<T>::TooManyInvulnerables
             );
 
+            let mut new_with_keys = Vec::new();
+
+            // check if the invulnerables have associated validator keys before they are set
+            for account_id in &new {
+                // don't let one unprepared collator ruin things for everyone.
+                let validator_key = T::ValidatorIdOf::convert(account_id.clone());
+                match validator_key {
+                    Some(key) => {
+                        // key is not registered
+                        if !T::ValidatorRegistration::is_registered(&key) {
+                            Self::deposit_event(Event::InvalidInvulnerableSkipped {
+                                account_id: account_id.clone(),
+                            });
+                            continue;
+                        }
+                        // else condition passes; key is registered
+                    }
+                    // key does not exist
+                    None => {
+                        Self::deposit_event(Event::InvalidInvulnerableSkipped {
+                            account_id: account_id.clone(),
+                        });
+                        continue;
+                    }
+                }
+
+                new_with_keys.push(account_id.clone());
+            }
+
             // should never fail since `new` must be equal to or shorter than `TooManyInvulnerables`
-            let mut bounded_invulnerables = BoundedVec::<_, T::MaxInvulnerables>::try_from(new)
-                .map_err(|_| Error::<T>::TooManyInvulnerables)?;
+            let mut bounded_invulnerables =
+                BoundedVec::<_, T::MaxInvulnerables>::try_from(new_with_keys)
+                    .map_err(|_| Error::<T>::TooManyInvulnerables)?;
 
             // Invulnerables must be sorted for removal.
             bounded_invulnerables.sort();
@@ -211,6 +262,34 @@ pub mod pallet {
 
             Self::deposit_event(Event::InvulnerableRemoved { account_id: who });
             Ok(())
+        }
+    }
+
+    use pallet_session::SessionManager;
+    use sp_staking::SessionIndex;
+
+    /// Play the role of the session manager.
+    impl<T: Config> SessionManager<T::AccountId> for Pallet<T> {
+        fn new_session(index: SessionIndex) -> Option<Vec<T::AccountId>> {
+            log::info!(
+                "assembling new invulnerable collators for new session {} at #{:?}",
+                index,
+                <frame_system::Pallet<T>>::block_number(),
+            );
+
+            let invulnerables = Self::invulnerables().to_vec();
+
+            frame_system::Pallet::<T>::register_extra_weight_unchecked(
+                T::WeightInfo::new_session(invulnerables.len() as u32),
+                DispatchClass::Mandatory,
+            );
+            Some(invulnerables)
+        }
+        fn start_session(_: SessionIndex) {
+            // we don't care.
+        }
+        fn end_session(_: SessionIndex) {
+            // we don't care.
         }
     }
 }
