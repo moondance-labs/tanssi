@@ -415,7 +415,7 @@ jobs:
 
   chopsticks-upgrade-test:
     runs-on:
-      labels: self-hosted
+      labels: ubuntu-latest
     needs: ["set-tags", "build"]
     strategy:
       matrix:
