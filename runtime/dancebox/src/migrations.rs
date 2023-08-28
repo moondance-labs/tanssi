@@ -23,6 +23,7 @@ use frame_support::{storage::types::StorageValue, weights::Weight};
 
 use pallet_invulnerables::WeightInfo;
 use pallet_migrations::{GetMigrations, Migration};
+use pallet_transaction_payment::Multiplier;
 use sp_runtime::BoundedVec;
 use sp_std::{marker::PhantomData, prelude::*};
 
@@ -106,16 +107,81 @@ where
     }
 }
 
+pub struct TransactionPaymentStorageValuePrefix;
+impl frame_support::traits::StorageInstance for TransactionPaymentStorageValuePrefix {
+    const STORAGE_PREFIX: &'static str = "NextFeeMultiplier";
+    fn pallet_prefix() -> &'static str {
+        "TransactionPayment"
+    }
+}
+pub type TransactionPaymentNextFeeMultiplierValue =
+    StorageValue<TransactionPaymentStorageValuePrefix, Multiplier>;
+
+pub struct MigrateTransactionPayment<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateTransactionPayment<T>
+where
+    T: pallet_transaction_payment::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateTransactionPayment"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        log::info!(target: LOG_TARGET, "migrate");
+
+        TransactionPaymentNextFeeMultiplierValue::set(Some(Multiplier::from_u32(1)));
+
+        // TODO: weight
+        let weight = Weight::default();
+        weight
+    }
+
+    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        log::info!(target: LOG_TARGET, "pre_upgrade");
+
+        // TODO
+
+        Ok(vec![])
+    }
+
+    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(
+        &self,
+        number_of_invulnerables: Vec<u8>,
+    ) -> Result<(), sp_runtime::DispatchError> {
+        log::info!(target: LOG_TARGET, "post_upgrade");
+        use parity_scale_codec::Decode;
+
+        let new_value = TransactionPaymentNextFeeMultiplierValue::get()
+            .expect("Failed to get NextFeeMultiplier from TransactionPayment pallet storage.");
+        assert_eq!(
+            new_value,
+            Multiplier::from_u32(1),
+            "after migration, the NextFeeMultiplier should be set to 1"
+        );
+
+        Ok(())
+    }
+}
+
 pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
 where
-    Runtime: pallet_invulnerables::Config,
-    Runtime: pallet_collator_selection::Config,
+    Runtime: pallet_invulnerables::Config
+        + pallet_collator_selection::Config
+        + pallet_transaction_payment::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
+        let migrate_transaction_payment = MigrateTransactionPayment::<Runtime>(Default::default());
 
-        vec![Box::new(migrate_invulnerables)]
+        vec![
+            Box::new(migrate_invulnerables),
+            Box::new(migrate_transaction_payment),
+        ]
     }
 }
