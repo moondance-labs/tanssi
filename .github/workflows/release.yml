@@ -419,9 +419,12 @@ jobs:
     needs: ["set-tags", "build"]
     strategy:
       matrix:
-        chain: ["dancebox"]
+        chains: [
+          { chain: "stagenet_dancebox", runtime: "dancebox" },
+          { chain: "dancebox", runtime: "dancebox" },
+        ]
     env:
-      GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chain }}
+      GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
       DEBUG_COLORS: 1
     steps:
       - name: Checkout
@@ -438,18 +441,18 @@ jobs:
           cache-dependency-path: test/pnpm-lock.yaml
       - name: Create local folders
         run: |
-          mkdir -p target/release/wbuild/${{ matrix.chain }}-runtime/
+          mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
           mkdir -p test/tmp
       - name: "Download runtime"
         uses: actions/download-artifact@v3.0.2
         with:
           name: runtimes
-          path: target/release/wbuild/${{ matrix.chain }}-runtime/
+          path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
       - name: "Install and run upgrade test"
         run: |
           cd test
           pnpm install
-          pnpm moonwall test chopsticks_${{matrix.chain}}_upgrade
+          pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
 
   zombienet-test-upgrade:
     runs-on: self-hosted

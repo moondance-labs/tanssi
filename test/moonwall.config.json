@@ -151,7 +151,7 @@
       }
     },
     {
-      "name": "chopsticks_dancebox_upgrade",
+      "name": "chopsticks_stagenet_dancebox_upgrade",
       "testFileDir": ["suites/rt-ugprade-chopsticks"],
       "foundation": {
         "type": "chopsticks",
@@ -161,6 +161,28 @@
             "name": "db",
             "type": "parachain",
             "configPath": "./configs/stagenet-dancebox.yml"
+          }
+        ]
+      },
+      "connections": [
+        {
+          "name": "DB",
+          "type": "polkadotJs",
+          "endpoints": ["ws://127.0.0.1:8000"]
+        }
+      ]
+    },
+    {
+      "name": "chopsticks_dancebox_upgrade",
+      "testFileDir": ["suites/rt-ugprade-chopsticks"],
+      "foundation": {
+        "type": "chopsticks",
+        "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
+        "launchSpec": [
+          {
+            "name": "db",
+            "type": "parachain",
+            "configPath": "./configs/dancebox.yml"
           }
         ]
       },
