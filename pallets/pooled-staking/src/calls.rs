@@ -20,14 +20,14 @@ use {
         pools::{self, Pool},
         traits::{ErrAdd, ErrSub},
         AllTargetPool, Candidate, Config, Delegator, Error, Event, Pallet, PendingOperationKey,
-        PendingOperationQuery, PendingOperations, RequestFilter, Shares, SharesOrStake, Stake,
-        TargetPool,
+        PendingOperationQuery, PendingOperations, Shares, SharesOrStake, Stake, TargetPool,
     },
     frame_support::{
         pallet_prelude::*,
         traits::{
             fungible::{Mutate, MutateHold},
             tokens::{Precision, Preservation},
+            Contains,
         },
     },
     frame_system::pallet_prelude::*,
@@ -302,7 +302,7 @@ impl<T: Config> Calls<T> {
                     at_block,
                 } => {
                     ensure!(
-                        T::JoiningRequestFilter::can_be_executed(&candidate, &delegator, *at_block),
+                        T::JoiningRequestFilter::contains(at_block),
                         Error::<T>::RequestCannotBeExecuted(index as u16)
                     );
 
@@ -318,7 +318,7 @@ impl<T: Config> Calls<T> {
                     at_block,
                 } => {
                     ensure!(
-                        T::JoiningRequestFilter::can_be_executed(&candidate, &delegator, *at_block),
+                        T::JoiningRequestFilter::contains(at_block),
                         Error::<T>::RequestCannotBeExecuted(index as u16)
                     );
 
@@ -334,7 +334,7 @@ impl<T: Config> Calls<T> {
                     at_block,
                 } => {
                     ensure!(
-                        T::LeavingRequestFilter::can_be_executed(&candidate, &delegator, *at_block),
+                        T::LeavingRequestFilter::contains(at_block),
                         Error::<T>::RequestCannotBeExecuted(index as u16)
                     );
 

@@ -17,13 +17,13 @@
 use {
     crate::{
         self as pallet_pooled_staking, candidate::Candidates, pools::Pool, Candidate, Delegator,
-        PendingOperationKey, RequestFilter, TargetPool,
+        PendingOperationKey, TargetPool,
     },
     frame_support::{
         parameter_types,
         traits::{
             tokens::fungible::{Inspect, InspectHold},
-            Everything, OnFinalize, OnInitialize,
+            Contains, Everything, OnFinalize, OnInitialize,
         },
     },
     frame_system::pallet_prelude::BlockNumberFor,
@@ -147,11 +147,11 @@ parameter_types! {
 pub const BLOCKS_TO_WAIT: u64 = 2;
 pub struct DummyRequestFilter;
 
-impl RequestFilter<Runtime> for DummyRequestFilter {
-    fn can_be_executed(_: &Candidate<Runtime>, _: &Delegator<Runtime>, request_block: u64) -> bool {
+impl Contains<u64> for DummyRequestFilter {
+    fn contains(request_block: &u64) -> bool {
         let block_number = frame_system::Pallet::<Runtime>::current_block_number();
 
-        let Some(diff) = block_number.checked_sub(request_block) else {
+        let Some(diff) = block_number.checked_sub(*request_block) else {
             return false;
         };
 
@@ -175,6 +175,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type LeavingRequestFilter = DummyRequestFilter;
     // low value so we can test vec bounding, in practice it should be bigger
     type EligibleCandidatesBufferSize = ConstU32<3>;
+    type EligibleCandidatesFilter = Everything;
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {

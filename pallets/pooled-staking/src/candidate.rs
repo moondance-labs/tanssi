@@ -21,6 +21,7 @@ use {
         Candidate, Config, Error, Event, Pallet, Pools, PoolsKey, SortedEligibleCandidates, Stake,
     },
     core::{cmp::Ordering, marker::PhantomData},
+    frame_support::traits::Contains,
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
     sp_core::{Get, RuntimeDebug},
@@ -142,9 +143,12 @@ impl<T: Config> Candidates<T> {
             Err(_) => None,
         };
 
+        let eligible = self_delegation >= T::MinimumSelfDelegation::get()
+            && T::EligibleCandidatesFilter::contains(candidate);
+
         // Find new position in the sorted list.
         // It will not be inserted if under the minimum self delegation.
-        let new_position = if self_delegation >= T::MinimumSelfDelegation::get() {
+        let new_position = if eligible {
             let entry = EligibleCandidate {
                 candidate: candidate.clone(),
                 stake: new_stake.0,

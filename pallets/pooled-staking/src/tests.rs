@@ -503,7 +503,7 @@ pool_test!(
         ExtBuilder::default().build().execute_with(|| {
             let final_amount = 2 * InitialManualClaimShareValue::get();
             let leaving_amount = round_down(final_amount, 3); // test leaving rounding
-            
+
             do_full_delegation::<P>(
                 ACCOUNT_CANDIDATE_1,
                 ACCOUNT_DELEGATOR_1,
@@ -512,7 +512,13 @@ pool_test!(
             );
 
             let block_number = block_number();
-            do_request_undelegation::<P>(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1, final_amount, final_amount, leaving_amount);
+            do_request_undelegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                final_amount,
+                final_amount,
+                leaving_amount,
+            );
 
             roll_to(block_number + BLOCKS_TO_WAIT - 1); // too soon
             assert_noop!(

@@ -57,7 +57,7 @@ pub mod pallet {
         frame_support::{
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
-            traits::{fungible, tokens::Balance, IsType},
+            traits::{fungible, tokens::Balance, Contains, IsType},
             Blake2_128Concat, RuntimeDebug,
         },
         frame_system::pallet_prelude::*,
@@ -73,15 +73,6 @@ pub mod pallet {
     // Type aliases for better readability.
     pub type Candidate<T> = <T as frame_system::Config>::AccountId;
     pub type Delegator<T> = <T as frame_system::Config>::AccountId;
-
-    /// Allow to customize when requests can be executed.
-    pub trait RequestFilter<T: Config> {
-        fn can_be_executed(
-            candidate: &Candidate<T>,
-            delegator: &Delegator<T>,
-            request_block: T::BlockNumber,
-        ) -> bool;
-    }
 
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
     /// StorageDoubleMap first key is the account id of the candidate.
@@ -256,15 +247,17 @@ pub mod pallet {
         type RewardsCollatorCommission: Get<Perbill>;
 
         /// Condition for when a joining request can be executed.
-        type JoiningRequestFilter: RequestFilter<Self>;
+        type JoiningRequestFilter: Contains<Self::BlockNumber>;
         /// Condition for when a leaving request can be executed.
-        type LeavingRequestFilter: RequestFilter<Self>;
+        type LeavingRequestFilter: Contains<Self::BlockNumber>;
         /// All eligible candidates are stored in a sorted list that is modified each time
         /// delegations changes. It is safer to bound this list, in which case eligible candidate
         /// could fall out of this list if they have less stake than the top `EligibleCandidatesBufferSize`
         /// eligible candidates. One of this top candidates leaving will then not bring the dropped candidate
         /// in the list. An extrinsic is available (TODO) to manually bring back such dropped candidate.
         type EligibleCandidatesBufferSize: Get<u32>;
+        /// Additional filter for candidates to be eligible.
+        type EligibleCandidatesFilter: Contains<Self::AccountId>;
     }
 
     /// Keeps a list of all eligible candidates, sorted by the amount of stake backing them.
