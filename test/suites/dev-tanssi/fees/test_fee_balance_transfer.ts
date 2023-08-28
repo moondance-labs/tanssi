@@ -20,11 +20,6 @@ describeSuite({
       charlie = context.keyring.charlie;
       dave = context.keyring.dave;
       polkadotJs = context.polkadotJs();
-
-      // We must create an empty block before any tests, otherwise the fee of the first test will be
-      // 2630822 despite the weight being the same:
-      //   inclusionFee: { baseFee: 1000000, lenFee: 144, adjustedWeightFee: 1630678 }
-      await context.createBlock([]);
     });
 
     it({
@@ -41,7 +36,7 @@ describeSuite({
 
         const events = await polkadotJs.query.system.events();
         const fee = extractFee(events).amount.toBigInt();
-        const expectedFee = 1000000n + BigInt(signedTx.encodedLength);
+        const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
         expect(fee).to.equal(expectedFee);
 
         const tip = 0n;
@@ -68,7 +63,7 @@ describeSuite({
 
         const events = await polkadotJs.query.system.events();
         const fee = extractFee(events).amount.toBigInt();
-        const expectedFee = 1000000n + BigInt(signedTx.encodedLength);
+        const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
         expect(fee).to.equal(expectedFee);
 
         const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
@@ -117,7 +112,7 @@ describeSuite({
 
         const events = await polkadotJs.query.system.events();
         const fee = extractFee(events).amount.toBigInt();
-        const expectedFee = 1000000n + BigInt(signedTx.encodedLength);
+        const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
         expect(fee).to.equal(expectedFee);
 
         const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
@@ -147,7 +142,7 @@ describeSuite({
 
         const events = await polkadotJs.query.system.events();
         const fee = extractFee(events).amount.toBigInt();
-        const expectedFee = 1000000n + BigInt(signedTx.encodedLength);
+        const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
         expect(fee).to.equal(expectedFee);
 
         const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
