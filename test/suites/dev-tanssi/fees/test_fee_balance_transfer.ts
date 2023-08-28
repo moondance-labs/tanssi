@@ -130,7 +130,6 @@ describeSuite({
       id: "E04",
       title: "Fees are burned",
       test: async function () {
-        await context.createBlock([]);
         const totalSupplyBefore = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
         const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
         const tx = polkadotJs.tx.balances.transfer(bob.address, 200_000);
