@@ -105,6 +105,7 @@ impl<T: Config> Calls<T> {
             return Ok(().into());
         }
 
+        // should be unreachable as diff must either be positive or negative
         return Ok(().into());
     }
 

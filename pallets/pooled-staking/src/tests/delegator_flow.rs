@@ -60,7 +60,7 @@ pool_test!(
             assert_eq_events!(vec![
                 Event::IncreasedStake {
                     candidate: ACCOUNT_CANDIDATE_1,
-                    stake: amount,
+                    stake_diff: amount,
                 },
                 Event::UpdatedCandidatePosition {
                     candidate: ACCOUNT_CANDIDATE_1,
@@ -128,7 +128,7 @@ pool_test!(
             assert_eq_events!(vec![
                 Event::IncreasedStake {
                     candidate: ACCOUNT_CANDIDATE_1,
-                    stake: requested_amount,
+                    stake_diff: requested_amount,
                 },
                 Event::UpdatedCandidatePosition {
                     candidate: ACCOUNT_CANDIDATE_1,
@@ -145,7 +145,7 @@ pool_test!(
                 },
                 Event::DecreasedStake {
                     candidate: ACCOUNT_CANDIDATE_1,
-                    stake: 10,
+                    stake_diff: 10,
                 },
                 Event::UpdatedCandidatePosition {
                     candidate: ACCOUNT_CANDIDATE_1,
@@ -213,7 +213,7 @@ pool_test!(
             do_request_undelegation::<P>(
                 ACCOUNT_CANDIDATE_1,
                 ACCOUNT_DELEGATOR_1,
-                final_amount,
+                SharesOrStake::Stake(final_amount),
                 final_amount,
                 leaving_amount,
                 0,
@@ -257,7 +257,7 @@ pool_test!(
             do_full_undelegation::<P>(
                 ACCOUNT_CANDIDATE_1,
                 ACCOUNT_DELEGATOR_1,
-                final_amount,
+                SharesOrStake::Stake(final_amount),
                 final_amount,
                 leaving_amount,
             );
@@ -266,7 +266,7 @@ pool_test!(
                 // delegate request
                 Event::IncreasedStake {
                     candidate: ACCOUNT_CANDIDATE_1,
-                    stake: requested_amount,
+                    stake_diff: requested_amount,
                 },
                 Event::UpdatedCandidatePosition {
                     candidate: ACCOUNT_CANDIDATE_1,
@@ -284,7 +284,7 @@ pool_test!(
                 // delegate exec
                 Event::DecreasedStake {
                     candidate: ACCOUNT_CANDIDATE_1,
-                    stake: 10,
+                    stake_diff: 10,
                 },
                 Event::UpdatedCandidatePosition {
                     candidate: ACCOUNT_CANDIDATE_1,
@@ -304,7 +304,7 @@ pool_test!(
                 // undelegate request
                 Event::DecreasedStake {
                     candidate: ACCOUNT_CANDIDATE_1,
-                    stake: final_amount,
+                    stake_diff: final_amount,
                 },
                 Event::UpdatedCandidatePosition {
                     candidate: ACCOUNT_CANDIDATE_1,
@@ -319,6 +319,102 @@ pool_test!(
                     from: P::target_pool(),
                     pending: leaving_amount,
                     released: 2
+                },
+                // undelegate exec
+                Event::ExecutedUndelegate {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    released: leaving_amount,
+                },
+            ]);
+        })
+    }
+);
+
+pool_test!(
+    fn undelegation_execution_amount_in_shares<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            let joining_amount = 2 * InitialManualClaimShareValue::get();
+            let joining_requested_amount = joining_amount + 10; // test share rounding
+
+            let leaving_requested_amount = InitialManualClaimShareValue::get();
+            let leaving_amount = round_down(leaving_requested_amount, 3); // test leaving rounding
+
+            assert_eq!(leaving_amount, 999_999);
+
+            do_full_delegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                joining_requested_amount,
+                joining_amount,
+                0,
+            );
+
+            do_full_undelegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                SharesOrStake::Shares(1),
+                leaving_requested_amount,
+                leaving_amount,
+            );
+
+            assert_eq_events!(vec![
+                // delegate request
+                Event::IncreasedStake {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake_diff: joining_requested_amount,
+                },
+                Event::UpdatedCandidatePosition {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake: joining_requested_amount,
+                    self_delegation: 0,
+                    before: None,
+                    after: None,
+                },
+                Event::RequestedDelegate {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    towards: P::target_pool(),
+                    pending: joining_requested_amount
+                },
+                // delegate exec
+                Event::DecreasedStake {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake_diff: 10,
+                },
+                Event::UpdatedCandidatePosition {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake: joining_amount,
+                    self_delegation: 0,
+                    before: None,
+                    after: None,
+                },
+                P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1, 2, joining_amount),
+                Event::ExecutedDelegate {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    towards: P::target_pool(),
+                    staked: joining_amount,
+                    released: 10,
+                },
+                // undelegate request
+                Event::DecreasedStake {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake_diff: leaving_requested_amount,
+                },
+                Event::UpdatedCandidatePosition {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    stake: joining_amount - leaving_requested_amount,
+                    self_delegation: 0,
+                    before: None,
+                    after: None,
+                },
+                Event::RequestedUndelegate {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    from: P::target_pool(),
+                    pending: leaving_amount,
+                    released: 1
                 },
                 // undelegate exec
                 Event::ExecutedUndelegate {
@@ -451,6 +547,32 @@ pool_test!(
                 ACCOUNT_DELEGATOR_1,
                 P::target_pool().into(),
                 SignedBalance::Negative(slash),
+            );
+        })
+    }
+);
+
+pool_test!(
+    fn rebalance_noop<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            // Preparation:
+            // We naturaly delegate towards a candidate.
+            let initial_amount = 2 * InitialManualClaimShareValue::get();
+
+            do_full_delegation::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                initial_amount,
+                initial_amount,
+                0,
+            );
+
+            // We perform the rebalancing and check nothing happen.
+            do_rebalance_hold::<P>(
+                ACCOUNT_CANDIDATE_1,
+                ACCOUNT_DELEGATOR_1,
+                P::target_pool().into(),
+                SignedBalance::Positive(0),
             );
         })
     }

@@ -339,12 +339,12 @@ pub mod pallet {
         /// Stake of that Candidate increased.
         IncreasedStake {
             candidate: Candidate<T>,
-            stake: T::Balance,
+            stake_diff: T::Balance,
         },
         /// Stake of that Candidate decreased.
         DecreasedStake {
             candidate: Candidate<T>,
-            stake: T::Balance,
+            stake_diff: T::Balance,
         },
         /// Delegator staked towards a Candidate for AutoCompounding Shares.
         StakedAutoCompounding {

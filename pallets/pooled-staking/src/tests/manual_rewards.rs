@@ -134,7 +134,7 @@ fn undelegation_transfer_rewards() {
         do_request_undelegation::<pools::ManualRewards<Runtime>>(
             ACCOUNT_CANDIDATE_1,
             ACCOUNT_DELEGATOR_1,
-            final_amount,
+            SharesOrStake::Stake(final_amount),
             final_amount,
             leaving_amount,
             expected_rewards,

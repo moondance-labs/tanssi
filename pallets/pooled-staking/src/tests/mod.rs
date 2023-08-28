@@ -192,7 +192,7 @@ pub(crate) fn do_full_delegation<P: PoolExt<Runtime>>(
 pub(crate) fn do_request_undelegation<P: PoolExt<Runtime>>(
     candidate: AccountId,
     delegator: AccountId,
-    request_amount: Balance,
+    request_amount: SharesOrStake<Balance>,
     expected_removed: Balance,
     expected_leaving: Balance,
     expected_manual_rewards: Balance,
@@ -209,7 +209,7 @@ pub(crate) fn do_request_undelegation<P: PoolExt<Runtime>>(
         RuntimeOrigin::signed(delegator),
         candidate,
         P::target_pool(),
-        SharesOrStake::Stake(request_amount),
+        request_amount,
     ));
 
     let after = State::extract(candidate, delegator);
@@ -288,7 +288,7 @@ pub(crate) fn do_execute_undelegation(
 pub(crate) fn do_full_undelegation<P: PoolExt<Runtime>>(
     candidate: AccountId,
     delegator: AccountId,
-    request_amount: Balance,
+    request_amount: SharesOrStake<Balance>,
     expected_removed: Balance,
     expected_leaving: Balance,
 ) {

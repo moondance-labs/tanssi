@@ -70,7 +70,7 @@ impl<T: Config> Candidates<T> {
 
         Pallet::<T>::deposit_event(Event::<T>::IncreasedStake {
             candidate: candidate.clone(),
-            stake: stake.0,
+            stake_diff: stake.0,
         });
 
         Self::update_total_stake(candidate, Stake(new_stake))?;
@@ -87,7 +87,7 @@ impl<T: Config> Candidates<T> {
 
         Pallet::<T>::deposit_event(Event::<T>::DecreasedStake {
             candidate: candidate.clone(),
-            stake: stake.0,
+            stake_diff: stake.0,
         });
 
         Self::update_total_stake(&candidate, Stake(new_stake))?;
