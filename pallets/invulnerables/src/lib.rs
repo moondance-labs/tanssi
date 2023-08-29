@@ -115,11 +115,9 @@ pub mod pallet {
                 "duplicate invulnerables in genesis."
             );
 
-            let mut bounded_invulnerables =
+            let bounded_invulnerables =
                 BoundedVec::<_, T::MaxInvulnerables>::try_from(self.invulnerables.clone())
                     .expect("genesis invulnerables are more than T::MaxInvulnerables");
-
-            bounded_invulnerables.sort();
 
             <Invulnerables<T>>::put(bounded_invulnerables);
         }
@@ -196,12 +194,9 @@ pub mod pallet {
             }
 
             // should never fail since `new` must be equal to or shorter than `TooManyInvulnerables`
-            let mut bounded_invulnerables =
+            let bounded_invulnerables =
                 BoundedVec::<_, T::MaxInvulnerables>::try_from(new_with_keys)
                     .map_err(|_| Error::<T>::TooManyInvulnerables)?;
-
-            // Invulnerables must be sorted for removal.
-            bounded_invulnerables.sort();
 
             <Invulnerables<T>>::put(&bounded_invulnerables);
             Self::deposit_event(Event::NewInvulnerables {
@@ -225,10 +220,10 @@ pub mod pallet {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                match invulnerables.binary_search(&who) {
-                    Ok(_) => return Err(Error::<T>::AlreadyInvulnerable)?,
-                    Err(pos) => invulnerables
-                        .try_insert(pos, who.clone())
+                match invulnerables.contains(&who) {
+                    true => return Err(Error::<T>::AlreadyInvulnerable)?,
+                    false => invulnerables
+                        .try_push(who.clone())
                         .map_err(|_| Error::<T>::TooManyInvulnerables)?,
                 }
                 Ok(())
@@ -256,10 +251,10 @@ pub mod pallet {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                let pos = invulnerables
-                    .binary_search(&who)
-                    .map_err(|_| Error::<T>::NotInvulnerable)?;
-                invulnerables.remove(pos);
+                if !invulnerables.contains(&who) {
+                    return Err(Error::<T>::NotInvulnerable)?;
+                }
+                invulnerables.retain(|c| c != &who);
                 Ok(())
             })?;
 
