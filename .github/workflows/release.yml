@@ -495,6 +495,46 @@ jobs:
                   name: logs-warp-sync
                   path: logs
 
+    chopsticks-upgrade-test:
+      runs-on:
+        labels: ubuntu-latest
+      needs: ["set-tags", "build"]
+      strategy:
+        matrix:
+          chains: [
+            { chain: "stagenet_dancebox", runtime: "dancebox" },
+            { chain: "dancebox", runtime: "dancebox" },
+          ]
+      env:
+        GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
+        DEBUG_COLORS: 1
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v3
+          with:
+            ref: ${{ needs.set-tags.outputs.git_ref }}
+        - uses: pnpm/action-setup@v2
+          with:
+            version: 8
+        - uses: actions/setup-node@v3
+          with:
+            node-version: 20.x
+            cache: "pnpm"
+        - name: Create local folders
+          run: |
+            mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
+            mkdir -p test/tmp
+        - name: "Download runtime"
+          uses: actions/download-artifact@v3.0.2
+          with:
+            name: runtimes
+            path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
+        - name: "Install and run upgrade test"
+          run: |
+            cd test
+            pnpm install
+            pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
+
     zombienet-test-upgrade:
         runs-on: self-hosted
         needs: ["set-tags", "build"]
