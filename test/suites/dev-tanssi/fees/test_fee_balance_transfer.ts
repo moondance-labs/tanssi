@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair, extractFee, extractInfo, filterAndApply } from "@moonwall/util";
+import { KeyringPair, extractFee, filterAndApply } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
@@ -11,6 +11,10 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
+        let expectedBasePlusWeightFee;
+        // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
+        // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
+        const baseWeight = 113638n * 1000n;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
@@ -24,30 +28,36 @@ describeSuite({
             test: async function () {
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const tx = polkadotJs.tx.balances.transfer(bob.address, 200_000);
+                // Estimate fee of balances.transfer using paymentInfo API, before sending transaction
                 const info = await tx.paymentInfo(alice.address);
                 const signedTx = await tx.signAsync(alice);
                 await context.createBlock([signedTx]);
 
                 const events = await polkadotJs.query.system.events();
-                console.log("events: ", events.toJSON());
-
                 const fee = extractFee(events).amount.toBigInt();
-                console.log("fee2: ", fee);
-                function getDispatchInfo({ event: { data, method } }) {
-                    return method === "ExtrinsicSuccess" ? (data[0] as any) : (data[1] as any);
-                }
-                const info2 = filterAndApply(events, "system", ["ExtrinsicFailed", "ExtrinsicSuccess"], getDispatchInfo)
-                    .filter((x) => {
-                        return x.class.toString() === "Normal" && x.paysFee.toString() === "Yes";
-                    })
-                    .map((x) => x.toJSON())[0];
-                //const info2 = extractInfo(events);
-                console.log("INFO2: ", info2);
+                // Get actual weight
+                const info2 = extractInfoForFee(events);
 
-                const ww = info2.weight.refTime;
-                // TODO: proofSize is free?
+                // The estimated weight does not match the actual weight reported in the block, because it is missing the
+                // "base weight"
+                const estimatedPlusBaseWeight = {
+                    refTime: info.weight.refTime.toBigInt() + baseWeight,
+                    proofSize: info.weight.proofSize.toBigInt(),
+                };
+                expect(estimatedPlusBaseWeight).to.deep.equal({
+                    refTime: info2.weight.refTime.toBigInt(),
+                    proofSize: info2.weight.proofSize.toBigInt(),
+                });
 
-                const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
+                // queryWeightToFee expects the "base weight" to be included in the input, so info2.weight provides
+                // the correct estimation, but tx.paymentInfo().weight does not
+                const basePlusWeightFee = (
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee(info2.weight)
+                ).toBigInt();
+                expect(basePlusWeightFee).to.equal(1000000n + 1630678n);
+                expectedBasePlusWeightFee = basePlusWeightFee;
+
+                const expectedFee = basePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const tip = 0n;
@@ -75,7 +85,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
+                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
@@ -128,7 +138,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
+                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
@@ -159,7 +169,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
+                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
@@ -172,5 +182,54 @@ describeSuite({
                 expect(totalSupplyBefore - totalSupplyAfter).to.equal(fee);
             },
         });
+
+        it({
+            id: "E05",
+            title: "Proof size does not affect fee",
+            test: async function () {
+                const refTime = 298945000n;
+                const proofSize = 3593n;
+                const fee1 = (
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
+                        refTime,
+                        proofSize,
+                    })
+                ).toBigInt();
+
+                const fee2 = (
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
+                        refTime,
+                        proofSize: 0,
+                    })
+                ).toBigInt();
+
+                expect(fee1).to.equal(fee2);
+            },
+        });
+
+        it({
+            id: "E06",
+            title: "Base refTime pays base fee",
+            test: async function () {
+                const fee = (
+                    await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
+                        refTime: baseWeight,
+                        proofSize: 0,
+                    })
+                ).toBigInt();
+
+                expect(fee).to.equal(1000000n);
+            },
+        });
     },
 });
+
+function getDispatchInfo({ event: { data, method } }) {
+    return method === "ExtrinsicSuccess" ? (data[0] as any) : (data[1] as any);
+}
+
+function extractInfoForFee(events): any {
+    return filterAndApply(events, "system", ["ExtrinsicFailed", "ExtrinsicSuccess"], getDispatchInfo).filter((x) => {
+        return x.class.toString() === "Normal" && x.paysFee.toString() === "Yes";
+    })[0];
+}
