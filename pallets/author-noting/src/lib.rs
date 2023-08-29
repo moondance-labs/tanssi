@@ -139,27 +139,33 @@ pub mod pallet {
                 "DidSetContainerAuthorData must be updated only once in a block",
             );
 
-            let tp_author_noting_inherent::OwnParachainInherentData {
-                relay_storage_proof,
-            } = data;
-
-            let relay_storage_root =
-                T::RelayChainStateProvider::current_relay_chain_state().state_root;
-            let relay_storage_rooted_proof =
-                GenericStateProof::new(relay_storage_root, relay_storage_proof)
-                    .expect("Invalid relay chain state proof");
-
             let registered_para_ids = T::ContainerChains::current_container_chains();
             let total_weight =
                 T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
-            for para_id in registered_para_ids {
-                match Self::fetch_block_info_from_proof(&relay_storage_rooted_proof, para_id) {
-                    Ok(block_info) => LatestAuthor::<T>::insert(para_id, block_info),
-                    Err(e) => log::warn!(
-                        "Author-noting error {:?} found in para {:?}",
-                        e,
-                        u32::from(para_id)
-                    ),
+
+            // We do this first to make sure we dont do 2 reads (parachains and relay state)
+            // when we have no containers registered
+            // Essentially one can pass an empty proof if no container-chains are registered
+            if !registered_para_ids.is_empty() {
+                let tp_author_noting_inherent::OwnParachainInherentData {
+                    relay_storage_proof,
+                } = data;
+
+                let relay_storage_root =
+                    T::RelayChainStateProvider::current_relay_chain_state().state_root;
+                let relay_storage_rooted_proof =
+                    GenericStateProof::new(relay_storage_root, relay_storage_proof)
+                        .expect("Invalid relay chain state proof");
+
+                for para_id in registered_para_ids {
+                    match Self::fetch_block_info_from_proof(&relay_storage_rooted_proof, para_id) {
+                        Ok(block_info) => LatestAuthor::<T>::insert(para_id, block_info),
+                        Err(e) => log::warn!(
+                            "Author-noting error {:?} found in para {:?}",
+                            e,
+                            u32::from(para_id)
+                        ),
+                    }
                 }
             }
 

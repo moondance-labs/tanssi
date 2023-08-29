@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    cumulus_primitives_core::PersistedValidationData,
+    cumulus_primitives_core::{ParaId, PersistedValidationData},
     dancebox_runtime::{AuthorInherent, AuthorityAssignment},
     frame_support::{
         assert_ok,
@@ -33,6 +33,8 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
+
+mod xcm;
 
 use dancebox_runtime::MaxLengthTokenSymbol;
 pub use dancebox_runtime::{
@@ -98,6 +100,8 @@ pub struct ExtBuilder {
     )>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
+    safe_xcm_version: Option<u32>,
+    own_para_id: Option<ParaId>,
 }
 
 impl ExtBuilder {
@@ -128,7 +132,17 @@ impl ExtBuilder {
         self
     }
 
-    pub fn build(self) -> sp_io::TestExternalities {
+    pub fn with_safe_xcm_version(mut self, safe_xcm_version: u32) -> Self {
+        self.safe_xcm_version = Some(safe_xcm_version);
+        self
+    }
+
+    pub fn with_own_para_id(mut self, own_para_id: ParaId) -> Self {
+        self.own_para_id = Some(own_para_id);
+        self
+    }
+
+    pub fn build_storage(self) -> sp_core::storage::Storage {
         let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();
@@ -162,6 +176,24 @@ impl ExtBuilder {
             &mut t,
         )
         .unwrap();
+
+        <pallet_xcm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+            &pallet_xcm::GenesisConfig {
+                safe_xcm_version: self.safe_xcm_version,
+            },
+            &mut t,
+        )
+        .unwrap();
+
+        if let Some(own_para_id) = self.own_para_id {
+            <parachain_info::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
+                &parachain_info::GenesisConfig {
+                    parachain_id: own_para_id,
+                },
+                &mut t,
+            )
+            .unwrap();
+        }
 
         if !self.collators.is_empty() {
             // We set invulnerables in pallet_collator_selection
@@ -199,7 +231,11 @@ impl ExtBuilder {
             )
             .unwrap();
         }
+        t
+    }
 
+    pub fn build(self) -> sp_io::TestExternalities {
+        let t = self.build_storage();
         let mut ext = sp_io::TestExternalities::new(t);
 
         ext.execute_with(|| {
@@ -208,11 +244,6 @@ impl ExtBuilder {
         ext
     }
 }
-
-pub const ALICE: [u8; 32] = [4u8; 32];
-pub const BOB: [u8; 32] = [5u8; 32];
-pub const CHARLIE: [u8; 32] = [6u8; 32];
-pub const DAVE: [u8; 32] = [7u8; 32];
 
 pub fn root_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::root()
@@ -305,3 +336,8 @@ pub fn current_author() -> AccountId {
         .expect("there is a mapping for the current author")
         .clone()
 }
+
+pub const ALICE: [u8; 32] = [4u8; 32];
+pub const BOB: [u8; 32] = [5u8; 32];
+pub const CHARLIE: [u8; 32] = [6u8; 32];
+pub const DAVE: [u8; 32] = [7u8; 32];

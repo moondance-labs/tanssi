@@ -17,6 +17,7 @@
 use {
     container_chain_template_frontier_runtime::{
         AccountId, EVMChainIdConfig, EVMConfig, MaintenanceModeConfig, MigrationsConfig,
+        PolkadotXcmConfig,
     },
     cumulus_primitives_core::ParaId,
     hex_literal::hex,
@@ -236,6 +237,8 @@ fn testnet_genesis(
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
         },
+        // This should initialize it to whatever we have set in the pallet
+        polkadot_xcm: PolkadotXcmConfig::default(),
     }
 }
 

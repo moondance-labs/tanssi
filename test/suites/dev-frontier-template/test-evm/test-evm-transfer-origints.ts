@@ -1,81 +1,73 @@
 import { describeSuite, expect } from "@moonwall/cli";
-import {
-  ALITH_ADDRESS,
-  DEFAULT_GENESIS_BALANCE,
-  BALTATHAR_ADDRESS,
-  baltathar,
-  alith,
-} from "@moonwall/util";
+import { ALITH_ADDRESS, DEFAULT_GENESIS_BALANCE, BALTATHAR_ADDRESS, baltathar, alith } from "@moonwall/util";
 
 // A call from root (sudo) can make a transfer directly in pallet_evm
 // A signed call cannot make a transfer directly in pallet_evm
 describeSuite({
-  id: "DF0702",
-  title: "Pallet EVM - call",
-  foundationMethods: "dev",
-  testCases: ({ context, it }) => {
-    it({
-      id: "T01",
-      title: "should fail without sudo",
-      test: async function () {
-        const tx = context
-        .polkadotJs()
-        .tx.evm.call(
-            ALITH_ADDRESS,
-            BALTATHAR_ADDRESS,
-          "0x0",
-          100_000_000_000_000_000_000n,
-          12_000_000n,
-          1_000_000_000n,
-          "0",
-          null,
-          []
-        );
-        expect(
-          await context
-            .createBlock([await tx.signAsync(alith)])
-            .catch((e) => e.toString())
-        ).to.equal("RpcError: 1010: Invalid Transaction: Transaction call is not expected");
+    id: "DF0702",
+    title: "Pallet EVM - call",
+    foundationMethods: "dev",
+    testCases: ({ context, it }) => {
+        it({
+            id: "T01",
+            title: "should fail without sudo",
+            test: async function () {
+                const tx = context
+                    .polkadotJs()
+                    .tx.evm.call(
+                        ALITH_ADDRESS,
+                        BALTATHAR_ADDRESS,
+                        "0x0",
+                        100_000_000_000_000_000_000n,
+                        12_000_000n,
+                        1_000_000_000n,
+                        "0",
+                        null,
+                        []
+                    );
+                expect(await context.createBlock([await tx.signAsync(alith)]).catch((e) => e.toString())).to.equal(
+                    "RpcError: 1010: Invalid Transaction: Transaction call is not expected"
+                );
 
-        expect(await context.viem("public").getBalance({ address: baltathar.address })).to.equal(
-          DEFAULT_GENESIS_BALANCE
-        );
-      },
-    });
+                expect(await context.viem("public").getBalance({ address: baltathar.address })).to.equal(
+                    DEFAULT_GENESIS_BALANCE
+                );
+            },
+        });
 
-    it({
-      id: "T02",
-      title: "should succeed with sudo",
-      test: async function () {
-        const { result } = await context.createBlock(
-          context
-            .polkadotJs()
-            .tx.sudo.sudo(
-              context
-                .polkadotJs()
-                .tx.evm.call(
-                  ALITH_ADDRESS,
-                  baltathar.address,
-                  "0x0",
-                  100_000_000_000_000_000_000n,
-                  12_000_000n,
-                  100_000_000_000_000n,
-                  "0",
-                  null,
-                  []
-                )
-            )
-        );
+        it({
+            id: "T02",
+            title: "should succeed with sudo",
+            test: async function () {
+                const { result } = await context.createBlock(
+                    context
+                        .polkadotJs()
+                        .tx.sudo.sudo(
+                            context
+                                .polkadotJs()
+                                .tx.evm.call(
+                                    ALITH_ADDRESS,
+                                    baltathar.address,
+                                    "0x0",
+                                    100_000_000_000_000_000_000n,
+                                    12_000_000n,
+                                    100_000_000_000_000n,
+                                    "0",
+                                    null,
+                                    []
+                                )
+                        )
+                );
 
-        expect(
-          result?.events.find(
-            ({ event: { section, method } }) => section == "system" && method == "ExtrinsicSuccess"
-          )
-        ).to.exist;
-        expect(await context.viem("public").getBalance({ address: baltathar.address })).to.equal(
-          DEFAULT_GENESIS_BALANCE + 100_000_000_000_000_000_000n
-        );
-      },
-    });
-  },
+                expect(
+                    result?.events.find(
+                        ({ event: { section, method } }) => section == "system" && method == "ExtrinsicSuccess"
+                    )
+                ).to.exist;
+                expect(await context.viem("public").getBalance({ address: baltathar.address })).to.equal(
+                    DEFAULT_GENESIS_BALANCE + 100_000_000_000_000_000_000n
+                );
+            },
+        });
+    },
 });

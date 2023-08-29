@@ -1,0 +1,22 @@
+# MacOS thing
+**/.DS_Store
+
+# Rust directories
+**/target
+**/scripts/tmp
+
+# Typescript directories
+**/node_modules
+**/.yarn
+test/tsconfig.json
+
+# Spec/Wasm build directory
+**/build/
+
+# Dist folders should not be formatted
+*/dist/
+
+# Temporary Moonwall files
+**/contracts/out
+**/tmp/
+**/html/

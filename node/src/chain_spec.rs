@@ -17,8 +17,8 @@
 use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
-        AccountId, MaintenanceModeConfig, MigrationsConfig, RegistrarConfig, Signature, SudoConfig,
-        EXISTENTIAL_DEPOSIT,
+        AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, RegistrarConfig,
+        Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
     },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
@@ -303,6 +303,9 @@ fn testnet_genesis(
             candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
             ..Default::default()
         },
+        invulnerables: dancebox_runtime::InvulnerablesConfig {
+            invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
+        },
         session: dancebox_runtime::SessionConfig {
             keys: invulnerables
                 .into_iter()
@@ -342,6 +345,9 @@ fn testnet_genesis(
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
         },
+        // This should initialize it to whatever we have set in the pallet
+        polkadot_xcm: PolkadotXcmConfig::default(),
+        transaction_payment: Default::default(),
     }
 }
 

@@ -16,18 +16,21 @@
 
 #![cfg(test)]
 
+use dancebox_runtime::migrations::{CollatorSelectionInvulnerablesValue, MigrateInvulnerables};
+
 use {
     common::*,
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
-        Configuration, Proxy, ProxyType,
+        Configuration, Invulnerables, Proxy, ProxyType,
     },
     frame_support::{assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting::ContainerChainBlockInfo,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
+    pallet_migrations::Migration,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
@@ -1982,4 +1985,46 @@ fn check_well_known_keys() {
         well_known_keys::SESSION_INDEX,
         frame_support::storage::storage_prefix(b"Session", b"CurrentIndex")
     );
+}
+
+#[test]
+fn test_invulnerables_migration() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            // Populate the invulnerables storage
+            let collators = vec![AccountId::from(ALICE), AccountId::from(BOB)];
+            CollatorSelectionInvulnerablesValue::<Runtime>::put(
+                BoundedVec::try_from(collators).expect("Failed to create BoundedVec"),
+            );
+
+            let invulnerables_before_migration = CollatorSelection::invulnerables();
+            assert_eq!(
+                invulnerables_before_migration.len(),
+                2,
+                "invulnerables has wrong length"
+            );
+            let migration = MigrateInvulnerables::<Runtime>(Default::default());
+            migration.migrate(Default::default());
+            let invulnerables_after_migration = Invulnerables::invulnerables();
+            assert_eq!(
+                invulnerables_before_migration,
+                invulnerables_after_migration
+            )
+        });
 }

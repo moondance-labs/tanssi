@@ -383,6 +383,7 @@ async fn start_node_impl(
                 overrides: overrides.clone(),
                 is_authority: false,
                 command_sink: None,
+                xcm_senders: None,
             };
             crate::rpc::create_full(
                 deps,
@@ -529,6 +530,7 @@ pub async fn start_dev_node(
     let fee_history_limit = rpc_config.fee_history_limit;
     let collator = config.role.is_authority();
     let mut command_sink = None;
+    let mut xcm_senders = None;
 
     let pubsub_notification_sinks: fc_mapping_sync::EthereumBlockNotificationSinks<
         fc_mapping_sync::EthereumBlockNotification<Block>,
@@ -543,6 +545,11 @@ pub async fn start_dev_node(
             prometheus_registry.as_ref(),
             telemetry.as_ref().map(|x| x.handle()),
         );
+
+        // Create channels for mocked XCM messages.
+        let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
+        let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
+        xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
 
         let commands_stream: Box<dyn Stream<Item = EngineCommand<H256>> + Send + Sync + Unpin> =
             match sealing {
@@ -635,6 +642,9 @@ pub async fn start_dev_node(
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     let authorities_for_cidp = authorities.clone();
 
+                    let downward_xcm_receiver = downward_xcm_receiver.clone();
+                    let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
+
 					async move {
                         let time = MockTimestampInherentDataProvider;
                         let mocked_parachain = MockValidationDataInherentDataProvider {
@@ -647,11 +657,11 @@ pub async fn start_dev_node(
                             xcm_config: MockXcmConfig::new(
                                 &*client_for_xcm,
                                 block,
-                                Default::default(),
+                                para_id,
                                 Default::default(),
                             ),
-                            raw_downward_messages: vec![],
-                            raw_horizontal_messages: vec![],
+                            raw_downward_messages: downward_xcm_receiver.drain().collect(),
+                            raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                         };
 
                         let mocked_authorities_noting =
@@ -727,6 +737,7 @@ pub async fn start_dev_node(
                 overrides: overrides.clone(),
                 is_authority: false,
                 command_sink: command_sink.clone(),
+                xcm_senders: xcm_senders.clone(),
             };
             crate::rpc::create_full(
                 deps,
