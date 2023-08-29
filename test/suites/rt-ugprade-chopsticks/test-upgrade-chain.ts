@@ -1,16 +1,12 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, generateKeyringPair } from "@moonwall/util";
+import { generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import fs from "node:fs";
 
 describeSuite({
     id: "CAN",
     title: "Chopsticks Dancebox Upgrade Test",
     foundationMethods: "chopsticks",
     testCases: function ({ it, context, log }) {
-        let paraApi: ApiPromise;
-        let relayApi: ApiPromise;
-        let alice: KeyringPair;
         let api: ApiPromise;
 
         beforeAll(async () => {
