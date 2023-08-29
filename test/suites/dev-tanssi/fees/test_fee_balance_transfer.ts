@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair, extractFee } from "@moonwall/util";
+import { KeyringPair, extractFee, extractInfo, filterAndApply } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
@@ -15,8 +15,6 @@ describeSuite({
         beforeAll(async () => {
             alice = context.keyring.alice;
             bob = context.keyring.bob;
-            charlie = context.keyring.charlie;
-            dave = context.keyring.dave;
             polkadotJs = context.polkadotJs();
         });
 
@@ -31,7 +29,24 @@ describeSuite({
                 await context.createBlock([signedTx]);
 
                 const events = await polkadotJs.query.system.events();
+                console.log("events: ", events.toJSON());
+
                 const fee = extractFee(events).amount.toBigInt();
+                console.log("fee2: ", fee);
+                function getDispatchInfo({ event: { data, method } }) {
+                    return method === "ExtrinsicSuccess" ? (data[0] as any) : (data[1] as any);
+                }
+                const info2 = filterAndApply(events, "system", ["ExtrinsicFailed", "ExtrinsicSuccess"], getDispatchInfo)
+                    .filter((x) => {
+                        return x.class.toString() === "Normal" && x.paysFee.toString() === "Yes";
+                    })
+                    .map((x) => x.toJSON())[0];
+                //const info2 = extractInfo(events);
+                console.log("INFO2: ", info2);
+
+                const ww = info2.weight.refTime;
+                // TODO: proofSize is free?
+
                 const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
                 expect(fee).to.equal(expectedFee);
 
@@ -113,7 +128,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = 1000000n + BigInt(signedTx.encodedLength);
+                const expectedFee = 1000000n + BigInt(signedTx.encodedLength) + 1630678n;
                 expect(fee).to.equal(expectedFee);
 
                 const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
