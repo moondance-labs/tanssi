@@ -1,639 +1,629 @@
 name: CI
 
 on:
-  pull_request:
-  push:
-    branches:
-      - master
-      - perm-*
+    pull_request:
+    push:
+        branches:
+            - master
+            - perm-*
 
 jobs:
-  set-tags:
-    runs-on: ubuntu-latest
-    outputs:
-      image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
-      git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
-      sha: ${{ steps.get-sha.outputs.sha }}
-      sha8: ${{ steps.get-sha.outputs.sha8 }}
-      latest_rt: ${{ steps.get-sha.outputs.latest_rt }}
-      latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
-    steps:
-      - name: Check git ref
-        id: check-git-ref
-        # if PR
-        # else if manual PR
-        # else (push)
-        run: |
-          if [[ -n "${{ github.event.pull_request.head.sha }}" ]]; then
-            echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
-            echo "git_ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-          elif [[ -n "${{ github.event.inputs.pull_request }}" ]]; then
-            echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
-            echo "git_ref=refs/pull/${{ github.event.inputs.pull_request }}/head" >> $GITHUB_OUTPUT
-          else
-            echo "git_branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
-            echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
-          fi
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ steps.check-git-ref.outputs.git_ref }}
-      - name: Get Latest RT Release
-        id: get-latest-rt
-        run: |
-          LATEST_RUNTIME_RELEASE=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases | jq -r '.[] | select(.name | test("runtime";"i")) | .tag_name' | head -n 1 | tr -d '[:blank:]') && [[ ! -z "${LATEST_RUNTIME_RELEASE}" ]]
-          echo $LATEST_RUNTIME_RELEASE
-          echo "latest_rt=$LATEST_RUNTIME_RELEASE" >> $GITHUB_OUTPUT
-      - name: Get Sha
-        id: get-sha
-        run: |
-          echo "sha=$(git log -1 --format='%H')" >> $GITHUB_OUTPUT
-          echo "sha8=$(git log -1 --format='%H' | cut -c1-8)" >> $GITHUB_OUTPUT
+    set-tags:
+        runs-on: ubuntu-latest
+        outputs:
+            image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
+            git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
+            sha: ${{ steps.get-sha.outputs.sha }}
+            sha8: ${{ steps.get-sha.outputs.sha8 }}
+            latest_rt: ${{ steps.get-sha.outputs.latest_rt }}
+            latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
+        steps:
+            - name: Check git ref
+              id: check-git-ref
+              # if PR
+              # else if manual PR
+              # else (push)
+              run: |
+                  if [[ -n "${{ github.event.pull_request.head.sha }}" ]]; then
+                    echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
+                    echo "git_ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+                  elif [[ -n "${{ github.event.inputs.pull_request }}" ]]; then
+                    echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
+                    echo "git_ref=refs/pull/${{ github.event.inputs.pull_request }}/head" >> $GITHUB_OUTPUT
+                  else
+                    echo "git_branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
+                    echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
+                  fi
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ steps.check-git-ref.outputs.git_ref }}
+            - name: Get Latest RT Release
+              id: get-latest-rt
+              run: |
+                  LATEST_RUNTIME_RELEASE=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases | jq -r '.[] | select(.name | test("runtime";"i")) | .tag_name' | head -n 1 | tr -d '[:blank:]') && [[ ! -z "${LATEST_RUNTIME_RELEASE}" ]]
+                  echo $LATEST_RUNTIME_RELEASE
+                  echo "latest_rt=$LATEST_RUNTIME_RELEASE" >> $GITHUB_OUTPUT
+            - name: Get Sha
+              id: get-sha
+              run: |
+                  echo "sha=$(git log -1 --format='%H')" >> $GITHUB_OUTPUT
+                  echo "sha8=$(git log -1 --format='%H' | cut -c1-8)" >> $GITHUB_OUTPUT
 
-          ENDPOINT="https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/${{ steps.get-latest-rt.outputs.latest_rt }}"
-          RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $ENDPOINT)
-          TYPE=$(echo $RESPONSE | jq -r '.object.type')
+                  ENDPOINT="https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/${{ steps.get-latest-rt.outputs.latest_rt }}"
+                  RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $ENDPOINT)
+                  TYPE=$(echo $RESPONSE | jq -r '.object.type')
 
-          if [[ $TYPE == "commit" ]]
-          then
-            LATEST_RT_SHA8=$(echo $RESPONSE | jq -r '.object.sha' | cut -c -8)
-          elif [[ $TYPE == "tag" ]]
-          then
-            URL=$(echo $RESPONSE | jq -r '.object.url')
-            TAG_RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $URL)
-            TAG_RESPONSE_CLEAN=$(echo $TAG_RESPONSE | tr -d '\000-\037')
-            LATEST_RT_SHA8=$(echo $TAG_RESPONSE_CLEAN | jq -r '.object.sha' | cut -c -8)
-          fi
+                  if [[ $TYPE == "commit" ]]
+                  then
+                    LATEST_RT_SHA8=$(echo $RESPONSE | jq -r '.object.sha' | cut -c -8)
+                  elif [[ $TYPE == "tag" ]]
+                  then
+                    URL=$(echo $RESPONSE | jq -r '.object.url')
+                    TAG_RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $URL)
+                    TAG_RESPONSE_CLEAN=$(echo $TAG_RESPONSE | tr -d '\000-\037')
+                    LATEST_RT_SHA8=$(echo $TAG_RESPONSE_CLEAN | jq -r '.object.sha' | cut -c -8)
+                  fi
 
-          echo $LATEST_RT_SHA8
-          echo "latest_rt_sha8=$LATEST_RT_SHA8" >> $GITHUB_OUTPUT
+                  echo $LATEST_RT_SHA8
+                  echo "latest_rt_sha8=$LATEST_RT_SHA8" >> $GITHUB_OUTPUT
 
-      - name: Check existing docker image
-        id: check-docker-image
-        run: |
-          TAG=sha-${{ steps.get-sha.outputs.sha8 }}
-          echo "image_exists=$(docker image inspect moondancelabs/tanssi:$TAG > /dev/null && echo "true" || echo "false")" >> $GITHUB_OUTPUT
+            - name: Check existing docker image
+              id: check-docker-image
+              run: |
+                  TAG=sha-${{ steps.get-sha.outputs.sha8 }}
+                  echo "image_exists=$(docker image inspect moondancelabs/tanssi:$TAG > /dev/null && echo "true" || echo "false")" >> $GITHUB_OUTPUT
 
-      - name: Display variables
-        run: |
-          echo git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
-          echo sha: ${{ steps.get-sha.outputs.sha }}
-          echo sha8: ${{ steps.get-sha.outputs.sha8 }}
-          echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
-          echo latest_rt: ${{ steps.get-latest-rt.outputs.latest_rt }}
-          echo latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
+            - name: Display variables
+              run: |
+                  echo git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
+                  echo sha: ${{ steps.get-sha.outputs.sha }}
+                  echo sha8: ${{ steps.get-sha.outputs.sha8 }}
+                  echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
+                  echo latest_rt: ${{ steps.get-latest-rt.outputs.latest_rt }}
+                  echo latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
 
-  check-copyright:
-    runs-on: ubuntu-latest
-    needs: ["set-tags"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Find un-copyrighted files
-        run: |
-          find . \! -name '*.expanded.rs' -name '*.rs' -exec grep  -H -E -o -c Copyright {} \; | grep ':0' || true
-          FILECOUNT=$(find . \! -name '*.expanded.rs' -name '*.rs' -exec grep  -H -E -o -c Copyright {} \; | grep -c ':0' || true)
-          if [[ $FILECOUNT -eq 0 ]]; then
-            true
-          else
-            false
-          fi
+    check-copyright:
+        runs-on: ubuntu-latest
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Find un-copyrighted files
+              run: |
+                  find . \! -name '*.expanded.rs' -name '*.rs' -exec grep  -H -E -o -c Copyright {} \; | grep ':0' || true
+                  FILECOUNT=$(find . \! -name '*.expanded.rs' -name '*.rs' -exec grep  -H -E -o -c Copyright {} \; | grep -c ':0' || true)
+                  if [[ $FILECOUNT -eq 0 ]]; then
+                    true
+                  else
+                    false
+                  fi
 
-  ####### Static Analyses #######
-  cargo-clippy:
-    runs-on: self-hosted
-    needs: ["set-tags"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
+    ####### Static Analyses #######
+    cargo-clippy:
+        runs-on: self-hosted
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
 
-      - name: Setup Rust toolchain
-        run: rustup show
+            - name: Setup Rust toolchain
+              run: rustup show
 
-      - name: Clippy
-        run: SKIP_WASM_BUILD=1 env -u RUSTFLAGS cargo clippy --features runtime-benchmarks
+            - name: Clippy
+              run: SKIP_WASM_BUILD=1 env -u RUSTFLAGS cargo clippy --features runtime-benchmarks
 
-  typescript-formatting:
-    runs-on: ubuntu-latest
-    needs: ["set-tags"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-      - name: "Setup Node"
-        uses: actions/setup-node@v2
-        with:
-          node-version: 20.x
-          cache: "pnpm"
-      - name: "Formatting check"
-        run: |
-          cd test
-          pnpm install
-          pnpm run fmt
+    typescript-formatting:
+        runs-on: ubuntu-latest
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
+            - name: "Setup Node"
+              uses: actions/setup-node@v2
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
+            - name: "Formatting check"
+              run: |
+                  cd test
+                  pnpm install
+                  pnpm run fmt
 
-  typescript-linting:
-    runs-on: ubuntu-latest
-    needs: ["set-tags"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-      - name: "Setup Node"
-        uses: actions/setup-node@v2
-        with:
-          node-version: 20.x
-          cache: "pnpm"
-      - name: "Linting check"
-        run: |
-          cd test
-          pnpm install
-          pnpm run lint
+    typescript-linting:
+        runs-on: ubuntu-latest
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
+            - name: "Setup Node"
+              uses: actions/setup-node@v2
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
+            - name: "Linting check"
+              run: |
+                  cd test
+                  pnpm install
+                  pnpm run lint
 
-  ####### Building and Testing binaries #######
+    ####### Building and Testing binaries #######
 
-  build:
-    runs-on: self-hosted
-    needs: ["set-tags"]
-    env:
-      TMP_TARGET: "/tmp/target"
-      CARGO_TARGET_DIR: "target"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
-      - name: Setup Variables
-        shell: bash
-        run: |
-          echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo "SCCACHE_CACHE_SIZE=100GB" >> $GITHUB_ENV
-          # Set RUSTFLAGS if not already set
-          if [ -z "$RUSTFLAGS" ]; then
-            echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
-          fi
-      - name: Setup Mold Linker
-        shell: bash
-        run: |
-          mkdir -p mold
-          curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v1.1.1/mold-1.1.1-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
-      - name: Setup Rust toolchain
-        run: rustup show
-      - name: Formatter
-        run: cargo fmt --all --check
-      - name: Build
-        run: cargo build --features=fast-runtime --release --all
-      - name: Save runtime wasm
-        run: |
-          mkdir -p runtimes
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
-      - name: Upload runtimes
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: runtimes
-          path: runtimes
-      - name: Save tanssi and template binaries
-        run: |
-          mkdir -p binaries
-          cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
-          cp $CARGO_TARGET_DIR/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
-          cp $CARGO_TARGET_DIR/release/container-chain-template-frontier-node binaries/container-chain-template-frontier-node;
-      - name: Upload binary
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: binaries
-          path: binaries
-      - name: Check runtime benchmarks
-        run: cargo check --features=runtime-benchmarks --release --all
+    build:
+        runs-on: self-hosted
+        needs: ["set-tags"]
+        env:
+            TMP_TARGET: "/tmp/target"
+            CARGO_TARGET_DIR: "target"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Run sccache-cache
+              uses: mozilla-actions/sccache-action@v0.0.3
+            - name: Setup Variables
+              shell: bash
+              run: |
+                  echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
+                  echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+                  echo "SCCACHE_CACHE_SIZE=100GB" >> $GITHUB_ENV
+                  # Set RUSTFLAGS if not already set
+                  if [ -z "$RUSTFLAGS" ]; then
+                    echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
+                  fi
+            - name: Setup Mold Linker
+              shell: bash
+              run: |
+                  mkdir -p mold
+                  curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v1.1.1/mold-1.1.1-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
+            - name: Setup Rust toolchain
+              run: rustup show
+            - name: Formatter
+              run: cargo fmt --all --check
+            - name: Build
+              run: cargo build --features=fast-runtime --release --all
+            - name: Save runtime wasm
+              run: |
+                  mkdir -p runtimes
+                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.wasm runtimes/;
+                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm runtimes/;
+                  cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
+            - name: Upload runtimes
+              uses: actions/upload-artifact@v3.1.2
+              with:
+                  name: runtimes
+                  path: runtimes
+            - name: Save tanssi and template binaries
+              run: |
+                  mkdir -p binaries
+                  cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
+                  cp $CARGO_TARGET_DIR/release/container-chain-template-simple-node binaries/container-chain-template-simple-node;
+                  cp $CARGO_TARGET_DIR/release/container-chain-template-frontier-node binaries/container-chain-template-frontier-node;
+            - name: Upload binary
+              uses: actions/upload-artifact@v3.1.2
+              with:
+                  name: binaries
+                  path: binaries
+            - name: Check runtime benchmarks
+              run: cargo check --features=runtime-benchmarks --release --all
 
-  rust-test:
-    runs-on: self-hosted
-    needs: ["set-tags", "build"]
-    env:
-      TMP_TARGET: "/tmp/target"
-      CARGO_TARGET_DIR: "target"
-      RUSTC_WRAPPER: "sccache"
-      CARGO_INCREMENTAL: "0"
-      SCCACHE_CACHE_SIZE: "100GB"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
-      - name: Setup Variables
-        shell: bash
-        run: |
-          echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
-      - name: Setup Mold Linker
-        shell: bash
-        run: |
-          mkdir -p mold
-          curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v1.1.1/mold-1.1.1-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
-      - name: Setup Rust toolchain
-        run: rustup show
-      - name: Unit tests
-        run: cargo test --release --all
-      - name: Run sccache stat for check pre test
-        run: ${SCCACHE_PATH} --show-stats
+    rust-test:
+        runs-on: self-hosted
+        needs: ["set-tags", "build"]
+        env:
+            TMP_TARGET: "/tmp/target"
+            CARGO_TARGET_DIR: "target"
+            RUSTC_WRAPPER: "sccache"
+            CARGO_INCREMENTAL: "0"
+            SCCACHE_CACHE_SIZE: "100GB"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Run sccache-cache
+              uses: mozilla-actions/sccache-action@v0.0.3
+            - name: Setup Variables
+              shell: bash
+              run: |
+                  echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
+            - name: Setup Mold Linker
+              shell: bash
+              run: |
+                  mkdir -p mold
+                  curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v1.1.1/mold-1.1.1-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
+            - name: Setup Rust toolchain
+              run: rustup show
+            - name: Unit tests
+              run: cargo test --release --all
+            - name: Run sccache stat for check pre test
+              run: ${SCCACHE_PATH} --show-stats
 
-  check-api-augment:
-    runs-on: ubuntu-latest
-    needs: ["set-tags", "build"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-      - name: "Download binaries"
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: target/release
-      - name: "Setup Node"
-        uses: actions/setup-node@v2
-        with:
-          node-version: 20.x
-          cache: "pnpm"
-      - name: "Generate Local interfaces"
-        run: |
-          chmod uog+x target/release/tanssi-node
-          cd typescript-api
+    check-api-augment:
+        runs-on: ubuntu-latest
+        needs: ["set-tags", "build"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
+            - name: "Download binaries"
+              uses: actions/download-artifact@v3.0.2
+              with:
+                  name: binaries
+                  path: target/release
+            - name: "Setup Node"
+              uses: actions/setup-node@v2
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
+            - name: "Generate Local interfaces"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  cd typescript-api
+                  pnpm install
+                  pnpm create-local-interfaces
+            - name: Check for changes
+              run: |
+                  git diff --exit-code || (echo "There are uncommitted changes after running typegen script.\n Please make sure to run the command before pushing." && exit 1)
 
-          pnpm install
-          pnpm create-local-interfaces
-      - name: Check for changes
-        run: |
-          git diff --exit-code || (echo "There are uncommitted changes after running typegen script.\n Please make sure to run the command before pushing." && exit 1)
+    typescript-tests:
+        runs-on: ubuntu-latest
+        needs: ["set-tags", "build"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
+            - name: "Download binaries"
+              uses: actions/download-artifact@v3.0.2
+              with:
+                  name: binaries
+                  path: target/release
+            - name: "Setup Node"
+              uses: actions/setup-node@v2
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
+            - name: "Generate typescript api"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  cd typescript-api
+                  pnpm install
+                  pnpm create-local-interfaces
+            - name: "Run Dev tests"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  cd test
+                  pnpm moonwall test dev_tanssi
 
-  typescript-tests:
-    runs-on: ubuntu-latest
-    needs: ["set-tags", "build"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-      - name: "Download binaries"
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: target/release
-      - name: "Setup Node"
-        uses: actions/setup-node@v2
-        with:
-          node-version: 20.x
-          cache: "pnpm"
-      - name: "Generate typescript api"
-        run: |
-          chmod uog+x target/release/tanssi-node
-          cd typescript-api
-          pnpm install
-          pnpm tsx ./scripts/generate-types.ts
-      - name: "Generate typescript api"
-        run: |
-          cd typescript-api
-          pnpm install
-          pnpm create-local-interfaces
-      - name: "Run Dev tests"
-        run: |
-          chmod uog+x target/release/tanssi-node
-          cd test
-          pnpm moonwall test dev_tanssi
+    typescript-tests-frontier:
+        runs-on: ubuntu-latest
+        needs: ["set-tags", "build"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
+            - name: Setup Node
+              uses: actions/setup-node@v2
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
+            - name: "Download binaries"
+              uses: actions/download-artifact@v3.0.2
+              with:
+                  name: binaries
+                  path: target/release
+            - name: "Generate typescript api"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  cd typescript-api
+                  pnpm install
+                  pnpm create-local-interfaces
+            - name: "Run Frontier tests"
+              run: |
+                  chmod uog+x target/release/container-chain-template-frontier-node
+                  cd test
+                  pnpm moonwall test dev_frontier_template
 
-  typescript-tests-frontier:
-    runs-on: ubuntu-latest
-    needs: ["set-tags", "build"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-      - name: Setup Node
-        uses: actions/setup-node@v2
-        with:
-          node-version: 20.x
-          cache: "pnpm"
-      - name: "Download binaries"
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: target/release
-      - name: "Generate typescript api"
-        run: |
-          cd typescript-api
-          pnpm install
-          pnpm create-local-interfaces
-      - name: "Run Frontier tests"
-        run: |
-          chmod uog+x target/release/container-chain-template-frontier-node
-          cd test
-          pnpm moonwall test dev_frontier_template
+    typescript-dancebox-specs:
+        runs-on: ubuntu-latest
+        needs: ["set-tags", "build"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
+            - name: Setup Node
+              uses: actions/setup-node@v2
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
+            - name: "Download binaries"
+              uses: actions/download-artifact@v3.0.2
+              with:
+                  name: binaries
+                  path: target/release
+            - name: "Install and run upgrade test"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  cd test
+                  pnpm install
+                  pnpm moonwall test dev_dancebox_specs
 
-  typescript-dancebox-specs:
-    runs-on: ubuntu-latest
-    needs: ["set-tags", "build"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-      - name: Setup Node
-        uses: actions/setup-node@v2
-        with:
-          node-version: 20.x
-          cache: "pnpm"
-      - name: "Download binaries"
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: target/release
-      - name: "Install and run upgrade test"
-        run: |
-          chmod uog+x target/release/tanssi-node
-          cd test
-          pnpm install
-          pnpm moonwall test dev_dancebox_specs
+    zombienet-tests:
+        runs-on: self-hosted
+        needs: ["set-tags", "build"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
 
-  zombienet-tests:
-    runs-on: self-hosted
-    needs: ["set-tags", "build"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
 
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+            - name: Setup Node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
 
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20.x
-          cache: "pnpm"
+            - name: "Download binaries"
+              uses: actions/download-artifact@v3.0.2
+              with:
+                  name: binaries
+                  path: target/release
 
-      - name: "Download binaries"
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: target/release
+            - name: "Run zombie test"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/container-chain-template-simple-node
+                  chmod uog+x target/release/container-chain-template-frontier-node
 
-      - name: "Run zombie test"
-        run: |
-          chmod uog+x target/release/tanssi-node
-          chmod uog+x target/release/container-chain-template-simple-node
-          chmod uog+x target/release/container-chain-template-frontier-node
+                  cd test
+                  pnpm install
 
-          cd test
-          pnpm install
+                  ## Run tests
 
-          ## Run tests
+                  pnpm moonwall test zombie_tanssi
 
-          pnpm moonwall test zombie_tanssi
+            - name: "Gather zombie logs"
+              if: failure()
+              run: |
+                  ls -ltr /tmp
+                  latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
+                  logs_dir="logs"
+                  mkdir -p "$logs_dir"
+                  find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
 
-      - name: "Gather zombie logs"
-        if: failure()
-        run: |
-          ls -ltr /tmp
-          latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
-          logs_dir="logs"
-          mkdir -p "$logs_dir"
-          find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
+            - name: "Upload zombie logs"
+              if: failure()
+              uses: actions/upload-artifact@v3.1.2
+              with:
+                  name: logs
+                  path: logs
 
-      - name: "Upload zombie logs"
-        if: failure()
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: logs
-          path: logs
+    zombienet-tests-warp-sync:
+        runs-on: ubuntu-latest
+        needs: ["set-tags", "build"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
 
-  zombienet-tests-warp-sync:
-    runs-on: ubuntu-latest
-    needs: ["set-tags", "build"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
 
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+            - name: Setup Node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
 
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20.x
-          cache: "pnpm"
+            - name: "Download binaries"
+              uses: actions/download-artifact@v3.0.2
+              with:
+                  name: binaries
+                  path: target/release
 
-      - name: "Download binaries"
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: target/release
+            - name: "Run zombie test"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/container-chain-template-simple-node
+                  chmod uog+x target/release/container-chain-template-frontier-node
 
-      - name: "Run zombie test"
-        run: |
-          chmod uog+x target/release/tanssi-node
-          chmod uog+x target/release/container-chain-template-simple-node
-          chmod uog+x target/release/container-chain-template-frontier-node
+                  cd test
+                  pnpm install
 
-          cd test
-          pnpm install
+                  ## Run tests
 
-          ## Run tests
+                  pnpm moonwall test zombie_tanssi_warp_sync
 
-          pnpm moonwall test zombie_tanssi_warp_sync
+            - name: "Gather zombie logs"
+              if: failure()
+              run: |
+                  ls -ltr /tmp
+                  latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
+                  logs_dir="logs"
+                  mkdir -p "$logs_dir"
+                  find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
 
-      - name: "Gather zombie logs"
-        if: failure()
-        run: |
-          ls -ltr /tmp
-          latest_zombie_dir=$(find /tmp -type d -iname "*zombie*" -printf '%T@ %p\n' | sort -n | tail -1 | cut -f2- -d" ")
-          logs_dir="logs"
-          mkdir -p "$logs_dir"
-          find "$latest_zombie_dir" -type f -name "*.log" -exec cp {} "$logs_dir" \;
+            - name: "Upload zombie logs"
+              if: failure()
+              uses: actions/upload-artifact@v3.1.2
+              with:
+                  name: logs-warp-sync
+                  path: logs
 
-      - name: "Upload zombie logs"
-        if: failure()
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: logs-warp-sync
-          path: logs
+    zombienet-test-upgrade:
+        runs-on: self-hosted
+        needs: ["set-tags", "build"]
+        strategy:
+            matrix:
+                chain: ["dancebox"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
 
-  zombienet-test-upgrade:
-    runs-on: self-hosted
-    needs: ["set-tags", "build"]
-    strategy:
-      matrix:
-        chain: ["dancebox"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                  version: 8
 
-      - name: Pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+            - name: Setup node
+              uses: actions/setup-node@v3
+              with:
+                  node-version: 20.x
+                  cache: "pnpm"
 
-      - name: Setup node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20.x
-          cache: "pnpm"
+            - name: Create local folders
+              run: |
+                  mkdir -p target/release/wbuild/${{ matrix.chain }}-runtime/
+                  mkdir -p test/tmp
+            - name: "Download binaries"
+              uses: actions/download-artifact@v3.0.2
+              with:
+                  name: binaries
+                  path: target/release
 
-      - name: Create local folders
-        run: |
-          mkdir -p target/release/wbuild/${{ matrix.chain }}-runtime/
-          mkdir -p test/tmp
-      - name: "Download binaries"
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: target/release
+            - name: "Download branch built runtime"
+              uses: actions/download-artifact@v3.0.2
+              with:
+                  name: runtimes
+                  path: target/release/wbuild/${{ matrix.chain }}-runtime/
 
-      - name: "Download branch built runtime"
-        uses: actions/download-artifact@v3.0.2
-        with:
-          name: runtimes
-          path: target/release/wbuild/${{ matrix.chain }}-runtime/
+            - name: Retrieve tanssi binary from docker (for plainSpec generation)
+              run: |
+                  TANSSI_COMMIT=${{ needs.set-tags.outputs.latest_rt_sha8 }}
+                  DOCKER_TAG="moondancelabs/tanssi:sha-$TANSSI_COMMIT"
 
-      - name: Retrieve tanssi binary from docker (for plainSpec generation)
-        run: |
-          TANSSI_COMMIT=${{ needs.set-tags.outputs.latest_rt_sha8 }}
-          DOCKER_TAG="moondancelabs/tanssi:sha-$TANSSI_COMMIT"
+                  docker rm -f tanssi_container 2> /dev/null | true
+                  docker create --name tanssi_container $DOCKER_TAG bash
+                  docker cp tanssi_container:tanssi/tanssi-node test/tmp/tanssi_rt
+                  docker rm -f tanssi_container
 
-          docker rm -f tanssi_container 2> /dev/null | true
-          docker create --name tanssi_container $DOCKER_TAG bash
-          docker cp tanssi_container:tanssi/tanssi-node test/tmp/tanssi_rt
-          docker rm -f tanssi_container
+            - name: "Run zombie upgrade test"
+              run: |
+                  chmod uog+x target/release/tanssi-node
 
-      - name: "Run zombie upgrade test"
-        run: |
-          chmod uog+x target/release/tanssi-node
+                  cd test
 
-          cd test
+                  pnpm install
 
-          pnpm install
+                  chmod uog+x tmp/tanssi_rt
+                  tmp/tanssi_rt build-spec --chain ${{ matrix.chain }}-local > tmp/${{ matrix.chain }}-plain-spec.json
+                  pnpm tsx scripts/modify-plain-specs.ts process tmp/${{ matrix.chain }}-plain-spec.json tmp/${{ matrix.chain }}-modified-spec.json 
+                  tmp/tanssi_rt build-spec --chain tmp/${{ matrix.chain }}-modified-spec.json --raw > tmp/${{ matrix.chain }}-raw-spec.json
 
-          chmod uog+x tmp/tanssi_rt
-          tmp/tanssi_rt build-spec --chain ${{ matrix.chain }}-local > tmp/${{ matrix.chain }}-plain-spec.json
-          pnpm tsx scripts/modify-plain-specs.ts process tmp/${{ matrix.chain }}-plain-spec.json tmp/${{ matrix.chain }}-modified-spec.json 
-          tmp/tanssi_rt build-spec --chain tmp/${{ matrix.chain }}-modified-spec.json --raw > tmp/${{ matrix.chain }}-raw-spec.json
+                  ## Run tests
 
-          ## Run tests
+                  pnpm moonwall test zombie_${{ matrix.chain }}_upgrade
+            - name: Zip and Upload Node Logs on Failure
+              if: failure()
+              run: |
+                  TIMESTAMP=$(date +%Y%m%d%H%M%S)
+                  export NODE_LOGS_ZIP="node_logs_$TIMESTAMP.zip"
+                  MOST_RECENT_ZOMBIE_DIR=$(ls -td /tmp/zombie-* | head -n 1)
+                  find $MOST_RECENT_ZOMBIE_DIR -maxdepth 1 -type f -name '*.log' -exec zip -r $NODE_LOGS_ZIP {} \;
+                  echo "NODE_LOGS_ZIP=${NODE_LOGS_ZIP}" >> $GITHUB_ENV
+            - uses: actions/upload-artifact@v3.1.2
+              if: failure()
+              with:
+                  name: failed-node-logs
+                  path: ${{ env.NODE_LOGS_ZIP }}
 
-          pnpm moonwall test zombie_${{ matrix.chain }}_upgrade
-      - name: Zip and Upload Node Logs on Failure
-        if: failure()
-        run: |
-          TIMESTAMP=$(date +%Y%m%d%H%M%S)
-          export NODE_LOGS_ZIP="node_logs_$TIMESTAMP.zip"
-          MOST_RECENT_ZOMBIE_DIR=$(ls -td /tmp/zombie-* | head -n 1)
-          find $MOST_RECENT_ZOMBIE_DIR -maxdepth 1 -type f -name '*.log' -exec zip -r $NODE_LOGS_ZIP {} \;
-          echo "NODE_LOGS_ZIP=${NODE_LOGS_ZIP}" >> $GITHUB_ENV
-      - uses: actions/upload-artifact@v3.1.2
-        if: failure()
-        with:
-          name: failed-node-logs
-          path: ${{ env.NODE_LOGS_ZIP }}
-
-  docker-tanssi:
-    runs-on: ubuntu-latest
-    needs: ["set-tags", "build"]
-    strategy:
-      matrix:
-        image:
-          [
-            "tanssi",
-            "container-chain-simple-template",
-            "container-chain-evm-template",
-          ]
-    if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: build
-      - name: Prepare
-        id: prep
-        run: |
-          DOCKER_IMAGE=moondancelabs/${{matrix.image}}
-          TAGS="${DOCKER_IMAGE}:sha-${{ needs.set-tags.outputs.sha8 }}"
-          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
-          echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2.1.0
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2.5.0
-        with:
-          version: latest
-          driver-opts: |
-            image=moby/buildkit:master
-      - name: Login to DockerHub
-        uses: docker/login-action@v2.2.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push
-        id: docker_build
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: ./docker/${{matrix.image}}.Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.prep.outputs.tags }}
-          labels: |
-            org.opencontainers.image.title=${{ github.event.repository.name }}
-            org.opencontainers.image.description=${{ github.event.repository.description }}
-            org.opencontainers.image.url=${{ github.event.repository.html_url }}
-            org.opencontainers.image.source=${{ github.event.repository.clone_url }}
-            org.opencontainers.image.created=${{ steps.prep.outputs.created }}
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
+    docker-tanssi:
+        runs-on: ubuntu-latest
+        needs: ["set-tags", "build"]
+        strategy:
+            matrix:
+                image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+        if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - uses: actions/download-artifact@v3.0.2
+              with:
+                  name: binaries
+                  path: build
+            - name: Prepare
+              id: prep
+              run: |
+                  DOCKER_IMAGE=moondancelabs/${{matrix.image}}
+                  TAGS="${DOCKER_IMAGE}:sha-${{ needs.set-tags.outputs.sha8 }}"
+                  echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+                  echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+            - name: Set up QEMU
+              uses: docker/setup-qemu-action@v2.1.0
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v2.5.0
+              with:
+                  version: latest
+                  driver-opts: |
+                      image=moby/buildkit:master
+            - name: Login to DockerHub
+              uses: docker/login-action@v2.2.0
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+            - name: Build and push
+              id: docker_build
+              uses: docker/build-push-action@v4
+              with:
+                  context: .
+                  file: ./docker/${{matrix.image}}.Dockerfile
+                  platforms: linux/amd64
+                  push: true
+                  tags: ${{ steps.prep.outputs.tags }}
+                  labels: |
+                      org.opencontainers.image.title=${{ github.event.repository.name }}
+                      org.opencontainers.image.description=${{ github.event.repository.description }}
+                      org.opencontainers.image.url=${{ github.event.repository.html_url }}
+                      org.opencontainers.image.source=${{ github.event.repository.clone_url }}
+                      org.opencontainers.image.created=${{ steps.prep.outputs.created }}
+                      org.opencontainers.image.revision=${{ github.sha }}
+                      org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
