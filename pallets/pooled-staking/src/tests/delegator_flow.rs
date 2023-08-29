@@ -49,13 +49,14 @@ pool_test!(
     fn delegation_request<P>() {
         ExtBuilder::default().build().execute_with(|| {
             let amount = 3324;
-            do_request_delegation(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                P::target_pool(),
-                amount + 1, // to test joining rounding
-                amount,
-            );
+            RequestDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                pool: P::target_pool(),
+                amount: amount + 1, // to test joining rounding
+                expected_joining: amount,
+            }
+            .test();
 
             assert_eq_events!(vec![
                 Event::IncreasedStake {
@@ -117,13 +118,14 @@ pool_test!(
             let final_amount = 2 * InitialManualClaimShareValue::get();
             let requested_amount = final_amount + 10; // test share rounding
 
-            do_full_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                requested_amount,
-                final_amount,
-                0,
-            );
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: requested_amount,
+                expected_increase: final_amount,
+                ..default()
+            }
+            .test::<P>();
 
             assert_eq_events!(vec![
                 Event::IncreasedStake {
@@ -172,13 +174,15 @@ pool_test!(
         ExtBuilder::default().build().execute_with(|| {
             let final_amount = 2 * InitialManualClaimShareValue::get();
             let block_number = block_number();
-            do_request_delegation(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                P::target_pool(),
-                final_amount,
-                final_amount,
-            );
+
+            RequestDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                pool: P::target_pool(),
+                amount: final_amount,
+                expected_joining: final_amount,
+            }
+            .test();
             roll_to(block_number + BLOCKS_TO_WAIT - 1); // too soon
 
             assert_noop!(
@@ -201,24 +205,26 @@ pool_test!(
             let final_amount = 2 * InitialManualClaimShareValue::get();
             let leaving_amount = round_down(final_amount, 3); // test leaving rounding
 
-            do_full_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                final_amount,
-                final_amount,
-                0,
-            );
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: final_amount,
+                expected_increase: final_amount,
+                ..default()
+            }
+            .test::<P>();
 
             let block_number = block_number();
-            do_request_undelegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                SharesOrStake::Stake(final_amount),
-                final_amount,
-                leaving_amount,
-                0,
-                0,
-            );
+
+            RequestUndelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: SharesOrStake::Stake(final_amount),
+                expected_removed: final_amount,
+                expected_leaving: leaving_amount,
+                ..default()
+            }
+            .test::<P>();
 
             roll_to(block_number + BLOCKS_TO_WAIT - 1); // too soon
             assert_noop!(
@@ -247,22 +253,24 @@ pool_test!(
 
             assert_eq!(leaving_amount, 1_999_998);
 
-            do_full_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                requested_amount,
-                final_amount,
-                0,
-            );
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: requested_amount,
+                expected_increase: final_amount,
+                ..default()
+            }
+            .test::<P>();
 
-            do_full_undelegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                SharesOrStake::Stake(final_amount),
-                final_amount,
-                leaving_amount,
-                0,
-            );
+            FullUndelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: SharesOrStake::Stake(final_amount),
+                expected_removed: final_amount,
+                expected_leaving: leaving_amount,
+                ..default()
+            }
+            .test::<P>();
 
             assert_eq_events!(vec![
                 // delegate request
@@ -344,22 +352,24 @@ pool_test!(
 
             assert_eq!(leaving_amount, 999_999);
 
-            do_full_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                joining_requested_amount,
-                joining_amount,
-                0,
-            );
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: joining_requested_amount,
+                expected_increase: joining_amount,
+                ..default()
+            }
+            .test::<P>();
 
-            do_full_undelegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                SharesOrStake::Shares(1),
-                leaving_requested_amount,
-                leaving_amount,
-                0,
-            );
+            FullUndelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: SharesOrStake::Shares(1),
+                expected_removed: leaving_requested_amount,
+                expected_leaving: leaving_amount,
+                ..default()
+            }
+            .test::<P>();
 
             assert_eq_events!(vec![
                 // delegate request

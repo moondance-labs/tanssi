@@ -38,13 +38,14 @@ fn first_delegation_init_checkpoint() {
         assert_eq!(pending_rewards(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1), 0);
 
         let amount = 2 * InitialManualClaimShareValue::get();
-        do_full_delegation::<pools::ManualRewards<Runtime>>(
-            ACCOUNT_CANDIDATE_1,
-            ACCOUNT_DELEGATOR_1,
-            amount,
-            amount,
-            0,
-        );
+        FullDelegation {
+            candidate: ACCOUNT_CANDIDATE_1,
+            delegator: ACCOUNT_DELEGATOR_1,
+            request_amount: amount,
+            expected_increase: amount,
+            ..default()
+        }
+        .test::<pools::ManualRewards<Runtime>>();
 
         let checkpoint = crate::Pools::<Runtime>::get(
             ACCOUNT_CANDIDATE_1,
@@ -61,13 +62,14 @@ fn first_delegation_init_checkpoint() {
 fn second_delegation_transfer_rewards() {
     ExtBuilder::default().build().execute_with(|| {
         let amount = 2 * InitialManualClaimShareValue::get();
-        do_full_delegation::<pools::ManualRewards<Runtime>>(
-            ACCOUNT_CANDIDATE_1,
-            ACCOUNT_DELEGATOR_1,
-            amount,
-            amount,
-            0,
-        );
+        FullDelegation {
+            candidate: ACCOUNT_CANDIDATE_1,
+            delegator: ACCOUNT_DELEGATOR_1,
+            request_amount: amount,
+            expected_increase: amount,
+            ..default()
+        }
+        .test::<pools::ManualRewards<Runtime>>();
 
         // Set counter to simulate rewards.
         let counter = 10;
@@ -83,13 +85,15 @@ fn second_delegation_transfer_rewards() {
             expected_rewards
         );
 
-        do_full_delegation::<pools::ManualRewards<Runtime>>(
-            ACCOUNT_CANDIDATE_1,
-            ACCOUNT_DELEGATOR_1,
-            amount,
-            amount,
-            expected_rewards,
-        );
+        FullDelegation {
+            candidate: ACCOUNT_CANDIDATE_1,
+            delegator: ACCOUNT_DELEGATOR_1,
+            request_amount: amount,
+            expected_increase: amount,
+            expected_manual_rewards: expected_rewards,
+            ..default()
+        }
+        .test::<pools::ManualRewards<Runtime>>();
 
         let checkpoint = crate::Pools::<Runtime>::get(
             ACCOUNT_CANDIDATE_1,
@@ -106,13 +110,14 @@ fn second_delegation_transfer_rewards() {
 fn undelegation_transfer_rewards() {
     ExtBuilder::default().build().execute_with(|| {
         let amount = 2 * InitialManualClaimShareValue::get();
-        do_full_delegation::<pools::ManualRewards<Runtime>>(
-            ACCOUNT_CANDIDATE_1,
-            ACCOUNT_DELEGATOR_1,
-            amount,
-            amount,
-            0,
-        );
+        FullDelegation {
+            candidate: ACCOUNT_CANDIDATE_1,
+            delegator: ACCOUNT_DELEGATOR_1,
+            request_amount: amount,
+            expected_increase: amount,
+            ..default()
+        }
+        .test::<pools::ManualRewards<Runtime>>();
 
         // Set counter to simulate rewards.
         let counter = 10;
@@ -131,15 +136,16 @@ fn undelegation_transfer_rewards() {
         let final_amount = 2 * InitialManualClaimShareValue::get();
         let leaving_amount = round_down(final_amount, 3); // test leaving rounding
 
-        do_request_undelegation::<pools::ManualRewards<Runtime>>(
-            ACCOUNT_CANDIDATE_1,
-            ACCOUNT_DELEGATOR_1,
-            SharesOrStake::Stake(final_amount),
-            final_amount,
-            leaving_amount,
-            expected_rewards,
-            0,
-        );
+        RequestUndelegation {
+            candidate: ACCOUNT_CANDIDATE_1,
+            delegator: ACCOUNT_DELEGATOR_1,
+            request_amount: SharesOrStake::Stake(final_amount),
+            expected_removed: final_amount,
+            expected_leaving: leaving_amount,
+            expected_manual_rewards: expected_rewards,
+            ..default()
+        }
+        .test::<pools::ManualRewards<Runtime>>();
 
         let checkpoint = crate::Pools::<Runtime>::get(
             ACCOUNT_CANDIDATE_1,

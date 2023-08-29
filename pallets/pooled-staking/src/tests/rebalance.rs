@@ -25,13 +25,14 @@ pool_test!(
             let rewards = 5 * KILO;
             let final_amount = initial_amount + rewards;
 
-            do_full_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                initial_amount,
-                initial_amount,
-                0,
-            );
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: initial_amount,
+                expected_increase: initial_amount,
+                ..default()
+            }
+            .test::<P>();
 
             // We then artificialy distribute rewards by increasing the value of the pool
             // and minting currency to the staking account (this is not how manual rewards would
@@ -89,13 +90,14 @@ pool_test!(
             let slash = 5 * KILO;
             let final_amount = initial_amount - slash;
 
-            do_full_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                initial_amount,
-                initial_amount,
-                0,
-            );
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: initial_amount,
+                expected_increase: initial_amount,
+                ..default()
+            }
+            .test::<P>();
 
             // We then artificialy slash by decreasing the value of the pool.
             assert_ok!(P::slash_stake_among_holders(
@@ -148,13 +150,14 @@ pool_test!(
             // We naturaly delegate towards a candidate.
             let initial_amount = 2 * InitialManualClaimShareValue::get();
 
-            do_full_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                initial_amount,
-                initial_amount,
-                0,
-            );
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: initial_amount,
+                expected_increase: initial_amount,
+                ..default()
+            }
+            .test::<P>();
 
             // We perform the rebalancing and check nothing happen.
             do_rebalance_hold::<P>(
@@ -175,13 +178,14 @@ pool_test!(
             let leaving_requested_amount = joining_amount + rewards;
             let leaving_amount = round_down(leaving_requested_amount, 3); // test leaving rounding
 
-            do_full_delegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                joining_amount,
-                joining_amount,
-                0,
-            );
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: joining_amount,
+                expected_increase: joining_amount,
+                ..default()
+            }
+            .test::<P>();
 
             // We then artificialy distribute rewards by increasing the value of the pool
             // and minting currency to the staking account (this is not how manual rewards would
@@ -198,15 +202,16 @@ pool_test!(
             assert_eq!(total_balance(&ACCOUNT_STAKING), DEFAULT_BALANCE + rewards);
 
             // We then do the undelegation
-            do_request_undelegation::<P>(
-                ACCOUNT_CANDIDATE_1,
-                ACCOUNT_DELEGATOR_1,
-                SharesOrStake::Stake(leaving_requested_amount),
-                leaving_requested_amount,
-                leaving_amount,
-                0,
-                rewards,
-            );
+            RequestUndelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: SharesOrStake::Stake(leaving_requested_amount),
+                expected_removed: leaving_requested_amount,
+                expected_leaving: leaving_amount,
+                expected_hold_rebalance: rewards,
+                ..default()
+            }
+            .test::<P>();
         })
     }
 );
