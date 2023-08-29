@@ -438,7 +438,6 @@ jobs:
         with:
           node-version: 20.x
           cache: "pnpm"
-          cache-dependency-path: test/pnpm-lock.yaml
       - name: Create local folders
         run: |
           mkdir -p target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
