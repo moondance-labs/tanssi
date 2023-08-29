@@ -14,14 +14,14 @@ npm i @tanssi/api-augment
 
 Add to your codebase entry point before any imports from the API itself.
 
-- `import '@tanssi/api-augment'` - applies Moonbeam types and endpoint augmentation
-- `import '@tanssi/api-augment/dancebox'` - applies Dancebox types and endpoint augmentation
+-   `import '@tanssi/api-augment'` - applies Moonbeam types and endpoint augmentation
+-   `import '@tanssi/api-augment/dancebox'` - applies Dancebox types and endpoint augmentation
 
 ## Docs
 
-- <a href="https://polkadot.js.org/docs/api/examples/promise/typegen/" target="_blank">@polkadot/api</a> - TS type generation
-- <a href="https://polkadot.js.org/docs/api/FAQ/#since-upgrading-to-the-7x-series-typescript-augmentation-is-missing" target="_blank">@polkadot/api</a> - Since upgrading to the 7.x series, TypeScript augmentation is missing
-- <a href="https://polkadot.js.org/docs/api/start/typescript" target="_blank">@polkadot/api</a> - TypeScript interfaces
+-   <a href="https://polkadot.js.org/docs/api/examples/promise/typegen/" target="_blank">@polkadot/api</a> - TS type generation
+-   <a href="https://polkadot.js.org/docs/api/FAQ/#since-upgrading-to-the-7x-series-typescript-augmentation-is-missing" target="_blank">@polkadot/api</a> - Since upgrading to the 7.x series, TypeScript augmentation is missing
+-   <a href="https://polkadot.js.org/docs/api/start/typescript" target="_blank">@polkadot/api</a> - TypeScript interfaces
 
 ## Publish
 
