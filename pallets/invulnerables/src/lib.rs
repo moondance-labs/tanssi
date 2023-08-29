@@ -119,7 +119,7 @@ pub mod pallet {
                 BoundedVec::<_, T::MaxInvulnerables>::try_from(self.invulnerables.clone())
                     .expect("genesis invulnerables are more than T::MaxInvulnerables");
 
-            bounded_invulnerables.sort();
+            //bounded_invulnerables.sort();
 
             <Invulnerables<T>>::put(bounded_invulnerables);
         }
@@ -201,7 +201,7 @@ pub mod pallet {
                     .map_err(|_| Error::<T>::TooManyInvulnerables)?;
 
             // Invulnerables must be sorted for removal.
-            bounded_invulnerables.sort();
+            //bounded_invulnerables.sort();
 
             <Invulnerables<T>>::put(&bounded_invulnerables);
             Self::deposit_event(Event::NewInvulnerables {
@@ -225,11 +225,18 @@ pub mod pallet {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                match invulnerables.binary_search(&who) {
+                /*match invulnerables.binary_search(&who) {
                     Ok(_) => return Err(Error::<T>::AlreadyInvulnerable)?,
                     Err(pos) => invulnerables
                         .try_insert(pos, who.clone())
                         .map_err(|_| Error::<T>::TooManyInvulnerables)?,
+                }*/
+                if invulnerables.contains(&who) {
+                    return Err(Error::<T>::AlreadyInvulnerable)?;
+                } else {
+                    invulnerables
+                        .try_push(who.clone())
+                        .map_err(|_| Error::<T>::TooManyInvulnerables)?
                 }
                 Ok(())
             })?;
@@ -256,10 +263,11 @@ pub mod pallet {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                let pos = invulnerables
-                    .binary_search(&who)
-                    .map_err(|_| Error::<T>::NotInvulnerable)?;
-                invulnerables.remove(pos);
+                if let Some(pos) = invulnerables.iter().position(|x| x == &who) {
+                    invulnerables.remove(pos);
+                } else {
+                    return Err(Error::<T>::TooManyInvulnerables)?;
+                }
                 Ok(())
             })?;
 
