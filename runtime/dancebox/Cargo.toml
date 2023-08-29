@@ -86,7 +86,6 @@ cumulus-pallet-xcmp-queue = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
-pallet-collator-selection = { workspace = true }
 pallet-invulnerables = { workspace = true }
 parachain-info = { workspace = true }
 
@@ -139,7 +138,6 @@ std = [
 	"pallet-authority-assignment/std",
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
-	"pallet-collator-selection/std",
 	"pallet-configuration/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
@@ -190,7 +188,6 @@ runtime-benchmarks = [
 	"pallet-author-noting/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
-	"pallet-collator-selection/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
@@ -216,7 +213,6 @@ try-runtime = [
 	"pallet-authority-mapping/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-collator-assignment/try-runtime",
-	"pallet-collator-selection/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-migrations/try-runtime",

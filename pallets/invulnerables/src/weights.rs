@@ -103,9 +103,22 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(1))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-
-	fn new_session(_b: u32) -> Weight {
-		Default::default()
+	/// Storage: Invulnerables Invulnerables (r:1 w:0)
+	/// Proof: Invulnerables Invulnerables (max_values: Some(1), max_size: Some(3202), added: 3697, mode: MaxEncodedLen)
+	/// Storage: System BlockWeight (r:1 w:1)
+	/// Proof: System BlockWeight (max_values: Some(1), max_size: Some(48), added: 543, mode: MaxEncodedLen)
+	/// The range of component `r` is `[1, 100]`.
+	fn new_session(r: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `70 + r * (32 ±0)`
+		//  Estimated: `4687`
+		// Minimum execution time: 5_890_000 picoseconds.
+		Weight::from_parts(6_573_828, 0)
+			.saturating_add(Weight::from_parts(0, 4687))
+			// Standard Error: 320
+			.saturating_add(Weight::from_parts(23_673, 0).saturating_mul(r.into()))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 }
 
@@ -156,8 +169,22 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
 
-	fn new_session(_b: u32) -> Weight {
-		Default::default()
+		/// Storage: Invulnerables Invulnerables (r:1 w:0)
+	/// Proof: Invulnerables Invulnerables (max_values: Some(1), max_size: Some(3202), added: 3697, mode: MaxEncodedLen)
+	/// Storage: System BlockWeight (r:1 w:1)
+	/// Proof: System BlockWeight (max_values: Some(1), max_size: Some(48), added: 543, mode: MaxEncodedLen)
+	/// The range of component `r` is `[1, 100]`.
+	fn new_session(r: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `70 + r * (32 ±0)`
+		//  Estimated: `4687`
+		// Minimum execution time: 5_890_000 picoseconds.
+		Weight::from_parts(6_573_828, 0)
+			.saturating_add(Weight::from_parts(0, 4687))
+			// Standard Error: 320
+			.saturating_add(Weight::from_parts(23_673, 0).saturating_mul(r.into()))
+			.saturating_add(RocksDbWeight::get().reads(2))
+			.saturating_add(RocksDbWeight::get().writes(1))
 	}
 
 }

@@ -21,12 +21,9 @@
 use super::*;
 
 #[allow(unused)]
-use crate::Pallet as CollatorSelection;
+use crate::Pallet as InvulnerablesPallet;
 use frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError};
-use frame_support::{
-    codec::Decode,
-    traits::{Currency, EnsureOrigin, Get},
-};
+use frame_support::{pallet_prelude::*, traits::Currency};
 use frame_system::{EventRecord, RawOrigin};
 use pallet_session::{self as session, SessionManager};
 use sp_std::prelude::*;
@@ -41,26 +38,17 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     assert_eq!(event, &system_event);
 }
 
-fn create_user<T: Config>(string: &'static str, n: u32) -> T::AccountId {
-    account(string, n, SEED)
-}
-
-fn invulnerable<T: Config + frame_system::Config>(c: u32) -> T::AccountId {
-    create_user::<T>("candidate", c)
-}
-
-fn invulnerables<T: Config + frame_system::Config>(count: u32) -> Vec<T::AccountId> {
-    (0..count).map(|c| invulnerable::<T>(c)).collect::<Vec<_>>()
-}
-
-fn create_funded_user<T: Config>(
+fn create_funded_user<T: Config + pallet_balances::Config>(
     string: &'static str,
     n: u32,
     balance_factor: u32,
 ) -> T::AccountId {
     let user = account(string, n, SEED);
-    let balance = T::Currency::minimum_balance() * balance_factor.into();
-    let _ = T::Currency::make_free_balance_be(&user, balance);
+    let balance = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::minimum_balance()
+        * balance_factor.into();
+    let _ = <pallet_balances::Pallet<T> as Currency<T::AccountId>>::make_free_balance_be(
+        &user, balance,
+    );
     user
 }
 
@@ -81,21 +69,27 @@ fn keys<T: Config + session::Config>(c: u32) -> <T as session::Config>::Keys {
     Decode::decode(&mut &keys[..]).unwrap()
 }
 
-fn validator<T: Config + session::Config>(c: u32) -> (T::AccountId, <T as session::Config>::Keys) {
-    (create_funded_user::<T>("candidate", c, 1000), keys::<T>(c))
+fn invulnerable<T: Config + session::Config + pallet_balances::Config>(
+    c: u32,
+) -> (T::AccountId, <T as session::Config>::Keys) {
+    (create_funded_user::<T>("candidate", c, 100), keys::<T>(c))
 }
 
-fn register_validators<T: Config + session::Config>(count: u32) -> Vec<T::AccountId> {
-    let validators = (0..count).map(|c| validator::<T>(c)).collect::<Vec<_>>();
+fn invulnerables<
+    T: Config + frame_system::Config + pallet_session::Config + pallet_balances::Config,
+>(
+    count: u32,
+) -> Vec<T::AccountId> {
+    let invulnerables = (0..count).map(|c| invulnerable::<T>(c)).collect::<Vec<_>>();
 
-    for (who, keys) in validators.clone() {
+    for (who, keys) in invulnerables.clone() {
         <session::Pallet<T>>::set_keys(RawOrigin::Signed(who).into(), keys, Vec::new()).unwrap();
     }
 
-    validators.into_iter().map(|(who, _)| who).collect()
+    invulnerables.into_iter().map(|(who, _)| who).collect()
 }
 
-#[benchmarks(where T: session::Config)]
+#[benchmarks(where T: session::Config + pallet_balances::Config)]
 mod benchmarks {
     use super::*;
 
@@ -137,7 +131,7 @@ mod benchmarks {
             frame_support::BoundedVec::try_from(invulnerables).unwrap();
         <Invulnerables<T>>::put(invulnerables);
 
-        let new_invulnerable = invulnerable::<T>(b + 1);
+        let new_invulnerable = invulnerable::<T>(b + 1).0;
 
         #[extrinsic_call]
         _(origin as T::RuntimeOrigin, new_invulnerable.clone());
@@ -178,24 +172,27 @@ mod benchmarks {
 
     // worst case for new session.
     #[benchmark]
-    fn new_session(r: Linear<1, { T::MaxInvulnerables::get() }>) {
+    fn new_session(r: Linear<1, { T::MaxInvulnerables::get() }>) -> Result<(), BenchmarkError> {
+        let origin =
+            T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+
         frame_system::Pallet::<T>::set_block_number(0u32.into());
-        register_validators::<T>(r);
         // now we need to fill up invulnerables
         let mut invulnerables = invulnerables::<T>(r);
         invulnerables.sort();
-        let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
-            frame_support::BoundedVec::try_from(invulnerables).unwrap();
-        <Invulnerables<T>>::put(invulnerables);
+        <InvulnerablesPallet<T>>::set_invulnerables(origin, invulnerables)
+            .expect("set invulnerables failed");
 
         #[block]
         {
-            <CollatorSelection<T> as SessionManager<_>>::new_session(0);
+            <InvulnerablesPallet<T> as SessionManager<_>>::new_session(0);
         }
+
+        Ok(())
     }
 
     impl_benchmark_test_suite!(
-        CollatorSelection,
+        InvulnerablesPallet,
         crate::mock::new_test_ext(),
         crate::mock::Test,
     );

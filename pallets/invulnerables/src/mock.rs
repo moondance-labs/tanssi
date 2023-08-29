@@ -114,11 +114,10 @@ impl Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureSignedBy<RootAccount, u64>;
     type MaxInvulnerables = ConstU32<20>;
+    type CollatorId = <Self as frame_system::Config>::AccountId;
+    type CollatorIdOf = IdentityCollator;
+    type CollatorRegistration = IsRegistered;
     type WeightInfo = ();
-    type Currency = Balances;
-    type ValidatorId = <Self as frame_system::Config>::AccountId;
-    type ValidatorIdOf = IdentityCollator;
-    type ValidatorRegistration = IsRegistered;
 }
 
 sp_runtime::impl_opaque_keys! {
@@ -158,14 +157,6 @@ parameter_types! {
     pub const Offset: u64 = 0;
     pub const Period: u64 = 10;
 }
-/// A convertor from collators id. Since this pallet does not have stash/controller, this is
-/// just identity.
-pub struct IdentityCollator;
-impl<T> sp_runtime::traits::Convert<T, Option<T>> for IdentityCollator {
-    fn convert(t: T) -> Option<T> {
-        Some(t)
-    }
-}
 
 impl pallet_session::Config for Test {
     type RuntimeEvent = RuntimeEvent;
@@ -200,6 +191,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         })
         .collect::<Vec<_>>();
     let session = pallet_session::GenesisConfig::<Test> { keys };
+    pallet_balances::GenesisConfig::<Test> { balances }
+        .assimilate_storage(&mut t)
+        .unwrap();
     GenesisBuild::<Test>::assimilate_storage(
         &invulnerables::GenesisConfig { invulnerables },
         &mut t,

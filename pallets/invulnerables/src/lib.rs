@@ -41,11 +41,8 @@ pub mod weights;
 pub mod pallet {
     pub use crate::weights::WeightInfo;
     use frame_support::{
-        dispatch::DispatchResultWithPostInfo,
-        pallet_prelude::*,
-        traits::EnsureOrigin,
-        traits::{ReservableCurrency, ValidatorRegistration},
-        BoundedVec, DefaultNoBound,
+        dispatch::DispatchResultWithPostInfo, pallet_prelude::*, traits::EnsureOrigin,
+        traits::ValidatorRegistration, BoundedVec, DefaultNoBound,
     };
     use frame_system::pallet_prelude::*;
     use sp_runtime::traits::Convert;
@@ -54,14 +51,20 @@ pub mod pallet {
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
 
+    /// A convertor from collators id. Since this pallet does not have stash/controller, this is
+    /// just identity.
+    pub struct IdentityCollator;
+    impl<T> sp_runtime::traits::Convert<T, Option<T>> for IdentityCollator {
+        fn convert(t: T) -> Option<T> {
+            Some(t)
+        }
+    }
+
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// Overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
-        /// The currency mechanism.
-        type Currency: ReservableCurrency<Self::AccountId>;
 
         /// Origin that can dictate updating parameters of this pallet.
         type UpdateOrigin: EnsureOrigin<Self::RuntimeOrigin>;
@@ -69,16 +72,16 @@ pub mod pallet {
         /// Maximum number of invulnerables.
         type MaxInvulnerables: Get<u32>;
 
-        /// A stable ID for a validator.
-        type ValidatorId: Member + Parameter;
+        /// A stable ID for a collator.
+        type CollatorId: Member + Parameter;
 
-        /// A conversion from account ID to validator ID.
+        /// A conversion from account ID to collator ID.
         ///
         /// Its cost must be at most one storage read.
-        type ValidatorIdOf: Convert<Self::AccountId, Option<Self::ValidatorId>>;
+        type CollatorIdOf: Convert<Self::AccountId, Option<Self::CollatorId>>;
 
         /// Validate a user is registered
-        type ValidatorRegistration: ValidatorRegistration<Self::ValidatorId>;
+        type CollatorRegistration: ValidatorRegistration<Self::CollatorId>;
 
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
@@ -168,11 +171,11 @@ pub mod pallet {
             // check if the invulnerables have associated validator keys before they are set
             for account_id in &new {
                 // don't let one unprepared collator ruin things for everyone.
-                let validator_key = T::ValidatorIdOf::convert(account_id.clone());
+                let validator_key = T::CollatorIdOf::convert(account_id.clone());
                 match validator_key {
                     Some(key) => {
                         // key is not registered
-                        if !T::ValidatorRegistration::is_registered(&key) {
+                        if !T::CollatorRegistration::is_registered(&key) {
                             Self::deposit_event(Event::InvalidInvulnerableSkipped {
                                 account_id: account_id.clone(),
                             });
@@ -278,7 +281,6 @@ pub mod pallet {
             );
 
             let invulnerables = Self::invulnerables().to_vec();
-
             frame_system::Pallet::<T>::register_extra_weight_unchecked(
                 T::WeightInfo::new_session(invulnerables.len() as u32),
                 DispatchClass::Mandatory,
