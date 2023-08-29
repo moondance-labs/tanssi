@@ -12,7 +12,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
-rand = { version = "0.8.5", features = ["std_rng"], default-features = false }
+rand = { workspace = true, optional = true }
 scale-info = { workspace = true, features = ["derive"] }
 
 sp-std = { workspace = true }
@@ -24,7 +24,7 @@ frame-system = { workspace = true }
 frame-benchmarking = { workspace = true }
 
 pallet-session = { workspace = true }
-pallet-balances = { workspace = true }
+pallet-balances = { workspace = true, optional = true }
 
 [dev-dependencies]
 sp-core = { workspace = true }
@@ -36,6 +36,8 @@ runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	"rand",
 ]
 std = [
 	"parity-scale-codec/std",
