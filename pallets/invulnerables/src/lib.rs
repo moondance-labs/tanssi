@@ -251,10 +251,11 @@ pub mod pallet {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                if !invulnerables.contains(&who) {
-                    return Err(Error::<T>::NotInvulnerable)?;
-                }
-                invulnerables.retain(|c| c != &who);
+                let pos = invulnerables
+                    .iter()
+                    .position(|x| x == &who)
+                    .ok_or(Error::<T>::NotInvulnerable)?;
+                invulnerables.remove(pos);
                 Ok(())
             })?;
 
