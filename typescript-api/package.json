@@ -15,9 +15,11 @@
         "node": ">=16.0.0"
     },
     "scripts": {
-        "create-local-interfaces": "pnpm tsx ./scripts/runtime-upgrade.ts",
-        "generate": "pnpm run load:meta && npm run generate:defs && npm run generate:meta",
+        "create-local-interfaces": "pnpm tsx ./scripts/runtime-upgrade.ts && pnpm fmt:fix",
+        "generate": "pnpm run load:meta && pnpm run generate:defs && pnpm run generate:meta",
         "clean": "pnpm exec rm -rf node_modules && pnpm exec rm -rf build",
+        "fmt": "prettier --check --ignore-path ../.prettierignore ./",
+        "fmt:fix": "prettier --write --ignore-path ../.prettierignore 'src'",
         "postgenerate": "pnpm run pretty",
         "load:meta:local": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' http://localhost:9933 > metadata-dancebox.json",
         "generate:defs": "pnpm run generate:defs:dancebox",
@@ -82,7 +84,7 @@
     },
     "devDependencies": {
         "@polkadot/typegen": "latest",
-        "prettier": "^2.7.1",
+        "prettier": "^2.8.8",
         "prettier-plugin-jsdoc": "^0.3.38",
         "tsx": "^3.12.7",
         "typescript": "^5.1.6"
