@@ -188,13 +188,13 @@ pub mod pallet {
 
     /// Wrapper type for an amount of shares.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
-    pub struct Shares<T: Config>(pub T::Balance);
+    #[derive(RuntimeDebug, Default, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    pub struct Shares<T>(pub T);
 
     /// Wrapper type for an amount of staked currency.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
-    pub struct Stake<T: Config>(pub T::Balance);
+    #[derive(RuntimeDebug, Default, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    pub struct Stake<T>(pub T);
 
     /// Pooled Staking pallet.
     #[pallet::pallet]

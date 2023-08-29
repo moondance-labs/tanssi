@@ -16,6 +16,7 @@
 
 mod delegator_flow;
 mod manual_rewards;
+mod rebalance;
 
 use {
     crate::{

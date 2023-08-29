@@ -57,11 +57,14 @@ impl<C: Ord, S: Ord> PartialOrd for EligibleCandidate<C, S> {
 pub struct Candidates<T>(PhantomData<T>);
 
 impl<T: Config> Candidates<T> {
-    pub fn total_stake(candidate: &Candidate<T>) -> Stake<T> {
+    pub fn total_stake(candidate: &Candidate<T>) -> Stake<T::Balance> {
         Stake(Pools::<T>::get(candidate, &PoolsKey::CandidateTotalStake))
     }
 
-    pub fn add_total_stake(candidate: &Candidate<T>, stake: &Stake<T>) -> Result<(), Error<T>> {
+    pub fn add_total_stake(
+        candidate: &Candidate<T>,
+        stake: &Stake<T::Balance>,
+    ) -> Result<(), Error<T>> {
         if stake.0.is_zero() {
             return Ok(());
         }
@@ -78,7 +81,10 @@ impl<T: Config> Candidates<T> {
         Ok(())
     }
 
-    pub fn sub_total_stake(candidate: &Candidate<T>, stake: Stake<T>) -> Result<(), Error<T>> {
+    pub fn sub_total_stake(
+        candidate: &Candidate<T>,
+        stake: Stake<T::Balance>,
+    ) -> Result<(), Error<T>> {
         if stake.0.is_zero() {
             return Ok(());
         }
@@ -95,7 +101,10 @@ impl<T: Config> Candidates<T> {
         Ok(())
     }
 
-    fn update_total_stake(candidate: &Candidate<T>, new_stake: Stake<T>) -> Result<(), Error<T>> {
+    fn update_total_stake(
+        candidate: &Candidate<T>,
+        new_stake: Stake<T::Balance>,
+    ) -> Result<(), Error<T>> {
         let stake_before = Pools::<T>::get(&candidate, &PoolsKey::CandidateTotalStake);
         Pools::<T>::set(&candidate, &PoolsKey::CandidateTotalStake, new_stake.0);
 
@@ -106,7 +115,7 @@ impl<T: Config> Candidates<T> {
         {
             Zero::zero()
         } else {
-            let shares = pools::AutoCompounding::shares(candidate, candidate);
+            let shares = pools::AutoCompounding::<T>::shares(candidate, candidate);
             pools::AutoCompounding::shares_to_stake(candidate, shares)?.0
         };
 
@@ -116,14 +125,14 @@ impl<T: Config> Candidates<T> {
         {
             Zero::zero()
         } else {
-            let shares = pools::ManualRewards::shares(candidate, candidate);
+            let shares = pools::ManualRewards::<T>::shares(candidate, candidate);
             pools::ManualRewards::shares_to_stake(candidate, shares)?.0
         };
 
         let joining_self = if pools::Joining::<T>::shares_supply(&candidate).0.is_zero() {
             Zero::zero()
         } else {
-            let shares = pools::Joining::shares(candidate, candidate);
+            let shares = pools::Joining::<T>::shares(candidate, candidate);
             pools::Joining::shares_to_stake(candidate, shares)?.0
         };
 

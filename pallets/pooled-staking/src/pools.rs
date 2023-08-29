@@ -27,29 +27,32 @@ use {
 
 pub trait Pool<T: Config> {
     /// Get the amount of shares a delegator have for given candidate.
-    fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T>;
+    fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T::Balance>;
     /// Get the total amount of shares all delegators have for given candidate.
-    fn shares_supply(candidate: &Candidate<T>) -> Shares<T>;
+    fn shares_supply(candidate: &Candidate<T>) -> Shares<T::Balance>;
     /// Get the total amount of currency staked for given candidate / the value of all shares.
-    fn total_staked(candidate: &Candidate<T>) -> Stake<T>;
+    fn total_staked(candidate: &Candidate<T>) -> Stake<T::Balance>;
     /// Get the amount of currency held for that pool in the delegator account.
-    fn hold(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Stake<T>;
+    fn hold(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Stake<T::Balance>;
 
     /// Set the amount of shares a delegator have for given candidate.
-    fn set_shares(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Shares<T>);
+    fn set_shares(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Shares<T::Balance>);
     /// Set the total amount of shares all delegators have for given candidate.
-    fn set_shares_supply(candidate: &Candidate<T>, value: Shares<T>);
+    fn set_shares_supply(candidate: &Candidate<T>, value: Shares<T::Balance>);
     /// Set the total amount of currency staked for given candidate / the value of all shares.
-    fn set_total_staked(candidate: &Candidate<T>, value: Stake<T>);
+    fn set_total_staked(candidate: &Candidate<T>, value: Stake<T::Balance>);
     /// Set the amount of currency held for that pool in the delegator account.
-    fn set_hold(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Stake<T>);
+    fn set_hold(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Stake<T::Balance>);
 
     /// Get the initial value of a share in case none exist yet.
-    fn initial_share_value() -> Stake<T>;
+    fn initial_share_value() -> Stake<T::Balance>;
 
     /// Convert an amount of shares to an amount of staked currency for given candidate.
     /// Returns an error if there are no shares for that candidate.
-    fn shares_to_stake(candidate: &Candidate<T>, shares: Shares<T>) -> Result<Stake<T>, Error<T>> {
+    fn shares_to_stake(
+        candidate: &Candidate<T>,
+        shares: Shares<T::Balance>,
+    ) -> Result<Stake<T::Balance>, Error<T>> {
         let total_staked = Self::total_staked(candidate).0;
         let supply = Self::shares_supply(candidate).0;
         ensure!(!supply.is_zero(), Error::NoOneIsStaking);
@@ -61,8 +64,8 @@ pub trait Pool<T: Config> {
     /// If this candidate have no shares then it uses `initial_share_value` to compute the value.
     fn shares_to_stake_or_init(
         candidate: &Candidate<T>,
-        shares: Shares<T>,
-    ) -> Result<Stake<T>, Error<T>> {
+        shares: Shares<T::Balance>,
+    ) -> Result<Stake<T::Balance>, Error<T>> {
         if Self::total_staked(candidate).0.is_zero() {
             Ok(Stake(shares.0.err_mul(&Self::initial_share_value().0)?))
         } else {
@@ -72,7 +75,10 @@ pub trait Pool<T: Config> {
 
     /// Convert an amount of staked currency to an amount of shares for given candidate.
     /// Returns an error if there are no shares for that candidate.
-    fn stake_to_shares(candidate: &Candidate<T>, stake: Stake<T>) -> Result<Shares<T>, Error<T>> {
+    fn stake_to_shares(
+        candidate: &Candidate<T>,
+        stake: Stake<T::Balance>,
+    ) -> Result<Shares<T::Balance>, Error<T>> {
         let total_staked = Self::total_staked(candidate).0;
         let supply = Self::shares_supply(candidate).0;
         ensure!(!supply.is_zero(), Error::NoOneIsStaking);
@@ -83,7 +89,7 @@ pub trait Pool<T: Config> {
     fn computed_stake(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
-    ) -> Result<Stake<T>, Error<T>> {
+    ) -> Result<Stake<T::Balance>, Error<T>> {
         let shares = Self::shares(candidate, delegator);
         if shares.0.is_zero() {
             return Ok(Stake(Zero::zero()));
@@ -96,8 +102,8 @@ pub trait Pool<T: Config> {
     /// If this candidate have no shares then it uses `initial_share_value` to compute the value.
     fn stake_to_shares_or_init(
         candidate: &Candidate<T>,
-        stake: Stake<T>,
-    ) -> Result<Shares<T>, Error<T>> {
+        stake: Stake<T::Balance>,
+    ) -> Result<Shares<T::Balance>, Error<T>> {
         if Self::total_staked(candidate).0.is_zero() {
             Ok(Shares(
                 stake
@@ -114,7 +120,7 @@ pub trait Pool<T: Config> {
     /// the value of each share.
     fn share_stake_among_holders(
         candidate: &Candidate<T>,
-        stake: Stake<T>,
+        stake: Stake<T::Balance>,
     ) -> Result<(), Error<T>> {
         let total_staked = Self::total_staked(candidate).0;
         let total_staked = total_staked.err_add(&stake.0)?;
@@ -126,7 +132,7 @@ pub trait Pool<T: Config> {
     /// the value of each share.
     fn slash_stake_among_holders(
         candidate: &Candidate<T>,
-        stake: Stake<T>,
+        stake: Stake<T::Balance>,
     ) -> Result<(), Error<T>> {
         let total_staked = Self::total_staked(candidate).0;
         let total_staked = total_staked.err_sub(&stake.0)?;
@@ -140,8 +146,8 @@ pub trait Pool<T: Config> {
     fn add_shares(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
-        shares: Shares<T>,
-    ) -> Result<Stake<T>, Error<T>> {
+        shares: Shares<T::Balance>,
+    ) -> Result<Stake<T::Balance>, Error<T>> {
         ensure!(!shares.0.is_zero(), Error::StakeMustBeNonZero);
 
         let stake = Self::shares_to_stake_or_init(candidate, shares.clone())?;
@@ -163,8 +169,8 @@ pub trait Pool<T: Config> {
     fn sub_shares(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
-        shares: Shares<T>,
-    ) -> Result<Stake<T>, Error<T>> {
+        shares: Shares<T::Balance>,
+    ) -> Result<Stake<T::Balance>, Error<T>> {
         ensure!(!shares.0.is_zero(), Error::StakeMustBeNonZero);
 
         let stake = Self::shares_to_stake(candidate, shares.clone())?;
@@ -183,7 +189,7 @@ pub trait Pool<T: Config> {
     fn increase_hold(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
-        stake: &Stake<T>,
+        stake: &Stake<T::Balance>,
     ) -> Result<(), Error<T>> {
         let hold = Self::hold(candidate, delegator);
         let hold = hold.0.err_add(&stake.0)?;
@@ -194,7 +200,7 @@ pub trait Pool<T: Config> {
     fn decrease_hold(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
-        stake: &Stake<T>,
+        stake: &Stake<T::Balance>,
     ) -> Result<(), Error<T>> {
         let hold = Self::hold(candidate, delegator);
         let hold = hold.0.err_sub(&stake.0)?;
@@ -225,7 +231,7 @@ macro_rules! impl_pool {
     ($name:ident, $shares:ident, $supply:ident, $total:ident, $hold: ident, $init:expr $(,)?) => {
         pub struct $name<T>(PhantomData<T>);
         impl<T: Config> Pool<T> for $name<T> {
-            fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T> {
+            fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T::Balance> {
                 Shares(Pools::<T>::get(
                     candidate,
                     &PoolsKey::$shares {
@@ -234,15 +240,15 @@ macro_rules! impl_pool {
                 ))
             }
 
-            fn shares_supply(candidate: &Candidate<T>) -> Shares<T> {
+            fn shares_supply(candidate: &Candidate<T>) -> Shares<T::Balance> {
                 Shares(Pools::<T>::get(candidate, &PoolsKey::$supply))
             }
 
-            fn total_staked(candidate: &Candidate<T>) -> Stake<T> {
+            fn total_staked(candidate: &Candidate<T>) -> Stake<T::Balance> {
                 Stake(Pools::<T>::get(candidate, &PoolsKey::$total))
             }
 
-            fn hold(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Stake<T> {
+            fn hold(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Stake<T::Balance> {
                 Stake(Pools::<T>::get(
                     candidate,
                     &PoolsKey::$hold {
@@ -251,7 +257,11 @@ macro_rules! impl_pool {
                 ))
             }
 
-            fn set_shares(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Shares<T>) {
+            fn set_shares(
+                candidate: &Candidate<T>,
+                delegator: &Delegator<T>,
+                value: Shares<T::Balance>,
+            ) {
                 Pools::<T>::set(
                     candidate,
                     &PoolsKey::$shares {
@@ -261,15 +271,19 @@ macro_rules! impl_pool {
                 )
             }
 
-            fn set_shares_supply(candidate: &Candidate<T>, value: Shares<T>) {
+            fn set_shares_supply(candidate: &Candidate<T>, value: Shares<T::Balance>) {
                 Pools::<T>::set(candidate, &PoolsKey::$supply, value.0)
             }
 
-            fn set_total_staked(candidate: &Candidate<T>, value: Stake<T>) {
+            fn set_total_staked(candidate: &Candidate<T>, value: Stake<T::Balance>) {
                 Pools::<T>::set(candidate, &PoolsKey::$total, value.0)
             }
 
-            fn set_hold(candidate: &Candidate<T>, delegator: &Delegator<T>, value: Stake<T>) {
+            fn set_hold(
+                candidate: &Candidate<T>,
+                delegator: &Delegator<T>,
+                value: Stake<T::Balance>,
+            ) {
                 Pools::<T>::set(
                     candidate,
                     &PoolsKey::$hold {
@@ -279,7 +293,7 @@ macro_rules! impl_pool {
                 )
             }
 
-            fn initial_share_value() -> Stake<T> {
+            fn initial_share_value() -> Stake<T::Balance> {
                 Stake($init)
             }
         }
@@ -327,7 +341,7 @@ impl<T: Config> ManualRewards<T> {
     pub fn pending_rewards(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
-    ) -> Result<Stake<T>, Error<T>> {
+    ) -> Result<Stake<T::Balance>, Error<T>> {
         let shares = Self::shares(candidate, delegator);
 
         if shares.0.is_zero() {
@@ -350,7 +364,7 @@ impl<T: Config> ManualRewards<T> {
     pub fn claim_rewards(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
-    ) -> Result<Stake<T>, Error<T>> {
+    ) -> Result<Stake<T::Balance>, Error<T>> {
         let shares = Self::shares(candidate, delegator);
 
         let counter = Pools::<T>::get(candidate, &PoolsKey::ManualRewardsCounter);

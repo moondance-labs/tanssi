@@ -365,7 +365,7 @@ impl<T: Config> Calls<T> {
         candidate: Candidate<T>,
         delegator: Delegator<T>,
         pool: TargetPool,
-        joining_shares: Shares<T>,
+        joining_shares: Shares<T::Balance>,
     ) -> DispatchResultWithPostInfo {
         // Convert joining shares into stake.
         let stake = pools::Joining::<T>::sub_shares(&candidate, &delegator, joining_shares)?;
@@ -469,7 +469,7 @@ impl<T: Config> Calls<T> {
     fn execute_leaving(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
-        leavinig_shares: Shares<T>,
+        leavinig_shares: Shares<T::Balance>,
     ) -> DispatchResultWithPostInfo {
         // Convert leaving shares into stake.
         let stake = pools::Leaving::<T>::sub_shares(&candidate, &delegator, leavinig_shares)?;
