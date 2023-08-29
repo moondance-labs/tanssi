@@ -73,10 +73,6 @@ import type {
     PalletBalancesReasons,
     PalletBalancesReserveData,
     PalletCollatorAssignmentCall,
-    PalletCollatorSelectionCall,
-    PalletCollatorSelectionCandidateInfo,
-    PalletCollatorSelectionError,
-    PalletCollatorSelectionEvent,
     PalletConfigurationCall,
     PalletConfigurationError,
     PalletConfigurationHostConfiguration,
@@ -273,10 +269,6 @@ declare module "@polkadot/types/types/registry" {
         PalletBalancesReasons: PalletBalancesReasons;
         PalletBalancesReserveData: PalletBalancesReserveData;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
-        PalletCollatorSelectionCall: PalletCollatorSelectionCall;
-        PalletCollatorSelectionCandidateInfo: PalletCollatorSelectionCandidateInfo;
-        PalletCollatorSelectionError: PalletCollatorSelectionError;
-        PalletCollatorSelectionEvent: PalletCollatorSelectionEvent;
         PalletConfigurationCall: PalletConfigurationCall;
         PalletConfigurationError: PalletConfigurationError;
         PalletConfigurationHostConfiguration: PalletConfigurationHostConfiguration;

@@ -57,30 +57,6 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
-        collatorSelection: {
-            /** User is already a candidate */
-            AlreadyCandidate: AugmentedError<ApiType>;
-            /** User is already an Invulnerable */
-            AlreadyInvulnerable: AugmentedError<ApiType>;
-            /** Account has no associated validator ID */
-            NoAssociatedValidatorId: AugmentedError<ApiType>;
-            /** User is not a candidate */
-            NotCandidate: AugmentedError<ApiType>;
-            /** Permission issue */
-            Permission: AugmentedError<ApiType>;
-            /** Too few candidates */
-            TooFewCandidates: AugmentedError<ApiType>;
-            /** Too many candidates */
-            TooManyCandidates: AugmentedError<ApiType>;
-            /** Too many invulnerables */
-            TooManyInvulnerables: AugmentedError<ApiType>;
-            /** Unknown error */
-            Unknown: AugmentedError<ApiType>;
-            /** Validator ID is not yet registered */
-            ValidatorNotRegistered: AugmentedError<ApiType>;
-            /** Generic error */
-            [key: string]: AugmentedError<ApiType>;
-        };
         configuration: {
             /** The new value for a configuration parameter is invalid. */
             InvalidNewValue: AugmentedError<ApiType>;
