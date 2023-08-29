@@ -13,18 +13,19 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use super::*;
-use crate as invulnerables;
-use frame_support::{
-    ord_parameter_types, parameter_types,
-    traits::{ConstU32, GenesisBuild},
-};
-use frame_system as system;
-use frame_system::EnsureSignedBy;
-use sp_core::H256;
-use sp_runtime::{
-    testing::Header,
-    traits::{BlakeTwo256, IdentityLookup},
+use {
+    super::*,
+    crate as invulnerables,
+    frame_support::{
+        ord_parameter_types, parameter_types,
+        traits::{ConstU32, GenesisBuild},
+    },
+    frame_system::{self as system, EnsureSignedBy},
+    sp_core::H256,
+    sp_runtime::{
+        testing::Header,
+        traits::{BlakeTwo256, IdentityLookup},
+    },
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;

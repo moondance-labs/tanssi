@@ -13,15 +13,17 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::{
-    mock::{
-        initialize_to_block, new_test_ext, Invulnerables, RootAccount, RuntimeEvent, RuntimeOrigin,
-        System, Test,
+use {
+    crate::{
+        mock::{
+            initialize_to_block, new_test_ext, Invulnerables, RootAccount, RuntimeEvent,
+            RuntimeOrigin, System, Test,
+        },
+        Error,
     },
-    Error,
+    frame_support::{assert_noop, assert_ok},
+    sp_runtime::traits::BadOrigin,
 };
-use frame_support::{assert_noop, assert_ok};
-use sp_runtime::traits::BadOrigin;
 
 #[test]
 fn basic_setup_works() {

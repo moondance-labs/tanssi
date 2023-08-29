@@ -21,10 +21,12 @@
 
 use frame_support::{storage::types::StorageValue, weights::Weight};
 
-use pallet_invulnerables::WeightInfo;
-use pallet_migrations::{GetMigrations, Migration};
-use sp_runtime::BoundedVec;
-use sp_std::{marker::PhantomData, prelude::*};
+use {
+    pallet_invulnerables::WeightInfo,
+    pallet_migrations::{GetMigrations, Migration},
+    sp_runtime::BoundedVec,
+    sp_std::{marker::PhantomData, prelude::*},
+};
 
 use crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET};
 

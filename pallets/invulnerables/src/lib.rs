@@ -40,12 +40,14 @@ pub mod weights;
 #[frame_support::pallet]
 pub mod pallet {
     pub use crate::weights::WeightInfo;
-    use frame_support::{
-        dispatch::DispatchResultWithPostInfo, pallet_prelude::*, traits::EnsureOrigin, BoundedVec,
-        DefaultNoBound,
+    use {
+        frame_support::{
+            dispatch::DispatchResultWithPostInfo, pallet_prelude::*, traits::EnsureOrigin,
+            BoundedVec, DefaultNoBound,
+        },
+        frame_system::pallet_prelude::*,
+        sp_std::vec::Vec,
     };
-    use frame_system::pallet_prelude::*;
-    use sp_std::vec::Vec;
 
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);

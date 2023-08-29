@@ -22,10 +22,12 @@ use super::*;
 
 #[allow(unused)]
 use crate::Pallet as CollatorSelection;
-use frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError};
-use frame_support::traits::{EnsureOrigin, Get};
-use frame_system::EventRecord;
-use sp_std::prelude::*;
+use {
+    frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
+    frame_support::traits::{EnsureOrigin, Get},
+    frame_system::EventRecord,
+    sp_std::prelude::*,
+};
 
 const SEED: u32 = 0;
 
