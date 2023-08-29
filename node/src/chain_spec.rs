@@ -303,6 +303,9 @@ fn testnet_genesis(
             candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
             ..Default::default()
         },
+        invulnerables: dancebox_runtime::InvulnerablesConfig {
+            invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
+        },
         session: dancebox_runtime::SessionConfig {
             keys: invulnerables
                 .into_iter()

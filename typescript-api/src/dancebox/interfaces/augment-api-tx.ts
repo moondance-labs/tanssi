@@ -349,6 +349,37 @@ declare module "@polkadot/api-base/types/submittable" {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        invulnerables: {
+            /**
+             * Add a new account `who` to the list of `Invulnerables` collators.
+             *
+             * The origin for this call must be the `UpdateOrigin`.
+             */
+            addInvulnerable: AugmentedSubmittable<
+                (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
+            /**
+             * Remove an account `who` from the list of `Invulnerables` collators. `Invulnerables` must be sorted.
+             *
+             * The origin for this call must be the `UpdateOrigin`.
+             */
+            removeInvulnerable: AugmentedSubmittable<
+                (who: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
+            /**
+             * Set the list of invulnerable (fixed) collators.
+             *
+             * Must be called by the `UpdateOrigin`.
+             */
+            setInvulnerables: AugmentedSubmittable<
+                (updated: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
+                [Vec<AccountId32>]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         maintenanceMode: {
             /**
              * Place the chain in maintenance mode
