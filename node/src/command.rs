@@ -42,16 +42,34 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
+            vec![
+                "Alice".to_string(),
+                "Bob".to_string(),
+                "Charlie".to_string(),
+                "Dave".to_string(),
+            ],
         )),
         "template-rococo" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
+            vec![
+                "Alice".to_string(),
+                "Bob".to_string(),
+                "Charlie".to_string(),
+                "Dave".to_string(),
+            ],
         )),
         "" | "dancebox-local" => Box::new(chain_spec::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
+            vec![
+                "Alice".to_string(),
+                "Bob".to_string(),
+                "Charlie".to_string(),
+                "Dave".to_string(),
+            ],
         )),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
@@ -243,12 +261,28 @@ pub fn run() -> Result<()> {
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
+                            cmd.invulnerable.clone().unwrap_or_else(|| {
+                                vec![
+                                    "Alice".to_string(),
+                                    "Bob".to_string(),
+                                    "Charlie".to_string(),
+                                    "Dave".to_string(),
+                                ]
+                            }),
                         ))
                     } else {
                         Box::new(chain_spec::local_dancebox_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
+                            cmd.invulnerable.clone().unwrap_or_else(|| {
+                                vec![
+                                    "Alice".to_string(),
+                                    "Bob".to_string(),
+                                    "Charlie".to_string(),
+                                    "Dave".to_string(),
+                                ]
+                            }),
                         ))
                     }
                 } else {

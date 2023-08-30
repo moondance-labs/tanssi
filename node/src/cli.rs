@@ -86,6 +86,10 @@ pub struct BuildSpecCmd {
     /// List of container chain chain spec paths to add to genesis.
     #[arg(long)]
     pub add_container_chain: Vec<String>,
+
+    /// List of container chain chain spec paths to add to genesis.
+    #[arg(long)]
+    pub invulnerable: Option<Vec<String>>,
 }
 
 impl CliConfiguration for BuildSpecCmd {
