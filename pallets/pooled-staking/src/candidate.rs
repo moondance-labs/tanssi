@@ -35,8 +35,8 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
 pub struct EligibleCandidate<C, S> {
-    candidate: C,
-    stake: S,
+    pub candidate: C,
+    pub stake: S,
 }
 
 impl<C: Ord, S: Ord> Ord for EligibleCandidate<C, S> {
@@ -101,7 +101,7 @@ impl<T: Config> Candidates<T> {
         Ok(())
     }
 
-    fn update_total_stake(
+    pub fn update_total_stake(
         candidate: &Candidate<T>,
         new_stake: Stake<T::Balance>,
     ) -> Result<(), Error<T>> {
@@ -167,15 +167,19 @@ impl<T: Config> Candidates<T> {
                 .binary_search(&entry)
                 .expect_err("Candidate should be present at most once in the list.");
 
-            // Insert in correct position then truncate the list if necessary.
-            list = list
-                .try_mutate(move |list| {
-                    list.insert(pos, entry.clone());
-                    list.truncate(T::EligibleCandidatesBufferSize::get() as usize)
-                })
-                .expect("list is truncated using the vec bound");
+            if pos >= T::EligibleCandidatesBufferSize::get() as usize {
+                None
+            } else {
+                // Insert in correct position then truncate the list if necessary.
+                list = list
+                    .try_mutate(move |list| {
+                        list.insert(pos, entry.clone());
+                        list.truncate(T::EligibleCandidatesBufferSize::get() as usize)
+                    })
+                    .expect("list is truncated using the vec bound");
 
-            Some(pos as u32)
+                Some(pos as u32)
+            }
         } else {
             None
         };

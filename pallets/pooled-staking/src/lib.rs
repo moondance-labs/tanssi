@@ -419,7 +419,9 @@ pub mod pallet {
             delegator: Delegator<T>,
             pool: AllTargetPool,
         ) -> DispatchResultWithPostInfo {
+            // We don't care about the sender.
             let _ = ensure_signed(origin)?;
+
             Calls::<T>::rebalance_hold(candidate, delegator, pool)
         }
 
@@ -429,14 +431,19 @@ pub mod pallet {
             pool: TargetPool,
             stake: T::Balance,
         ) -> DispatchResultWithPostInfo {
-            Calls::<T>::request_delegate(origin, candidate, pool, stake)
+            let delegator = ensure_signed(origin)?;
+
+            Calls::<T>::request_delegate(candidate, delegator, pool, stake)
         }
 
         pub fn execute_pending_operations(
             origin: OriginFor<T>,
             operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
         ) -> DispatchResultWithPostInfo {
-            Calls::<T>::execute_pending_operations(origin, operations)
+            // We don't care about the sender.
+            let _ = ensure_signed(origin)?;
+
+            Calls::<T>::execute_pending_operations(operations)
         }
 
         pub fn request_undelegate(
@@ -445,7 +452,29 @@ pub mod pallet {
             pool: TargetPool,
             amount: SharesOrStake<T::Balance>,
         ) -> DispatchResultWithPostInfo {
-            Calls::<T>::request_undelegate(origin, candidate, pool, amount)
+            let delegator = ensure_signed(origin)?;
+
+            Calls::<T>::request_undelegate(candidate, delegator, pool, amount)
+        }
+
+        pub fn claim_manual_rewards(
+            origin: OriginFor<T>,
+            pairs: Vec<(Candidate<T>, Delegator<T>)>,
+        ) -> DispatchResultWithPostInfo {
+            // We don't care about the sender.
+            let _ = ensure_signed(origin)?;
+
+            Calls::<T>::claim_manual_rewards(&pairs)
+        }
+
+        pub fn update_candidate_position(
+            origin: OriginFor<T>,
+            candidates: Vec<Candidate<T>>,
+        ) -> DispatchResultWithPostInfo {
+            // We don't care about the sender.
+            let _ = ensure_signed(origin)?;
+
+            Calls::<T>::update_candidate_position(&candidates)
         }
     }
 }

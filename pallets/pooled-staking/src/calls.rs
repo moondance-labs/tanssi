@@ -30,7 +30,6 @@ use {
             Contains,
         },
     },
-    frame_system::pallet_prelude::*,
     sp_runtime::traits::{CheckedSub, Zero},
 };
 
@@ -110,12 +109,11 @@ impl<T: Config> Calls<T> {
     }
 
     pub fn request_delegate(
-        origin: OriginFor<T>,
         candidate: Candidate<T>,
+        delegator: Delegator<T>,
         pool: TargetPool,
         stake: T::Balance,
     ) -> DispatchResultWithPostInfo {
-        let delegator = ensure_signed(origin)?;
         ensure!(!stake.is_zero(), Error::<T>::StakeMustBeNonZero);
 
         // Convert stake into joining shares quantity.
@@ -167,13 +165,11 @@ impl<T: Config> Calls<T> {
     }
 
     pub fn request_undelegate(
-        origin: OriginFor<T>,
         candidate: Candidate<T>,
+        delegator: Delegator<T>,
         pool: TargetPool,
         amount: SharesOrStake<T::Balance>,
     ) -> DispatchResultWithPostInfo {
-        let delegator = ensure_signed(origin)?;
-
         // Converts amount to shares of the correct pool
         let shares = match (amount, pool) {
             (SharesOrStake::Shares(s), _) => s,
@@ -187,7 +183,7 @@ impl<T: Config> Calls<T> {
 
         // Any change in the amount of Manual Rewards shares requires to claim manual rewards.
         if let TargetPool::ManualRewards = pool {
-            Self::claim_manual_rewards(candidate.clone(), delegator.clone())?;
+            Self::claim_manual_rewards(&[(candidate.clone(), delegator.clone())])?;
         }
 
         // Destroy shares
@@ -288,12 +284,8 @@ impl<T: Config> Calls<T> {
     }
 
     pub fn execute_pending_operations(
-        origin: OriginFor<T>,
         operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
     ) -> DispatchResultWithPostInfo {
-        // We don't care about the sender.
-        let _ = ensure_signed(origin)?;
-
         for (index, query) in operations.into_iter().enumerate() {
             // We deconstruct the query and find the balance associated with it.
             // If it is zero it may not exist or have been executed before, thus
@@ -376,7 +368,7 @@ impl<T: Config> Calls<T> {
 
         // Any change in the amount of Manual Rewards shares requires to claim manual rewards.
         if let TargetPool::ManualRewards = pool {
-            Self::claim_manual_rewards(candidate.clone(), delegator.clone())?;
+            Self::claim_manual_rewards(&[(candidate.clone(), delegator.clone())])?;
         }
 
         // Convert stake into shares quantity.
@@ -495,28 +487,38 @@ impl<T: Config> Calls<T> {
         Ok(().into())
     }
 
-    fn claim_manual_rewards(
-        candidate: Candidate<T>,
-        delegator: Delegator<T>,
+    pub fn claim_manual_rewards(
+        pairs: &[(Candidate<T>, Delegator<T>)],
     ) -> DispatchResultWithPostInfo {
-        let Stake(rewards) = pools::ManualRewards::<T>::claim_rewards(&candidate, &delegator)?;
+        for (candidate, delegator) in pairs {
+            let Stake(rewards) = pools::ManualRewards::<T>::claim_rewards(&candidate, &delegator)?;
 
-        if rewards.is_zero() {
-            return Ok(().into());
+            if rewards.is_zero() {
+                continue;
+            }
+
+            T::Currency::transfer(
+                &T::StakingAccount::get(),
+                &delegator,
+                rewards,
+                Preservation::Preserve,
+            )?;
+
+            Pallet::<T>::deposit_event(Event::<T>::ClaimedManualRewards {
+                candidate: candidate.clone(),
+                delegator: delegator.clone(),
+                rewards,
+            });
         }
 
-        T::Currency::transfer(
-            &T::StakingAccount::get(),
-            &delegator,
-            rewards,
-            Preservation::Preserve,
-        )?;
+        Ok(().into())
+    }
 
-        Pallet::<T>::deposit_event(Event::<T>::ClaimedManualRewards {
-            candidate: candidate.clone(),
-            delegator: delegator.clone(),
-            rewards,
-        });
+    pub fn update_candidate_position(candidates: &[Candidate<T>]) -> DispatchResultWithPostInfo {
+        for candidate in candidates {
+            let stake = Candidates::<T>::total_stake(&candidate);
+            Candidates::<T>::update_total_stake(&candidate, stake)?;
+        }
 
         Ok(().into())
     }

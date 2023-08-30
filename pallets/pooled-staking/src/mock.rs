@@ -464,7 +464,7 @@ macro_rules! assert_eq_events {
 #[macro_export]
 macro_rules! assert_eq_last_events {
     ($events:expr) => {
-        assert_tail_eq!($events, crate::mock::events());
+        crate::assert_tail_eq!($events, crate::mock::events())
     };
 }
 
