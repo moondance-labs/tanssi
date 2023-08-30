@@ -65,7 +65,7 @@ use {
         FeeCalculator, GasWeightMapping, IdentityAddressMapping,
         OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
-    pallet_transaction_payment::CurrencyAdapter,
+    pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     parity_scale_codec::{Decode, Encode},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
@@ -437,6 +437,7 @@ impl frame_system::Config for Runtime {
 
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
+    pub const FeeMultiplier: Multiplier = Multiplier::from_u32(1);
 }
 
 impl pallet_transaction_payment::Config for Runtime {
@@ -446,7 +447,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
-    type FeeMultiplierUpdate = ();
+    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
 }
 
 impl pallet_timestamp::Config for Runtime {
