@@ -39,7 +39,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter},
+        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, Everything, InstanceFilter},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -65,9 +65,11 @@ use {
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
-        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT},
+        traits::{
+            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, BlockNumberProvider,
+        },
         transaction_validity::{TransactionSource, TransactionValidity},
-        ApplyExtrinsicResult,
+        AccountId32, ApplyExtrinsicResult,
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
@@ -738,6 +740,53 @@ impl pallet_maintenance_mode::Config for Runtime {
 
 impl pallet_root_testing::Config for Runtime {}
 
+parameter_types! {
+    pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
+    pub const CurrencyHoldReason: [u8; 8] = *b"POOLSTAK";
+    pub const InitialManualClaimShareValue: u128 = currency::KILODANCE;
+    pub const InitialAutoCompoundingShareValue: u128 = currency::KILODANCE;
+    pub const InitialJoiningShareValue: u128 = currency::DANCE;
+    pub const InitialLeavingShareValue: u128 = currency::DANCE;
+    pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
+    pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
+}
+
+pub const BLOCKS_TO_WAIT: u32 = 2;
+pub struct DummyRequestFilter;
+
+impl Contains<u32> for DummyRequestFilter {
+    fn contains(request_block: &u32) -> bool {
+        let block_number = frame_system::Pallet::<Runtime>::current_block_number();
+
+        let Some(diff) = block_number.checked_sub(*request_block) else {
+            return false;
+        };
+
+        diff >= BLOCKS_TO_WAIT // must wait 2 blocks
+    }
+}
+
+impl pallet_pooled_staking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type Balance = Balance;
+    type CurrencyHoldReason = CurrencyHoldReason;
+    type StakingAccount = StakingAccount;
+    type InitialManualClaimShareValue = InitialManualClaimShareValue;
+    type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
+    type InitialJoiningShareValue = InitialJoiningShareValue;
+    type InitialLeavingShareValue = InitialLeavingShareValue;
+    type MinimumSelfDelegation = MinimumSelfDelegation;
+    type RewardsCollatorCommission = RewardsCollatorCommission;
+    // TODO: Change for session boundary filter
+    type JoiningRequestFilter = DummyRequestFilter;
+    // TODO: Change for proper duration
+    type LeavingRequestFilter = DummyRequestFilter;
+    type EligibleCandidatesBufferSize = ConstU32<100>;
+    // TODO: Add check that candidate have authoring keys?
+    type EligibleCandidatesFilter = Everything;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -774,6 +823,7 @@ construct_runtime!(
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
         Invulnerables: pallet_invulnerables = 34,
+        PooledStaking: pallet_pooled_staking = 35,
 
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 50,

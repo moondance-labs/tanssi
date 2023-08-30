@@ -2622,6 +2622,7 @@ dependencies = [
  "pallet-maintenance-mode",
  "pallet-message-queue",
  "pallet-migrations",
+ "pallet-pooled-staking",
  "pallet-proxy",
  "pallet-registrar",
  "pallet-registrar-runtime-api",

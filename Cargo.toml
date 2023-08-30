@@ -30,6 +30,7 @@ pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/r
 pallet-configuration = { path = "pallets/configuration", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }
+pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 
@@ -146,11 +147,11 @@ pallet-xcm = { git = "https://github.com/moondance-labs/polkadot", branch = "tan
 polkadot-parachain = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 polkadot-runtime-common = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 polkadot-runtime-parachains = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
-xcm = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
-xcm-executor = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
-xcm-builder = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 westend-runtime = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 westend-runtime-constants = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+xcm = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+xcm-builder = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+xcm-executor = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43" }

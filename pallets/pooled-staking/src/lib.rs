@@ -65,6 +65,7 @@ pub mod pallet {
         scale_info::TypeInfo,
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
+        sp_std::vec::Vec,
     };
 
     #[cfg(feature = "std")]
