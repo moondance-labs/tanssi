@@ -31,6 +31,7 @@
         {
             "id": 1000,
             "chain_spec_path": "specs/warp-sync-tanssi-1000.json",
+            "COMMENT": "Important: these collators will not be injected to pallet-invulnerables because zombienet does not support that. When changing the collators list, make sure to update `scripts/build-spec-warp-sync.sh`",
             "collators": [
                 {
                     "name": "Collator1000-01",
