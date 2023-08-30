@@ -87,7 +87,7 @@ pub struct BuildSpecCmd {
     #[arg(long)]
     pub add_container_chain: Vec<String>,
 
-    /// List of container chain chain spec paths to add to genesis.
+    /// List of invulnerable collators to write to pallet_invulnerables genesis.
     #[arg(long)]
     pub invulnerable: Option<Vec<String>>,
 }
