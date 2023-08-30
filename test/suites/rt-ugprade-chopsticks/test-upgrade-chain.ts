@@ -54,17 +54,19 @@ describeSuite({
                 /// Chopsticks does not have the notion of tx pool either, so we need to retry
                 /// Therefore we just retry at most MAX_BALANCE_TRANSFER_TRIES
                 while (tries < MAX_BALANCE_TRANSFER_TRIES) {
-                    let txHash = await api.tx.balances.transfer(randomAccount.address, 1_000_000_000).signAndSend(alice);
-                    let result = await context.createBlock({ count: 1 });
+                    const txHash = await api.tx.balances
+                        .transfer(randomAccount.address, 1_000_000_000)
+                        .signAndSend(alice);
+                    const result = await context.createBlock({ count: 1 });
 
                     const block = await context.polkadotJs().rpc.chain.getBlock(result.result);
                     const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
                     if (includedTxHashes.includes(txHash.toString())) {
                         break;
                     }
-                    tries ++;
-                };
-                
+                    tries++;
+                }
+
                 const balanceAfter = (await api.query.system.account(randomAccount.address)).data.free.toBigInt();
                 expect(balanceBefore < balanceAfter).to.be.true;
             },
