@@ -125,10 +125,12 @@ pub fn template_session_keys(keys: NimbusId) -> dancebox_runtime::SessionKeys {
 }
 
 /// Helper function to turn a list of names into a list of `(AccountId, NimbusId)`
-pub fn invulnerables(names: &[&str]) -> Vec<(AccountId, NimbusId)> {
+pub fn invulnerables_from_seeds<S: AsRef<str>, I: Iterator<Item = S>>(
+    names: I,
+) -> Vec<(AccountId, NimbusId)> {
     names
-        .iter()
         .map(|name| {
+            let name = name.as_ref();
             (
                 get_account_id_from_seed::<sr25519::Public>(name),
                 get_collator_keys_from_seed(name),
@@ -149,6 +151,7 @@ pub fn development_config(
     para_id: ParaId,
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
+    invulnerables: Vec<String>,
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -166,7 +169,7 @@ pub fn development_config(
         move || {
             testnet_genesis(
                 // initial collators.
-                invulnerables(&["Alice", "Bob", "Charlie", "Dave"]),
+                invulnerables_from_seeds(invulnerables.iter()),
                 account_ids(&[
                     "Alice",
                     "Bob",
@@ -211,6 +214,7 @@ pub fn local_dancebox_config(
     para_id: ParaId,
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
+    invulnerables: Vec<String>,
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -228,7 +232,7 @@ pub fn local_dancebox_config(
         move || {
             testnet_genesis(
                 // initial collators.
-                invulnerables(&["Alice", "Bob", "Charlie", "Dave"]),
+                invulnerables_from_seeds(invulnerables.iter()),
                 account_ids(&[
                     "Alice",
                     "Bob",
