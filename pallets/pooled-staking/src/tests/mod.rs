@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+mod candidates;
 mod delegator_flow;
 mod manual_rewards;
 mod rebalance;
@@ -219,8 +220,8 @@ impl FullDelegation {
         let block_number = block_number();
 
         RequestDelegation {
-            candidate: ACCOUNT_CANDIDATE_1,
-            delegator: ACCOUNT_DELEGATOR_1,
+            candidate,
+            delegator,
             pool: P::target_pool(),
             amount: request_amount,
             expected_joining: round_down(request_amount, 2),
