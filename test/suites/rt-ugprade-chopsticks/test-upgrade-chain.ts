@@ -59,7 +59,7 @@ describeSuite({
                         .signAndSend(alice);
                     const result = await context.createBlock({ count: 1 });
 
-                    const block = await context.polkadotJs().rpc.chain.getBlock(result.result);
+                    const block = await api.rpc.chain.getBlock(result.result);
                     const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
                     if (includedTxHashes.includes(txHash.toString())) {
                         break;
