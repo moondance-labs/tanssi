@@ -45,7 +45,9 @@ pub mod pallet {
         traits::ValidatorRegistration, BoundedVec, DefaultNoBound,
     };
     use frame_system::pallet_prelude::*;
+    use pallet_session::SessionManager;
     use sp_runtime::traits::Convert;
+    use sp_staking::SessionIndex;
     use sp_std::vec::Vec;
 
     /// The current storage version.
@@ -169,28 +171,16 @@ pub mod pallet {
             // check if the invulnerables have associated validator keys before they are set
             for account_id in &new {
                 // don't let one unprepared collator ruin things for everyone.
-                let validator_key = T::CollatorIdOf::convert(account_id.clone());
-                match validator_key {
-                    Some(key) => {
-                        // key is not registered
-                        if !T::CollatorRegistration::is_registered(&key) {
-                            Self::deposit_event(Event::InvalidInvulnerableSkipped {
-                                account_id: account_id.clone(),
-                            });
-                            continue;
-                        }
-                        // else condition passes; key is registered
-                    }
-                    // key does not exist
-                    None => {
-                        Self::deposit_event(Event::InvalidInvulnerableSkipped {
-                            account_id: account_id.clone(),
-                        });
-                        continue;
-                    }
+                let collator_id = T::CollatorIdOf::convert(account_id.clone());
+                let is_valid =
+                    collator_id.map_or(false, |key| T::CollatorRegistration::is_registered(&key));
+                if is_valid {
+                    new_with_keys.push(account_id.clone());
+                } else {
+                    Self::deposit_event(Event::InvalidInvulnerableSkipped {
+                        account_id: account_id.clone(),
+                    });
                 }
-
-                new_with_keys.push(account_id.clone());
             }
 
             // should never fail since `new` must be equal to or shorter than `TooManyInvulnerables`
@@ -263,9 +253,6 @@ pub mod pallet {
             Ok(())
         }
     }
-
-    use pallet_session::SessionManager;
-    use sp_staking::SessionIndex;
 
     /// Play the role of the session manager.
     impl<T: Config> SessionManager<T::AccountId> for Pallet<T> {
