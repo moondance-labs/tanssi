@@ -19,14 +19,11 @@
 use {super::*, crate::Pallet as PooledStaking};
 
 use {
-    crate::PendingOperationKey::JoiningAutoCompounding,
+    crate::PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
         dispatch::RawOrigin,
-        traits::{
-            fungible::Mutate,
-            Get,
-        },
+        traits::{fungible::Mutate, Get},
     },
     frame_system::{EventRecord, Pallet as System},
     sp_std::prelude::*,
@@ -107,7 +104,10 @@ mod benchmarks {
         // Initialize the block at which we should do stuff
         let block_number = frame_system::Pallet::<T>::block_number();
 
-        System::<T>::set_block_number(block_number + 5u32.into());
+        // TODO: make this parametric by instead of using contains use
+        // a custom trait
+        // Right now we know this is going to be correct with fast-runtime
+        System::<T>::set_block_number(block_number + 10u32.into());
         #[extrinsic_call]
         _(
             RawOrigin::Signed(caller.clone()),
@@ -128,6 +128,145 @@ mod benchmarks {
                 towards: TargetPool::AutoCompounding,
                 staked: min_candidate_stk::<T>(),
                 released: 0u32.into(),
+            }
+            .into(),
+        );
+        Ok(())
+    }
+
+    #[benchmark]
+    fn request_undelegate() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
+        PooledStaking::<T>::request_delegate(
+            RawOrigin::Signed(caller.clone()).into(),
+            caller.clone(),
+            TargetPool::AutoCompounding,
+            min_candidate_stk::<T>(),
+        )?;
+
+        // Initialize the block at which we should do stuff
+        let block_number = frame_system::Pallet::<T>::block_number();
+
+        // TODO: make this parametric by instead of using contains use
+        // a custom trait
+        // Right now we know this is going to be correct with fast-runtime
+        System::<T>::set_block_number(block_number + 10u32.into());
+
+        PooledStaking::<T>::execute_pending_operations(
+            RawOrigin::Signed(caller.clone()).into(),
+            vec![PendingOperationQuery {
+                delegator: caller.clone(),
+                operation: JoiningAutoCompounding {
+                    candidate: caller.clone(),
+                    at_block: block_number,
+                },
+            }],
+        )?;
+
+        // We now have a working delegation, and we can request to undelegate
+        // This should take the candidate out from being eligible
+
+        #[extrinsic_call]
+        _(
+            RawOrigin::Signed(caller.clone()),
+            caller.clone(),
+            TargetPool::AutoCompounding,
+            SharesOrStake::Stake(min_candidate_stk::<T>() / 2u32.into()),
+        );
+
+        // assert that it comes out sorted
+        // TODO: hardcoded numbers should dissapear
+        assert_last_event::<T>(
+            Event::RequestedUndelegate {
+                candidate: caller.clone(),
+                delegator: caller,
+                from: TargetPool::AutoCompounding,
+                pending: 4999998u32.into(),
+                released: 2u32.into(),
+            }
+            .into(),
+        );
+        Ok(())
+    }
+
+    #[benchmark]
+    fn claim_manual_rewards(
+        b: Linear<1, { T::EligibleCandidatesBufferSize::get() }>,
+    ) -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * b.into());
+
+        let mut candidate_delegator = vec![];
+        // Create as many delegations as one can
+        for i in 0..b {
+            let (candidate, _deposit) = create_funded_user::<T>(
+                "caller",
+                USER_SEED - i - 1,
+                min_candidate_stk::<T>() * 2u32.into(),
+            );
+
+            // self delegation
+            PooledStaking::<T>::request_delegate(
+                RawOrigin::Signed(candidate.clone()).into(),
+                candidate.clone(),
+                TargetPool::AutoCompounding,
+                min_candidate_stk::<T>(),
+            )?;
+
+            PooledStaking::<T>::request_delegate(
+                RawOrigin::Signed(caller.clone()).into(),
+                candidate.clone(),
+                TargetPool::ManualRewards,
+                min_candidate_stk::<T>(),
+            )?;
+
+            candidate_delegator.push((candidate.clone(), caller.clone()))
+        }
+
+        // Initialize the block at which we should do stuff
+        let block_number = frame_system::Pallet::<T>::block_number();
+
+        // TODO: make this parametric by instead of using contains use
+        // a custom trait
+        // Right now we know this is going to be correct with fast-runtime
+        System::<T>::set_block_number(block_number + 10u32.into());
+
+        // Execute as many pending operations as posible
+        for i in 0..b {
+            let candidate: T::AccountId = account("caller", USER_SEED - i - 1, 0);
+
+            PooledStaking::<T>::execute_pending_operations(
+                RawOrigin::Signed(caller.clone()).into(),
+                vec![PendingOperationQuery {
+                    delegator: caller.clone(),
+                    operation: JoiningManualRewards {
+                        candidate: candidate.clone(),
+                        at_block: block_number,
+                    },
+                }],
+            )?;
+
+            // Set counter to simulate rewards.
+            let counter = 100u32;
+            crate::Pools::<T>::set(candidate, &PoolsKey::ManualRewardsCounter, counter.into());
+        }
+
+        #[extrinsic_call]
+        _(
+            RawOrigin::Signed(caller.clone()),
+            candidate_delegator.clone(),
+        );
+
+        let (candidate, delegator) = &candidate_delegator[candidate_delegator.len() - 1];
+        // We should have the last pairs event as the last event
+        assert_last_event::<T>(
+            Event::ClaimedManualRewards {
+                candidate: candidate.clone(),
+                delegator: delegator.clone(),
+                rewards: 1000u32.into(),
             }
             .into(),
         );
