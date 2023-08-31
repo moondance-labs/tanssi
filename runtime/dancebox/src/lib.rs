@@ -965,6 +965,7 @@ impl_runtime_apis! {
             use pallet_configuration::Pallet as PalletConfigurationBench;
             use pallet_registrar::Pallet as PalletRegistrarBench;
             use pallet_invulnerables::Pallet as PalletInvulnerablesBench;
+            use pallet_pooled_staking::Pallet as PalledPooledStaking;
 
             let mut list = Vec::<BenchmarkList>::new();
 
@@ -994,6 +995,13 @@ impl_runtime_apis! {
                 PalletInvulnerablesBench::<Runtime>
             );
 
+            list_benchmark!(
+                list,
+                extra,
+                pallet_pooled_staking,
+                PalledPooledStaking::<Runtime>
+            );
+
             let storage_info = AllPalletsWithSystem::storage_info();
 
             (list, storage_info)
@@ -1010,6 +1018,7 @@ impl_runtime_apis! {
             use pallet_configuration::Pallet as PalletConfigurationBench;
             use pallet_registrar::Pallet as PalletRegistrarBench;
             use pallet_invulnerables::Pallet as PalletInvulnerablesBench;
+            use pallet_pooled_staking::Pallet as PalletPooledStaking;
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -1070,6 +1079,12 @@ impl_runtime_apis! {
                 batches,
                 pallet_invulnerables,
                 PalletInvulnerablesBench::<Runtime>
+            );
+            add_benchmark!(
+                params,
+                batches,
+                pallet_pooled_staking,
+                PalletPooledStaking::<Runtime>
             );
             if batches.is_empty() {
                 return Err("Benchmark not found for this pallet.".into());

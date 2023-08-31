@@ -23,7 +23,7 @@ use {
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
         dispatch::RawOrigin,
-        traits::{fungible::Mutate, Get},
+        traits::{fungible::Mutate, Get, fungible::InspectHold},
     },
     frame_system::{EventRecord, Pallet as System},
     sp_std::prelude::*,
@@ -165,6 +165,8 @@ mod benchmarks {
             }],
         )?;
 
+        let stake_to_remove = min_candidate_stk::<T>() / 2u32.into();
+
         // We now have a working delegation, and we can request to undelegate
         // This should take the candidate out from being eligible
 
@@ -173,8 +175,13 @@ mod benchmarks {
             RawOrigin::Signed(caller.clone()),
             caller.clone(),
             TargetPool::AutoCompounding,
-            SharesOrStake::Stake(min_candidate_stk::<T>() / 2u32.into()),
+            SharesOrStake::Stake(stake_to_remove),
         );
+
+        // lets get the hold amount to know dust
+        let on_hold = T::Currency::balance_on_hold(&T::CurrencyHoldReason::get(), &caller);
+        // dust gets released immediatly
+        let dust = min_candidate_stk::<T>() - on_hold;
 
         // assert that it comes out sorted
         // TODO: hardcoded numbers should dissapear
@@ -183,9 +190,9 @@ mod benchmarks {
                 candidate: caller.clone(),
                 delegator: caller,
                 from: TargetPool::AutoCompounding,
-                pending: 4999998u32.into(),
-                released: 2u32.into(),
-            }
+                pending: stake_to_remove - dust,
+                released: dust
+            } 
             .into(),
         );
         Ok(())
@@ -200,6 +207,7 @@ mod benchmarks {
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * b.into());
 
         let mut candidate_delegator = vec![];
+        T::Currency::set_balance(&T::StakingAccount::get(), min_candidate_stk::<T>());
         // Create as many delegations as one can
         for i in 0..b {
             let (candidate, _deposit) = create_funded_user::<T>(
@@ -259,6 +267,7 @@ mod benchmarks {
             RawOrigin::Signed(caller.clone()),
             candidate_delegator.clone(),
         );
+
 
         let (candidate, delegator) = &candidate_delegator[candidate_delegator.len() - 1];
         // We should have the last pairs event as the last event
