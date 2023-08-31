@@ -399,17 +399,13 @@ impl<T: Config> Calls<T> {
         // represents (due to rounding).
         let actually_staked = match pool {
             TargetPool::AutoCompounding => {
-                let stake = pools::AutoCompounding::<T>::add_shares(
-                    &candidate,
-                    &delegator,
-                    shares,
-                )?;
+                let stake =
+                    pools::AutoCompounding::<T>::add_shares(&candidate, &delegator, shares)?;
                 pools::AutoCompounding::<T>::increase_hold(&candidate, &delegator, &stake)?;
                 stake
             }
             TargetPool::ManualRewards => {
-                let stake =
-                    pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares)?;
+                let stake = pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares)?;
                 pools::ManualRewards::<T>::increase_hold(&candidate, &delegator, &stake)?;
                 stake
             }
