@@ -19,6 +19,10 @@ import type {
     DanceboxRuntimeOriginCaller,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeSessionKeys,
+    PalletPooledStakingAllTargetPool,
+    PalletPooledStakingPendingOperationQuery,
+    PalletPooledStakingSharesOrStake,
+    PalletPooledStakingTargetPool,
     SpWeightsWeightV2Weight,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
@@ -647,6 +651,66 @@ declare module "@polkadot/api-base/types/submittable" {
                     feeAssetItem: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [XcmVersionedMultiLocation, XcmVersionedMultiLocation, XcmVersionedMultiAssets, u32]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        pooledStaking: {
+            claimManualRewards: AugmentedSubmittable<
+                (
+                    pairs:
+                        | Vec<ITuple<[AccountId32, AccountId32]>>
+                        | [AccountId32 | string | Uint8Array, AccountId32 | string | Uint8Array][]
+                ) => SubmittableExtrinsic<ApiType>,
+                [Vec<ITuple<[AccountId32, AccountId32]>>]
+            >;
+            executePendingOperations: AugmentedSubmittable<
+                (
+                    operations:
+                        | Vec<PalletPooledStakingPendingOperationQuery>
+                        | (
+                              | PalletPooledStakingPendingOperationQuery
+                              | { delegator?: any; operation?: any }
+                              | string
+                              | Uint8Array
+                          )[]
+                ) => SubmittableExtrinsic<ApiType>,
+                [Vec<PalletPooledStakingPendingOperationQuery>]
+            >;
+            rebalanceHold: AugmentedSubmittable<
+                (
+                    candidate: AccountId32 | string | Uint8Array,
+                    delegator: AccountId32 | string | Uint8Array,
+                    pool:
+                        | PalletPooledStakingAllTargetPool
+                        | "Joining"
+                        | "AutoCompounding"
+                        | "ManualRewards"
+                        | "Leaving"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, AccountId32, PalletPooledStakingAllTargetPool]
+            >;
+            requestDelegate: AugmentedSubmittable<
+                (
+                    candidate: AccountId32 | string | Uint8Array,
+                    pool: PalletPooledStakingTargetPool | "AutoCompounding" | "ManualRewards" | number | Uint8Array,
+                    stake: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, PalletPooledStakingTargetPool, u128]
+            >;
+            requestUndelegate: AugmentedSubmittable<
+                (
+                    candidate: AccountId32 | string | Uint8Array,
+                    pool: PalletPooledStakingTargetPool | "AutoCompounding" | "ManualRewards" | number | Uint8Array,
+                    amount: PalletPooledStakingSharesOrStake | { Shares: any } | { Stake: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
+            >;
+            updateCandidatePosition: AugmentedSubmittable<
+                (candidates: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
+                [Vec<AccountId32>]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
