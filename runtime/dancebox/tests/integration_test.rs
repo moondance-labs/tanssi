@@ -16,14 +16,17 @@
 
 #![cfg(test)]
 
-use dancebox_runtime::migrations::{CollatorSelectionInvulnerablesValue, MigrateInvulnerables};
+use dancebox_runtime::MinimumSelfDelegation;
+use frame_support::assert_err;
+use frame_support::assert_noop;
 
 use {
     common::*,
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
+        migrations::{CollatorSelectionInvulnerablesValue, MigrateInvulnerables},
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
-        Configuration, Invulnerables, Proxy, ProxyType,
+        Configuration, Invulnerables, PooledStaking, Proxy, ProxyType,
     },
     frame_support::{assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -31,6 +34,9 @@ use {
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_migrations::Migration,
+    pallet_pooled_staking::{
+        candidate::EligibleCandidate, PendingOperationKey, PendingOperationQuery, TargetPool,
+    },
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
@@ -38,7 +44,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
-        traits::{BlakeTwo256, OpaqueKeys},
+        traits::{BadOrigin, BlakeTwo256, OpaqueKeys},
         DigestItem,
     },
     sp_std::vec,
@@ -2026,5 +2032,614 @@ fn test_invulnerables_migration() {
                 invulnerables_before_migration,
                 invulnerables_after_migration
             )
+        });
+}
+
+#[test]
+fn test_staking_no_candidates_in_genesis() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let initial_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+
+            assert_eq!(initial_candidates, vec![]);
+        });
+}
+
+#[test]
+fn test_staking_join() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = MinimumSelfDelegation::get() * 10;
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake
+            ));
+
+            // Immediatly after joining, Alice is the top candidate
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+
+            assert_eq!(
+                eligible_candidates,
+                vec![EligibleCandidate {
+                    candidate: ALICE.into(),
+                    stake
+                }]
+            );
+        });
+}
+
+#[test]
+fn test_staking_join_bad_origin() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_noop!(
+                PooledStaking::request_delegate(
+                    root_origin(),
+                    ALICE.into(),
+                    TargetPool::AutoCompounding,
+                    stake
+                ),
+                BadOrigin,
+            );
+        });
+}
+
+#[test]
+fn test_staking_join_below_self_delegation_min() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake1 = MinimumSelfDelegation::get() / 3;
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake1
+            ));
+
+            // Since stake is below MinimumSelfDelegation, the join operation succeeds
+            // but the candidate is not eligible
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(eligible_candidates, vec![],);
+
+            let stake2 = MinimumSelfDelegation::get() - stake1;
+            // Even though stake1 + stake2 == MinimumSelfDelegation, there is a rounding error
+            // introduced when converting the stake amount to shares.
+            let shares_error = 1000000000000;
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake2 + shares_error,
+            ));
+
+            // Increasing the stake to above MinimumSelfDelegation makes the candidate eligible
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![EligibleCandidate {
+                    candidate: ALICE.into(),
+                    stake: stake1 + stake2
+                }],
+            );
+        });
+}
+
+#[test]
+fn test_staking_join_no_self_delegation() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // Bob delegates to Alice, but Alice is not a valid candidate (not enough self-delegation)
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(BOB.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(eligible_candidates, vec![],);
+        });
+}
+
+#[test]
+fn test_staking_join_before_self_delegation() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // Bob delegates to Alice, but Alice is not a valid candidate (not enough self-delegation)
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(BOB.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake
+            ));
+
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(eligible_candidates, vec![],);
+
+            run_to_session(2);
+            assert_ok!(PooledStaking::execute_pending_operations(
+                origin_of(ALICE.into()),
+                vec![PendingOperationQuery {
+                    delegator: BOB.into(),
+                    operation: PendingOperationKey::JoiningAutoCompounding {
+                        candidate: ALICE.into(),
+                        at_block: 2,
+                    }
+                }]
+            ),);
+
+            // Now Alice joins with enough self-delegation
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake
+            ));
+
+            // Alice is a valid candidate, and Bob's stake is also counted
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![EligibleCandidate {
+                    candidate: ALICE.into(),
+                    stake: stake * 2,
+                }],
+            );
+        });
+}
+
+#[test]
+fn test_staking_join_twice_in_same_block() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake1 = 10 * MinimumSelfDelegation::get();
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake1
+            ));
+
+            let stake2 = 9 * MinimumSelfDelegation::get();
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake2
+            ));
+
+            // Both operations succeed and the total stake is the sum of the individual stakes
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+
+            assert_eq!(
+                eligible_candidates,
+                vec![EligibleCandidate {
+                    candidate: ALICE.into(),
+                    stake: stake1 + stake2,
+                }]
+            );
+
+            run_to_session(2);
+
+            assert_ok!(PooledStaking::execute_pending_operations(
+                origin_of(ALICE.into()),
+                vec![PendingOperationQuery {
+                    delegator: ALICE.into(),
+                    operation: PendingOperationKey::JoiningAutoCompounding {
+                        candidate: ALICE.into(),
+                        at_block: 2,
+                    }
+                }]
+            ),);
+
+            // TODO: ensure the total stake has been moved to auto compounding pool
+        });
+}
+
+#[test]
+fn test_staking_join_execute_before_time() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake
+            ));
+
+            // Immediatly after joining, Alice is the top candidate
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![EligibleCandidate {
+                    candidate: ALICE.into(),
+                    stake
+                }]
+            );
+
+            // We called request_delegate in session 0, we will be able to execute it starting from session 2
+            let start_of_session_2 = session_to_block(2);
+            // TODO: maybe this test fails because the code is wrong
+            // Session 2 starts at block 600, but run_to_session runs to block 601, so subtract 2 here to go to 599
+            run_to_block(start_of_session_2 - 2);
+            assert_noop!(
+                PooledStaking::execute_pending_operations(
+                    origin_of(ALICE.into()),
+                    vec![PendingOperationQuery {
+                        delegator: ALICE.into(),
+                        operation: PendingOperationKey::JoiningAutoCompounding {
+                            candidate: ALICE.into(),
+                            at_block: 2,
+                        }
+                    }]
+                ),
+                pallet_pooled_staking::Error::<Runtime>::RequestCannotBeExecuted(0),
+            );
+
+            run_to_block(start_of_session_2);
+            assert_ok!(PooledStaking::execute_pending_operations(
+                origin_of(ALICE.into()),
+                vec![PendingOperationQuery {
+                    delegator: ALICE.into(),
+                    operation: PendingOperationKey::JoiningAutoCompounding {
+                        candidate: ALICE.into(),
+                        at_block: 2,
+                    }
+                }]
+            ),);
+        });
+}
+
+#[test]
+fn test_staking_join_execute_any_origin() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake
+            ));
+
+            // Immediatly after joining, Alice is the top candidate
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![EligibleCandidate {
+                    candidate: ALICE.into(),
+                    stake
+                }]
+            );
+
+            // We called request_delegate in session 0, we will be able to execute it starting from session 2
+            run_to_session(2);
+            assert_ok!(PooledStaking::execute_pending_operations(
+                origin_of(BOB.into()),
+                vec![PendingOperationQuery {
+                    delegator: ALICE.into(),
+                    operation: PendingOperationKey::JoiningAutoCompounding {
+                        candidate: ALICE.into(),
+                        at_block: 2,
+                    }
+                }]
+            ),);
+        });
+}
+
+#[test]
+fn test_staking_join_execute_bad_origin() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake
+            ));
+
+            // Immediatly after joining, Alice is the top candidate
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![EligibleCandidate {
+                    candidate: ALICE.into(),
+                    stake
+                }]
+            );
+
+            // We called request_delegate in session 0, we will be able to execute it starting from session 2
+            run_to_session(2);
+            assert_noop!(
+                PooledStaking::execute_pending_operations(
+                    root_origin(),
+                    vec![PendingOperationQuery {
+                        delegator: ALICE.into(),
+                        operation: PendingOperationKey::JoiningAutoCompounding {
+                            candidate: ALICE.into(),
+                            at_block: 2,
+                        }
+                    }]
+                ),
+                BadOrigin,
+            );
         });
 }

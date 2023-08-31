@@ -33,6 +33,7 @@ pub use sp_runtime::BuildStorage;
 pub mod migrations;
 
 use {
+    core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{BodyId, ParaId},
     frame_support::{
@@ -63,6 +64,7 @@ use {
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
+    sp_runtime::traits::Zero,
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -71,6 +73,7 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
+    sp_std::ops::{Rem, Sub},
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
 };
@@ -752,19 +755,63 @@ parameter_types! {
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
 }
 
-pub const BLOCKS_TO_WAIT: u32 = 2;
-pub struct DummyRequestFilter;
+/// Estimate a session index from a block number.
+/// It is called "estimate" because it will be wrong if the period or offset change after a runtime upgrade.
+///
+/// The first session will have length of `Offset`, and
+/// the following sessions will have length of `Period`.
+pub struct EstimateSessionFromBlockNumber<Period, Offset>(PhantomData<(Period, Offset)>);
 
-impl Contains<u32> for DummyRequestFilter {
-    fn contains(request_block: &u32) -> bool {
-        let block_number = frame_system::Pallet::<Runtime>::current_block_number();
+impl<Period: Get<BlockNumber>, Offset: Get<BlockNumber>>
+    EstimateSessionFromBlockNumber<Period, Offset>
+{
+    fn estimate_session(now: BlockNumber) -> u32 {
+        // TODO: test edge cases
+        let offset = Offset::get();
 
-        let Some(diff) = block_number.checked_sub(*request_block) else {
+        if now < offset {
+            return 0;
+        }
+
+        (now - offset) / Period::get()
+    }
+}
+
+pub struct SessionBoundaryFilter<NumSessions, Period, Offset>(
+    PhantomData<(NumSessions, Period, Offset)>,
+);
+
+impl<NumSessions, Period, Offset> Contains<BlockNumber>
+    for SessionBoundaryFilter<NumSessions, Period, Offset>
+where
+    NumSessions: Get<u32>,
+    Period: Get<BlockNumber>,
+    Offset: Get<BlockNumber>,
+{
+    fn contains(request_block: &BlockNumber) -> bool {
+        // TODO: how to get session number at request_block?
+        // Probably not possible
+        // So calculate the block at which the current session has started
+        // If the request block is lower than that, it means that the request has been through at least
+        // one session boundary
+        // Note that a request at session_boundary-1 will only have to wait 1 block to be executed, so
+        // probably we need to make this 2 session boundaries
+        // Therefore we need session offset and session duration and calculate manually
+        let current_session = Session::current_index();
+        let request_session =
+            EstimateSessionFromBlockNumber::<Period, Offset>::estimate_session(*request_block);
+
+        let Some(diff) = current_session.checked_sub(request_session) else {
             return false;
         };
 
-        diff >= BLOCKS_TO_WAIT // must wait 2 blocks
+        diff >= NumSessions::get() // must wait for at least num_sessions
     }
+}
+
+parameter_types! {
+    // Need to wait 2 sessions before being able to join or leave staking pools
+    pub const StakingSessionDelay: u32 = 2;
 }
 
 impl pallet_pooled_staking::Config for Runtime {
@@ -779,12 +826,11 @@ impl pallet_pooled_staking::Config for Runtime {
     type InitialLeavingShareValue = InitialLeavingShareValue;
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RewardsCollatorCommission = RewardsCollatorCommission;
-    // TODO: Change for session boundary filter
-    type JoiningRequestFilter = DummyRequestFilter;
-    // TODO: Change for proper duration
-    type LeavingRequestFilter = DummyRequestFilter;
+    type JoiningRequestFilter = SessionBoundaryFilter<StakingSessionDelay, Period, Offset>;
+    type LeavingRequestFilter = SessionBoundaryFilter<StakingSessionDelay, Period, Offset>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     // TODO: Add check that candidate have authoring keys?
+    // check if registered in pallet_session, copy from collator_selection
     type EligibleCandidatesFilter = Everything;
 }
 

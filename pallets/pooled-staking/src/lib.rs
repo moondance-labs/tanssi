@@ -33,9 +33,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod calls;
-mod candidate;
-mod pools;
+pub mod calls;
+pub mod candidate;
+pub mod pools;
 pub mod traits;
 
 #[cfg(test)]
