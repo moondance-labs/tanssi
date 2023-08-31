@@ -2603,7 +2603,6 @@ dependencies = [
  "pallet-balances",
  "pallet-collator-assignment",
  "pallet-collator-assignment-runtime-api",
- "pallet-collator-selection",
  "pallet-configuration",
  "pallet-im-online",
  "pallet-initializer",
@@ -7567,11 +7566,15 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
+ "pallet-balances",
+ "pallet-session",
  "parity-scale-codec",
+ "rand 0.8.5",
  "scale-info",
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-staking",
  "sp-std",
 ]
 

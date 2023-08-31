@@ -22,8 +22,8 @@ use {
     common::*,
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
-        AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, CollatorSelection,
-        Configuration, Invulnerables, Proxy, ProxyType,
+        AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, Configuration,
+        Invulnerables, Proxy, ProxyType,
     },
     frame_support::{assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -374,7 +374,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             ));
 
             // Set new invulnerables
-            assert_ok!(CollatorSelection::set_invulnerables(
+            assert_ok!(Invulnerables::set_invulnerables(
                 root_origin(),
                 vec![CHARLIE.into(), DAVE.into()]
             ));
@@ -447,7 +447,7 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             ));
 
             // Set new invulnerables
-            assert_ok!(CollatorSelection::set_invulnerables(
+            assert_ok!(Invulnerables::set_invulnerables(
                 root_origin(),
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
@@ -968,7 +968,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             ));
 
             // Set new invulnerables
-            assert_ok!(CollatorSelection::set_invulnerables(
+            assert_ok!(Invulnerables::set_invulnerables(
                 root_origin(),
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
@@ -1021,7 +1021,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             );
 
             // Remove BOB
-            assert_ok!(CollatorSelection::set_invulnerables(
+            assert_ok!(Invulnerables::set_invulnerables(
                 root_origin(),
                 vec![ALICE.into(), CHARLIE.into(), DAVE.into()]
             ));
@@ -1131,7 +1131,7 @@ fn test_consensus_runtime_api() {
             ));
 
             // Set new invulnerables
-            assert_ok!(CollatorSelection::set_invulnerables(
+            assert_ok!(Invulnerables::set_invulnerables(
                 root_origin(),
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
@@ -1231,7 +1231,7 @@ fn test_consensus_runtime_api_session_changes() {
             ));
 
             // Set new invulnerables
-            assert_ok!(CollatorSelection::set_invulnerables(
+            assert_ok!(Invulnerables::set_invulnerables(
                 root_origin(),
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
@@ -1370,7 +1370,7 @@ fn test_consensus_runtime_api_next_session() {
             ));
 
             // Set new invulnerables
-            assert_ok!(CollatorSelection::set_invulnerables(
+            assert_ok!(Invulnerables::set_invulnerables(
                 root_origin(),
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
@@ -2013,7 +2013,7 @@ fn test_invulnerables_migration() {
                 BoundedVec::try_from(collators).expect("Failed to create BoundedVec"),
             );
 
-            let invulnerables_before_migration = CollatorSelection::invulnerables();
+            let invulnerables_before_migration = Invulnerables::invulnerables();
             assert_eq!(
                 invulnerables_before_migration.len(),
                 2,

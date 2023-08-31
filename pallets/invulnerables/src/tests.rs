@@ -34,12 +34,11 @@ fn basic_setup_works() {
 #[test]
 fn it_should_set_invulnerables() {
     new_test_ext().execute_with(|| {
-        let mut new_set = vec![1, 4, 3, 2];
+        let new_set = vec![1, 4, 3, 2];
         assert_ok!(Invulnerables::set_invulnerables(
             RuntimeOrigin::signed(RootAccount::get()),
             new_set.clone()
         ));
-        new_set.sort();
         assert_eq!(Invulnerables::invulnerables(), new_set);
 
         // cannot set with non-root.
@@ -134,7 +133,7 @@ fn remove_invulnerable_works() {
             3
         ));
 
-        assert_eq!(Invulnerables::invulnerables(), vec![1, 2, 3, 4]);
+        assert_eq!(Invulnerables::invulnerables(), vec![1, 2, 4, 3]);
 
         assert_ok!(Invulnerables::remove_invulnerable(
             RuntimeOrigin::signed(RootAccount::get()),
@@ -144,7 +143,7 @@ fn remove_invulnerable_works() {
         System::assert_last_event(RuntimeEvent::Invulnerables(
             crate::Event::InvulnerableRemoved { account_id: 2 },
         ));
-        assert_eq!(Invulnerables::invulnerables(), vec![1, 3, 4]);
+        assert_eq!(Invulnerables::invulnerables(), vec![1, 4, 3]);
 
         // cannot remove invulnerable not in the list
         assert_noop!(

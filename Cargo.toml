@@ -131,6 +131,7 @@ sc-transaction-pool-api = { git = "https://github.com/moondance-labs/substrate",
 sp-blockchain = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
 sp-externalities = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
 sp-keystore = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
+sp-staking = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
 sp-storage = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
 sp-timestamp = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false}
 substrate-build-script-utils = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43" }
@@ -167,7 +168,6 @@ cumulus-pallet-xcmp-queue = { git = "https://github.com/moondance-labs/cumulus",
 cumulus-primitives-core = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-primitives-timestamp = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 cumulus-primitives-utility = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
-pallet-collator-selection = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 parachain-info = { git = "https://github.com/moondance-labs/cumulus", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 
 # Cumulus (client)
@@ -223,6 +223,7 @@ flume = "0.10.9"
 futures = { version = "0.3.1" }
 hex = { version = "0.4.3", default-features = false }
 jsonrpsee = { version = "0.16.2", features = [ "server" ] }
+rand = { version = "0.8.5", features = ["std_rng"], default-features = false }
 serde_json = { version = "1.0.96", default-features = false }
 thiserror = { version = "1.0.40" }
 tokio = { version = "1.26.0", default-features = false }
