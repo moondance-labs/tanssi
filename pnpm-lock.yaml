@@ -22,8 +22,8 @@ importers:
         specifier: ^4.0.20
         version: 4.0.20(@types/node@20.5.6)(@vitest/ui@0.33.0)(typescript@5.2.2)
       '@moonwall/util':
-        specifier: ^4.0.18
-        version: 4.0.18(@vitest/ui@0.33.0)(typescript@5.2.2)
+        specifier: ^4.0.20
+        version: 4.0.20(@vitest/ui@0.33.0)(typescript@5.2.2)
       '@polkadot/api':
         specifier: ^10.9.1
         version: 10.9.1
@@ -1033,8 +1033,8 @@ packages:
       - zod
     dev: true
 
-  /@moonwall/types@4.0.18(typescript@5.2.2):
-    resolution: {integrity: sha512-1oAHXhRT59Is96XPzsWJq/4CLLj5TMMgAVEn0kSlpZfesrlPGjwMJu8cnrTkoLd2r67y4gmdwlfe/Exn/YY02A==}
+  /@moonwall/types@4.0.20(typescript@5.2.2):
+    resolution: {integrity: sha512-4A/i8643/WgKB7odvSXajtkimqMFUHWVAoW4ANf2rkJTGwwthHNLg/TEyZ6txvYv6FeAmY/m8k212QHRjzmW3A==}
     engines: {node: '>=14.16.0', pnpm: '>=7'}
     dependencies:
       '@polkadot/api': 10.9.1
@@ -1081,12 +1081,12 @@ packages:
       - zod
     dev: true
 
-  /@moonwall/util@4.0.18(@vitest/ui@0.33.0)(typescript@5.2.2):
-    resolution: {integrity: sha512-iFMKiWAVsnEk12io+g5BkkpoS7dDxQS6/ZrwHneOHTMB9yo1Nbmi/hP/4fBjSGxApSTY/NpryP3mJ7orNt2DXA==}
+  /@moonwall/util@4.0.20(@vitest/ui@0.33.0)(typescript@5.2.2):
+    resolution: {integrity: sha512-IA8lyVvPxS6qgPTcWxeqgCVi6u/AnRedkAvWTMInOiPSg9TAVqWIe3lEDpNclNrZuH4N3sTyCPTw+zAdL4+4JA==}
     engines: {node: '>=14.16.0', pnpm: '>=7'}
     dependencies:
       '@moonbeam-network/api-augment': 0.2400.0
-      '@moonwall/types': 4.0.18(typescript@5.2.2)
+      '@moonwall/types': 4.0.20(typescript@5.2.2)
       '@polkadot/api': 10.9.1
       '@polkadot/api-augment': 10.9.1
       '@polkadot/api-derive': 10.9.1
