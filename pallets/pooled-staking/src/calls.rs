@@ -47,28 +47,28 @@ impl<T: Config> Calls<T> {
                 let held = pools::Joining::<T>::hold(&candidate, &delegator);
                 let shares = pools::Joining::<T>::shares(&candidate, &delegator);
                 let stake = pools::Joining::<T>::shares_to_stake(&candidate, shares)?;
-                pools::Joining::<T>::set_hold(&candidate, &delegator, stake.clone());
+                pools::Joining::<T>::set_hold(&candidate, &delegator, stake);
                 (held, stake)
             }
             AllTargetPool::AutoCompounding => {
                 let held = pools::AutoCompounding::<T>::hold(&candidate, &delegator);
                 let shares = pools::AutoCompounding::<T>::shares(&candidate, &delegator);
                 let stake = pools::AutoCompounding::<T>::shares_to_stake(&candidate, shares)?;
-                pools::AutoCompounding::<T>::set_hold(&candidate, &delegator, stake.clone());
+                pools::AutoCompounding::<T>::set_hold(&candidate, &delegator, stake);
                 (held, stake)
             }
             AllTargetPool::ManualRewards => {
                 let held = pools::ManualRewards::<T>::hold(&candidate, &delegator);
                 let shares = pools::ManualRewards::<T>::shares(&candidate, &delegator);
                 let stake = pools::ManualRewards::<T>::shares_to_stake(&candidate, shares)?;
-                pools::ManualRewards::<T>::set_hold(&candidate, &delegator, stake.clone());
+                pools::ManualRewards::<T>::set_hold(&candidate, &delegator, stake);
                 (held, stake)
             }
             AllTargetPool::Leaving => {
                 let held = pools::Leaving::<T>::hold(&candidate, &delegator);
                 let shares = pools::Leaving::<T>::shares(&candidate, &delegator);
                 let stake = pools::Leaving::<T>::shares_to_stake(&candidate, shares)?;
-                pools::Leaving::<T>::set_hold(&candidate, &delegator, stake.clone());
+                pools::Leaving::<T>::set_hold(&candidate, &delegator, stake);
                 (held, stake)
             }
         };
@@ -106,7 +106,7 @@ impl<T: Config> Calls<T> {
         }
 
         // should be unreachable as diff must either be positive or negative
-        return Ok(().into());
+        Ok(().into())
     }
 
     pub fn request_delegate(
@@ -126,7 +126,7 @@ impl<T: Config> Calls<T> {
 
         // We create the new joining shares. It returns the actual amount of stake those shares
         // represents (due to rounding).
-        let stake = pools::Joining::<T>::add_shares(&candidate, &delegator, shares.clone())?;
+        let stake = pools::Joining::<T>::add_shares(&candidate, &delegator, shares)?;
 
         // We hold the funds of the delegator and register its stake into the candidate stake.
         T::Currency::hold(&T::CurrencyHoldReason::get(), &delegator, stake.0)?;
@@ -232,16 +232,16 @@ impl<T: Config> Calls<T> {
         };
 
         // All this stake no longer contribute to the election of the candidate.
-        Candidates::<T>::sub_total_stake(&candidate, removed_stake.clone())?;
+        Candidates::<T>::sub_total_stake(&candidate, removed_stake)?;
 
         // Create leaving shares.
         // As with all pools there will be some rounding error, this amount
         // should be small enough so that it is safe to directly release it
         // in the delegator account.
         let leaving_shares =
-            pools::Leaving::<T>::stake_to_shares_or_init(&candidate, removed_stake.clone())?;
+            pools::Leaving::<T>::stake_to_shares_or_init(&candidate, removed_stake)?;
         let leaving_stake =
-            pools::Leaving::<T>::add_shares(&candidate, &delegator, leaving_shares.clone())?;
+            pools::Leaving::<T>::add_shares(&candidate, &delegator, leaving_shares)?;
         pools::Leaving::<T>::increase_hold(&candidate, &delegator, &leaving_stake)?;
 
         // We create/mutate a request for leaving.
@@ -375,10 +375,10 @@ impl<T: Config> Calls<T> {
         // Convert stake into shares quantity.
         let shares = match pool {
             TargetPool::AutoCompounding => {
-                pools::AutoCompounding::<T>::stake_to_shares_or_init(&candidate, stake.clone())?
+                pools::AutoCompounding::<T>::stake_to_shares_or_init(&candidate, stake)?
             }
             TargetPool::ManualRewards => {
-                pools::ManualRewards::<T>::stake_to_shares_or_init(&candidate, stake.clone())?
+                pools::ManualRewards::<T>::stake_to_shares_or_init(&candidate, stake)?
             }
         };
 
@@ -402,14 +402,14 @@ impl<T: Config> Calls<T> {
                 let stake = pools::AutoCompounding::<T>::add_shares(
                     &candidate,
                     &delegator,
-                    shares.clone(),
+                    shares,
                 )?;
                 pools::AutoCompounding::<T>::increase_hold(&candidate, &delegator, &stake)?;
                 stake
             }
             TargetPool::ManualRewards => {
                 let stake =
-                    pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares.clone())?;
+                    pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares)?;
                 pools::ManualRewards::<T>::increase_hold(&candidate, &delegator, &stake)?;
                 stake
             }
@@ -492,7 +492,7 @@ impl<T: Config> Calls<T> {
         pairs: &[(Candidate<T>, Delegator<T>)],
     ) -> DispatchResultWithPostInfo {
         for (candidate, delegator) in pairs {
-            let Stake(rewards) = pools::ManualRewards::<T>::claim_rewards(&candidate, &delegator)?;
+            let Stake(rewards) = pools::ManualRewards::<T>::claim_rewards(candidate, delegator)?;
 
             if rewards.is_zero() {
                 continue;
@@ -500,7 +500,7 @@ impl<T: Config> Calls<T> {
 
             T::Currency::transfer(
                 &T::StakingAccount::get(),
-                &delegator,
+                delegator,
                 rewards,
                 Preservation::Preserve,
             )?;
@@ -517,8 +517,8 @@ impl<T: Config> Calls<T> {
 
     pub fn update_candidate_position(candidates: &[Candidate<T>]) -> DispatchResultWithPostInfo {
         for candidate in candidates {
-            let stake = Candidates::<T>::total_stake(&candidate);
-            Candidates::<T>::update_total_stake(&candidate, stake)?;
+            let stake = Candidates::<T>::total_stake(candidate);
+            Candidates::<T>::update_total_stake(candidate, stake)?;
         }
 
         Ok(().into())

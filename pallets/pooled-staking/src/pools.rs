@@ -150,7 +150,7 @@ pub trait Pool<T: Config> {
     ) -> Result<Stake<T::Balance>, Error<T>> {
         ensure!(!shares.0.is_zero(), Error::StakeMustBeNonZero);
 
-        let stake = Self::shares_to_stake_or_init(candidate, shares.clone())?;
+        let stake = Self::shares_to_stake_or_init(candidate, shares)?;
 
         let new_shares_supply = Self::shares_supply(candidate).0.err_add(&shares.0)?;
         let new_shares = Self::shares(candidate, delegator).0.err_add(&shares.0)?;
@@ -173,7 +173,7 @@ pub trait Pool<T: Config> {
     ) -> Result<Stake<T::Balance>, Error<T>> {
         ensure!(!shares.0.is_zero(), Error::StakeMustBeNonZero);
 
-        let stake = Self::shares_to_stake(candidate, shares.clone())?;
+        let stake = Self::shares_to_stake(candidate, shares)?;
 
         let new_shares_supply = Self::shares_supply(candidate).0.err_sub(&shares.0)?;
         let new_shares = Self::shares(candidate, delegator).0.err_sub(&shares.0)?;
@@ -212,9 +212,9 @@ pub trait Pool<T: Config> {
 pub fn check_candidate_consistency<T: Config>(candidate: &Candidate<T>) -> Result<(), Error<T>> {
     let total0 = Pools::<T>::get(candidate, &PoolsKey::CandidateTotalStake);
 
-    let joining = Joining::<T>::total_staked(&candidate).0;
-    let auto = AutoCompounding::<T>::total_staked(&candidate).0;
-    let manual = ManualRewards::<T>::total_staked(&candidate).0;
+    let joining = Joining::<T>::total_staked(candidate).0;
+    let auto = AutoCompounding::<T>::total_staked(candidate).0;
+    let manual = ManualRewards::<T>::total_staked(candidate).0;
 
     let total1 = joining
         .checked_add(&auto)

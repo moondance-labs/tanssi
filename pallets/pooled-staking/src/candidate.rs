@@ -96,7 +96,7 @@ impl<T: Config> Candidates<T> {
             stake_diff: stake.0,
         });
 
-        Self::update_total_stake(&candidate, Stake(new_stake))?;
+        Self::update_total_stake(candidate, Stake(new_stake))?;
 
         Ok(())
     }
@@ -105,8 +105,8 @@ impl<T: Config> Candidates<T> {
         candidate: &Candidate<T>,
         new_stake: Stake<T::Balance>,
     ) -> Result<(), Error<T>> {
-        let stake_before = Pools::<T>::get(&candidate, &PoolsKey::CandidateTotalStake);
-        Pools::<T>::set(&candidate, &PoolsKey::CandidateTotalStake, new_stake.0);
+        let stake_before = Pools::<T>::get(candidate, &PoolsKey::CandidateTotalStake);
+        Pools::<T>::set(candidate, &PoolsKey::CandidateTotalStake, new_stake.0);
 
         // Compute self delegation.
         let ac_self = if pools::AutoCompounding::<T>::shares_supply(candidate)
@@ -119,7 +119,7 @@ impl<T: Config> Candidates<T> {
             pools::AutoCompounding::shares_to_stake(candidate, shares)?.0
         };
 
-        let mr_self = if pools::ManualRewards::<T>::shares_supply(&candidate)
+        let mr_self = if pools::ManualRewards::<T>::shares_supply(candidate)
             .0
             .is_zero()
         {
@@ -129,7 +129,7 @@ impl<T: Config> Candidates<T> {
             pools::ManualRewards::shares_to_stake(candidate, shares)?.0
         };
 
-        let joining_self = if pools::Joining::<T>::shares_supply(&candidate).0.is_zero() {
+        let joining_self = if pools::Joining::<T>::shares_supply(candidate).0.is_zero() {
             Zero::zero()
         } else {
             let shares = pools::Joining::<T>::shares(candidate, candidate);
