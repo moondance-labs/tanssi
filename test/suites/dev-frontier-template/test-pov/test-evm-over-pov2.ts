@@ -12,9 +12,6 @@ describeSuite({
         let proxyAddress: `0x${string}`;
         let proxyAbi: Abi;
         let contracts: HeavyContract[];
-        let callData: `0x${string}`;
-        const MAX_CONTRACTS = 20;
-        const EXPECTED_POV_ROUGH = 500_000; // bytes
 
         beforeAll(async () => {
             const { contractAddress, abi } = await deployCreateCompiledContract(context, "CallForwarder");
@@ -23,12 +20,6 @@ describeSuite({
 
             // Deploy heavy contracts (test won't use more than what is needed for reaching max pov)
             contracts = await deployHeavyContracts(context, 6000, Number(6000n + MAX_ETH_POV_PER_TX / 24_000n + 1n));
-
-            callData = encodeFunctionData({
-                abi: proxyAbi,
-                functionName: "callRange",
-                args: [contracts[0].account, contracts[MAX_CONTRACTS].account],
-            });
         });
 
         it({

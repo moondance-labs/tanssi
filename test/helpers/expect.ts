@@ -46,7 +46,7 @@ export function expectSubstrateEvent<
 ): IEvent<Tuple> {
     let event: EventRecord | undefined;
     if (Array.isArray(block.result)) {
-        block.result.forEach((r, idx) => {
+        block.result.forEach((r) => {
             const foundEvents = r.events.filter(
                 ({ event }) => event.section.toString() == section && event.method.toString() == method
             );
@@ -86,40 +86,4 @@ export function expectSubstrateEvent<
             .join("")}`
     ).to.not.be.undefined;
     return event!.event as any;
-}
-
-export function expectSubstrateEvents<
-    ApiType extends ApiTypes,
-    Call extends SubmittableExtrinsic<ApiType> | Promise<SubmittableExtrinsic<ApiType>> | string | Promise<string>,
-    Calls extends Call | Call[],
-    Event extends AugmentedEvents<ApiType>,
-    Section extends keyof Event,
-    Method extends keyof Event[Section],
-    Tuple extends ExtractTuple<Event[Section][Method]>
->(
-    block: BlockCreationResponse<ApiType, Calls extends Call[] ? Awaited<Call>[] : Awaited<Call>>,
-    section: Section,
-    method: Method,
-    count = 0 // if 0, doesn't check
-): IEvent<Tuple>[] {
-    let events: EventRecord[] = [];
-    if (Array.isArray(block.result)) {
-        block.result.forEach((r, idx) => {
-            const foundEvents = r.events.filter(
-                ({ event }) => event.section.toString() == section && event.method.toString() == method
-            );
-            if (foundEvents.length > 0) {
-                events.push(...foundEvents);
-            }
-        });
-    } else {
-        const foundEvents = block.result.events.filter(
-            ({ event }) => event.section.toString() == section && event.method.toString() == method
-        );
-        if (foundEvents.length > 0) {
-            events.push(...foundEvents);
-        }
-    }
-    expect(events.length > 0).to.not.be.null;
-    return events.map(({ event }) => event) as any;
 }
