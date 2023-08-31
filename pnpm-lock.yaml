@@ -19,11 +19,11 @@ importers:
         specifier: ^0.2400.0
         version: 0.2400.0
       '@moonwall/cli':
-        specifier: ^4.0.18
-        version: 4.0.18(@types/node@20.5.6)(@vitest/ui@0.33.0)(typescript@5.2.2)
+        specifier: ^4.0.20
+        version: 4.0.20(@types/node@20.5.6)(@vitest/ui@0.33.0)(typescript@5.2.2)
       '@moonwall/util':
-        specifier: ^4.0.18
-        version: 4.0.18(@vitest/ui@0.33.0)(typescript@5.2.2)
+        specifier: ^4.0.20
+        version: 4.0.20(@vitest/ui@0.33.0)(typescript@5.2.2)
       '@polkadot/api':
         specifier: ^10.9.1
         version: 10.9.1
@@ -951,15 +951,15 @@ packages:
     engines: {node: '>=14.0.0'}
     dev: true
 
-  /@moonwall/cli@4.0.18(@types/node@20.5.6)(@vitest/ui@0.33.0)(typescript@5.2.2):
-    resolution: {integrity: sha512-RmFxgOSsZVZ3UVli+QD7DwL9+aV4kQvXXFJgOz59+F7asVQD6LGSY/AH/XbWpkd6HDKYt3VUxNbe7RJNFhjkZA==}
+  /@moonwall/cli@4.0.20(@types/node@20.5.6)(@vitest/ui@0.33.0)(typescript@5.2.2):
+    resolution: {integrity: sha512-7LmoP8RcBrENab9McEThuY0kijOW44peAu6YNJTWgNa3+4h8MpxaWGlKR9n6Rl/G+jB3VeM1NbbP5dwrEzwLwA==}
     engines: {node: '>=14.16.0', pnpm: '>=7'}
     hasBin: true
     dependencies:
       '@acala-network/chopsticks': 0.7.3(debug@4.3.4)
       '@moonbeam-network/api-augment': 0.2400.0
-      '@moonwall/types': 4.0.18(typescript@5.2.2)
-      '@moonwall/util': 4.0.18(@vitest/ui@0.33.0)(typescript@5.2.2)
+      '@moonwall/types': 4.0.20(typescript@5.2.2)
+      '@moonwall/util': 4.0.20(@vitest/ui@0.33.0)(typescript@5.2.2)
       '@polkadot/api': 10.9.1
       '@polkadot/api-augment': 10.9.1
       '@polkadot/api-derive': 10.9.1
@@ -1033,8 +1033,8 @@ packages:
       - zod
     dev: true
 
-  /@moonwall/types@4.0.18(typescript@5.2.2):
-    resolution: {integrity: sha512-1oAHXhRT59Is96XPzsWJq/4CLLj5TMMgAVEn0kSlpZfesrlPGjwMJu8cnrTkoLd2r67y4gmdwlfe/Exn/YY02A==}
+  /@moonwall/types@4.0.20(typescript@5.2.2):
+    resolution: {integrity: sha512-4A/i8643/WgKB7odvSXajtkimqMFUHWVAoW4ANf2rkJTGwwthHNLg/TEyZ6txvYv6FeAmY/m8k212QHRjzmW3A==}
     engines: {node: '>=14.16.0', pnpm: '>=7'}
     dependencies:
       '@polkadot/api': 10.9.1
@@ -1057,12 +1057,12 @@ packages:
       - zod
     dev: true
 
-  /@moonwall/util@4.0.18(@vitest/ui@0.33.0)(typescript@5.2.2):
-    resolution: {integrity: sha512-iFMKiWAVsnEk12io+g5BkkpoS7dDxQS6/ZrwHneOHTMB9yo1Nbmi/hP/4fBjSGxApSTY/NpryP3mJ7orNt2DXA==}
+  /@moonwall/util@4.0.20(@vitest/ui@0.33.0)(typescript@5.2.2):
+    resolution: {integrity: sha512-IA8lyVvPxS6qgPTcWxeqgCVi6u/AnRedkAvWTMInOiPSg9TAVqWIe3lEDpNclNrZuH4N3sTyCPTw+zAdL4+4JA==}
     engines: {node: '>=14.16.0', pnpm: '>=7'}
     dependencies:
       '@moonbeam-network/api-augment': 0.2400.0
-      '@moonwall/types': 4.0.18(typescript@5.2.2)
+      '@moonwall/types': 4.0.20(typescript@5.2.2)
       '@polkadot/api': 10.9.1
       '@polkadot/api-augment': 10.9.1
       '@polkadot/api-derive': 10.9.1
@@ -1295,14 +1295,6 @@ packages:
       '@polkadot/util-crypto': 12.4.2(@polkadot/util@12.4.2)
       tslib: 2.6.2
 
-  /@polkadot/networks@12.4.1:
-    resolution: {integrity: sha512-plVju5afj5vpa5qv2/2DKtmpGQSHxAjKJVpWf8x74IeesGEflaoyz1vISLPDor9U8X/MNmj5glSbqXeFVA10kA==}
-    engines: {node: '>=16'}
-    dependencies:
-      '@polkadot/util': 12.4.1
-      '@substrate/ss58-registry': 1.43.0
-      tslib: 2.6.2
-
   /@polkadot/networks@12.4.2:
     resolution: {integrity: sha512-dd7vss+86kpOyy/C+DuCWChGfhwHBHtrzJ9ArbbpY75qc8SqdP90lj/c13ZCHr5I1l+coy31gyyMj5i6ja1Dpg==}
     engines: {node: '>=16'}
@@ -1350,7 +1342,7 @@ packages:
       '@polkadot/util': 12.4.2
       '@polkadot/util-crypto': 12.4.2(@polkadot/util@12.4.2)
       '@polkadot/x-fetch': 12.4.1
-      '@polkadot/x-global': 12.4.1
+      '@polkadot/x-global': 12.4.2
       '@polkadot/x-ws': 12.4.1
       eventemitter3: 5.0.1
       mock-socket: 9.2.1
@@ -1403,7 +1395,7 @@ packages:
     engines: {node: '>=16'}
     dependencies:
       '@polkadot/util': 12.4.2
-      '@polkadot/x-bigint': 12.4.1
+      '@polkadot/x-bigint': 12.4.2
       tslib: 2.6.2
 
   /@polkadot/types-create@10.9.1:
@@ -1418,7 +1410,7 @@ packages:
     resolution: {integrity: sha512-zCMVWc4pJtkbMFPu72bD4IhvV/gkHXPX3C5uu92WdmCfnn0vEIEsMKWlVXVVvQQZKAqvs/awpqIfrUtEViOGEA==}
     engines: {node: '>=16'}
     dependencies:
-      '@polkadot/networks': 12.4.1
+      '@polkadot/networks': 12.4.2
       '@polkadot/types': 10.9.1
       '@polkadot/types-codec': 10.9.1
       '@polkadot/types-create': 10.9.1
@@ -1460,18 +1452,6 @@ packages:
       '@polkadot/x-bigint': 12.4.2
       '@polkadot/x-randomvalues': 12.4.2(@polkadot/util@12.4.2)(@polkadot/wasm-util@7.2.2)
       '@scure/base': 1.1.1
-      tslib: 2.6.2
-
-  /@polkadot/util@12.4.1:
-    resolution: {integrity: sha512-msKecQxYwi/1AEkBvvqE7SdbomDl/0xUe77jzhU9rtOlmHnUhTei5cOiFlXqMD3vxMH7hfh+80u2MnexXgeqHA==}
-    engines: {node: '>=16'}
-    dependencies:
-      '@polkadot/x-bigint': 12.4.1
-      '@polkadot/x-global': 12.4.1
-      '@polkadot/x-textdecoder': 12.4.1
-      '@polkadot/x-textencoder': 12.4.1
-      '@types/bn.js': 5.1.1
-      bn.js: 5.2.1
       tslib: 2.6.2
 
   /@polkadot/util@12.4.2:
@@ -1557,13 +1537,6 @@ packages:
       '@polkadot/util': 12.4.2
       tslib: 2.6.2
 
-  /@polkadot/x-bigint@12.4.1:
-    resolution: {integrity: sha512-Wc5udWkRvZJpdISNmnVEwgtyyb/cPHk2YyqdGv9OnEmrG/gLQpmfPVnoxCYNvxq2qyv4klgAdrKcPTG0XvBOTA==}
-    engines: {node: '>=16'}
-    dependencies:
-      '@polkadot/x-global': 12.4.1
-      tslib: 2.6.2
-
   /@polkadot/x-bigint@12.4.2:
     resolution: {integrity: sha512-VRbkhdIf7CyWiUSyHemYi2fFWjBetUGyqpzsIHEclmzvqhKPfs7Kd2ZRdoXKU5QM56eD0sV2pyJxL34dv36/rw==}
     engines: {node: '>=16'}
@@ -1603,25 +1576,11 @@ packages:
       '@polkadot/x-global': 12.4.2
       tslib: 2.6.2
 
-  /@polkadot/x-textdecoder@12.4.1:
-    resolution: {integrity: sha512-8P4j8ORy4M6mK1+S1VzW/Jv/+LY7hggZUfxOyTbPAZPDACs86qtbVksUMdhh8kJvLwXuqpdAPtGDv7qrTsb3Rw==}
-    engines: {node: '>=16'}
-    dependencies:
-      '@polkadot/x-global': 12.4.1
-      tslib: 2.6.2
-
   /@polkadot/x-textdecoder@12.4.2:
     resolution: {integrity: sha512-cyUoKwdSIiBXAaWnGdMYqnaNHc5NV9skQh/fITis3ufKKi3pMwxJ5IwhhfDZpuKDl/3fDXF40Z3fqtTeUnoRXA==}
     engines: {node: '>=16'}
     dependencies:
       '@polkadot/x-global': 12.4.2
-      tslib: 2.6.2
-
-  /@polkadot/x-textencoder@12.4.1:
-    resolution: {integrity: sha512-L/q7BOTcKAH/9gyH1pGtUXNWGZW/uzN9Z2vnJfrAifdXWKiALOeK2WmiObhGKWf8gXlooxEhjbJQUigI1J41rg==}
-    engines: {node: '>=16'}
-    dependencies:
-      '@polkadot/x-global': 12.4.1
       tslib: 2.6.2
 
   /@polkadot/x-textencoder@12.4.2:
