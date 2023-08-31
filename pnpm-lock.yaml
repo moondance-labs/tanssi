@@ -1057,87 +1057,6 @@ packages:
       - zod
     dev: true
 
-  /@moonwall/types@4.0.20(typescript@5.2.2):
-    resolution: {integrity: sha512-4A/i8643/WgKB7odvSXajtkimqMFUHWVAoW4ANf2rkJTGwwthHNLg/TEyZ6txvYv6FeAmY/m8k212QHRjzmW3A==}
-    engines: {node: '>=14.16.0', pnpm: '>=7'}
-    dependencies:
-      '@polkadot/api': 10.9.1
-      '@polkadot/api-base': 10.9.1
-      '@polkadot/keyring': 12.4.2(@polkadot/util-crypto@12.4.2)(@polkadot/util@12.4.2)
-      '@polkadot/types': 10.9.1
-      '@polkadot/util': 12.4.2
-      '@polkadot/util-crypto': 12.4.2(@polkadot/util@12.4.2)
-      bottleneck: 2.19.5
-      debug: 4.3.4(supports-color@8.1.1)
-      ethers: 6.7.1
-      viem: 1.7.0(typescript@5.2.2)
-      web3: 4.0.3
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - supports-color
-      - typescript
-      - utf-8-validate
-      - zod
-    dev: true
-
-  /@moonwall/util@4.0.20(@vitest/ui@0.33.0)(typescript@5.2.2):
-    resolution: {integrity: sha512-IA8lyVvPxS6qgPTcWxeqgCVi6u/AnRedkAvWTMInOiPSg9TAVqWIe3lEDpNclNrZuH4N3sTyCPTw+zAdL4+4JA==}
-    engines: {node: '>=14.16.0', pnpm: '>=7'}
-    dependencies:
-      '@moonbeam-network/api-augment': 0.2400.0
-      '@moonwall/types': 4.0.20(typescript@5.2.2)
-      '@polkadot/api': 10.9.1
-      '@polkadot/api-augment': 10.9.1
-      '@polkadot/api-derive': 10.9.1
-      '@polkadot/keyring': 12.4.2(@polkadot/util-crypto@12.4.2)(@polkadot/util@12.4.2)
-      '@polkadot/rpc-provider': 10.9.1
-      '@polkadot/types': 10.9.1
-      '@polkadot/types-codec': 10.9.1
-      '@polkadot/util': 12.4.2
-      '@polkadot/util-crypto': 12.4.2(@polkadot/util@12.4.2)
-      bottleneck: 2.19.5
-      chalk: 5.3.0
-      clear: 0.1.0
-      cli-progress: 3.12.0
-      colors: 1.4.0
-      debug: 4.3.4(supports-color@8.1.1)
-      dotenv: 16.3.1
-      ethers: 6.7.1
-      inquirer: 8.2.6
-      inquirer-press-to-continue: 1.2.0(inquirer@8.2.6)
-      node-fetch: 3.3.2
-      rlp: 3.0.0
-      semver: 7.5.4
-      viem: 1.7.0(typescript@5.2.2)
-      vitest: 0.34.3(@vitest/ui@0.33.0)
-      web3: 4.0.3
-      ws: 8.13.0
-      yaml: 2.3.1
-      yargs: 17.7.2
-    transitivePeerDependencies:
-      - '@edge-runtime/vm'
-      - '@vitest/browser'
-      - '@vitest/ui'
-      - bufferutil
-      - encoding
-      - happy-dom
-      - jsdom
-      - less
-      - lightningcss
-      - playwright
-      - safaridriver
-      - sass
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - typescript
-      - utf-8-validate
-      - webdriverio
-      - zod
-    dev: true
-
   /@moonwall/util@4.0.20(@vitest/ui@0.33.0)(typescript@5.2.2):
     resolution: {integrity: sha512-IA8lyVvPxS6qgPTcWxeqgCVi6u/AnRedkAvWTMInOiPSg9TAVqWIe3lEDpNclNrZuH4N3sTyCPTw+zAdL4+4JA==}
     engines: {node: '>=14.16.0', pnpm: '>=7'}
@@ -1476,7 +1395,7 @@ packages:
     engines: {node: '>=16'}
     dependencies:
       '@polkadot/util': 12.4.2
-      '@polkadot/x-bigint': 12.4.2
+      '@polkadot/x-bigint': 12.4.1
       tslib: 2.6.2
 
   /@polkadot/types-create@10.9.1:
@@ -1616,6 +1535,13 @@ packages:
       '@polkadot/util': '*'
     dependencies:
       '@polkadot/util': 12.4.2
+      tslib: 2.6.2
+
+  /@polkadot/x-bigint@12.4.1:
+    resolution: {integrity: sha512-Wc5udWkRvZJpdISNmnVEwgtyyb/cPHk2YyqdGv9OnEmrG/gLQpmfPVnoxCYNvxq2qyv4klgAdrKcPTG0XvBOTA==}
+    engines: {node: '>=16'}
+    dependencies:
+      '@polkadot/x-global': 12.4.1
       tslib: 2.6.2
 
   /@polkadot/x-bigint@12.4.2:
