@@ -210,12 +210,12 @@ pub mod pallet {
             T::UpdateOrigin::ensure_origin(origin)?;
 
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
-                match invulnerables.contains(&who) {
-                    true => return Err(Error::<T>::AlreadyInvulnerable)?,
-                    false => invulnerables
-                        .try_push(who.clone())
-                        .map_err(|_| Error::<T>::TooManyInvulnerables)?,
+                if invulnerables.contains(&who) {
+                    Err(Error::<T>::AlreadyInvulnerable)?;
                 }
+                invulnerables
+                    .try_push(who.clone())
+                    .map_err(|_| Error::<T>::TooManyInvulnerables)?;
                 Ok(())
             })?;
 
