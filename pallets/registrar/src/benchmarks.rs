@@ -24,7 +24,7 @@ use {
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::vec,
-    tp_container_chain_genesis_data::ContainerChainGenesisData,
+    tp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
     tp_traits::ParaId,
 };
 
@@ -48,6 +48,19 @@ fn create_funded_user<T: Config>(
 mod benchmarks {
     use super::*;
 
+    fn new_genesis_data<T: Get<u32>>(
+        storage: Vec<ContainerChainGenesisDataItem>,
+    ) -> ContainerChainGenesisData<T> {
+        ContainerChainGenesisData {
+            storage,
+            name: Default::default(),
+            id: Default::default(),
+            fork_id: Default::default(),
+            extensions: Default::default(),
+            properties: Default::default(),
+        }
+    }
+
     #[benchmark]
     fn register(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
         let mut data = vec![];
@@ -56,16 +69,7 @@ mod benchmarks {
             data.push((b"code".to_vec(), vec![1; (x / z) as usize]).into())
         }
 
-        let storage = ContainerChainGenesisData {
-            // Runtime would go under "code" key, so we mimic
-            // with 4 byte key
-            storage: data,
-            name: Default::default(),
-            id: Default::default(),
-            fork_id: Default::default(),
-            extensions: Default::default(),
-            properties: Default::default(),
-        };
+        let storage = new_genesis_data(data);
 
         for i in 1..y {
             // Twice the deposit just in case
@@ -95,16 +99,8 @@ mod benchmarks {
 
     #[benchmark]
     fn deregister(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
-        let storage = ContainerChainGenesisData {
-            // Runtime would go under "code" key, so we mimic
-            // with 4 byte key
-            storage: vec![(b"code".to_vec(), vec![1; x as usize]).into()],
-            name: Default::default(),
-            id: Default::default(),
-            fork_id: Default::default(),
-            extensions: Default::default(),
-            properties: Default::default(),
-        };
+        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
+        let storage = new_genesis_data(storage);
 
         for i in 0..y {
             // Twice the deposit just in case
@@ -131,16 +127,8 @@ mod benchmarks {
 
     #[benchmark]
     fn mark_valid_for_collating(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
-        let storage = ContainerChainGenesisData {
-            // Runtime would go under "code" key, so we mimic
-            // with 4 byte key
-            storage: vec![(vec![1; 4], vec![1; x as usize]).into()],
-            name: Default::default(),
-            id: Default::default(),
-            fork_id: Default::default(),
-            extensions: Default::default(),
-            properties: Default::default(),
-        };
+        let storage = vec![(vec![1; 4], vec![1; x as usize]).into()];
+        let storage = new_genesis_data(storage);
 
         for i in 0..y {
             // Twice the deposit just in case
@@ -166,6 +154,19 @@ mod benchmarks {
 
     #[benchmark]
     fn set_boot_nodes(x: Linear<1, 200>, y: Linear<1, 10>) {
+        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
+        let storage = new_genesis_data(storage);
+
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+
+        Pallet::<T>::register(
+            RawOrigin::Signed(caller.clone()).into(),
+            Default::default(),
+            storage,
+        )
+        .expect("Failed to register chain");
+
         // x: url len, y: num boot_nodes
         let boot_nodes = BoundedVec::try_from(vec![
             BoundedVec::try_from(vec![b'A'; x as usize])
@@ -175,7 +176,7 @@ mod benchmarks {
         .unwrap();
 
         #[extrinsic_call]
-        Pallet::<T>::set_boot_nodes(RawOrigin::Root, Default::default(), boot_nodes);
+        Pallet::<T>::set_boot_nodes(RawOrigin::Signed(caller), Default::default(), boot_nodes);
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
