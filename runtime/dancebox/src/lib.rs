@@ -34,11 +34,12 @@ pub mod migrations;
 
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::{BodyId, ParaId},
+    cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, BodyId, ParaId, DmpMessageHandler},
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
+        pallet_prelude::DispatchResult,
         traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter},
         weights::{
             constants::{
@@ -665,10 +666,20 @@ impl pallet_proxy::Config for Runtime {
     type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
 }
 
+pub struct XcmExecutionManager;
+impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
+	fn suspend_xcm_execution() -> DispatchResult {
+		XcmpQueue::suspend_xcm_execution(RuntimeOrigin::root())
+	}
+	fn resume_xcm_execution() -> DispatchResult {
+		XcmpQueue::resume_xcm_execution(RuntimeOrigin::root())
+	}
+}
+
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (migrations::DanceboxMigrations<Runtime>,);
-    type XcmExecutionManager = ();
+    type XcmExecutionManager = XcmExecutionManager;
 }
 
 /// Maintenance mode Call filter
@@ -677,6 +688,7 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
         match c {
             RuntimeCall::Balances(_) => false,
+            RuntimeCall::PolkadotXcm(_) => false,
             _ => true,
         }
     }
@@ -698,9 +710,42 @@ impl Contains<RuntimeCall> for NormalFilter {
                 pallet_proxy::Call::kill_pure { .. } => false,
                 _ => true,
             },
+            // Only allow force_default_xcm_version
+            RuntimeCall::PolkadotXcm(method) => match method {
+				pallet_xcm::Call::force_default_xcm_version { .. } => true,
+				_ => false,
+			},
             _ => true,
         }
     }
+}
+
+pub struct NormalDmpHandler;
+impl DmpMessageHandler for NormalDmpHandler {
+	// This implementation makes messages be queued
+	// Since the limit is 0, messages are queued for next iteration
+	fn handle_dmp_messages(
+		iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+		limit: Weight,
+	) -> Weight {
+		(if Migrations::should_pause_xcm() {
+			DmpQueue::handle_dmp_messages(iter, Weight::zero())
+		} else {
+			DmpQueue::handle_dmp_messages(iter, limit)
+		}) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
+	}
+}
+
+pub struct MaintenanceDmpHandler;
+impl DmpMessageHandler for MaintenanceDmpHandler {
+	// This implementation makes messages be queued
+	// Since the limit is 0, messages are queued for next iteration
+	fn handle_dmp_messages(
+		iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+		_limit: Weight,
+	) -> Weight {
+		DmpQueue::handle_dmp_messages(iter, Weight::zero())
+	}
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
@@ -708,12 +753,9 @@ impl pallet_maintenance_mode::Config for Runtime {
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
-    // TODO: enable xcm-support feature when we enable xcm
-    /*
     type XcmExecutionManager = XcmExecutionManager;
     type NormalDmpHandler = NormalDmpHandler;
     type MaintenanceDmpHandler = MaintenanceDmpHandler;
-    */
     // We use AllPalletsWithSystem because we dont want to change the hooks in normal
     // operation
     type NormalExecutiveHooks = AllPalletsWithSystem;

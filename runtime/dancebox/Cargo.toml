@@ -34,8 +34,9 @@ tp-core = { workspace = true }
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
-pallet-maintenance-mode = { workspace = true }
+pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
+xcm-primitives = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -175,7 +176,8 @@ std = [
 	"tp-traits/std",
 	"xcm/std",
 	"xcm-builder/std",
-	"xcm-executor/std"
+	"xcm-executor/std",
+	"xcm-primitives/std"
 ]
 
 runtime-benchmarks = [
