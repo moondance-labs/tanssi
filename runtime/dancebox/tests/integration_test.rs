@@ -2211,15 +2211,25 @@ fn test_staking_join_below_self_delegation_min() {
                 pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
             assert_eq!(eligible_candidates, vec![],);
 
-            let stake2 = MinimumSelfDelegation::get() - stake1;
-            // Even though stake1 + stake2 == MinimumSelfDelegation, there is a rounding error
-            // introduced when converting the stake amount to shares.
-            let shares_error = 1000000000000;
+            let stake2 = MinimumSelfDelegation::get() - stake1 - 1;
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
                 TargetPool::AutoCompounding,
-                stake2 + shares_error,
+                stake2,
+            ));
+
+            // Still below, missing 1 unit
+            let eligible_candidates =
+            pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(eligible_candidates, vec![],);
+
+            let stake3 = 1;
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake3,
             ));
 
             // Increasing the stake to above MinimumSelfDelegation makes the candidate eligible
@@ -2229,7 +2239,7 @@ fn test_staking_join_below_self_delegation_min() {
                 eligible_candidates,
                 vec![EligibleCandidate {
                     candidate: ALICE.into(),
-                    stake: stake1 + stake2
+                    stake: stake1 + stake2 + stake3
                 }],
             );
         });
@@ -2564,6 +2574,7 @@ fn test_staking_join_execute_any_origin() {
 
             // We called request_delegate in session 0, we will be able to execute it starting from session 2
             run_to_session(2);
+            // Anyone can execute pending operations for anyone else
             assert_ok!(PooledStaking::execute_pending_operations(
                 origin_of(BOB.into()),
                 vec![PendingOperationQuery {
