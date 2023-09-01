@@ -17,7 +17,6 @@
 #![cfg(test)]
 
 use dancebox_runtime::MinimumSelfDelegation;
-use frame_support::assert_err;
 use frame_support::assert_noop;
 use pallet_pooled_staking::PoolsKey;
 use pallet_pooled_staking::SharesOrStake;
