@@ -41,6 +41,8 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use sp_runtime::traits::BadOrigin;
+
     use {
         crate::weights::WeightInfo,
         frame_support::{
@@ -419,7 +421,14 @@ pub mod pallet {
             para_id: ParaId,
             boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
         ) -> DispatchResult {
-            T::RegistrarOrigin::ensure_origin(origin)?;
+            let res = T::RegistrarOrigin::ensure_origin(origin.clone());
+            if res.is_err() {
+                let origin = ensure_signed(origin)?;
+                let deposit_info = RegistrarDeposit::<T>::get(para_id).ok_or(BadOrigin)?;
+                if deposit_info.creator != origin {
+                    Err(BadOrigin)?;
+                }
+            }
 
             BootNodes::<T>::insert(para_id, boot_nodes);
 

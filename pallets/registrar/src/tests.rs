@@ -475,6 +475,26 @@ fn set_boot_nodes_bad_origin() {
 }
 
 #[test]
+fn set_boot_nodes_by_para_id_registrar() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data(),
+        ).unwrap();
+        assert_ok!(ParaRegistrar::set_boot_nodes(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            vec![
+                b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
+            ].try_into().unwrap()
+        )
+    );
+    });
+}
+
+#[test]
 fn set_boot_nodes_bad_para_id() {
     // This is allowed in case we want to set bootnodes before registering the chain
     new_test_ext().execute_with(|| {
