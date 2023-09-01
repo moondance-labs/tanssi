@@ -396,23 +396,19 @@ export default {
             },
         },
     },
-    /** Lookup48: pallet_collator_selection::pallet::Event<T> */
-    PalletCollatorSelectionEvent: {
+    /** Lookup48: pallet_invulnerables::pallet::Event<T> */
+    PalletInvulnerablesEvent: {
         _enum: {
             NewInvulnerables: {
                 invulnerables: "Vec<AccountId32>",
             },
-            NewDesiredCandidates: {
-                desiredCandidates: "u32",
-            },
-            NewCandidacyBond: {
-                bondAmount: "u128",
-            },
-            CandidateAdded: {
+            InvulnerableAdded: {
                 accountId: "AccountId32",
-                deposit: "u128",
             },
-            CandidateRemoved: {
+            InvulnerableRemoved: {
+                accountId: "AccountId32",
+            },
+            InvalidInvulnerableSkipped: {
                 accountId: "AccountId32",
             },
         },
@@ -1849,7 +1845,6 @@ export default {
                 pairs: "Vec<(AccountId32,AccountId32)>",
             },
             update_candidate_position: {
-                candidates: "Vec<AccountId32>",
             },
         },
     },

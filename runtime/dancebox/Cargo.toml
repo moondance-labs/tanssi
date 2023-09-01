@@ -87,7 +87,6 @@ cumulus-pallet-xcmp-queue = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
-pallet-collator-selection = { workspace = true }
 pallet-invulnerables = { workspace = true }
 parachain-info = { workspace = true }
 
@@ -140,7 +139,6 @@ try-runtime = [
 	"pallet-authority-mapping/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-collator-assignment/try-runtime",
-	"pallet-collator-selection/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
