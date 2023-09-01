@@ -789,14 +789,6 @@ where
     Offset: Get<BlockNumber>,
 {
     fn contains(request_block: &BlockNumber) -> bool {
-        // TODO: how to get session number at request_block?
-        // Probably not possible
-        // So calculate the block at which the current session has started
-        // If the request block is lower than that, it means that the request has been through at least
-        // one session boundary
-        // Note that a request at session_boundary-1 will only have to wait 1 block to be executed, so
-        // probably we need to make this 2 session boundaries
-        // Therefore we need session offset and session duration and calculate manually
         let current_session = Session::current_index();
         let request_session =
             EstimateSessionFromBlockNumber::<Period, Offset>::estimate_session(*request_block);

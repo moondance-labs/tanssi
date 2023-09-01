@@ -45,6 +45,8 @@ pub use dancebox_runtime::{
 pub fn session_to_block(n: u32) -> u32 {
     let block_number = dancebox_runtime::Period::get() * n;
 
+    // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
+    // so this is the first block of the new session that can actually be used
     block_number + 1
 }
 

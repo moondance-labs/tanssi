@@ -19,6 +19,8 @@
 use dancebox_runtime::MinimumSelfDelegation;
 use frame_support::assert_err;
 use frame_support::assert_noop;
+use pallet_pooled_staking::PoolsKey;
+use pallet_pooled_staking::SharesOrStake;
 
 use {
     common::*,
@@ -2102,6 +2104,8 @@ fn test_staking_join() {
         .execute_with(|| {
             run_to_block(2);
 
+            let balance_before = System::account(AccountId::from(ALICE)).data.free;
+            assert_eq!(System::account(AccountId::from(ALICE)).data.reserved, 0);
             let stake = MinimumSelfDelegation::get() * 10;
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
@@ -2110,7 +2114,7 @@ fn test_staking_join() {
                 stake
             ));
 
-            // Immediatly after joining, Alice is the top candidate
+            // Immediately after joining, Alice is the top candidate
             let eligible_candidates =
                 pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
 
@@ -2121,6 +2125,11 @@ fn test_staking_join() {
                     stake
                 }]
             );
+
+            // And staken amount is immediately marked as "reserved"
+            let balance_after = System::account(AccountId::from(ALICE)).data.free;
+            assert_eq!(balance_before - balance_after, stake);
+            assert_eq!(System::account(AccountId::from(ALICE)).data.reserved, stake);
         });
 }
 
@@ -2221,7 +2230,7 @@ fn test_staking_join_below_self_delegation_min() {
 
             // Still below, missing 1 unit
             let eligible_candidates =
-            pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
             assert_eq!(eligible_candidates, vec![],);
 
             let stake3 = 1;
@@ -2479,7 +2488,7 @@ fn test_staking_join_execute_before_time() {
                 stake
             ));
 
-            // Immediatly after joining, Alice is the top candidate
+            // Immediately after joining, Alice is the top candidate
             let eligible_candidates =
                 pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
             assert_eq!(
@@ -2492,7 +2501,6 @@ fn test_staking_join_execute_before_time() {
 
             // We called request_delegate in session 0, we will be able to execute it starting from session 2
             let start_of_session_2 = session_to_block(2);
-            // TODO: maybe this test fails because the code is wrong
             // Session 2 starts at block 600, but run_to_session runs to block 601, so subtract 2 here to go to 599
             run_to_block(start_of_session_2 - 2);
             assert_noop!(
@@ -2561,7 +2569,7 @@ fn test_staking_join_execute_any_origin() {
                 stake
             ));
 
-            // Immediatly after joining, Alice is the top candidate
+            // Immediately after joining, Alice is the top candidate
             let eligible_candidates =
                 pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
             assert_eq!(
@@ -2626,7 +2634,7 @@ fn test_staking_join_execute_bad_origin() {
                 stake
             ));
 
-            // Immediatly after joining, Alice is the top candidate
+            // Immediately after joining, Alice is the top candidate
             let eligible_candidates =
                 pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
             assert_eq!(
@@ -2653,4 +2661,397 @@ fn test_staking_join_execute_bad_origin() {
                 BadOrigin,
             );
         });
+}
+
+struct A {
+    delegator: AccountId,
+    candidate: AccountId,
+    target_pool: TargetPool,
+    stake: u128,
+}
+
+// Setup test environment with provided delegations already being executed. Input function f gets executed at start session 2
+fn setup_staking_join_and_execute<R>(ops: Vec<A>, f: impl FnOnce() -> R) {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            for op in ops.iter() {
+                assert_ok!(PooledStaking::request_delegate(
+                    origin_of(op.delegator.clone()),
+                    op.candidate.clone(),
+                    op.target_pool,
+                    op.stake,
+                ));
+            }
+
+            // We called request_delegate in session 0, we will be able to execute it starting from session 2
+            run_to_session(2);
+
+            for op in ops.iter() {
+                let operation = match op.target_pool {
+                    TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
+                        candidate: op.candidate.clone(),
+                        at_block: 2,
+                    },
+                    TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
+                        candidate: op.candidate.clone(),
+                        at_block: 2,
+                    },
+                };
+
+                assert_ok!(PooledStaking::execute_pending_operations(
+                    origin_of(op.delegator.clone()),
+                    vec![PendingOperationQuery {
+                        delegator: op.delegator.clone(),
+                        operation,
+                    }]
+                ));
+            }
+
+            f()
+        });
+}
+
+#[test]
+fn test_staking_leave_exact_amount() {
+    setup_staking_join_and_execute(
+        vec![A {
+            delegator: ALICE.into(),
+            candidate: ALICE.into(),
+            target_pool: TargetPool::AutoCompounding,
+            stake: 10 * MinimumSelfDelegation::get(),
+        }],
+        || {
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_ok!(PooledStaking::request_undelegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                SharesOrStake::Stake(stake),
+            ));
+
+            // Immediately after calling request_undelegate, Alice is no longer a candidate
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(eligible_candidates, vec![]);
+        },
+    )
+}
+
+#[test]
+fn test_staking_leave_bad_origin() {
+    setup_staking_join_and_execute(
+        vec![A {
+            delegator: ALICE.into(),
+            candidate: ALICE.into(),
+            target_pool: TargetPool::AutoCompounding,
+            stake: 10 * MinimumSelfDelegation::get(),
+        }],
+        || {
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_noop!(
+                PooledStaking::request_undelegate(
+                    root_origin(),
+                    ALICE.into(),
+                    TargetPool::AutoCompounding,
+                    SharesOrStake::Stake(stake),
+                ),
+                BadOrigin
+            );
+        },
+    )
+}
+
+#[test]
+fn test_staking_leave_more_than_allowed() {
+    setup_staking_join_and_execute(
+        vec![A {
+            delegator: ALICE.into(),
+            candidate: ALICE.into(),
+            target_pool: TargetPool::AutoCompounding,
+            stake: 10 * MinimumSelfDelegation::get(),
+        }],
+        || {
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_noop!(
+                PooledStaking::request_undelegate(
+                    origin_of(ALICE.into()),
+                    ALICE.into(),
+                    TargetPool::AutoCompounding,
+                    SharesOrStake::Stake(stake + 1 * MinimumSelfDelegation::get()),
+                ),
+                pallet_pooled_staking::Error::<Runtime>::MathUnderflow,
+            );
+        },
+    );
+}
+
+#[test]
+fn test_staking_leave_in_separate_transactions() {
+    let stake = 10 * MinimumSelfDelegation::get();
+
+    setup_staking_join_and_execute(
+        vec![A {
+            delegator: ALICE.into(),
+            candidate: ALICE.into(),
+            target_pool: TargetPool::AutoCompounding,
+            stake,
+        }],
+        || {
+            let half_stake = stake / 2;
+            assert_ok!(PooledStaking::request_undelegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                SharesOrStake::Stake(half_stake),
+            ));
+
+            // Alice is still a valid candidate, now with less stake
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            let remaining_stake = stake - half_stake;
+            assert_eq!(
+                eligible_candidates,
+                vec![EligibleCandidate {
+                    candidate: ALICE.into(),
+                    stake: remaining_stake,
+                }],
+            );
+
+            assert_ok!(PooledStaking::request_undelegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                SharesOrStake::Stake(remaining_stake),
+            ));
+
+            // Unstaked remaining stake, so no longer a valid candidate
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(eligible_candidates, vec![],);
+        },
+    );
+}
+
+#[test]
+fn test_staking_leave_all_except_some_dust() {
+    let stake = 10 * MinimumSelfDelegation::get();
+
+    setup_staking_join_and_execute(
+        vec![A {
+            delegator: ALICE.into(),
+            candidate: ALICE.into(),
+            target_pool: TargetPool::AutoCompounding,
+            stake,
+        }],
+        || {
+            let dust = MinimumSelfDelegation::get() / 2;
+            assert_ok!(PooledStaking::request_undelegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                SharesOrStake::Stake(stake - dust),
+            ));
+
+            // Alice still has some stake left, but not enough to reach MinimumSelfDelegation
+            assert_eq!(
+                pallet_pooled_staking::Pools::<Runtime>::get(
+                    AccountId::from(ALICE),
+                    PoolsKey::CandidateTotalStake
+                ),
+                dust,
+            );
+
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(eligible_candidates, vec![],);
+
+            // Leave with remaining stake
+            assert_ok!(PooledStaking::request_undelegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                SharesOrStake::Stake(dust),
+            ));
+
+            // Alice has no more stake left
+            assert_eq!(
+                pallet_pooled_staking::Pools::<Runtime>::get(
+                    AccountId::from(ALICE),
+                    PoolsKey::CandidateTotalStake
+                ),
+                0,
+            );
+        },
+    );
+}
+
+#[test]
+fn test_staking_leave_execute_before_time() {
+    let stake = 10 * MinimumSelfDelegation::get();
+
+    setup_staking_join_and_execute(
+        vec![A {
+            delegator: ALICE.into(),
+            candidate: ALICE.into(),
+            target_pool: TargetPool::AutoCompounding,
+            stake,
+        }],
+        || {
+            let balance_before = System::account(AccountId::from(ALICE)).data.free;
+            let at_block = System::block_number();
+            assert_ok!(PooledStaking::request_undelegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                SharesOrStake::Stake(stake),
+            ));
+
+            // Request undelegate does not change account balance
+            assert_eq!(
+                balance_before,
+                System::account(AccountId::from(ALICE)).data.free
+            );
+
+            // We called request_delegate in session 0, we will be able to execute it starting from session 2
+            let start_of_session_4 = session_to_block(4);
+            // Session 4 starts at block 1200, but run_to_session runs to block 1201, so subtract 2 here to go to 1999
+            run_to_block(start_of_session_4 - 2);
+
+            assert_eq!(
+                balance_before,
+                System::account(AccountId::from(ALICE)).data.free
+            );
+
+            assert_noop!(
+                PooledStaking::execute_pending_operations(
+                    origin_of(ALICE.into()),
+                    vec![PendingOperationQuery {
+                        delegator: ALICE.into(),
+                        operation: PendingOperationKey::Leaving {
+                            candidate: ALICE.into(),
+                            at_block,
+                        }
+                    }]
+                ),
+                pallet_pooled_staking::Error::<Runtime>::RequestCannotBeExecuted(0)
+            );
+        },
+    );
+}
+
+#[test]
+fn test_staking_leave_execute_any_origin() {
+    let stake = 10 * MinimumSelfDelegation::get();
+
+    setup_staking_join_and_execute(
+        vec![A {
+            delegator: ALICE.into(),
+            candidate: ALICE.into(),
+            target_pool: TargetPool::AutoCompounding,
+            stake,
+        }],
+        || {
+            let balance_before = System::account(AccountId::from(ALICE)).data.free;
+            let at_block = System::block_number();
+            assert_ok!(PooledStaking::request_undelegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                SharesOrStake::Stake(stake),
+            ));
+
+            // Request undelegate does not change account balance
+            assert_eq!(
+                balance_before,
+                System::account(AccountId::from(ALICE)).data.free
+            );
+
+            run_to_session(4);
+
+            assert_eq!(
+                balance_before,
+                System::account(AccountId::from(ALICE)).data.free
+            );
+
+            assert_ok!(PooledStaking::execute_pending_operations(
+                // Any signed origin can execute this, the stake will go to Alice account
+                origin_of(BOB.into()),
+                vec![PendingOperationQuery {
+                    delegator: ALICE.into(),
+                    operation: PendingOperationKey::Leaving {
+                        candidate: ALICE.into(),
+                        at_block,
+                    }
+                }]
+            ),);
+
+            let balance_after = System::account(AccountId::from(ALICE)).data.free;
+            assert_eq!(balance_after - balance_before, stake);
+        },
+    );
+}
+
+#[test]
+fn test_staking_leave_execute_bad_origin() {
+    let stake = 10 * MinimumSelfDelegation::get();
+
+    setup_staking_join_and_execute(
+        vec![A {
+            delegator: ALICE.into(),
+            candidate: ALICE.into(),
+            target_pool: TargetPool::AutoCompounding,
+            stake,
+        }],
+        || {
+            let at_block = System::block_number();
+            assert_ok!(PooledStaking::request_undelegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                SharesOrStake::Stake(stake),
+            ));
+
+            run_to_session(4);
+
+            assert_noop!(
+                PooledStaking::execute_pending_operations(
+                    root_origin(),
+                    vec![PendingOperationQuery {
+                        delegator: ALICE.into(),
+                        operation: PendingOperationKey::Leaving {
+                            candidate: ALICE.into(),
+                            at_block,
+                        }
+                    }]
+                ),
+                BadOrigin
+            );
+        },
+    );
 }

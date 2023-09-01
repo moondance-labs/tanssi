@@ -19,12 +19,17 @@
 use {super::*, crate::Pallet as PooledStaking};
 
 use {
-    crate::PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
     crate::pools::Pool,
+    crate::PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
         dispatch::RawOrigin,
-        traits::{fungible::{Mutate, MutateHold}, Get, fungible::InspectHold, tokens::Precision},
+        traits::{
+            fungible::InspectHold,
+            fungible::{Mutate, MutateHold},
+            tokens::Precision,
+            Get,
+        },
     },
     frame_system::{EventRecord, Pallet as System},
     sp_std::prelude::*,
@@ -192,8 +197,8 @@ mod benchmarks {
                 delegator: caller,
                 from: TargetPool::AutoCompounding,
                 pending: stake_to_remove - dust,
-                released: dust
-            } 
+                released: dust,
+            }
             .into(),
         );
         Ok(())
@@ -269,7 +274,6 @@ mod benchmarks {
             candidate_delegator.clone(),
         );
 
-
         let (candidate, delegator) = &candidate_delegator[candidate_delegator.len() - 1];
         // We should have the last pairs event as the last event
         assert_last_event::<T>(
@@ -291,15 +295,18 @@ mod benchmarks {
 
         T::Currency::set_balance(&T::StakingAccount::get(), min_candidate_stk::<T>());
         // Create as many delegations as one can
-      
+
         let (candidate, _deposit) = create_funded_user::<T>(
             "caller",
             USER_SEED - 1,
             min_candidate_stk::<T>() * 2u32.into(),
         );
 
-        let (caller_2, _deposit_amount) =
-        create_funded_user::<T>("caller", USER_SEED-2u32, min_candidate_stk::<T>() * 2u32.into());
+        let (caller_2, _deposit_amount) = create_funded_user::<T>(
+            "caller",
+            USER_SEED - 2u32,
+            min_candidate_stk::<T>() * 2u32.into(),
+        );
 
         // self delegation
         PooledStaking::<T>::request_delegate(
@@ -328,7 +335,12 @@ mod benchmarks {
         // We manually hack it such that hold!=stake
         pools::Joining::<T>::set_hold(&candidate, &caller, Stake(fake_hold));
         let on_hold_before = T::Currency::balance_on_hold(&T::CurrencyHoldReason::get(), &caller);
-        T::Currency::release(&T::CurrencyHoldReason::get(), &caller, on_hold_before - fake_hold, Precision::Exact)?;
+        T::Currency::release(
+            &T::CurrencyHoldReason::get(),
+            &caller,
+            on_hold_before - fake_hold,
+            Precision::Exact,
+        )?;
 
         #[extrinsic_call]
         _(
@@ -345,7 +357,9 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn update_candidate_position( b: Linear<1, { T::EligibleCandidatesBufferSize::get() }>, ) -> Result<(), BenchmarkError> {
+    fn update_candidate_position(
+        b: Linear<1, { T::EligibleCandidatesBufferSize::get() }>,
+    ) -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1000;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
@@ -353,8 +367,8 @@ mod benchmarks {
         T::Currency::set_balance(&T::StakingAccount::get(), min_candidate_stk::<T>());
         let mut candidates = vec![];
 
-         // Create as many candidates as one can
-         for i in 0..b {
+        // Create as many candidates as one can
+        for i in 0..b {
             let (candidate, _deposit) = create_funded_user::<T>(
                 "candidate",
                 USER_SEED - i - 1,
@@ -373,10 +387,7 @@ mod benchmarks {
         }
 
         #[extrinsic_call]
-        _(
-            RawOrigin::Signed(caller.clone()),
-            candidates,
-        );
+        _(RawOrigin::Signed(caller.clone()), candidates);
 
         Ok(())
     }
