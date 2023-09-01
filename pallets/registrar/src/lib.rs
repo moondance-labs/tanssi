@@ -41,17 +41,19 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use sp_runtime::traits::BadOrigin;
 
     use {
         crate::weights::WeightInfo,
         frame_support::{
             pallet_prelude::*,
-            traits::{Currency, ReservableCurrency},
+            traits::{Currency, EitherOfDiverse, ReservableCurrency},
             DefaultNoBound, LOG_TARGET,
         },
-        frame_system::pallet_prelude::*,
-        sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
+        frame_system::{pallet_prelude::*, EnsureSigned},
+        sp_runtime::{
+            traits::{AtLeast32BitUnsigned, BadOrigin},
+            Either, Saturating,
+        },
         sp_std::prelude::*,
         tp_container_chain_genesis_data::ContainerChainGenesisData,
         tp_traits::{
@@ -421,11 +423,14 @@ pub mod pallet {
             para_id: ParaId,
             boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
         ) -> DispatchResult {
-            let res = T::RegistrarOrigin::ensure_origin(origin.clone());
-            if res.is_err() {
-                let origin = ensure_signed(origin)?;
+            let origin =
+                EitherOfDiverse::<T::RegistrarOrigin, EnsureSigned<T::AccountId>>::ensure_origin(
+                    origin,
+                )?;
+
+            if let Either::Right(signed_account) = origin {
                 let deposit_info = RegistrarDeposit::<T>::get(para_id).ok_or(BadOrigin)?;
-                if deposit_info.creator != origin {
+                if deposit_info.creator != signed_account {
                     Err(BadOrigin)?;
                 }
             }
