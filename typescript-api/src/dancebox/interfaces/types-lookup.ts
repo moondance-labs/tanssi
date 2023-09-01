@@ -584,47 +584,7 @@ declare module "@polkadot/types/lookup" {
         readonly type: "LatestAuthorChanged";
     }
 
-    /** @name PalletCollatorSelectionEvent (48) */
-    interface PalletCollatorSelectionEvent extends Enum {
-        readonly isNewInvulnerables: boolean;
-        readonly asNewInvulnerables: {
-            readonly invulnerables: Vec<AccountId32>;
-        } & Struct;
-        readonly isNewDesiredCandidates: boolean;
-        readonly asNewDesiredCandidates: {
-            readonly desiredCandidates: u32;
-        } & Struct;
-        readonly isNewCandidacyBond: boolean;
-        readonly asNewCandidacyBond: {
-            readonly bondAmount: u128;
-        } & Struct;
-        readonly isCandidateAdded: boolean;
-        readonly asCandidateAdded: {
-            readonly accountId: AccountId32;
-            readonly deposit: u128;
-        } & Struct;
-        readonly isCandidateRemoved: boolean;
-        readonly asCandidateRemoved: {
-            readonly accountId: AccountId32;
-        } & Struct;
-        readonly type:
-            | "NewInvulnerables"
-            | "NewDesiredCandidates"
-            | "NewCandidacyBond"
-            | "CandidateAdded"
-            | "CandidateRemoved";
-    }
-
-    /** @name PalletSessionEvent (50) */
-    interface PalletSessionEvent extends Enum {
-        readonly isNewSession: boolean;
-        readonly asNewSession: {
-            readonly sessionIndex: u32;
-        } & Struct;
-        readonly type: "NewSession";
-    }
-
-    /** @name PalletInvulnerablesEvent (51) */
+    /** @name PalletInvulnerablesEvent (48) */
     interface PalletInvulnerablesEvent extends Enum {
         readonly isNewInvulnerables: boolean;
         readonly asNewInvulnerables: {
@@ -638,7 +598,11 @@ declare module "@polkadot/types/lookup" {
         readonly asInvulnerableRemoved: {
             readonly accountId: AccountId32;
         } & Struct;
-        readonly type: "NewInvulnerables" | "InvulnerableAdded" | "InvulnerableRemoved";
+        readonly isInvalidInvulnerableSkipped: boolean;
+        readonly asInvalidInvulnerableSkipped: {
+            readonly accountId: AccountId32;
+        } & Struct;
+        readonly type: "NewInvulnerables" | "InvulnerableAdded" | "InvulnerableRemoved" | "InvalidInvulnerableSkipped";
     }
 
     /** @name PalletPooledStakingEvent (52) */
@@ -3150,19 +3114,8 @@ declare module "@polkadot/types/lookup" {
         readonly isNotCandidate: boolean;
         readonly isTooManyInvulnerables: boolean;
         readonly isAlreadyInvulnerable: boolean;
-        readonly isNoAssociatedValidatorId: boolean;
-        readonly isValidatorNotRegistered: boolean;
-        readonly type:
-            | "TooManyCandidates"
-            | "TooFewCandidates"
-            | "Unknown"
-            | "Permission"
-            | "AlreadyCandidate"
-            | "NotCandidate"
-            | "TooManyInvulnerables"
-            | "AlreadyInvulnerable"
-            | "NoAssociatedValidatorId"
-            | "ValidatorNotRegistered";
+        readonly isNotInvulnerable: boolean;
+        readonly type: "TooManyInvulnerables" | "AlreadyInvulnerable" | "NotInvulnerable";
     }
 
     /** @name SpCoreCryptoKeyTypeId (300) */

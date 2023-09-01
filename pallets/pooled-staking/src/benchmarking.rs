@@ -19,14 +19,15 @@
 use {super::*, crate::Pallet as PooledStaking};
 
 use {
-    crate::pools::Pool,
-    crate::PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
+    crate::{
+        pools::Pool,
+        PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
+    },
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
         dispatch::RawOrigin,
         traits::{
-            fungible::InspectHold,
-            fungible::{Mutate, MutateHold},
+            fungible::{InspectHold, Mutate, MutateHold},
             tokens::Precision,
             Get,
         },

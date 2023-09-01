@@ -57,7 +57,7 @@ where
     fn migrate(&self, _available_weight: Weight) -> Weight {
         log::info!(target: LOG_TARGET, "migrate");
 
-        let invulnerables = CollatorSelectionInvulnerablesValue::<Runtime>::get()
+        let invulnerables = CollatorSelectionInvulnerablesValue::<Runtime>::take()
             .expect("Failed to get invulnerables from CollatorSelection pallet storage.");
         let invulnerables_len = invulnerables.len();
         Invulnerables::set_invulnerables(RuntimeOrigin::root(), invulnerables.to_vec())
@@ -113,7 +113,6 @@ pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
 where
     Runtime: pallet_invulnerables::Config,
-    Runtime: pallet_collator_selection::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());

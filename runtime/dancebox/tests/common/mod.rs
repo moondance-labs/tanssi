@@ -203,7 +203,7 @@ impl ExtBuilder {
         }
 
         if !self.collators.is_empty() {
-            // We set invulnerables in pallet_collator_selection
+            // We set invulnerables in pallet_invulnerables
             let invulnerables: Vec<AccountId> = self
                 .collators
                 .clone()
@@ -211,10 +211,8 @@ impl ExtBuilder {
                 .map(|(account, _balance)| account)
                 .collect();
 
-            pallet_collator_selection::GenesisConfig::<Runtime> {
+            pallet_invulnerables::GenesisConfig::<Runtime> {
                 invulnerables: invulnerables.clone(),
-                candidacy_bond: Default::default(),
-                desired_candidates: invulnerables.len() as u32,
             }
             .assimilate_storage(&mut t)
             .unwrap();
