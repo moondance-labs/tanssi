@@ -25,6 +25,7 @@ use {
 };
 
 const ALICE: u64 = 1;
+const BOB: u64 = 2;
 
 #[test]
 fn register_para_id_42() {
@@ -490,6 +491,27 @@ fn set_boot_nodes_by_para_id_registrar() {
                 b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
             ].try_into().unwrap()
         )
+    );
+    });
+}
+
+#[test]
+fn set_boot_nodes_by_invalid_user() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data(),
+        ).unwrap();
+        assert_noop!(ParaRegistrar::set_boot_nodes(
+            RuntimeOrigin::signed(BOB),
+            42.into(),
+            vec![
+                b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
+            ].try_into().unwrap()
+        ),
+        DispatchError::BadOrigin
     );
     });
 }
