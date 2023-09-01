@@ -42,7 +42,9 @@ pub mod pallet {
     pub use crate::weights::WeightInfo;
     use {
         frame_support::{
-            dispatch::DispatchResultWithPostInfo, pallet_prelude::*, traits::{EnsureOrigin, ValidatorRegistration},
+            dispatch::DispatchResultWithPostInfo,
+            pallet_prelude::*,
+            traits::{EnsureOrigin, ValidatorRegistration},
             BoundedVec, DefaultNoBound,
         },
         frame_system::pallet_prelude::*,

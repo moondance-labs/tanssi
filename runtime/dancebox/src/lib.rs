@@ -806,8 +806,7 @@ construct_runtime!(
         Session: pallet_session = 31,
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
-        Invulnerables: pallet_invulnerables = 34,
-        PooledStaking: pallet_pooled_staking = 35,
+        PooledStaking: pallet_pooled_staking = 34,
 
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 50,

@@ -21,12 +21,12 @@ use {
         traits::{ConstU32, GenesisBuild, ValidatorRegistration},
     },
     frame_system::{self as system, EnsureSignedBy},
-    pallet_balances::AccountData
+    pallet_balances::AccountData,
     sp_core::H256,
     sp_runtime::{
-        RuntimeAppPublic,
         testing::{Header, UintAuthorityId},
         traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
+        RuntimeAppPublic,
     },
 };
 

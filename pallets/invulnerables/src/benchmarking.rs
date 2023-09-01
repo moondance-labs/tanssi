@@ -21,13 +21,16 @@
 use super::*;
 
 #[allow(unused)]
-use crate::Pallet as CollatorSelection;
+use crate::Pallet as InvulnerablesPallet;
 use {
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
-    frame_support::{pallet_prelude::*, traits::{Currency, EnsureOrigin, Get}},
+    frame_support::{
+        pallet_prelude::*,
+        traits::{Currency, EnsureOrigin, Get},
+    },
     frame_system::{EventRecord, RawOrigin},
+    pallet_session::{self as session, SessionManager},
     sp_std::prelude::*,
-    pallet_session::{self as session, SessionManager}
 };
 
 const SEED: u32 = 0;
