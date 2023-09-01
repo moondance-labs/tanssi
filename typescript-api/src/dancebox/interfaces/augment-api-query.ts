@@ -29,7 +29,6 @@ import type {
     PalletBalancesBalanceLock,
     PalletBalancesIdAmount,
     PalletBalancesReserveData,
-    PalletCollatorSelectionCandidateInfo,
     PalletConfigurationHostConfiguration,
     PalletInitializerBufferedSessionChange,
     PalletPooledStakingCandidateEligibleCandidate,
@@ -196,35 +195,6 @@ declare module "@polkadot/api-base/types/storage" {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        collatorSelection: {
-            /**
-             * Fixed amount to deposit to become a collator.
-             *
-             * When a collator calls `leave_intent` they immediately receive the deposit back.
-             */
-            candidacyBond: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
-            /** The (community, limited) collation candidates. */
-            candidates: AugmentedQuery<ApiType, () => Observable<Vec<PalletCollatorSelectionCandidateInfo>>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /**
-             * Desired number of candidates.
-             *
-             * This should ideally always be less than [`Config::MaxCandidates`] for weights to be correct.
-             */
-            desiredCandidates: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
-            /** The invulnerable, fixed collators. */
-            invulnerables: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /** Last block authored by collator. */
-            lastAuthoredBlock: AugmentedQuery<
-                ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<u32>,
-                [AccountId32]
-            > &
-                QueryableStorageEntry<ApiType, [AccountId32]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

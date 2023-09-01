@@ -277,45 +277,6 @@ declare module "@polkadot/api-base/types/submittable" {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
-        collatorSelection: {
-            /**
-             * Deregister `origin` as a collator candidate. Note that the collator can only leave on session change. The
-             * `CandidacyBond` will be unreserved immediately.
-             *
-             * This call will fail if the total number of candidates would drop below `MinCandidates`.
-             *
-             * This call is not available to `Invulnerable` collators.
-             */
-            leaveIntent: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
-            /**
-             * Register this account as a collator candidate. The account must (a) already have registered session keys and
-             * (b) be able to reserve the `CandidacyBond`.
-             *
-             * This call is not available to `Invulnerable` collators.
-             */
-            registerAsCandidate: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
-            /** Set the candidacy bond amount. */
-            setCandidacyBond: AugmentedSubmittable<
-                (bond: u128 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [u128]
-            >;
-            /**
-             * Set the ideal number of collators (not including the invulnerables). If lowering this number, then the number
-             * of running collators could be higher than this figure. Aside from that edge case, there should be no other way
-             * to have more collators than the desired number.
-             */
-            setDesiredCandidates: AugmentedSubmittable<
-                (max: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [u32]
-            >;
-            /** Set the list of invulnerable (fixed) collators. */
-            setInvulnerables: AugmentedSubmittable<
-                (updated: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
-                [Vec<AccountId32>]
-            >;
-            /** Generic tx */
-            [key: string]: SubmittableExtrinsicFunction<ApiType>;
-        };
         configuration: {
             /** Setting this to true will disable consistency checks for the configuration setters. Use with caution. */
             setBypassConsistencyCheck: AugmentedSubmittable<

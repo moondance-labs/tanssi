@@ -114,7 +114,7 @@ From substrate:
 - _Timestamp_: On-Chain notion of time
 - _Transaction Payment_: Transaction payment (fee) management
 - _Authorship_: A pallet where authorship information for orchestrator is stored
-- _CollatorSelection_: A pallet that selects collators to be assigned to author in container-chains and orchestrator
+- _Invulnerables_: A pallet that selects invulnerable collators to be assigned to author in container-chains and orchestrator
 - _Session_: A pallet that handles session-changes and keys
 - _AuthorityMapping_: A pallet that handles a mapping between collator accounts and authority keys
 

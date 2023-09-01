@@ -18,7 +18,7 @@ use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
         AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, RegistrarConfig,
-        Signature, SudoConfig, EXISTENTIAL_DEPOSIT,
+        Signature, SudoConfig,
     },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
@@ -302,11 +302,6 @@ fn testnet_genesis(
                 .collect(),
         },
         parachain_info: dancebox_runtime::ParachainInfoConfig { parachain_id: id },
-        collator_selection: dancebox_runtime::CollatorSelectionConfig {
-            invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
-            candidacy_bond: EXISTENTIAL_DEPOSIT * 16,
-            ..Default::default()
-        },
         invulnerables: dancebox_runtime::InvulnerablesConfig {
             invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
         },

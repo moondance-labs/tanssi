@@ -1395,7 +1395,7 @@ packages:
     engines: {node: '>=16'}
     dependencies:
       '@polkadot/util': 12.4.2
-      '@polkadot/x-bigint': 12.4.2
+      '@polkadot/x-bigint': 12.4.1
       tslib: 2.6.2
 
   /@polkadot/types-create@10.9.1:
@@ -1535,6 +1535,13 @@ packages:
       '@polkadot/util': '*'
     dependencies:
       '@polkadot/util': 12.4.2
+      tslib: 2.6.2
+
+  /@polkadot/x-bigint@12.4.1:
+    resolution: {integrity: sha512-Wc5udWkRvZJpdISNmnVEwgtyyb/cPHk2YyqdGv9OnEmrG/gLQpmfPVnoxCYNvxq2qyv4klgAdrKcPTG0XvBOTA==}
+    engines: {node: '>=16'}
+    dependencies:
+      '@polkadot/x-global': 12.4.1
       tslib: 2.6.2
 
   /@polkadot/x-bigint@12.4.2:
