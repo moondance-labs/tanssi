@@ -786,6 +786,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesBufferSize = ConstU32<100>;
     // TODO: Add check that candidate have authoring keys?
     type EligibleCandidatesFilter = Everything;
+    type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

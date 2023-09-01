@@ -47,6 +47,8 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+pub mod weights;
+
 use frame_support::pallet;
 
 pub use pallet::*;
@@ -55,6 +57,7 @@ pub use pallet::*;
 pub mod pallet {
     use {
         super::*,
+        crate::weights::WeightInfo,
         calls::Calls,
         core::marker::PhantomData,
         frame_support::{
@@ -262,6 +265,8 @@ pub mod pallet {
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: Contains<Self::AccountId>;
+
+        type WeightInfo: WeightInfo;
     }
 
     /// Keeps a list of all eligible candidates, sorted by the amount of stake backing them.
@@ -417,6 +422,8 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        #[pallet::call_index(0)]
+        #[pallet::weight(T::WeightInfo::rebalance_hold())]
         pub fn rebalance_hold(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -429,6 +436,9 @@ pub mod pallet {
             Calls::<T>::rebalance_hold(candidate, delegator, pool)
         }
 
+
+        #[pallet::call_index(1)]
+        #[pallet::weight(T::WeightInfo::request_delegate().saturating_add(T::WeightInfo::execute_pending_operations()))]
         pub fn request_delegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -440,6 +450,7 @@ pub mod pallet {
             Calls::<T>::request_delegate(candidate, delegator, pool, stake)
         }
 
+        #[pallet::weight(T::WeightInfo::execute_pending_operations())]
         pub fn execute_pending_operations(
             origin: OriginFor<T>,
             operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
@@ -447,9 +458,12 @@ pub mod pallet {
             // We don't care about the sender.
             let _ = ensure_signed(origin)?;
 
-            Calls::<T>::execute_pending_operations(operations)
+            Calls::<T>::execute_pending_operations(operations)?;
+            // these fees have been pre-paid by request_delegate or request_undelegate
+            Ok(Pays::No.into())
         }
 
+        #[pallet::weight(T::WeightInfo::request_undelegate().saturating_add(T::WeightInfo::execute_pending_operations()))]
         pub fn request_undelegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -461,6 +475,7 @@ pub mod pallet {
             Calls::<T>::request_undelegate(candidate, delegator, pool, amount)
         }
 
+        #[pallet::weight(T::WeightInfo::claim_manual_rewards(pairs.len() as u32))]
         pub fn claim_manual_rewards(
             origin: OriginFor<T>,
             pairs: Vec<(Candidate<T>, Delegator<T>)>,
@@ -471,6 +486,7 @@ pub mod pallet {
             Calls::<T>::claim_manual_rewards(&pairs)
         }
 
+        #[pallet::weight(T::WeightInfo::update_candidate_position(candidates.len() as u32))]
         pub fn update_candidate_position(
             origin: OriginFor<T>,
             candidates: Vec<Candidate<T>>,
