@@ -746,8 +746,8 @@ parameter_types! {
     pub const CurrencyHoldReason: [u8; 8] = *b"POOLSTAK";
     pub const InitialManualClaimShareValue: u128 = currency::KILODANCE;
     pub const InitialAutoCompoundingShareValue: u128 = currency::KILODANCE;
-    pub const InitialJoiningShareValue: u128 = currency::DANCE;
-    pub const InitialLeavingShareValue: u128 = currency::DANCE;
+    pub const InitialJoiningShareValue: u128 = 1;
+    pub const InitialLeavingShareValue: u128 = 1;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
 }
