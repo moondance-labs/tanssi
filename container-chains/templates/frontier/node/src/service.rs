@@ -20,7 +20,7 @@ use {
     sc_executor::{HeapAllocStrategy, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY},
     sc_network::config::FullNetworkConfiguration,
 };
-
+use cumulus_client_consensus_common::ParachainBlockImport;
 // std
 use std::{
     collections::BTreeMap,
@@ -139,7 +139,12 @@ pub fn new_partial(
         sc_consensus::DefaultImportQueue<Block, ParachainClient>,
         sc_transaction_pool::FullPool<Block, ParachainClient>,
         (
-            FrontierBlockImport<Block, Arc<ParachainClient>, ParachainClient>,
+            ParachainBlockImport<Block, FrontierBlockImport<
+					Block,
+					Arc<ParachainClient>,
+					ParachainClient,
+				>,
+                ParachainBackend>,
             Option<FilterPool>,
             Option<Telemetry>,
             Option<TelemetryWorkerHandle>,
@@ -221,9 +226,14 @@ pub fn new_partial(
 
     let frontier_block_import = FrontierBlockImport::new(client.clone(), client.clone());
 
+    let parachain_block_import = cumulus_client_consensus_common::ParachainBlockImport::new(
+		frontier_block_import,
+		backend.clone(),
+	);
+
     let import_queue = nimbus_consensus::import_queue(
         client.clone(),
-        frontier_block_import.clone(),
+        parachain_block_import.clone(),
         move |_, _| async move {
             let time = sp_timestamp::InherentDataProvider::from_system_time();
 
@@ -243,7 +253,7 @@ pub fn new_partial(
         transaction_pool,
         select_chain: maybe_select_chain,
         other: (
-            frontier_block_import,
+            parachain_block_import,
             filter_pool,
             telemetry,
             telemetry_worker_handle,
