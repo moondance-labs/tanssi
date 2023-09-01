@@ -17,10 +17,10 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
+    cumulus_client_consensus_common::ParachainBlockImport,
     sc_executor::{HeapAllocStrategy, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY},
     sc_network::config::FullNetworkConfiguration,
 };
-use cumulus_client_consensus_common::ParachainBlockImport;
 // std
 use std::{
     collections::BTreeMap,
@@ -139,12 +139,11 @@ pub fn new_partial(
         sc_consensus::DefaultImportQueue<Block, ParachainClient>,
         sc_transaction_pool::FullPool<Block, ParachainClient>,
         (
-            ParachainBlockImport<Block, FrontierBlockImport<
-					Block,
-					Arc<ParachainClient>,
-					ParachainClient,
-				>,
-                ParachainBackend>,
+            ParachainBlockImport<
+                Block,
+                FrontierBlockImport<Block, Arc<ParachainClient>, ParachainClient>,
+                ParachainBackend,
+            >,
             Option<FilterPool>,
             Option<Telemetry>,
             Option<TelemetryWorkerHandle>,
@@ -227,9 +226,9 @@ pub fn new_partial(
     let frontier_block_import = FrontierBlockImport::new(client.clone(), client.clone());
 
     let parachain_block_import = cumulus_client_consensus_common::ParachainBlockImport::new(
-		frontier_block_import,
-		backend.clone(),
-	);
+        frontier_block_import,
+        backend.clone(),
+    );
 
     let import_queue = nimbus_consensus::import_queue(
         client.clone(),
