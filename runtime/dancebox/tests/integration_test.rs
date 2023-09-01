@@ -36,7 +36,7 @@ use {
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_migrations::Migration,
     pallet_pooled_staking::{
-        candidate::EligibleCandidate, PendingOperationKey, PendingOperationQuery, TargetPool,
+        EligibleCandidate, PendingOperationKey, PendingOperationQuery, TargetPool,
     },
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,

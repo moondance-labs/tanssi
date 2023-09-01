@@ -33,9 +33,9 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod calls;
-pub mod candidate;
-pub mod pools;
+mod calls;
+mod candidate;
+mod pools;
 pub mod traits;
 
 #[cfg(test)]
@@ -49,6 +49,7 @@ mod benchmarking;
 
 use frame_support::pallet;
 
+pub use candidate::EligibleCandidate;
 pub use pallet::*;
 
 #[pallet(dev_mode)]
