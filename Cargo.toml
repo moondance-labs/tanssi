@@ -54,12 +54,12 @@ tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
 # Moonkit (wasm)
-xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43" }
 nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 
 # Substrate (wasm)
 frame-benchmarking = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
