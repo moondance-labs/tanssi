@@ -2116,7 +2116,6 @@ fn test_staking_join() {
             // Immediately after joining, Alice is the top candidate
             let eligible_candidates =
                 pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-
             assert_eq!(
                 eligible_candidates,
                 vec![EligibleCandidate {
@@ -2129,6 +2128,157 @@ fn test_staking_join() {
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
             assert_eq!(balance_before - balance_after, stake);
             assert_eq!(System::account(AccountId::from(ALICE)).data.reserved, stake);
+        });
+}
+
+#[test]
+fn test_staking_join_no_keys_registered() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = MinimumSelfDelegation::get() * 10;
+            let new_account = AccountId::from([42u8; 32]);
+            assert_ok!(Balances::transfer(
+                origin_of(ALICE.into()),
+                new_account.clone().into(),
+                stake * 2
+            ));
+            let balance_before = System::account(new_account.clone()).data.free;
+            assert_eq!(System::account(new_account.clone()).data.reserved, 0);
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(new_account.clone()),
+                new_account.clone(),
+                TargetPool::AutoCompounding,
+                stake
+            ));
+
+            // The new account should be the top candidate but it has no keys registered in
+            // pallet_session, so it is not eligible
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+
+            assert_eq!(eligible_candidates, vec![]);
+
+            // And staken amount is immediately marked as "reserved"
+            let balance_after = System::account(new_account.clone()).data.free;
+            assert_eq!(balance_before - balance_after, stake);
+            assert_eq!(System::account(new_account.clone()).data.reserved, stake);
+        });
+}
+
+#[test]
+fn test_staking_register_keys_after_joining() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = MinimumSelfDelegation::get() * 10;
+            let new_account = AccountId::from([42u8; 32]);
+            assert_ok!(Balances::transfer(
+                origin_of(ALICE.into()),
+                new_account.clone().into(),
+                stake * 2
+            ));
+            let balance_before = System::account(new_account.clone()).data.free;
+            assert_eq!(System::account(new_account.clone()).data.reserved, 0);
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(new_account.clone()),
+                new_account.clone(),
+                TargetPool::AutoCompounding,
+                stake
+            ));
+
+            // The new account should be the top candidate but it has no keys registered in
+            // pallet_session, so it is not eligible
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(eligible_candidates, vec![]);
+
+            // And staken amount is immediately marked as "reserved"
+            let balance_after = System::account(new_account.clone()).data.free;
+            assert_eq!(balance_before - balance_after, stake);
+            assert_eq!(System::account(new_account.clone()).data.reserved, stake);
+
+            // Now register the keys
+            let new_account_id = get_aura_id_from_seed(&new_account.to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(new_account.clone()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: new_account_id,
+                },
+                vec![]
+            ));
+
+            // Still not eligible, need to manually update candidate list
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(eligible_candidates, vec![]);
+
+            // Update candidate list
+            assert_ok!(PooledStaking::update_candidate_position(
+                origin_of(BOB.into()),
+                vec![new_account.clone()]
+            ));
+
+            // Now it is eligible
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![EligibleCandidate {
+                    candidate: new_account.clone(),
+                    stake
+                }]
+            );
         });
 }
 

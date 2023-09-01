@@ -40,7 +40,9 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, Everything, InstanceFilter},
+        traits::{
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, ValidatorRegistration,
+        },
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -780,6 +782,14 @@ where
     }
 }
 
+pub struct RegisteredInPalletSession;
+
+impl Contains<AccountId> for RegisteredInPalletSession {
+    fn contains(account: &AccountId) -> bool {
+        Session::is_registered(account)
+    }
+}
+
 parameter_types! {
     // Need to wait 2 sessions before being able to join or leave staking pools
     pub const StakingSessionDelay: u32 = 2;
@@ -800,9 +810,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type JoiningRequestFilter = SessionBoundaryFilter<StakingSessionDelay, Period, Offset>;
     type LeavingRequestFilter = SessionBoundaryFilter<StakingSessionDelay, Period, Offset>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
-    // TODO: Add check that candidate have authoring keys?
-    // check if registered in pallet_session, copy from collator_selection
-    type EligibleCandidatesFilter = Everything;
+    type EligibleCandidatesFilter = RegisteredInPalletSession;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
