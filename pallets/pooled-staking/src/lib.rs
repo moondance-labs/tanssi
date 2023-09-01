@@ -44,6 +44,9 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
 use frame_support::pallet;
 
 pub use pallet::*;
@@ -255,7 +258,7 @@ pub mod pallet {
         /// delegations changes. It is safer to bound this list, in which case eligible candidate
         /// could fall out of this list if they have less stake than the top `EligibleCandidatesBufferSize`
         /// eligible candidates. One of this top candidates leaving will then not bring the dropped candidate
-        /// in the list. An extrinsic is available (TODO) to manually bring back such dropped candidate.
+        /// in the list. An extrinsic is available to manually bring back such dropped candidate.
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: Contains<Self::AccountId>;
