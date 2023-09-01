@@ -1,7 +1,6 @@
-import { describeSuite, expect } from "@moonwall/cli";
+import { describeSuite, expect, beforeEach } from "@moonwall/cli";
 import { alith } from "@moonwall/util";
 import { MultiLocation } from "../../../util/xcm";
-import { beforeEach } from "node:test";
 
 // Here we will test that NormalFilter of MaintenanceMode pallet works fine.
 // This means that only one XCM call can be done -> 'forceDefaultXcmVersion',
