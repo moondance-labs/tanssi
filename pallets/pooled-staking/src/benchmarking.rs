@@ -73,8 +73,52 @@ mod benchmarks {
     fn request_delegate() -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1;
         let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
+            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>()*3u32.into());
 
+        // self delegation
+        PooledStaking::<T>::request_delegate(
+            RawOrigin::Signed(caller.clone()).into(),
+            caller.clone(),
+            TargetPool::AutoCompounding,
+            min_candidate_stk::<T>(),
+        )?;
+
+        // self delegation
+        PooledStaking::<T>::request_delegate(
+            RawOrigin::Signed(caller.clone()).into(),
+            caller.clone(),
+            TargetPool::ManualRewards,
+            min_candidate_stk::<T>(),
+        )?;
+
+        // Initialize the block at which we should do stuff
+        let block_number = frame_system::Pallet::<T>::block_number();
+
+        System::<T>::set_block_number(block_number + 10u32.into());
+
+        PooledStaking::<T>::execute_pending_operations(
+            RawOrigin::Signed(caller.clone()).into(),
+            vec![PendingOperationQuery {
+                delegator: caller.clone(),
+                operation: JoiningAutoCompounding {
+                    candidate: caller.clone(),
+                    at_block: block_number,
+                },
+            }],
+        )?;
+
+        PooledStaking::<T>::execute_pending_operations(
+            RawOrigin::Signed(caller.clone()).into(),
+            vec![PendingOperationQuery {
+                delegator: caller.clone(),
+                operation: JoiningManualRewards {
+                    candidate: caller.clone(),
+                    at_block: block_number,
+                },
+            }],
+        )?;
+
+        // Worst case scenario is: we have already shares in both pools, and we delegate again
         #[extrinsic_call]
         _(
             RawOrigin::Signed(caller.clone()),
