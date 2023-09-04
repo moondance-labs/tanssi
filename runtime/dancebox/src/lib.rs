@@ -63,7 +63,7 @@ use {
     scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::{KeyTypeId, UncheckedFrom}, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
+    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT},
@@ -783,6 +783,7 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
+        use sp_core::crypto::UncheckedFrom;
         if eligible {
             let account_slice: &[u8; 32] = a.as_ref();
             let _ = Session::set_keys(RuntimeOrigin::signed(a.clone()), SessionKeys {
