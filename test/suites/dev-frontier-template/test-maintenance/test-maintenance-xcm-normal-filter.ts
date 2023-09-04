@@ -52,7 +52,7 @@ describeSuite({
 
                 // Now let's try with polkadotXcm 'send' extrinsic
                 const destMultilocation: MultiLocation = {
-                    parents: 0,
+                    parents: 1,
                     interior: { Here: null },
                 };
 

@@ -33,7 +33,7 @@ describeSuite({
             title: "should fail to call polkadotXcm without sudo",
             test: async function () {
                 const destMultilocation: MultiLocation = {
-                    parents: 0,
+                    parents: 1,
                     interior: { Here: null },
                 };
 
@@ -57,7 +57,7 @@ describeSuite({
             title: "should succeed to call polkadotXcm with sudo",
             test: async function () {
                 const destMultiLocation: MultiLocation = {
-                    parents: 0,
+                    parents: 1,
                     interior: { Here: null },
                 };
 
