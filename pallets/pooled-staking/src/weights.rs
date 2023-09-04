@@ -71,17 +71,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Balances Holds (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: PooledStaking SortedEligibleCandidates (r:1 w:1)
 	/// Proof Skipped: PooledStaking SortedEligibleCandidates (max_values: Some(1), max_size: None, mode: Measured)
+	/// Storage: Session NextKeys (r:1 w:0)
+	/// Proof Skipped: Session NextKeys (max_values: None, max_size: None, mode: Measured)
 	/// Storage: Session CurrentIndex (r:1 w:0)
 	/// Proof Skipped: Session CurrentIndex (max_values: Some(1), max_size: None, mode: Measured)
 	/// Storage: PooledStaking PendingOperations (r:1 w:1)
 	/// Proof Skipped: PooledStaking PendingOperations (max_values: None, max_size: None, mode: Measured)
 	fn request_delegate() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1105`
-		//  Estimated: `29320`
-		// Minimum execution time: 413_853_000 picoseconds.
-		Weight::from_parts(416_799_000, 29320)
-			.saturating_add(T::DbWeight::get().reads(16_u64))
+		//  Measured:  `1199`
+		//  Estimated: `29414`
+		// Minimum execution time: 441_564_000 picoseconds.
+		Weight::from_parts(451_776_000, 29414)
+			.saturating_add(T::DbWeight::get().reads(17_u64))
 			.saturating_add(T::DbWeight::get().writes(9_u64))
 	}
 	/// Storage: PooledStaking PendingOperations (r:100 w:100)
@@ -99,10 +101,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `550 + b * (390 ±0)`
 		//  Estimated: `3593 + b * (25141 ±0)`
-		// Minimum execution time: 283_142_000 picoseconds.
-		Weight::from_parts(285_478_000, 3593)
-			// Standard Error: 891_503
-			.saturating_add(Weight::from_parts(167_728_531, 0).saturating_mul(b.into()))
+		// Minimum execution time: 321_430_000 picoseconds.
+		Weight::from_parts(323_973_000, 3593)
+			// Standard Error: 517_737
+			.saturating_add(Weight::from_parts(164_837_615, 0).saturating_mul(b.into()))
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().reads((11_u64).saturating_mul(b.into())))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
@@ -117,10 +119,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof Skipped: PooledStaking PendingOperations (max_values: None, max_size: None, mode: Measured)
 	fn request_undelegate() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `557`
-		//  Estimated: `33722`
-		// Minimum execution time: 252_472_000 picoseconds.
-		Weight::from_parts(260_013_000, 33722)
+		//  Measured:  `506`
+		//  Estimated: `33671`
+		// Minimum execution time: 214_402_000 picoseconds.
+		Weight::from_parts(215_741_000, 33671)
 			.saturating_add(T::DbWeight::get().reads(15_u64))
 			.saturating_add(T::DbWeight::get().writes(11_u64))
 	}
@@ -131,12 +133,12 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `b` is `[1, 100]`.
 	fn claim_manual_rewards(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `360 + b * (456 ±0)`
+		//  Measured:  `347 + b * (456 ±0)`
 		//  Estimated: `6196 + b * (7882 ±0)`
-		// Minimum execution time: 138_097_000 picoseconds.
-		Weight::from_parts(472_501_106, 6196)
-			// Standard Error: 653_656
-			.saturating_add(Weight::from_parts(86_521_425, 0).saturating_mul(b.into()))
+		// Minimum execution time: 121_756_000 picoseconds.
+		Weight::from_parts(371_802_571, 6196)
+			// Standard Error: 828_600
+			.saturating_add(Weight::from_parts(91_379_539, 0).saturating_mul(b.into()))
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().reads((3_u64).saturating_mul(b.into())))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
@@ -151,10 +153,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: Balances Holds (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	fn rebalance_hold() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `987`
-		//  Estimated: `11877`
-		// Minimum execution time: 211_216_000 picoseconds.
-		Weight::from_parts(217_029_000, 11877)
+		//  Measured:  `974`
+		//  Estimated: `11864`
+		// Minimum execution time: 195_541_000 picoseconds.
+		Weight::from_parts(197_273_000, 11864)
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
@@ -162,20 +164,22 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof Skipped: PooledStaking Pools (max_values: None, max_size: None, mode: Measured)
 	/// Storage: PooledStaking SortedEligibleCandidates (r:1 w:1)
 	/// Proof Skipped: PooledStaking SortedEligibleCandidates (max_values: Some(1), max_size: None, mode: Measured)
+	/// Storage: Session NextKeys (r:100 w:0)
+	/// Proof Skipped: Session NextKeys (max_values: None, max_size: None, mode: Measured)
 	/// The range of component `b` is `[1, 100]`.
 	fn update_candidate_position(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `122 + b * (325 ±0)`
-		//  Estimated: `1608 + b * (15176 ±0)`
-		// Minimum execution time: 91_879_000 picoseconds.
-		Weight::from_parts(93_319_000, 1608)
-			// Standard Error: 185_731
-			.saturating_add(Weight::from_parts(62_115_270, 0).saturating_mul(b.into()))
+		//  Measured:  `451 + b * (279 ±0)`
+		//  Estimated: `1931 + b * (15129 ±0)`
+		// Minimum execution time: 88_177_000 picoseconds.
+		Weight::from_parts(31_239_777, 1931)
+			// Standard Error: 349_912
+			.saturating_add(Weight::from_parts(59_676_072, 0).saturating_mul(b.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().reads((6_u64).saturating_mul(b.into())))
+			.saturating_add(T::DbWeight::get().reads((7_u64).saturating_mul(b.into())))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
-			.saturating_add(Weight::from_parts(0, 15176).saturating_mul(b.into()))
+			.saturating_add(Weight::from_parts(0, 15129).saturating_mul(b.into()))
 	}
 }
 
@@ -189,17 +193,19 @@ impl WeightInfo for () {
 	/// Proof: Balances Holds (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	/// Storage: PooledStaking SortedEligibleCandidates (r:1 w:1)
 	/// Proof Skipped: PooledStaking SortedEligibleCandidates (max_values: Some(1), max_size: None, mode: Measured)
+	/// Storage: Session NextKeys (r:1 w:0)
+	/// Proof Skipped: Session NextKeys (max_values: None, max_size: None, mode: Measured)
 	/// Storage: Session CurrentIndex (r:1 w:0)
 	/// Proof Skipped: Session CurrentIndex (max_values: Some(1), max_size: None, mode: Measured)
 	/// Storage: PooledStaking PendingOperations (r:1 w:1)
 	/// Proof Skipped: PooledStaking PendingOperations (max_values: None, max_size: None, mode: Measured)
 	fn request_delegate() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `1105`
-		//  Estimated: `29320`
-		// Minimum execution time: 413_853_000 picoseconds.
-		Weight::from_parts(416_799_000, 29320)
-			.saturating_add(RocksDbWeight::get().reads(16_u64))
+		//  Measured:  `1199`
+		//  Estimated: `29414`
+		// Minimum execution time: 441_564_000 picoseconds.
+		Weight::from_parts(451_776_000, 29414)
+			.saturating_add(RocksDbWeight::get().reads(17_u64))
 			.saturating_add(RocksDbWeight::get().writes(9_u64))
 	}
 	/// Storage: PooledStaking PendingOperations (r:100 w:100)
@@ -217,10 +223,10 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `550 + b * (390 ±0)`
 		//  Estimated: `3593 + b * (25141 ±0)`
-		// Minimum execution time: 283_142_000 picoseconds.
-		Weight::from_parts(285_478_000, 3593)
-			// Standard Error: 891_503
-			.saturating_add(Weight::from_parts(167_728_531, 0).saturating_mul(b.into()))
+		// Minimum execution time: 321_430_000 picoseconds.
+		Weight::from_parts(323_973_000, 3593)
+			// Standard Error: 517_737
+			.saturating_add(Weight::from_parts(164_837_615, 0).saturating_mul(b.into()))
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().reads((11_u64).saturating_mul(b.into())))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
@@ -235,10 +241,10 @@ impl WeightInfo for () {
 	/// Proof Skipped: PooledStaking PendingOperations (max_values: None, max_size: None, mode: Measured)
 	fn request_undelegate() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `557`
-		//  Estimated: `33722`
-		// Minimum execution time: 252_472_000 picoseconds.
-		Weight::from_parts(260_013_000, 33722)
+		//  Measured:  `506`
+		//  Estimated: `33671`
+		// Minimum execution time: 214_402_000 picoseconds.
+		Weight::from_parts(215_741_000, 33671)
 			.saturating_add(RocksDbWeight::get().reads(15_u64))
 			.saturating_add(RocksDbWeight::get().writes(11_u64))
 	}
@@ -249,12 +255,12 @@ impl WeightInfo for () {
 	/// The range of component `b` is `[1, 100]`.
 	fn claim_manual_rewards(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `360 + b * (456 ±0)`
+		//  Measured:  `347 + b * (456 ±0)`
 		//  Estimated: `6196 + b * (7882 ±0)`
-		// Minimum execution time: 138_097_000 picoseconds.
-		Weight::from_parts(472_501_106, 6196)
-			// Standard Error: 653_656
-			.saturating_add(Weight::from_parts(86_521_425, 0).saturating_mul(b.into()))
+		// Minimum execution time: 121_756_000 picoseconds.
+		Weight::from_parts(371_802_571, 6196)
+			// Standard Error: 828_600
+			.saturating_add(Weight::from_parts(91_379_539, 0).saturating_mul(b.into()))
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().reads((3_u64).saturating_mul(b.into())))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
@@ -269,10 +275,10 @@ impl WeightInfo for () {
 	/// Proof: Balances Holds (max_values: None, max_size: Some(73), added: 2548, mode: MaxEncodedLen)
 	fn rebalance_hold() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `987`
-		//  Estimated: `11877`
-		// Minimum execution time: 211_216_000 picoseconds.
-		Weight::from_parts(217_029_000, 11877)
+		//  Measured:  `974`
+		//  Estimated: `11864`
+		// Minimum execution time: 195_541_000 picoseconds.
+		Weight::from_parts(197_273_000, 11864)
 			.saturating_add(RocksDbWeight::get().reads(7_u64))
 			.saturating_add(RocksDbWeight::get().writes(4_u64))
 	}
@@ -280,19 +286,21 @@ impl WeightInfo for () {
 	/// Proof Skipped: PooledStaking Pools (max_values: None, max_size: None, mode: Measured)
 	/// Storage: PooledStaking SortedEligibleCandidates (r:1 w:1)
 	/// Proof Skipped: PooledStaking SortedEligibleCandidates (max_values: Some(1), max_size: None, mode: Measured)
+	/// Storage: Session NextKeys (r:100 w:0)
+	/// Proof Skipped: Session NextKeys (max_values: None, max_size: None, mode: Measured)
 	/// The range of component `b` is `[1, 100]`.
 	fn update_candidate_position(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `122 + b * (325 ±0)`
-		//  Estimated: `1608 + b * (15176 ±0)`
-		// Minimum execution time: 91_879_000 picoseconds.
-		Weight::from_parts(93_319_000, 1608)
-			// Standard Error: 185_731
-			.saturating_add(Weight::from_parts(62_115_270, 0).saturating_mul(b.into()))
+		//  Measured:  `451 + b * (279 ±0)`
+		//  Estimated: `1931 + b * (15129 ±0)`
+		// Minimum execution time: 88_177_000 picoseconds.
+		Weight::from_parts(31_239_777, 1931)
+			// Standard Error: 349_912
+			.saturating_add(Weight::from_parts(59_676_072, 0).saturating_mul(b.into()))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().reads((6_u64).saturating_mul(b.into())))
+			.saturating_add(RocksDbWeight::get().reads((7_u64).saturating_mul(b.into())))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 			.saturating_add(RocksDbWeight::get().writes((1_u64).saturating_mul(b.into())))
-			.saturating_add(Weight::from_parts(0, 15176).saturating_mul(b.into()))
+			.saturating_add(Weight::from_parts(0, 15129).saturating_mul(b.into()))
 	}
 }
