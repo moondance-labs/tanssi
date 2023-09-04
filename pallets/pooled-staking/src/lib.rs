@@ -437,7 +437,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::request_delegate().saturating_add(T::WeightInfo::execute_pending_operations()))]
+        #[pallet::weight(T::WeightInfo::request_delegate().saturating_add(T::WeightInfo::execute_pending_operations(1)))]
         pub fn request_delegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -449,7 +449,7 @@ pub mod pallet {
             Calls::<T>::request_delegate(candidate, delegator, pool, stake)
         }
 
-        #[pallet::weight(T::WeightInfo::execute_pending_operations())]
+        #[pallet::weight(T::WeightInfo::execute_pending_operations(operations.len() as u32))]
         pub fn execute_pending_operations(
             origin: OriginFor<T>,
             operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
@@ -462,7 +462,7 @@ pub mod pallet {
             Ok(Pays::No.into())
         }
 
-        #[pallet::weight(T::WeightInfo::request_undelegate().saturating_add(T::WeightInfo::execute_pending_operations()))]
+        #[pallet::weight(T::WeightInfo::request_undelegate().saturating_add(T::WeightInfo::execute_pending_operations(1)))]
         pub fn request_undelegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,

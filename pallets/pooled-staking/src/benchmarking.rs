@@ -97,40 +97,59 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn execute_pending_operations() -> Result<(), BenchmarkError> {
-        const USER_SEED: u32 = 1;
+    fn execute_pending_operations(
+        b: Linear<1, { T::EligibleCandidatesBufferSize::get() }>,
+    ) -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1000;
         let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
-        PooledStaking::<T>::request_delegate(
-            RawOrigin::Signed(caller.clone()).into(),
-            caller.clone(),
-            TargetPool::AutoCompounding,
-            min_candidate_stk::<T>(),
-        )?;
+            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * b.into());
+
+        let mut pending_operations = vec![];
+        let mut candidates = vec![];
+
+        T::Currency::set_balance(&T::StakingAccount::get(), min_candidate_stk::<T>());
 
         // Initialize the block at which we should do stuff
         let block_number = frame_system::Pallet::<T>::block_number();
+
+        // Create as many delegations as one can
+        for i in 0..b {
+            let (candidate, _deposit) = create_funded_user::<T>(
+                "candidate",
+                USER_SEED - i - 1,
+                min_candidate_stk::<T>() * 2u32.into(),
+            );
+
+            // self delegation
+            PooledStaking::<T>::request_delegate(
+                RawOrigin::Signed(caller.clone()).into(),
+                candidate.clone(),
+                TargetPool::AutoCompounding,
+                min_candidate_stk::<T>(),
+            )?;
+
+            pending_operations.push(PendingOperationQuery {
+                delegator: caller.clone(),
+                operation: JoiningAutoCompounding {
+                    candidate: candidate.clone(),
+                    at_block: block_number,
+                },
+            });
+            candidates.push(candidate);
+        }
 
         // TODO: make this parametric by instead of using contains use
         // a custom trait
         // Right now we know this is going to be correct with fast-runtime
         System::<T>::set_block_number(block_number + 10u32.into());
         #[extrinsic_call]
-        _(
-            RawOrigin::Signed(caller.clone()),
-            vec![PendingOperationQuery {
-                delegator: caller.clone(),
-                operation: JoiningAutoCompounding {
-                    candidate: caller.clone(),
-                    at_block: block_number,
-                },
-            }],
-        );
+        _(RawOrigin::Signed(caller.clone()), pending_operations);
 
+        let last_candidate = &candidates[candidates.len() - 1];
         // assert that it comes out sorted
         assert_last_event::<T>(
             Event::ExecutedDelegate {
-                candidate: caller.clone(),
+                candidate: last_candidate.clone(),
                 delegator: caller,
                 towards: TargetPool::AutoCompounding,
                 staked: min_candidate_stk::<T>(),
