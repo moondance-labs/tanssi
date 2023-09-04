@@ -39,7 +39,9 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, ValidatorRegistration},
+        traits::{
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, ValidatorRegistration,
+        },
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -70,8 +72,7 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
-    sp_std::prelude::*,
-    sp_std::marker::PhantomData,
+    sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
 };
 pub use {
@@ -747,7 +748,7 @@ where
     type Instant = u32;
 
     fn now() -> Self::Instant {
-       Session::current_index()
+        Session::current_index()
     }
 
     fn is_elapsed(instant: &Self::Instant) -> bool {
@@ -775,7 +776,6 @@ where
     }
 }
 
-
 pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
@@ -786,14 +786,17 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         use sp_core::crypto::UncheckedFrom;
         if eligible {
             let account_slice: &[u8; 32] = a.as_ref();
-            let _ = Session::set_keys(RuntimeOrigin::signed(a.clone()), SessionKeys {
-                nimbus: NimbusId::unchecked_from(account_slice.clone()),
-            }, vec![]);
-        }
-        else {
+            let _ = Session::set_keys(
+                RuntimeOrigin::signed(a.clone()),
+                SessionKeys {
+                    nimbus: NimbusId::unchecked_from(account_slice.clone()),
+                },
+                vec![],
+            );
+        } else {
             let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
         }
-     }
+    }
 }
 
 impl pallet_pooled_staking::Config for Runtime {

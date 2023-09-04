@@ -57,8 +57,10 @@ pub use pallet::*;
 pub mod pallet {
     use {
         super::*,
-        crate::weights::WeightInfo,
-        crate::traits::{IsCandidateEligible, Timer},
+        crate::{
+            traits::{IsCandidateEligible, Timer},
+            weights::WeightInfo,
+        },
         calls::Calls,
         core::marker::PhantomData,
         frame_support::{

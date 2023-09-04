@@ -21,8 +21,8 @@ use {super::*, crate::Pallet as PooledStaking};
 use {
     crate::{
         pools::Pool,
+        traits::{IsCandidateEligible, Timer},
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
-        traits::{Timer,IsCandidateEligible},
     },
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
@@ -74,7 +74,7 @@ mod benchmarks {
     fn request_delegate() -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1;
         let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>()*3u32.into());
+            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * 3u32.into());
 
         T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
         // self delegation
@@ -207,7 +207,7 @@ mod benchmarks {
         const USER_SEED: u32 = 1;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
-        
+
         T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
 
         PooledStaking::<T>::request_delegate(
