@@ -437,7 +437,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::request_delegate().saturating_add(T::WeightInfo::execute_pending_operations(1)))]
+        #[pallet::weight(T::WeightInfo::request_delegate())]
         pub fn request_delegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -449,7 +449,8 @@ pub mod pallet {
             Calls::<T>::request_delegate(candidate, delegator, pool, stake)
         }
 
-        #[pallet::weight(T::WeightInfo::execute_pending_operations(operations.len() as u32))]
+        /// Execute pending operations can incur in claim manual rewards per operation, we simply add the worst case
+        #[pallet::weight(T::WeightInfo::execute_pending_operations(operations.len() as u32).saturating_add(T::WeightInfo::claim_manual_rewards(operations.len() as u32)))]
         pub fn execute_pending_operations(
             origin: OriginFor<T>,
             operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
@@ -457,12 +458,11 @@ pub mod pallet {
             // We don't care about the sender.
             let _ = ensure_signed(origin)?;
 
-            Calls::<T>::execute_pending_operations(operations)?;
-            // these fees have been pre-paid by request_delegate or request_undelegate
-            Ok(Pays::No.into())
+            Calls::<T>::execute_pending_operations(operations)
         }
 
-        #[pallet::weight(T::WeightInfo::request_undelegate().saturating_add(T::WeightInfo::execute_pending_operations(1)))]
+        /// Request undelegate can incur in either claim manual rewards or hold rebalances, we simply add the worst case
+        #[pallet::weight(T::WeightInfo::request_undelegate().saturating_add(T::WeightInfo::claim_manual_rewards(1).max(T::WeightInfo::rebalance_hold())))]
         pub fn request_undelegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
