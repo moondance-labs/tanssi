@@ -35,8 +35,8 @@ use {
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
-        parameter_types,
         pallet_prelude::DispatchResult,
+        parameter_types,
         traits::{ConstU32, ConstU64, ConstU8, Contains},
         weights::{
             constants::{
@@ -412,12 +412,12 @@ impl pallet_utility::Config for Runtime {
 
 pub struct XcmExecutionManager;
 impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
-	fn suspend_xcm_execution() -> DispatchResult {
-		XcmpQueue::suspend_xcm_execution(RuntimeOrigin::root())
-	}
-	fn resume_xcm_execution() -> DispatchResult {
-		XcmpQueue::resume_xcm_execution(RuntimeOrigin::root())
-	}
+    fn suspend_xcm_execution() -> DispatchResult {
+        XcmpQueue::suspend_xcm_execution(RuntimeOrigin::root())
+    }
+    fn resume_xcm_execution() -> DispatchResult {
+        XcmpQueue::resume_xcm_execution(RuntimeOrigin::root())
+    }
 }
 
 impl pallet_migrations::Config for Runtime {
@@ -449,40 +449,40 @@ impl Contains<RuntimeCall> for NormalFilter {
         match c {
             // Only allow force_default_xcm_version
             RuntimeCall::PolkadotXcm(method) => match method {
-				pallet_xcm::Call::force_default_xcm_version { .. } => true,
-				_ => false,
-			},
-            _ => true
+                pallet_xcm::Call::force_default_xcm_version { .. } => true,
+                _ => false,
+            },
+            _ => true,
         }
     }
 }
 
 pub struct NormalDmpHandler;
 impl DmpMessageHandler for NormalDmpHandler {
-	// This implementation makes messages be queued
-	// Since the limit is 0, messages are queued for next iteration
-	fn handle_dmp_messages(
-		iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-		limit: Weight,
-	) -> Weight {
-		(if Migrations::should_pause_xcm() {
-			DmpQueue::handle_dmp_messages(iter, Weight::zero())
-		} else {
-			DmpQueue::handle_dmp_messages(iter, limit)
-		}) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
-	}
+    // This implementation makes messages be queued
+    // Since the limit is 0, messages are queued for next iteration
+    fn handle_dmp_messages(
+        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+        limit: Weight,
+    ) -> Weight {
+        (if Migrations::should_pause_xcm() {
+            DmpQueue::handle_dmp_messages(iter, Weight::zero())
+        } else {
+            DmpQueue::handle_dmp_messages(iter, limit)
+        }) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
+    }
 }
 
 pub struct MaintenanceDmpHandler;
 impl DmpMessageHandler for MaintenanceDmpHandler {
-	// This implementation makes messages be queued
-	// Since the limit is 0, messages are queued for next iteration
-	fn handle_dmp_messages(
-		iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-		_limit: Weight,
-	) -> Weight {
-		DmpQueue::handle_dmp_messages(iter, Weight::zero())
-	}
+    // This implementation makes messages be queued
+    // Since the limit is 0, messages are queued for next iteration
+    fn handle_dmp_messages(
+        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+        _limit: Weight,
+    ) -> Weight {
+        DmpQueue::handle_dmp_messages(iter, Weight::zero())
+    }
 }
 
 impl pallet_maintenance_mode::Config for Runtime {
