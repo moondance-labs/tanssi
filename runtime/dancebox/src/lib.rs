@@ -55,7 +55,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
-    pallet_pooled_staking::traits::BlockNumberTimer,
+    pallet_pooled_staking::traits::{BlockNumberTimer, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
@@ -71,6 +71,7 @@ use {
         AccountId32, ApplyExtrinsicResult,
     },
     sp_std::prelude::*,
+    sp_std::marker::PhantomData,
     sp_version::RuntimeVersion,
 };
 
@@ -733,10 +734,47 @@ parameter_types! {
     pub const InitialLeavingShareValue: u128 = 1;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
-    pub const BlocksToWait: u32 = BLOCKS_TO_WAIT;
+    pub const BlocksToWait: u32 = 2;
+    pub const SessionsToWait: u32 = 2;
+
 }
 
-pub const BLOCKS_TO_WAIT: u32 = 2;
+pub struct SessionTimer<G>(PhantomData<G>);
+
+impl<G> Timer for SessionTimer<G>
+where
+    G: Get<u32>,
+{
+    type Instant = u32;
+
+    fn now() -> Self::Instant {
+       Session::current_index()
+    }
+
+    fn is_elapsed(instant: &Self::Instant) -> bool {
+        let delay = G::get();
+        let Some(end) = instant.checked_add(delay) else {
+            return false;
+        };
+        end <= Self::now()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn elapsed_instant() -> Self::Instant {
+        let delay = G::get();
+        Self::now()
+            .checked_add(delay)
+            .expect("overflow when computing valid elapsed instant")
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed() {
+        let session_to_reach = Self::elapsed_instant();
+        while Self::now() < session_to_reach {
+            Session::rotate_session();
+        }
+    }
+}
 
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -751,7 +789,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RewardsCollatorCommission = RewardsCollatorCommission;
     // TODO: Change for session boundary filter
-    type JoiningRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
+    type JoiningRequestTimer = SessionTimer<SessionsToWait>;
     // TODO: Change for proper duration
     type LeavingRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
