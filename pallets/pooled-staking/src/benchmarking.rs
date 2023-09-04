@@ -22,7 +22,7 @@ use {
     crate::{
         pools::Pool,
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
-        traits::Timer,
+        traits::{Timer,IsCandidateEligible},
     },
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
@@ -76,6 +76,7 @@ mod benchmarks {
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>()*3u32.into());
 
+        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
         // self delegation
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
@@ -162,6 +163,7 @@ mod benchmarks {
                 USER_SEED - i - 1,
                 min_candidate_stk::<T>() * 2u32.into(),
             );
+            T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
 
             // self delegation
             PooledStaking::<T>::request_delegate(
@@ -205,6 +207,9 @@ mod benchmarks {
         const USER_SEED: u32 = 1;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
+        
+        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
+
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
             caller.clone(),
@@ -277,6 +282,7 @@ mod benchmarks {
                 USER_SEED - i - 1,
                 min_candidate_stk::<T>() * 2u32.into(),
             );
+            T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
 
             // self delegation
             PooledStaking::<T>::request_delegate(
@@ -360,6 +366,7 @@ mod benchmarks {
             min_candidate_stk::<T>() * 2u32.into(),
         );
 
+        T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
         // self delegation
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(candidate.clone()).into(),
@@ -426,6 +433,7 @@ mod benchmarks {
                 USER_SEED - i - 1,
                 min_candidate_stk::<T>() * 2u32.into(),
             );
+            T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
 
             // self delegation
             PooledStaking::<T>::request_delegate(
