@@ -729,8 +729,6 @@ parameter_types! {
     pub const CurrencyHoldReason: [u8; 8] = *b"POOLSTAK";
     pub const InitialManualClaimShareValue: u128 = currency::KILODANCE;
     pub const InitialAutoCompoundingShareValue: u128 = currency::KILODANCE;
-    pub const InitialJoiningShareValue: u128 = 1;
-    pub const InitialLeavingShareValue: u128 = 1;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     pub const BlocksToWait: u32 = BLOCKS_TO_WAIT;
@@ -746,8 +744,6 @@ impl pallet_pooled_staking::Config for Runtime {
     type StakingAccount = StakingAccount;
     type InitialManualClaimShareValue = InitialManualClaimShareValue;
     type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
-    type InitialJoiningShareValue = InitialJoiningShareValue;
-    type InitialLeavingShareValue = InitialLeavingShareValue;
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RewardsCollatorCommission = RewardsCollatorCommission;
     // TODO: Change for session boundary filter
