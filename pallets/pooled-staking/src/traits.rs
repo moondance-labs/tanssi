@@ -73,6 +73,22 @@ where
     }
 }
 
+pub trait IsCandidateEligible<AccountId> {
+    fn is_candidate_eligible(a: &AccountId) -> bool;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_candidate_eligible(a: &AccountId, eligible: bool);
+}
+
+impl<AccountId> IsCandidateEligible<AccountId> for () {
+    fn is_candidate_eligible(_: &AccountId) -> bool {
+        true
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_candidate_eligible(_: &AccountId, _: bool) {}
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct OverflowError;
 

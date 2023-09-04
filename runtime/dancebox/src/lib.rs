@@ -58,7 +58,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
-    pallet_pooled_staking::traits::Timer,
+    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
@@ -791,8 +791,8 @@ parameter_types! {
 
 pub struct RegisteredInPalletSession;
 
-impl Contains<AccountId> for RegisteredInPalletSession {
-    fn contains(account: &AccountId) -> bool {
+impl IsCandidateEligible<AccountId> for RegisteredInPalletSession {
+    fn is_candidate_eligible(account: &AccountId) -> bool {
         Session::is_registered(account)
     }
 }
@@ -814,17 +814,8 @@ where
         let Some(end) = instant.checked_add(delay) else {
             return false;
         };
-        let res = end <= Self::now();
 
-        log::info!(
-            "is_elapsed {}? {} (now={}, delay={})",
-            instant,
-            res,
-            Self::now(),
-            delay
-        );
-
-        res
+        end <= Self::now()
     }
 
     #[cfg(feature = "runtime-benchmarks")]

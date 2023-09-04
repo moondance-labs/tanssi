@@ -56,13 +56,13 @@ pub use pallet::*;
 pub mod pallet {
     use {
         super::*,
-        crate::traits::Timer,
+        crate::traits::{IsCandidateEligible, Timer},
         calls::Calls,
         core::marker::PhantomData,
         frame_support::{
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
-            traits::{fungible, tokens::Balance, Contains, IsType},
+            traits::{fungible, tokens::Balance, IsType},
             Blake2_128Concat, RuntimeDebug,
         },
         frame_system::pallet_prelude::*,
@@ -275,7 +275,7 @@ pub mod pallet {
         /// in the list. An extrinsic is available to manually bring back such dropped candidate.
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
-        type EligibleCandidatesFilter: Contains<Self::AccountId>;
+        type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
     }
 
     /// Keeps a list of all eligible candidates, sorted by the amount of stake backing them.
