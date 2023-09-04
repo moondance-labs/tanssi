@@ -782,7 +782,7 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
-    fn make_candidate_eligible(a: &AccountId, _eligible: bool) {
+    fn make_candidate_eligible(a: &AccountId, eligible: bool) {
         if eligible {
             let account_slice: &[u8; 32] = a.as_ref();
             let _ = Session::set_keys(RuntimeOrigin::signed(a.clone()), SessionKeys {
