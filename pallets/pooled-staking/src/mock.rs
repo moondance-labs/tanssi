@@ -176,6 +176,7 @@ impl pallet_pooled_staking::Config for Runtime {
     // low value so we can test vec bounding, in practice it should be bigger
     type EligibleCandidatesBufferSize = ConstU32<3>;
     type EligibleCandidatesFilter = Everything;
+    type WeightInfo = ();
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {
