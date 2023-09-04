@@ -789,7 +789,7 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
             let _ = Session::set_keys(
                 RuntimeOrigin::signed(a.clone()),
                 SessionKeys {
-                    nimbus: NimbusId::unchecked_from(account_slice.clone()),
+                    nimbus: NimbusId::unchecked_from(*account_slice),
                 },
                 vec![],
             );
