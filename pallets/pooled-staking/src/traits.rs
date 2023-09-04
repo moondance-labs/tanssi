@@ -33,6 +33,9 @@ pub trait Timer {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn elapsed_instant() -> Self::Instant;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed();
 }
 
 pub struct BlockNumberTimer<T, G>(PhantomData<(T, G)>);
@@ -62,6 +65,11 @@ where
         Self::now()
             .checked_add(&delay)
             .expect("overflow when computing valid elapsed instant")
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed() {
+        frame_system::Pallet::<T>::set_block_number(Self::elapsed_instant());
     }
 }
 

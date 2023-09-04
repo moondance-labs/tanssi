@@ -28,7 +28,6 @@ use {
         traits::{
             fungible::{Mutate, MutateHold},
             tokens::{Precision, Preservation},
-            Contains,
         },
     },
     sp_runtime::traits::{CheckedSub, Zero},

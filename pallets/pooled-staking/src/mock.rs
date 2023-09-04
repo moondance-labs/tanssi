@@ -26,7 +26,7 @@ use {
         parameter_types,
         traits::{
             tokens::fungible::{Inspect, InspectHold},
-            Contains, Everything, OnFinalize, OnInitialize,
+            Everything, OnFinalize, OnInitialize,
         },
     },
     frame_system::pallet_prelude::BlockNumberFor,
@@ -36,7 +36,7 @@ use {
     sp_core::{ConstU32, ConstU64, RuntimeDebug, H256},
     sp_runtime::{
         testing::Header,
-        traits::{BlakeTwo256, BlockNumberProvider, IdentityLookup},
+        traits::{BlakeTwo256, IdentityLookup},
         Perbill,
     },
 };
