@@ -39,7 +39,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, Everything, InstanceFilter},
+        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -756,7 +756,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type LeavingRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     // TODO: Add check that candidate have authoring keys?
-    type EligibleCandidatesFilter = Everything;
+    type EligibleCandidatesFilter = ();
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
