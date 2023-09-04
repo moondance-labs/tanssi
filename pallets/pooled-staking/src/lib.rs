@@ -436,7 +436,6 @@ pub mod pallet {
             Calls::<T>::rebalance_hold(candidate, delegator, pool)
         }
 
-
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::request_delegate().saturating_add(T::WeightInfo::execute_pending_operations()))]
         pub fn request_delegate(
