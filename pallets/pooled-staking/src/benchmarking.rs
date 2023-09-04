@@ -22,6 +22,7 @@ use {
     crate::{
         pools::Pool,
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
+        traits::Timer,
     },
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
@@ -32,7 +33,7 @@ use {
             Get,
         },
     },
-    frame_system::{EventRecord, Pallet as System},
+    frame_system::EventRecord,
     sp_std::prelude::*,
 };
 
@@ -91,10 +92,9 @@ mod benchmarks {
             min_candidate_stk::<T>(),
         )?;
 
-        // Initialize the block at which we should do stuff
-        let block_number = frame_system::Pallet::<T>::block_number();
+        let timer = T::JoiningRequestTimer::now();
 
-        System::<T>::set_block_number(block_number + 10u32.into());
+        T::JoiningRequestTimer::skip_to_elapsed();
 
         PooledStaking::<T>::execute_pending_operations(
             RawOrigin::Signed(caller.clone()).into(),
@@ -102,7 +102,7 @@ mod benchmarks {
                 delegator: caller.clone(),
                 operation: JoiningAutoCompounding {
                     candidate: caller.clone(),
-                    at_block: block_number,
+                    at: timer.clone(),
                 },
             }],
         )?;
@@ -113,7 +113,7 @@ mod benchmarks {
                 delegator: caller.clone(),
                 operation: JoiningManualRewards {
                     candidate: caller.clone(),
-                    at_block: block_number,
+                    at: timer.clone(),
                 },
             }],
         )?;
@@ -153,8 +153,7 @@ mod benchmarks {
 
         T::Currency::set_balance(&T::StakingAccount::get(), min_candidate_stk::<T>());
 
-        // Initialize the block at which we should do stuff
-        let block_number = frame_system::Pallet::<T>::block_number();
+        let timer = T::JoiningRequestTimer::now();
 
         // Create as many delegations as one can
         for i in 0..b {
@@ -176,16 +175,13 @@ mod benchmarks {
                 delegator: caller.clone(),
                 operation: JoiningAutoCompounding {
                     candidate: candidate.clone(),
-                    at_block: block_number,
+                    at: timer.clone(),
                 },
             });
             candidates.push(candidate);
         }
 
-        // TODO: make this parametric by instead of using contains use
-        // a custom trait
-        // Right now we know this is going to be correct with fast-runtime
-        System::<T>::set_block_number(block_number + 10u32.into());
+        T::JoiningRequestTimer::skip_to_elapsed();
         #[extrinsic_call]
         _(RawOrigin::Signed(caller.clone()), pending_operations);
 
@@ -216,13 +212,9 @@ mod benchmarks {
             min_candidate_stk::<T>(),
         )?;
 
-        // Initialize the block at which we should do stuff
-        let block_number = frame_system::Pallet::<T>::block_number();
+        let timer = T::JoiningRequestTimer::now();
 
-        // TODO: make this parametric by instead of using contains use
-        // a custom trait
-        // Right now we know this is going to be correct with fast-runtime
-        System::<T>::set_block_number(block_number + 10u32.into());
+        T::JoiningRequestTimer::skip_to_elapsed();
 
         PooledStaking::<T>::execute_pending_operations(
             RawOrigin::Signed(caller.clone()).into(),
@@ -230,7 +222,7 @@ mod benchmarks {
                 delegator: caller.clone(),
                 operation: JoiningAutoCompounding {
                     candidate: caller.clone(),
-                    at_block: block_number,
+                    at: timer.clone(),
                 },
             }],
         )?;
@@ -304,13 +296,9 @@ mod benchmarks {
             candidate_delegator.push((candidate.clone(), caller.clone()))
         }
 
-        // Initialize the block at which we should do stuff
-        let block_number = frame_system::Pallet::<T>::block_number();
+        let timer = T::JoiningRequestTimer::now();
 
-        // TODO: make this parametric by instead of using contains use
-        // a custom trait
-        // Right now we know this is going to be correct with fast-runtime
-        System::<T>::set_block_number(block_number + 10u32.into());
+        T::JoiningRequestTimer::skip_to_elapsed();
 
         // Execute as many pending operations as posible
         for i in 0..b {
@@ -322,7 +310,7 @@ mod benchmarks {
                     delegator: caller.clone(),
                     operation: JoiningManualRewards {
                         candidate: candidate.clone(),
-                        at_block: block_number,
+                        at: timer.clone(),
                     },
                 }],
             )?;

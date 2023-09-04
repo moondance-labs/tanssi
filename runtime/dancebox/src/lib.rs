@@ -55,6 +55,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
+    pallet_pooled_staking::traits::BlockNumberTimer,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
@@ -65,15 +66,14 @@ use {
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
-        traits::{
-            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, BlockNumberProvider,
-        },
+        traits::{AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT},
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
 };
+
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
     tp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
@@ -733,22 +733,10 @@ parameter_types! {
     pub const InitialLeavingShareValue: u128 = 1;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
+    pub const BlocksToWait: u32 = BLOCKS_TO_WAIT;
 }
 
 pub const BLOCKS_TO_WAIT: u32 = 2;
-pub struct DummyRequestFilter;
-
-impl Contains<u32> for DummyRequestFilter {
-    fn contains(request_block: &u32) -> bool {
-        let block_number = frame_system::Pallet::<Runtime>::current_block_number();
-
-        let Some(diff) = block_number.checked_sub(*request_block) else {
-            return false;
-        };
-
-        diff >= BLOCKS_TO_WAIT // must wait 2 blocks
-    }
-}
 
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -763,9 +751,9 @@ impl pallet_pooled_staking::Config for Runtime {
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RewardsCollatorCommission = RewardsCollatorCommission;
     // TODO: Change for session boundary filter
-    type JoiningRequestFilter = DummyRequestFilter;
+    type JoiningRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
     // TODO: Change for proper duration
-    type LeavingRequestFilter = DummyRequestFilter;
+    type LeavingRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     // TODO: Add check that candidate have authoring keys?
     type EligibleCandidatesFilter = Everything;

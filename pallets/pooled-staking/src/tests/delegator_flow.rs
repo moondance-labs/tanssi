@@ -234,7 +234,7 @@ pool_test!(
                         delegator: ACCOUNT_DELEGATOR_1,
                         operation: PendingOperationKey::Leaving {
                             candidate: ACCOUNT_CANDIDATE_1,
-                            at_block: block_number,
+                            at: block_number,
                         }
                     }]
                 ),

@@ -16,14 +16,17 @@
 
 use {
     crate::{
-        self as pallet_pooled_staking, candidate::Candidates, pools::Pool, Candidate, Delegator,
-        PendingOperationKey, TargetPool,
+        self as pallet_pooled_staking,
+        candidate::Candidates,
+        pools::Pool,
+        traits::{BlockNumberTimer, Timer},
+        Candidate, Delegator, PendingOperationKey, PendingOperationKeyOf, TargetPool,
     },
     frame_support::{
         parameter_types,
         traits::{
             tokens::fungible::{Inspect, InspectHold},
-            Contains, Everything, OnFinalize, OnInitialize,
+            Everything, OnFinalize, OnInitialize,
         },
     },
     frame_system::pallet_prelude::BlockNumberFor,
@@ -33,7 +36,7 @@ use {
     sp_core::{ConstU32, ConstU64, RuntimeDebug, H256},
     sp_runtime::{
         testing::Header,
-        traits::{BlakeTwo256, BlockNumberProvider, IdentityLookup},
+        traits::{BlakeTwo256, IdentityLookup},
         Perbill,
     },
 };
@@ -142,22 +145,10 @@ parameter_types! {
     pub const InitialLeavingShareValue: u128 = 3; // to test rounding
     pub const MinimumSelfDelegation: u128 = 10 * MEGA;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
+    pub const BlocksToWait: u64 = BLOCKS_TO_WAIT;
 }
 
 pub const BLOCKS_TO_WAIT: u64 = 2;
-pub struct DummyRequestFilter;
-
-impl Contains<u64> for DummyRequestFilter {
-    fn contains(request_block: &u64) -> bool {
-        let block_number = frame_system::Pallet::<Runtime>::current_block_number();
-
-        let Some(diff) = block_number.checked_sub(*request_block) else {
-            return false;
-        };
-
-        diff >= BLOCKS_TO_WAIT // must wait 2 blocks
-    }
-}
 
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -171,8 +162,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type InitialLeavingShareValue = InitialLeavingShareValue;
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RewardsCollatorCommission = RewardsCollatorCommission;
-    type JoiningRequestFilter = DummyRequestFilter;
-    type LeavingRequestFilter = DummyRequestFilter;
+    type JoiningRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
+    type LeavingRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
     // low value so we can test vec bounding, in practice it should be bigger
     type EligibleCandidatesBufferSize = ConstU32<3>;
     type EligibleCandidatesFilter = Everything;
@@ -189,8 +180,8 @@ pub trait PoolExt<T: crate::Config>: Pool<T> {
     ) -> crate::Event<T>;
     fn joining_operation_key(
         candidate: Candidate<T>,
-        at_block: T::BlockNumber,
-    ) -> PendingOperationKey<Candidate<T>, T::BlockNumber>;
+        at: <T::JoiningRequestTimer as Timer>::Instant,
+    ) -> PendingOperationKeyOf<T>;
 }
 
 impl<T: crate::Config> PoolExt<T> for crate::pools::ManualRewards<T> {
@@ -214,12 +205,9 @@ impl<T: crate::Config> PoolExt<T> for crate::pools::ManualRewards<T> {
 
     fn joining_operation_key(
         candidate: Candidate<T>,
-        at_block: T::BlockNumber,
-    ) -> PendingOperationKey<Candidate<T>, T::BlockNumber> {
-        PendingOperationKey::JoiningManualRewards {
-            candidate,
-            at_block,
-        }
+        at: <T::JoiningRequestTimer as Timer>::Instant,
+    ) -> PendingOperationKeyOf<T> {
+        PendingOperationKey::JoiningManualRewards { candidate, at }
     }
 }
 
@@ -243,12 +231,9 @@ impl<T: crate::Config> PoolExt<T> for crate::pools::AutoCompounding<T> {
 
     fn joining_operation_key(
         candidate: Candidate<T>,
-        at_block: T::BlockNumber,
-    ) -> PendingOperationKey<Candidate<T>, T::BlockNumber> {
-        PendingOperationKey::JoiningAutoCompounding {
-            candidate,
-            at_block,
-        }
+        at: <T::JoiningRequestTimer as Timer>::Instant,
+    ) -> PendingOperationKeyOf<T> {
+        PendingOperationKey::JoiningAutoCompounding { candidate, at }
     }
 }
 
