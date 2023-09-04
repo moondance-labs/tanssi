@@ -3204,3 +3204,302 @@ fn test_staking_leave_execute_bad_origin() {
         },
     );
 }
+
+#[test]
+fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
+    // Alice, Bob, Charlie are invulnerables
+    // Alice, Dave are in pallet_staking
+    // Expected collators are Alice, Bob, Charlie, Dave
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = 10 * MinimumSelfDelegation::get();
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            // Register Dave in pallet_session (invulnerables are automatically registered)
+            let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: dave_account_id,
+                },
+                vec![]
+            ));
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(DAVE.into()),
+                DAVE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![
+                    EligibleCandidate {
+                        candidate: ALICE.into(),
+                        stake
+                    },
+                    EligibleCandidate {
+                        candidate: DAVE.into(),
+                        stake
+                    },
+                ]
+            );
+
+            assert_eq!(
+                pallet_invulnerables::Invulnerables::<Runtime>::get().to_vec(),
+                vec![
+                    AccountId::from(ALICE),
+                    AccountId::from(BOB),
+                    AccountId::from(CHARLIE),
+                ]
+            );
+
+            // Need to trigger new session to update pallet_session
+            run_to_session(2);
+
+            assert_eq!(
+                Session::validators(),
+                vec![
+                    AccountId::from(ALICE),
+                    AccountId::from(BOB),
+                    AccountId::from(CHARLIE),
+                    AccountId::from(DAVE),
+                ]
+            );
+        });
+}
+
+#[test]
+fn test_pallet_session_limits_num_validators() {
+    // Set max_collators = 2, now only the first 2 invulnerables are valid collators
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = 10 * MinimumSelfDelegation::get();
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            // Register Dave in pallet_session (invulnerables are automatically registered)
+            let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: dave_account_id,
+                },
+                vec![]
+            ));
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(DAVE.into()),
+                DAVE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![
+                    EligibleCandidate {
+                        candidate: ALICE.into(),
+                        stake
+                    },
+                    EligibleCandidate {
+                        candidate: DAVE.into(),
+                        stake
+                    },
+                ]
+            );
+
+            assert_eq!(
+                pallet_invulnerables::Invulnerables::<Runtime>::get().to_vec(),
+                vec![
+                    AccountId::from(ALICE),
+                    AccountId::from(BOB),
+                    AccountId::from(CHARLIE),
+                ]
+            );
+
+            // Need to trigger new session to update pallet_session
+            run_to_session(2);
+
+            assert_eq!(
+                Session::validators(),
+                vec![AccountId::from(ALICE), AccountId::from(BOB),]
+            );
+        });
+}
+
+#[test]
+fn test_pallet_session_limits_num_validators_from_staking() {
+    // Set max_collators = 2, take 1 invulnerable and the rest from staking
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 2,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = 10 * MinimumSelfDelegation::get();
+
+            // Register accounts in pallet_session (invulnerables are automatically registered)
+            let bob_account_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(BOB.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: bob_account_id,
+                },
+                vec![]
+            ));
+            let charlie_account_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(CHARLIE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: charlie_account_id,
+                },
+                vec![]
+            ));
+            let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: dave_account_id,
+                },
+                vec![]
+            ));
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(BOB.into()),
+                BOB.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(CHARLIE.into()),
+                CHARLIE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(DAVE.into()),
+                DAVE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![
+                    EligibleCandidate {
+                        candidate: BOB.into(),
+                        stake
+                    },
+                    EligibleCandidate {
+                        candidate: CHARLIE.into(),
+                        stake
+                    },
+                    EligibleCandidate {
+                        candidate: DAVE.into(),
+                        stake
+                    },
+                ]
+            );
+
+            assert_eq!(
+                pallet_invulnerables::Invulnerables::<Runtime>::get().to_vec(),
+                vec![AccountId::from(ALICE),]
+            );
+
+            // Need to trigger new session to update pallet_session
+            run_to_session(2);
+
+            assert_eq!(
+                Session::validators(),
+                vec![AccountId::from(ALICE), AccountId::from(BOB),]
+            );
+        });
+}

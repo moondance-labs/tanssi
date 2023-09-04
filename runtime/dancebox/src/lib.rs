@@ -35,7 +35,7 @@ pub mod migrations;
 use {
     core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::{BodyId, ParaId},
+    cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
@@ -59,7 +59,7 @@ use {
     },
     nimbus_primitives::NimbusId,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_session::ShouldEndSession,
+    pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     polkadot_runtime_common::BlockHashCount,
     scale_info::TypeInfo,
@@ -462,6 +462,55 @@ impl pallet_initializer::Config for Runtime {
 
 impl parachain_info::Config for Runtime {}
 
+/// Returns a list of collators by combining pallet_invulnerables and pallet_pooled_staking.
+pub struct CollatorsFromInvulnerablesAndThenFromStaking;
+
+/// Play the role of the session manager.
+impl SessionManager<AccountId> for CollatorsFromInvulnerablesAndThenFromStaking {
+    fn new_session(index: SessionIndex) -> Option<Vec<AccountId>> {
+        log::info!(
+            "assembling new collators for new session {} at #{:?}",
+            index,
+            <frame_system::Pallet<Runtime>>::block_number(),
+        );
+
+        let invulnerables = Invulnerables::invulnerables().to_vec();
+        let candidates_staking =
+            pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+        // Max number of collators is set in pallet_configuration
+        let max_collators = Configuration::config().max_collators;
+        let collators = invulnerables
+            .iter()
+            .cloned()
+            .chain(candidates_staking.into_iter().filter_map(|elig| {
+                let cand = elig.candidate;
+                if invulnerables.contains(&cand) {
+                    // If a candidate is both in pallet_invulnerables and pallet_staking, do not count it twice
+                    None
+                } else {
+                    Some(cand)
+                }
+            }))
+            .take(max_collators as usize)
+            .collect();
+
+        // TODO: weight?
+        /*
+        frame_system::Pallet::<T>::register_extra_weight_unchecked(
+            T::WeightInfo::new_session(invulnerables.len() as u32),
+            DispatchClass::Mandatory,
+        );
+        */
+        Some(collators)
+    }
+    fn start_session(_: SessionIndex) {
+        // we don't care.
+    }
+    fn end_session(_: SessionIndex) {
+        // we don't care.
+    }
+}
+
 parameter_types! {
     pub const Period: u32 = prod_or_fast!(1 * HOURS, 1 * MINUTES);
     pub const Offset: u32 = 0;
@@ -474,7 +523,7 @@ impl pallet_session::Config for Runtime {
     type ValidatorIdOf = pallet_invulnerables::IdentityCollator;
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
-    type SessionManager = Invulnerables;
+    type SessionManager = CollatorsFromInvulnerablesAndThenFromStaking;
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
