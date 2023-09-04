@@ -166,7 +166,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type LeavingRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
     // low value so we can test vec bounding, in practice it should be bigger
     type EligibleCandidatesBufferSize = ConstU32<3>;
-    type EligibleCandidatesFilter = Everything;
+    type EligibleCandidatesFilter = ();
     type WeightInfo = ();
 }
 
