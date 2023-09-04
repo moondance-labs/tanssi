@@ -55,6 +55,7 @@ pub use pallet::*;
 pub mod pallet {
     use {
         super::*,
+        crate::traits::Timer,
         calls::Calls,
         core::marker::PhantomData,
         frame_support::{
@@ -138,21 +139,33 @@ pub mod pallet {
     /// Value is the amount of shares in the joining/leaving pool.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
-    pub enum PendingOperationKey<A: FullCodec, B: FullCodec> {
+    pub enum PendingOperationKey<A: FullCodec, J: FullCodec, L: FullCodec> {
         /// Candidate requested to join the auto compounding pool of a candidate.
-        JoiningAutoCompounding { candidate: A, at_block: B },
+        JoiningAutoCompounding { candidate: A, at: J },
         /// Candidate requested to join the manual rewards pool of a candidate.
-        JoiningManualRewards { candidate: A, at_block: B },
+        JoiningManualRewards { candidate: A, at: J },
         /// Candidate requested to to leave a pool of a candidate.
-        Leaving { candidate: A, at_block: B },
+        Leaving { candidate: A, at: L },
     }
+
+    pub type PendingOperationKeyOf<T> = PendingOperationKey<
+        <T as frame_system::Config>::AccountId,
+        <<T as Config>::JoiningRequestTimer as Timer>::Instant,
+        <<T as Config>::LeavingRequestTimer as Timer>::Instant,
+    >;
 
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
-    pub struct PendingOperationQuery<A: FullCodec, B: FullCodec> {
+    pub struct PendingOperationQuery<A: FullCodec, J: FullCodec, L: FullCodec> {
         pub delegator: A,
-        pub operation: PendingOperationKey<A, B>,
+        pub operation: PendingOperationKey<A, J, L>,
     }
+
+    pub type PendingOperationQueryOf<T> = PendingOperationQuery<
+        <T as frame_system::Config>::AccountId,
+        <<T as Config>::JoiningRequestTimer as Timer>::Instant,
+        <<T as Config>::LeavingRequestTimer as Timer>::Instant,
+    >;
 
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
@@ -251,9 +264,9 @@ pub mod pallet {
         type RewardsCollatorCommission: Get<Perbill>;
 
         /// Condition for when a joining request can be executed.
-        type JoiningRequestFilter: Contains<Self::BlockNumber>;
+        type JoiningRequestTimer: Timer;
         /// Condition for when a leaving request can be executed.
-        type LeavingRequestFilter: Contains<Self::BlockNumber>;
+        type LeavingRequestTimer: Timer;
         /// All eligible candidates are stored in a sorted list that is modified each time
         /// delegations changes. It is safer to bound this list, in which case eligible candidate
         /// could fall out of this list if they have less stake than the top `EligibleCandidatesBufferSize`
@@ -297,7 +310,7 @@ pub mod pallet {
         Blake2_128Concat,
         Delegator<T>,
         Blake2_128Concat,
-        PendingOperationKey<T::AccountId, T::BlockNumber>,
+        PendingOperationKeyOf<T>,
         T::Balance,
         ValueQuery,
     >;
@@ -442,7 +455,7 @@ pub mod pallet {
 
         pub fn execute_pending_operations(
             origin: OriginFor<T>,
-            operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
+            operations: Vec<PendingOperationQueryOf<T>>,
         ) -> DispatchResultWithPostInfo {
             // We don't care about the sender.
             let _ = ensure_signed(origin)?;

@@ -18,9 +18,10 @@ use {
     crate::{
         candidate::Candidates,
         pools::{self, Pool},
-        traits::{ErrAdd, ErrSub},
+        traits::{ErrAdd, ErrSub, Timer},
         AllTargetPool, Candidate, Config, Delegator, Error, Event, Pallet, PendingOperationKey,
-        PendingOperationQuery, PendingOperations, Shares, SharesOrStake, Stake, TargetPool,
+        PendingOperationQuery, PendingOperationQueryOf, PendingOperations, Shares, SharesOrStake,
+        Stake, TargetPool,
     },
     frame_support::{
         pallet_prelude::*,
@@ -134,15 +135,15 @@ impl<T: Config> Calls<T> {
         Candidates::<T>::add_total_stake(&candidate, &stake)?;
 
         // We create/mutate a request for joining.
-        let now = frame_system::Pallet::<T>::block_number();
+        let now = T::JoiningRequestTimer::now();
         let operation_key = match pool {
             TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
                 candidate: candidate.clone(),
-                at_block: now,
+                at: now,
             },
             TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
                 candidate: candidate.clone(),
-                at_block: now,
+                at: now,
             },
         };
 
@@ -245,10 +246,10 @@ impl<T: Config> Calls<T> {
         pools::Leaving::<T>::increase_hold(&candidate, &delegator, &leaving_stake)?;
 
         // We create/mutate a request for leaving.
-        let now = frame_system::Pallet::<T>::block_number();
+        let now = T::LeavingRequestTimer::now();
         let operation_key = PendingOperationKey::Leaving {
             candidate: candidate.clone(),
-            at_block: now,
+            at: now,
         };
         let operation = PendingOperations::<T>::get(&delegator, &operation_key);
         let operation = operation
@@ -285,7 +286,7 @@ impl<T: Config> Calls<T> {
     }
 
     pub fn execute_pending_operations(
-        operations: Vec<PendingOperationQuery<T::AccountId, T::BlockNumber>>,
+        operations: Vec<PendingOperationQueryOf<T>>,
     ) -> DispatchResultWithPostInfo {
         for (index, query) in operations.into_iter().enumerate() {
             // We deconstruct the query and find the balance associated with it.
@@ -303,12 +304,9 @@ impl<T: Config> Calls<T> {
             }
 
             match &operation {
-                PendingOperationKey::JoiningAutoCompounding {
-                    candidate,
-                    at_block,
-                } => {
+                PendingOperationKey::JoiningAutoCompounding { candidate, at } => {
                     ensure!(
-                        T::JoiningRequestFilter::contains(at_block),
+                        T::JoiningRequestTimer::is_elapsed(at),
                         Error::<T>::RequestCannotBeExecuted(index as u16)
                     );
 
@@ -319,12 +317,9 @@ impl<T: Config> Calls<T> {
                         Shares(value),
                     )?;
                 }
-                PendingOperationKey::JoiningManualRewards {
-                    candidate,
-                    at_block,
-                } => {
+                PendingOperationKey::JoiningManualRewards { candidate, at } => {
                     ensure!(
-                        T::JoiningRequestFilter::contains(at_block),
+                        T::JoiningRequestTimer::is_elapsed(at),
                         Error::<T>::RequestCannotBeExecuted(index as u16)
                     );
 
@@ -335,12 +330,9 @@ impl<T: Config> Calls<T> {
                         Shares(value),
                     )?;
                 }
-                PendingOperationKey::Leaving {
-                    candidate,
-                    at_block,
-                } => {
+                PendingOperationKey::Leaving { candidate, at } => {
                     ensure!(
-                        T::LeavingRequestFilter::contains(at_block),
+                        T::LeavingRequestTimer::is_elapsed(at),
                         Error::<T>::RequestCannotBeExecuted(index as u16)
                     );
 
