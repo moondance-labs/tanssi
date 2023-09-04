@@ -39,7 +39,7 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter},
+        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, ValidatorRegistration},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -55,7 +55,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
-    pallet_pooled_staking::traits::{BlockNumberTimer, Timer},
+    pallet_pooled_staking::traits::{BlockNumberTimer, IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
@@ -63,7 +63,7 @@ use {
     scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
+    sp_core::{crypto::{KeyTypeId, UncheckedFrom}, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT},
@@ -74,7 +74,6 @@ use {
     sp_std::marker::PhantomData,
     sp_version::RuntimeVersion,
 };
-
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
     tp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
@@ -776,6 +775,21 @@ where
     }
 }
 
+
+pub struct CandidateHasRegisteredKeys;
+impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
+    fn is_candidate_eligible(a: &AccountId) -> bool {
+        <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_candidate_eligible(a: &AccountId, _eligible: bool) {
+        let account_slice: &[u8; 32] = a.as_ref();
+        let _ = Session::set_keys(RuntimeOrigin::signed(a.clone()), SessionKeys {
+            nimbus: NimbusId::unchecked_from(account_slice.clone()),
+        }, vec![]);
+     }
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -793,8 +807,7 @@ impl pallet_pooled_staking::Config for Runtime {
     // TODO: Change for proper duration
     type LeavingRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
-    // TODO: Add check that candidate have authoring keys?
-    type EligibleCandidatesFilter = ();
+    type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
 }
 
