@@ -77,7 +77,6 @@ impl<T: Config> Calls<T> {
             return Ok(().into());
         }
 
-        // Transfer is done using withdraw to ensure it works regardless of ED.
         if let Some(diff) = stake.0.checked_sub(&held.0) {
             T::Currency::transfer(
                 &T::StakingAccount::get(),
