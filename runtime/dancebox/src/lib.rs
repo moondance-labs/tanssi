@@ -783,10 +783,15 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, _eligible: bool) {
-        let account_slice: &[u8; 32] = a.as_ref();
-        let _ = Session::set_keys(RuntimeOrigin::signed(a.clone()), SessionKeys {
-            nimbus: NimbusId::unchecked_from(account_slice.clone()),
-        }, vec![]);
+        if eligible {
+            let account_slice: &[u8; 32] = a.as_ref();
+            let _ = Session::set_keys(RuntimeOrigin::signed(a.clone()), SessionKeys {
+                nimbus: NimbusId::unchecked_from(account_slice.clone()),
+            }, vec![]);
+        }
+        else {
+            let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
+        }
      }
 }
 
