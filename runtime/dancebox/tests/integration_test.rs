@@ -2498,7 +2498,7 @@ fn test_staking_join_before_self_delegation() {
                     delegator: BOB.into(),
                     operation: PendingOperationKey::JoiningAutoCompounding {
                         candidate: ALICE.into(),
-                        at_block: 2,
+                        at: 0,
                     }
                 }]
             ),);
@@ -2590,7 +2590,7 @@ fn test_staking_join_twice_in_same_block() {
                     delegator: ALICE.into(),
                     operation: PendingOperationKey::JoiningAutoCompounding {
                         candidate: ALICE.into(),
-                        at_block: 2,
+                        at: 0,
                     }
                 }]
             ),);
@@ -2659,7 +2659,7 @@ fn test_staking_join_execute_before_time() {
                         delegator: ALICE.into(),
                         operation: PendingOperationKey::JoiningAutoCompounding {
                             candidate: ALICE.into(),
-                            at_block: 2,
+                            at: 0,
                         }
                     }]
                 ),
@@ -2673,7 +2673,7 @@ fn test_staking_join_execute_before_time() {
                     delegator: ALICE.into(),
                     operation: PendingOperationKey::JoiningAutoCompounding {
                         candidate: ALICE.into(),
-                        at_block: 2,
+                        at: 0,
                     }
                 }]
             ),);
@@ -2738,7 +2738,7 @@ fn test_staking_join_execute_any_origin() {
                     delegator: ALICE.into(),
                     operation: PendingOperationKey::JoiningAutoCompounding {
                         candidate: ALICE.into(),
-                        at_block: 2,
+                        at: 0,
                     }
                 }]
             ),);
@@ -2803,7 +2803,7 @@ fn test_staking_join_execute_bad_origin() {
                         delegator: ALICE.into(),
                         operation: PendingOperationKey::JoiningAutoCompounding {
                             candidate: ALICE.into(),
-                            at_block: 2,
+                            at: 0,
                         }
                     }]
                 ),
@@ -2865,11 +2865,11 @@ fn setup_staking_join_and_execute<R>(ops: Vec<A>, f: impl FnOnce() -> R) {
                 let operation = match op.target_pool {
                     TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
                         candidate: op.candidate.clone(),
-                        at_block: 2,
+                        at: 0,
                     },
                     TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
                         candidate: op.candidate.clone(),
-                        at_block: 2,
+                        at: 0,
                     },
                 };
 
@@ -3073,7 +3073,7 @@ fn test_staking_leave_execute_before_time() {
         }],
         || {
             let balance_before = System::account(AccountId::from(ALICE)).data.free;
-            let at_block = System::block_number();
+            let at = Session::current_index();
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
@@ -3104,7 +3104,7 @@ fn test_staking_leave_execute_before_time() {
                         delegator: ALICE.into(),
                         operation: PendingOperationKey::Leaving {
                             candidate: ALICE.into(),
-                            at_block,
+                            at,
                         }
                     }]
                 ),
@@ -3127,7 +3127,7 @@ fn test_staking_leave_execute_any_origin() {
         }],
         || {
             let balance_before = System::account(AccountId::from(ALICE)).data.free;
-            let at_block = System::block_number();
+            let at = Session::current_index();
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
@@ -3155,7 +3155,7 @@ fn test_staking_leave_execute_any_origin() {
                     delegator: ALICE.into(),
                     operation: PendingOperationKey::Leaving {
                         candidate: ALICE.into(),
-                        at_block,
+                        at,
                     }
                 }]
             ),);
@@ -3178,7 +3178,7 @@ fn test_staking_leave_execute_bad_origin() {
             stake,
         }],
         || {
-            let at_block = System::block_number();
+            let at = Session::current_index();
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
@@ -3195,7 +3195,7 @@ fn test_staking_leave_execute_bad_origin() {
                         delegator: ALICE.into(),
                         operation: PendingOperationKey::Leaving {
                             candidate: ALICE.into(),
-                            at_block,
+                            at,
                         }
                     }]
                 ),

@@ -122,7 +122,7 @@ mod benchmarks {
                 delegator: caller.clone(),
                 operation: JoiningAutoCompounding {
                     candidate: caller.clone(),
-                    at_block: block_number,
+                    at: block_number,
                 },
             }],
         );
@@ -167,7 +167,7 @@ mod benchmarks {
                 delegator: caller.clone(),
                 operation: JoiningAutoCompounding {
                     candidate: caller.clone(),
-                    at_block: block_number,
+                    at: block_number,
                 },
             }],
         )?;
@@ -259,7 +259,7 @@ mod benchmarks {
                     delegator: caller.clone(),
                     operation: JoiningManualRewards {
                         candidate: candidate.clone(),
-                        at_block: block_number,
+                        at: block_number,
                     },
                 }],
             )?;

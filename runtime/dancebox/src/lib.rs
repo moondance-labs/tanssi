@@ -58,6 +58,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
+    pallet_pooled_staking::traits::Timer,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
@@ -75,6 +76,7 @@ use {
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
 };
+
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
     tp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
@@ -783,52 +785,8 @@ parameter_types! {
     pub const InitialLeavingShareValue: u128 = 1;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
-}
-
-/// Estimate a session index from a block number.
-/// It is called "estimate" because it will be wrong if the period or offset change after a runtime upgrade.
-///
-/// The first session will have length of `Offset`, and
-/// the following sessions will have length of `Period`.
-pub struct EstimateSessionFromBlockNumber<Period, Offset>(PhantomData<(Period, Offset)>);
-
-impl<Period: Get<BlockNumber>, Offset: Get<BlockNumber>>
-    EstimateSessionFromBlockNumber<Period, Offset>
-{
-    fn estimate_session(now: BlockNumber) -> u32 {
-        // TODO: test edge cases
-        let offset = Offset::get();
-
-        if now < offset {
-            return 0;
-        }
-
-        (now - offset) / Period::get()
-    }
-}
-
-pub struct SessionBoundaryFilter<NumSessions, Period, Offset>(
-    PhantomData<(NumSessions, Period, Offset)>,
-);
-
-impl<NumSessions, Period, Offset> Contains<BlockNumber>
-    for SessionBoundaryFilter<NumSessions, Period, Offset>
-where
-    NumSessions: Get<u32>,
-    Period: Get<BlockNumber>,
-    Offset: Get<BlockNumber>,
-{
-    fn contains(request_block: &BlockNumber) -> bool {
-        let current_session = Session::current_index();
-        let request_session =
-            EstimateSessionFromBlockNumber::<Period, Offset>::estimate_session(*request_block);
-
-        let Some(diff) = current_session.checked_sub(request_session) else {
-            return false;
-        };
-
-        diff >= NumSessions::get() // must wait for at least num_sessions
-    }
+    // Need to wait 2 sessions before being able to join or leave staking pools
+    pub const StakingSessionDelay: u32 = 2;
 }
 
 pub struct RegisteredInPalletSession;
@@ -839,10 +797,54 @@ impl Contains<AccountId> for RegisteredInPalletSession {
     }
 }
 
-parameter_types! {
-    // Need to wait 2 sessions before being able to join or leave staking pools
-    pub const StakingSessionDelay: u32 = 2;
+pub struct SessionTimer<G>(PhantomData<G>);
+
+impl<G> Timer for SessionTimer<G>
+where
+    G: Get<u32>,
+{
+    type Instant = u32;
+
+    fn now() -> Self::Instant {
+        Session::current_index()
+    }
+
+    fn is_elapsed(instant: &Self::Instant) -> bool {
+        let delay = G::get();
+        let Some(end) = instant.checked_add(delay) else {
+            return false;
+        };
+        let res = end <= Self::now();
+
+        log::info!(
+            "is_elapsed {}? {} (now={}, delay={})",
+            instant,
+            res,
+            Self::now(),
+            delay
+        );
+
+        res
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn elapsed_instant() -> Self::Instant {
+        let delay = G::get();
+        Self::now()
+            .checked_add(delay)
+            .expect("overflow when computing valid elapsed instant")
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed() {
+        let session_to_reach = Self::elapsed_instant();
+        while Self::now() < session_to_reach {
+            Session::rotate_session();
+        }
+    }
 }
+
+parameter_types! {}
 
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -856,8 +858,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type InitialLeavingShareValue = InitialLeavingShareValue;
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RewardsCollatorCommission = RewardsCollatorCommission;
-    type JoiningRequestFilter = SessionBoundaryFilter<StakingSessionDelay, Period, Offset>;
-    type LeavingRequestFilter = SessionBoundaryFilter<StakingSessionDelay, Period, Offset>;
+    type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
+    type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = RegisteredInPalletSession;
 }

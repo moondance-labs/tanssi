@@ -44,16 +44,16 @@ pub(crate) fn operation_stake(
     candidate: AccountId,
     delegator: AccountId,
     pool: TargetPool,
-    at_block: u64,
+    at: u64,
 ) -> Balance {
     let operation_key = match pool {
         TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
             candidate: candidate.clone(),
-            at_block,
+            at,
         },
         TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
             candidate: candidate.clone(),
-            at_block,
+            at,
         },
     };
 
@@ -355,7 +355,7 @@ impl ExecuteUndelegation {
                 delegator: delegator,
                 operation: PendingOperationKey::Leaving {
                     candidate,
-                    at_block: block_number
+                    at: block_number
                 }
             }]
         ));
@@ -366,7 +366,7 @@ impl ExecuteUndelegation {
             delegator,
             PendingOperationKey::Leaving {
                 candidate,
-                at_block: block_number,
+                at: block_number,
             },
         );
 

@@ -16,10 +16,62 @@
 
 use {
     crate::{Config, Error},
+    core::{fmt::Debug, marker::PhantomData},
+    parity_scale_codec::FullCodec,
+    scale_info::TypeInfo,
     sp_core::U256,
-    sp_runtime::traits::{CheckedAdd, CheckedMul, CheckedSub, Zero},
+    sp_runtime::traits::{CheckedAdd, CheckedMul, CheckedSub, Get, Zero},
     sp_std::convert::TryInto,
 };
+
+pub trait Timer {
+    type Instant: FullCodec + TypeInfo + Clone + Debug + Eq;
+
+    fn now() -> Self::Instant;
+
+    fn is_elapsed(instant: &Self::Instant) -> bool;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn elapsed_instant() -> Self::Instant;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed();
+}
+
+pub struct BlockNumberTimer<T, G>(PhantomData<(T, G)>);
+
+impl<T, G> Timer for BlockNumberTimer<T, G>
+where
+    T: frame_system::Config,
+    G: Get<<T as frame_system::Config>::BlockNumber>,
+{
+    type Instant = <T as frame_system::Config>::BlockNumber;
+
+    fn now() -> Self::Instant {
+        frame_system::Pallet::<T>::block_number()
+    }
+
+    fn is_elapsed(instant: &Self::Instant) -> bool {
+        let delay = G::get();
+        let Some(end) = instant.checked_add(&delay) else {
+            return false;
+        };
+        end <= Self::now()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn elapsed_instant() -> Self::Instant {
+        let delay = G::get();
+        Self::now()
+            .checked_add(&delay)
+            .expect("overflow when computing valid elapsed instant")
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed() {
+        frame_system::Pallet::<T>::set_block_number(Self::elapsed_instant());
+    }
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct OverflowError;
