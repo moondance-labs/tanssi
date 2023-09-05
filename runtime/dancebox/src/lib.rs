@@ -626,7 +626,12 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 )
             }
             ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(c, RuntimeCall::Session(..) | RuntimeCall::Utility(..)),
+            ProxyType::Staking => matches!(
+                c,
+                RuntimeCall::Session(..)
+                    | RuntimeCall::Utility(..)
+                    | RuntimeCall::PooledStaking(..)
+            ),
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
@@ -678,10 +683,10 @@ impl pallet_migrations::Config for Runtime {
 pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            RuntimeCall::Balances(_) => false,
-            _ => true,
-        }
+        matches!(
+            c,
+            RuntimeCall::Invulnerables(..) | RuntimeCall::Sudo(..) | RuntimeCall::Configuration(..)
+        )
     }
 }
 
@@ -730,8 +735,6 @@ parameter_types! {
     pub const CurrencyHoldReason: [u8; 8] = *b"POOLSTAK";
     pub const InitialManualClaimShareValue: u128 = currency::KILODANCE;
     pub const InitialAutoCompoundingShareValue: u128 = currency::KILODANCE;
-    pub const InitialJoiningShareValue: u128 = 1;
-    pub const InitialLeavingShareValue: u128 = 1;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     pub const BlocksToWait: u32 = 2;
@@ -807,8 +810,6 @@ impl pallet_pooled_staking::Config for Runtime {
     type StakingAccount = StakingAccount;
     type InitialManualClaimShareValue = InitialManualClaimShareValue;
     type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
-    type InitialJoiningShareValue = InitialJoiningShareValue;
-    type InitialLeavingShareValue = InitialLeavingShareValue;
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RewardsCollatorCommission = RewardsCollatorCommission;
     // TODO: Change for session boundary filter

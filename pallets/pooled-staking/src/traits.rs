@@ -24,20 +24,29 @@ use {
     sp_std::convert::TryInto,
 };
 
+/// Allows to get the current instant and check if some duration is elapsed.
 pub trait Timer {
+    /// Type for the instant. Must implement some traits to be used easily with
+    /// the Pooled Staking pallet.
     type Instant: FullCodec + TypeInfo + Clone + Debug + Eq;
 
+    /// Get the current instant.
     fn now() -> Self::Instant;
 
-    fn is_elapsed(instant: &Self::Instant) -> bool;
+    /// Check if the timer started at `started` is elapsed.
+    fn is_elapsed(start: &Self::Instant) -> bool;
 
+    /// Returns an instant that will make `is_elapsed` true.
     #[cfg(feature = "runtime-benchmarks")]
     fn elapsed_instant() -> Self::Instant;
 
+    /// Skip to a state where `now` will make `is_elapsed` true.
     #[cfg(feature = "runtime-benchmarks")]
     fn skip_to_elapsed();
 }
 
+/// A timer using block numbers.
+/// `T` is the Runtime type while `G` is a getter for the delay.
 pub struct BlockNumberTimer<T, G>(PhantomData<(T, G)>);
 
 impl<T, G> Timer for BlockNumberTimer<T, G>
@@ -51,9 +60,9 @@ where
         frame_system::Pallet::<T>::block_number()
     }
 
-    fn is_elapsed(instant: &Self::Instant) -> bool {
+    fn is_elapsed(start: &Self::Instant) -> bool {
         let delay = G::get();
-        let Some(end) = instant.checked_add(&delay) else {
+        let Some(end) = start.checked_add(&delay) else {
             return false;
         };
         end <= Self::now()
@@ -73,9 +82,13 @@ where
     }
 }
 
+/// Allows knowing if some account is eligible to be a candidate.
 pub trait IsCandidateEligible<AccountId> {
+    /// Is the provided account id eligible?
     fn is_candidate_eligible(a: &AccountId) -> bool;
 
+    /// Make the provided account id eligible if `eligible` is true, and not
+    /// eligible if false.
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool);
 }
@@ -89,6 +102,7 @@ impl<AccountId> IsCandidateEligible<AccountId> for () {
     fn make_candidate_eligible(_: &AccountId, _: bool) {}
 }
 
+/// Error returned by math operations which can overflow.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct OverflowError;
 
@@ -98,6 +112,7 @@ impl<T: Config> From<OverflowError> for Error<T> {
     }
 }
 
+/// Error returned by math operations which can underflow.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UnderflowError;
 
@@ -107,6 +122,9 @@ impl<T: Config> From<UnderflowError> for Error<T> {
     }
 }
 
+/// Helper to compute ratios by multiplying then dividing by some values, while
+/// performing the intermediary computation using a bigger type to avoid
+/// overflows.
 pub trait MulDiv: Sized {
     /// Multiply self by `a` then divide the result by `b`.
     /// Computation will be performed in a bigger type to avoid overflows.
@@ -145,7 +163,9 @@ impl_mul_div!(u32, u64);
 impl_mul_div!(u64, u128);
 impl_mul_div!(u128, U256);
 
+/// Returns directly an error on overflow.
 pub trait ErrAdd: CheckedAdd {
+    /// Returns directly an error on overflow.
     fn err_add(&self, v: &Self) -> Result<Self, OverflowError> {
         self.checked_add(v).ok_or(OverflowError)
     }
@@ -153,7 +173,9 @@ pub trait ErrAdd: CheckedAdd {
 
 impl<T: CheckedAdd> ErrAdd for T {}
 
+/// Returns directly an error on underflow.
 pub trait ErrSub: CheckedSub {
+    /// Returns directly an error on underflow.
     fn err_sub(&self, v: &Self) -> Result<Self, UnderflowError> {
         self.checked_sub(v).ok_or(UnderflowError)
     }
@@ -161,7 +183,9 @@ pub trait ErrSub: CheckedSub {
 
 impl<T: CheckedSub> ErrSub for T {}
 
+/// Returns directly an error on overflow.
 pub trait ErrMul: CheckedMul {
+    /// Returns directly an error on overflow.
     fn err_mul(&self, v: &Self) -> Result<Self, OverflowError> {
         self.checked_mul(v).ok_or(OverflowError)
     }

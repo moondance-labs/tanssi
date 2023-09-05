@@ -141,8 +141,6 @@ parameter_types! {
     pub const CurrencyHoldReason: HoldIdentifier = HoldIdentifier::Staking;
     pub const InitialManualClaimShareValue: u128 = MEGA;
     pub const InitialAutoCompoundingShareValue: u128 = MEGA;
-    pub const InitialJoiningShareValue: u128 = 2; // to test rounding
-    pub const InitialLeavingShareValue: u128 = 3; // to test rounding
     pub const MinimumSelfDelegation: u128 = 10 * MEGA;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     pub const BlocksToWait: u64 = BLOCKS_TO_WAIT;
@@ -158,8 +156,6 @@ impl pallet_pooled_staking::Config for Runtime {
     type StakingAccount = StakingAccount;
     type InitialManualClaimShareValue = InitialManualClaimShareValue;
     type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
-    type InitialJoiningShareValue = InitialJoiningShareValue;
-    type InitialLeavingShareValue = InitialLeavingShareValue;
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = BlockNumberTimer<Self, BlocksToWait>;

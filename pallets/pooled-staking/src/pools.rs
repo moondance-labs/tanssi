@@ -306,7 +306,7 @@ impl_pool!(
     JoiningSharesSupply,
     JoiningSharesTotalStaked,
     JoiningSharesHeldStake,
-    T::InitialJoiningShareValue::get(),
+    if cfg!(test) { 2u32 } else { 1 }.into(),
 );
 
 impl_pool!(
@@ -333,7 +333,7 @@ impl_pool!(
     LeavingSharesSupply,
     LeavingSharesTotalStaked,
     LeavingSharesHeldStake,
-    T::InitialLeavingShareValue::get(),
+    if cfg!(test) { 3u32 } else { 1u32 }.into(),
 );
 
 impl<T: Config> ManualRewards<T> {
