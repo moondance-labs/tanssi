@@ -434,13 +434,13 @@ export default {
             RequestedDelegate: {
                 candidate: "AccountId32",
                 delegator: "AccountId32",
-                towards: "PalletPooledStakingTargetPool",
+                pool: "PalletPooledStakingTargetPool",
                 pending: "u128",
             },
             ExecutedDelegate: {
                 candidate: "AccountId32",
                 delegator: "AccountId32",
-                towards: "PalletPooledStakingTargetPool",
+                pool: "PalletPooledStakingTargetPool",
                 staked: "u128",
                 released: "u128",
             },

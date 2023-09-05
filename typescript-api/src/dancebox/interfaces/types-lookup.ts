@@ -628,14 +628,14 @@ declare module "@polkadot/types/lookup" {
         readonly asRequestedDelegate: {
             readonly candidate: AccountId32;
             readonly delegator: AccountId32;
-            readonly towards: PalletPooledStakingTargetPool;
+            readonly pool: PalletPooledStakingTargetPool;
             readonly pending: u128;
         } & Struct;
         readonly isExecutedDelegate: boolean;
         readonly asExecutedDelegate: {
             readonly candidate: AccountId32;
             readonly delegator: AccountId32;
-            readonly towards: PalletPooledStakingTargetPool;
+            readonly pool: PalletPooledStakingTargetPool;
             readonly staked: u128;
             readonly released: u128;
         } & Struct;
