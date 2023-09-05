@@ -441,7 +441,7 @@ mod benchmarks {
                 TargetPool::AutoCompounding,
                 min_candidate_stk::<T>(),
             )?;
-            
+
             // Make candidate eligible
             T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
 
