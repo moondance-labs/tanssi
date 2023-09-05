@@ -442,6 +442,10 @@ declare module "@polkadot/api-base/types/events" {
                 [candidate: AccountId32, stakeDiff: u128],
                 { candidate: AccountId32; stakeDiff: u128 }
             >;
+            /**
+             * Delegation request was executed. `staked` has been properly staked in `pool`, while the rounding when
+             * converting to shares has been `released`.
+             */
             ExecutedDelegate: AugmentedEvent<
                 ApiType,
                 [
@@ -459,6 +463,7 @@ declare module "@polkadot/api-base/types/events" {
                     released: u128;
                 }
             >;
+            /** Undelegation request was executed. */
             ExecutedUndelegate: AugmentedEvent<
                 ApiType,
                 [candidate: AccountId32, delegator: AccountId32, released: u128],
@@ -470,16 +475,16 @@ declare module "@polkadot/api-base/types/events" {
                 [candidate: AccountId32, stakeDiff: u128],
                 { candidate: AccountId32; stakeDiff: u128 }
             >;
+            /** User requested to delegate towards a candidate. */
             RequestedDelegate: AugmentedEvent<
                 ApiType,
                 [candidate: AccountId32, delegator: AccountId32, pool: PalletPooledStakingTargetPool, pending: u128],
-                {
-                    candidate: AccountId32;
-                    delegator: AccountId32;
-                    pool: PalletPooledStakingTargetPool;
-                    pending: u128;
-                }
+                { candidate: AccountId32; delegator: AccountId32; pool: PalletPooledStakingTargetPool; pending: u128 }
             >;
+            /**
+             * User requested to undelegate from a candidate. Stake was removed from a `pool` and is `pending` for the request
+             * to be executed. The rounding when converting to leaving shares has been `released` immediately.
+             */
             RequestedUndelegate: AugmentedEvent<
                 ApiType,
                 [
@@ -533,7 +538,7 @@ declare module "@polkadot/api-base/types/events" {
                 [candidate: AccountId32, delegator: AccountId32, shares: u128, stake: u128],
                 { candidate: AccountId32; delegator: AccountId32; shares: u128; stake: u128 }
             >;
-            /** Stake of that Candidate increased. */
+            /** Stake of the candidate has changed, which may have modified its position in the eligible candidates list. */
             UpdatedCandidatePosition: AugmentedEvent<
                 ApiType,
                 [candidate: AccountId32, stake: u128, selfDelegation: u128, before: Option<u32>, after: Option<u32>],
