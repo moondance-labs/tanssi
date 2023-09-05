@@ -33,7 +33,6 @@ pub use sp_runtime::BuildStorage;
 pub mod migrations;
 
 use {
-    core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
     frame_support::{
@@ -73,10 +72,9 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
-    sp_std::prelude::*,
+    sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
 };
-
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
     tp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
@@ -677,7 +675,12 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 )
             }
             ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(c, RuntimeCall::Session(..) | RuntimeCall::Utility(..)),
+            ProxyType::Staking => matches!(
+                c,
+                RuntimeCall::Session(..)
+                    | RuntimeCall::Utility(..)
+                    | RuntimeCall::PooledStaking(..)
+            ),
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
@@ -729,10 +732,10 @@ impl pallet_migrations::Config for Runtime {
 pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            RuntimeCall::Balances(_) => false,
-            _ => true,
-        }
+        matches!(
+            c,
+            RuntimeCall::Invulnerables(..) | RuntimeCall::Sudo(..) | RuntimeCall::Configuration(..)
+        )
     }
 }
 
@@ -787,14 +790,6 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-pub struct RegisteredInPalletSession;
-
-impl IsCandidateEligible<AccountId> for RegisteredInPalletSession {
-    fn is_candidate_eligible(account: &AccountId) -> bool {
-        Session::is_registered(account)
-    }
-}
-
 pub struct SessionTimer<G>(PhantomData<G>);
 
 impl<G> Timer for SessionTimer<G>
@@ -812,7 +807,6 @@ where
         let Some(end) = instant.checked_add(delay) else {
             return false;
         };
-
         end <= Self::now()
     }
 
@@ -833,7 +827,28 @@ where
     }
 }
 
-parameter_types! {}
+pub struct CandidateHasRegisteredKeys;
+impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
+    fn is_candidate_eligible(a: &AccountId) -> bool {
+        <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_candidate_eligible(a: &AccountId, eligible: bool) {
+        use sp_core::crypto::UncheckedFrom;
+        if eligible {
+            let account_slice: &[u8; 32] = a.as_ref();
+            let _ = Session::set_keys(
+                RuntimeOrigin::signed(a.clone()),
+                SessionKeys {
+                    nimbus: NimbusId::unchecked_from(*account_slice),
+                },
+                vec![],
+            );
+        } else {
+            let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
+        }
+    }
+}
 
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -848,7 +863,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
-    type EligibleCandidatesFilter = RegisteredInPalletSession;
+    type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

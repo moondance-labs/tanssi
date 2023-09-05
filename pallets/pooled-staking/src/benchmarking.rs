@@ -21,6 +21,7 @@ use {super::*, crate::Pallet as PooledStaking};
 use {
     crate::{
         pools::Pool,
+        traits::{IsCandidateEligible, Timer},
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
     },
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
@@ -32,7 +33,7 @@ use {
             Get,
         },
     },
-    frame_system::{EventRecord, Pallet as System},
+    frame_system::EventRecord,
     sp_std::prelude::*,
 };
 
@@ -73,8 +74,52 @@ mod benchmarks {
     fn request_delegate() -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1;
         let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
+            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * 3u32.into());
 
+        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
+        // self delegation
+        PooledStaking::<T>::request_delegate(
+            RawOrigin::Signed(caller.clone()).into(),
+            caller.clone(),
+            TargetPool::AutoCompounding,
+            min_candidate_stk::<T>(),
+        )?;
+
+        // self delegation
+        PooledStaking::<T>::request_delegate(
+            RawOrigin::Signed(caller.clone()).into(),
+            caller.clone(),
+            TargetPool::ManualRewards,
+            min_candidate_stk::<T>(),
+        )?;
+
+        let timer = T::JoiningRequestTimer::now();
+
+        T::JoiningRequestTimer::skip_to_elapsed();
+
+        PooledStaking::<T>::execute_pending_operations(
+            RawOrigin::Signed(caller.clone()).into(),
+            vec![PendingOperationQuery {
+                delegator: caller.clone(),
+                operation: JoiningAutoCompounding {
+                    candidate: caller.clone(),
+                    at: timer.clone(),
+                },
+            }],
+        )?;
+
+        PooledStaking::<T>::execute_pending_operations(
+            RawOrigin::Signed(caller.clone()).into(),
+            vec![PendingOperationQuery {
+                delegator: caller.clone(),
+                operation: JoiningManualRewards {
+                    candidate: caller.clone(),
+                    at: timer.clone(),
+                },
+            }],
+        )?;
+
+        // Worst case scenario is: we have already shares in both pools, and we delegate again
         #[extrinsic_call]
         _(
             RawOrigin::Signed(caller.clone()),
@@ -97,40 +142,56 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn execute_pending_operations() -> Result<(), BenchmarkError> {
-        const USER_SEED: u32 = 1;
+    fn execute_pending_operations(
+        b: Linear<1, { T::EligibleCandidatesBufferSize::get() }>,
+    ) -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1000;
         let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
-        PooledStaking::<T>::request_delegate(
-            RawOrigin::Signed(caller.clone()).into(),
-            caller.clone(),
-            TargetPool::AutoCompounding,
-            min_candidate_stk::<T>(),
-        )?;
+            create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * b.into());
 
-        // Initialize the block at which we should do stuff
-        let block_number = frame_system::Pallet::<T>::block_number();
+        let mut pending_operations = vec![];
+        let mut candidates = vec![];
 
-        // TODO: make this parametric by instead of using contains use
-        // a custom trait
-        // Right now we know this is going to be correct with fast-runtime
-        System::<T>::set_block_number(block_number + 10u32.into());
-        #[extrinsic_call]
-        _(
-            RawOrigin::Signed(caller.clone()),
-            vec![PendingOperationQuery {
+        T::Currency::set_balance(&T::StakingAccount::get(), min_candidate_stk::<T>());
+
+        let timer = T::JoiningRequestTimer::now();
+
+        // Create as many delegations as one can
+        for i in 0..b {
+            let (candidate, _deposit) = create_funded_user::<T>(
+                "candidate",
+                USER_SEED - i - 1,
+                min_candidate_stk::<T>() * 2u32.into(),
+            );
+            T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
+
+            // self delegation
+            PooledStaking::<T>::request_delegate(
+                RawOrigin::Signed(caller.clone()).into(),
+                candidate.clone(),
+                TargetPool::AutoCompounding,
+                min_candidate_stk::<T>(),
+            )?;
+
+            pending_operations.push(PendingOperationQuery {
                 delegator: caller.clone(),
                 operation: JoiningAutoCompounding {
-                    candidate: caller.clone(),
-                    at: block_number,
+                    candidate: candidate.clone(),
+                    at: timer.clone(),
                 },
-            }],
-        );
+            });
+            candidates.push(candidate);
+        }
 
+        T::JoiningRequestTimer::skip_to_elapsed();
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller.clone()), pending_operations);
+
+        let last_candidate = &candidates[candidates.len() - 1];
         // assert that it comes out sorted
         assert_last_event::<T>(
             Event::ExecutedDelegate {
-                candidate: caller.clone(),
+                candidate: last_candidate.clone(),
                 delegator: caller,
                 towards: TargetPool::AutoCompounding,
                 staked: min_candidate_stk::<T>(),
@@ -146,6 +207,9 @@ mod benchmarks {
         const USER_SEED: u32 = 1;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
+
+        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
+
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
             caller.clone(),
@@ -153,13 +217,9 @@ mod benchmarks {
             min_candidate_stk::<T>(),
         )?;
 
-        // Initialize the block at which we should do stuff
-        let block_number = frame_system::Pallet::<T>::block_number();
+        let timer = T::JoiningRequestTimer::now();
 
-        // TODO: make this parametric by instead of using contains use
-        // a custom trait
-        // Right now we know this is going to be correct with fast-runtime
-        System::<T>::set_block_number(block_number + 10u32.into());
+        T::JoiningRequestTimer::skip_to_elapsed();
 
         PooledStaking::<T>::execute_pending_operations(
             RawOrigin::Signed(caller.clone()).into(),
@@ -167,7 +227,7 @@ mod benchmarks {
                 delegator: caller.clone(),
                 operation: JoiningAutoCompounding {
                     candidate: caller.clone(),
-                    at: block_number,
+                    at: timer.clone(),
                 },
             }],
         )?;
@@ -222,6 +282,7 @@ mod benchmarks {
                 USER_SEED - i - 1,
                 min_candidate_stk::<T>() * 2u32.into(),
             );
+            T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
 
             // self delegation
             PooledStaking::<T>::request_delegate(
@@ -241,13 +302,9 @@ mod benchmarks {
             candidate_delegator.push((candidate.clone(), caller.clone()))
         }
 
-        // Initialize the block at which we should do stuff
-        let block_number = frame_system::Pallet::<T>::block_number();
+        let timer = T::JoiningRequestTimer::now();
 
-        // TODO: make this parametric by instead of using contains use
-        // a custom trait
-        // Right now we know this is going to be correct with fast-runtime
-        System::<T>::set_block_number(block_number + 10u32.into());
+        T::JoiningRequestTimer::skip_to_elapsed();
 
         // Execute as many pending operations as posible
         for i in 0..b {
@@ -259,7 +316,7 @@ mod benchmarks {
                     delegator: caller.clone(),
                     operation: JoiningManualRewards {
                         candidate: candidate.clone(),
-                        at: block_number,
+                        at: timer.clone(),
                     },
                 }],
             )?;
@@ -309,6 +366,7 @@ mod benchmarks {
             min_candidate_stk::<T>() * 2u32.into(),
         );
 
+        T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
         // self delegation
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(candidate.clone()).into(),
@@ -383,6 +441,9 @@ mod benchmarks {
                 TargetPool::AutoCompounding,
                 min_candidate_stk::<T>(),
             )?;
+
+            // Make candidate eligible
+            T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
 
             candidates.push(candidate.clone())
         }
