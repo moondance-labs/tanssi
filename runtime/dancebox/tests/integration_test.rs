@@ -16,27 +16,23 @@
 
 #![cfg(test)]
 
-use dancebox_runtime::MinimumSelfDelegation;
-use frame_support::assert_noop;
-use pallet_pooled_staking::PoolsKey;
-use pallet_pooled_staking::SharesOrStake;
-
 use {
     common::*,
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
         migrations::{CollatorSelectionInvulnerablesValue, MigrateInvulnerables},
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, Configuration,
-        Invulnerables, PooledStaking, Proxy, ProxyType,
+        Invulnerables, MinimumSelfDelegation, PooledStaking, Proxy, ProxyType,
     },
-    frame_support::{assert_ok, BoundedVec},
+    frame_support::{assert_noop, assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting::ContainerChainBlockInfo,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_migrations::Migration,
     pallet_pooled_staking::{
-        EligibleCandidate, PendingOperationKey, PendingOperationQuery, TargetPool,
+        traits::IsCandidateEligible, EligibleCandidate, PendingOperationKey, PendingOperationQuery,
+        PoolsKey, SharesOrStake, TargetPool,
     },
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -2124,7 +2120,7 @@ fn test_staking_join() {
                 }]
             );
 
-            // And staken amount is immediately marked as "reserved"
+            // And staked amount is immediately marked as "reserved"
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
             assert_eq!(balance_before - balance_after, stake);
             assert_eq!(System::account(AccountId::from(ALICE)).data.reserved, stake);
@@ -2179,12 +2175,13 @@ fn test_staking_join_no_keys_registered() {
 
             // The new account should be the top candidate but it has no keys registered in
             // pallet_session, so it is not eligible
+            assert!(!<Runtime as pallet_pooled_staking::Config>::EligibleCandidatesFilter::is_candidate_eligible(&new_account));
             let eligible_candidates =
                 pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
 
             assert_eq!(eligible_candidates, vec![]);
 
-            // And staken amount is immediately marked as "reserved"
+            // And staked amount is immediately marked as "reserved"
             let balance_after = System::account(new_account.clone()).data.free;
             assert_eq!(balance_before - balance_after, stake);
             assert_eq!(System::account(new_account.clone()).data.reserved, stake);
@@ -2239,11 +2236,12 @@ fn test_staking_register_keys_after_joining() {
 
             // The new account should be the top candidate but it has no keys registered in
             // pallet_session, so it is not eligible
+            assert!(!<Runtime as pallet_pooled_staking::Config>::EligibleCandidatesFilter::is_candidate_eligible(&new_account));
             let eligible_candidates =
                 pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
             assert_eq!(eligible_candidates, vec![]);
 
-            // And staken amount is immediately marked as "reserved"
+            // And staked amount is immediately marked as "reserved"
             let balance_after = System::account(new_account.clone()).data.free;
             assert_eq!(balance_before - balance_after, stake);
             assert_eq!(System::account(new_account.clone()).data.reserved, stake);
@@ -2258,7 +2256,9 @@ fn test_staking_register_keys_after_joining() {
                 vec![]
             ));
 
-            // Still not eligible, need to manually update candidate list
+            // Now eligible according to filter
+            assert!(<Runtime as pallet_pooled_staking::Config>::EligibleCandidatesFilter::is_candidate_eligible(&new_account));
+            // But not eligible according to pallet_pooled_staking, need to manually update candidate list
             let eligible_candidates =
                 pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
             assert_eq!(eligible_candidates, vec![]);
