@@ -683,9 +683,15 @@ impl pallet_migrations::Config for Runtime {
 pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        matches!(
+        !matches!(
             c,
-            RuntimeCall::Invulnerables(..) | RuntimeCall::Sudo(..) | RuntimeCall::Configuration(..)
+            RuntimeCall::Balances(..)
+                | RuntimeCall::Registrar(..)
+                | RuntimeCall::Session(..)
+                | RuntimeCall::System(..)
+                | RuntimeCall::PooledStaking(..)
+                | RuntimeCall::Utility(..)
+                | RuntimeCall::PolkadotXcm(..)
         )
     }
 }
