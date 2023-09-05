@@ -39,7 +39,9 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter},
+        traits::{
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, ValidatorRegistration,
+        },
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -55,7 +57,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
-    pallet_pooled_staking::traits::BlockNumberTimer,
+    pallet_pooled_staking::traits::{BlockNumberTimer, IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
@@ -70,10 +72,9 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
-    sp_std::prelude::*,
+    sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
 };
-
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
     tp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
@@ -736,10 +737,70 @@ parameter_types! {
     pub const InitialAutoCompoundingShareValue: u128 = currency::KILODANCE;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
-    pub const BlocksToWait: u32 = BLOCKS_TO_WAIT;
+    pub const BlocksToWait: u32 = 2;
+    pub const SessionsToWait: u32 = 2;
+
 }
 
-pub const BLOCKS_TO_WAIT: u32 = 2;
+pub struct SessionTimer<G>(PhantomData<G>);
+
+impl<G> Timer for SessionTimer<G>
+where
+    G: Get<u32>,
+{
+    type Instant = u32;
+
+    fn now() -> Self::Instant {
+        Session::current_index()
+    }
+
+    fn is_elapsed(instant: &Self::Instant) -> bool {
+        let delay = G::get();
+        let Some(end) = instant.checked_add(delay) else {
+            return false;
+        };
+        end <= Self::now()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn elapsed_instant() -> Self::Instant {
+        let delay = G::get();
+        Self::now()
+            .checked_add(delay)
+            .expect("overflow when computing valid elapsed instant")
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed() {
+        let session_to_reach = Self::elapsed_instant();
+        while Self::now() < session_to_reach {
+            Session::rotate_session();
+        }
+    }
+}
+
+pub struct CandidateHasRegisteredKeys;
+impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
+    fn is_candidate_eligible(a: &AccountId) -> bool {
+        <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_candidate_eligible(a: &AccountId, eligible: bool) {
+        use sp_core::crypto::UncheckedFrom;
+        if eligible {
+            let account_slice: &[u8; 32] = a.as_ref();
+            let _ = Session::set_keys(
+                RuntimeOrigin::signed(a.clone()),
+                SessionKeys {
+                    nimbus: NimbusId::unchecked_from(*account_slice),
+                },
+                vec![],
+            );
+        } else {
+            let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
+        }
+    }
+}
 
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -752,12 +813,12 @@ impl pallet_pooled_staking::Config for Runtime {
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RewardsCollatorCommission = RewardsCollatorCommission;
     // TODO: Change for session boundary filter
-    type JoiningRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
+    type JoiningRequestTimer = SessionTimer<SessionsToWait>;
     // TODO: Change for proper duration
     type LeavingRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
-    // TODO: Add check that candidate have authoring keys?
-    type EligibleCandidatesFilter = ();
+    type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
