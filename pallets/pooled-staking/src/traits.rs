@@ -62,7 +62,7 @@ where
 
     fn is_elapsed(start: &Self::Instant) -> bool {
         let delay = G::get();
-        let Some(end) = instant.checked_add(&delay) else {
+        let Some(end) = start.checked_add(&delay) else {
             return false;
         };
         end <= Self::now()
