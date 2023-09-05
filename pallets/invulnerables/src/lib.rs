@@ -40,15 +40,19 @@ pub mod weights;
 #[frame_support::pallet]
 pub mod pallet {
     pub use crate::weights::WeightInfo;
-    use frame_support::{
-        dispatch::DispatchResultWithPostInfo, pallet_prelude::*, traits::EnsureOrigin,
-        traits::ValidatorRegistration, BoundedVec, DefaultNoBound,
+    use {
+        frame_support::{
+            dispatch::DispatchResultWithPostInfo,
+            pallet_prelude::*,
+            traits::{EnsureOrigin, ValidatorRegistration},
+            BoundedVec, DefaultNoBound,
+        },
+        frame_system::pallet_prelude::*,
+        pallet_session::SessionManager,
+        sp_runtime::traits::Convert,
+        sp_staking::SessionIndex,
+        sp_std::vec::Vec,
     };
-    use frame_system::pallet_prelude::*;
-    use pallet_session::SessionManager;
-    use sp_runtime::traits::Convert;
-    use sp_staking::SessionIndex;
-    use sp_std::vec::Vec;
 
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);

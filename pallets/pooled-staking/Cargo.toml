@@ -1,0 +1,49 @@
+[package]
+name = "pallet-pooled-staking"
+authors = { workspace = true }
+description = "A staking pallet implemented using shares in pools"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[dependencies]
+log = { workspace = true }
+serde = { workspace = true, optional = true }
+
+# Substrate
+frame-benchmarking = { workspace = true, optional = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+
+# Nimbus
+nimbus-primitives = { workspace = true }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+
+[dev-dependencies]
+num-traits = { workspace = true }
+pallet-balances = { workspace = true, features = [ "std" ] }
+similar-asserts = { workspace = true }
+sp-io = { workspace = true, features = [ "std" ] }
+
+[features]
+default = [ "std" ]
+std = [
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"nimbus-primitives/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"serde",
+	"sp-runtime/std",
+	"sp-std/std",
+]
+runtime-benchmarks = [ "frame-benchmarking" ]
+try-runtime = [ "frame-support/try-runtime" ]

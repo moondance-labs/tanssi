@@ -12,6 +12,7 @@ async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
 exit-future = { workspace = true }
+flume = { workspace = true }
 futures = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
@@ -19,7 +20,6 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 serde_json = { workspace = true }
 tokio = { workspace = true }
-flume = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }

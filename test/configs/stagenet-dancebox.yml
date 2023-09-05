@@ -1,4 +1,5 @@
-endpoint: wss://vira-stagenet-dancebox-rpc.a.moondev.network
+endpoint: wss://fraa-stagebox-rpc.a.stagenet.tanssi.network
+
 mock-signature-host: true
 db: ./tmp/db_mba.sqlite
 

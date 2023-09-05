@@ -39,7 +39,9 @@ use {
         construct_runtime,
         dispatch::DispatchClass,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter},
+        traits::{
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, ValidatorRegistration,
+        },
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -55,6 +57,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
+    pallet_pooled_staking::traits::{BlockNumberTimer, IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::ShouldEndSession,
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
@@ -65,11 +68,11 @@ use {
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
-        traits::{AccountIdLookup, BlakeTwo256, Block as BlockT},
+        traits::{AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT},
         transaction_validity::{TransactionSource, TransactionValidity},
-        ApplyExtrinsicResult,
+        AccountId32, ApplyExtrinsicResult,
     },
-    sp_std::prelude::*,
+    sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
 };
 pub use {
@@ -623,7 +626,12 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 )
             }
             ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(c, RuntimeCall::Session(..) | RuntimeCall::Utility(..)),
+            ProxyType::Staking => matches!(
+                c,
+                RuntimeCall::Session(..)
+                    | RuntimeCall::Utility(..)
+                    | RuntimeCall::PooledStaking(..)
+            ),
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
@@ -675,10 +683,16 @@ impl pallet_migrations::Config for Runtime {
 pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            RuntimeCall::Balances(_) => false,
-            _ => true,
-        }
+        !matches!(
+            c,
+            RuntimeCall::Balances(..)
+                | RuntimeCall::Registrar(..)
+                | RuntimeCall::Session(..)
+                | RuntimeCall::System(..)
+                | RuntimeCall::PooledStaking(..)
+                | RuntimeCall::Utility(..)
+                | RuntimeCall::PolkadotXcm(..)
+        )
     }
 }
 
@@ -722,6 +736,97 @@ impl pallet_maintenance_mode::Config for Runtime {
 
 impl pallet_root_testing::Config for Runtime {}
 
+parameter_types! {
+    pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
+    pub const CurrencyHoldReason: [u8; 8] = *b"POOLSTAK";
+    pub const InitialManualClaimShareValue: u128 = currency::KILODANCE;
+    pub const InitialAutoCompoundingShareValue: u128 = currency::KILODANCE;
+    pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
+    pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
+    pub const BlocksToWait: u32 = 2;
+    pub const SessionsToWait: u32 = 2;
+
+}
+
+pub struct SessionTimer<G>(PhantomData<G>);
+
+impl<G> Timer for SessionTimer<G>
+where
+    G: Get<u32>,
+{
+    type Instant = u32;
+
+    fn now() -> Self::Instant {
+        Session::current_index()
+    }
+
+    fn is_elapsed(instant: &Self::Instant) -> bool {
+        let delay = G::get();
+        let Some(end) = instant.checked_add(delay) else {
+            return false;
+        };
+        end <= Self::now()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn elapsed_instant() -> Self::Instant {
+        let delay = G::get();
+        Self::now()
+            .checked_add(delay)
+            .expect("overflow when computing valid elapsed instant")
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed() {
+        let session_to_reach = Self::elapsed_instant();
+        while Self::now() < session_to_reach {
+            Session::rotate_session();
+        }
+    }
+}
+
+pub struct CandidateHasRegisteredKeys;
+impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
+    fn is_candidate_eligible(a: &AccountId) -> bool {
+        <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_candidate_eligible(a: &AccountId, eligible: bool) {
+        use sp_core::crypto::UncheckedFrom;
+        if eligible {
+            let account_slice: &[u8; 32] = a.as_ref();
+            let _ = Session::set_keys(
+                RuntimeOrigin::signed(a.clone()),
+                SessionKeys {
+                    nimbus: NimbusId::unchecked_from(*account_slice),
+                },
+                vec![],
+            );
+        } else {
+            let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
+        }
+    }
+}
+
+impl pallet_pooled_staking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type Balance = Balance;
+    type CurrencyHoldReason = CurrencyHoldReason;
+    type StakingAccount = StakingAccount;
+    type InitialManualClaimShareValue = InitialManualClaimShareValue;
+    type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
+    type MinimumSelfDelegation = MinimumSelfDelegation;
+    type RewardsCollatorCommission = RewardsCollatorCommission;
+    // TODO: Change for session boundary filter
+    type JoiningRequestTimer = SessionTimer<SessionsToWait>;
+    // TODO: Change for proper duration
+    type LeavingRequestTimer = BlockNumberTimer<Self, BlocksToWait>;
+    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -757,6 +862,7 @@ construct_runtime!(
         Session: pallet_session = 31,
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
+        PooledStaking: pallet_pooled_staking = 34,
 
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 50,
@@ -897,6 +1003,7 @@ impl_runtime_apis! {
             use pallet_configuration::Pallet as PalletConfigurationBench;
             use pallet_registrar::Pallet as PalletRegistrarBench;
             use pallet_invulnerables::Pallet as PalletInvulnerablesBench;
+            use pallet_pooled_staking::Pallet as PalledPooledStaking;
 
             let mut list = Vec::<BenchmarkList>::new();
 
@@ -926,6 +1033,13 @@ impl_runtime_apis! {
                 PalletInvulnerablesBench::<Runtime>
             );
 
+            list_benchmark!(
+                list,
+                extra,
+                pallet_pooled_staking,
+                PalledPooledStaking::<Runtime>
+            );
+
             let storage_info = AllPalletsWithSystem::storage_info();
 
             (list, storage_info)
@@ -942,6 +1056,7 @@ impl_runtime_apis! {
             use pallet_configuration::Pallet as PalletConfigurationBench;
             use pallet_registrar::Pallet as PalletRegistrarBench;
             use pallet_invulnerables::Pallet as PalletInvulnerablesBench;
+            use pallet_pooled_staking::Pallet as PalletPooledStaking;
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -1002,6 +1117,12 @@ impl_runtime_apis! {
                 batches,
                 pallet_invulnerables,
                 PalletInvulnerablesBench::<Runtime>
+            );
+            add_benchmark!(
+                params,
+                batches,
+                pallet_pooled_staking,
+                PalletPooledStaking::<Runtime>
             );
             if batches.is_empty() {
                 return Err("Benchmark not found for this pallet.".into());

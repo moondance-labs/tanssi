@@ -12,6 +12,7 @@ import type {
     DanceboxRuntimeProxyType,
     FrameSupportDispatchDispatchInfo,
     FrameSupportTokensMiscBalanceStatus,
+    PalletPooledStakingTargetPool,
     SpRuntimeDispatchError,
     SpWeightsWeightV2Weight,
     XcmV3MultiLocation,
@@ -425,6 +426,124 @@ declare module "@polkadot/api-base/types/events" {
              * [ destination location, cost ]
              */
             VersionNotifyUnrequested: AugmentedEvent<ApiType, [XcmV3MultiLocation, XcmV3MultiassetMultiAssets]>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        pooledStaking: {
+            /** Rewards manually claimed. */
+            ClaimedManualRewards: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, delegator: AccountId32, rewards: u128],
+                { candidate: AccountId32; delegator: AccountId32; rewards: u128 }
+            >;
+            /** Stake of that Candidate decreased. */
+            DecreasedStake: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, stakeDiff: u128],
+                { candidate: AccountId32; stakeDiff: u128 }
+            >;
+            /**
+             * Delegation request was executed. `staked` has been properly staked in `pool`, while the rounding when
+             * converting to shares has been `released`.
+             */
+            ExecutedDelegate: AugmentedEvent<
+                ApiType,
+                [
+                    candidate: AccountId32,
+                    delegator: AccountId32,
+                    pool: PalletPooledStakingTargetPool,
+                    staked: u128,
+                    released: u128
+                ],
+                {
+                    candidate: AccountId32;
+                    delegator: AccountId32;
+                    pool: PalletPooledStakingTargetPool;
+                    staked: u128;
+                    released: u128;
+                }
+            >;
+            /** Undelegation request was executed. */
+            ExecutedUndelegate: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, delegator: AccountId32, released: u128],
+                { candidate: AccountId32; delegator: AccountId32; released: u128 }
+            >;
+            /** Stake of that Candidate increased. */
+            IncreasedStake: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, stakeDiff: u128],
+                { candidate: AccountId32; stakeDiff: u128 }
+            >;
+            /** User requested to delegate towards a candidate. */
+            RequestedDelegate: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, delegator: AccountId32, pool: PalletPooledStakingTargetPool, pending: u128],
+                { candidate: AccountId32; delegator: AccountId32; pool: PalletPooledStakingTargetPool; pending: u128 }
+            >;
+            /**
+             * User requested to undelegate from a candidate. Stake was removed from a `pool` and is `pending` for the request
+             * to be executed. The rounding when converting to leaving shares has been `released` immediately.
+             */
+            RequestedUndelegate: AugmentedEvent<
+                ApiType,
+                [
+                    candidate: AccountId32,
+                    delegator: AccountId32,
+                    from: PalletPooledStakingTargetPool,
+                    pending: u128,
+                    released: u128
+                ],
+                {
+                    candidate: AccountId32;
+                    delegator: AccountId32;
+                    from: PalletPooledStakingTargetPool;
+                    pending: u128;
+                    released: u128;
+                }
+            >;
+            /** Collator has been rewarded. */
+            RewardedCollator: AugmentedEvent<
+                ApiType,
+                [collator: AccountId32, autoCompoundingRewards: u128, manualClaimRewards: u128],
+                { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
+            >;
+            /** Delegators have been rewarded. */
+            RewardedDelegators: AugmentedEvent<
+                ApiType,
+                [collator: AccountId32, autoCompoundingRewards: u128, manualClaimRewards: u128],
+                { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
+            >;
+            /** Delegator staked towards a Candidate for AutoCompounding Shares. */
+            StakedAutoCompounding: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, delegator: AccountId32, shares: u128, stake: u128],
+                { candidate: AccountId32; delegator: AccountId32; shares: u128; stake: u128 }
+            >;
+            /** Delegator staked towards a candidate for ManualRewards Shares. */
+            StakedManualRewards: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, delegator: AccountId32, shares: u128, stake: u128],
+                { candidate: AccountId32; delegator: AccountId32; shares: u128; stake: u128 }
+            >;
+            /** Delegator unstaked towards a candidate with AutoCompounding Shares. */
+            UnstakedAutoCompounding: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, delegator: AccountId32, shares: u128, stake: u128],
+                { candidate: AccountId32; delegator: AccountId32; shares: u128; stake: u128 }
+            >;
+            /** Delegator unstaked towards a candidate with ManualRewards Shares. */
+            UnstakedManualRewards: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, delegator: AccountId32, shares: u128, stake: u128],
+                { candidate: AccountId32; delegator: AccountId32; shares: u128; stake: u128 }
+            >;
+            /** Stake of the candidate has changed, which may have modified its position in the eligible candidates list. */
+            UpdatedCandidatePosition: AugmentedEvent<
+                ApiType,
+                [candidate: AccountId32, stake: u128, selfDelegation: u128, before: Option<u32>, after: Option<u32>],
+                { candidate: AccountId32; stake: u128; selfDelegation: u128; before: Option<u32>; after: Option<u32> }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
