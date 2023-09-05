@@ -1,5 +1,5 @@
 import "@tanssi/api-augment";
-import { describeSuite, beforeAll, expect } from "@moonwall/cli";
+import { describeSuite, beforeAll, expect, isExtrinsicSuccessful } from "@moonwall/cli";
 import { KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { numberToHex } from "@polkadot/util";
@@ -30,11 +30,13 @@ describeSuite({
 
                 const tx = polkadotJs.tx.balances.transfer(randomAccount.address, 2n * 10000000000000000n);
                 await context.createBlock([await tx.signAsync(alice)]);
+                expect(isExtrinsicSuccessful(await polkadotJs.query.system.events())).to.be.true;
 
                 // Register keys in pallet_session
                 const newKey = await polkadotJs.rpc.author.rotateKeys();
                 const tx2 = polkadotJs.tx.session.setKeys(newKey, []);
                 await context.createBlock([await tx2.signAsync(randomAccount)]);
+                expect(isExtrinsicSuccessful(await polkadotJs.query.system.events())).to.be.true;
 
                 // Self-delegate in pallet_pooled_staking
                 const tx3 = polkadotJs.tx.pooledStaking.requestDelegate(
@@ -43,8 +45,20 @@ describeSuite({
                     10000000000000000n
                 );
                 await context.createBlock([await tx3.signAsync(randomAccount)]);
+                const events = await polkadotJs.query.system.events();
+                const ev1 = events.filter((a) => {
+                    return a.event.method == "IncreasedStake";
+                });
+                expect(ev1.length).to.be.equal(1);
+                const ev2 = events.filter((a) => {
+                    return a.event.method == "UpdatedCandidatePosition";
+                });
+                expect(ev2.length).to.be.equal(1);
+                const ev3 = events.filter((a) => {
+                    return a.event.method == "RequestedDelegate";
+                });
+                expect(ev3.length).to.be.equal(1);
 
-                // TODO: check events
                 const stakingCandidates = await polkadotJs.query.pooledStaking.sortedEligibleCandidates();
                 expect(stakingCandidates.toJSON()).to.deep.equal([
                     {

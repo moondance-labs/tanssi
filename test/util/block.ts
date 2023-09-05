@@ -31,7 +31,7 @@ export async function jumpBlocks(context: DevModeContext, blockCount: number) {
 export async function jumpToBlock(context: DevModeContext, targetBlockNumber: number) {
     let blockNumber = (await context.polkadotJs().rpc.chain.getBlock()).block.header.number.toNumber();
 
-    while (blockNumber < targetBlockNumber) {
+    while (blockNumber + 1 < targetBlockNumber) {
         await context.createBlock();
         blockNumber = (await context.polkadotJs().rpc.chain.getBlock()).block.header.number.toNumber();
     }
