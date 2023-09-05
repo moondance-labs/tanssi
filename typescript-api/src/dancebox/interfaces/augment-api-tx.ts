@@ -625,6 +625,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[AccountId32, AccountId32]>>]
             >;
+            /** Execute pending operations can incur in claim manual rewards per operation, we simply add the worst case */
             executePendingOperations: AugmentedSubmittable<
                 (
                     operations:
@@ -661,6 +662,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingTargetPool, u128]
             >;
+            /** Request undelegate can incur in either claim manual rewards or hold rebalances, we simply add the worst case */
             requestUndelegate: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
