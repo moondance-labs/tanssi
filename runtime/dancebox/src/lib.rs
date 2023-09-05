@@ -625,7 +625,12 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 )
             }
             ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(c, RuntimeCall::Session(..) | RuntimeCall::Utility(..)),
+            ProxyType::Staking => matches!(
+                c,
+                RuntimeCall::Session(..)
+                    | RuntimeCall::Utility(..)
+                    | RuntimeCall::PooledStaking(..)
+            ),
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
@@ -677,10 +682,10 @@ impl pallet_migrations::Config for Runtime {
 pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            RuntimeCall::Balances(_) => false,
-            _ => true,
-        }
+        matches!(
+            c,
+            RuntimeCall::Invulnerables(..) | RuntimeCall::Sudo(..) | RuntimeCall::Configuration(..)
+        )
     }
 }
 
