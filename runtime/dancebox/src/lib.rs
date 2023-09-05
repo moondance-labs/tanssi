@@ -57,7 +57,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
-    pallet_pooled_staking::traits::{BlockNumberTimer, IsCandidateEligible, Timer},
+    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
