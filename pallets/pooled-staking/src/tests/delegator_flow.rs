@@ -73,7 +73,7 @@ pool_test!(
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     pending: amount
                 },
             ]);
@@ -142,7 +142,7 @@ pool_test!(
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     pending: requested_amount,
                 },
                 Event::DecreasedStake {
@@ -160,7 +160,7 @@ pool_test!(
                 Event::ExecutedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     staked: final_amount,
                     released: 10,
                 },
@@ -288,7 +288,7 @@ pool_test!(
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     pending: requested_amount
                 },
                 // delegate exec
@@ -307,7 +307,7 @@ pool_test!(
                 Event::ExecutedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     staked: final_amount,
                     released: 10,
                 },
@@ -387,7 +387,7 @@ pool_test!(
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     pending: joining_requested_amount
                 },
                 // delegate exec
@@ -406,7 +406,7 @@ pool_test!(
                 Event::ExecutedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     staked: joining_amount,
                     released: 10,
                 },

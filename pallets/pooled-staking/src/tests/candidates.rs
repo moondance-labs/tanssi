@@ -53,7 +53,7 @@ pool_test!(
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     pending: round_down(requested_amount, 2),
                 },
                 Event::DecreasedStake {
@@ -71,7 +71,7 @@ pool_test!(
                 Event::ExecutedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     staked: final_amount,
                     released: round_down(requested_amount, 2) - final_amount,
                 },
@@ -135,14 +135,14 @@ pool_test!(
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     pending: round_down(requested_amount, 2),
                 },
                 P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_CANDIDATE_1, 10, final_amount),
                 Event::ExecutedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     staked: final_amount,
                     released: round_down(requested_amount, 2) - final_amount,
                 },
@@ -161,14 +161,14 @@ pool_test!(
                 Event::RequestedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     pending: round_down(requested_amount, 2),
                 },
                 P::event_staked(ACCOUNT_CANDIDATE_1, ACCOUNT_CANDIDATE_1, 10, final_amount),
                 Event::ExecutedDelegate {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    towards: P::target_pool(),
+                    pool: P::target_pool(),
                     staked: final_amount,
                     released: round_down(requested_amount, 2) - final_amount,
                 },
@@ -257,7 +257,7 @@ fn many_candidates_mixed_pools() {
                             Event::RequestedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
-                                towards: TargetPool::AutoCompounding,
+                                pool: TargetPool::AutoCompounding,
                                 pending: action.amount,
                             },
                             Event::StakedAutoCompounding {
@@ -269,7 +269,7 @@ fn many_candidates_mixed_pools() {
                             Event::ExecutedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
-                                towards: TargetPool::AutoCompounding,
+                                pool: TargetPool::AutoCompounding,
                                 staked: action.amount,
                                 released: 0,
                             },
@@ -304,7 +304,7 @@ fn many_candidates_mixed_pools() {
                             Event::RequestedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
-                                towards: TargetPool::ManualRewards,
+                                pool: TargetPool::ManualRewards,
                                 pending: action.amount,
                             },
                             Event::StakedManualRewards {
@@ -316,7 +316,7 @@ fn many_candidates_mixed_pools() {
                             Event::ExecutedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
-                                towards: TargetPool::ManualRewards,
+                                pool: TargetPool::ManualRewards,
                                 staked: action.amount,
                                 released: 0,
                             },

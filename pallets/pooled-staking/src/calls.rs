@@ -157,7 +157,7 @@ impl<T: Config> Calls<T> {
         Pallet::<T>::deposit_event(Event::<T>::RequestedDelegate {
             candidate,
             delegator,
-            towards: pool,
+            pool: pool,
             pending: stake.0,
         });
 
@@ -437,7 +437,7 @@ impl<T: Config> Calls<T> {
         Pallet::<T>::deposit_event(Event::<T>::ExecutedDelegate {
             candidate,
             delegator,
-            towards: pool,
+            pool: pool,
             staked: actually_staked.0,
             released: release,
         });

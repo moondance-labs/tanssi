@@ -321,7 +321,8 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        /// Stake of that Candidate increased.
+        /// Stake of the candidate has changed, which may have modified its
+        /// position in the eligible candidates list.
         UpdatedCandidatePosition {
             candidate: Candidate<T>,
             stake: T::Balance,
@@ -330,19 +331,27 @@ pub mod pallet {
             after: Option<u32>,
         },
 
+        /// User requested to delegate towards a candidate.
         RequestedDelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            towards: TargetPool,
+            pool: TargetPool,
             pending: T::Balance,
         },
+        /// Delegation request was executed. `staked` has been properly staked
+        /// in `pool`, while the rounding when converting to shares has been
+        /// `released`.
         ExecutedDelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            towards: TargetPool,
+            pool: TargetPool,
             staked: T::Balance,
             released: T::Balance,
         },
+        /// User requested to undelegate from a candidate.
+        /// Stake was removed from a `pool` and is `pending` for the request
+        /// to be executed. The rounding when converting to leaving shares has
+        /// been `released` immediately.
         RequestedUndelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
@@ -350,6 +359,7 @@ pub mod pallet {
             pending: T::Balance,
             released: T::Balance,
         },
+        /// Undelegation request was executed.
         ExecutedUndelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,

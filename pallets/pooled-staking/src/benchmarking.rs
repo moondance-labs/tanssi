@@ -133,7 +133,7 @@ mod benchmarks {
             Event::RequestedDelegate {
                 candidate: caller.clone(),
                 delegator: caller,
-                towards: TargetPool::AutoCompounding,
+                pool: TargetPool::AutoCompounding,
                 pending: min_candidate_stk::<T>(),
             }
             .into(),
@@ -193,7 +193,7 @@ mod benchmarks {
             Event::ExecutedDelegate {
                 candidate: last_candidate.clone(),
                 delegator: caller,
-                towards: TargetPool::AutoCompounding,
+                pool: TargetPool::AutoCompounding,
                 staked: min_candidate_stk::<T>(),
                 released: 0u32.into(),
             }

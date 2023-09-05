@@ -447,14 +447,14 @@ declare module "@polkadot/api-base/types/events" {
                 [
                     candidate: AccountId32,
                     delegator: AccountId32,
-                    towards: PalletPooledStakingTargetPool,
+                    pool: PalletPooledStakingTargetPool,
                     staked: u128,
                     released: u128
                 ],
                 {
                     candidate: AccountId32;
                     delegator: AccountId32;
-                    towards: PalletPooledStakingTargetPool;
+                    pool: PalletPooledStakingTargetPool;
                     staked: u128;
                     released: u128;
                 }
@@ -472,11 +472,11 @@ declare module "@polkadot/api-base/types/events" {
             >;
             RequestedDelegate: AugmentedEvent<
                 ApiType,
-                [candidate: AccountId32, delegator: AccountId32, towards: PalletPooledStakingTargetPool, pending: u128],
+                [candidate: AccountId32, delegator: AccountId32, pool: PalletPooledStakingTargetPool, pending: u128],
                 {
                     candidate: AccountId32;
                     delegator: AccountId32;
-                    towards: PalletPooledStakingTargetPool;
+                    pool: PalletPooledStakingTargetPool;
                     pending: u128;
                 }
             >;
