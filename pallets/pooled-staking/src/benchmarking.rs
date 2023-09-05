@@ -433,7 +433,6 @@ mod benchmarks {
                 USER_SEED - i - 1,
                 min_candidate_stk::<T>() * 2u32.into(),
             );
-            T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
 
             // self delegation
             PooledStaking::<T>::request_delegate(
@@ -442,6 +441,9 @@ mod benchmarks {
                 TargetPool::AutoCompounding,
                 min_candidate_stk::<T>(),
             )?;
+            
+            // Make candidate eligible
+            T::EligibleCandidatesFilter::make_candidate_eligible(&candidate, true);
 
             candidates.push(candidate.clone())
         }
