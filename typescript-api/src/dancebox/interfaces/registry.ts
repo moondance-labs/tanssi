@@ -85,6 +85,16 @@ import type {
     PalletMaintenanceModeEvent,
     PalletMigrationsError,
     PalletMigrationsEvent,
+    PalletPooledStakingAllTargetPool,
+    PalletPooledStakingCall,
+    PalletPooledStakingCandidateEligibleCandidate,
+    PalletPooledStakingError,
+    PalletPooledStakingEvent,
+    PalletPooledStakingPendingOperationKey,
+    PalletPooledStakingPendingOperationQuery,
+    PalletPooledStakingPoolsKey,
+    PalletPooledStakingSharesOrStake,
+    PalletPooledStakingTargetPool,
     PalletProxyAnnouncement,
     PalletProxyCall,
     PalletProxyError,
@@ -281,6 +291,16 @@ declare module "@polkadot/types/types/registry" {
         PalletMaintenanceModeEvent: PalletMaintenanceModeEvent;
         PalletMigrationsError: PalletMigrationsError;
         PalletMigrationsEvent: PalletMigrationsEvent;
+        PalletPooledStakingAllTargetPool: PalletPooledStakingAllTargetPool;
+        PalletPooledStakingCall: PalletPooledStakingCall;
+        PalletPooledStakingCandidateEligibleCandidate: PalletPooledStakingCandidateEligibleCandidate;
+        PalletPooledStakingError: PalletPooledStakingError;
+        PalletPooledStakingEvent: PalletPooledStakingEvent;
+        PalletPooledStakingPendingOperationKey: PalletPooledStakingPendingOperationKey;
+        PalletPooledStakingPendingOperationQuery: PalletPooledStakingPendingOperationQuery;
+        PalletPooledStakingPoolsKey: PalletPooledStakingPoolsKey;
+        PalletPooledStakingSharesOrStake: PalletPooledStakingSharesOrStake;
+        PalletPooledStakingTargetPool: PalletPooledStakingTargetPool;
         PalletProxyAnnouncement: PalletProxyAnnouncement;
         PalletProxyCall: PalletProxyCall;
         PalletProxyError: PalletProxyError;

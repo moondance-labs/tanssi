@@ -12,9 +12,9 @@ parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len
 
 
 # Substrate
-sp-core = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
+sp-core = { workspace = true }
 
 sp-io = { workspace = true }
 sp-std = { workspace = true }
@@ -26,4 +26,4 @@ xcm-executor = { workspace = true }
 
 [features]
 default = [ "std" ]
-std = ["sp-core/std", "frame-support/std", "frame-system/std", "sp-io/std", "sp-std/std", "xcm/std", "xcm-executor/std"]
+std = [ "frame-support/std", "frame-system/std", "sp-core/std", "sp-io/std", "sp-std/std", "xcm-executor/std", "xcm/std" ]

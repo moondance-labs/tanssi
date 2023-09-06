@@ -28,6 +28,15 @@ export async function jumpBlocks(context: DevModeContext, blockCount: number) {
     }
 }
 
+export async function jumpToBlock(context: DevModeContext, targetBlockNumber: number) {
+    let blockNumber = (await context.polkadotJs().rpc.chain.getBlock()).block.header.number.toNumber();
+
+    while (blockNumber + 1 < targetBlockNumber) {
+        await context.createBlock();
+        blockNumber = (await context.polkadotJs().rpc.chain.getBlock()).block.header.number.toNumber();
+    }
+}
+
 export async function waitSessions(context, paraApi: ApiPromise, count: number): Promise<string | null> {
     const session = (await paraApi.query.session.currentIndex()).addn(count.valueOf()).toNumber();
 
