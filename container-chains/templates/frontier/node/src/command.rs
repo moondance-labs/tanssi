@@ -238,10 +238,10 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::ExportGenesisState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.sync_run(|_config| {
-                let spec = cli.load_spec(&cmd.shared_params.chain.clone().unwrap_or_default())?;
-                let state_version = Cli::native_runtime_version(&spec).state_version();
-                cmd.run::<Block>(&*spec, state_version)
+            runner.sync_run(|mut config| {
+                let partials = new_partial(&mut config, false)?;
+
+                cmd.run(&*config.chain_spec, &*partials.client)
             })
         }
         Some(Subcommand::ExportGenesisWasm(cmd)) => {
