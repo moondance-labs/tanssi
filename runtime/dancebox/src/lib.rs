@@ -31,6 +31,7 @@ use sp_version::NativeVersion;
 pub use sp_runtime::BuildStorage;
 
 pub mod migrations;
+pub mod weights;
 
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
