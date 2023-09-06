@@ -1,6 +1,6 @@
 {
     "name": "@tanssi/api-augment",
-    "version": "0.100.0",
+    "version": "0.200.0",
     "type": "module",
     "description": "Tanssi types augment for @polkadot/api",
     "author": "Moondance-labs",
