@@ -30,6 +30,7 @@ use {
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
     },
+    sc_client_api::ExecutorProvider,
     sc_service::config::{BasePath, PrometheusConfig},
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
@@ -218,9 +219,13 @@ pub fn run() -> Result<()> {
         Some(Subcommand::ExportGenesisState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
+                let spec = cli.load_spec(&cmd.shared_params.chain.clone().unwrap_or_default())?;
                 let partials = new_partial(&config)?;
-
-                cmd.run(&*config.chain_spec, &*partials.client)
+                let state_version = sc_chain_spec::resolve_state_version_from_wasm(
+                    &spec.build_storage()?,
+                    partials.client.executor(),
+                )?;
+                cmd.run::<Block>(&*spec, state_version)
             })
         }
         Some(Subcommand::ExportGenesisWasm(cmd)) => {
