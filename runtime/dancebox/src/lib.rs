@@ -1034,6 +1034,8 @@ impl_runtime_apis! {
 					Ok(MultiLocation::parent())
 				}
 				fn worst_case_holding(_depositable_count: u32) -> MultiAssets {
+                    // We only care for native asset until we support others
+                    // TODO: refactor this case once other assets are supported
 					vec![MultiAsset{
 						id: Concrete(MultiLocation::here()),
 						fun: Fungible(u128::MAX),
