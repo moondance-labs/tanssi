@@ -52,10 +52,10 @@ where
     Runtime: frame_system::Config,
 {
     fn withdraw_asset(_assets: &MultiAssets) -> XCMWeight {
-        XCMWeight::from_parts(200_000_000 as u64, ASSET_BURN_MAX_PROOF_SIZE)
+        XCMWeight::from_parts(200_000_000u64, ASSET_BURN_MAX_PROOF_SIZE)
     }
     fn reserve_asset_deposited(_assets: &MultiAssets) -> XCMWeight {
-        XCMWeight::from_parts(200_000_000 as u64, 0)
+        XCMWeight::from_parts(200_000_000u64, 0)
     }
     fn receive_teleported_asset(_assets: &MultiAssets) -> XCMWeight {
         XCMWeight::MAX
@@ -69,14 +69,14 @@ where
         XcmGeneric::<Runtime>::query_response()
     }
     fn transfer_asset(_assets: &MultiAssets, _dest: &MultiLocation) -> XCMWeight {
-        XCMWeight::from_parts(200_000_000 as u64, ASSET_TRANSFER_MAX_PROOF_SIZE)
+        XCMWeight::from_parts(200_000_000u64, ASSET_TRANSFER_MAX_PROOF_SIZE)
     }
     fn transfer_reserve_asset(
         _assets: &MultiAssets,
         _dest: &MultiLocation,
         _xcm: &Xcm<()>,
     ) -> XCMWeight {
-        XCMWeight::from_parts(200_000_000 as u64, ASSET_TRANSFER_MAX_PROOF_SIZE)
+        XCMWeight::from_parts(200_000_000u64, ASSET_TRANSFER_MAX_PROOF_SIZE)
     }
     fn transact(
         _origin_type: &OriginKind,
@@ -111,14 +111,14 @@ where
         XcmGeneric::<Runtime>::report_error()
     }
     fn deposit_asset(_assets: &MultiAssetFilter, _dest: &MultiLocation) -> XCMWeight {
-        Weight::from_parts(200_000_000 as u64, ASSET_MINT_MAX_PROOF_SIZE)
+        Weight::from_parts(200_000_000u64, ASSET_MINT_MAX_PROOF_SIZE)
     }
     fn deposit_reserve_asset(
         _assets: &MultiAssetFilter,
         _dest: &MultiLocation,
         _xcm: &Xcm<()>,
     ) -> XCMWeight {
-        Weight::from_parts(200_000_000 as u64, ASSET_MINT_MAX_PROOF_SIZE)
+        Weight::from_parts(200_000_000u64, ASSET_MINT_MAX_PROOF_SIZE)
     }
     fn exchange_asset(
         _give: &MultiAssetFilter,
