@@ -923,10 +923,12 @@ construct_runtime!(
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
     frame_benchmarking::define_benchmarks!(
+        [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
         [pallet_author_noting, AuthorNoting]
         [pallet_configuration, Configuration]
         [pallet_registrar, Registrar]
         [pallet_invulnerables, Invulnerables]
+        [pallet_pooled_staking, PooledStaking]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }
