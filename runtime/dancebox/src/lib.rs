@@ -35,7 +35,8 @@ pub mod migrations;
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{
-        relay_chain::{BlockNumber as RelayBlockNumber, SessionIndex}, BodyId, DmpMessageHandler, ParaId,
+        relay_chain::{BlockNumber as RelayBlockNumber, SessionIndex},
+        BodyId, DmpMessageHandler, ParaId,
     },
     frame_support::{
         construct_runtime,
