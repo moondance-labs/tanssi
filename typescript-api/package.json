@@ -1,6 +1,6 @@
 {
-    "name": "@tanssi-network/api-augment",
-    "version": "0.100.0",
+    "name": "@tanssi/api-augment",
+    "version": "0.200.0",
     "type": "module",
     "private": true,
     "description": "Tanssi types augment for @polkadot/api",
