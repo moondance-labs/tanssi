@@ -42,9 +42,16 @@ pub use dancebox_runtime::{
     RuntimeEvent, Session, System,
 };
 
-pub fn run_to_session(n: u32) {
+pub fn session_to_block(n: u32) -> u32 {
     let block_number = dancebox_runtime::Period::get() * n;
-    run_to_block(block_number + 1);
+
+    // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
+    // so this is the first block of the new session that can actually be used
+    block_number + 1
+}
+
+pub fn run_to_session(n: u32) {
+    run_to_block(session_to_block(n));
 }
 
 /// Utility function that advances the chain to the desired block number.

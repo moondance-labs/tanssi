@@ -51,6 +51,7 @@ pub mod weights;
 
 use frame_support::pallet;
 
+pub use candidate::EligibleCandidate;
 pub use pallet::*;
 
 #[pallet(dev_mode)]
