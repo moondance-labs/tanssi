@@ -71,6 +71,7 @@ tp-traits = { workspace = true }
 
 # Polkadot
 pallet-xcm = { workspace = true }
+pallet-xcm-benchmarks = { workspace = true }
 polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
 xcm = { workspace = true }
@@ -195,6 +196,7 @@ runtime-benchmarks = [
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
+	"pallet-xcm-benchmarks/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
  ]
