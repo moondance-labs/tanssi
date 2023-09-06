@@ -775,11 +775,6 @@ impl Contains<RuntimeCall> for NormalFilter {
                 pallet_proxy::Call::kill_pure { .. } => false,
                 _ => true,
             },
-            // Only allow force_default_xcm_version
-            RuntimeCall::PolkadotXcm(method) => match method {
-                pallet_xcm::Call::force_default_xcm_version { .. } => true,
-                _ => false,
-            },
             _ => true,
         }
     }

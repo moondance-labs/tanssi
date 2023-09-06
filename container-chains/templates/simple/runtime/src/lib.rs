@@ -445,15 +445,8 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 /// This can change in the future
 pub struct NormalFilter;
 impl Contains<RuntimeCall> for NormalFilter {
-    fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            // Only allow force_default_xcm_version
-            RuntimeCall::PolkadotXcm(method) => match method {
-                pallet_xcm::Call::force_default_xcm_version { .. } => true,
-                _ => false,
-            },
-            _ => true,
-        }
+    fn contains(_c: &RuntimeCall) -> bool {
+        true
     }
 }
 

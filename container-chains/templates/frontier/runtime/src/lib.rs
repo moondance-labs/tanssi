@@ -567,11 +567,6 @@ impl Contains<RuntimeCall> for NormalFilter {
             // Note: It is also assumed that EVM calls are only allowed through `Origin::Root` so
             // this can be seen as an additional security
             RuntimeCall::EVM(_) => false,
-            // Only allow force_default_xcm_version
-            RuntimeCall::PolkadotXcm(method) => match method {
-                pallet_xcm::Call::force_default_xcm_version { .. } => true,
-                _ => false,
-            },
             _ => true,
         }
     }
