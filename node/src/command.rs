@@ -337,36 +337,18 @@ pub fn run() -> Result<()> {
                 cmd.run(config, polkadot_config)
             })
         }
-        Some(Subcommand::ExportGenesisState(params)) => {
-            let mut builder = sc_cli::LoggerBuilder::new("");
-            builder.with_profiling(sc_tracing::TracingReceiver::Log, "");
-            let _ = builder.init();
+        Some(Subcommand::ExportGenesisState(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.sync_run(|config| {
+                let partials = new_partial(&config)?;
+                // Cumulus approach here, we directly call the generic load_spec func
+                let chain_spec = load_spec(
+                    &cmd.chain.clone().unwrap_or_default(),
+                    cmd.parachain_id.unwrap_or(1000).into(),
+                )?;
 
-            // Cumulus approach here, we directly call the generic load_spec func
-            let chain_spec = load_spec(
-                &params.chain.clone().unwrap_or_default(),
-                params.parachain_id.unwrap_or(1000).into(),
-            )?;
-            let state_version = Cli::native_runtime_version(&chain_spec).state_version();
-
-            let output_buf = {
-                let block: Block = generate_genesis_block(&*chain_spec, state_version)?;
-                let raw_header = block.header().encode();
-
-                if params.raw {
-                    raw_header
-                } else {
-                    format!("0x{:?}", HexDisplay::from(&block.header().encode())).into_bytes()
-                }
-            };
-
-            if let Some(output) = &params.output {
-                std::fs::write(output, output_buf)?;
-            } else {
-                std::io::stdout().write_all(&output_buf)?;
-            }
-
-            Ok(())
+                cmd.run(&*chain_spec, &*partials.client)
+            })
         }
         Some(Subcommand::ExportGenesisWasm(params)) => {
             let mut builder = sc_cli::LoggerBuilder::new("");

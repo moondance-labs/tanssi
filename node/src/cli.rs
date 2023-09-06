@@ -16,11 +16,15 @@
 
 use {
     crate::{chain_spec::RawGenesisConfig, service::Sealing},
+    cumulus_client_cli::generate_genesis_block,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    parity_scale_codec::Encode,
+    sc_cli::{ChainSpec, CliConfiguration, NodeKeyParams, SharedParams},
+    sc_client_api::ExecutorProvider,
     sc_network::config::MultiaddrWithPeerId,
-    sp_runtime::traits::Get,
-    std::{collections::BTreeMap, path::PathBuf},
+    sp_core::hexdisplay::HexDisplay,
+    sp_runtime::traits::{Block as BlockT, Get},
+    std::{collections::BTreeMap, fs, io, io::Write, path::PathBuf},
     tp_container_chain_genesis_data::json::properties_to_map,
 };
 
@@ -119,6 +123,46 @@ pub struct ExportGenesisStateCommand {
     /// The name of the chain for that the genesis state should be exported.
     #[arg(long)]
     pub chain: Option<String>,
+
+    #[allow(missing_docs)]
+    #[command(flatten)]
+    pub shared_params: sc_cli::SharedParams,
+}
+
+impl ExportGenesisStateCommand {
+    /// Run the export-genesis-state command
+    pub fn run<Block: BlockT>(
+        &self,
+        chain_spec: &dyn ChainSpec,
+        client: &impl ExecutorProvider<Block>,
+    ) -> sc_cli::Result<()> {
+        let state_version = sc_chain_spec::resolve_state_version_from_wasm(
+            &chain_spec.build_storage()?,
+            client.executor(),
+        )?;
+
+        let block: Block = generate_genesis_block(chain_spec, state_version)?;
+        let raw_header = block.header().encode();
+        let output_buf = if self.raw {
+            raw_header
+        } else {
+            format!("0x{:?}", HexDisplay::from(&block.header().encode())).into_bytes()
+        };
+
+        if let Some(output) = &self.output {
+            fs::write(output, output_buf)?;
+        } else {
+            io::stdout().write_all(&output_buf)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl sc_cli::CliConfiguration for ExportGenesisStateCommand {
+    fn shared_params(&self) -> &sc_cli::SharedParams {
+        &self.shared_params
+    }
 }
 
 /// Command for exporting the genesis wasm file.
