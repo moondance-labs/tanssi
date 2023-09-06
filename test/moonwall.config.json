@@ -167,7 +167,7 @@
                 {
                     "name": "DBX",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://vira-stagenet-dancebox-rpc.a.moondev.network"]
+                    "endpoints": ["wss://fraa-stagebox-rpc.a.stagenet.tanssi.network"]
                 }
             ]
         },
