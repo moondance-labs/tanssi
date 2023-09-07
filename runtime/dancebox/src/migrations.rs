@@ -24,7 +24,7 @@ use frame_support::{
 };
 
 use {
-    crate::{Balances, Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
     pallet_balances::IdAmount,
     pallet_invulnerables::WeightInfo,
     pallet_migrations::{GetMigrations, Migration},
