@@ -19,16 +19,19 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
-use frame_support::{storage::types::StorageValue, weights::Weight};
+use frame_support::{
+    migration::storage_key_iter, storage::types::StorageValue, weights::Weight, Blake2_128Concat,
+};
 
 use {
+    crate::{Balances, Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    pallet_balances::IdAmount,
     pallet_invulnerables::WeightInfo,
     pallet_migrations::{GetMigrations, Migration},
+    sp_core::Get,
     sp_runtime::BoundedVec,
     sp_std::{marker::PhantomData, prelude::*},
 };
-
-use crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET};
 
 pub struct CollatorSelectionStorageValuePrefix;
 impl frame_support::traits::StorageInstance for CollatorSelectionStorageValuePrefix {
@@ -108,15 +111,100 @@ where
     }
 }
 
+pub struct MigrateHoldReason<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateHoldReason<T>
+where
+    T: pallet_balances::Config,
+    T: pallet_pooled_staking::Config,
+    T::HoldIdentifier: From<crate::HoldReason>,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateHoldReason"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        log::info!(target: LOG_TARGET, "migrate");
+        let pallet_prefix: &[u8] = b"Balances";
+        let storage_item_prefix: &[u8] = b"Holds";
+
+        let stored_data: Vec<_> = storage_key_iter::<
+            T::AccountId,
+            BoundedVec<IdAmount<[u8; 8], <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
+            Blake2_128Concat,
+        >(pallet_prefix, storage_item_prefix)
+        .collect();
+
+        let migrated_count_read = stored_data.len() as u64;
+        let mut migrated_count_write = 0u64;
+
+        // Write to the new storage
+        for (account_id, holds) in stored_data {
+            let mut new_holds = vec![];
+
+            for hold in holds {
+                let new_item: pallet_balances::IdAmount<
+                    T::HoldIdentifier,
+                    <T as pallet_balances::Config>::Balance,
+                > = pallet_balances::IdAmount {
+                    id: crate::HoldReason::PooledStake.into(),
+                    amount: hold.amount,
+                };
+                new_holds.push(new_item);
+            }
+            let bounded = BoundedVec::<_, T::MaxHolds>::truncate_from(new_holds.clone());
+            pallet_balances::Holds::<T>::insert(&account_id, bounded);
+            migrated_count_write += 1;
+        }
+        let db_weights = T::DbWeight::get();
+        db_weights.reads_writes(migrated_count_read, migrated_count_write)
+    }
+
+    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        log::info!(target: LOG_TARGET, "pre_upgrade");
+        let pallet_prefix: &[u8] = b"Balances";
+        let storage_item_prefix: &[u8] = b"Holds";
+
+        let stored_data: Vec<_> = storage_key_iter::<
+            T::AccountId,
+            BoundedVec<IdAmount<[u8; 8], <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
+            Blake2_128Concat,
+        >(pallet_prefix, storage_item_prefix)
+        .collect();
+        use parity_scale_codec::Encode;
+
+        Ok(stored_data.encode())
+    }
+
+    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, migrated_holds: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use parity_scale_codec::Decode;
+        let should_be_migrated: Vec<(
+            T::AccountId,
+            BoundedVec<IdAmount<[u8; 8], <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
+        )> = Decode::decode(migrated_holds.as_slice());
+
+        log::info!(target: LOG_TARGET, "post_upgrade");
+
+        Ok(())
+    }
+}
+
 pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
 where
     Runtime: pallet_invulnerables::Config,
+    Runtime: pallet_pooled_staking::Config,
+    Runtime: pallet_balances::Config,
+    Runtime::HoldIdentifier: From<crate::HoldReason>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
+        let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
 
-        vec![Box::new(migrate_invulnerables)]
+        vec![Box::new(migrate_invulnerables), Box::new(migrate_holds)]
     }
 }
