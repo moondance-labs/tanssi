@@ -46,13 +46,13 @@ describeSuite({
                 };
 
                 const polkadotXcmSend = context.polkadotJs().tx.polkadotXcm.send(dest, message);
-                
+
                 if (chain == "frontier-template") {
-                    expect(async () => await context.createBlock(polkadotXcmSend.signAsync(alice))).rejects.toThrowError(
-                        "1010: Invalid Transaction: Transaction call is not expected"
-                    );
+                    expect(
+                        async () => await context.createBlock(polkadotXcmSend.signAsync(alice))
+                    ).rejects.toThrowError("1010: Invalid Transaction: Transaction call is not expected");
                 } else {
-                    const {result} = await context.createBlock([await polkadotXcmSend.signAsync(alice)]);
+                    const { result } = await context.createBlock([await polkadotXcmSend.signAsync(alice)]);
                     expect(result[0].successful).to.be.false;
                     expect(result[0].error.name).to.eq("CallFiltered");
                 }
@@ -84,7 +84,9 @@ describeSuite({
 
                 const polkadotXcmSend = context.polkadotJs().tx.polkadotXcm.send(dest, message);
 
-                const {result} = await context.createBlock([await polkadotJs.tx.sudo.sudo(polkadotXcmSend).signAsync(alice)]);
+                const { result } = await context.createBlock([
+                    await polkadotJs.tx.sudo.sudo(polkadotXcmSend).signAsync(alice),
+                ]);
 
                 // Search for ExtrinsicSuccess event
                 const events = (await context.polkadotJs().query.system.events()).filter(({ event }) =>
