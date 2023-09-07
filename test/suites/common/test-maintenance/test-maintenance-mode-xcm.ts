@@ -26,6 +26,8 @@ describeSuite({
             id: "E01",
             title: "polkadotXcm calls disabled in maintenance mode",
             test: async function () {
+                await context.createBlock();
+
                 const tx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
@@ -63,6 +65,8 @@ describeSuite({
             id: "E02",
             title: "polkadotXcm calls enabled with sudo in maintenance mode",
             test: async function () {
+                await context.createBlock();
+
                 const tx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
@@ -102,6 +106,8 @@ describeSuite({
             id: "E03",
             title: "polkadotXcm calls allowed again after disabling maintenance mode",
             test: async function () {
+                await context.createBlock();
+
                 const tx = polkadotJs.tx.maintenanceMode.resumeNormalOperation();
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
