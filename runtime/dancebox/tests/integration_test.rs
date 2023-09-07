@@ -3503,3 +3503,59 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             );
         });
 }
+
+#[test]
+fn test_migration_holds() {
+    use {
+        dancebox_runtime::migrations::MigrateHoldReason,
+        frame_support::{migration::put_storage_value, Blake2_128Concat, StorageHasher},
+    };
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            let pallet_prefix: &[u8] = b"Balances";
+            let storage_item_prefix: &[u8] = b"Holds";
+            use parity_scale_codec::Encode;
+            let hold: pallet_balances::IdAmount<
+                [u8; 8],
+                <Runtime as pallet_balances::Config>::Balance,
+            > = pallet_balances::IdAmount {
+                id: *b"POOLSTAK",
+                amount: 100u128.into(),
+            };
+            let holds = vec![hold];
+            let bounded_holds =
+                BoundedVec::<_, <Runtime as pallet_balances::Config>::MaxHolds>::truncate_from(
+                    holds.clone(),
+                );
+
+            put_storage_value(
+                pallet_prefix,
+                storage_item_prefix,
+                &Blake2_128Concat::hash(&AccountId::from(ALICE).encode()),
+                bounded_holds,
+            );
+            let migration = MigrateHoldReason::<Runtime>(Default::default());
+            migration.migrate(Default::default());
+            let new_holds = pallet_balances::Holds::<Runtime>::get(AccountId::from(ALICE));
+
+            assert_eq!(new_holds.len() as u32, 1u32);
+            assert_eq!(new_holds[0].id, dancebox_runtime::HoldReason::PooledStake);
+            assert_eq!(new_holds[0].amount, 100u128);
+        });
+}

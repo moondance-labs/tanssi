@@ -184,9 +184,26 @@ where
         let should_be_migrated: Vec<(
             T::AccountId,
             BoundedVec<IdAmount<[u8; 8], <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
-        )> = Decode::decode(migrated_holds.as_slice());
+        )> = Decode::decode(&mut migrated_holds.as_slice()).expect("should be decodable");
 
         log::info!(target: LOG_TARGET, "post_upgrade");
+
+        // Write to the new storage
+        for (account_id, holds) in should_be_migrated {
+            let migrated = pallet_balances::Holds::<T>::get(&account_id);
+
+            for (index, hold) in holds.iter().enumerate() {
+                assert_eq!(
+                    migrated[index].amount, hold.amount,
+                    "after migration, there should be the same number held amount"
+                );
+                assert_eq!(
+                    migrated[index].id,
+                    crate::HoldReason::PooledStake.into(),
+                    "Pooled stake should be migrated"
+                );
+            }
+        }
 
         Ok(())
     }
