@@ -2,6 +2,7 @@ import "@polkadot/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
+import { initializeCustomCreateBlock } from "../../../util/block";
 import { MultiLocation } from "../../../util/xcm";
 
 describeSuite({
@@ -14,6 +15,8 @@ describeSuite({
         let chain: string;
 
         beforeAll(() => {
+            initializeCustomCreateBlock(context);
+
             polkadotJs = context.pjsApi;
             chain = polkadotJs.consts.system.version.specName.toString();
             alice = context.keyring.alice;
@@ -23,6 +26,9 @@ describeSuite({
             id: "E01",
             title: "polkadotXcm calls disabled in maintenance mode",
             test: async function () {
+                await context.createBlock();
+                await context.createBlock();
+
                 const tx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
@@ -60,6 +66,9 @@ describeSuite({
             id: "E02",
             title: "polkadotXcm calls enabled with sudo in maintenance mode",
             test: async function () {
+                await context.createBlock();
+                await context.createBlock();
+
                 const tx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
@@ -99,6 +108,9 @@ describeSuite({
             id: "E03",
             title: "polkadotXcm calls allowed again after disabling maintenance mode",
             test: async function () {
+                await context.createBlock();
+                await context.createBlock();
+
                 const tx = polkadotJs.tx.maintenanceMode.resumeNormalOperation();
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
