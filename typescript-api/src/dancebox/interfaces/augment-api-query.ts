@@ -6,7 +6,7 @@
 import "@polkadot/api-base/types/storage";
 
 import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from "@polkadot/api-base/types";
-import type { BTreeMap, Bytes, Option, U8aFixed, Vec, bool, u128, u16, u32, u64 } from "@polkadot/types-codec";
+import type { BTreeMap, Bytes, Option, Struct, U8aFixed, Vec, bool, u128, u16, u32, u64 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -17,6 +17,7 @@ import type {
     CumulusPalletXcmpQueueInboundChannelDetails,
     CumulusPalletXcmpQueueOutboundChannelDetails,
     CumulusPalletXcmpQueueQueueConfigData,
+    DanceboxRuntimeHoldReason,
     DanceboxRuntimeSessionKeys,
     FrameSupportDispatchPerDispatchClassWeight,
     FrameSystemAccountInfo,
@@ -149,7 +150,14 @@ declare module "@polkadot/api-base/types/storage" {
             /** Holds on account balances. */
             holds: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmount>>,
+                (arg: AccountId32 | string | Uint8Array) => Observable<
+                    Vec<
+                        {
+                            readonly id: DanceboxRuntimeHoldReason;
+                            readonly amount: u128;
+                        } & Struct
+                    >
+                >,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
