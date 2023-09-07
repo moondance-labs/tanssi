@@ -122,7 +122,7 @@ describeSuite({
                 // Ensure we are in maintenance mode
                 let maintenanceOn = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
                 expect(maintenanceOn).to.be.true;
-                
+
                 // This XCM message coming by HRMP should not be executed since we are in maintenance mode
                 await injectHrmpMessageAndSeal(context, 1, {
                     type: "XcmVersionedXcm",
