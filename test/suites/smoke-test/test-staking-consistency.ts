@@ -7,15 +7,21 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
+        let runtimeVersion;
 
         beforeAll(async () => {
             api = context.polkadotJs();
+            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
         });
 
         it({
             id: "C01",
             title: "All eligible candidates have enough self delegation",
             test: async function () {
+                if (runtimeVersion < 200) {
+                    return;
+                }
+
                 const eligibleCandidates = await api.query.pooledStaking.sortedEligibleCandidates();
 
                 const minimum = 10_000_000_000_000_000n;
