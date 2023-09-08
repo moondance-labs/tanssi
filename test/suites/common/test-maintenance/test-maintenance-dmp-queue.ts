@@ -134,11 +134,6 @@ describeSuite({
 
                 // Create a block in which the previous queued XCM message will execute
                 await context.createBlock();
-                await context.createBlock();
-                await injectDmpMessageAndSeal(context, {
-                    type: "XcmVersionedXcm",
-                    payload: xcmMessage,
-                } as RawXcmMessage);
 
                 const events = await polkadotJs.query.system.events();
                 console.log(events.toHuman());
