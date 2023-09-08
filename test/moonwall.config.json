@@ -167,6 +167,21 @@
                 {
                     "name": "DBX",
                     "type": "polkadotJs",
+                    "endpoints": ["wss://fraa-dancebox-rpc.a.dancebox.tanssi.network"]
+                }
+            ]
+        },
+        {
+            "name": "stagenet_dancebox_smoke",
+            "testFileDir": ["suites/smoke-test"],
+            "foundation": {
+                "type": "read_only"
+            },
+            "reporters": ["basic", "html"],
+            "connections": [
+                {
+                    "name": "DBX",
+                    "type": "polkadotJs",
                     "endpoints": ["wss://fraa-stagebox-rpc.a.stagenet.tanssi.network"]
                 }
             ]
