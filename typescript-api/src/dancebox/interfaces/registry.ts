@@ -28,6 +28,7 @@ import type {
     CumulusPalletXcmpQueueOutboundState,
     CumulusPalletXcmpQueueQueueConfigData,
     CumulusPrimitivesParachainInherentParachainInherentData,
+    DanceboxRuntimeHoldReason,
     DanceboxRuntimeOriginCaller,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeRuntime,
@@ -234,6 +235,7 @@ declare module "@polkadot/types/types/registry" {
         CumulusPalletXcmpQueueOutboundState: CumulusPalletXcmpQueueOutboundState;
         CumulusPalletXcmpQueueQueueConfigData: CumulusPalletXcmpQueueQueueConfigData;
         CumulusPrimitivesParachainInherentParachainInherentData: CumulusPrimitivesParachainInherentParachainInherentData;
+        DanceboxRuntimeHoldReason: DanceboxRuntimeHoldReason;
         DanceboxRuntimeOriginCaller: DanceboxRuntimeOriginCaller;
         DanceboxRuntimeProxyType: DanceboxRuntimeProxyType;
         DanceboxRuntimeRuntime: DanceboxRuntimeRuntime;

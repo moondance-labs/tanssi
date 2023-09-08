@@ -194,7 +194,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 200,
+    spec_version: 300,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -372,6 +372,15 @@ parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
 }
 
+/// A reason for placing a hold on funds.
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, Debug, TypeInfo,
+)]
+pub enum HoldReason {
+    /// The Pooled Stake holds
+    PooledStake,
+}
+
 impl pallet_balances::Config for Runtime {
     type MaxLocks = ConstU32<50>;
     /// The type for recording an account's balance.
@@ -385,7 +394,7 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = [u8; 8];
     type MaxFreezes = ConstU32<0>;
-    type HoldIdentifier = [u8; 8];
+    type HoldIdentifier = HoldReason;
     type MaxHolds = ConstU32<1>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
@@ -788,7 +797,7 @@ impl pallet_root_testing::Config for Runtime {}
 
 parameter_types! {
     pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
-    pub const CurrencyHoldReason: [u8; 8] = *b"POOLSTAK";
+    pub const CurrencyHoldReason: HoldReason = HoldReason::PooledStake;
     pub const InitialManualClaimShareValue: u128 = currency::KILODANCE;
     pub const InitialAutoCompoundingShareValue: u128 = currency::KILODANCE;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
