@@ -1,7 +1,5 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-
 import { ApiPromise } from "@polkadot/api";
-import { BN } from "@polkadot/util";
 
 describeSuite({
     id: "S05",
@@ -18,12 +16,12 @@ describeSuite({
             id: "C01",
             title: "All eligible candidates have enough self delegation",
             test: async function () {
-                let eligibleCandidates = await api.query.pooledStaking.sortedEligibleCandidates();
+                const eligibleCandidates = await api.query.pooledStaking.sortedEligibleCandidates();
 
-                let minimum = 10_000_000_000_000_000n;
+                const minimum = 10_000_000_000_000_000n;
 
-                for (let c of eligibleCandidates) {
-                    let candidate = c.candidate.toHex();
+                for (const c of eligibleCandidates) {
+                    const candidate = c.candidate.toHex();
 
                     // TODO: Currently it is not possible to directly get the
                     // stake of a delegator in a given pool without having to
@@ -34,27 +32,33 @@ describeSuite({
                     // amount.
                     // We should add a runtime API to easily get the staked
                     // amount and update this test, before rewards or slashing
-                    // is introduced.    
-                    
-                    let joining = (await api.query.pooledStaking.pools(candidate, {
-                        JoiningSharesHeldStake: {
-                            delegator: candidate,
-                        }
-                    })).toBigInt();
+                    // is introduced.
 
-                    let auto = (await api.query.pooledStaking.pools(candidate, {
-                        AutoCompoundingSharesHeldStake: {
-                            delegator: candidate,
-                        }
-                    })).toBigInt();
+                    const joining = (
+                        await api.query.pooledStaking.pools(candidate, {
+                            JoiningSharesHeldStake: {
+                                delegator: candidate,
+                            },
+                        })
+                    ).toBigInt();
 
-                    let manual = (await api.query.pooledStaking.pools(candidate, {
-                        ManualRewardsSharesHeldStake: {
-                            delegator: candidate,
-                        }
-                    })).toBigInt();
+                    const auto = (
+                        await api.query.pooledStaking.pools(candidate, {
+                            AutoCompoundingSharesHeldStake: {
+                                delegator: candidate,
+                            },
+                        })
+                    ).toBigInt();
 
-                    let selfDelegation = joining + auto + manual;
+                    const manual = (
+                        await api.query.pooledStaking.pools(candidate, {
+                            ManualRewardsSharesHeldStake: {
+                                delegator: candidate,
+                            },
+                        })
+                    ).toBigInt();
+
+                    const selfDelegation = joining + auto + manual;
 
                     expect(
                         selfDelegation,
@@ -63,7 +67,6 @@ describeSuite({
                         ${minimum}`
                     ).toBeGreaterThanOrEqual(minimum);
                 }
-               
             },
         });
     },
