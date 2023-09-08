@@ -71,7 +71,7 @@ tp-traits = { workspace = true }
 
 # Polkadot
 pallet-xcm = { workspace = true }
-pallet-xcm-benchmarks = { workspace = true }
+pallet-xcm-benchmarks = { workspace = true, optional = true }
 polkadot-parachain = { workspace = true }
 polkadot-runtime-common = { workspace = true }
 xcm = { workspace = true }
