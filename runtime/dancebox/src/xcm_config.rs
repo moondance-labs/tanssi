@@ -16,8 +16,9 @@
 
 use {
     super::{
-        AccountId, AllPalletsWithSystem, Balances, ParachainInfo, ParachainSystem, PolkadotXcm,
-        Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
+        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, Balances,
+        ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, WeightToFee, XcmpQueue,
     },
     frame_support::{
         parameter_types,
@@ -30,10 +31,10 @@ use {
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-        AllowTopLevelPaidExecutionFrom, CurrencyAdapter, EnsureXcmOrigin, FixedWeightBounds,
-        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
-        SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
-        SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WithComputedOrigin,
+        AllowTopLevelPaidExecutionFrom, CurrencyAdapter, EnsureXcmOrigin, IsConcrete,
+        ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
+        SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
+        TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
     xcm_executor::XcmExecutor,
 };
@@ -146,7 +147,8 @@ pub type XcmOriginToTransactDispatchOrigin = (
 
 /// Means for transacting assets on this chain.
 pub type AssetTransactors = CurrencyTransactor;
-pub type XcmWeigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
+pub type XcmWeigher =
+    WeightInfoBounds<XcmGenericWeights<RuntimeCall>, RuntimeCall, MaxInstructions>;
 
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
