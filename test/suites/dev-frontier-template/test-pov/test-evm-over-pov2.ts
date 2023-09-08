@@ -8,7 +8,7 @@ describeSuite({
     id: "D2402",
     title: "PoV Limit (3.5Mb in Dev)",
     foundationMethods: "dev",
-    testCases: ({ context, it }) => {
+    testCases: ({ context, it, log }) => {
         let proxyAddress: `0x${string}`;
         let proxyAbi: Abi;
         let contracts: HeavyContract[];
@@ -41,8 +41,11 @@ describeSuite({
                     txnType: "eip1559",
                 });
 
-                const { result } = await context.createBlock(rawSigned);
+                const { result, block } = await context.createBlock(rawSigned);
 
+                log(`block.proofSize: ${block.proofSize} (successful: ${result?.successful})`);
+                expect(block.proofSize).toBeGreaterThanOrEqual(MAX_ETH_POV_PER_TX - 20_000n);
+                expect(block.proofSize).toBeLessThanOrEqual(MAX_ETH_POV_PER_TX - 1n);
                 expect(result?.successful).to.equal(true);
             },
         });
@@ -66,8 +69,11 @@ describeSuite({
                     txnType: "eip1559",
                 });
 
-                const { result } = await context.createBlock(rawSigned);
+                const { result, block } = await context.createBlock(rawSigned);
 
+                log(`block.proofSize: ${block.proofSize} (successful: ${result?.successful})`);
+                // Empty blocks usually do not exceed 10kb, picking 50kb as a safe limit
+                expect(block.proofSize).to.be.at.most(50_000);
                 expect(result?.successful).to.equal(false);
             },
         });
