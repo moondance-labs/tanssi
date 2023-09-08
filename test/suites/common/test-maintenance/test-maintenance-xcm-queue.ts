@@ -140,6 +140,7 @@ describeSuite({
 
                 // Note: the queued XCM message should execute in this block, too
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(resumeTx).signAsync(alice)]);
+                await context.createBlock();
 
                 // Ensure we are NOT in maintenance mode
                 maintenanceOn = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
