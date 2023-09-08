@@ -145,6 +145,7 @@ try-runtime-cli = { git = "https://github.com/moondance-labs/substrate", branch 
 
 # Polkadot (wasm)
 pallet-xcm = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
+pallet-xcm-benchmarks = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 polkadot-parachain = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 polkadot-runtime-common = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 polkadot-runtime-parachains = { git = "https://github.com/moondance-labs/polkadot", branch = "tanssi-polkadot-v0.9.43", default-features = false }

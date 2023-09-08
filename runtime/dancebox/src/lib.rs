@@ -31,6 +31,7 @@ use sp_version::NativeVersion;
 pub use sp_runtime::BuildStorage;
 
 pub mod migrations;
+pub mod weights;
 
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
@@ -929,6 +930,19 @@ construct_runtime!(
     }
 );
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benches {
+    frame_benchmarking::define_benchmarks!(
+        [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [pallet_author_noting, AuthorNoting]
+        [pallet_configuration, Configuration]
+        [pallet_registrar, Registrar]
+        [pallet_invulnerables, Invulnerables]
+        [pallet_pooled_staking, PooledStaking]
+        [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+    );
+}
+
 impl_runtime_apis! {
     impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
@@ -1051,67 +1065,81 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{list_benchmark, BenchmarkList, Benchmarking};
+            use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
-            use frame_system_benchmarking::Pallet as SystemBench;
-            use pallet_author_noting::Pallet as PalletAuthorNotingBench;
-            use pallet_configuration::Pallet as PalletConfigurationBench;
-            use pallet_registrar::Pallet as PalletRegistrarBench;
-            use pallet_invulnerables::Pallet as PalletInvulnerablesBench;
-            use pallet_pooled_staking::Pallet as PalledPooledStaking;
 
             let mut list = Vec::<BenchmarkList>::new();
-
-            list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
-            list_benchmark!(
-                list,
-                extra,
-                pallet_configuration,
-                PalletConfigurationBench::<Runtime>
-            );
-            list_benchmark!(
-                list,
-                extra,
-                pallet_author_noting,
-                PalletAuthorNotingBench::<Runtime>
-            );
-            list_benchmark!(
-                list,
-                extra,
-                pallet_registrar,
-                PalletRegistrarBench::<Runtime>
-            );
-            list_benchmark!(
-                list,
-                extra,
-                pallet_invulnerables,
-                PalletInvulnerablesBench::<Runtime>
-            );
-
-            list_benchmark!(
-                list,
-                extra,
-                pallet_pooled_staking,
-                PalledPooledStaking::<Runtime>
-            );
+            list_benchmarks!(list, extra);
 
             let storage_info = AllPalletsWithSystem::storage_info();
-
             (list, storage_info)
         }
 
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{add_benchmark, BenchmarkBatch, Benchmarking, TrackedStorageKey};
+            use frame_benchmarking::{BenchmarkBatch, Benchmarking, TrackedStorageKey};
 
-            use frame_system_benchmarking::Pallet as SystemBench;
             impl frame_system_benchmarking::Config for Runtime {}
-            use pallet_author_noting::Pallet as PalletAuthorNotingBench;
-            use pallet_configuration::Pallet as PalletConfigurationBench;
-            use pallet_registrar::Pallet as PalletRegistrarBench;
-            use pallet_invulnerables::Pallet as PalletInvulnerablesBench;
-            use pallet_pooled_staking::Pallet as PalletPooledStaking;
+
+            use xcm::latest::prelude::*;
+            use frame_benchmarking::BenchmarkError;
+
+            impl pallet_xcm_benchmarks::Config for Runtime {
+                type XcmConfig = xcm_config::XcmConfig;
+                type AccountIdConverter = xcm_config::LocationToAccountId;
+                fn valid_destination() -> Result<MultiLocation, BenchmarkError> {
+                    Ok(MultiLocation::parent())
+                }
+                fn worst_case_holding(_depositable_count: u32) -> MultiAssets {
+                    // We only care for native asset until we support others
+                    // TODO: refactor this case once other assets are supported
+                    vec![MultiAsset{
+                        id: Concrete(MultiLocation::here()),
+                        fun: Fungible(u128::MAX),
+                    }].into()
+                }
+            }
+
+            impl pallet_xcm_benchmarks::generic::Config for Runtime {
+                type RuntimeCall = RuntimeCall;
+
+                fn worst_case_response() -> (u64, Response) {
+                    (0u64, Response::Version(Default::default()))
+                }
+
+                fn worst_case_asset_exchange() -> Result<(MultiAssets, MultiAssets), BenchmarkError> {
+                    Err(BenchmarkError::Skip)
+                }
+
+                fn universal_alias() -> Result<(MultiLocation, Junction), BenchmarkError> {
+                    Err(BenchmarkError::Skip)
+                }
+
+                fn transact_origin_and_runtime_call() -> Result<(MultiLocation, RuntimeCall), BenchmarkError> {
+                    Ok((MultiLocation::parent(), frame_system::Call::remark_with_event { remark: vec![] }.into()))
+                }
+
+                fn subscribe_origin() -> Result<MultiLocation, BenchmarkError> {
+                    Ok(MultiLocation::parent())
+                }
+
+                fn claimable_asset() -> Result<(MultiLocation, MultiLocation, MultiAssets), BenchmarkError> {
+                    let origin = MultiLocation::parent();
+                    let assets: MultiAssets = (Concrete(MultiLocation::parent()), 1_000u128).into();
+                    let ticket = MultiLocation { parents: 0, interior: Here };
+                    Ok((origin, ticket, assets))
+                }
+
+                fn unlockable_asset() -> Result<(MultiLocation, MultiLocation, MultiAsset), BenchmarkError> {
+                    Err(BenchmarkError::Skip)
+                }
+
+                fn export_message_origin_and_destination(
+                ) -> Result<(MultiLocation, NetworkId, InteriorMultiLocation), BenchmarkError> {
+                    Err(BenchmarkError::Skip)
+                }
+            }
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -1148,40 +1176,8 @@ impl_runtime_apis! {
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
 
-            add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
-            add_benchmark!(
-                params,
-                batches,
-                pallet_configuration,
-                PalletConfigurationBench::<Runtime>
-            );
-            add_benchmark!(
-                params,
-                batches,
-                pallet_author_noting,
-                PalletAuthorNotingBench::<Runtime>
-            );
-            add_benchmark!(
-                params,
-                batches,
-                pallet_registrar,
-                PalletRegistrarBench::<Runtime>
-            );
-            add_benchmark!(
-                params,
-                batches,
-                pallet_invulnerables,
-                PalletInvulnerablesBench::<Runtime>
-            );
-            add_benchmark!(
-                params,
-                batches,
-                pallet_pooled_staking,
-                PalletPooledStaking::<Runtime>
-            );
-            if batches.is_empty() {
-                return Err("Benchmark not found for this pallet.".into());
-            }
+            add_benchmarks!(params, batches);
+
             Ok(batches)
         }
     }
