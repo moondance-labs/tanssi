@@ -29,7 +29,6 @@ yargs(hideBin(process.argv))
             process.stdout.write(`Done ✅\n`);
 
             plainSpec.bootNodes = [];
-            // TODO: change to invulnerables once we upgrade to 200
             plainSpec.genesis.runtime.invulnerables.invulnerables = [ALICE_ADDRESS];
 
             process.stdout.write(`Writing to: ${argv.outputPath} ...`);
