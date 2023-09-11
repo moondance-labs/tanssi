@@ -2664,6 +2664,7 @@ dependencies = [
  "tp-author-noting-inherent",
  "tp-consensus",
  "tp-core",
+ "tp-pooled-staking",
  "tp-traits",
  "westend-runtime",
  "westend-runtime-constants",
@@ -7817,6 +7818,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-pooled-staking",
 ]
 
 [[package]]
@@ -14610,6 +14612,19 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "tp-pooled-staking"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-api",
  "sp-std",
 ]
 

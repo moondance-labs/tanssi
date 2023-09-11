@@ -31,6 +31,7 @@ pallet-proxy = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 tp-core = { workspace = true }
+tp-pooled-staking = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }

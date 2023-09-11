@@ -52,6 +52,7 @@ tp-collator-assignment = { path = "primitives/collator-assignment", default-feat
 tp-consensus = { path = "primitives/consensus", default-features = false }
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-core = { path = "primitives/core", default-features = false }
+tp-pooled-staking = { path = "primitives/pooled-staking", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
 # Moonkit (wasm)

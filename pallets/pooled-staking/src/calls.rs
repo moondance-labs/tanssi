@@ -19,9 +19,9 @@ use {
         candidate::Candidates,
         pools::{self, Pool},
         traits::{ErrAdd, ErrSub, Timer},
-        AllTargetPool, Candidate, Config, Delegator, Error, Event, Pallet, PendingOperationKey,
+        Candidate, Config, Delegator, Error, Event, Pallet, PendingOperationKey,
         PendingOperationQuery, PendingOperationQueryOf, PendingOperations, Shares, SharesOrStake,
-        Stake, TargetPool,
+        Stake,
     },
     frame_support::{
         pallet_prelude::*,
@@ -32,6 +32,7 @@ use {
     },
     sp_runtime::traits::{CheckedSub, Zero},
     sp_std::vec::Vec,
+    tp_pooled_staking::{AllTargetPool, TargetPool},
 };
 
 pub struct Calls<T>(PhantomData<T>);

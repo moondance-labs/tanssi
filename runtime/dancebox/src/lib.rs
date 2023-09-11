@@ -1357,6 +1357,23 @@ impl_runtime_apis! {
             TransactionPayment::length_to_fee(length)
         }
     }
+
+    impl tp_pooled_staking::PooledStakingApi<Block, AccountId, Balance> for Runtime {
+        fn staked_in_pool(
+            candidate: AccountId,
+            delegator: AccountId,
+            pool: tp_pooled_staking::AllTargetPool
+        ) -> Option<Balance> {
+            PooledStaking::staked_in_pool(candidate, delegator, pool)
+        }
+
+        fn pending_manual_rewards(
+            candidate: AccountId,
+            delegator: AccountId
+        ) -> Option<Balance> {
+            PooledStaking::pending_manual_rewards(candidate, delegator)
+        }
+    }
 }
 
 struct CheckInherents;

@@ -51,8 +51,7 @@ pub mod weights;
 
 use frame_support::pallet;
 
-pub use candidate::EligibleCandidate;
-pub use pallet::*;
+pub use {candidate::EligibleCandidate, pallet::*};
 
 #[pallet(dev_mode)]
 pub mod pallet {
@@ -76,6 +75,7 @@ pub mod pallet {
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
+        tp_pooled_staking::{AllTargetPool, TargetPool},
     };
 
     #[cfg(feature = "std")]
@@ -172,31 +172,6 @@ pub mod pallet {
         <<T as Config>::JoiningRequestTimer as Timer>::Instant,
         <<T as Config>::LeavingRequestTimer as Timer>::Instant,
     >;
-
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
-    pub enum TargetPool {
-        AutoCompounding,
-        ManualRewards,
-    }
-
-    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
-    pub enum AllTargetPool {
-        Joining,
-        AutoCompounding,
-        ManualRewards,
-        Leaving,
-    }
-
-    impl From<TargetPool> for AllTargetPool {
-        fn from(value: TargetPool) -> Self {
-            match value {
-                TargetPool::AutoCompounding => AllTargetPool::AutoCompounding,
-                TargetPool::ManualRewards => AllTargetPool::ManualRewards,
-            }
-        }
-    }
 
     /// Allow calls to be performed using either share amounts or stake.
     /// When providing stake, calls will convert them into share amounts that are
@@ -515,6 +490,41 @@ pub mod pallet {
             let _ = ensure_signed(origin)?;
 
             Calls::<T>::update_candidate_position(&candidates)
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        pub fn staked_in_pool(
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            pool: AllTargetPool,
+        ) -> Option<T::Balance> {
+            use pools::Pool;
+            match pool {
+                AllTargetPool::Joining => {
+                    pools::Joining::<T>::computed_stake(&candidate, &delegator)
+                }
+                AllTargetPool::ManualRewards => {
+                    pools::ManualRewards::<T>::computed_stake(&candidate, &delegator)
+                }
+                AllTargetPool::AutoCompounding => {
+                    pools::AutoCompounding::<T>::computed_stake(&candidate, &delegator)
+                }
+                AllTargetPool::Leaving => {
+                    pools::Leaving::<T>::computed_stake(&candidate, &delegator)
+                }
+            }
+            .ok()
+            .map(|Stake(x)| x)
+        }
+
+        pub fn pending_manual_rewards(
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+        ) -> Option<T::Balance> {
+            pools::ManualRewards::<T>::pending_rewards(&candidate, &delegator)
+                .ok()
+                .map(|Stake(x)| x)
         }
     }
 }
