@@ -762,7 +762,7 @@ pub async fn start_node_impl_container(
         config: parachain_config,
         keystore: keystore.clone(),
         backend,
-        network: network.clone(),
+        network,
         system_rpc_tx,
         tx_handler_controller,
         telemetry: telemetry.as_mut(),

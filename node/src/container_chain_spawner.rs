@@ -463,7 +463,7 @@ fn handle_update_assignment_state_change(
 //     Collator2002-01/data/containers/chains/simple_container_2002
 fn delete_container_chain_db(db_path: &Path) {
     if db_path.exists() {
-        std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");
+        std::fs::remove_dir_all(db_path).expect("failed to remove old container chain db");
     }
 }
 

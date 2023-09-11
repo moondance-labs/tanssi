@@ -418,10 +418,7 @@ impl pallet_migrations::Config for Runtime {
 pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            RuntimeCall::Balances(_) => false,
-            _ => true,
-        }
+        !matches!(c, RuntimeCall::Balances(_))
     }
 }
 

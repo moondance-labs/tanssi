@@ -16,12 +16,12 @@
 
 #![cfg(feature = "runtime-benchmarks")]
 
-use {super::*, crate::Pallet as PooledStaking};
-
 use {
+    super::*,
     crate::{
         pools::Pool,
         traits::{IsCandidateEligible, Timer},
+        Pallet as PooledStaking,
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
     },
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
@@ -35,6 +35,7 @@ use {
     },
     frame_system::EventRecord,
     sp_std::prelude::*,
+    tp_pooled_staking::{AllTargetPool, TargetPool},
 };
 
 /// Minimum collator candidate stake
