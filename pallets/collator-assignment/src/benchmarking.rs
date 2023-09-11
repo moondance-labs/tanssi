@@ -1,0 +1,96 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
+//! Benchmarking setup for pallet-invulnerables
+
+#![cfg(feature = "runtime-benchmarks")]
+
+use super::*;
+
+#[allow(unused)]
+use {
+    crate::Pallet,
+    frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
+    frame_support::{
+        pallet_prelude::*,
+        traits::{Currency, EnsureOrigin, Get},
+    },
+    frame_system::{EventRecord, RawOrigin},
+    sp_std::collections::btree_map::BTreeMap,
+    sp_std::prelude::*,
+};
+
+const SEED: u32 = 0;
+
+fn invulnerable<T: Config>(c: u32, seed: u32) -> T::AccountId {
+    account::<T::AccountId>("candidate", c, seed)
+}
+
+fn invulnerables<T: Config + frame_system::Config>(count: u32, seed: u32) -> Vec<T::AccountId> {
+    let invulnerables = (0..count)
+        .map(|c| invulnerable::<T>(c, seed))
+        .collect::<Vec<_>>();
+
+    invulnerables
+}
+
+#[benchmarks]
+mod benchmarks {
+    use super::*;
+
+    // worst case for new session.
+    // TODO: this should be parametric over the config values:
+    // * min_collators_for_orchestrator
+    // * max_collators_for_orchestrator
+    // * collators_per_container
+    #[benchmark]
+    fn new_session(x: Linear<1, 200>, y: Linear<1, 20>) -> Result<(), BenchmarkError> {
+        frame_system::Pallet::<T>::set_block_number(0u32.into());
+
+        let collators = invulnerables::<T>(x, SEED);
+        let container_chains: Vec<_> = (0..y).map(|para_id| ParaId::from(para_id)).collect();
+        let session_index = 0u32.into();
+        T::ContainerChains::set_session_container_chains(session_index, &container_chains);
+
+        // Assign random collators to test worst case: when collators need to be checked against existing collators
+        // In this case all of the old collators don't exist anymore
+        let old_container_chains: Vec<(ParaId, _)> = (0..20)
+            .map(|para_id| (para_id.into(), invulnerables::<T>(10, SEED + 2 + para_id)))
+            .collect();
+        let old_assigned = AssignedCollators {
+            orchestrator_chain: invulnerables::<T>(100, SEED + 1),
+            container_chains: BTreeMap::from_iter(old_container_chains),
+        };
+        <CollatorContainerChain<T>>::put(&old_assigned);
+
+        #[block]
+        {
+            <Pallet<T>>::initializer_on_new_session(&session_index, collators);
+        }
+
+        // Assignment changed
+        assert_ne!(<CollatorContainerChain::<T>>::get(), old_assigned);
+        // New assignment is not empty
+        assert_ne!(
+            <CollatorContainerChain::<T>>::get().container_chains.len(),
+            0
+        );
+
+        Ok(())
+    }
+
+    impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test,);
+}

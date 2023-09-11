@@ -935,6 +935,7 @@ mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
         [pallet_author_noting, AuthorNoting]
+        [pallet_collator_assignment, CollatorAssignment]
         [pallet_configuration, Configuration]
         [pallet_registrar, Registrar]
         [pallet_invulnerables, Invulnerables]

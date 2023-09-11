@@ -564,5 +564,16 @@ pub mod pallet {
 
             paras.into_iter().collect()
         }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn set_session_container_chains(
+            _session_index: T::SessionIndex,
+            container_chains: &[ParaId],
+        ) {
+            // TODO: this assumes session_index == current
+            let paras: BoundedVec<ParaId, T::MaxLengthParaIds> =
+                container_chains.to_vec().try_into().unwrap();
+            RegisteredParaIds::<T>::put(paras);
+        }
     }
 }
