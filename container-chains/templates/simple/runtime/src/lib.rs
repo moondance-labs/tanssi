@@ -535,7 +535,7 @@ impl Contains<RuntimeCall> for NormalFilter {
                 pallet_proxy::Call::kill_pure { .. } => false,
                 _ => true,
             },
-            _ => true
+            _ => true,
         }
     }
 }
