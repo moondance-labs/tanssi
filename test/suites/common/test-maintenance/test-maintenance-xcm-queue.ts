@@ -137,9 +137,9 @@ describeSuite({
 
                 // Disable maintenance mode with sudo
                 const resumeTx = polkadotJs.tx.maintenanceMode.resumeNormalOperation();
-
-                // Note: the queued XCM message should execute in this block, too
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(resumeTx).signAsync(alice)]);
+
+                // Create a block in which the XCM message will be executed
                 await context.createBlock();
 
                 // Ensure we are NOT in maintenance mode
