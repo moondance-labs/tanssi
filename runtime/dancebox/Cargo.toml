@@ -56,6 +56,7 @@ sp-application-crypto = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
+sp-debug-derive = { workspace = true }
 sp-inherents = { workspace = true }
 sp-offchain = { workspace = true }
 sp-runtime = { workspace = true }
@@ -179,6 +180,9 @@ std = [
 	"xcm-executor/std",
 	"xcm/std",
  ]
+
+# Allow to print logs details (no wasm:stripped)
+force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
