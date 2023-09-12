@@ -90,6 +90,7 @@ sp-consensus-aura = { git = "https://github.com/moondance-labs/substrate", branc
 sp-consensus-babe = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 sp-consensus-slots = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 sp-core = { git = "https://github.com/moondance-labs/substrate.git", branch = "tanssi-polkadot-v0.9.43", version = "7.0.0", default-features = false }
+sp-debug-derive = { git = "https://github.com/moondance-labs/substrate.git", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 sp-inherents = { git = "https://github.com/moondance-labs/substrate", branch = "tanssi-polkadot-v0.9.43", default-features = false }
 sp-io = { git = "https://github.com/moondance-labs/substrate.git", branch = "tanssi-polkadot-v0.9.43", version = "7.0.0", default-features = false }
 sp-keyring = { git = "https://github.com/moondance-labs/substrate.git", branch = "tanssi-polkadot-v0.9.43", version = "7.0.0", default-features = false }
