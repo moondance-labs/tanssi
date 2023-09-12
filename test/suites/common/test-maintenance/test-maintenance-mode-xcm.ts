@@ -6,7 +6,7 @@ import { initializeCustomCreateBlock } from "../../../util/block";
 import { MultiLocation } from "../../../util/xcm";
 
 describeSuite({
-    id: "C0101",
+    id: "C0102",
     title: "XCM in maintenance mode",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

@@ -40,7 +40,7 @@ async function setDmpConfigStorage(context: DevModeContext, api: ApiPromise, sud
 }
 
 describeSuite({
-    id: "C0103",
+    id: "C0101",
     title: "Maintenance mode - DMP queue",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
