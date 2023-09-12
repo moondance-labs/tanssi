@@ -51,7 +51,11 @@ pub mod weights;
 
 use frame_support::pallet;
 
-pub use {candidate::EligibleCandidate, pallet::*};
+pub use {
+    candidate::EligibleCandidate,
+    pallet::*,
+    tp_pooled_staking::{AllTargetPool, TargetPool},
+};
 
 #[pallet(dev_mode)]
 pub mod pallet {
@@ -75,7 +79,6 @@ pub mod pallet {
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
-        tp_pooled_staking::{AllTargetPool, TargetPool},
     };
 
     #[cfg(feature = "std")]
