@@ -1,15 +1,43 @@
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair, alith } from "@moonwall/util";
 import { generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
+import { xxhashAsU8a } from "@polkadot/util-crypto";
+import { u8aToHex } from "@polkadot/util";
+import { CumulusPalletDmpQueueConfigData } from "@polkadot/types/lookup";
 import {
     RawXcmMessage,
     XcmFragment,
     descendParentOriginForAddress20,
     descendParentOriginFromAddress32,
     injectDmpMessageAndSeal,
-    injectDmpMessage,
 } from "../../../util/xcm.ts";
+
+async function setDmpConfigStorage(context: DevModeContext, api: ApiPromise, sudoAccount: KeyringPair) {
+    // Get module and storage name keys
+    const module = xxhashAsU8a(new TextEncoder().encode("DmpQueue"), 128);
+    const configuration_key = xxhashAsU8a(new TextEncoder().encode("Configuration"), 128);
+
+    // Build the element to insert in 'Configuration' storage
+    const configToEncode: CumulusPalletDmpQueueConfigData = context
+        .polkadotJs()
+        .createType("CumulusPalletDmpQueueConfigData", {
+            maxIndividual: {
+                refTime: 10_000_000_000n,
+                proofSize: 300_000n,
+            },
+        });
+
+    // Build the entire key for 'Configuration' storage
+    const overallConfigKey = new Uint8Array([...module, ...configuration_key]);
+
+    await context.createBlock(
+        api.tx.sudo
+            .sudo(api.tx.system.setStorage([[u8aToHex(overallConfigKey), u8aToHex(configToEncode.toU8a())]]))
+            .signAsync(sudoAccount)
+    );
+    return;
+}
 
 describeSuite({
     id: "C0103",
@@ -98,6 +126,11 @@ describeSuite({
                     },
                 })
                 .as_v3();
+
+            // In case of frontier chains, we set a different Config for DmpQueue
+            if (chain == "frontier-template") {
+                await setDmpConfigStorage(context, polkadotJs, alice);
+            }
         });
 
         it({
@@ -118,9 +151,6 @@ describeSuite({
                     payload: xcmMessage,
                 } as RawXcmMessage);
 
-                const pagesBefore = await polkadotJs.query.dmpQueue.pages(0);
-                console.log("PAGES BEFORE: ", pagesBefore.toHuman());
-
                 // Make sure the random address has zero balance
                 const balance = (await polkadotJs.query.system.account(random.address)).data.free.toBigInt();
                 expect(balance).to.eq(0n);
@@ -137,12 +167,6 @@ describeSuite({
 
                 // Create a block in which the previous queued XCM message will execute
                 await context.createBlock();
-
-                const pagesAfter = await polkadotJs.query.dmpQueue.pages(0);
-                console.log("PAGES AFTER: ", pagesAfter.toHuman());
-
-                /* const events = await polkadotJs.query.system.events();
-                console.log(events.toHuman()); */
 
                 // Make sure the random address has received the tokens
                 const balanceAfter = (await polkadotJs.query.system.account(random.address)).data.free.toBigInt();
