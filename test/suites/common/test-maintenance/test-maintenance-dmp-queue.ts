@@ -118,6 +118,9 @@ describeSuite({
                     payload: xcmMessage,
                 } as RawXcmMessage);
 
+                const pagesBefore = await polkadotJs.query.dmpQueue.pages(0);
+                console.log("PAGES BEFORE: ", pagesBefore.toHuman());
+
                 // Make sure the random address has zero balance
                 const balance = (await polkadotJs.query.system.account(random.address)).data.free.toBigInt();
                 expect(balance).to.eq(0n);
@@ -135,8 +138,11 @@ describeSuite({
                 // Create a block in which the previous queued XCM message will execute
                 await context.createBlock();
 
-                const events = await polkadotJs.query.system.events();
-                console.log(events.toHuman());
+                const pagesAfter = await polkadotJs.query.dmpQueue.pages(0);
+                console.log("PAGES AFTER: ", pagesAfter.toHuman());
+
+                /* const events = await polkadotJs.query.system.events();
+                console.log(events.toHuman()); */
 
                 // Make sure the random address has received the tokens
                 const balanceAfter = (await polkadotJs.query.system.account(random.address)).data.free.toBigInt();

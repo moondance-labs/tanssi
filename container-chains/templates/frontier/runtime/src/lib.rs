@@ -44,8 +44,8 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Imbalance, OnFinalize,
-            OnUnbalanced,
+            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Imbalance,
+            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -155,7 +155,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    AllPalletsWithSystem,
+    pallet_maintenance_mode::ExecutiveHooks<Runtime>,
 >;
 
 impl fp_self_contained::SelfContainedCall for RuntimeCall {
@@ -495,7 +495,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type OutboundXcmpMessageSource = XcmpQueue;
-    type DmpMessageHandler = DmpQueue;
+    type DmpMessageHandler = MaintenanceMode;
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
@@ -600,6 +600,49 @@ impl DmpMessageHandler for MaintenanceDmpHandler {
     }
 }
 
+/// The hooks we want to run in Maintenance Mode
+pub struct MaintenanceHooks;
+
+impl OnInitialize<BlockNumber> for MaintenanceHooks {
+    fn on_initialize(n: BlockNumber) -> Weight {
+        AllPalletsWithSystem::on_initialize(n)
+    }
+}
+
+// We override onIdle for xcmQueue and dmpQueue pallets to not process messages inside it
+impl OnIdle<BlockNumber> for MaintenanceHooks {
+    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
+        Weight::zero()
+    }
+}
+
+impl OnRuntimeUpgrade for MaintenanceHooks {
+    fn on_runtime_upgrade() -> Weight {
+        AllPalletsWithSystem::on_runtime_upgrade()
+    }
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        AllPalletsWithSystem::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        AllPalletsWithSystem::post_upgrade(state)
+    }
+}
+
+impl OnFinalize<BlockNumber> for MaintenanceHooks {
+    fn on_finalize(n: BlockNumber) {
+        AllPalletsWithSystem::on_finalize(n)
+    }
+}
+
+impl OffchainWorker<BlockNumber> for MaintenanceHooks {
+    fn offchain_worker(n: BlockNumber) {
+        AllPalletsWithSystem::offchain_worker(n)
+    }
+}
+
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
@@ -611,7 +654,7 @@ impl pallet_maintenance_mode::Config for Runtime {
     // We use AllPalletsWithSystem because we dont want to change the hooks in normal
     // operation
     type NormalExecutiveHooks = AllPalletsWithSystem;
-    type MaintenanceExecutiveHooks = AllPalletsWithSystem;
+    type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
 impl pallet_cc_authorities_noting::Config for Runtime {
