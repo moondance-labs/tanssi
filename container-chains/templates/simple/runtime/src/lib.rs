@@ -431,12 +431,10 @@ pub enum ProxyType {
     NonTransfer = 1,
     /// Only extrinsics related to governance (democracy and collectives).
     Governance = 2,
-    /// Only extrinsics related to staking.
-    Staking = 3,
     /// Allow to veto an announced proxy call.
-    CancelProxy = 4,
+    CancelProxy = 3,
     /// Allow extrinsic related to Balances.
-    Balances = 5,
+    Balances = 4,
 }
 
 impl Default for ProxyType {
@@ -460,7 +458,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 )
             }
             ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => false,
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })

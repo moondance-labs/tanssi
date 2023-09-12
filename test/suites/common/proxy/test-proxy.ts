@@ -131,9 +131,9 @@ describeSuite({
                 const txs = [];
 
                 // All proxy types that do not allow balance transfer
-                // NonTransfer = 1, Governance = 2, Staking = 3, CancelProxy = 4
-                // Staking is disabled for now in frontier chains
-                const proxyTypes = chain == "frontier-template" ? [1, 2, 4] : [1, 2, 3, 4];
+                // Frontier chains -> NonTransfer = 1, Governance = 2, CancelProxy = 3
+                // Other chains -> NonTransfer = 1, Governance = 2, Staking = 3, CancelProxy = 4
+                const proxyTypes = chain == "frontier-template" ? [1, 2, 3] : [1, 2, 3, 4];
                 const nonce =
                     chain == "frontier-template"
                         ? (await polkadotJs.query.system.account(alice.address)).nonce

@@ -12,6 +12,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let charlie: KeyringPair;
+        let chain: string;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
@@ -19,6 +20,7 @@ describeSuite({
             alice = context.keyring.alice;
             charlie = context.keyring.charlie;
             polkadotJs = context.polkadotJs();
+            chain = polkadotJs.consts.system.version.specName.toString();
         });
 
         it({
@@ -36,7 +38,7 @@ describeSuite({
             title: "Add proxy Balances",
             test: async function () {
                 const delegate = charlie.address;
-                const balances = 5;
+                const balances = chain == "frontier-template" ? 4 : 5;
                 const delay = 0;
                 const tx = polkadotJs.tx.proxy.addProxy(delegate, balances, delay);
                 await context.createBlock([await tx.signAsync(alice)]);
