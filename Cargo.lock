@@ -7181,10 +7181,12 @@ dependencies = [
 name = "pallet-collator-assignment"
 version = "0.1.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
  "parity-scale-codec",
+ "rand 0.8.5",
  "scale-info",
  "serde",
  "sp-core",
