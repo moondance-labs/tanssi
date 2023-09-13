@@ -166,6 +166,7 @@ impl pallet_collator_assignment::Config for Test {
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
+    type WeightInfo = ();
 }
 
 // Build genesis storage according to the mock runtime.
