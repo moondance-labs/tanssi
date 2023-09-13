@@ -20,6 +20,7 @@ import type {
     CumulusPalletXcmError,
     CumulusPalletXcmEvent,
     CumulusPalletXcmOrigin,
+    CumulusPalletXcmpQueueCall,
     CumulusPalletXcmpQueueError,
     CumulusPalletXcmpQueueEvent,
     CumulusPalletXcmpQueueInboundChannelDetails,
@@ -227,6 +228,7 @@ declare module "@polkadot/types/types/registry" {
         CumulusPalletXcmError: CumulusPalletXcmError;
         CumulusPalletXcmEvent: CumulusPalletXcmEvent;
         CumulusPalletXcmOrigin: CumulusPalletXcmOrigin;
+        CumulusPalletXcmpQueueCall: CumulusPalletXcmpQueueCall;
         CumulusPalletXcmpQueueError: CumulusPalletXcmpQueueError;
         CumulusPalletXcmpQueueEvent: CumulusPalletXcmpQueueEvent;
         CumulusPalletXcmpQueueInboundChannelDetails: CumulusPalletXcmpQueueInboundChannelDetails;
