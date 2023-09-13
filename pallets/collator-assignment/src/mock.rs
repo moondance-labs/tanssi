@@ -187,11 +187,13 @@ pub fn run_to_block(n: u64) {
 
     for x in (old_block_number + 1)..=n {
         System::set_block_number(x);
+        let randomness = [0u8; 32];
 
         if x % session_len == 1 {
             let session_index = (x / session_len) as u32;
             CollatorAssignment::initializer_on_new_session(
                 &session_index,
+                randomness,
                 CollatorsGetter::collators(session_index),
             );
         }

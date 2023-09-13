@@ -45,6 +45,8 @@ pub use pallet::*;
 use {
     crate::weights::WeightInfo,
     frame_support::pallet_prelude::*,
+    rand::{seq::SliceRandom, SeedableRng},
+    rand_chacha::ChaCha20Rng,
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, One, Zero},
         Saturating,
@@ -271,8 +273,11 @@ pub mod pallet {
 
         pub fn initializer_on_new_session(
             session_index: &T::SessionIndex,
-            collators: Vec<T::AccountId>,
+            random_seed: [u8; 32],
+            mut collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
+            let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
+            collators.shuffle(&mut rng);
             let num_collators = collators.len();
             let assigned_collators = Self::assign_collators(session_index, collators);
             let num_parachains = assigned_collators.next_assignment.container_chains.len();

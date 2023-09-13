@@ -34,7 +34,9 @@ pub mod migrations;
 pub mod weights;
 
 use {
+    cumulus_pallet_parachain_system::RelayChainStateProof,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
+    cumulus_primitives_core::relay_chain,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
     frame_support::{
         construct_runtime,
@@ -431,6 +433,51 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
+/// Only callable after `set_validation_data` is called which forms this proof the same way
+fn relay_chain_state_proof() -> RelayChainStateProof {
+    let relay_storage_root = ParachainSystem::validation_data()
+        .expect("set in `set_validation_data`")
+        .relay_parent_storage_root;
+    let relay_chain_state =
+        ParachainSystem::relay_state_proof().expect("set in `set_validation_data`");
+    RelayChainStateProof::new(ParachainInfo::get(), relay_storage_root, relay_chain_state)
+        .expect("Invalid relay chain state proof, already constructed in `set_validation_data`")
+}
+
+pub struct BabeDataGetter;
+impl BabeDataGetter {
+    /*
+    // Tolerate panic here because only ever called in inherent (so can be omitted)
+    fn get_epoch_index() -> u64 {
+        if cfg!(feature = "runtime-benchmarks") {
+            // storage reads as per actual reads
+            let _relay_storage_root = ParachainSystem::validation_data();
+            let _relay_chain_state = ParachainSystem::relay_state_proof();
+            const BENCHMARKING_NEW_EPOCH: u64 = 10u64;
+            return BENCHMARKING_NEW_EPOCH;
+        }
+        relay_chain_state_proof()
+            .read_optional_entry(relay_chain::well_known_keys::EPOCH_INDEX)
+            .ok()
+            .flatten()
+            .expect("expected to be able to read epoch index from relay chain state proof")
+    }
+    */
+    fn get_epoch_randomness() -> Option<Hash> {
+        if cfg!(feature = "runtime-benchmarks") {
+            // storage reads as per actual reads
+            let _relay_storage_root = ParachainSystem::validation_data();
+            let _relay_chain_state = ParachainSystem::relay_state_proof();
+            let benchmarking_babe_output = Hash::default();
+            return Some(benchmarking_babe_output);
+        }
+        relay_chain_state_proof()
+            .read_optional_entry(relay_chain::well_known_keys::ONE_EPOCH_AGO_RANDOMNESS)
+            .ok()
+            .flatten()
+    }
+}
+
 pub struct OwnApplySession;
 impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
@@ -439,6 +486,18 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         all_validators: Vec<(AccountId, NimbusId)>,
         queued: Vec<(AccountId, NimbusId)>,
     ) {
+        let random_seed = {
+            let mut buf = [0u8; 32];
+            // TODO: mix some key like b"paras"
+            let random_hash = BabeDataGetter::get_epoch_randomness().unwrap();
+            // TODO: audit usage of randomness API
+            // https://github.com/paritytech/polkadot/issues/2601
+            //let (random_hash, _) = pallet_babe::RandomnessFromOneEpochAgo::<Runtime>::random(&b"paras"[..]);
+            let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+            buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
+            buf
+        };
+
         // We first initialize Configuration
         Configuration::initializer_on_new_session(&session_index);
         // Next: Registrar
@@ -449,8 +508,11 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
 
         // Next: CollatorAssignment
-        let assignments =
-            CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
+        let assignments = CollatorAssignment::initializer_on_new_session(
+            &session_index,
+            random_seed,
+            next_collators,
+        );
 
         let queued_id_to_nimbus_map = queued.iter().cloned().collect();
         AuthorityAssignment::initializer_on_new_session(
