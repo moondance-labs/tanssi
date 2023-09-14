@@ -153,12 +153,20 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
             .map(ParaId::from)
             .collect()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_session_container_chains(_session_index: u32, para_ids: &[ParaId]) {
+        MockData::mutate(|mocks| {
+            mocks.container_chains = para_ids.iter().cloned().map(|x| x.into()).collect();
+        })
+    }
 }
 
 impl pallet_collator_assignment::Config for Test {
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
+    type WeightInfo = ();
 }
 
 // Build genesis storage according to the mock runtime.

@@ -20,6 +20,8 @@ sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 tp-collator-assignment = { workspace = true }
 tp-traits = { workspace = true }
+frame-benchmarking = { workspace = true }
+rand = { workspace = true, optional = true }
 
 [dev-dependencies]
 sp-io = { workspace = true }
@@ -27,6 +29,7 @@ sp-io = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
+	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
 	"parity-scale-codec/std",
@@ -34,6 +37,14 @@ std = [
 	"serde",
 	"tp-collator-assignment/std",
 	"tp-traits/std",
+	"sp-runtime/std",
+	"sp-std/std",
 ]
-runtime-benchmarks = []
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"rand",
+	"tp-traits/runtime-benchmarks",
+]
 try-runtime = [ "frame-support/try-runtime" ]

@@ -42,6 +42,7 @@ sc-cli = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
 sc-consensus-manual-seal = { workspace = true }
+sp-debug-derive = { workspace = true }
 sc-executor = { workspace = true }
 sc-network = { workspace = true }
 sc-network-common = { workspace = true }
