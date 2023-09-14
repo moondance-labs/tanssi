@@ -187,9 +187,10 @@ pub mod pallet {
         /// Assign new collators to missing container_chains.
         /// Old collators always have preference to remain on the same chain.
         /// If there are no missing collators, nothing is changed.
-        /// `container_chain_ids` should be shuffled or at least rotated on every session, because
-        /// that order affects container chain priority: the first container chain on that list will
-        /// be the first one to get new collators.
+        ///
+        /// `container_chain_ids` should be shuffled or at least rotated on every session to ensure
+        /// a fair distribution, because the order of that list affects container chain priority:
+        /// the first container chain on that list will be the first one to get new collators.
         fn assign_collators_always_keep_old(
             collators: Vec<T::AccountId>,
             container_chain_ids: &[ParaId],
@@ -230,9 +231,10 @@ pub mod pallet {
             let mut new_plus_extra_collators = new_collators
                 .by_ref()
                 .chain(&mut extra_orchestrator_collators);
-            new_assigned.add_new_container_chains(container_chain_ids);
-            new_assigned.fill_container_chain_collators(
+
+            new_assigned.add_and_fill_new_container_chains_in_order(
                 num_each_container_chain,
+                container_chain_ids,
                 &mut new_plus_extra_collators,
             );
 

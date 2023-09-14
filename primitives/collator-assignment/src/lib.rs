@@ -97,6 +97,13 @@ where
         }
     }
 
+    /// Fill orchestrator chain with collators until it has `num_orchestrator_chain`.
+    ///
+    /// If the `next_collator` iterator does not have enough elements, this function will try to
+    /// fill the list as much as it can.
+    ///
+    /// Call `remove_orchestrator_chain_excess_collators` before calling this function to ensure
+    /// that the list has no more than `num_orchestrator_chain`.
     pub fn fill_orchestrator_chain_collators<I>(
         &mut self,
         num_orchestrator_chain: usize,
@@ -113,27 +120,28 @@ where
         }
     }
 
-    pub fn fill_container_chain_collators<I>(
+    /// For each container chain in `container_chains`, add it to the list if it didn't already
+    /// exist, and fill it with collators. The order determines priority.
+    pub fn add_and_fill_new_container_chains_in_order<I>(
         &mut self,
         num_each_container_chain: usize,
+        container_chains: &[ParaId],
         next_collator: &mut I,
     ) where
         I: Iterator<Item = AccountId>,
     {
-        for (_id, cs) in self.container_chains.iter_mut() {
+        for para_id in container_chains {
+            let cs = self.container_chains.entry(*para_id).or_default();
+
             while cs.len() < num_each_container_chain {
                 if let Some(nc) = next_collator.next() {
                     cs.push(nc);
                 } else {
-                    return;
+                    // No more collators but continue the outer for loop to add all the remaining
+                    // container chains
+                    break;
                 }
             }
-        }
-    }
-
-    pub fn add_new_container_chains(&mut self, container_chains: &[ParaId]) {
-        for para_id in container_chains {
-            self.container_chains.entry(*para_id).or_default();
         }
     }
 
