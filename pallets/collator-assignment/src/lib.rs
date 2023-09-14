@@ -148,14 +148,31 @@ pub mod pallet {
             let old_assigned = Self::read_assigned_collators();
             // We assign new collators
             // we use the config scheduled at the target_session_index
-            let new_assigned = Self::assign_collators_always_keep_old(
-                collators,
-                &container_chain_ids,
-                T::HostConfiguration::min_collators_for_orchestrator(target_session_index) as usize,
-                T::HostConfiguration::max_collators_for_orchestrator(target_session_index) as usize,
-                T::HostConfiguration::collators_per_container(target_session_index) as usize,
-                old_assigned.clone(),
-            );
+            let new_assigned =
+                if T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index) {
+                    Self::assign_collators_rotate_all(
+                        collators,
+                        &container_chain_ids,
+                        T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                            as usize,
+                        T::HostConfiguration::max_collators_for_orchestrator(target_session_index)
+                            as usize,
+                        T::HostConfiguration::collators_per_container(target_session_index)
+                            as usize,
+                    )
+                } else {
+                    Self::assign_collators_always_keep_old(
+                        collators,
+                        &container_chain_ids,
+                        T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                            as usize,
+                        T::HostConfiguration::max_collators_for_orchestrator(target_session_index)
+                            as usize,
+                        T::HostConfiguration::collators_per_container(target_session_index)
+                            as usize,
+                        old_assigned.clone(),
+                    )
+                };
 
             let mut pending = PendingCollatorContainerChain::<T>::get();
             let old_assigned_changed = old_assigned != new_assigned;
@@ -187,6 +204,28 @@ pub mod pallet {
                 active_assignment: old_assigned,
                 next_assignment: new_assigned,
             }
+        }
+
+        /// Recompute collator assignment from scratch. If the list of collators and the list of
+        /// container chains are shuffled, this returns a random assignment.
+        fn assign_collators_rotate_all(
+            collators: Vec<T::AccountId>,
+            container_chain_ids: &[ParaId],
+            min_num_orchestrator_chain: usize,
+            max_num_orchestrator_chain: usize,
+            num_each_container_chain: usize,
+        ) -> AssignedCollators<T::AccountId> {
+            // This is just the "always_keep_old" algorithm but with an empty "old"
+            let old_assigned = Default::default();
+
+            Self::assign_collators_always_keep_old(
+                collators,
+                container_chain_ids,
+                min_num_orchestrator_chain,
+                max_num_orchestrator_chain,
+                num_each_container_chain,
+                old_assigned,
+            )
         }
 
         /// Assign new collators to missing container_chains.

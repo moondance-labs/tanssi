@@ -91,6 +91,9 @@ mod benchmarks {
             0
         );
 
+        // TODO: make sure this did not call assign_collators_rotate_all, because that's cheaper
+        // than assign_collators_always_keep_old.
+
         Ok(())
     }
 
