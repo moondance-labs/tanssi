@@ -276,8 +276,12 @@ pub mod pallet {
             random_seed: [u8; 32],
             mut collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
-            let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
-            collators.shuffle(&mut rng);
+            // If the random_seed is all zeros, we don't shuffle the list of collators
+            // This should only happen in tests, and in the genesis block
+            if random_seed != [0; 32] {
+                let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
+                collators.shuffle(&mut rng);
+            }
             let num_collators = collators.len();
             let assigned_collators = Self::assign_collators(session_index, collators);
             let num_parachains = assigned_collators.next_assignment.container_chains.len();
