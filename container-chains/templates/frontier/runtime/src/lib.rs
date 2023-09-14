@@ -596,13 +596,13 @@ impl pallet_proxy::Config for Runtime {
     type ProxyType = ProxyType;
     // One storage item; key size 32, value size 8
     type ProxyDepositBase = ConstU128<{ deposit(1, 8) }>;
-    // Additional storage item size of 33 bytes (20 bytes AccountId + 1 byte sizeof(ProxyType)).
+    // Additional storage item size of 21 bytes (20 bytes AccountId + 1 byte sizeof(ProxyType)).
     type ProxyDepositFactor = ConstU128<{ deposit(0, 21) }>;
     type MaxProxies = ConstU32<32>;
     type MaxPending = ConstU32<32>;
     type CallHasher = BlakeTwo256;
     type AnnouncementDepositBase = ConstU128<{ deposit(1, 8) }>;
-    // Additional storage item size of 68 bytes:
+    // Additional storage item size of 56 bytes:
     // - 20 bytes AccountId
     // - 32 bytes Hasher (Blake2256)
     // - 4 bytes BlockNumber (u32)
