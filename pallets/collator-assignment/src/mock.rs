@@ -16,7 +16,10 @@
 
 use {
     crate::{self as pallet_collator_assignment},
-    frame_support::traits::{ConstU16, ConstU64},
+    frame_support::{
+        parameter_types,
+        traits::{ConstU16, ConstU64, Get},
+    },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
     sp_core::H256,
@@ -24,7 +27,9 @@ use {
         testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
     },
+    std::marker::PhantomData,
     tp_traits::ParaId,
+    tp_traits::ShouldRotateAllCollators,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -162,10 +167,26 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
     }
 }
 
+pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
+
+impl<Period> ShouldRotateAllCollators<u32> for RotateCollatorsEveryNSessions<Period>
+where
+    Period: Get<u32>,
+{
+    fn should_rotate_all_collators(session_index: u32) -> bool {
+        session_index % Period::get() == 0
+    }
+}
+
+parameter_types! {
+    pub const CollatorRotationSessionPeriod: u32 = 5;
+}
+
 impl pallet_collator_assignment::Config for Test {
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
+    type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<CollatorRotationSessionPeriod>;
     type WeightInfo = ();
 }
 

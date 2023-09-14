@@ -54,7 +54,8 @@ use {
     sp_std::{prelude::*, vec},
     tp_collator_assignment::AssignedCollators,
     tp_traits::{
-        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId, Slot,
+        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
+        ShouldRotateAllCollators, Slot,
     },
 };
 
@@ -85,6 +86,7 @@ pub mod pallet {
         // which guarantees that at least one full session has passed before any changes are applied.
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
         type ContainerChains: GetSessionContainerChains<Self::SessionIndex>;
+        type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }

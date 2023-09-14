@@ -77,6 +77,7 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
+    tp_traits::ShouldRotateAllCollators,
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -591,6 +592,7 @@ impl SessionManager<AccountId> for CollatorsFromInvulnerablesAndThenFromStaking 
 parameter_types! {
     pub const Period: u32 = prod_or_fast!(1 * HOURS, 1 * MINUTES);
     pub const Offset: u32 = 0;
+    pub const CollatorRotationSessionPeriod: u32 = 5;
 }
 
 impl pallet_session::Config for Runtime {
@@ -607,10 +609,22 @@ impl pallet_session::Config for Runtime {
     type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
+pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
+
+impl<Period> ShouldRotateAllCollators<SessionIndex> for RotateCollatorsEveryNSessions<Period>
+where
+    Period: Get<SessionIndex>,
+{
+    fn should_rotate_all_collators(session_index: SessionIndex) -> bool {
+        session_index % Period::get() == 0
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
+    type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<CollatorRotationSessionPeriod>;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
