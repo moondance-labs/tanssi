@@ -123,8 +123,16 @@ pub mod pallet {
         /// collators should be queued collators
         pub fn assign_collators(
             current_session_index: &T::SessionIndex,
-            collators: Vec<T::AccountId>,
+            random_seed: [u8; 32],
+            mut collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
+            // If the random_seed is all zeros, we don't shuffle the list of collators
+            // This should only happen in tests, and in the genesis block
+            if random_seed != [0; 32] {
+                let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
+                collators.shuffle(&mut rng);
+            }
+
             // We work with one session delay to calculate assignments
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
@@ -179,6 +187,9 @@ pub mod pallet {
         /// Assign new collators to missing container_chains.
         /// Old collators always have preference to remain on the same chain.
         /// If there are no missing collators, nothing is changed.
+        /// `container_chain_ids` should be shuffled or at least rotated on every session, because
+        /// that order affects container chain priority: the first container chain on that list will
+        /// be the first one to get new collators.
         fn assign_collators_always_keep_old(
             collators: Vec<T::AccountId>,
             container_chain_ids: &[ParaId],
@@ -198,10 +209,8 @@ pub mod pallet {
             new_assigned.remove_container_chain_excess_collators(num_each_container_chain);
 
             // Collators that are not present in old_assigned
-            // TODO: unless we save all the old_collators somewhere, it is still possible for a
-            // collator to change from container_chain 1001 to None to 1002
-            // And ideally that should not happen until the automatic chain rotation is implemented
-            // But the current implementation allows changes, even without passing through None
+            // This is used to keep track of which collators are old and which ones are new, to keep
+            // the old collators on the same chain if possible.
             let mut new_collators = vec![];
             for c in collators {
                 if !new_assigned.find_collator(&c) && !extra_orchestrator_collators.contains(&c) {
@@ -274,16 +283,10 @@ pub mod pallet {
         pub fn initializer_on_new_session(
             session_index: &T::SessionIndex,
             random_seed: [u8; 32],
-            mut collators: Vec<T::AccountId>,
+            collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
-            // If the random_seed is all zeros, we don't shuffle the list of collators
-            // This should only happen in tests, and in the genesis block
-            if random_seed != [0; 32] {
-                let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
-                collators.shuffle(&mut rng);
-            }
             let num_collators = collators.len();
-            let assigned_collators = Self::assign_collators(session_index, collators);
+            let assigned_collators = Self::assign_collators(session_index, random_seed, collators);
             let num_parachains = assigned_collators.next_assignment.container_chains.len();
 
             frame_system::Pallet::<T>::register_extra_weight_unchecked(
