@@ -486,9 +486,10 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         all_validators: Vec<(AccountId, NimbusId)>,
         queued: Vec<(AccountId, NimbusId)>,
     ) {
-        let random_seed = {
+        let random_seed = if session_index != 0 {
             let mut buf = [0u8; 32];
-            // TODO: mix some key like b"paras"
+            // TODO: mix some key like b"paras" and also the block number to ensure the seed changes
+            // on every tanssi block
             let random_hash = BabeDataGetter::get_epoch_randomness().unwrap();
             // TODO: audit usage of randomness API
             // https://github.com/paritytech/polkadot/issues/2601
@@ -496,6 +497,9 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             let len = sp_std::cmp::min(32, random_hash.as_ref().len());
             buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
             buf
+        } else {
+            // On genesis, there is no randomness
+            [0; 32]
         };
 
         // We first initialize Configuration

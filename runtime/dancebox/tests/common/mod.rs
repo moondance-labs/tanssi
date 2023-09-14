@@ -79,8 +79,6 @@ pub fn run_to_block(n: u32) {
             &pre_digest,
         );
 
-        set_parachain_inherent_data();
-
         // Initialize the new block
         Session::on_initialize(System::block_number());
         Initializer::on_initialize(System::block_number());
