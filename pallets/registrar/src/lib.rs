@@ -307,6 +307,8 @@ pub mod pallet {
             ParaGenesisData::<T>::insert(para_id, genesis_data);
             PendingVerification::<T>::put(pending_verification);
 
+            Self::mark_valid_for_collating_inner(para_id)?;
+
             Self::deposit_event(Event::ParaIdRegistered { para_id });
 
             Ok(())
@@ -485,6 +487,34 @@ pub mod pallet {
         /// Return the session index that should be used for any future scheduled changes.
         fn scheduled_session() -> T::SessionIndex {
             T::CurrentSessionIndex::session_index().saturating_add(T::SessionDelay::get())
+        }
+
+        fn mark_valid_for_collating_inner(para_id: ParaId) -> DispatchResult {
+            let mut pending_verification = PendingVerification::<T>::get();
+
+            match pending_verification.binary_search(&para_id) {
+                Ok(i) => {
+                    pending_verification.remove(i);
+                }
+                Err(_) => return Err(Error::<T>::ParaIdNotInPendingVerification.into()),
+            };
+
+            Self::schedule_parachain_change(|para_ids| {
+                // We don't want to add duplicate para ids, so we check whether the potential new
+                // para id is already present in the list. Because the list is always ordered, we can
+                // leverage the binary search which makes this check O(log n).
+
+                match para_ids.binary_search(&para_id) {
+                    Ok(_) => Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                    Err(index) => {
+                        para_ids
+                            .try_insert(index, para_id)
+                            .map_err(|_e| Error::<T>::ParaIdListFull)?;
+
+                        Ok(())
+                    }
+                }
+            })
         }
 
         /// Called by the initializer to note that a new session has started.
