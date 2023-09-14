@@ -126,19 +126,22 @@ pub mod pallet {
             random_seed: [u8; 32],
             mut collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
-            // If the random_seed is all zeros, we don't shuffle the list of collators
-            // This should only happen in tests, and in the genesis block
-            if random_seed != [0; 32] {
-                let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
-                collators.shuffle(&mut rng);
-            }
-
             // We work with one session delay to calculate assignments
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
             // We get the containerChains that we will have at the target session
-            let container_chain_ids =
+            let mut container_chain_ids =
                 T::ContainerChains::session_container_chains(target_session_index);
+
+            // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
+            // of container chains.
+            // This should only happen in tests, and in the genesis block.
+            if random_seed != [0; 32] {
+                let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
+                collators.shuffle(&mut rng);
+                container_chain_ids.shuffle(&mut rng);
+            }
+
             // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
             // We assign new collators
