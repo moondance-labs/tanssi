@@ -24,8 +24,9 @@ tp-consensus = { workspace = true }
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
-pallet-maintenance-mode = { workspace = true }
+pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
+xcm-primitives = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -85,7 +86,7 @@ substrate-wasm-builder = { workspace = true }
 default = [
 	"std",
 ]
-std = [ "cumulus-pallet-dmp-queue/std", "cumulus-pallet-parachain-system/std", "cumulus-pallet-xcm/std", "cumulus-pallet-xcmp-queue/std", "cumulus-primitives-core/std", "cumulus-primitives-timestamp/std", "cumulus-primitives-utility/std", "frame-executive/std", "frame-support/std", "frame-system-rpc-runtime-api/std", "frame-system/std", "frame-try-runtime/std", "log/std", "nimbus-primitives/std", "pallet-author-inherent/std", "pallet-balances/std", "pallet-cc-authorities-noting/std", "pallet-maintenance-mode/std", "pallet-migrations/std", "pallet-proxy/std", "pallet-session/std", "pallet-sudo/std", "pallet-timestamp/std", "pallet-transaction-payment-rpc-runtime-api/std", "pallet-utility/std", "pallet-xcm/std", "parachain-info/std", "parity-scale-codec/std", "polkadot-parachain/std", "polkadot-runtime-common/std", "scale-info/std", "serde", "sp-api/std", "sp-block-builder/std", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-offchain/std", "sp-runtime/std", "sp-std/std", "sp-transaction-pool/std", "sp-version/std", "tp-consensus/std", "xcm-builder/std", "xcm-executor/std", "xcm/std" ]
+std = [ "cumulus-pallet-dmp-queue/std", "cumulus-pallet-parachain-system/std", "cumulus-pallet-xcm/std", "cumulus-pallet-xcmp-queue/std", "cumulus-primitives-core/std", "cumulus-primitives-timestamp/std", "cumulus-primitives-utility/std", "frame-executive/std", "frame-support/std", "frame-system-rpc-runtime-api/std", "frame-system/std", "frame-try-runtime/std", "log/std", "nimbus-primitives/std", "pallet-author-inherent/std", "pallet-balances/std", "pallet-cc-authorities-noting/std", "pallet-maintenance-mode/std", "pallet-migrations/std", "pallet-proxy/std", "pallet-session/std", "pallet-sudo/std", "pallet-timestamp/std", "pallet-transaction-payment-rpc-runtime-api/std", "pallet-utility/std", "pallet-xcm/std", "parachain-info/std", "parity-scale-codec/std", "polkadot-parachain/std", "polkadot-runtime-common/std", "scale-info/std", "serde", "sp-api/std", "sp-block-builder/std", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-offchain/std", "sp-runtime/std", "sp-std/std", "sp-transaction-pool/std", "sp-version/std", "tp-consensus/std", "xcm-builder/std", "xcm-executor/std", "xcm/std", "xcm-primitives/std" ]
 
 # Allow to print logs details (no wasm:stripped)
 force-debug = [ "sp-debug-derive/force-debug" ]

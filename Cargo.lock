@@ -1384,6 +1384,7 @@ dependencies = [
  "xcm",
  "xcm-builder",
  "xcm-executor",
+ "xcm-primitives",
 ]
 
 [[package]]
@@ -1512,6 +1513,7 @@ dependencies = [
  "xcm",
  "xcm-builder",
  "xcm-executor",
+ "xcm-primitives",
 ]
 
 [[package]]
@@ -2680,6 +2682,7 @@ dependencies = [
  "xcm-builder",
  "xcm-emulator",
  "xcm-executor",
+ "xcm-primitives",
 ]
 
 [[package]]
