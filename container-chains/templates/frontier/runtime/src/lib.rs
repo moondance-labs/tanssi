@@ -45,7 +45,8 @@ use {
         parameter_types,
         traits::{
             ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Imbalance,
-            InstanceFilter, OnFinalize, OnUnbalanced, OffchainWorker, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            OnUnbalanced,
         },
         weights::{
             constants::{

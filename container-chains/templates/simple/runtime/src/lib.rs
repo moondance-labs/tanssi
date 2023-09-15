@@ -37,8 +37,10 @@ use {
         dispatch::DispatchClass,
         pallet_prelude::DispatchResult,
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
-            OnInitialize, OnRuntimeUpgrade,},
+        traits::{
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
+            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+        },
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
