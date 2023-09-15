@@ -37,10 +37,8 @@ use {
         dispatch::DispatchClass,
         pallet_prelude::DispatchResult,
         parameter_types,
-        traits::{
-            ConstU32, ConstU64, ConstU8, Contains, OffchainWorker, OnFinalize, OnIdle,
-            OnInitialize, OnRuntimeUpgrade,
-        },
+        traits::{ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
+            OnInitialize, OnRuntimeUpgrade,},
         weights::{
             constants::{
                 BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight,
@@ -56,9 +54,11 @@ use {
     },
     nimbus_primitives::NimbusId,
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
+    parity_scale_codec::{Decode, Encode},
+    scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::OpaqueMetadata,
+    sp_core::{MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
@@ -215,10 +215,18 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
+pub const SUPPLY_FACTOR: Balance = 100;
+
 // Unit = the base number of indivisible units for balances
 pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = 1_000_000_000;
 pub const MICROUNIT: Balance = 1_000_000;
+
+pub const STORAGE_BYTE_FEE: Balance = 100 * MICROUNIT * SUPPLY_FACTOR;
+
+pub const fn deposit(items: u32, bytes: u32) -> Balance {
+    items as Balance * 100 * MILLIUNIT * SUPPLY_FACTOR + (bytes as Balance) * STORAGE_BYTE_FEE
+}
 
 /// The existential deposit. Set to 1/10 of the Connected Relay Chain.
 pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
@@ -413,6 +421,87 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
+/// The type used to represent the kinds of proxying allowed.
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
+)]
+#[allow(clippy::unnecessary_cast)]
+pub enum ProxyType {
+    /// All calls can be proxied. This is the trivial/most permissive filter.
+    Any = 0,
+    /// Only extrinsics that do not transfer funds.
+    NonTransfer = 1,
+    /// Only extrinsics related to governance (democracy and collectives).
+    Governance = 2,
+    /// Allow to veto an announced proxy call.
+    CancelProxy = 3,
+    /// Allow extrinsic related to Balances.
+    Balances = 4,
+}
+
+impl Default for ProxyType {
+    fn default() -> Self {
+        Self::Any
+    }
+}
+
+impl InstanceFilter<RuntimeCall> for ProxyType {
+    fn filter(&self, c: &RuntimeCall) -> bool {
+        match self {
+            ProxyType::Any => true,
+            ProxyType::NonTransfer => {
+                matches!(
+                    c,
+                    RuntimeCall::System(..)
+                        | RuntimeCall::ParachainSystem(..)
+                        | RuntimeCall::Timestamp(..)
+                        | RuntimeCall::Utility(..)
+                        | RuntimeCall::Proxy(..)
+                )
+            }
+            ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
+            ProxyType::CancelProxy => matches!(
+                c,
+                RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
+            ),
+            ProxyType::Balances => {
+                matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+            }
+        }
+    }
+
+    fn is_superset(&self, o: &Self) -> bool {
+        match (self, o) {
+            (x, y) if x == y => true,
+            (ProxyType::Any, _) => true,
+            (_, ProxyType::Any) => false,
+            _ => false,
+        }
+    }
+}
+
+impl pallet_proxy::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type ProxyType = ProxyType;
+    // One storage item; key size 32, value size 8
+    type ProxyDepositBase = ConstU128<{ deposit(1, 8) }>;
+    // Additional storage item size of 33 bytes (32 bytes AccountId + 1 byte sizeof(ProxyType)).
+    type ProxyDepositFactor = ConstU128<{ deposit(0, 33) }>;
+    type MaxProxies = ConstU32<32>;
+    type MaxPending = ConstU32<32>;
+    type CallHasher = BlakeTwo256;
+    type AnnouncementDepositBase = ConstU128<{ deposit(1, 8) }>;
+    // Additional storage item size of 68 bytes:
+    // - 32 bytes AccountId
+    // - 32 bytes Hasher (Blake2256)
+    // - 4 bytes BlockNumber (u32)
+    type AnnouncementDepositFactor = ConstU128<{ deposit(0, 68) }>;
+    type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+}
+
 pub struct XcmExecutionManager;
 impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
     fn suspend_xcm_execution() -> DispatchResult {
@@ -448,8 +537,17 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 /// This can change in the future
 pub struct NormalFilter;
 impl Contains<RuntimeCall> for NormalFilter {
-    fn contains(_c: &RuntimeCall) -> bool {
-        true
+    fn contains(c: &RuntimeCall) -> bool {
+        match c {
+            // We filter anonymous proxy as they make "reserve" inconsistent
+            // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
+            RuntimeCall::Proxy(method) => match method {
+                pallet_proxy::Call::create_pure { .. } => false,
+                pallet_proxy::Call::kill_pure { .. } => false,
+                _ => true,
+            },
+            _ => true,
+        }
     }
 }
 
@@ -568,7 +666,7 @@ construct_runtime!(
         ParachainInfo: parachain_info = 3,
         Sudo: pallet_sudo = 4,
         Utility: pallet_utility = 5,
-        // Proxy: pallet_proxy = 6,
+        Proxy: pallet_proxy = 6,
         Migrations: pallet_migrations = 7,
         MaintenanceMode: pallet_maintenance_mode = 8,
 

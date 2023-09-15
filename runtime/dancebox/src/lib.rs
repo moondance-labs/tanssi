@@ -549,6 +549,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
+    type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {
@@ -1018,6 +1019,7 @@ mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
         [pallet_author_noting, AuthorNoting]
+        [pallet_collator_assignment, CollatorAssignment]
         [pallet_configuration, Configuration]
         [pallet_registrar, Registrar]
         [pallet_invulnerables, Invulnerables]

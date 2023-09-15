@@ -60,7 +60,7 @@ jobs:
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
-          features: fast-runtime
+          features: "fast-runtime"
       - name: Clean-up possible coverage generated during builds
         run: |
           rm default_*.profraw
