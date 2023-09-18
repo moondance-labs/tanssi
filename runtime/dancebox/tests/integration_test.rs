@@ -1562,6 +1562,50 @@ fn test_author_noting_not_self_para() {
 }
 
 #[test]
+fn test_author_noting_rotation() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .build()
+        .execute_with(|| {
+            let mut sproof = ParaHeaderSproofBuilder::default();
+            let slot: u64 = 5;
+            let other_para: ParaId = 1001u32.into();
+
+            // Charlie and Dave to 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            let initial_assignment = assignment.clone();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            for i in 1..20 {
+                println!("goto session {}", i);
+                run_to_session(i);
+
+                let assignment = CollatorAssignment::collator_container_chain();
+                assert_eq!(assignment, initial_assignment);
+            }
+        });
+}
+
+#[test]
 fn test_author_noting_runtime_api() {
     ExtBuilder::default()
         .with_balances(vec![
