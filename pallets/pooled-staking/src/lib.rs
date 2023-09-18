@@ -51,8 +51,7 @@ pub mod weights;
 
 use frame_support::pallet;
 
-pub use candidate::EligibleCandidate;
-pub use pallet::*;
+pub use {candidate::EligibleCandidate, pallet::*};
 
 #[pallet(dev_mode)]
 pub mod pallet {
@@ -515,6 +514,15 @@ pub mod pallet {
             let _ = ensure_signed(origin)?;
 
             Calls::<T>::update_candidate_position(&candidates)
+        }
+    }
+
+    impl<T: Config> tp_core::DistributeRewards<Candidate<T>, T::Balance> for Pallet<T> {
+        fn distribute_rewards(
+            candidate: Candidate<T>,
+            rewards: T::Balance,
+        ) -> DispatchResultWithPostInfo {
+            pools::distribute_rewards::<T>(&candidate, rewards)
         }
     }
 }
