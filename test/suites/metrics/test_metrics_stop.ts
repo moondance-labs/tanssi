@@ -143,21 +143,17 @@ describeSuite({
         });
 
         it({
-            id: "T11",
-            title: "Metrics servers are up",
-            test: async function () {
-                expect(await checkUrl('http://127.0.0.1:27124/metrics')).to.be.true;
-                expect(await checkUrl('http://127.0.0.1:27125/metrics')).to.be.true;
-            },
-        });
-
-        it({
             id: "T12",
             title: "Test metrics: deregister container chain and metrics should stop",
             timeout: 300000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                // Create an agent to keep the HTTP connection alive (optional)
+                const agent = new http.Agent({ keepAlive: true, keepAliveMsecs: 300000 });
+                expect(await checkUrl('http://127.0.0.1:27124/metrics', agent)).to.be.true;
+                expect(await checkUrl('http://127.0.0.1:27125/metrics', agent)).to.be.true;
 
                 const registered1 = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
@@ -173,16 +169,8 @@ describeSuite({
                 // TODO: fix once we have types
                 expect(registered.toJSON().includes(2000)).to.be.false;
 
-                // TODO: check metrics
-            },
-        });
-
-        it({
-            id: "T13",
-            title: "Metrics servers are down",
-            test: async function () {
-                expect(await checkUrl('http://127.0.0.1:27124/metrics')).to.be.false;
-                expect(await checkUrl('http://127.0.0.1:27125/metrics')).to.be.false;
+                expect(await checkUrl('http://127.0.0.1:27124/metrics', agent)).to.be.false;
+                expect(await checkUrl('http://127.0.0.1:27125/metrics', agent)).to.be.false;
             },
         });
     },
@@ -211,19 +199,27 @@ function getTmpZombiePath() {
 }
 
 // Define an async function to check if a URL returns HTTP 200
-async function checkUrl(url: string): Promise<boolean> {
+async function checkUrl(url: string, agent?: http.Agent | https.Agent): Promise<boolean> {
     // Choose the appropriate module based on the URL (http or https)
     const client = url.startsWith('https') ? https : http;
+
+    const requestOptions = {
+        agent,
+    };
   
     return new Promise<boolean>((resolve, reject) => {
       // Send an HTTP GET request to the URL
-      client.get(url, (response) => {
+      client.get(url, requestOptions, (response) => {
         if (response.statusCode === 200) {
+            console.log("checkUrl: ", url, response.statusCode);
           resolve(true);
         } else {
+            console.log("checkUrl: ", url, response.statusCode);
           resolve(false);
         }
       }).on('error', (error) => {
+        console.log("checkUrl: ", url, error);
+
         resolve(false);
       });
     });
