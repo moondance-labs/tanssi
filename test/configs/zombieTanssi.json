@@ -44,27 +44,33 @@
                 },
                 {
                     "name": "Collator2000-01",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-- --tmp --prometheus-external --prometheus-port 27126"]
                 },
                 {
                     "name": "Collator2000-02",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-- --tmp --prometheus-external --prometheus-port 27125"]
                 },
                 {
                     "name": "Collator2001-01",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-- --tmp --prometheus-external --prometheus-port 27124"]
                 },
                 {
                     "name": "Collator2001-02",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-- --tmp --prometheus-external --prometheus-port 27123"]
                 },
                 {
                     "name": "Collator2002-01",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-- --tmp --prometheus-external --prometheus-port 27122"]
                 },
                 {
                     "name": "Collator2002-02",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-- --tmp --prometheus-external --prometheus-port 27120"]
                 }
             ]
         },
