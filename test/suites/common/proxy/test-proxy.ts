@@ -5,7 +5,7 @@ import { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
 
 describeSuite({
-    id: "DT0503",
+    id: "C0103",
     title: "Proxy test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -14,6 +14,7 @@ describeSuite({
         let bob: KeyringPair;
         let charlie: KeyringPair;
         let dave: KeyringPair;
+        let chain: string;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
@@ -24,6 +25,7 @@ describeSuite({
             dave = context.keyring.dave;
 
             polkadotJs = context.polkadotJs();
+            chain = polkadotJs.consts.system.version.specName.toString();
         });
 
         it({
@@ -127,12 +129,16 @@ describeSuite({
 
                 const delegate = dave.address;
                 const txs = [];
+
                 // All proxy types that do not allow balance transfer
-                const proxyTypes = [
-                    // NonTransfer = 1, Governance = 2, Staking = 3, CancelProxy = 4
-                    1, 2, 3, 4,
-                ];
-                const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
+                // Frontier chains -> NonTransfer = 1, Governance = 2, CancelProxy = 3
+                // Other chains -> NonTransfer = 1, Governance = 2, Staking = 3, CancelProxy = 4
+                const proxyTypes = chain == "frontier-template" ? [1, 2, 3] : [1, 2, 3, 4];
+                const nonce =
+                    chain == "frontier-template"
+                        ? (await polkadotJs.query.system.account(alice.address)).nonce
+                        : await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
+
                 for (const [i, proxyType] of proxyTypes.entries()) {
                     const tx = polkadotJs.tx.proxy.addProxy(delegate, proxyType, 0);
                     txs.push(await tx.signAsync(alice, { nonce: nonce.addn(i) }));
@@ -179,7 +185,7 @@ describeSuite({
         });
 
         it({
-            id: "E06",
+            id: "E07",
             title: "Account with non transfer proxy can call system.remark",
             test: async function () {
                 await context.createBlock();
