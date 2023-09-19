@@ -9,6 +9,7 @@ import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "fs/promises";
 import * as http from 'http';
 import * as https from 'https';
+import net from 'net';
 
 describeSuite({
     id: "ZM01",
@@ -151,9 +152,13 @@ describeSuite({
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 // Create an agent to keep the HTTP connection alive (optional)
-                const agent = new http.Agent({ keepAlive: true, keepAliveMsecs: 300000 });
-                expect(await checkUrl('http://127.0.0.1:27124/metrics', agent)).to.be.true;
-                expect(await checkUrl('http://127.0.0.1:27125/metrics', agent)).to.be.true;
+                //const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+                //expect(await checkUrl('http://127.0.0.1:27124/metrics', agent)).to.be.true;
+                //expect(await checkUrl('http://127.0.0.1:27125/metrics', agent)).to.be.true;
+                const connectionHandle = sendMetricsRequestLoop('127.0.0.1', 27124, 1000);
+                expect(isServerAlive(connectionHandle)).to.be.true;
+                //checkUrlLoop('http://127.0.0.1:27124/metrics', 1000, agent);
+                //checkUrlLoop('http://127.0.0.1:27125/metrics', 1000, agent);
 
                 const registered1 = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
@@ -168,9 +173,9 @@ describeSuite({
                 const registered = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
                 expect(registered.toJSON().includes(2000)).to.be.false;
-
-                expect(await checkUrl('http://127.0.0.1:27124/metrics', agent)).to.be.false;
-                expect(await checkUrl('http://127.0.0.1:27125/metrics', agent)).to.be.false;
+                expect(isServerAlive(connectionHandle)).to.be.false;
+                //expect(await checkUrl('http://127.0.0.1:27124/metrics', agent)).to.be.false;
+                //expect(await checkUrl('http://127.0.0.1:27125/metrics', agent)).to.be.false;
             },
         });
     },
@@ -198,18 +203,33 @@ function getTmpZombiePath() {
     return null;
 }
 
+async function checkUrlLoop(url, interval, agent?: http.Agent | https.Agent) {
+    setTimeout(() => {
+        checkUrl(url, agent);
+        checkUrlLoop(url, interval, agent);
+    }, interval)
+}
+
 // Define an async function to check if a URL returns HTTP 200
 async function checkUrl(url: string, agent?: http.Agent | https.Agent): Promise<boolean> {
     // Choose the appropriate module based on the URL (http or https)
     const client = url.startsWith('https') ? https : http;
-
-    const requestOptions = {
-        agent,
-    };
   
     return new Promise<boolean>((resolve, reject) => {
       // Send an HTTP GET request to the URL
-      client.get(url, requestOptions, (response) => {
+      const req = client.request({
+        agent: agent,
+        method: 'GET',
+        hostname: '127.0.0.1',
+        port: 27124,
+      }, (response) => {
+        response.on('data', () => {
+            console.log('Data');
+        });
+        
+        response.on('end', () => {
+            console.log('End');
+        });
         if (response.statusCode === 200) {
             console.log("checkUrl: ", url, response.statusCode);
           resolve(true);
@@ -217,10 +237,63 @@ async function checkUrl(url: string, agent?: http.Agent | https.Agent): Promise<
             console.log("checkUrl: ", url, response.statusCode);
           resolve(false);
         }
-      }).on('error', (error) => {
+      });
+      req.on('error', (error) => {
         console.log("checkUrl: ", url, error);
 
         resolve(false);
       });
+      req.end();
     });
 }
+
+// Send periodic "GET /metrics" requests using the same socket every time.
+// This is to reproduce a bug where the metrics server would not close if there are any open connections.
+function sendMetricsRequestLoop(hostname: string, port: number, period: number) {
+    // Use a TCP client instead of an HTTP client because I was unable to configure the HTTP client to use only
+    // one socket
+    const client = new net.Socket();
+  
+    // Connect to the server
+    client.connect(port, hostname, () => {
+      console.log(`Connected to ${hostname}:${port}`);
+  
+      // Define the function to send the metrics request
+      const sendMetrics = () => {
+        if (!client.destroyed) {
+          const request = "GET /metrics HTTP/1.1\r\n\r\n";
+          client.write(request);
+          console.log(`Sent request: ${request}`);
+        }
+      };
+  
+      // Initially send the request
+      sendMetrics();
+  
+      // Set up periodic sending of the request
+      const intervalId = setInterval(sendMetrics, period);
+  
+      // Handle data received from the server
+      client.on('data', (data) => {
+        console.log(`Received data: ${data}`);
+      });
+  
+      // Handle errors
+      client.on('error', (error) => {
+        console.error(`Error: ${error}`);
+      });
+  
+      // Handle connection close
+      client.on('close', () => {
+        console.log('Connection closed');
+        clearInterval(intervalId);
+      });
+    });
+  
+    return client; // Return the socket as a handle
+  }
+
+  // Check if the connection is still alive
+function isServerAlive(socket: net.Socket): boolean {
+    return !socket.destroyed && !socket.closed;
+  }
