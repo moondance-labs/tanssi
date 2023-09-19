@@ -14,11 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::pools::AutoCompounding;
-
 use {
     super::*,
-    crate::{assert_eq_last_events, Pallet, TargetPool},
+    crate::{
+        assert_eq_last_events,
+        pools::{AutoCompounding, ManualRewards},
+        Pallet, TargetPool,
+    },
     tp_core::DistributeRewards,
 };
 
@@ -34,17 +36,19 @@ struct RewardRequest {
     rewards: Balance,
 }
 
-struct ExpectedStake {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct DelegatorState {
     candidate: AccountId,
     delegator: AccountId,
     auto_stake: Balance,
     auto_shares: Balance,
     manual_stake: Balance,
     manual_shares: Balance,
-    claimable_rewards: Balance,
+    pending_rewards: Balance,
 }
 
-struct ExpectedDistribution {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Distribution {
     collator_auto: Balance,
     collator_manual: Balance,
     delegators_auto: Balance,
@@ -54,8 +58,8 @@ struct ExpectedDistribution {
 fn test_distribution(
     delegations: &[Delegation],
     reward: RewardRequest,
-    stakes: &[ExpectedStake],
-    distribution: ExpectedDistribution,
+    stakes: &[DelegatorState],
+    distribution: Distribution,
 ) {
     use crate::traits::Timer;
     let block_number = <Runtime as crate::Config>::JoiningRequestTimer::now();
@@ -80,20 +84,26 @@ fn test_distribution(
                 delegator: d.delegator,
                 operation: match d.pool {
                     TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
-                        candidate: d.candidate, at: block_number
+                        candidate: d.candidate,
+                        at: block_number
                     },
                     TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
-                        candidate: d.candidate, at: block_number
+                        candidate: d.candidate,
+                        at: block_number
                     },
                 }
             }]
         ));
     }
 
+    let candidate_balance_before = total_balance(&ACCOUNT_CANDIDATE_1);
+
     assert_ok!(Pallet::<Runtime>::distribute_rewards(
         reward.collator,
         reward.rewards
     ));
+
+    let candidate_balance_after = total_balance(&ACCOUNT_CANDIDATE_1);
 
     assert_eq_last_events!(vec![
         Event::<Runtime>::RewardedCollator {
@@ -108,71 +118,361 @@ fn test_distribution(
         },
     ]);
 
-    // TODO: Test new stake/shares quantities
+    for expected in stakes {
+        let actual = DelegatorState {
+            candidate: expected.candidate,
+            delegator: expected.delegator,
+            auto_stake: AutoCompounding::<Runtime>::computed_stake(
+                &expected.candidate,
+                &expected.delegator,
+            )
+            .expect("to have stake")
+            .0,
+            auto_shares: AutoCompounding::<Runtime>::shares(
+                &expected.candidate,
+                &expected.delegator,
+            )
+            .0,
+            manual_stake: ManualRewards::<Runtime>::computed_stake(
+                &expected.candidate,
+                &expected.delegator,
+            )
+            .expect("to have stake")
+            .0,
+            manual_shares: ManualRewards::<Runtime>::shares(
+                &expected.candidate,
+                &expected.delegator,
+            )
+            .0,
+            pending_rewards: ManualRewards::<Runtime>::pending_rewards(
+                &expected.candidate,
+                &expected.delegator,
+            )
+            .expect("no overflow")
+            .0,
+        };
+
+        similar_asserts::assert_eq!(&actual, expected);
+    }
+
+    assert_eq!(
+        distribution.collator_auto
+            + distribution.collator_manual
+            + distribution.delegators_auto
+            + distribution.delegators_manual,
+        reward.rewards,
+        "Distribution total doesn't match requested reward"
+    );
+
+    assert_eq!(
+        candidate_balance_before + distribution.collator_manual,
+        candidate_balance_after,
+        "candidate balance should be increased by collator_manual"
+    );
+
+    let sum_manual: Balance = stakes.iter().map(|s| s.pending_rewards).sum();
+    assert_eq!(
+        sum_manual, distribution.delegators_manual,
+        "sum of pending rewards should match distributed delegators manual rewards"
+    );
+
+    let sum_auto_stake_before: Balance = delegations
+        .iter()
+        .filter_map(|d| match d.pool {
+            TargetPool::AutoCompounding => Some(d.stake),
+            _ => None,
+        })
+        .sum();
+
+    let sum_auto_stake_after: Balance = stakes.iter().map(|s| s.auto_stake).sum();
+    assert_eq!(
+        sum_auto_stake_after - sum_auto_stake_before,
+        distribution.collator_auto + distribution.delegators_auto,
+        "diff between sum of auto stake before and after distribution should match distributed auto rewards"
+    );
 }
 
-// #[test]
-// candidate_only_manual_only() {
-//     ExtBuilder::default().build().execute_with(|| {
-//         test_distribution(&[
-//             Delegation {
-//                 candidate: ACCOUNT_CANDIDATE_1,
-//                 delegator: ACCOUNT_CANDIDATE_1,
-//                 pool: TargetPool::ManualRewards,
-//                 stake: 1_000_000_000
-//             }
-//         ], RewardRequest {
-//             collator: ACCOUNT_CANDIDATE_1,
-//         }, stakes, distribution)
-//     });
-// }
+#[test]
+fn candidate_only_manual_only() {
+    ExtBuilder::default().build().execute_with(|| {
+        test_distribution(
+            &[Delegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_CANDIDATE_1,
+                pool: TargetPool::ManualRewards,
+                stake: 1_000_000_000,
+            }],
+            RewardRequest {
+                collator: ACCOUNT_CANDIDATE_1,
+                rewards: 1_000_000,
+            },
+            &[DelegatorState {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_CANDIDATE_1,
+                auto_shares: 0,
+                auto_stake: 0,
+                manual_shares: 1_000,
+                manual_stake: 1_000_000_000,
+                pending_rewards: 800_000,
+            }],
+            Distribution {
+                collator_auto: 0,
+                collator_manual: 200_000, // 20% of rewards
+                delegators_auto: 0,
+                delegators_manual: 800_000, // 80% of rewards
+            },
+        )
+    });
+}
 
-// pool_test!(
-//     fn candidate_only_single_pool<P>() {
-//         ExtBuilder::default().build().execute_with(|| {
-//             let share_value = InitialManualClaimShareValue::get();
-//             let stake = 1_000 * share_value;
-//             let rewards = 200 * share_value + 42;
+#[test]
+fn candidate_only_auto_only() {
+    ExtBuilder::default().build().execute_with(|| {
+        test_distribution(
+            &[Delegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_CANDIDATE_1,
+                pool: TargetPool::AutoCompounding,
+                stake: 1_000_000_000,
+            }],
+            RewardRequest {
+                collator: ACCOUNT_CANDIDATE_1,
+                rewards: 10_000_000,
+            },
+            &[DelegatorState {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_CANDIDATE_1,
+                auto_shares: 1_001,
+                // initial auto stake is 1_000_000_000 for
+                // 8_000_000 is shared between all delegators, so 1 share
+                // is now worth 1_008_000_000 / 1000 = 1_008_000 now
+                // collator is should be rewarded 2_000_000 in auto shares,
+                // which allows to get 1 more share, so the collator now
+                // have 1_001 shares worth
+                // 1_008_000_000 + 1_008_000 = 1_009_008_000
+                auto_stake: 1_009_008_000,
+                manual_shares: 0,
+                manual_stake: 0,
+                pending_rewards: 0,
+            }],
+            Distribution {
+                // 20% of rewards, rounded down to closest amount of Auto shares
+                // AFTER delegators rewards has been rewarded
+                collator_auto: 1_008_000,
+                // dust from collator_auto
+                collator_manual: 992_000,
+                delegators_auto: 8_000_000, // 80% of rewards
+                delegators_manual: 0,
+            },
+        )
+    });
+}
 
-//             FullDelegation {
-//                 candidate: ACCOUNT_CANDIDATE_1,
-//                 delegator: ACCOUNT_CANDIDATE_1,
-//                 request_amount: stake,
-//                 expected_increase: stake,
-//                 ..default()
-//             }
-//             .test::<P>();
+#[test]
+fn candidate_only_mixed() {
+    ExtBuilder::default().build().execute_with(|| {
+        test_distribution(
+            &[
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_CANDIDATE_1,
+                    pool: TargetPool::AutoCompounding,
+                    stake: 1_000_000_000,
+                },
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_CANDIDATE_1,
+                    pool: TargetPool::ManualRewards,
+                    stake: 250_000_000,
+                },
+            ],
+            RewardRequest {
+                collator: ACCOUNT_CANDIDATE_1,
+                rewards: 10_000_000,
+            },
+            &[DelegatorState {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_CANDIDATE_1,
+                auto_shares: 1_001,
+                auto_stake: 1_007_406_400,
+                manual_shares: 250,
+                manual_stake: 250_000_000,
+                pending_rewards: 1_600_000,
+            }],
+            Distribution {
+                collator_auto: 1_006_400,
+                collator_manual: 993_600,
+                delegators_auto: 6_400_000,
+                delegators_manual: 1_600_000,
+            },
+        )
+    });
+}
 
-//             assert_ok!(Pallet::<Runtime>::distribute_rewards(
-//                 ACCOUNT_CANDIDATE_1,
-//                 rewards
-//             ));
+#[test]
+fn delegators_manual_only() {
+    ExtBuilder::default().build().execute_with(|| {
+        test_distribution(
+            &[
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_CANDIDATE_1,
+                    pool: TargetPool::ManualRewards,
+                    stake: 1_000_000_000,
+                },
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    pool: TargetPool::ManualRewards,
+                    stake: 250_000_000,
+                },
+            ],
+            RewardRequest {
+                collator: ACCOUNT_CANDIDATE_1,
+                rewards: 10_000_000,
+            },
+            &[
+                DelegatorState {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_CANDIDATE_1,
+                    auto_shares: 0,
+                    auto_stake: 0,
+                    manual_shares: 1_000,
+                    manual_stake: 1_000_000_000,
+                    pending_rewards: 6_400_000,
+                },
+                DelegatorState {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    auto_shares: 0,
+                    auto_stake: 0,
+                    manual_shares: 250,
+                    manual_stake: 250_000_000,
+                    pending_rewards: 1_600_000,
+                },
+            ],
+            Distribution {
+                collator_auto: 0,
+                collator_manual: 2_000_000,
+                delegators_auto: 0,
+                delegators_manual: 8_000_000,
+            },
+        )
+    });
+}
 
-//             let rewards_collator = rewards * 2 / 10; // 20%
-//             let rewards_delegators = rewards - rewards_collator;
+#[test]
+fn delegators_auto_only() {
+    ExtBuilder::default().build().execute_with(|| {
+        test_distribution(
+            &[
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_CANDIDATE_1,
+                    pool: TargetPool::AutoCompounding,
+                    stake: 1_000_000_000,
+                },
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    pool: TargetPool::AutoCompounding,
+                    stake: 250_000_000,
+                },
+            ],
+            RewardRequest {
+                collator: ACCOUNT_CANDIDATE_1,
+                rewards: 10_000_000,
+            },
+            &[
+                DelegatorState {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_CANDIDATE_1,
+                    auto_shares: 1_001,
+                    auto_stake: 1_007_406_400,
+                    manual_shares: 0,
+                    manual_stake: 0,
+                    pending_rewards: 0,
+                },
+                DelegatorState {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    auto_shares: 250,
+                    auto_stake: 251_600_000,
+                    manual_shares: 0,
+                    manual_stake: 0,
+                    pending_rewards: 0,
+                },
+            ],
+            Distribution {
+                collator_auto: 1_006_400,
+                collator_manual: 993_600,
+                delegators_auto: 8_000_000,
+                delegators_manual: 0,
+            },
+        )
+    });
+}
 
-//             let (
-//                 rewards_collator_manual,
-//                 rewards_collator_auto,
-//                 rewards_delegators_manual,
-//                 rewards_delegators_auto,
-//             ) = match P::target_pool() {
-//                 TargetPool::AutoCompounding => (0, rewards_collator, 0, rewards_delegators),
-//                 TargetPool::ManualRewards => (rewards_collator, 0, rewards_delegators, 0),
-//             };
-
-//             assert_eq_last_events!(vec![
-//                 Event::<Runtime>::RewardedCollator {
-//                     collator: ACCOUNT_CANDIDATE_1,
-//                     auto_compounding_rewards: rewards_collator_auto,
-//                     manual_claim_rewards: rewards_collator_manual,
-//                 },
-//                 Event::RewardedDelegators {
-//                     collator: ACCOUNT_CANDIDATE_1,
-//                     auto_compounding_rewards: rewards_delegators_auto,
-//                     manual_claim_rewards: rewards_delegators_manual,
-//                 },
-//             ])
-//         })
-//     }
-// );
+#[test]
+fn delegators_mixed() {
+    ExtBuilder::default().build().execute_with(|| {
+        test_distribution(
+            &[
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_CANDIDATE_1,
+                    pool: TargetPool::AutoCompounding,
+                    stake: 1_000_000_000,
+                },
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_CANDIDATE_1,
+                    pool: TargetPool::ManualRewards,
+                    stake: 500_000_000,
+                },
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    pool: TargetPool::ManualRewards,
+                    stake: 250_000_000,
+                },
+                Delegation {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    pool: TargetPool::AutoCompounding,
+                    stake: 500_000_000,
+                },
+            ],
+            RewardRequest {
+                collator: ACCOUNT_CANDIDATE_1,
+                rewards: 10_000_000,
+            },
+            &[
+                DelegatorState {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_CANDIDATE_1,
+                    auto_shares: 1_001,
+                    auto_stake: 1_004_559_388,
+                    manual_shares: 500,
+                    manual_stake: 500_000_000,
+                    pending_rewards: 1_777_500,
+                },
+                DelegatorState {
+                    candidate: ACCOUNT_CANDIDATE_1,
+                    delegator: ACCOUNT_DELEGATOR_1,
+                    auto_shares: 500,
+                    auto_stake: 501_777_916,
+                    manual_shares: 250,
+                    manual_stake: 250_000_000,
+                    pending_rewards: 888_750,
+                },
+            ],
+            Distribution {
+                collator_auto: 1_003_555,
+                collator_manual: 996_445,
+                delegators_auto: 5_333_750,
+                delegators_manual: 2_666_250,
+            },
+        );
+    });
+}

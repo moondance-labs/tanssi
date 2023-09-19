@@ -479,7 +479,7 @@ fn distribute_rewards_inner<T: Config>(
 ) -> Result<T::Balance, Error<T>> {
     {
         let candidate_auto_stake = AutoCompounding::<T>::computed_stake(candidate, candidate)?.0;
-        dbg!(candidate_auto_stake)
+        candidate_auto_stake
     };
 
     // `RewardsCollatorCommission` is a `Perbill` so we're not worried about overflow.
@@ -510,11 +510,11 @@ fn distribute_rewards_inner<T: Config>(
     // with 0 share supply will cause issues, so in this case we distribute this
     // dust as candidate manual rewards.
     let delegators_auto_rewards = delegators_rewards.err_sub(&delegators_manual_rewards)?;
-    let delegators_auto_dust = if !auto_total_stake.is_zero() {
+    let (delegators_auto_rewards, delegators_auto_dust) = if !auto_total_stake.is_zero() {
         AutoCompounding::<T>::share_stake_among_holders(candidate, Stake(delegators_auto_rewards))?;
-        Zero::zero()
+        (delegators_auto_rewards, Zero::zero())
     } else {
-        delegators_auto_rewards
+        (Zero::zero(), delegators_auto_rewards)
     };
 
     // Distribute candidate AutoCompounding rewards, it implies some rounding.
@@ -522,12 +522,11 @@ fn distribute_rewards_inner<T: Config>(
         Zero::zero()
     } else {
         let candidate_auto_stake = AutoCompounding::<T>::computed_stake(candidate, candidate)?.0;
-        let candidate_combined_stake =
-            dbg!(candidate_manual_stake).err_add(&candidate_auto_stake)?;
+        let candidate_combined_stake = candidate_manual_stake.err_add(&candidate_auto_stake)?;
         let rewards = candidate_rewards.mul_div(candidate_auto_stake, candidate_combined_stake)?;
-        let new_shares = AutoCompounding::<T>::stake_to_shares(candidate, Stake(dbg!(rewards)))?;
+        let new_shares = AutoCompounding::<T>::stake_to_shares(candidate, Stake(rewards))?;
 
-        if dbg!(new_shares).0.is_zero() {
+        if new_shares.0.is_zero() {
             Zero::zero()
         } else {
             AutoCompounding::<T>::add_shares(candidate, candidate, new_shares)?.0
