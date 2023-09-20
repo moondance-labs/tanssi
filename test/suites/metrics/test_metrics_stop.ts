@@ -146,14 +146,9 @@ describeSuite({
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-                // Create an agent to keep the HTTP connection alive (optional)
-                //const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
-                //expect(await checkUrl('http://127.0.0.1:27124/metrics', agent)).to.be.true;
-                //expect(await checkUrl('http://127.0.0.1:27125/metrics', agent)).to.be.true;
+                // Begin sending GET /metrics requests in a loop to try to prevent the server from closing
                 const connectionHandle = sendMetricsRequestLoop("127.0.0.1", 27124, 1000);
                 expect(isServerAlive(connectionHandle)).to.be.true;
-                //checkUrlLoop('http://127.0.0.1:27124/metrics', 1000, agent);
-                //checkUrlLoop('http://127.0.0.1:27125/metrics', 1000, agent);
 
                 const registered1 = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
@@ -168,8 +163,6 @@ describeSuite({
                 // TODO: fix once we have types
                 expect(registered.toJSON().includes(2000)).to.be.false;
                 expect(isServerAlive(connectionHandle)).to.be.false;
-                //expect(await checkUrl('http://127.0.0.1:27124/metrics', agent)).to.be.false;
-                //expect(await checkUrl('http://127.0.0.1:27125/metrics', agent)).to.be.false;
             },
         });
     },
@@ -218,7 +211,7 @@ function sendMetricsRequestLoop(hostname: string, port: number, period: number) 
         });
     });
 
-    return client; // Return the socket as a handle
+    return client;
 }
 
 // Check if the connection is still alive
