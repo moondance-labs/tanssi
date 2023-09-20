@@ -628,14 +628,14 @@ declare module "@polkadot/types/lookup" {
         readonly asRequestedDelegate: {
             readonly candidate: AccountId32;
             readonly delegator: AccountId32;
-            readonly pool: PalletPooledStakingTargetPool;
+            readonly pool: TpPooledStakingTargetPool;
             readonly pending: u128;
         } & Struct;
         readonly isExecutedDelegate: boolean;
         readonly asExecutedDelegate: {
             readonly candidate: AccountId32;
             readonly delegator: AccountId32;
-            readonly pool: PalletPooledStakingTargetPool;
+            readonly pool: TpPooledStakingTargetPool;
             readonly staked: u128;
             readonly released: u128;
         } & Struct;
@@ -643,7 +643,7 @@ declare module "@polkadot/types/lookup" {
         readonly asRequestedUndelegate: {
             readonly candidate: AccountId32;
             readonly delegator: AccountId32;
-            readonly from: PalletPooledStakingTargetPool;
+            readonly from: TpPooledStakingTargetPool;
             readonly pending: u128;
             readonly released: u128;
         } & Struct;
@@ -726,8 +726,8 @@ declare module "@polkadot/types/lookup" {
             | "ClaimedManualRewards";
     }
 
-    /** @name PalletPooledStakingTargetPool (53) */
-    interface PalletPooledStakingTargetPool extends Enum {
+    /** @name TpPooledStakingTargetPool (53) */
+    interface TpPooledStakingTargetPool extends Enum {
         readonly isAutoCompounding: boolean;
         readonly isManualRewards: boolean;
         readonly type: "AutoCompounding" | "ManualRewards";
@@ -2438,12 +2438,12 @@ declare module "@polkadot/types/lookup" {
         readonly asRebalanceHold: {
             readonly candidate: AccountId32;
             readonly delegator: AccountId32;
-            readonly pool: PalletPooledStakingAllTargetPool;
+            readonly pool: TpPooledStakingAllTargetPool;
         } & Struct;
         readonly isRequestDelegate: boolean;
         readonly asRequestDelegate: {
             readonly candidate: AccountId32;
-            readonly pool: PalletPooledStakingTargetPool;
+            readonly pool: TpPooledStakingTargetPool;
             readonly stake: u128;
         } & Struct;
         readonly isExecutePendingOperations: boolean;
@@ -2453,7 +2453,7 @@ declare module "@polkadot/types/lookup" {
         readonly isRequestUndelegate: boolean;
         readonly asRequestUndelegate: {
             readonly candidate: AccountId32;
-            readonly pool: PalletPooledStakingTargetPool;
+            readonly pool: TpPooledStakingTargetPool;
             readonly amount: PalletPooledStakingSharesOrStake;
         } & Struct;
         readonly isClaimManualRewards: boolean;
@@ -2473,8 +2473,8 @@ declare module "@polkadot/types/lookup" {
             | "UpdateCandidatePosition";
     }
 
-    /** @name PalletPooledStakingAllTargetPool (206) */
-    interface PalletPooledStakingAllTargetPool extends Enum {
+    /** @name TpPooledStakingAllTargetPool (206) */
+    interface TpPooledStakingAllTargetPool extends Enum {
         readonly isJoining: boolean;
         readonly isAutoCompounding: boolean;
         readonly isManualRewards: boolean;

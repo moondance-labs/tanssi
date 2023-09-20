@@ -19,13 +19,13 @@ import type {
     DanceboxRuntimeOriginCaller,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeSessionKeys,
-    PalletPooledStakingAllTargetPool,
     PalletPooledStakingPendingOperationQuery,
     PalletPooledStakingSharesOrStake,
-    PalletPooledStakingTargetPool,
     SpWeightsWeightV2Weight,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
+    TpPooledStakingAllTargetPool,
+    TpPooledStakingTargetPool,
     XcmV3MultiLocation,
     XcmV3WeightLimit,
     XcmVersionedMultiAssets,
@@ -644,7 +644,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     candidate: AccountId32 | string | Uint8Array,
                     delegator: AccountId32 | string | Uint8Array,
                     pool:
-                        | PalletPooledStakingAllTargetPool
+                        | TpPooledStakingAllTargetPool
                         | "Joining"
                         | "AutoCompounding"
                         | "ManualRewards"
@@ -652,24 +652,24 @@ declare module "@polkadot/api-base/types/submittable" {
                         | number
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [AccountId32, AccountId32, PalletPooledStakingAllTargetPool]
+                [AccountId32, AccountId32, TpPooledStakingAllTargetPool]
             >;
             requestDelegate: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
-                    pool: PalletPooledStakingTargetPool | "AutoCompounding" | "ManualRewards" | number | Uint8Array,
+                    pool: TpPooledStakingTargetPool | "AutoCompounding" | "ManualRewards" | number | Uint8Array,
                     stake: u128 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [AccountId32, PalletPooledStakingTargetPool, u128]
+                [AccountId32, TpPooledStakingTargetPool, u128]
             >;
             /** Request undelegate can incur in either claim manual rewards or hold rebalances, we simply add the worst case */
             requestUndelegate: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
-                    pool: PalletPooledStakingTargetPool | "AutoCompounding" | "ManualRewards" | number | Uint8Array,
+                    pool: TpPooledStakingTargetPool | "AutoCompounding" | "ManualRewards" | number | Uint8Array,
                     amount: PalletPooledStakingSharesOrStake | { Shares: any } | { Stake: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
+                [AccountId32, TpPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
             >;
             updateCandidatePosition: AugmentedSubmittable<
                 (candidates: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,

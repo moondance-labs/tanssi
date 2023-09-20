@@ -12,9 +12,9 @@ import type {
     DanceboxRuntimeProxyType,
     FrameSupportDispatchDispatchInfo,
     FrameSupportTokensMiscBalanceStatus,
-    PalletPooledStakingTargetPool,
     SpRuntimeDispatchError,
     SpWeightsWeightV2Weight,
+    TpPooledStakingTargetPool,
     XcmV3MultiLocation,
     XcmV3MultiassetMultiAssets,
     XcmV3Response,
@@ -451,14 +451,14 @@ declare module "@polkadot/api-base/types/events" {
                 [
                     candidate: AccountId32,
                     delegator: AccountId32,
-                    pool: PalletPooledStakingTargetPool,
+                    pool: TpPooledStakingTargetPool,
                     staked: u128,
                     released: u128
                 ],
                 {
                     candidate: AccountId32;
                     delegator: AccountId32;
-                    pool: PalletPooledStakingTargetPool;
+                    pool: TpPooledStakingTargetPool;
                     staked: u128;
                     released: u128;
                 }
@@ -478,8 +478,8 @@ declare module "@polkadot/api-base/types/events" {
             /** User requested to delegate towards a candidate. */
             RequestedDelegate: AugmentedEvent<
                 ApiType,
-                [candidate: AccountId32, delegator: AccountId32, pool: PalletPooledStakingTargetPool, pending: u128],
-                { candidate: AccountId32; delegator: AccountId32; pool: PalletPooledStakingTargetPool; pending: u128 }
+                [candidate: AccountId32, delegator: AccountId32, pool: TpPooledStakingTargetPool, pending: u128],
+                { candidate: AccountId32; delegator: AccountId32; pool: TpPooledStakingTargetPool; pending: u128 }
             >;
             /**
              * User requested to undelegate from a candidate. Stake was removed from a `pool` and is `pending` for the request
@@ -490,14 +490,14 @@ declare module "@polkadot/api-base/types/events" {
                 [
                     candidate: AccountId32,
                     delegator: AccountId32,
-                    from: PalletPooledStakingTargetPool,
+                    from: TpPooledStakingTargetPool,
                     pending: u128,
                     released: u128
                 ],
                 {
                     candidate: AccountId32;
                     delegator: AccountId32;
-                    from: PalletPooledStakingTargetPool;
+                    from: TpPooledStakingTargetPool;
                     pending: u128;
                     released: u128;
                 }

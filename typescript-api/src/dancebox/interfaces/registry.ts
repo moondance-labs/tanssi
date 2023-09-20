@@ -87,7 +87,6 @@ import type {
     PalletMaintenanceModeEvent,
     PalletMigrationsError,
     PalletMigrationsEvent,
-    PalletPooledStakingAllTargetPool,
     PalletPooledStakingCall,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingError,
@@ -96,7 +95,6 @@ import type {
     PalletPooledStakingPendingOperationQuery,
     PalletPooledStakingPoolsKey,
     PalletPooledStakingSharesOrStake,
-    PalletPooledStakingTargetPool,
     PalletProxyAnnouncement,
     PalletProxyCall,
     PalletProxyError,
@@ -161,6 +159,8 @@ import type {
     TpContainerChainGenesisDataContainerChainGenesisDataItem,
     TpContainerChainGenesisDataProperties,
     TpContainerChainGenesisDataTokenMetadata,
+    TpPooledStakingAllTargetPool,
+    TpPooledStakingTargetPool,
     XcmDoubleEncoded,
     XcmV2BodyId,
     XcmV2BodyPart,
@@ -295,7 +295,6 @@ declare module "@polkadot/types/types/registry" {
         PalletMaintenanceModeEvent: PalletMaintenanceModeEvent;
         PalletMigrationsError: PalletMigrationsError;
         PalletMigrationsEvent: PalletMigrationsEvent;
-        PalletPooledStakingAllTargetPool: PalletPooledStakingAllTargetPool;
         PalletPooledStakingCall: PalletPooledStakingCall;
         PalletPooledStakingCandidateEligibleCandidate: PalletPooledStakingCandidateEligibleCandidate;
         PalletPooledStakingError: PalletPooledStakingError;
@@ -304,7 +303,6 @@ declare module "@polkadot/types/types/registry" {
         PalletPooledStakingPendingOperationQuery: PalletPooledStakingPendingOperationQuery;
         PalletPooledStakingPoolsKey: PalletPooledStakingPoolsKey;
         PalletPooledStakingSharesOrStake: PalletPooledStakingSharesOrStake;
-        PalletPooledStakingTargetPool: PalletPooledStakingTargetPool;
         PalletProxyAnnouncement: PalletProxyAnnouncement;
         PalletProxyCall: PalletProxyCall;
         PalletProxyError: PalletProxyError;
@@ -369,6 +367,8 @@ declare module "@polkadot/types/types/registry" {
         TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
         TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
         TpContainerChainGenesisDataTokenMetadata: TpContainerChainGenesisDataTokenMetadata;
+        TpPooledStakingAllTargetPool: TpPooledStakingAllTargetPool;
+        TpPooledStakingTargetPool: TpPooledStakingTargetPool;
         XcmDoubleEncoded: XcmDoubleEncoded;
         XcmV2BodyId: XcmV2BodyId;
         XcmV2BodyPart: XcmV2BodyPart;

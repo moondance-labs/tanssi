@@ -434,20 +434,20 @@ export default {
             RequestedDelegate: {
                 candidate: "AccountId32",
                 delegator: "AccountId32",
-                pool: "PalletPooledStakingTargetPool",
+                pool: "TpPooledStakingTargetPool",
                 pending: "u128",
             },
             ExecutedDelegate: {
                 candidate: "AccountId32",
                 delegator: "AccountId32",
-                pool: "PalletPooledStakingTargetPool",
+                pool: "TpPooledStakingTargetPool",
                 staked: "u128",
                 released: "u128",
             },
             RequestedUndelegate: {
                 candidate: "AccountId32",
                 delegator: "AccountId32",
-                from: "PalletPooledStakingTargetPool",
+                from: "TpPooledStakingTargetPool",
                 pending: "u128",
                 released: "u128",
             },
@@ -505,8 +505,8 @@ export default {
             },
         },
     },
-    /** Lookup53: pallet_pooled_staking::pallet::TargetPool */
-    PalletPooledStakingTargetPool: {
+    /** Lookup53: tp_pooled_staking::TargetPool */
+    TpPooledStakingTargetPool: {
         _enum: ["AutoCompounding", "ManualRewards"],
     },
     /** Lookup54: cumulus_pallet_xcmp_queue::pallet::Event<T> */
@@ -1793,11 +1793,11 @@ export default {
             rebalance_hold: {
                 candidate: "AccountId32",
                 delegator: "AccountId32",
-                pool: "PalletPooledStakingAllTargetPool",
+                pool: "TpPooledStakingAllTargetPool",
             },
             request_delegate: {
                 candidate: "AccountId32",
-                pool: "PalletPooledStakingTargetPool",
+                pool: "TpPooledStakingTargetPool",
                 stake: "u128",
             },
             execute_pending_operations: {
@@ -1805,7 +1805,7 @@ export default {
             },
             request_undelegate: {
                 candidate: "AccountId32",
-                pool: "PalletPooledStakingTargetPool",
+                pool: "TpPooledStakingTargetPool",
                 amount: "PalletPooledStakingSharesOrStake",
             },
             claim_manual_rewards: {
@@ -1816,8 +1816,8 @@ export default {
             },
         },
     },
-    /** Lookup206: pallet_pooled_staking::pallet::AllTargetPool */
-    PalletPooledStakingAllTargetPool: {
+    /** Lookup206: tp_pooled_staking::AllTargetPool */
+    TpPooledStakingAllTargetPool: {
         _enum: ["Joining", "AutoCompounding", "ManualRewards", "Leaving"],
     },
     /** Lookup208: pallet_pooled_staking::pallet::PendingOperationQuery<sp_core::crypto::AccountId32, J, L> */
