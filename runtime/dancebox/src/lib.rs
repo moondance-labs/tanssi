@@ -475,9 +475,8 @@ impl BabeDataGetter {
             let benchmarking_babe_output = Hash::default();
             return Some(benchmarking_babe_output);
         }
-        // TODO: use CURRENT_BLOCK_RANDOMNESS instead
         relay_chain_state_proof()
-            .read_optional_entry(relay_chain::well_known_keys::ONE_EPOCH_AGO_RANDOMNESS)
+            .read_optional_entry(relay_chain::well_known_keys::CURRENT_BLOCK_RANDOMNESS)
             .ok()
             .flatten()
     }

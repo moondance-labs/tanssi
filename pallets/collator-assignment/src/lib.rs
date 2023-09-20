@@ -150,6 +150,11 @@ pub mod pallet {
             // we use the config scheduled at the target_session_index
             let new_assigned =
                 if T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index) {
+                    log::info!(
+                        "Collator assignment: rotating collators. Seed: {:?}",
+                        random_seed
+                    );
+
                     Self::assign_collators_rotate_all(
                         collators,
                         &container_chain_ids,
