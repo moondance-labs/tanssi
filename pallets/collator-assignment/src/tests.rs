@@ -638,3 +638,51 @@ fn assign_collators_reorganize_container_chains_if_not_enough_collators() {
         );
     });
 }
+
+#[test]
+fn assign_collators_set_zero_per_container() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+            m.container_chains = vec![1001, 1002, 1003, 1004];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![
+                (1, 999),
+                (2, 999),
+                (3, 1001),
+                (4, 1001),
+                (5, 1002),
+                (6, 1002),
+                (7, 1003),
+                (8, 1003),
+                (9, 1004),
+                (10, 1004),
+                (11, 999),
+                (12, 999)
+            ]),
+        );
+
+        MockData::mutate(|m| {
+            // We don't want to assign collators to container chains anymore
+            m.collators_per_container = 0;
+        });
+        run_to_block(21);
+
+        // There are 5 collators in total: 0x4 container chains, plus 5 in the orchestrator chain
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![(1, 999), (2, 999), (3, 999), (11, 999), (12, 999),]),
+        );
+    });
+}

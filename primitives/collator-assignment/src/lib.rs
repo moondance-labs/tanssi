@@ -147,17 +147,21 @@ where
 
     /// Check container chains and remove all collators from container chains
     /// that do not reach the target number of collators. Reassign those to other
-    /// container chains.
+    /// container chains, giving priority to the container chains with most collators
+    /// first, and in case of tie the container chains that appear first in the input
+    /// `container_chains` parameter.
     ///
     /// Returns the collators that could not be assigned to any container chain,
     /// those can be assigned to the orchestrator chain by the caller.
     pub fn reorganize_incomplete_container_chains_collators(
         &mut self,
+        container_chains: &[ParaId],
         num_each_container_chain: usize,
     ) -> Vec<AccountId> {
         let mut incomplete_container_chains: VecDeque<_> = VecDeque::new();
 
-        for (para_id, collators) in self.container_chains.iter_mut() {
+        for para_id in container_chains {
+            let collators = self.container_chains.entry(*para_id).or_default();
             if !collators.is_empty() && collators.len() < num_each_container_chain {
                 // Do not remove the para_id from the map, instead replace the list of
                 // collators with an empty vec using mem::take.
@@ -168,6 +172,7 @@ where
             }
         }
 
+        // Stable sort because we want to keep input order in case of tie
         incomplete_container_chains
             .make_contiguous()
             .sort_by_key(|(_para_id, collators)| collators.len());

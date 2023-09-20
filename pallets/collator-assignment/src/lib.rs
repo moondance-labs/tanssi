@@ -300,7 +300,10 @@ pub mod pallet {
             // [2, 2, 0, 0, 0]
             // and assign 1 extra collator to the orchestrator chain, if needed.
             let incomplete_container_chains_collators = new_assigned
-                .reorganize_incomplete_container_chains_collators(num_each_container_chain);
+                .reorganize_incomplete_container_chains_collators(
+                    container_chain_ids,
+                    num_each_container_chain,
+                );
 
             // Assign collators from container chains that do not reach
             // "num_each_container_chain" to orchestrator chain
