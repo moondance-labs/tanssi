@@ -342,6 +342,7 @@ impl_pool!(
 );
 
 impl<T: Config> ManualRewards<T> {
+    #[allow(dead_code)]
     pub fn pending_rewards(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,

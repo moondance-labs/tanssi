@@ -64,6 +64,7 @@ fn test_distribution(
     use crate::traits::Timer;
     let block_number = <Runtime as crate::Config>::JoiningRequestTimer::now();
 
+    // Request all delegations
     for d in delegations {
         assert_ok!(Staking::request_delegate(
             RuntimeOrigin::signed(d.delegator),
@@ -73,10 +74,12 @@ fn test_distribution(
         ));
     }
 
+    // Wait for delegation to be executable
     for _ in 0..BLOCKS_TO_WAIT {
         roll_one_block();
     }
 
+    // Execute delegations
     for d in delegations {
         assert_ok!(Staking::execute_pending_operations(
             RuntimeOrigin::signed(d.delegator),
@@ -96,15 +99,15 @@ fn test_distribution(
         ));
     }
 
+    // Distribute rewards
     let candidate_balance_before = total_balance(&ACCOUNT_CANDIDATE_1);
-
     assert_ok!(Pallet::<Runtime>::distribute_rewards(
         reward.collator,
         reward.rewards
     ));
-
     let candidate_balance_after = total_balance(&ACCOUNT_CANDIDATE_1);
 
+    // Check events matches the expected distribution.
     assert_eq_last_events!(vec![
         Event::<Runtime>::RewardedCollator {
             collator: reward.collator,
@@ -118,6 +121,7 @@ fn test_distribution(
         },
     ]);
 
+    // Check the state of each delegate match the expected values.
     for expected in stakes {
         let actual = DelegatorState {
             candidate: expected.candidate,
@@ -155,6 +159,7 @@ fn test_distribution(
         similar_asserts::assert_eq!(&actual, expected);
     }
 
+    // Additional checks.
     assert_eq!(
         distribution.collator_auto
             + distribution.collator_manual
@@ -184,7 +189,7 @@ fn test_distribution(
         })
         .sum();
 
-    let sum_auto_stake_after: Balance = stakes.iter().map(|s| s.auto_stake).sum();
+    let sum_auto_stake_after = AutoCompounding::<Runtime>::total_staked(&reward.collator).0;
     assert_eq!(
         sum_auto_stake_after - sum_auto_stake_before,
         distribution.collator_auto + distribution.delegators_auto,
@@ -470,8 +475,22 @@ fn delegators_mixed() {
             Distribution {
                 collator_auto: 1_003_555,
                 collator_manual: 996_445,
-                delegators_auto: 5_333_750,
+                // Total stake: 2_250_000_000
+                // Auto stake: 1_500_000_000
+                // Manual stake: 750_000_000
+                // Manual shares: 750
+                // Rewards towards delegators: 80% of 10_000_000 = 8_000_000
+                // Rewards towards manual deleg
+                //   = 8_000_000 * 750_000_000 / 2_250_000_000
+                //   = 2_666_666
+                //   => 2_666_250 (rounding down to closest multiple of 750)
+                //   gives dust of 2_666_666 - 2_666_250 = 416
                 delegators_manual: 2_666_250,
+                // Rewards towards auto deleg
+                // = Rewards deleg - Rewards manual deleg
+                // = 8_000_000 - 2_666_250
+                // = 5_333_750
+                delegators_auto: 5_333_750,
             },
         );
     });
