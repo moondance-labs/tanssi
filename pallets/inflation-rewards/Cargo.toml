@@ -1,7 +1,7 @@
 [package]
-name = "pallet-pooled-staking"
+name = "pallet-inflation-rewards"
 authors = { workspace = true }
-description = "A staking pallet implemented using shares in pools"
+description = "A pallet to handle token inflation and rewards"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
@@ -40,6 +40,7 @@ std = [
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
+	"log/std",
 	"nimbus-primitives/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
@@ -47,6 +48,7 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 	"tp-core/std",
+	"tp-maths/std",
 ]
 runtime-benchmarks = [ "frame-benchmarking" ]
 try-runtime = [ "frame-support/try-runtime" ]

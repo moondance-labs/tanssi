@@ -17,7 +17,7 @@
 use {
     crate::{
         pools::{self, Pool},
-        traits::{ErrAdd, ErrSub, IsCandidateEligible},
+        traits::IsCandidateEligible,
         Candidate, Config, Error, Event, Pallet, Pools, PoolsKey, SortedEligibleCandidates, Stake,
     },
     core::{cmp::Ordering, marker::PhantomData},
@@ -25,6 +25,7 @@ use {
     scale_info::TypeInfo,
     sp_core::{Get, RuntimeDebug},
     sp_runtime::traits::Zero,
+    tp_maths::{ErrAdd, ErrSub},
 };
 
 #[cfg(feature = "std")]

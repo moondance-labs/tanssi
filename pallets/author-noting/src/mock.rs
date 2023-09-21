@@ -187,6 +187,7 @@ impl Config for Test {
     type ContainerChainAuthor = MockAuthorFetcher;
     type SelfParaId = ParachainId;
     type ContainerChains = MockContainerChainGetter;
+    type AuthorNotingHook = ();
     type RelayChainStateProvider = MockRelayStateProvider;
 }
 

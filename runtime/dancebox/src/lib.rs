@@ -557,6 +557,7 @@ impl pallet_author_noting::Config for Runtime {
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    type AuthorNotingHook = ();
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }
 

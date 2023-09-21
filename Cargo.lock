@@ -7557,6 +7557,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-inflation-rewards"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "nimbus-primitives",
+ "num-traits",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "similar-asserts",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "tp-core",
+ "tp-maths",
+]
+
+[[package]]
 name = "pallet-initializer"
 version = "0.1.0"
 dependencies = [
@@ -7819,6 +7842,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "tp-core",
+ "tp-maths",
 ]
 
 [[package]]
@@ -14614,6 +14638,14 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "tp-maths"
+version = "0.1.0"
+dependencies = [
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]

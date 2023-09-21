@@ -1,0 +1,20 @@
+[package]
+name = "tp-maths"
+authors = { workspace = true }
+description = "Tanssi mathematics primitives"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[dependencies]
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+
+
+[features]
+default = [ "std" ]
+std = [
+	"sp-core/std",
+	"sp-runtime/std",
+]
+runtime-benchmarks = []

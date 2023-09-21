@@ -75,6 +75,7 @@ pub mod pallet {
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
+        tp_maths::MulDiv,
     };
 
     #[cfg(feature = "std")]
@@ -237,7 +238,7 @@ pub mod pallet {
         /// Same as Currency::Balance. Must impl `MulDiv` which perform
         /// multiplication followed by division using a bigger type to avoid
         /// overflows.
-        type Balance: Balance + traits::MulDiv;
+        type Balance: Balance + MulDiv;
 
         /// Identifier reserved for this pallet holding account funds.
         type CurrencyHoldReason: Get<
@@ -438,6 +439,18 @@ pub mod pallet {
         UnsufficientSharesForTransfer,
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
+    }
+
+    impl<T: Config> From<tp_maths::OverflowError> for Error<T> {
+        fn from(_: tp_maths::OverflowError) -> Self {
+            Error::MathOverflow
+        }
+    }
+
+    impl<T: Config> From<tp_maths::UnderflowError> for Error<T> {
+        fn from(_: tp_maths::UnderflowError) -> Self {
+            Error::MathUnderflow
+        }
     }
 
     #[pallet::call]

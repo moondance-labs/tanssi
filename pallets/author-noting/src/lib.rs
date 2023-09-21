@@ -64,6 +64,24 @@ pub use pallet::*;
 
 use crate::weights::WeightInfo;
 
+/// The author-noting hook to react to container chains authoring.
+pub trait AuthorNotingHook<AccountId> {
+    /// This hook is called partway through the `set_latest_author_data` inherent in author-noting.
+    ///
+    /// The hook should never panic and is required to return the weight consumed.
+    fn on_container_author_noted(
+        author: &AccountId,
+        block_number: BlockNumber,
+        para_id: ParaId,
+    ) -> Weight;
+}
+
+impl<AccountId> AuthorNotingHook<AccountId> for () {
+    fn on_container_author_noted(_: &AccountId, _: BlockNumber, _: ParaId) -> Weight {
+        Weight::zero()
+    }
+}
+
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
@@ -80,6 +98,11 @@ pub mod pallet {
         type ContainerChainAuthor: GetContainerChainAuthor<Self::AccountId>;
 
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
+
+        /// An entry-point for higher-level logic to react to containers chains authoring.
+        ///
+        /// Typically, this can be a hook to reward block authors.
+        type AuthorNotingHook: AuthorNotingHook<Self::AccountId>;
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -140,7 +163,7 @@ pub mod pallet {
             );
 
             let registered_para_ids = T::ContainerChains::current_container_chains();
-            let total_weight =
+            let mut total_weight =
                 T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
 
             // We do this first to make sure we dont do 2 reads (parachains and relay state)
@@ -159,7 +182,16 @@ pub mod pallet {
 
                 for para_id in registered_para_ids {
                     match Self::fetch_block_info_from_proof(&relay_storage_rooted_proof, para_id) {
-                        Ok(block_info) => LatestAuthor::<T>::insert(para_id, block_info),
+                        Ok(block_info) => {
+                            total_weight = total_weight.saturating_add(
+                                T::AuthorNotingHook::on_container_author_noted(
+                                    &block_info.author,
+                                    block_info.block_number,
+                                    para_id,
+                                ),
+                            );
+                            LatestAuthor::<T>::insert(para_id, block_info);
+                        }
                         Err(e) => log::warn!(
                             "Author-noting error {:?} found in para {:?}",
                             e,

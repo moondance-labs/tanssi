@@ -16,9 +16,8 @@
 
 use {
     crate::{
-        candidate::Candidates,
-        traits::{ErrAdd, ErrMul, ErrSub, MulDiv},
-        Candidate, Config, Delegator, Error, Event, Pallet, Pools, PoolsKey, Shares, Stake,
+        candidate::Candidates, Candidate, Config, Delegator, Error, Event, Pallet, Pools, PoolsKey,
+        Shares, Stake,
     },
     core::marker::PhantomData,
     frame_support::{
@@ -28,6 +27,7 @@ use {
     },
     sp_core::Get,
     sp_runtime::traits::{CheckedAdd, CheckedDiv, Zero},
+    tp_maths::{ErrAdd, ErrMul, ErrSub, MulDiv},
 };
 
 pub trait Pool<T: Config> {
