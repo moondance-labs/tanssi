@@ -51,8 +51,7 @@ pub mod weights;
 
 use frame_support::pallet;
 
-pub use candidate::EligibleCandidate;
-pub use pallet::*;
+pub use {candidate::EligibleCandidate, pallet::*};
 
 #[pallet(dev_mode)]
 pub mod pallet {
@@ -422,6 +421,18 @@ pub mod pallet {
             delegator: Delegator<T>,
             rewards: T::Balance,
         },
+        /// Swapped between AutoCompounding and ManualReward shares
+        SwappedPool {
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            source_pool: TargetPool,
+            source_shares: T::Balance,
+            source_stake: T::Balance,
+            target_shares: T::Balance,
+            target_stake: T::Balance,
+            pending_leaving: T::Balance,
+            released: T::Balance,
+        },
     }
 
     #[pallet::error]
@@ -439,6 +450,7 @@ pub mod pallet {
         UnsufficientSharesForTransfer,
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
+        SwapResultsInZeroShares,
     }
 
     #[pallet::call]
@@ -515,6 +527,19 @@ pub mod pallet {
             let _ = ensure_signed(origin)?;
 
             Calls::<T>::update_candidate_position(&candidates)
+        }
+
+        #[pallet::weight(0)]
+        pub fn swap_pool(
+            origin: OriginFor<T>,
+            candidate: Candidate<T>,
+            source_pool: TargetPool,
+            amount: SharesOrStake<T::Balance>,
+        ) -> DispatchResultWithPostInfo {
+            // We don't care about the sender.
+            let delegator = ensure_signed(origin)?;
+
+            Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
         }
     }
 }
