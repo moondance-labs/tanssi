@@ -20,7 +20,12 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use cumulus_primitives_core::{relay_chain::Slot, ParaId};
+use frame_support::pallet_prelude::DispatchResultWithPostInfo;
 use sp_std::vec::Vec;
+
+pub trait DistributeRewards<AccountId, Balance> {
+    fn distribute_rewards(rewarded: AccountId, amount: Balance) -> DispatchResultWithPostInfo;
+}
 
 /// Get the current list of container chains parachain ids.
 pub trait GetCurrentContainerChains {

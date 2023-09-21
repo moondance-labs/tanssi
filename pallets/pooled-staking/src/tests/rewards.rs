@@ -21,7 +21,7 @@ use {
         pools::{AutoCompounding, ManualRewards},
         Pallet, TargetPool,
     },
-    tp_core::DistributeRewards,
+    tp_traits::DistributeRewards,
 };
 
 struct Delegation {

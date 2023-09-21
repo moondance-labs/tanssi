@@ -530,7 +530,7 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config> tp_core::DistributeRewards<Candidate<T>, T::Balance> for Pallet<T> {
+    impl<T: Config> tp_traits::DistributeRewards<Candidate<T>, T::Balance> for Pallet<T> {
         fn distribute_rewards(
             candidate: Candidate<T>,
             rewards: T::Balance,

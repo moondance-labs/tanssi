@@ -14,6 +14,7 @@ log = { workspace = true }
 serde = { workspace = true, optional = true }
 tp-core = { workspace = true }
 tp-maths = { workspace = true }
+tp-traits = { workspace = true }
 
 # Substrate
 frame-benchmarking = { workspace = true, optional = true }
@@ -47,6 +48,8 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 	"tp-core/std",
+	"tp-maths/std",
+	"tp-traits/std",
 ]
 runtime-benchmarks = [ "frame-benchmarking" ]
 try-runtime = [ "frame-support/try-runtime" ]

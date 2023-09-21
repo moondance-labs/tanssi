@@ -7843,6 +7843,7 @@ dependencies = [
  "sp-std",
  "tp-core",
  "tp-maths",
+ "tp-traits",
 ]
 
 [[package]]
@@ -14653,6 +14654,7 @@ name = "tp-traits"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
+ "frame-support",
  "sp-std",
 ]
 
