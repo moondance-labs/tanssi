@@ -18,9 +18,9 @@ use {
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::Hashable,
     parity_scale_codec::Encode,
-    sp_runtime::traits::{BlakeTwo256, HashFor},
+    sp_runtime::traits::{BlakeTwo256, HashingFor},
     sp_state_machine::Backend,
-    sp_trie::{MemoryDB, StorageProof},
+    sp_trie::{PrefixedMemoryDB, StorageProof},
     tp_collator_assignment::AssignedCollators,
     tp_core::well_known_keys,
 };
@@ -67,7 +67,7 @@ impl ParaHeaderSproofBuilder {
         sp_state_machine::StorageProof,
     ) {
         let (db, root) =
-            MemoryDB::<HashFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
+            PrefixedMemoryDB::<HashingFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
         let state_version = Default::default(); // for test using default.
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
 
@@ -123,10 +123,14 @@ impl ParaHeaderSproofBuilder {
         sp_state_machine::StorageProof,
     ) {
         // Recover the db
-        let db = state.into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
-        let state_version = Default::default(); // for test using default.
-                                                // Construct the backend
+        let (prefixed_db, prefixed_root) =
+            PrefixedMemoryDB::<HashingFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
+        let db = state.into_memory_db::<HashingFor<cumulus_primitives_core::relay_chain::Block>>();
+
+        // TODO: fix me later
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
+
+
         // Fetch all existing keys
         let mut relevant_keys = backend
             .keys(Default::default())
@@ -140,7 +144,7 @@ impl ParaHeaderSproofBuilder {
 
             let mut insert = |key: Vec<u8>, value: Vec<u8>| {
                 relevant_keys.push(key.clone());
-                backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
+                //backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
             };
 
             for item in self.items {
@@ -180,7 +184,9 @@ impl<T: Encode> AuthorityAssignmentSproofBuilder<T> {
         sp_state_machine::StorageProof,
     ) {
         let (db, root) =
-            MemoryDB::<HashFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
+            PrefixedMemoryDB::<HashingFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
+
+
         let state_version = Default::default();
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
         let mut relevant_keys = Vec::new();

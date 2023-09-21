@@ -16,13 +16,14 @@ parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len
 scale-info = { workspace = true }
 serde = { workspace = true, optional = true, features = [ "derive" ] }
 
+sp-runtime = { workspace = true }
+
 cumulus-primitives-core = { workspace = true }
 
 [dev-dependencies]
 pallet-balances = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
-sp-runtime = { workspace = true }
 
 [features]
 default = [ "std" ]
@@ -32,5 +33,6 @@ std = [
 	"frame-system/std",
 	"pallet-balances/std",
 	"scale-info/std",
+	"sp-runtime/std",
 ]
 try-runtime = [ "frame-support/try-runtime" ]

@@ -77,7 +77,7 @@ pub mod pallet {
     }
 
     #[pallet::genesis_build]
-    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
             // Sort para ids and detect duplicates, but do it using a vector of
             // references to avoid cloning the genesis data, which may be big.

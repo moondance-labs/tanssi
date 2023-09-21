@@ -22,6 +22,7 @@ use {
     sp_core::U256,
     sp_runtime::traits::{CheckedAdd, CheckedMul, CheckedSub, Get, Zero},
     sp_std::convert::TryInto,
+    frame_system::pallet_prelude::BlockNumberFor
 };
 
 /// Allows to get the current instant and check if some duration is elapsed.
@@ -52,9 +53,9 @@ pub struct BlockNumberTimer<T, G>(PhantomData<(T, G)>);
 impl<T, G> Timer for BlockNumberTimer<T, G>
 where
     T: frame_system::Config,
-    G: Get<<T as frame_system::Config>::BlockNumber>,
+    G: Get<BlockNumberFor<T>>,
 {
-    type Instant = <T as frame_system::Config>::BlockNumber;
+    type Instant = BlockNumberFor<T>;
 
     fn now() -> Self::Instant {
         frame_system::Pallet::<T>::block_number()

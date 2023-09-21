@@ -169,13 +169,15 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     #[derive(Default)]
-    pub struct GenesisConfig {
+    pub struct GenesisConfig<T: Config>{
         pub config: HostConfiguration,
+        #[serde(skip)]
+		pub _config: sp_std::marker::PhantomData<T>,
     }
 
     #[cfg(feature = "std")]
     #[pallet::genesis_build]
-    impl<T: Config> GenesisBuild<T> for GenesisConfig {
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
             self.config.panic_if_not_consistent();
             ActiveConfig::<T>::put(&self.config);
