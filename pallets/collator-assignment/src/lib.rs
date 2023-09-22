@@ -151,7 +151,8 @@ pub mod pallet {
             let new_assigned =
                 if T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index) {
                     log::info!(
-                        "Collator assignment: rotating collators. Seed: {:?}",
+                        "Collator assignment: rotating collators. Session {:?}, Seed: {:?}",
+                        current_session_index.encode(),
                         random_seed
                     );
 
@@ -166,6 +167,12 @@ pub mod pallet {
                             as usize,
                     )
                 } else {
+                    log::info!(
+                        "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
+                        current_session_index.encode(),
+                        random_seed
+                    );
+
                     Self::assign_collators_always_keep_old(
                         collators,
                         &container_chain_ids,
