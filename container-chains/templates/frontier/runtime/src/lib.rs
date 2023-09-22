@@ -405,15 +405,13 @@ impl frame_system::Config for Runtime {
     /// The lookup mechanism to get account ID from whatever is passed in dispatchers.
     type Lookup = IdentityLookup<AccountId>;
     /// The index type for storing how many extrinsics an account has signed.
-    type Index = Index;
+    type Nonce = Index;
     /// The index type for blocks.
-    type BlockNumber = BlockNumber;
+    type Block = Block;
     /// The type for hashing blocks and tries.
     type Hash = Hash;
     /// The hashing algorithm used.
     type Hashing = BlakeTwo256;
-    /// The header type.
-    type Header = generic::Header<BlockNumber, BlakeTwo256>;
     /// The ubiquitous event type.
     type RuntimeEvent = RuntimeEvent;
     /// The ubiquitous origin type.
@@ -490,7 +488,7 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = [u8; 8];
     type MaxFreezes = ConstU32<0>;
-    type HoldIdentifier = [u8; 8];
+    type RuntimeHoldReason = [u8; 8];
     type MaxHolds = ConstU32<0>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
@@ -896,7 +894,7 @@ construct_runtime!(
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 70,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
-        PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config} = 73,
+        PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
 
         RootTesting: pallet_root_testing = 100,
     }

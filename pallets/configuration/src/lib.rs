@@ -168,7 +168,7 @@ pub mod pallet {
     pub(crate) type BypassConsistencyCheck<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     #[pallet::genesis_config]
-    #[derive(Default)]
+    #[derive(frame_support::DefaultNoBound)]
     pub struct GenesisConfig<T: Config>{
         pub config: HostConfiguration,
         #[serde(skip)]

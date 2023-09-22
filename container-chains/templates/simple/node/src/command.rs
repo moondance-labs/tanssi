@@ -87,10 +87,6 @@ impl SubstrateCli for Cli {
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         load_spec(id, self.para_id.unwrap_or(1000).into())
     }
-
-    fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &container_chain_template_simple_runtime::VERSION
-    }
 }
 
 impl SubstrateCli for RelayChainCli {
@@ -128,9 +124,6 @@ impl SubstrateCli for RelayChainCli {
         polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
     }
 
-    fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        polkadot_cli::Cli::native_runtime_version(chain_spec)
-    }
 }
 
 macro_rules! construct_async_run {
@@ -219,13 +212,8 @@ pub fn run() -> Result<()> {
         Some(Subcommand::ExportGenesisState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
-                let spec = cli.load_spec(&cmd.shared_params.chain.clone().unwrap_or_default())?;
                 let partials = new_partial(&config)?;
-                let state_version = sc_chain_spec::resolve_state_version_from_wasm(
-                    &spec.build_storage()?,
-                    partials.client.executor(),
-                )?;
-                cmd.run::<Block>(&*spec, state_version)
+                cmd.run(&*config.chain_spec, &*partials.client)
             })
         }
         Some(Subcommand::ExportGenesisWasm(cmd)) => {
@@ -241,7 +229,7 @@ pub fn run() -> Result<()> {
             match cmd {
                 BenchmarkCmd::Pallet(cmd) => {
                     if cfg!(feature = "runtime-benchmarks") {
-                        runner.sync_run(|config| cmd.run::<Block, ParachainNativeExecutor>(config))
+                        runner.sync_run(|config| cmd.run::<Block, ()>(config))
                     } else {
                         Err("Benchmarking wasn't enabled when building the node. \
 					You can enable it with `--features runtime-benchmarks`."
@@ -333,8 +321,7 @@ pub fn run() -> Result<()> {
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
-				let state_version = Cli::native_runtime_version(&config.chain_spec).state_version();
-				let block: Block = generate_genesis_block(&*config.chain_spec, state_version)
+				let block: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
 					.map_err(|e| format!("{:?}", e))?;
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
 
@@ -348,9 +335,12 @@ pub fn run() -> Result<()> {
 				info!("Parachain genesis state: {}", genesis_state);
 				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
 
-				if !collator_options.relay_chain_rpc_urls.is_empty() && !cli.relay_chain_args.is_empty() {
-					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
-				}
+                if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
+		            collator_options.clone().relay_chain_mode {
+				    if !rpc_target_urls.is_empty() && !cli.relay_chain_args.is_empty() {
+					    warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
+				    }
+                }
 
 				crate::service::start_parachain_node(
 					config,

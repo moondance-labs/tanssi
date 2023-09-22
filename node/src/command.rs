@@ -111,10 +111,6 @@ impl SubstrateCli for Cli {
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         load_spec(id, self.para_id.unwrap_or(1000).into())
     }
-
-    fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &dancebox_runtime::VERSION
-    }
 }
 
 impl SubstrateCli for RelayChainCli {
@@ -152,9 +148,6 @@ impl SubstrateCli for RelayChainCli {
         polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
     }
 
-    fn native_runtime_version(chain_spec: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        polkadot_cli::Cli::native_runtime_version(chain_spec)
-    }
 }
 
 impl SubstrateCli for ContainerChainCli {
@@ -210,10 +203,6 @@ impl SubstrateCli for ContainerChainCli {
             }
             None => Err(format!("ChainSpec for {} not found", id)),
         }
-    }
-
-    fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-        &dancebox_runtime::VERSION
     }
 }
 
