@@ -37,7 +37,7 @@ fn first_delegation_init_checkpoint() {
 
         assert_eq!(pending_rewards(ACCOUNT_CANDIDATE_1, ACCOUNT_DELEGATOR_1), 0);
 
-        let amount = 2 * InitialManualClaimShareValue::get();
+        let amount = 2 * SHARE_INIT;
         FullDelegation {
             candidate: ACCOUNT_CANDIDATE_1,
             delegator: ACCOUNT_DELEGATOR_1,
@@ -61,7 +61,7 @@ fn first_delegation_init_checkpoint() {
 #[test]
 fn second_delegation_transfer_rewards() {
     ExtBuilder::default().build().execute_with(|| {
-        let amount = 2 * InitialManualClaimShareValue::get();
+        let amount = 2 * SHARE_INIT;
         FullDelegation {
             candidate: ACCOUNT_CANDIDATE_1,
             delegator: ACCOUNT_DELEGATOR_1,
@@ -109,7 +109,7 @@ fn second_delegation_transfer_rewards() {
 #[test]
 fn undelegation_transfer_rewards() {
     ExtBuilder::default().build().execute_with(|| {
-        let amount = 2 * InitialManualClaimShareValue::get();
+        let amount = 2 * SHARE_INIT;
         FullDelegation {
             candidate: ACCOUNT_CANDIDATE_1,
             delegator: ACCOUNT_DELEGATOR_1,
@@ -133,7 +133,7 @@ fn undelegation_transfer_rewards() {
             expected_rewards
         );
 
-        let final_amount = 2 * InitialManualClaimShareValue::get();
+        let final_amount = 2 * SHARE_INIT;
         let leaving_amount = round_down(final_amount, 3); // test leaving rounding
 
         RequestUndelegation {
