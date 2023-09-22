@@ -27,7 +27,7 @@ use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
-
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_primitives_parachain_inherent::{
@@ -38,6 +38,8 @@ use {
     sp_consensus_aura::SlotDuration,
     sp_core::Pair,
 };
+use sc_client_api::Backend;
+use futures::FutureExt;
 // Local Runtime Types
 use {
     container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
@@ -47,7 +49,7 @@ use {
 // Cumulus Imports
 use {
     cumulus_client_service::{
-        build_relay_chain_interface, prepare_node_config, start_full_node, StartFullNodeParams,
+        build_relay_chain_interface, prepare_node_config, start_full_node, StartFullNodeParams, CollatorSybilResistance
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -316,6 +318,7 @@ async fn start_node_impl(
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
             net_config,
+            sybil_resistance_level: CollatorSybilResistance::Resistant
         })
         .await?;
 
@@ -346,13 +349,13 @@ async fn start_node_impl(
 			"offchain-work",
 			sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
 				runtime_api_provider: client.clone(),
-				keystore: Some(keystore_container.keystore()),
+				keystore: Some(params.keystore_container.keystore()),
 				offchain_db: backend.offchain_storage(),
 				transaction_pool: Some(OffchainTransactionPoolFactory::new(
 					transaction_pool.clone(),
 				)),
 				network_provider: network.clone(),
-				is_validator: config.role.is_authority(),
+				is_validator: parachain_config.role.is_authority(),
 				enable_http_requests: false,
 				custom_extensions: move |_| vec![],
 			})

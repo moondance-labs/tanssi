@@ -28,15 +28,15 @@ use {
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
     sp_core::ConstU32,
-    xcm::latest::prelude::*,
-    xcm_builder::{
+    staging_xcm::latest::prelude::*,
+    staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, CurrencyAdapter, EnsureXcmOrigin, IsConcrete,
         ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
         SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
         TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
-    xcm_executor::XcmExecutor,
+    staging_xcm_executor::XcmExecutor,
 };
 
 parameter_types! {
@@ -100,11 +100,11 @@ pub type LocationToAccountId = (
     // The parent (Relay-chain) origin converts to the default `AccountId`.
     ParentIsPreset<AccountId>,
     // Sibling parachain origins convert to AccountId via the `ParaId::into`.
-    SiblingParachainConvertsVia<polkadot_parachain::primitives::Sibling, AccountId>,
+    SiblingParachainConvertsVia<polkadot_parachain_primitives::primitives::Sibling, AccountId>,
     // If we receive a MultiLocation of type AccountKey20, just generate a native account
     AccountId32Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
-    xcm_builder::HashedDescriptionDescribeFamilyAllTerminal<AccountId>,
+    staging_xcm_builder::HashedDescription<AccountId, staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>>,
 );
 
 /// Local origins on this chain are allowed to dispatch XCM sends/executions.
@@ -160,7 +160,7 @@ pub type XcmRouter = (
 );
 
 pub struct XcmConfig;
-impl xcm_executor::Config for XcmConfig {
+impl staging_xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
@@ -186,6 +186,7 @@ impl xcm_executor::Config for XcmConfig {
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
+    type Aliasers = Nothing;
 }
 
 impl pallet_xcm::Config for Runtime {

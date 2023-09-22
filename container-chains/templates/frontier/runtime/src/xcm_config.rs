@@ -185,6 +185,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
+    type Aliasers = Nothing;
 }
 
 impl pallet_xcm::Config for Runtime {

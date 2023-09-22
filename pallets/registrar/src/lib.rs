@@ -85,7 +85,7 @@ pub mod pallet {
             para_ids.sort_by(|a, b| a.0.cmp(&b.0));
             para_ids.dedup_by(|a, b| {
                 if a.0 == b.0 {
-                    panic!("Duplicate para_id: {}", a.0);
+                    panic!("Duplicate para_id: {}", u32::from(a.0));
                 } else {
                     false
                 }

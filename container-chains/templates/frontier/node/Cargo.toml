@@ -91,12 +91,13 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 
 # Frontier
+fc-api = { workspace = true }
 fc-cli = { workspace = true }
 fc-consensus = { workspace = true }
 fc-db = { workspace = true, features = [ "sql" ] }
 fc-mapping-sync = { workspace = true, features = [ "sql" ] }
-fc-rpc = { workspace = true }
-fc-rpc-core = { workspace = true }
+fc-rpc = { workspace = true, features = ["txpool"] }
+fc-rpc-core = { workspace = true, features = ["txpool"] }
 fc-storage = { workspace = true }
 fp-evm = { workspace = true }
 fp-rpc = { workspace = true }

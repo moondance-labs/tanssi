@@ -53,8 +53,6 @@ pub trait BaseRuntimeApiCollection:
     + sp_offchain::OffchainWorkerApi<Block>
     + sp_session::SessionKeys<Block>
     + sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
-where
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
@@ -66,7 +64,6 @@ where
         + sp_offchain::OffchainWorkerApi<Block>
         + sp_session::SessionKeys<Block>
         + sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>,
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
@@ -76,8 +73,6 @@ pub trait RuntimeApiCollection:
     + EthCompatRuntimeApiCollection
     + sp_consensus_aura::AuraApi<Block, AuraId>
     + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
-where
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
@@ -87,6 +82,5 @@ where
         + EthCompatRuntimeApiCollection
         + sp_consensus_aura::AuraApi<Block, AuraId>
         + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>,
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }

@@ -73,7 +73,8 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     /// EthFilterApi pool.
     pub filter_pool: Option<FilterPool>,
     /// Frontier Backend.
-    pub frontier_backend: Arc<dyn fc_db::BackendReader<Block> + Send + Sync>,
+    // TODO: log indexer?
+    pub frontier_backend: Arc<dyn fc_api::Backend<Block>>,
     /// Backend.
     pub backend: Arc<BE>,
     /// Maximum number of logs in a query.
@@ -95,7 +96,7 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
 }
 
 /// Instantiate all Full RPC extensions.
-pub fn create_full<C, P, BE, A>(
+pub fn create_full<B, C, P, BE, A, EC>(
     deps: FullDeps<C, P, A, BE>,
     subscription_task_executor: SubscriptionTaskExecutor,
     pubsub_notification_sinks: Arc<
@@ -105,6 +106,7 @@ pub fn create_full<C, P, BE, A>(
     >,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
+    B: BlockT<Hash = H256>,
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
     BE::Blockchain: BlockchainBackend<Block>,
@@ -112,10 +114,12 @@ where
     C: BlockchainEvents<Block>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: CallApiAt<Block>,
+    C: ProvideRuntimeApi<Block>,
     C: Send + Sync + 'static,
     A: ChainApi<Block = Block> + 'static,
-    C::Api: RuntimeApiCollection<StateBackend = BE::State>,
+    C::Api: RuntimeApiCollection,
     P: TransactionPool<Block = Block> + 'static,
+    EC: EthConfig<B, C>,
 {
     use {
         fc_rpc::{
@@ -162,8 +166,11 @@ where
     }
     let convert_transaction: Option<Never> = None;
 
+    let pending_create_inherent_data_providers = move |_, ()| async move {
+        Ok(())
+    };
     io.merge(
-        Eth::new(
+        Eth::<_, _, _, _, _, _, _, EC>::new(
             Arc::clone(&client),
             Arc::clone(&pool),
             Arc::clone(&graph),
@@ -178,6 +185,9 @@ where
             fee_history_limit,
             10,
             None,
+            // TODO: resvisit
+            pending_create_inherent_data_providers,
+            None
         )
         .into_rpc(),
     )?;
@@ -188,7 +198,7 @@ where
             EthFilter::new(
                 client.clone(),
                 frontier_backend,
-                tx_pool.clone(),
+                graph.clone(),
                 filter_pool,
                 500_usize, // max stored filters
                 max_past_logs,
@@ -368,8 +378,6 @@ pub trait RuntimeApiCollection:
     + fp_rpc::ConvertTransactionRuntimeApi<Block>
     + fp_rpc::EthereumRuntimeRPCApi<Block>
     + cumulus_primitives_core::CollectCollationInfo<Block>
-where
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
@@ -385,6 +393,5 @@ where
         + fp_rpc::ConvertTransactionRuntimeApi<Block>
         + fp_rpc::EthereumRuntimeRPCApi<Block>
         + cumulus_primitives_core::CollectCollationInfo<Block>,
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }

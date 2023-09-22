@@ -203,6 +203,7 @@ pallet-evm-precompile-simple = { git = "https://github.com/moondance-labs/fronti
 pallet-hotfix-sufficients = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 
 # Frontier (client)
+fc-api = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 fc-cli = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 fc-consensus = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 fc-db = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }

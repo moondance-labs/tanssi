@@ -366,7 +366,7 @@ pub fn run() -> Result<()> {
             match cmd {
                 BenchmarkCmd::Pallet(cmd) => {
                     if cfg!(feature = "runtime-benchmarks") {
-                        runner.sync_run(|config| cmd.run::<Block, ParachainNativeExecutor>(config))
+                        runner.sync_run(|config| cmd.run::<Block, ()>(config))
                     } else {
                         Err("Benchmarking wasn't enabled when building the node. \
 					You can enable it with `--features runtime-benchmarks`."
@@ -475,9 +475,8 @@ pub fn run() -> Result<()> {
 
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
-
-				let state_version = Cli::native_runtime_version(&config.chain_spec).state_version();
-				let block: Block = generate_genesis_block(&*config.chain_spec, state_version)
+                // TODO: fetch it from
+				let block: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
 					.map_err(|e| format!("{:?}", e))?;
 				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
 
@@ -491,9 +490,12 @@ pub fn run() -> Result<()> {
 				info!("Parachain genesis state: {}", genesis_state);
 				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
 
-				if !collator_options.relay_chain_rpc_urls.is_empty() && !cli.relaychain_args().is_empty() {
-					warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
-				}
+				if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
+		            collator_options.clone().relay_chain_mode {
+				    if !rpc_target_urls.is_empty() && !cli.relaychain_args().is_empty() {
+					    warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
+				    }
+                }
 
 				let mut container_chain_config = None;
                 // Even if container-chain-args are empty, we need to spawn the container-detection

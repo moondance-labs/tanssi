@@ -55,8 +55,6 @@ pub mod json;
 // The original approach of using `storage: BTreeMap<Vec<u8>, Vec<u8>>` looks very bad
 // in polkadot.js, because `Vec<u8>` is serialized as `[12, 51, 124]` instead of hex.
 // That's why we use `serde(with = "sp_core::bytes")` everywhere, to convert it to hex.
-#[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "std", serde(bound = ""))]
 #[derive(
     DebugNoBound,
     CloneNoBound,
@@ -66,8 +64,11 @@ pub mod json;
     Encode,
     Decode,
     scale_info::TypeInfo,
+    serde::Deserialize,
+    serde::Serialize,
 )]
 #[scale_info(skip_type_params(MaxLengthTokenSymbol))]
+#[serde(bound = "")]
 pub struct ContainerChainGenesisData<MaxLengthTokenSymbol: Get<u32>> {
     pub storage: Vec<ContainerChainGenesisDataItem>,
     // TODO: make all these Vec<u8> bounded
@@ -81,8 +82,7 @@ pub struct ContainerChainGenesisData<MaxLengthTokenSymbol: Get<u32>> {
     pub properties: Properties<MaxLengthTokenSymbol>,
 }
 
-#[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "std", serde(bound = ""))]
+
 #[derive(
     DebugNoBound,
     CloneNoBound,
@@ -92,18 +92,21 @@ pub struct ContainerChainGenesisData<MaxLengthTokenSymbol: Get<u32>> {
     Encode,
     Decode,
     scale_info::TypeInfo,
+    serde::Deserialize, serde::Serialize
 )]
 #[scale_info(skip_type_params(MaxLengthTokenSymbol))]
+#[serde(bound = "")]
+
 pub struct Properties<MaxLengthTokenSymbol: Get<u32>> {
     pub token_metadata: TokenMetadata<MaxLengthTokenSymbol>,
     pub is_ethereum: bool,
 }
 
-#[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
-#[cfg_attr(feature = "std", serde(bound = ""))]
 #[derive(
-    DebugNoBound, CloneNoBound, EqNoBound, PartialEqNoBound, Encode, Decode, scale_info::TypeInfo,
+    DebugNoBound, CloneNoBound, EqNoBound, PartialEqNoBound, Encode, Decode, scale_info::TypeInfo, serde::Deserialize,
+    serde::Serialize,
 )]
+#[serde(bound = "")]
 #[scale_info(skip_type_params(MaxLengthTokenSymbol))]
 pub struct TokenMetadata<MaxLengthTokenSymbol: Get<u32>> {
     pub token_symbol: BoundedVec<u8, MaxLengthTokenSymbol>,
@@ -122,12 +125,11 @@ impl<MaxLengthTokenSymbol: Get<u32>> Default for TokenMetadata<MaxLengthTokenSym
     }
 }
 
-#[cfg_attr(feature = "std", derive(serde::Deserialize, serde::Serialize))]
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo)]
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo, serde::Deserialize, serde::Serialize)]
 pub struct ContainerChainGenesisDataItem {
-    #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
+    #[serde(with = "sp_core::bytes")]
     pub key: Vec<u8>,
-    #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
+    #[serde(with = "sp_core::bytes")]
     pub value: Vec<u8>,
 }
 

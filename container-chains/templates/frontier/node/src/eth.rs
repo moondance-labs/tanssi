@@ -29,8 +29,6 @@ pub trait EthCompatRuntimeApiCollection:
     sp_api::ApiExt<Block>
     + fp_rpc::EthereumRuntimeRPCApi<Block>
     + fp_rpc::ConvertTransactionRuntimeApi<Block>
-where
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
@@ -39,6 +37,5 @@ where
     Api: sp_api::ApiExt<Block>
         + fp_rpc::EthereumRuntimeRPCApi<Block>
         + fp_rpc::ConvertTransactionRuntimeApi<Block>,
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }

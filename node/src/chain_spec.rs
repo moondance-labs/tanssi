@@ -195,6 +195,7 @@ pub fn development_config(
                         max_orchestrator_collators: 1u32,
                         collators_per_container: 2u32,
                     },
+                    ..Default::default()
                 },
             )
         },
@@ -258,6 +259,7 @@ pub fn local_dancebox_config(
                         max_orchestrator_collators: 5u32,
                         collators_per_container: 2u32,
                     },
+                    ..Default::default()
                 },
             )
         },
@@ -286,13 +288,14 @@ fn testnet_genesis(
     root_key: AccountId,
     container_chains: &[String],
     mock_container_chains: &[ParaId],
-    configuration: pallet_configuration::GenesisConfig,
+    configuration: pallet_configuration::GenesisConfig::<dancebox_runtime::Runtime>,
 ) -> dancebox_runtime::GenesisConfig {
     dancebox_runtime::GenesisConfig {
         system: dancebox_runtime::SystemConfig {
             code: dancebox_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
                 .to_vec(),
+            ..Default::default()
         },
         balances: dancebox_runtime::BalancesConfig {
             balances: endowed_accounts
@@ -301,7 +304,7 @@ fn testnet_genesis(
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
-        parachain_info: dancebox_runtime::ParachainInfoConfig { parachain_id: id },
+        parachain_info: dancebox_runtime::ParachainInfoConfig { parachain_id: id, ..Default::default() },
         invulnerables: dancebox_runtime::InvulnerablesConfig {
             invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
         },
@@ -340,9 +343,10 @@ fn testnet_genesis(
         sudo: SudoConfig {
             key: Some(root_key),
         },
-        migrations: MigrationsConfig {},
+        migrations: MigrationsConfig { ..Default::default() },
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
+            ..Default::default() 
         },
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),
