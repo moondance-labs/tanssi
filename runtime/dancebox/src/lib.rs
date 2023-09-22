@@ -492,17 +492,22 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     ) {
         let random_seed = if session_index != 0 {
             let mut buf = [0u8; 32];
-            // TODO: mix some key like b"paras" and also the block number to ensure the seed changes
-            // on every tanssi block
-            let random_hash = BabeDataGetter::get_epoch_randomness().unwrap();
-            // TODO: audit usage of randomness API
-            // https://github.com/paritytech/polkadot/issues/2601
-            //let (random_hash, _) = pallet_babe::RandomnessFromOneEpochAgo::<Runtime>::random(&b"paras"[..]);
-            let len = sp_std::cmp::min(32, random_hash.as_ref().len());
-            buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
-            buf
+            if let Some(random_hash) = BabeDataGetter::get_epoch_randomness() {
+                // TODO: mix some key like b"paras" and also the block number to ensure the seed changes
+                // on every tanssi block
+                // TODO: audit usage of randomness API
+                // https://github.com/paritytech/polkadot/issues/2601
+                //let (random_hash, _) = pallet_babe::RandomnessFromOneEpochAgo::<Runtime>::random(&b"paras"[..]);
+                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
+                buf
+            } else {
+                // If there is no randomness (e.g when running in dev mode), return [0; 32]
+                // TODO: smoke test to ensure this never happens in a live network
+                [0; 32]
+            }
         } else {
-            // On genesis, there is no randomness
+            // In session 0 (genesis) there is randomness
             [0; 32]
         };
 
