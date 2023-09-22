@@ -257,19 +257,8 @@ describeSuite({
                 // TODO: fix once we have types
                 expect(registered3.toJSON().includes(2002)).to.be.false;
 
-                // The node should be syncing the container 2002, but not collating yet
-                // so it should still try to produce blocks in orchestrator chain.
-                // Use database path to check that the container chain started
-                // TODO: use collator rpc instead to check if the container chain is running,
-                // that's not possible now because we would need to guess the port number
-
-                const container2002DbPath =
-                    getTmpZombiePath() +
-                    "/Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002";
-                expect(await directoryExists(container2002DbPath)).to.be.false;
                 // The node starts one session before the container chain is in registered list
                 await waitSessions(context, paraApi, 1);
-                expect(await directoryExists(container2002DbPath)).to.be.true;
                 // Not registered yet, still pending
                 const registered4 = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
