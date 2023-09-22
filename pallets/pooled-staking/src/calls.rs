@@ -501,7 +501,11 @@ impl<T: Config> Calls<T> {
 
         // We proceed with the leaving, which create Leaving shares and request,
         // and release the dust from the convertion to Leaving shares.
-        let (leaving_stake, dust) = Self::leave_stake(&candidate, &delegator, removed_stake)?;
+        let (leaving_stake, dust) = if stake_decrease.is_zero() {
+            (Stake(0u32.into()), Stake(0u32.into()))
+        } else {
+            Self::leave_stake(&candidate, &delegator, Stake(stake_decrease))?
+        };
 
         pools::check_candidate_consistency::<T>(&candidate)?;
 
