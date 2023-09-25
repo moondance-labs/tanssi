@@ -50,8 +50,8 @@ impl<AccountId> AuthorNotingHook<AccountId> for () {
     }
 }
 
-pub trait DistributeRewards<AccountId, Balance> {
-    fn distribute_rewards(rewarded: AccountId, amount: Balance) -> DispatchResultWithPostInfo;
+pub trait DistributeRewards<AccountId, Imbalance> {
+    fn distribute_rewards(rewarded: AccountId, amount: Imbalance) -> DispatchResultWithPostInfo;
 }
 
 /// Get the current list of container chains parachain ids.

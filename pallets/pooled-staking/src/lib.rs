@@ -83,6 +83,8 @@ pub mod pallet {
 
     // Type aliases for better readability.
     pub type Candidate<T> = <T as frame_system::Config>::AccountId;
+    pub type CreditOf<T> =
+        fungible::Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
     pub type Delegator<T> = <T as frame_system::Config>::AccountId;
 
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
@@ -530,10 +532,10 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config> tp_traits::DistributeRewards<Candidate<T>, T::Balance> for Pallet<T> {
+    impl<T: Config> tp_traits::DistributeRewards<Candidate<T>, CreditOf<T>> for Pallet<T> {
         fn distribute_rewards(
             candidate: Candidate<T>,
-            rewards: T::Balance,
+            rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
             pools::distribute_rewards::<T>(&candidate, rewards)
         }
