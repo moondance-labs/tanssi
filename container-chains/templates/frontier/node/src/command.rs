@@ -231,7 +231,7 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::ExportGenesisState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
-            runner.sync_run(|config| {
+            runner.sync_run(|mut config| {
                 let partials = new_partial(&mut config, false)?;
                 cmd.run(&*config.chain_spec, &*partials.client)
             })

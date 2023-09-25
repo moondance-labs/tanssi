@@ -53,6 +53,18 @@ use {
     std::{sync::Arc, time::Duration},
 };
 
+pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
+
+impl<C, BE> fc_rpc::EthConfig<Block, C> for DefaultEthConfig<C, BE>
+where
+	C: StorageProvider<Block, BE> + Sync + Send + 'static,
+	BE: Backend<Block> + 'static,
+{
+	type EstimateGasAdapter = ();
+	type RuntimeStorageOverride =
+		fc_rpc::frontier_backend_client::SystemAccountId20StorageOverride<Block, C, BE>;
+}
+
 mod eth;
 pub use eth::*;
 
@@ -96,7 +108,7 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
 }
 
 /// Instantiate all Full RPC extensions.
-pub fn create_full<B, C, P, BE, A, EC>(
+pub fn create_full<C, P, BE, A>(
     deps: FullDeps<C, P, A, BE>,
     subscription_task_executor: SubscriptionTaskExecutor,
     pubsub_notification_sinks: Arc<
@@ -106,7 +118,6 @@ pub fn create_full<B, C, P, BE, A, EC>(
     >,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
-    B: BlockT<Hash = H256>,
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
     BE::Blockchain: BlockchainBackend<Block>,
@@ -114,12 +125,10 @@ where
     C: BlockchainEvents<Block>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: CallApiAt<Block>,
-    C: ProvideRuntimeApi<Block>,
     C: Send + Sync + 'static,
     A: ChainApi<Block = Block> + 'static,
     C::Api: RuntimeApiCollection,
     P: TransactionPool<Block = Block> + 'static,
-    EC: EthConfig<B, C>,
 {
     use {
         fc_rpc::{
@@ -166,11 +175,10 @@ where
     }
     let convert_transaction: Option<Never> = None;
 
-    let pending_create_inherent_data_providers = move |_, ()| async move {
-        Ok(())
-    };
+	let pending_create_inherent_data_providers = move |_, _| async move { Ok(()) };
+
     io.merge(
-        Eth::<_, _, _, _, _, _, _, EC>::new(
+        Eth::< _, _, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
             Arc::clone(&client),
             Arc::clone(&pool),
             Arc::clone(&graph),
@@ -192,7 +200,7 @@ where
         .into_rpc(),
     )?;
 
-    let tx_pool = TxPool::new(client.clone(), graph);
+    let tx_pool = TxPool::new(client.clone(), graph.clone());
     if let Some(filter_pool) = filter_pool {
         io.merge(
             EthFilter::new(
