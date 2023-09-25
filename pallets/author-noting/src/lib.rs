@@ -45,7 +45,7 @@ use {
     sp_runtime::{traits::Header, DispatchResult, RuntimeString},
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_core::well_known_keys::PARAS_HEADS_INDEX,
-    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
+    tp_traits::{AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChains},
 };
 
 #[cfg(test)]
@@ -63,24 +63,6 @@ mod mock_proof;
 pub use pallet::*;
 
 use crate::weights::WeightInfo;
-
-/// The author-noting hook to react to container chains authoring.
-pub trait AuthorNotingHook<AccountId> {
-    /// This hook is called partway through the `set_latest_author_data` inherent in author-noting.
-    ///
-    /// The hook should never panic and is required to return the weight consumed.
-    fn on_container_author_noted(
-        author: &AccountId,
-        block_number: BlockNumber,
-        para_id: ParaId,
-    ) -> Weight;
-}
-
-impl<AccountId> AuthorNotingHook<AccountId> for () {
-    fn on_container_author_noted(_: &AccountId, _: BlockNumber, _: ParaId) -> Weight {
-        Weight::zero()
-    }
-}
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -174,8 +156,8 @@ pub mod pallet {
                     relay_storage_proof,
                 } = data;
 
-                let relay_storage_root =
-                    T::RelayChainStateProvider::current_relay_chain_state().state_root;
+                let relay_chain_state = T::RelayChainStateProvider::current_relay_chain_state();
+                let relay_storage_root = relay_chain_state.state_root;
                 let relay_storage_rooted_proof =
                     GenericStateProof::new(relay_storage_root, relay_storage_proof)
                         .expect("Invalid relay chain state proof");
@@ -188,6 +170,7 @@ pub mod pallet {
                                     &block_info.author,
                                     block_info.block_number,
                                     para_id,
+                                    relay_chain_state.number,
                                 ),
                             );
                             LatestAuthor::<T>::insert(para_id, block_info);
