@@ -117,6 +117,7 @@ pub struct Mocks {
     pub collators_per_container: u32,
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
+    pub random_seed: [u8; 32],
 }
 
 impl mock_data::Config for Test {}
@@ -208,7 +209,7 @@ pub fn run_to_block(n: u64) {
 
     for x in (old_block_number + 1)..=n {
         System::set_block_number(x);
-        let randomness = [0u8; 32];
+        let randomness = MockData::mock().random_seed;
 
         if x % session_len == 1 {
             let session_index = (x / session_len) as u32;
