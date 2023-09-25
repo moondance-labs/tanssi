@@ -1,12 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { ApiPromise } from "@polkadot/api";
 import { Signer } from "ethers";
-import fs from "fs/promises";
-import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
+import { getAuthorFromDigest } from "../../util/author";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
-import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 
@@ -20,8 +17,6 @@ describeSuite({
         let container2000Api: ApiPromise;
         let container2001Api: ApiPromise;
         let container2002Api: ApiPromise;
-        let blockNumber2002Start;
-        let blockNumber2002End;
         let ethersSigner: Signer;
 
         beforeAll(async () => {
@@ -216,67 +211,17 @@ describeSuite({
                 expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
             },
         });
+        it({
+            id: "T12",
+            title: "Rotation works",
+            timeout: 30000,
+            test: async function () {
+                // TODO: for the missing tests:
+                // go to session 4, check that future assignment changes
+                // also check that collators start syncing the new chains (check if db path exists)
+                // go to session 5, check that collators stopped the previously assigned chain
+                // check that all the chains are still producing blocks
+            },
+        });
     },
 });
-
-/// Verify that the next `numBlocks` have no more than `numAuthors` different authors
-///
-/// Concepts: blocks and slots.
-/// A slot is a time-based period where one author can propose a block.
-/// Block numbers are always consecutive, but some slots may have no block.
-/// One session consists of a fixed number of blocks, but a variable number of slots.
-///
-/// We want to ensure that all the eligible block authors are trying to propose blocks.
-/// Since nodes may fail to propose blocks because of high system load, we cannot easily
-/// test that all the eligible nodes are creating blocks.
-async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors) {
-    // These are the authorities for the next block, so we need to wait 1 block before fetching the first author
-    const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
-    // TODO: fix once we have types
-    const authorities = (await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)).toJSON();
-    const actualAuthors = [];
-    const blockNumbers = [];
-
-    const authors = await getAuthorFromDigestRange(paraApi, blockStart, blockEnd);
-    for (let i = 0; i < authors.length; i++) {
-        const [blockNum, author] = authors[i];
-        blockNumbers.push(blockNum);
-        actualAuthors.push(author);
-    }
-
-    const uniq = [...new Set(actualAuthors)];
-
-    if (uniq.length > numAuthors || (uniq.length == 1 && numAuthors > 1)) {
-        console.error(
-            "Mismatch between authorities and actual block authors: authorities: ",
-            authorities,
-            ", actual authors: ",
-            actualAuthors,
-            ", block numbers: ",
-            blockNumbers
-        );
-        expect(false).to.be.true;
-    }
-}
-
-async function directoryExists(directoryPath) {
-    try {
-        await fs.access(directoryPath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    const logFilePath = process.env.MOON_MONITORED_NODE;
-
-    if (logFilePath) {
-        const lastIndex = logFilePath.lastIndexOf("/");
-        return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
-    }
-
-    // Return null if the environment variable is not set
-    return null;
-}
