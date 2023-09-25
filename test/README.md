@@ -55,6 +55,22 @@ pnpm moonwall test chopsticks_dancebox_upgrade
 You can find all the test suites in `moonwall.config.json`, or in the interactive moonwall mode when running
 `pnpm moonwall`.
 
+You can grep tests by simply appending the pattern after the command:
+
+```sh
+# using the exact test id
+pnpm moonwall test dev_tanssi DT3301
+# or just a prefix
+pnpm moonwall test dev_tanssi DT33
+```
+
+To allow better debugging, use `run` instead of `test`, which will leave the moonwall environment open after
+running the test, allowing you to use polkadot.js to see all the blocks, events, and state:
+
+```sh
+pnpm moonwall run zombie_tanssi
+```
+
 ## Where to find node logs
 
 To see the logs of a failing zombienet node:
