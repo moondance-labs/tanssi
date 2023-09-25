@@ -1562,7 +1562,7 @@ fn test_author_noting_not_self_para() {
 }
 
 #[test]
-fn test_author_noting_rotation() {
+fn test_collator_assignment_rotation() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -1583,10 +1583,6 @@ fn test_author_noting_rotation() {
         ])
         .build()
         .execute_with(|| {
-            let mut sproof = ParaHeaderSproofBuilder::default();
-            let slot: u64 = 5;
-            let other_para: ParaId = 1001u32.into();
-
             // Charlie and Dave to 1001
             let assignment = CollatorAssignment::collator_container_chain();
             let initial_assignment = assignment.clone();
@@ -1595,13 +1591,62 @@ fn test_author_noting_rotation() {
                 vec![CHARLIE.into(), DAVE.into()]
             );
 
-            for i in 1..20 {
-                println!("goto session {}", i);
-                run_to_session(i);
+            pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
+                use cumulus_primitives_core::relay_chain::well_known_keys;
+                use cumulus_primitives_core::PersistedValidationData;
+                use cumulus_primitives_parachain_inherent::ParachainInherentData;
+                use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
+                use frame_support::dispatch::Dispatchable;
 
-                let assignment = CollatorAssignment::collator_container_chain();
-                assert_eq!(assignment, initial_assignment);
+                let (relay_parent_storage_root, relay_chain_state) = {
+                    let mut sproof = RelayStateSproofBuilder::default();
+                    sproof.additional_key_values.push((
+                        well_known_keys::CURRENT_BLOCK_RANDOMNESS.to_vec(),
+                        random_seed.to_vec(),
+                    ));
+
+                    sproof.into_state_root_and_proof()
+                };
+                let vfp = PersistedValidationData {
+                    relay_parent_number: 1u32,
+                    relay_parent_storage_root,
+                    ..Default::default()
+                };
+                let parachain_inherent_data = ParachainInherentData {
+                    validation_data: vfp,
+                    relay_chain_state: relay_chain_state,
+                    downward_messages: Default::default(),
+                    horizontal_messages: Default::default(),
+                };
+                assert_ok!(
+                    RuntimeCall::ParachainSystem(
+                        cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
+                            data: parachain_inherent_data
+                        }
+                    )
+                    .dispatch(inherent_origin())
+                );
             }
+
+            run_to_session(3);
+
+            // TODO: this fails with error
+            // thread 'test_collator_assignment_rotation' panicked at 'ValidationData must be updated only once in a block'
+            // How to set a different seed?
+            set_parachain_inherent_data_random_seed([1; 32]);
+
+            run_to_session(4);
+            assert_eq!(
+                CollatorAssignment::collator_container_chain(),
+                initial_assignment,
+            );
+
+            run_to_session(5);
+            // Assignment changed
+            assert_ne!(
+                CollatorAssignment::collator_container_chain(),
+                initial_assignment,
+            );
         });
 }
 

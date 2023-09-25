@@ -95,9 +95,9 @@ pub fn run_to_block(n: u32) {
     }
 }
 
-// Mock the inherent that sets validation data in ParachainSystem, which
-/// contains the `relay_chain_block_number`, which is used in `author-filter` as a
-/// source of randomness to filter valid authors at each block.
+/// Mock the inherent that sets validation data in ParachainSystem, which
+/// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
+/// source of randomness.
 pub fn set_parachain_inherent_data() {
     use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
     let (relay_parent_storage_root, relay_chain_state) = {
