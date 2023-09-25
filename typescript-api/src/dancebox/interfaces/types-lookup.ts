@@ -709,6 +709,18 @@ declare module "@polkadot/types/lookup" {
             readonly delegator: AccountId32;
             readonly rewards: u128;
         } & Struct;
+        readonly isSwappedPool: boolean;
+        readonly asSwappedPool: {
+            readonly candidate: AccountId32;
+            readonly delegator: AccountId32;
+            readonly sourcePool: PalletPooledStakingTargetPool;
+            readonly sourceShares: u128;
+            readonly sourceStake: u128;
+            readonly targetShares: u128;
+            readonly targetStake: u128;
+            readonly pendingLeaving: u128;
+            readonly released: u128;
+        } & Struct;
         readonly type:
             | "UpdatedCandidatePosition"
             | "RequestedDelegate"
@@ -723,7 +735,8 @@ declare module "@polkadot/types/lookup" {
             | "UnstakedManualRewards"
             | "RewardedCollator"
             | "RewardedDelegators"
-            | "ClaimedManualRewards";
+            | "ClaimedManualRewards"
+            | "SwappedPool";
     }
 
     /** @name PalletPooledStakingTargetPool (53) */
@@ -2464,13 +2477,20 @@ declare module "@polkadot/types/lookup" {
         readonly asUpdateCandidatePosition: {
             readonly candidates: Vec<AccountId32>;
         } & Struct;
+        readonly isSwapPool: boolean;
+        readonly asSwapPool: {
+            readonly candidate: AccountId32;
+            readonly sourcePool: PalletPooledStakingTargetPool;
+            readonly amount: PalletPooledStakingSharesOrStake;
+        } & Struct;
         readonly type:
             | "RebalanceHold"
             | "RequestDelegate"
             | "ExecutePendingOperations"
             | "RequestUndelegate"
             | "ClaimManualRewards"
-            | "UpdateCandidatePosition";
+            | "UpdateCandidatePosition"
+            | "SwapPool";
     }
 
     /** @name PalletPooledStakingAllTargetPool (206) */
@@ -3255,6 +3275,7 @@ declare module "@polkadot/types/lookup" {
         readonly isCandidateTransferingOwnSharesForbidden: boolean;
         readonly isRequestCannotBeExecuted: boolean;
         readonly asRequestCannotBeExecuted: u16;
+        readonly isSwapResultsInZeroShares: boolean;
         readonly type:
             | "InvalidPalletSetting"
             | "DisabledFeature"
@@ -3268,7 +3289,8 @@ declare module "@polkadot/types/lookup" {
             | "InconsistentState"
             | "UnsufficientSharesForTransfer"
             | "CandidateTransferingOwnSharesForbidden"
-            | "RequestCannotBeExecuted";
+            | "RequestCannotBeExecuted"
+            | "SwapResultsInZeroShares";
     }
 
     /** @name CumulusPalletXcmpQueueInboundChannelDetails (313) */
