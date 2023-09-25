@@ -22,39 +22,224 @@
 
 pub use pallet::*;
 
-pub type PositiveImbalanceOf<T> = <<T as Config>::Currency as frame_support::traits::Currency<
-    <T as frame_system::Config>::AccountId,
->>::PositiveImbalance;
+use frame_support::{
+    pallet_prelude::*,
+    traits::{
+        fungible::{Balanced, Credit, Inspect},
+        tokens::{Fortitude, Precision, Preservation},
+        Imbalance, OnUnbalanced,
+    },
+};
+use frame_system::pallet_prelude::*;
+use sp_runtime::{traits::Get, Perbill};
+use tp_core::{BlockNumber, ParaId};
+use tp_traits::{AuthorNotingHook, DistributeRewards, GetCurrentContainerChains};
 
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-    use frame_support::traits::{fungible, tokens::Balance, Currency, OnUnbalanced};
-    use sp_runtime::{traits::Get, Perbill};
-    use tp_maths::MulDiv;
+
+    pub type BalanceOf<T> =
+        <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
+    pub type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
 
     /// Inflation rewards pallet.
     #[pallet::pallet]
     #[pallet::without_storage_info]
     pub struct Pallet<T>(core::marker::PhantomData<T>);
 
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(_: T::BlockNumber) -> Weight {
+            let mut weight = T::DbWeight::get().reads(1);
+
+            // Collect indistributed rewards, if any
+            let not_distributed_rewards =
+                if let Some(chains_to_reward) = ChainsToReward::<T>::take() {
+                    // Collect and sum all undistributed rewards
+                    let rewards_not_distributed: BalanceOf<T> = chains_to_reward.rewards_per_chain
+                        * (chains_to_reward.para_ids.len() as u32).into();
+                    T::Currency::withdraw(
+                        &T::PendingRewardsAccount::get(),
+                        rewards_not_distributed,
+                        Precision::BestEffort,
+                        Preservation::Expendable,
+                        Fortitude::Force,
+                    )
+                    .unwrap_or(CreditOf::<T>::zero())
+                } else {
+                    CreditOf::<T>::zero()
+                };
+
+            // Get the number of chains at this block
+            weight += T::DbWeight::get().reads_writes(1, 1);
+            let registered_para_ids = T::ContainerChains::current_container_chains();
+            let number_of_chains: BalanceOf<T> =
+                ((registered_para_ids.len() as u32).saturating_add(1)).into();
+
+            // Issue new supply
+            let new_supply =
+                T::Currency::issue(T::InflationRate::get() * T::Currency::total_issuance());
+
+            // Split staking reward portion
+            let total_rewards = T::RewardsPortion::get() * new_supply.peek();
+            let (rewards_credit, reminder_credit) = new_supply.split(total_rewards);
+            let rewards_per_chain: BalanceOf<T> = rewards_credit.peek() / number_of_chains;
+            let (mut total_reminder, staking_rewards) = rewards_credit.split_merge(
+                total_rewards % number_of_chains,
+                (reminder_credit, CreditOf::<T>::zero()),
+            );
+
+            // Deposit the new supply dedicated to rewards in the pending rewards account
+            if let Err(undistributed_rewards) =
+                T::Currency::resolve(&T::PendingRewardsAccount::get(), staking_rewards)
+            {
+                total_reminder = total_reminder.merge(undistributed_rewards);
+            }
+
+            // Keep track of chains to reward
+            ChainsToReward::<T>::put(ChainsToRewardValue {
+                para_ids: registered_para_ids,
+                rewards_per_chain,
+            });
+
+            // Let the runtime handle the non-staking part
+            T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
+
+            weight
+        }
+    }
+
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        type Currency: Currency<Self::AccountId>
-            + fungible::Inspect<Self::AccountId, Balance = Self::Balance>;
+        type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
 
-        /// Same as Currency::Balance. Must impl `MulDiv` which perform
-        /// multiplication followed by division using a bigger type to avoid
-        /// overflows.
-        type Balance: Balance + MulDiv;
+        type ContainerChains: GetCurrentContainerChains;
 
-        /// Inflation rate per block (proportion of the total issuance)
+        /// Inflation rate per relay block (proportion of the total issuance)
         type InflationRate: Get<Perbill>;
 
-        /// Proportion of the new supply dedicated to staking
-        type StakingRewardsPart: Get<Perbill>;
+        /// What to do with the new supply not dedicated to staking
+        type OnUnbalanced: OnUnbalanced<CreditOf<Self>>;
 
-        /// What to do with the new suplly not dedicated to staking
-        type OnUnbalanced: OnUnbalanced<PositiveImbalanceOf<Self>>;
+        /// The account that will store rewards waiting to be paid out
+        type PendingRewardsAccount: Get<Self::AccountId>;
+
+        /// Staking rewards distribution implementation
+        type StakingRewardsDistributor: DistributeRewards<Self::AccountId, CreditOf<Self>>;
+
+        /// Proportion of the new supply dedicated to staking
+        type RewardsPortion: Get<Perbill>;
+    }
+
+    /// Container chains to reward per relay block
+    #[pallet::storage]
+    #[pallet::getter(fn container_chains_to_reward)]
+    pub(super) type ChainsToReward<T: Config> =
+        StorageValue<_, ChainsToRewardValue<T>, OptionQuery>;
+    #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
+    #[scale_info(skip_type_params(T))]
+    pub struct ChainsToRewardValue<T: Config> {
+        pub para_ids: Vec<ParaId>,
+        pub rewards_per_chain: BalanceOf<T>,
+    }
+
+    /// Pending rewards per relay block and per container chain
+    #[pallet::storage]
+    #[pallet::getter(fn pending_rewards)]
+    pub(super) type PendingRewards<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        BlockNumber,
+        Twox64Concat,
+        ParaId,
+        PendingAuthors<T>,
+        OptionQuery,
+    >;
+
+    /// Information extracted from a container chain header
+    #[derive(
+        Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
+    )]
+    #[scale_info(skip_type_params(T))]
+    pub struct PendingAuthors<T: Config> {
+        pub authors: Vec<(T::AccountId, u32)>,
+        pub last_block_number: BlockNumber,
+    }
+}
+
+impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
+    fn on_container_author_noted(
+        author: &T::AccountId,
+        block_number: BlockNumber,
+        para_id: ParaId,
+        relay_block_number: BlockNumber,
+    ) -> Weight {
+        let mut total_weight = T::DbWeight::get().reads_writes(1, 1);
+        let pending_authors_per_chain = if let Some(mut pending_authors_per_chain) =
+            PendingRewards::<T>::get(relay_block_number, para_id)
+        {
+            // track how many blocks produced by each author
+            if block_number > pending_authors_per_chain.last_block_number {
+                match pending_authors_per_chain
+                    .authors
+                    .binary_search_by(|(account, _)| account.cmp(author))
+                {
+                    Ok(index) => {
+                        pending_authors_per_chain.authors[index].1 += 1;
+                    }
+                    Err(index) => {
+                        pending_authors_per_chain
+                            .authors
+                            .insert(index, (author.to_owned(), 1));
+                    }
+                }
+            }
+            pending_authors_per_chain
+        } else if relay_block_number > 0 {
+            let previous_relay_block = relay_block_number - 1;
+            if let Some(authors_to_reward) =
+                PendingRewards::<T>::take(previous_relay_block, para_id)
+            {
+                if !authors_to_reward.authors.is_empty() {
+                    total_weight += T::DbWeight::get().reads(1);
+                    if let Some(container_chains_to_reward) = ChainsToReward::<T>::get() {
+                        total_weight += T::DbWeight::get().reads(1);
+
+                        // Compute amount to reward per block
+                        let rewards_per_block: BalanceOf<T> = container_chains_to_reward
+                            .rewards_per_chain
+                            / (authors_to_reward.authors.len() as u32).into();
+
+                        // Reward all blocks authors in `authors_to_reward`
+                        for (author, blocks) in authors_to_reward.authors {
+                            let _result = T::StakingRewardsDistributor::distribute_rewards(
+                                author,
+                                T::Currency::withdraw(
+                                    &T::PendingRewardsAccount::get(),
+                                    rewards_per_block * blocks.into(),
+                                    Precision::BestEffort,
+                                    Preservation::Expendable,
+                                    Fortitude::Force,
+                                )
+                                .unwrap_or(CreditOf::<T>::zero()),
+                            );
+                            debug_assert!(_result.is_ok(), "Fail to distribute rewards");
+                        }
+                    }
+                }
+            }
+            PendingAuthors {
+                authors: vec![(author.to_owned(), 1)],
+                last_block_number: block_number,
+            }
+        } else {
+            PendingAuthors {
+                authors: vec![(author.to_owned(), 1)],
+                last_block_number: block_number,
+            }
+        };
+        PendingRewards::<T>::insert(relay_block_number, para_id, pending_authors_per_chain);
+        total_weight
     }
 }

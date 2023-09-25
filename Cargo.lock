@@ -7576,7 +7576,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "tp-core",
- "tp-maths",
+ "tp-traits",
 ]
 
 [[package]]
