@@ -1608,7 +1608,8 @@ fn test_collator_assignment_rotation() {
                     sproof.into_state_root_and_proof()
                 };
                 let vfp = PersistedValidationData {
-                    relay_parent_number: 1u32,
+                    // TODO: this is previous relay_parent_number + 1, but not sure where can I get that value
+                    relay_parent_number: 2u32,
                     relay_parent_storage_root,
                     ..Default::default()
                 };
@@ -1618,6 +1619,13 @@ fn test_collator_assignment_rotation() {
                     downward_messages: Default::default(),
                     horizontal_messages: Default::default(),
                 };
+                // Delete existing flag to avoid error
+                // 'ValidationData must be updated only once in a block'
+                // TODO: this is a hack
+                frame_support::storage::unhashed::kill(&frame_support::storage::storage_prefix(
+                    b"ParachainSystem",
+                    b"ValidationData",
+                ));
                 assert_ok!(
                     RuntimeCall::ParachainSystem(
                         cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
@@ -1630,16 +1638,16 @@ fn test_collator_assignment_rotation() {
 
             run_to_session(3);
 
-            // TODO: this fails with error
-            // thread 'test_collator_assignment_rotation' panicked at 'ValidationData must be updated only once in a block'
-            // How to set a different seed?
             set_parachain_inherent_data_random_seed([1; 32]);
+
+            assert!(CollatorAssignment::pending_collator_container_chain().is_none());
 
             run_to_session(4);
             assert_eq!(
                 CollatorAssignment::collator_container_chain(),
                 initial_assignment,
             );
+            assert!(CollatorAssignment::pending_collator_container_chain().is_some());
 
             run_to_session(5);
             // Assignment changed
