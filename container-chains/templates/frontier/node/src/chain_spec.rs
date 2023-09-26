@@ -160,7 +160,7 @@ fn testnet_genesis(
             code: container_chain_template_frontier_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
                 .to_vec(),
-                ..Default::default()
+            ..Default::default()
         },
         balances: container_chain_template_frontier_runtime::BalancesConfig {
             balances: endowed_accounts
@@ -238,7 +238,9 @@ fn testnet_genesis(
             orchestrator_para_id: ORCHESTRATOR,
             ..Default::default()
         },
-        migrations: MigrationsConfig {..Default::default() },
+        migrations: MigrationsConfig {
+            ..Default::default()
+        },
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
             ..Default::default()

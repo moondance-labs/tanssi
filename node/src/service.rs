@@ -16,6 +16,8 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use futures::FutureExt;
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 #[allow(deprecated)]
 use {
     crate::{
@@ -31,7 +33,7 @@ use {
     cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
     cumulus_client_service::{
         build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
-        StartCollatorParams, StartFullNodeParams, CollatorSybilResistance
+        CollatorSybilResistance, StartCollatorParams, StartFullNodeParams,
     },
     cumulus_primitives_core::{
         relay_chain::{CollatorPair, Hash as PHash},
@@ -80,8 +82,6 @@ use {
     },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
-use sc_transaction_pool_api::OffchainTransactionPoolFactory;
-use futures::FutureExt;
 
 type FullBackend = TFullBackend<Block>;
 type MaybeSelectChain = Option<sc_consensus::LongestChain<FullBackend, Block>>;
@@ -442,7 +442,7 @@ async fn start_node_impl(
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
             net_config,
-            sybil_resistance_level: CollatorSybilResistance::Resistant
+            sybil_resistance_level: CollatorSybilResistance::Resistant,
         })
         .await?;
 
@@ -746,7 +746,7 @@ pub async fn start_node_impl_container(
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
             net_config,
-            sybil_resistance_level: CollatorSybilResistance::Resistant
+            sybil_resistance_level: CollatorSybilResistance::Resistant,
         })
         .await?;
 

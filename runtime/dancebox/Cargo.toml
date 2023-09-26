@@ -109,6 +109,7 @@ polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
 polkadot-service = { workspace = true }
 sc-consensus-grandpa = { workspace = true }
 sp-consensus-babe = { workspace = true, features = [ "std" ] }
+sp-consensus-beefy = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 westend-runtime = { workspace = true, features = [ "std" ] }

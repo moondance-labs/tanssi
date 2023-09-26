@@ -48,13 +48,12 @@ impl system::Config for Test {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
+    type Nonce = u64;
+    type Block = Block;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
@@ -88,8 +87,8 @@ impl pallet_configuration::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    system::GenesisConfig::default()
-        .build_storage::<Test>()
+    system::GenesisConfig::<Test>::default()
+        .build_storage()
         .unwrap()
         .into()
 }
@@ -98,7 +97,10 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 pub fn new_test_ext_with_genesis(config: HostConfiguration) -> sp_io::TestExternalities {
     GenesisConfig {
         system: Default::default(),
-        configuration: pallet_configuration::GenesisConfig { config },
+        configuration: pallet_configuration::GenesisConfig {
+            config,
+            ..Default::default()
+        },
     }
     .build_storage()
     .unwrap()

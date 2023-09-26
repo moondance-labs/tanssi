@@ -123,13 +123,13 @@ impl ParaHeaderSproofBuilder {
         sp_state_machine::StorageProof,
     ) {
         // Recover the db
-        let (prefixed_db, prefixed_root) =
-            PrefixedMemoryDB::<HashingFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
+        let (prefixed_db, prefixed_root) = PrefixedMemoryDB::<
+            HashingFor<cumulus_primitives_core::relay_chain::Block>,
+        >::default_with_root();
         let db = state.into_memory_db::<HashingFor<cumulus_primitives_core::relay_chain::Block>>();
 
         // TODO: fix me later
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
-
 
         // Fetch all existing keys
         let mut relevant_keys = backend
@@ -185,7 +185,6 @@ impl<T: Encode> AuthorityAssignmentSproofBuilder<T> {
     ) {
         let (db, root) =
             PrefixedMemoryDB::<HashingFor<cumulus_primitives_core::relay_chain::Block>>::default_with_root();
-
 
         let state_version = Default::default();
         let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();

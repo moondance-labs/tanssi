@@ -63,6 +63,7 @@ pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch 
 xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "girazoki-try-full-crypto", default-features = false }
 
 # Substrate (wasm)
+sp-consensus-beefy = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 frame-benchmarking = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 frame-executive = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 frame-support = { git = "https://github.com/moondance-labs/polkadot-sdk.git", branch = "tanssi-polkadot-v1.1.0", version = "4.0.0-dev", default-features = false }

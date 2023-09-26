@@ -37,7 +37,7 @@ use {
     sp_runtime::{
         testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
-        Perbill,
+        BuildStorage, Perbill,
     },
 };
 
@@ -96,13 +96,12 @@ impl frame_system::Config for Runtime {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
+    type Nonce = u64;
+    type Block = Block;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
@@ -131,7 +130,7 @@ impl pallet_balances::Config for Runtime {
     type AccountStore = System;
     type FreezeIdentifier = ();
     type MaxFreezes = ();
-    type HoldIdentifier = HoldIdentifier;
+    type RuntimeHoldReason = HoldIdentifier;
     type MaxHolds = ConstU32<5>;
     type WeightInfo = ();
 }
@@ -345,8 +344,8 @@ impl ExtBuilder {
     }
 
     pub(crate) fn build(self) -> sp_io::TestExternalities {
-        let mut t = frame_system::GenesisConfig::default()
-            .build_storage::<Runtime>()
+        let mut t = frame_system::GenesisConfig::<Runtime>::default()
+            .build_storage()
             .expect("Frame system builds valid default genesis config");
 
         pallet_balances::GenesisConfig::<Runtime> {

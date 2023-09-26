@@ -16,10 +16,12 @@
 
 use {
     crate::{mock::*, Authorities, Event, OrchestratorParaId, ParaId},
+    cumulus_primitives_core::relay_chain::BlockId,
     frame_support::{
         assert_ok,
-        dispatch::{GetDispatchInfo, UnfilteredDispatchable},
+        dispatch::GetDispatchInfo,
         inherent::{InherentData, ProvideInherent},
+        traits::UnfilteredDispatchable,
     },
     frame_system::RawOrigin,
     sp_runtime::traits::BlakeTwo256,

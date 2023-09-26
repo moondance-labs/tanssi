@@ -16,6 +16,7 @@
 
 use {
     crate::{mock::*, ContainerChainBlockInfo, Event},
+    cumulus_primitives_core::relay_chain::BlockId,
     cumulus_primitives_core::ParaId,
     frame_support::{
         assert_ok,

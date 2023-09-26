@@ -130,14 +130,14 @@ pub mod pallet {
     pub struct GenesisConfig<T: Config> {
         pub orchestrator_para_id: ParaId,
         #[serde(skip)]
-		pub _config: sp_std::marker::PhantomData<T>,
+        pub _config: sp_std::marker::PhantomData<T>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {
         fn default() -> Self {
             GenesisConfig {
                 orchestrator_para_id: 1000u32.into(),
-                _config: Default::default()
+                _config: Default::default(),
             }
         }
     }

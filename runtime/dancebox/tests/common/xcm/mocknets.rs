@@ -18,36 +18,33 @@ use {
         accounts::{ALICE, BOB, RANDOM},
         frontier_template, simple_template, westend,
     },
-    frame_support::{parameter_types, sp_tracing},
+    frame_support::parameter_types,
 };
-
+use cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV6;
 pub use sp_core::{sr25519, storage::Storage, Get};
 use {
-    xcm::prelude::*,
-    xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
+    staging_xcm::prelude::*,
+    staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
+    staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::{
-        decl_test_networks, decl_test_parachains, decl_test_relay_chains, Parachain, RelayChain,
-        TestExt,
+        decl_test_networks, decl_test_parachains, decl_test_relay_chains, Chain, DefaultMessageProcessor,
+        Parachain, RelayChain, TestExt,
     },
-    xcm_executor::traits::Convert,
 };
 
 decl_test_relay_chains! {
+    #[api_version(5)]
     pub struct Westend {
         genesis = westend::genesis(),
         on_init = (),
-        runtime = {
-            Runtime: westend_runtime::Runtime,
-            RuntimeOrigin: westend_runtime::RuntimeOrigin,
-            RuntimeCall: westend_runtime::RuntimeCall,
-            RuntimeEvent: westend_runtime::RuntimeEvent,
-            MessageQueue: westend_runtime::MessageQueue,
-            XcmConfig: westend_runtime::xcm_config::XcmConfig,
+        runtime = westend_runtime,
+        core = {
+            MessageProcessor: DefaultMessageProcessor<Westend>,
             SovereignAccountOf: westend_runtime::xcm_config::LocationConverter, //TODO: rename to SovereignAccountOf,
+        },
+        pallets = {
             System: westend_runtime::System,
             Balances: westend_runtime::Balances,
-        },
-        pallets_extra = {
             XcmPallet: westend_runtime::XcmPallet,
             Sudo: westend_runtime::Sudo,
         }
@@ -63,16 +60,16 @@ decl_test_parachains! {
             (crate::AccountId::from(crate::ALICE), 210_000 * crate::UNIT),
             (crate::AccountId::from(crate::BOB), 100_000 * crate::UNIT),
             // Give some balance to the relay chain account
-            (ParentIsPreset::<crate::AccountId>::convert_ref(MultiLocation::parent()).unwrap(), 100_000 * crate::UNIT),
+            (ParentIsPreset::<crate::AccountId>::convert_location(&MultiLocation::parent()).unwrap(), 100_000 * crate::UNIT),
             // And to sovereigns
             (
-                SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
-                    MultiLocation{ parents: 1, interior: X1(Parachain(2001u32))}
+                SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
+                    &MultiLocation{ parents: 1, interior: X1(Parachain(2001u32))}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
             (
-                SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
-                    MultiLocation{ parents: 1, interior: X1(Parachain(2002u32))}
+                SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
+                    &MultiLocation{ parents: 1, interior: X1(Parachain(2002u32))}
                 ).unwrap(), 100_000 * crate::UNIT
             ),
 
@@ -82,60 +79,51 @@ decl_test_parachains! {
         .with_own_para_id(2000u32.into())
         .build_storage(),
         on_init = (),
-        runtime = {
-            Runtime: dancebox_runtime::Runtime,
-            RuntimeOrigin: dancebox_runtime::RuntimeOrigin,
-            RuntimeCall: dancebox_runtime::RuntimeCall,
-            RuntimeEvent: dancebox_runtime::RuntimeEvent,
+        runtime = dancebox_runtime,
+        core = {
             XcmpMessageHandler: dancebox_runtime::XcmpQueue,
             DmpMessageHandler: dancebox_runtime::DmpQueue,
             LocationToAccountId: dancebox_runtime::xcm_config::LocationToAccountId,
+            ParachainInfo: dancebox_runtime::ParachainInfo,
+        },
+        pallets = {
             System: dancebox_runtime::System,
             Balances: dancebox_runtime::Balances,
             ParachainSystem: dancebox_runtime::ParachainSystem,
-            ParachainInfo: dancebox_runtime::ParachainInfo,
-        },
-        pallets_extra = {
             PolkadotXcm: dancebox_runtime::PolkadotXcm,
         }
     },
     pub struct FrontierTemplate {
         genesis = frontier_template::genesis(),
         on_init = (),
-        runtime = {
-            Runtime: container_chain_template_frontier_runtime::Runtime,
-            RuntimeOrigin: container_chain_template_frontier_runtime::RuntimeOrigin,
-            RuntimeCall: container_chain_template_frontier_runtime::RuntimeCall,
-            RuntimeEvent: container_chain_template_frontier_runtime::RuntimeEvent,
+        runtime = container_chain_template_frontier_runtime,
+        core = {
             XcmpMessageHandler: container_chain_template_frontier_runtime::XcmpQueue,
             DmpMessageHandler: container_chain_template_frontier_runtime::DmpQueue,
             LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
+            ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
+        },
+        pallets = {
             System: container_chain_template_frontier_runtime::System,
             Balances: container_chain_template_frontier_runtime::Balances,
             ParachainSystem: container_chain_template_frontier_runtime::ParachainSystem,
-            ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
-        },
-        pallets_extra = {
             PolkadotXcm: container_chain_template_frontier_runtime::PolkadotXcm,
         }
     },
     pub struct SimpleTemplate {
         genesis = simple_template::genesis(),
         on_init = (),
-        runtime = {
-            Runtime: container_chain_template_simple_runtime::Runtime,
-            RuntimeOrigin: container_chain_template_simple_runtime::RuntimeOrigin,
-            RuntimeCall: container_chain_template_simple_runtime::RuntimeCall,
-            RuntimeEvent: container_chain_template_simple_runtime::RuntimeEvent,
+        runtime = container_chain_template_simple_runtime,
+        core = {
             XcmpMessageHandler: container_chain_template_simple_runtime::XcmpQueue,
             DmpMessageHandler: container_chain_template_simple_runtime::DmpQueue,
             LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
+            ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
+        },
+        pallets = {
             System: container_chain_template_simple_runtime::System,
             Balances: container_chain_template_simple_runtime::Balances,
             ParachainSystem: container_chain_template_simple_runtime::ParachainSystem,
-            ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
-        },
-        pallets_extra = {
             PolkadotXcm: container_chain_template_simple_runtime::PolkadotXcm,
         }
     }
@@ -149,6 +137,7 @@ decl_test_networks! {
             FrontierTemplate,
             SimpleTemplate,
         ],
+        bridge = ()
     }
 }
 

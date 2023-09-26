@@ -82,7 +82,6 @@ pub struct ContainerChainGenesisData<MaxLengthTokenSymbol: Get<u32>> {
     pub properties: Properties<MaxLengthTokenSymbol>,
 }
 
-
 #[derive(
     DebugNoBound,
     CloneNoBound,
@@ -92,7 +91,8 @@ pub struct ContainerChainGenesisData<MaxLengthTokenSymbol: Get<u32>> {
     Encode,
     Decode,
     scale_info::TypeInfo,
-    serde::Deserialize, serde::Serialize
+    serde::Deserialize,
+    serde::Serialize,
 )]
 #[scale_info(skip_type_params(MaxLengthTokenSymbol))]
 #[serde(bound = "")]
@@ -103,7 +103,14 @@ pub struct Properties<MaxLengthTokenSymbol: Get<u32>> {
 }
 
 #[derive(
-    DebugNoBound, CloneNoBound, EqNoBound, PartialEqNoBound, Encode, Decode, scale_info::TypeInfo, serde::Deserialize,
+    DebugNoBound,
+    CloneNoBound,
+    EqNoBound,
+    PartialEqNoBound,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
+    serde::Deserialize,
     serde::Serialize,
 )]
 #[serde(bound = "")]
@@ -125,7 +132,19 @@ impl<MaxLengthTokenSymbol: Get<u32>> Default for TokenMetadata<MaxLengthTokenSym
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, scale_info::TypeInfo, serde::Deserialize, serde::Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Encode,
+    Decode,
+    scale_info::TypeInfo,
+    serde::Deserialize,
+    serde::Serialize,
+)]
 pub struct ContainerChainGenesisDataItem {
     #[serde(with = "sp_core::bytes")]
     pub key: Vec<u8>,

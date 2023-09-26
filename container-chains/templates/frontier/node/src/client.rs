@@ -55,14 +55,13 @@ pub trait BaseRuntimeApiCollection:
 {
 }
 
-impl<Api> BaseRuntimeApiCollection for Api
-where
+impl<Api> BaseRuntimeApiCollection for Api where
     Api: sp_api::ApiExt<Block>
         + sp_api::Metadata<Block>
         + sp_block_builder::BlockBuilder<Block>
         + sp_offchain::OffchainWorkerApi<Block>
         + sp_session::SessionKeys<Block>
-        + sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>,
+        + sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
 {
 }
 
@@ -75,11 +74,10 @@ pub trait RuntimeApiCollection:
 {
 }
 
-impl<Api> RuntimeApiCollection for Api
-where
+impl<Api> RuntimeApiCollection for Api where
     Api: BaseRuntimeApiCollection
         + EthCompatRuntimeApiCollection
         + sp_consensus_aura::AuraApi<Block, AuraId>
-        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>,
+        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 {
 }

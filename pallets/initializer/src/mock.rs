@@ -22,6 +22,7 @@ use {
     sp_runtime::{
         testing::{Header, UintAuthorityId},
         traits::{BlakeTwo256, IdentityLookup},
+        BuildStorage,
     },
     sp_std::cell::RefCell,
 };
@@ -48,13 +49,12 @@ impl system::Config for Test {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
+    type Nonce = u64;
+    type Block = Block;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
@@ -103,8 +103,8 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     // Start with None in the global var
     SESSION_CHANGE_VALIDATORS.with(|r| *r.borrow_mut() = None);
 
-    system::GenesisConfig::default()
-        .build_storage::<Test>()
+    system::GenesisConfig::<Test>::default()
+        .build_storage()
         .unwrap()
         .into()
 }

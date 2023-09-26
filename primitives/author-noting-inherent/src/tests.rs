@@ -115,7 +115,9 @@ mod mock_relay_chain_impl {
     use {
         async_trait::async_trait,
         cumulus_primitives_core::{
-            relay_chain::{CommittedCandidateReceipt, OccupiedCoreAssumption, SessionIndex},
+            relay_chain::{
+                BlockId, CommittedCandidateReceipt, OccupiedCoreAssumption, SessionIndex,
+            },
             InboundHrmpMessage, ParaId,
         },
         cumulus_relay_chain_interface::{
@@ -233,6 +235,10 @@ mod mock_relay_chain_impl {
         async fn new_best_notification_stream(
             &self,
         ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn header(&self, block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
             unimplemented!("Not needed for test")
         }
     }

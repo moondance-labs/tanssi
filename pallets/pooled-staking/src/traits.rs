@@ -17,12 +17,12 @@
 use {
     crate::{Config, Error},
     core::{fmt::Debug, marker::PhantomData},
+    frame_system::pallet_prelude::BlockNumberFor,
     parity_scale_codec::FullCodec,
     scale_info::TypeInfo,
     sp_core::U256,
     sp_runtime::traits::{CheckedAdd, CheckedMul, CheckedSub, Get, Zero},
     sp_std::convert::TryInto,
-    frame_system::pallet_prelude::BlockNumberFor
 };
 
 /// Allows to get the current instant and check if some duration is elapsed.

@@ -34,7 +34,8 @@ use {
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec = sc_service::GenericChainSpec<dancebox_runtime::RuntimeGenesisConfig, Extensions>;
+pub type ChainSpec =
+    sc_service::GenericChainSpec<dancebox_runtime::RuntimeGenesisConfig, Extensions>;
 
 /// Specialized `ChainSpec` for container chains that only allows raw genesis format.
 pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfig, Extensions>;
@@ -288,7 +289,7 @@ fn testnet_genesis(
     root_key: AccountId,
     container_chains: &[String],
     mock_container_chains: &[ParaId],
-    configuration: pallet_configuration::GenesisConfig::<dancebox_runtime::Runtime>,
+    configuration: pallet_configuration::GenesisConfig<dancebox_runtime::Runtime>,
 ) -> dancebox_runtime::RuntimeGenesisConfig {
     dancebox_runtime::RuntimeGenesisConfig {
         system: dancebox_runtime::SystemConfig {
@@ -304,7 +305,10 @@ fn testnet_genesis(
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
-        parachain_info: dancebox_runtime::ParachainInfoConfig { parachain_id: id, ..Default::default() },
+        parachain_info: dancebox_runtime::ParachainInfoConfig {
+            parachain_id: id,
+            ..Default::default()
+        },
         invulnerables: dancebox_runtime::InvulnerablesConfig {
             invulnerables: invulnerables.iter().cloned().map(|(acc, _)| acc).collect(),
         },
@@ -343,10 +347,12 @@ fn testnet_genesis(
         sudo: SudoConfig {
             key: Some(root_key),
         },
-        migrations: MigrationsConfig { ..Default::default() },
+        migrations: MigrationsConfig {
+            ..Default::default()
+        },
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
-            ..Default::default() 
+            ..Default::default()
         },
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),

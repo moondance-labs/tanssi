@@ -25,6 +25,7 @@ use {
     sp_runtime::{
         testing::{Header, UintAuthorityId},
         traits::{BlakeTwo256, IdentityLookup},
+        BuildStorage,
     },
 };
 
@@ -50,13 +51,12 @@ impl system::Config for Test {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
+    type Nonce = u64;
+    type Block = Block;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
@@ -85,8 +85,8 @@ impl pallet_authority_mapping::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    system::GenesisConfig::default()
-        .build_storage::<Test>()
+    system::GenesisConfig::<Test>::default()
+        .build_storage()
         .unwrap()
         .into()
 }

@@ -455,10 +455,7 @@ where
         storage_changes: StorageChanges<B>,
         public: Self::Claim,
         _epoch: Self::AuxData,
-    ) -> Result<
-        sc_consensus::BlockImportParams<B>,
-        sp_consensus::Error,
-    > {
+    ) -> Result<sc_consensus::BlockImportParams<B>, sp_consensus::Error> {
         // sign the pre-sealed hash of the block and then
         // add it to a digest item.
         let signature = Keystore::sign_with(

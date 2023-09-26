@@ -2876,6 +2876,7 @@ dependencies = [
  "sp-block-builder",
  "sp-consensus-aura",
  "sp-consensus-babe",
+ "sp-consensus-beefy",
  "sp-core",
  "sp-debug-derive",
  "sp-inherents",

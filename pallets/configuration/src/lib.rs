@@ -45,16 +45,25 @@ pub use pallet::*;
 use {
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
+    serde::{Deserialize, Serialize},
     sp_runtime::{traits::AtLeast32BitUnsigned, RuntimeAppPublic, Saturating},
     sp_std::prelude::*,
     tp_traits::GetSessionIndex,
-    serde::{Deserialize, Serialize}
 };
 
 const LOG_TARGET: &str = "pallet_configuration";
 
 /// All configuration of the runtime with respect to parachains and parathreads.
-#[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo, Serialize, Deserialize)]
+#[derive(
+    Clone,
+    Encode,
+    Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+    Serialize,
+    Deserialize,
+)]
 pub struct HostConfiguration {
     pub max_collators: u32,
     pub min_orchestrator_collators: u32,
@@ -169,10 +178,10 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     #[derive(frame_support::DefaultNoBound)]
-    pub struct GenesisConfig<T: Config>{
+    pub struct GenesisConfig<T: Config> {
         pub config: HostConfiguration,
         #[serde(skip)]
-		pub _config: sp_std::marker::PhantomData<T>,
+        pub _config: sp_std::marker::PhantomData<T>,
     }
 
     #[pallet::genesis_build]

@@ -29,13 +29,15 @@ use container_chain_template_simple_runtime::{opaque::Block, RuntimeApi};
 use {
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_service::{
-        build_relay_chain_interface, prepare_node_config, start_full_node, StartFullNodeParams, CollatorSybilResistance
+        build_relay_chain_interface, prepare_node_config, start_full_node, CollatorSybilResistance,
+        StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
 };
 
 // Substrate Imports
+use futures::FutureExt;
 use {
     sc_client_api::Backend,
     sc_consensus::ImportQueue,
@@ -45,7 +47,6 @@ use {
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
     sc_transaction_pool_api::OffchainTransactionPoolFactory,
 };
-use futures::FutureExt;
 
 /// Native executor type.
 pub struct ParachainNativeExecutor;
@@ -215,29 +216,29 @@ async fn start_node_impl(
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
             net_config,
-            sybil_resistance_level: CollatorSybilResistance::Resistant
+            sybil_resistance_level: CollatorSybilResistance::Resistant,
         })
         .await?;
 
     if parachain_config.offchain_worker.enabled {
         task_manager.spawn_handle().spawn(
-			"offchain-workers-runner",
-			"offchain-work",
-			sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
-				runtime_api_provider: client.clone(),
-				keystore: Some(params.keystore_container.keystore()),
-				offchain_db: backend.offchain_storage(),
-				transaction_pool: Some(OffchainTransactionPoolFactory::new(
-					transaction_pool.clone(),
-				)),
-				network_provider: network.clone(),
-				is_validator: parachain_config.role.is_authority(),
-				enable_http_requests: false,
-				custom_extensions: move |_| vec![],
-			})
-			.run(client.clone(), task_manager.spawn_handle())
-			.boxed(),
-		);
+            "offchain-workers-runner",
+            "offchain-work",
+            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+                runtime_api_provider: client.clone(),
+                keystore: Some(params.keystore_container.keystore()),
+                offchain_db: backend.offchain_storage(),
+                transaction_pool: Some(OffchainTransactionPoolFactory::new(
+                    transaction_pool.clone(),
+                )),
+                network_provider: network.clone(),
+                is_validator: parachain_config.role.is_authority(),
+                enable_http_requests: false,
+                custom_extensions: move |_| vec![],
+            })
+            .run(client.clone(), task_manager.spawn_handle())
+            .boxed(),
+        );
     }
 
     let rpc_builder = {

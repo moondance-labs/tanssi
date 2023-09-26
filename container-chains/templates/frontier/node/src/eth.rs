@@ -30,10 +30,9 @@ pub trait EthCompatRuntimeApiCollection:
 {
 }
 
-impl<Api> EthCompatRuntimeApiCollection for Api
-where
+impl<Api> EthCompatRuntimeApiCollection for Api where
     Api: sp_api::ApiExt<Block>
         + fp_rpc::EthereumRuntimeRPCApi<Block>
-        + fp_rpc::ConvertTransactionRuntimeApi<Block>,
+        + fp_rpc::ConvertTransactionRuntimeApi<Block>
 {
 }

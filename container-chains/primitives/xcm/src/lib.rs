@@ -19,16 +19,15 @@
 use {
     frame_support::traits::OriginTrait,
     sp_core::Get,
-    staging_xcm::latest::{Junction::AccountKey20, MultiLocation, NetworkId},
     sp_runtime::traits::TryConvert,
+    staging_xcm::latest::{Junction::AccountKey20, MultiLocation, NetworkId},
 };
 
 // Convert a local Origin (i.e., a signed 20 byte account Origin)  to a Multilocation
 pub struct SignedToAccountKey20<Origin, AccountId, Network>(
     sp_std::marker::PhantomData<(Origin, AccountId, Network)>,
 );
-impl<Origin, AccountId, Network: Get<NetworkId>>
-    TryConvert<Origin, MultiLocation>
+impl<Origin, AccountId, Network: Get<NetworkId>> TryConvert<Origin, MultiLocation>
     for SignedToAccountKey20<Origin, AccountId, Network>
 where
     Origin: OriginTrait + Clone,

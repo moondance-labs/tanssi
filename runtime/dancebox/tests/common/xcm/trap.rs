@@ -22,16 +22,17 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    xcm::{
+    staging_xcm::{
         latest::{prelude::*, Error::Trap as TrapError},
         VersionedMultiLocation, VersionedXcm,
     },
+    xcm_emulator::Chain,
 };
 
 #[test]
 fn trapping_asserts_works_with_polkadot_xcm() {
     // XcmPallet send arguments
-    let sudo_origin = <Westend as Relay>::RuntimeOrigin::root();
+    let sudo_origin = <Westend as Chain>::RuntimeOrigin::root();
     let dancebox_para_destination: VersionedMultiLocation =
         Westend::child_location_of(Dancebox::para_id()).into();
 
@@ -62,7 +63,7 @@ fn trapping_asserts_works_with_polkadot_xcm() {
             bx!(xcm),
         ));
 
-        type RuntimeEvent = <Westend as Relay>::RuntimeEvent;
+        type RuntimeEvent = <Westend as Chain>::RuntimeEvent;
 
         assert_expected_events!(
             Westend,
@@ -74,7 +75,7 @@ fn trapping_asserts_works_with_polkadot_xcm() {
 
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
         assert_expected_events!(
             Dancebox,
             vec![
@@ -85,7 +86,7 @@ fn trapping_asserts_works_with_polkadot_xcm() {
                     error: *error == TrapError(0),
                 },
                 RuntimeEvent::PolkadotXcm(
-                    pallet_xcm::Event::AssetsTrapped(_hash, origin, _assets)) => {
+                    pallet_xcm::Event::AssetsTrapped{hash, origin, assets}) => {
                         origin: *origin == MultiLocation::parent(),
                 },
             ]

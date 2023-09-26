@@ -57,12 +57,12 @@ pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
 
 impl<C, BE> fc_rpc::EthConfig<Block, C> for DefaultEthConfig<C, BE>
 where
-	C: StorageProvider<Block, BE> + Sync + Send + 'static,
-	BE: Backend<Block> + 'static,
+    C: StorageProvider<Block, BE> + Sync + Send + 'static,
+    BE: Backend<Block> + 'static,
 {
-	type EstimateGasAdapter = ();
-	type RuntimeStorageOverride =
-		fc_rpc::frontier_backend_client::SystemAccountId20StorageOverride<Block, C, BE>;
+    type EstimateGasAdapter = ();
+    type RuntimeStorageOverride =
+        fc_rpc::frontier_backend_client::SystemAccountId20StorageOverride<Block, C, BE>;
 }
 
 mod eth;
@@ -175,10 +175,10 @@ where
     }
     let convert_transaction: Option<Never> = None;
 
-	let pending_create_inherent_data_providers = move |_, _| async move { Ok(()) };
+    let pending_create_inherent_data_providers = move |_, _| async move { Ok(()) };
 
     io.merge(
-        Eth::< _, _, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
+        Eth::<_, _, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
             Arc::clone(&client),
             Arc::clone(&pool),
             Arc::clone(&graph),
@@ -195,7 +195,7 @@ where
             None,
             // TODO: resvisit
             pending_create_inherent_data_providers,
-            None
+            None,
         )
         .into_rpc(),
     )?;
@@ -389,8 +389,7 @@ pub trait RuntimeApiCollection:
 {
 }
 
-impl<Api> RuntimeApiCollection for Api
-where
+impl<Api> RuntimeApiCollection for Api where
     Api: sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
         + sp_api::ApiExt<Block>
         + sp_block_builder::BlockBuilder<Block>
@@ -400,6 +399,6 @@ where
         + sp_session::SessionKeys<Block>
         + fp_rpc::ConvertTransactionRuntimeApi<Block>
         + fp_rpc::EthereumRuntimeRPCApi<Block>
-        + cumulus_primitives_core::CollectCollationInfo<Block>,
+        + cumulus_primitives_core::CollectCollationInfo<Block>
 {
 }

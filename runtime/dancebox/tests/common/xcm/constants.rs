@@ -21,6 +21,7 @@ use {
     polkadot_service::chain_spec::get_authority_keys_from_seed_no_beefy,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
+    sp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId,
     sp_core::{sr25519, storage::Storage, Pair, Public},
     sp_runtime::{
         traits::{IdentifyAccount, Verify},
@@ -124,6 +125,7 @@ pub mod westend {
         para_validator: ValidatorId,
         para_assignment: AssignmentId,
         authority_discovery: AuthorityDiscoveryId,
+        beefy: BeefyId,
     ) -> westend_runtime::SessionKeys {
         westend_runtime::SessionKeys {
             babe,
@@ -132,6 +134,7 @@ pub mod westend {
             para_validator,
             para_assignment,
             authority_discovery,
+            beefy,
         }
     }
 
@@ -162,6 +165,7 @@ pub mod westend {
                                 x.5.clone(),
                                 x.6.clone(),
                                 x.7.clone(),
+                                get_from_seed::<BeefyId>("Alice"),
                             ),
                         )
                     })
@@ -236,6 +240,7 @@ pub mod frontier_template {
             // For now moonwall is very tailored for moonbeam so we need it for tests
             evm_chain_id: container_chain_template_frontier_runtime::EVMChainIdConfig {
                 chain_id: 1281u32 as u64,
+                ..Default::default()
             },
             sudo: container_chain_template_frontier_runtime::SudoConfig {
                 key: Some(pre_funded_accounts()[0]),
@@ -243,6 +248,7 @@ pub mod frontier_template {
             authorities_noting:
                 container_chain_template_frontier_runtime::AuthoritiesNotingConfig {
                     orchestrator_para_id: ORCHESTRATOR.into(),
+                    ..Default::default()
                 },
             ..Default::default()
         };
@@ -295,6 +301,7 @@ pub mod simple_template {
             },
             authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
                 orchestrator_para_id: ORCHESTRATOR.into(),
+                ..Default::default()
             },
             ..Default::default()
         };
