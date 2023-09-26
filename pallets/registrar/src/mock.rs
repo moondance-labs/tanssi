@@ -22,8 +22,8 @@ use {
     frame_system as system,
     sp_core::{parameter_types, ConstU32, H256},
     sp_runtime::{
-        BuildStorage,
         traits::{BlakeTwo256, IdentityLookup},
+        BuildStorage,
     },
     tp_traits::ParaId,
 };

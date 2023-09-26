@@ -20,7 +20,7 @@ use {
     frame_system as system,
     sp_core::H256,
     sp_runtime::{
-        testing::{UintAuthorityId},
+        testing::UintAuthorityId,
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },

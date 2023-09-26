@@ -31,10 +31,8 @@ use {
     polkadot_parachain_primitives::primitives::RelayChainBlockNumber,
     polkadot_primitives::Slot,
     sp_core::H256,
+    sp_runtime::traits::{BlakeTwo256, IdentityLookup},
     sp_runtime::BuildStorage,
-    sp_runtime::{
-        traits::{BlakeTwo256, IdentityLookup},
-    },
     sp_state_machine::StorageProof,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };

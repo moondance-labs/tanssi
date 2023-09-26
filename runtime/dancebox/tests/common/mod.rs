@@ -28,7 +28,7 @@ use {
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::{Get, Pair},
-    sp_runtime::{BuildStorage, traits::Dispatchable, Digest, DigestItem},
+    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
@@ -195,7 +195,6 @@ impl ExtBuilder {
             }
             .assimilate_storage(&mut t)
             .unwrap();
-
         }
 
         if !self.collators.is_empty() {
@@ -227,8 +226,8 @@ impl ExtBuilder {
                 })
                 .collect();
             pallet_session::GenesisConfig::<Runtime> { keys }
-            .assimilate_storage(&mut t)
-            .unwrap();
+                .assimilate_storage(&mut t)
+                .unwrap();
         }
         t
     }

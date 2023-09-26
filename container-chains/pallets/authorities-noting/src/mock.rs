@@ -22,8 +22,7 @@ use {
         inherent::{InherentData, ProvideInherent},
         parameter_types,
         traits::{
-            ConstU32, ConstU64, Everything, OnFinalize, OnInitialize,
-            UnfilteredDispatchable,
+            ConstU32, ConstU64, Everything, OnFinalize, OnInitialize, UnfilteredDispatchable,
         },
     },
     frame_system::RawOrigin,
@@ -32,8 +31,8 @@ use {
     sp_core::H256,
     sp_io,
     sp_runtime::{
-        BuildStorage,
         traits::{BlakeTwo256, IdentityLookup},
+        BuildStorage,
     },
     sp_state_machine::StorageProof,
     sp_version::RuntimeVersion,

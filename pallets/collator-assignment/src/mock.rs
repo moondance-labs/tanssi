@@ -21,8 +21,8 @@ use {
     parity_scale_codec::{Decode, Encode},
     sp_core::H256,
     sp_runtime::{
-        BuildStorage,
         traits::{BlakeTwo256, IdentityLookup},
+        BuildStorage,
     },
     tp_traits::ParaId,
 };

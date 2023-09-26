@@ -40,8 +40,8 @@ use {
     },
     sp_core::H256,
     sp_runtime::{
-        BuildStorage,
         traits::{BlakeTwo256, IdentityLookup},
+        BuildStorage,
     },
 };
 

@@ -18,8 +18,8 @@ use {
     frame_support::traits::{ConstU32, ConstU64, Everything},
     sp_core::H256,
     sp_runtime::{
-        BuildStorage,
         traits::{BlakeTwo256, IdentityLookup},
+        BuildStorage,
     },
 };
 

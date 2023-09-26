@@ -13,6 +13,8 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+use cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV6;
+pub use sp_core::{sr25519, storage::Storage, Get};
 use {
     super::constants::{
         accounts::{ALICE, BOB, RANDOM},
@@ -20,14 +22,13 @@ use {
     },
     frame_support::parameter_types,
 };
-use cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV6;
-pub use sp_core::{sr25519, storage::Storage, Get};
 use {
     staging_xcm::prelude::*,
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::{
-        decl_test_networks, decl_test_parachains, decl_test_relay_chains, Chain, DefaultMessageProcessor,
+        decl_test_networks, decl_test_parachains, decl_test_relay_chains, Chain,
+        DefaultMessageProcessor,
     },
 };
 

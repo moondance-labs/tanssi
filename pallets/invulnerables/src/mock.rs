@@ -24,7 +24,7 @@ use {
     pallet_balances::AccountData,
     sp_core::H256,
     sp_runtime::{
-        testing::{UintAuthorityId},
+        testing::UintAuthorityId,
         traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
         BuildStorage, RuntimeAppPublic,
     },
