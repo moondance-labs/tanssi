@@ -14299,6 +14299,7 @@ name = "substrate-prometheus-endpoint"
 version = "0.10.0-dev"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.1.0#32efd9d3e7be20303591348ab9e49f6b8d735d49"
 dependencies = [
+ "exit-future",
  "hyper",
  "log",
  "prometheus",
