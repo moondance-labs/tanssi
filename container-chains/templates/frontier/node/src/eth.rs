@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-// Substrate
-use sp_runtime::traits::BlakeTwo256;
 // Frontier
 pub use {
     fc_consensus::FrontierBlockImport,

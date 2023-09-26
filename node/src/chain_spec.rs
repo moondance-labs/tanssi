@@ -34,7 +34,7 @@ use {
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec = sc_service::GenericChainSpec<dancebox_runtime::GenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<dancebox_runtime::RuntimeGenesisConfig, Extensions>;
 
 /// Specialized `ChainSpec` for container chains that only allows raw genesis format.
 pub type RawChainSpec = sc_service::GenericChainSpec<RawGenesisConfig, Extensions>;
@@ -289,8 +289,8 @@ fn testnet_genesis(
     container_chains: &[String],
     mock_container_chains: &[ParaId],
     configuration: pallet_configuration::GenesisConfig::<dancebox_runtime::Runtime>,
-) -> dancebox_runtime::GenesisConfig {
-    dancebox_runtime::GenesisConfig {
+) -> dancebox_runtime::RuntimeGenesisConfig {
+    dancebox_runtime::RuntimeGenesisConfig {
         system: dancebox_runtime::SystemConfig {
             code: dancebox_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")

@@ -18,7 +18,6 @@
 use {
     sc_executor::{NativeExecutionDispatch, NativeVersion},
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
-    sp_runtime::traits::BlakeTwo256,
 };
 // Local
 use container_chain_template_frontier_runtime::{opaque::Block, AccountId, Index};

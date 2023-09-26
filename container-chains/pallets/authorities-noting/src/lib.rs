@@ -137,7 +137,7 @@ pub mod pallet {
         fn default() -> Self {
             GenesisConfig {
                 orchestrator_para_id: 1000u32.into(),
-                ..Default::default()
+                _config: Default::default()
             }
         }
     }

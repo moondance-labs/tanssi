@@ -18,7 +18,7 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, RelayChainCli, Subcommand},
-        service::{new_partial, ParachainNativeExecutor},
+        service::new_partial,
     },
     container_chain_template_simple_runtime::Block,
     cumulus_client_cli::generate_genesis_block,
@@ -28,9 +28,8 @@ use {
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
-        NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
+        NetworkParams, Result, SharedParams, SubstrateCli,
     },
-    sc_client_api::ExecutorProvider,
     sc_service::config::{BasePath, PrometheusConfig},
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},

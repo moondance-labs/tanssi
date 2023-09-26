@@ -18,7 +18,6 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, RelayChainCli, Subcommand},
-        client::TemplateRuntimeExecutor,
         service::{frontier_database_dir, new_partial},
     },
     container_chain_template_frontier_runtime::Block,
@@ -30,9 +29,8 @@ use {
     polkadot_cli::IdentifyVariant,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
-        NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
+        NetworkParams, Result, SharedParams, SubstrateCli,
     },
-    sc_client_api::ExecutorProvider,
     sc_service::{
         config::{BasePath, PrometheusConfig},
         DatabaseSource,

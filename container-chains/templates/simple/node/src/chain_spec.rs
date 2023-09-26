@@ -29,7 +29,7 @@ use {
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<
-    container_chain_template_simple_runtime::GenesisConfig,
+    container_chain_template_simple_runtime::RuntimeGenesisConfig,
     Extensions,
 >;
 
@@ -169,8 +169,8 @@ fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-) -> container_chain_template_simple_runtime::GenesisConfig {
-    container_chain_template_simple_runtime::GenesisConfig {
+) -> container_chain_template_simple_runtime::RuntimeGenesisConfig {
+    container_chain_template_simple_runtime::RuntimeGenesisConfig {
         system: container_chain_template_simple_runtime::SystemConfig {
             code: container_chain_template_simple_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")

@@ -47,6 +47,7 @@ use {
 };
 
 // Cumulus Imports
+#[allow(deprecated)]
 use {
     cumulus_client_service::{
         build_relay_chain_interface, prepare_node_config, start_full_node, StartFullNodeParams, CollatorSybilResistance
@@ -455,6 +456,7 @@ async fn start_node_impl(
         sync_service,
     };
 
+    #[allow(deprecated)]
     start_full_node(params)?;
 
     start_network.start_network();

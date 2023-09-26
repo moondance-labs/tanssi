@@ -16,6 +16,7 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+#[allow(deprecated)]
 use {
     crate::{
         cli::ContainerChainCli,
@@ -589,6 +590,7 @@ async fn start_node_impl(
         let client = client.clone();
         let collator_key = collator_key.clone();
         collate_on_tanssi = Some(move || async move {
+            #[allow(deprecated)]
             cumulus_client_collator::start_collator(cumulus_client_collator::StartCollatorParams {
                 runtime_api: client.clone(),
                 block_status: client.clone(),
@@ -604,6 +606,7 @@ async fn start_node_impl(
             .await;
         });
 
+        #[allow(deprecated)]
         start_collator(params).await?;
     } else {
         let params = StartFullNodeParams {
@@ -618,6 +621,7 @@ async fn start_node_impl(
             sync_service,
         };
 
+        #[allow(deprecated)]
         start_full_node(params)?;
     }
 
@@ -871,6 +875,7 @@ pub async fn start_node_impl_container(
             {
                 f.await
             }
+            #[allow(deprecated)]
             wrap(
                 para_id,
                 cumulus_client_collator::start_collator(
@@ -902,6 +907,7 @@ pub async fn start_node_impl_container(
             sync_service,
         };
 
+        #[allow(deprecated)]
         start_full_node(params)?;
     }
 

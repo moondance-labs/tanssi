@@ -18,7 +18,7 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, ContainerChainCli, RelayChainCli, Subcommand},
-        service::{new_partial, IdentifyVariant, ParachainNativeExecutor},
+        service::{new_partial, IdentifyVariant},
     },
     cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
     cumulus_primitives_core::ParaId,
@@ -28,7 +28,7 @@ use {
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
-        NetworkParams, Result, RuntimeVersion, SharedParams, SubstrateCli,
+        NetworkParams, Result, SharedParams, SubstrateCli,
     },
     sc_service::config::{BasePath, PrometheusConfig},
     sp_core::hexdisplay::HexDisplay,

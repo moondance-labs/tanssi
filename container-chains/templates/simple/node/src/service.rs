@@ -25,6 +25,7 @@ use {cumulus_client_cli::CollatorOptions, sc_network::config::FullNetworkConfigu
 use container_chain_template_simple_runtime::{opaque::Block, RuntimeApi};
 
 // Cumulus Imports
+#[allow(deprecated)]
 use {
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_service::{
@@ -292,6 +293,7 @@ async fn start_node_impl(
         sync_service,
     };
 
+    #[allow(deprecated)]
     start_full_node(params)?;
 
     start_network.start_network();
