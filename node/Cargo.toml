@@ -105,8 +105,7 @@ default = []
 runtime-benchmarks = [
 	"dancebox-runtime/runtime-benchmarks",
 	"polkadot-cli/runtime-benchmarks",
-	"polkadot-service/runtime-benchmarks",
-	"try-runtime-cli/try-runtime",
+	"polkadot-service/runtime-benchmarks"
 ]
 try-runtime = [ "dancebox-runtime/try-runtime", "nimbus-primitives/try-runtime", "pallet-configuration/try-runtime", "polkadot-cli/try-runtime", "polkadot-service/try-runtime", "sp-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
 
