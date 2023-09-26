@@ -145,7 +145,7 @@
         },
         {
             "name": "zombie_tanssi_rotation",
-            "testFileDir": ["suites/para-rotation"],
+            "testFileDir": ["suites/rotation-para"],
             "runScripts": ["build-spec.sh", "download-polkadot.sh"],
             "foundation": {
                 "type": "zombie",
