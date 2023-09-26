@@ -23,22 +23,17 @@ use {
     parity_scale_codec::{Decode, Encode},
     sp_core::H256,
     sp_runtime::{
-        testing::Header,
-        traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
+        traits::{BlakeTwo256, IdentityLookup},
     },
     sp_std::collections::btree_map::BTreeMap,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
         System: frame_system,
         MockData: mock_data,

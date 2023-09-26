@@ -20,21 +20,17 @@ use {
     frame_system as system,
     sp_core::{ConstU32, H256},
     sp_runtime::{
-        testing::{Header, UintAuthorityId},
+        testing::{UintAuthorityId},
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
         System: frame_system,
         Configuration: pallet_configuration,
@@ -95,7 +91,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(config: HostConfiguration) -> sp_io::TestExternalities {
-    GenesisConfig {
+    RuntimeGenesisConfig {
         system: Default::default(),
         configuration: pallet_configuration::GenesisConfig {
             config,

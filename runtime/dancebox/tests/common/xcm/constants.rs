@@ -139,7 +139,7 @@ pub mod westend {
     }
 
     pub fn genesis() -> Storage {
-        let genesis_config = westend_runtime::GenesisConfig {
+        let genesis_config = westend_runtime::RuntimeGenesisConfig {
             system: westend_runtime::SystemConfig {
                 code: westend_runtime::WASM_BINARY.unwrap().to_vec(),
                 ..Default::default()
@@ -217,7 +217,7 @@ pub mod frontier_template {
     pub const PARA_ID: u32 = 2001;
     pub const ORCHESTRATOR: u32 = 2000;
     pub fn genesis() -> sp_core::storage::Storage {
-        let genesis_config = container_chain_template_frontier_runtime::GenesisConfig {
+        let genesis_config = container_chain_template_frontier_runtime::RuntimeGenesisConfig {
             system: container_chain_template_frontier_runtime::SystemConfig {
                 code: container_chain_template_frontier_runtime::WASM_BINARY
                     .expect("WASM binary was not build, please build it!")
@@ -278,7 +278,7 @@ pub mod simple_template {
     const ENDOWMENT: u128 = 1_000_000 * DEV;
 
     pub fn genesis() -> sp_core::storage::Storage {
-        let genesis_config = container_chain_template_simple_runtime::GenesisConfig {
+        let genesis_config = container_chain_template_simple_runtime::RuntimeGenesisConfig {
             system: container_chain_template_simple_runtime::SystemConfig {
                 code: container_chain_template_simple_runtime::WASM_BINARY
                     .expect("WASM binary was not build, please build it!")

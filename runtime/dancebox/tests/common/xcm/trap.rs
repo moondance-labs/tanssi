@@ -86,7 +86,7 @@ fn trapping_asserts_works_with_polkadot_xcm() {
                     error: *error == TrapError(0),
                 },
                 RuntimeEvent::PolkadotXcm(
-                    pallet_xcm::Event::AssetsTrapped{hash, origin, assets}) => {
+                    pallet_xcm::Event::AssetsTrapped{origin, ..}) => {
                         origin: *origin == MultiLocation::parent(),
                 },
             ]

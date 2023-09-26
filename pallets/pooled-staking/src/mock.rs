@@ -35,7 +35,6 @@ use {
     scale_info::TypeInfo,
     sp_core::{ConstU32, ConstU64, RuntimeDebug, H256},
     sp_runtime::{
-        testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
     },
@@ -58,7 +57,6 @@ pub enum HoldIdentifier {
     Staking,
 }
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
 pub type AccountId = u64;
 pub type Balance = u128;
@@ -78,10 +76,7 @@ pub const DEFAULT_BALANCE: u128 = PETA;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Runtime where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Runtime
     {
         System: frame_system,
         Balances: pallet_balances,

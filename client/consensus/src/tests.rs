@@ -25,7 +25,6 @@ use {
         InherentDataProviderExt, LOG_TARGET,
     },
     cumulus_client_consensus_common::ParachainConsensus,
-    cumulus_primitives_core::relay_chain::BlockId,
     cumulus_primitives_core::PersistedValidationData,
     futures::prelude::*,
     futures_timer::Delay,

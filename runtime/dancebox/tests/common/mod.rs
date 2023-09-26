@@ -19,7 +19,7 @@ use {
     dancebox_runtime::{AuthorInherent, AuthorityAssignment},
     frame_support::{
         assert_ok,
-        traits::{GenesisBuild, OnFinalize, OnInitialize},
+        traits::{OnFinalize, OnInitialize},
     },
     nimbus_primitives::{NimbusId, NIMBUS_ENGINE_ID},
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,

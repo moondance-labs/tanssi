@@ -18,27 +18,23 @@ use {
     crate as invulnerables,
     frame_support::{
         ord_parameter_types, parameter_types,
-        traits::{ConstU32, GenesisBuild, ValidatorRegistration},
+        traits::{ConstU32, ValidatorRegistration},
     },
     frame_system::{self as system, EnsureSignedBy},
     pallet_balances::AccountData,
     sp_core::H256,
     sp_runtime::{
-        testing::{Header, UintAuthorityId},
+        testing::{UintAuthorityId},
         traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
         BuildStorage, RuntimeAppPublic,
     },
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
         System: frame_system,
         Invulnerables: invulnerables,

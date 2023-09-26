@@ -28,7 +28,6 @@ use {
     staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::{
         decl_test_networks, decl_test_parachains, decl_test_relay_chains, Chain, DefaultMessageProcessor,
-        Parachain, RelayChain, TestExt,
     },
 };
 

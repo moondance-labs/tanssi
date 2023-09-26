@@ -123,13 +123,13 @@ impl ParaHeaderSproofBuilder {
         sp_state_machine::StorageProof,
     ) {
         // Recover the db
-        let (prefixed_db, prefixed_root) = PrefixedMemoryDB::<
+        let (_prefixed_db, _prefixed_root) = PrefixedMemoryDB::<
             HashingFor<cumulus_primitives_core::relay_chain::Block>,
         >::default_with_root();
         let db = state.into_memory_db::<HashingFor<cumulus_primitives_core::relay_chain::Block>>();
 
         // TODO: fix me later
-        let mut backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
+        let backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
 
         // Fetch all existing keys
         let mut relevant_keys = backend
@@ -142,7 +142,7 @@ impl ParaHeaderSproofBuilder {
         {
             use parity_scale_codec::Encode as _;
 
-            let mut insert = |key: Vec<u8>, value: Vec<u8>| {
+            let mut insert = |key: Vec<u8>, _value: Vec<u8>| {
                 relevant_keys.push(key.clone());
                 //backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
             };

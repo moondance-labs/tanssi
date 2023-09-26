@@ -18,21 +18,16 @@ use {
     frame_support::traits::{ConstU32, ConstU64, Everything},
     sp_core::H256,
     sp_runtime::{
-        testing::Header,
-        traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
+        traits::{BlakeTwo256, IdentityLookup},
     },
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 type AccountId = u64;
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
         System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>},
     }

@@ -238,7 +238,7 @@ mod mock_relay_chain_impl {
             unimplemented!("Not needed for test")
         }
 
-        async fn header(&self, block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
+        async fn header(&self, _block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
             unimplemented!("Not needed for test")
         }
     }

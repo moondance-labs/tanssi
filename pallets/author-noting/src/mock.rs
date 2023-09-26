@@ -33,22 +33,17 @@ use {
     sp_core::H256,
     sp_runtime::BuildStorage,
     sp_runtime::{
-        testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
     },
     sp_state_machine::StorageProof,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 type AccountId = u64;
 
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
         System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>},
         AuthorNoting: author_noting_pallet::{Pallet, Call, Storage, Event<T>},
