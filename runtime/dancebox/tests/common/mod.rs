@@ -17,7 +17,7 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
-    dancebox_runtime::{AuthorInherent, AuthorityAssignment},
+    dancebox_runtime::{AuthorInherent, AuthorityAssignment, MaxLengthTokenSymbol},
     frame_support::{
         assert_ok,
         dispatch::Dispatchable,
@@ -37,8 +37,6 @@ use {
 
 mod xcm;
 
-use cumulus_primitives_core::relay_chain::well_known_keys;
-use dancebox_runtime::MaxLengthTokenSymbol;
 pub use dancebox_runtime::{
     AccountId, Balance, Balances, Initializer, ParachainInfo, Registrar, Runtime, RuntimeCall,
     RuntimeEvent, Session, System,
