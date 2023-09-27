@@ -536,7 +536,6 @@ pub mod pallet {
             source_pool: TargetPool,
             amount: SharesOrStake<T::Balance>,
         ) -> DispatchResultWithPostInfo {
-            // We don't care about the sender.
             let delegator = ensure_signed(origin)?;
 
             Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
