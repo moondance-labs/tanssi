@@ -1602,7 +1602,7 @@ fn test_collator_assignment_rotation() {
                     let mut sproof = RelayStateSproofBuilder::default();
                     sproof.additional_key_values.push((
                         well_known_keys::CURRENT_BLOCK_RANDOMNESS.to_vec(),
-                        random_seed.to_vec(),
+                        Some(random_seed).encode(),
                     ));
 
                     sproof.into_state_root_and_proof()

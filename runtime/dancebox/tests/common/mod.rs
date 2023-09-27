@@ -100,15 +100,8 @@ pub fn run_to_block(n: u32) {
 /// source of randomness.
 pub fn set_parachain_inherent_data() {
     use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
-    let (relay_parent_storage_root, relay_chain_state) = {
-        let mut sproof = RelayStateSproofBuilder::default();
-        sproof.additional_key_values.push((
-            well_known_keys::CURRENT_BLOCK_RANDOMNESS.to_vec(),
-            cumulus_primitives_core::relay_chain::Hash::default().encode(),
-        ));
-
-        sproof.into_state_root_and_proof()
-    };
+    let (relay_parent_storage_root, relay_chain_state) =
+        RelayStateSproofBuilder::default().into_state_root_and_proof();
     let vfp = PersistedValidationData {
         relay_parent_number: 1u32,
         relay_parent_storage_root,
