@@ -1,8 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import { ApiPromise, Keyring } from "@polkadot/api";
 import { Signer } from "ethers";
 import { getAuthorFromDigest } from "../../util/author";
+import { signAndSendAndInclude, waitSessions, waitToSession } from "../../util/block";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
@@ -18,6 +19,10 @@ describeSuite({
         let container2001Api: ApiPromise;
         let container2002Api: ApiPromise;
         let ethersSigner: Signer;
+        let assignment3;
+        let assignment5;
+        let allCollators;
+        let collatorName;
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
@@ -58,6 +63,21 @@ describeSuite({
             expect(header2000.number.toNumber()).to.be.equal(0);
             expect(header2001.number.toNumber()).to.be.equal(0);
             expect(header2002.number.toNumber()).to.be.equal(0);
+
+            // Initialize list of all collators, this should match the names from build-spec.sh script
+            allCollators = [
+                "Collator1000-01",
+                "Collator1000-02",
+                "Collator2000-01",
+                "Collator2000-02",
+                "Collator2001-01",
+                "Collator2001-02",
+                "Collator2002-01",
+                "Collator2002-02",
+            ];
+            // Initialize reverse map of collator key to collator name
+            collatorName = createCollatorKeyToNameMap(paraApi, allCollators);
+            console.log(collatorName);
         }, 120000);
 
         it({
@@ -66,6 +86,24 @@ describeSuite({
             test: async function () {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
+
+                const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
+                console.log("assignment session 0: ", assignment.toJSON());
+            },
+        });
+
+        it({
+            id: "T02",
+            title: "Set 1 collator per parachain",
+            test: async function () {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                const tx1 = await paraApi.tx.configuration.setCollatorsPerContainer(1);
+                const tx2 = await paraApi.tx.configuration.setMinOrchestratorCollators(1);
+                const tx3 = await paraApi.tx.configuration.setMaxOrchestratorCollators(1);
+                const tx123 = paraApi.tx.utility.batchAll([tx1, tx2, tx3]);
+                await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx123), alice);
             },
         });
 
@@ -213,9 +251,59 @@ describeSuite({
         });
         it({
             id: "T12",
-            title: "Rotation works",
-            timeout: 30000,
+            title: "On session 3 we have 1 collator per chain",
+            timeout: 90000,
             test: async function () {
+                await waitToSession(context, paraApi, 3);
+                const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
+                assignment3 = assignment.toJSON();
+                console.log("assignment session 3: ", assignment.toJSON());
+                expect(assignment.orchestratorChain.length).toBe(1);
+                expect(assignment.containerChains.toJSON()[2000].length).toBe(1);
+                expect(assignment.containerChains.toJSON()[2001].length).toBe(1);
+            },
+        });
+        it({
+            id: "T13",
+            title: "On session 4 collators start syncing the new chains",
+            timeout: 300000,
+            test: async function () {
+                await waitToSession(context, paraApi, 4);
+                const futureAssignment = await paraApi.query.collatorAssignment.pendingCollatorContainerChain();
+                console.log("future assignment session 5: ", futureAssignment.toJSON());
+                // The assignment is random, so there is a small chance that it will be the same,
+                // and in that case this test shouldn't fail
+                if (futureAssignment.isNone) {
+                    assignment5 = assignment3;
+                } else {
+                    assignment5 = futureAssignment.toJSON();
+                }
+
+                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
+                // So wait a few blocks more hoping that the current block will be finalized by then.
+                await context.waitBlock(3, "Tanssi");
+
+                let c2000 = collatorName[assignment5.containerChains[2000][0]];
+                let c2001 = collatorName[assignment5.containerChains[2001][0]];
+                console.log("c2000: ", c2000);
+                console.log("c2001: ", c2001);
+                let otherCollators = getUnassignedCollators(allCollators, [c2000, c2001]);
+                console.log("otherCollators: ", otherCollators);
+
+                // TODO: verify that collators have db path running, and otherCollators do not have the db path
+            },
+        });
+        it({
+            id: "T14",
+            title: "On session 5 collators stop the previously assigned chains",
+            timeout: 300000,
+            test: async function () {
+                await waitToSession(context, paraApi, 5);
+                const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
+                console.log("assignment session 5: ", assignment.toJSON());
+                expect(assignment.orchestratorChain.length).toBe(1);
+                expect(assignment.containerChains.toJSON()[2000].length).toBe(1);
+                expect(assignment.containerChains.toJSON()[2001].length).toBe(1);
                 // TODO: for the missing tests:
                 // go to session 4, check that future assignment changes
                 // also check that collators start syncing the new chains (check if db path exists)
@@ -225,3 +313,19 @@ describeSuite({
         });
     },
 });
+
+function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<string, string> {
+    const collatorName: Record<string, string> = {};
+    
+    collatorNames.forEach(name => {
+        const hexAddress = getKeyringNimbusIdHex(name);
+        const k = paraApi.createType("AccountId", hexAddress);
+        collatorName[k] = name;
+    });
+    
+    return collatorName;
+}
+
+function getUnassignedCollators(allCollators: string[], assignedToContainers: string[]): string[] {
+    return allCollators.filter(collator => !assignedToContainers.includes(collator));
+}
