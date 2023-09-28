@@ -541,4 +541,30 @@ pub mod pallet {
             Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
         }
     }
+
+    impl<T: Config> Pallet<T> {
+        pub fn computed_stake(
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            pool: AllTargetPool,
+        ) -> Option<T::Balance> {
+            use pools::Pool;
+            match pool {
+                AllTargetPool::Joining => {
+                    pools::Joining::<T>::computed_stake(&candidate, &delegator)
+                }
+                AllTargetPool::AutoCompounding => {
+                    pools::AutoCompounding::<T>::computed_stake(&candidate, &delegator)
+                }
+                AllTargetPool::ManualRewards => {
+                    pools::ManualRewards::<T>::computed_stake(&candidate, &delegator)
+                }
+                AllTargetPool::Leaving => {
+                    pools::Leaving::<T>::computed_stake(&candidate, &delegator)
+                }
+            }
+            .ok()
+            .map(|x| x.0)
+        }
+    }
 }
