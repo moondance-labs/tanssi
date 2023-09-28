@@ -23,7 +23,10 @@ pub use cumulus_primitives_core::{
     relay_chain::{BlockNumber, Slot},
     ParaId,
 };
-use frame_support::pallet_prelude::{DispatchResultWithPostInfo, Weight};
+use frame_support::{
+    pallet_prelude::{DispatchResultWithPostInfo, Get, Weight},
+    BoundedVec,
+};
 use sp_std::vec::Vec;
 
 /// The author-noting hook to react to container chains authoring.
@@ -56,7 +59,9 @@ pub trait DistributeRewards<AccountId, Imbalance> {
 
 /// Get the current list of container chains parachain ids.
 pub trait GetCurrentContainerChains {
-    fn current_container_chains() -> Vec<ParaId>;
+    type MaxContainerChains: Get<u32>;
+
+    fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains>;
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_current_container_chains(container_chains: &[ParaId]);

@@ -30,7 +30,10 @@ use {
         AllTargetPool, Error, Event, PendingOperationKey, PendingOperationQuery, PendingOperations,
         Shares, SharesOrStake, Stake, TargetPool,
     },
-    frame_support::{assert_noop, assert_ok, traits::tokens::fungible::Mutate},
+    frame_support::{
+        assert_noop, assert_ok,
+        traits::tokens::fungible::{Balanced, Mutate},
+    },
     sp_runtime::TokenError,
 };
 
@@ -480,4 +483,8 @@ pub(crate) fn do_rebalance_hold<P: Pool<Runtime>>(
 
     // Stake stay the same.
     assert_fields_eq!(pool_before, pool_after, stake);
+}
+
+pub(crate) fn currency_issue(amount: Balance) -> CreditOf<Runtime> {
+    <<Runtime as crate::Config>::Currency as Balanced>::issue(amount)
 }

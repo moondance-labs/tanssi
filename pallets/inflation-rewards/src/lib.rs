@@ -74,6 +74,7 @@ pub mod pallet {
             // Get the number of chains at this block
             weight += T::DbWeight::get().reads_writes(1, 1);
             let registered_para_ids = T::ContainerChains::current_container_chains();
+
             let number_of_chains: BalanceOf<T> =
                 ((registered_para_ids.len() as u32).saturating_add(1)).into();
 
@@ -119,6 +120,9 @@ pub mod pallet {
         /// Inflation rate per relay block (proportion of the total issuance)
         type InflationRate: Get<Perbill>;
 
+        /// The maximum number of block authors
+        type MaxAuthors: Get<u32>;
+
         /// What to do with the new supply not dedicated to staking
         type OnUnbalanced: OnUnbalanced<CreditOf<Self>>;
 
@@ -132,7 +136,7 @@ pub mod pallet {
         type RewardsPortion: Get<Perbill>;
     }
 
-    /// Container chains to reward per relay block
+    /// Container chains to reward per block
     #[pallet::storage]
     #[pallet::getter(fn container_chains_to_reward)]
     pub(super) type ChainsToReward<T: Config> =
@@ -140,20 +144,23 @@ pub mod pallet {
     #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
     #[scale_info(skip_type_params(T))]
     pub struct ChainsToRewardValue<T: Config> {
-        pub para_ids: Vec<ParaId>,
+        pub para_ids: BoundedVec<
+            ParaId,
+            <T::ContainerChains as GetCurrentContainerChains>::MaxContainerChains,
+        >,
         pub rewards_per_chain: BalanceOf<T>,
     }
 
-    /// Pending rewards per relay block and per container chain
+    /// Pending authors per block and per container chain
     #[pallet::storage]
     #[pallet::getter(fn pending_rewards)]
-    pub(super) type PendingRewards<T: Config> = StorageDoubleMap<
+    pub(super) type PendingAuthors<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
         BlockNumber,
         Twox64Concat,
         ParaId,
-        PendingAuthors<T>,
+        PendingAuthorsValue<T>,
         OptionQuery,
     >;
 
@@ -162,9 +169,21 @@ pub mod pallet {
         Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
     )]
     #[scale_info(skip_type_params(T))]
-    pub struct PendingAuthors<T: Config> {
-        pub authors: Vec<(T::AccountId, u32)>,
+    pub struct PendingAuthorsValue<T: Config> {
+        pub authors: BoundedVec<(T::AccountId, u32), T::MaxAuthors>,
         pub last_block_number: BlockNumber,
+    }
+    impl<T: Config> PendingAuthorsValue<T> {
+        pub(super) fn new(author: T::AccountId, block_number: BlockNumber) -> Self {
+            let mut authors = BoundedVec::new();
+            authors
+                .try_push((author, 1))
+                .expect("MaxAuthors should be greather than zero");
+            Self {
+                authors,
+                last_block_number: block_number,
+            }
+        }
     }
 }
 
@@ -173,11 +192,11 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         author: &T::AccountId,
         block_number: BlockNumber,
         para_id: ParaId,
-        relay_block_number: BlockNumber,
+        _relay_block_number: BlockNumber,
     ) -> Weight {
         let mut total_weight = T::DbWeight::get().reads_writes(1, 1);
         let pending_authors_per_chain = if let Some(mut pending_authors_per_chain) =
-            PendingRewards::<T>::get(relay_block_number, para_id)
+            PendingAuthors::<T>::get(block_number, para_id)
         {
             // track how many blocks produced by each author
             if block_number > pending_authors_per_chain.last_block_number {
@@ -189,17 +208,21 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                         pending_authors_per_chain.authors[index].1 += 1;
                     }
                     Err(index) => {
-                        pending_authors_per_chain
+                        if pending_authors_per_chain
                             .authors
-                            .insert(index, (author.to_owned(), 1));
+                            .try_insert(index, (author.clone(), 1))
+                            .is_err()
+                        {
+                            log::warn!("too many authors");
+                        }
                     }
                 }
             }
             pending_authors_per_chain
-        } else if relay_block_number > 0 {
-            let previous_relay_block = relay_block_number - 1;
+        } else if block_number > 0 {
+            let previous_block_number = block_number - 1;
             if let Some(authors_to_reward) =
-                PendingRewards::<T>::take(previous_relay_block, para_id)
+                PendingAuthors::<T>::take(previous_block_number, para_id)
             {
                 if !authors_to_reward.authors.is_empty() {
                     total_weight += T::DbWeight::get().reads(1);
@@ -229,17 +252,11 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                     }
                 }
             }
-            PendingAuthors {
-                authors: vec![(author.to_owned(), 1)],
-                last_block_number: block_number,
-            }
+            PendingAuthorsValue::new(author.clone(), block_number)
         } else {
-            PendingAuthors {
-                authors: vec![(author.to_owned(), 1)],
-                last_block_number: block_number,
-            }
+            PendingAuthorsValue::new(author.clone(), block_number)
         };
-        PendingRewards::<T>::insert(relay_block_number, para_id, pending_authors_per_chain);
+        PendingAuthors::<T>::insert(block_number, para_id, pending_authors_per_chain);
         total_weight
     }
 }

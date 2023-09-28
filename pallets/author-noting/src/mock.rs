@@ -146,8 +146,8 @@ impl tp_traits::GetContainerChainAuthor<AccountId> for MockAuthorFetcher {
 
 pub struct MockContainerChainGetter;
 
-impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
-    fn current_container_chains() -> Vec<ParaId> {
+impl tp_traits::GetCurrentContainerChains<ConstU32<5>> for MockContainerChainGetter {
+    fn current_container_chains() -> BoundedVec<ParaId, ConstU32<5>> {
         MockData::mock().container_chains
     }
 

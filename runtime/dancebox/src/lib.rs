@@ -41,7 +41,9 @@ use {
         dispatch::DispatchClass,
         parameter_types,
         traits::{
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, ValidatorRegistration,
+            fungible::{Balanced, Credit},
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter,
+            ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -884,6 +886,34 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub ParachainBondAccount: AccountId32 = AccountId32::new([42; 32]); // TODO replace by a real account
+    pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
+    // 5%/year with 2_629_800 blocks per year -> 0.05/2_629_800 = 19/1_000_000_000
+    pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));
+
+    // 30% for parachain bond, so 70% for staking
+    pub const RewardsPortion: Perbill = Perbill::from_percent(70);
+}
+
+pub struct OnUnbalancedInflation;
+impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
+    fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
+        let _ = <Balances as Balanced<_>>::resolve(&ParachainBondAccount::get(), credit);
+    }
+}
+
+impl pallet_inflation_rewards::Config for Runtime {
+    type Currency = Balances;
+    type ContainerChains = Registrar;
+    type InflationRate = InflationRate;
+    type MaxAuthors = ConstU32<80>;
+    type OnUnbalanced = OnUnbalancedInflation;
+    type PendingRewardsAccount = PendingRewardsAccount;
+    type StakingRewardsDistributor = PooledStaking;
+    type RewardsPortion = RewardsPortion;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime where
@@ -920,6 +950,7 @@ construct_runtime!(
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
         PooledStaking: pallet_pooled_staking = 34,
+        InflationRewards: pallet_inflation_rewards = 35,
 
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 50,

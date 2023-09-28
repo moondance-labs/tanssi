@@ -25,6 +25,7 @@ pallet-authority-mapping = { workspace = true }
 pallet-collator-assignment = { workspace = true }
 pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
+pallet-inflation-rewards = { workspace = true }
 pallet-initializer = { workspace = true }
 pallet-pooled-staking = { workspace = true }
 pallet-proxy = { workspace = true }
@@ -141,6 +142,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-configuration/std",
+	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
 	"pallet-maintenance-mode/std",
