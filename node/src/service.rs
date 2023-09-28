@@ -1505,15 +1505,14 @@ pub fn new_dev(
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {
-                        
                         let mocked_author_noting =
-                        tp_author_noting_inherent::MockAuthorNotingInherentDataProvider {
-                            current_para_block,
-                            relay_offset: 1000,
-                            relay_blocks_per_para_block: 2,
-                            para_ids,
-                            slots_per_para_block: 1,
-                        };
+                            tp_author_noting_inherent::MockAuthorNotingInherentDataProvider {
+                                current_para_block,
+                                relay_offset: 1000,
+                                relay_blocks_per_para_block: 2,
+                                para_ids,
+                                slots_per_para_block: 1,
+                            };
 
                         let time = MockTimestampInherentDataProvider;
                         let mocked_parachain = MockValidationDataInherentDataProvider {
@@ -1531,7 +1530,9 @@ pub fn new_dev(
                             ),
                             raw_downward_messages: downward_xcm_receiver.drain().collect(),
                             raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
-                            additional_key_values : Some(mocked_author_noting.get_key_values().clone())
+                            additional_key_values: Some(
+                                mocked_author_noting.get_key_values().clone(),
+                            ),
                         };
 
                         Ok((time, mocked_parachain, mocked_author_noting))

@@ -154,10 +154,8 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
     }
 }
 
-
 impl MockAuthoritiesNotingInherentDataProvider {
     pub fn get_key_values(&self) -> Vec<(Vec<u8>, Vec<u8>)> {
-
         let mut sproof_builder = ParaHeaderSproofBuilder::default();
 
         let container_chains =

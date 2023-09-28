@@ -143,7 +143,7 @@ impl ParaHeaderSproofBuilder {
         }
 
         // Insert new keys and add them to relevant keys
- /*       {
+        /*       {
             use parity_scale_codec::Encode as _;
 
             let mut insert = |key: Vec<u8>, _value: Vec<u8>| {
@@ -173,9 +173,7 @@ impl ParaHeaderSproofBuilder {
     }
 
     // Construct the proof from an existing state and proof
-    pub fn key_values(
-        self
-    ) -> Vec<(Vec<u8>, Vec<u8>)> {
+    pub fn key_values(self) -> Vec<(Vec<u8>, Vec<u8>)> {
         // Fetch all existing keys
         let mut key_values = vec![];
 
