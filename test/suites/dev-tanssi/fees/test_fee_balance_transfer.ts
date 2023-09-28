@@ -62,6 +62,7 @@ describeSuite({
                 expect(basePlusWeightFee).to.equal(1000000n + 1479873n);
                 expectedBasePlusWeightFee = basePlusWeightFee;
 
+                // TODO: revisit this 1 unit that is getting injected here
                 const expectedFee = basePlusWeightFee + BigInt(signedTx.encodedLength) +1n;
                 expect(fee).to.equal(expectedFee);
 
