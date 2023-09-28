@@ -64,6 +64,11 @@ fn test_distribution(
     use crate::traits::Timer;
     let block_number = <Runtime as crate::Config>::JoiningRequestTimer::now();
 
+    // Create new supply for rewards
+    let new_supply = currency_issue(reward.rewards);
+    use frame_support::traits::Imbalance;
+    let new_supply_amount = new_supply.peek();
+
     // Request all delegations
     for d in delegations {
         assert_ok!(Staking::request_delegate(
@@ -103,7 +108,7 @@ fn test_distribution(
     let candidate_balance_before = total_balance(&ACCOUNT_CANDIDATE_1);
     assert_ok!(Pallet::<Runtime>::distribute_rewards(
         reward.collator,
-        reward.rewards
+        new_supply
     ));
     let candidate_balance_after = total_balance(&ACCOUNT_CANDIDATE_1);
 
@@ -165,7 +170,7 @@ fn test_distribution(
             + distribution.collator_manual
             + distribution.delegators_auto
             + distribution.delegators_manual,
-        reward.rewards,
+        new_supply_amount,
         "Distribution total doesn't match requested reward"
     );
 

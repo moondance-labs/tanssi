@@ -485,6 +485,6 @@ pub(crate) fn do_rebalance_hold<P: Pool<Runtime>>(
     assert_fields_eq!(pool_before, pool_after, stake);
 }
 
-pub(crate) fn currency_issue(amount: Balance) -> CreditOf<Runtime> {
-    <<Runtime as crate::Config>::Currency as Balanced>::issue(amount)
+pub(crate) fn currency_issue(amount: Balance) -> crate::CreditOf<Runtime> {
+    <<Runtime as crate::Config>::Currency as Balanced<AccountId>>::issue(amount)
 }

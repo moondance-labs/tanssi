@@ -6886,6 +6886,7 @@ dependencies = [
 name = "pallet-author-noting"
 version = "0.1.0"
 dependencies = [
+ "bounded-collections",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "frame-benchmarking",

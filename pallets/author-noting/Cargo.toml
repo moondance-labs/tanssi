@@ -33,6 +33,7 @@ tp-core = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
+bounded-collections = { workspace = true }
 hex-literal = { workspace = true }
 polkadot-parachain = { workspace = true }
 polkadot-primitives = { workspace = true }
