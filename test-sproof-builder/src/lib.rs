@@ -123,12 +123,9 @@ impl ParaHeaderSproofBuilder {
         sp_state_machine::StorageProof,
     ) {
         // Recover the db
-        let (_prefixed_db, _prefixed_root) = PrefixedMemoryDB::<
-            HashingFor<cumulus_primitives_core::relay_chain::Block>,
-        >::default_with_root();
         let db = state.into_memory_db::<HashingFor<cumulus_primitives_core::relay_chain::Block>>();
 
-        // TODO: fix me later
+        // We assume this backend already has the keys injected, and we just need to fetch the proof
         let backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
 
         // Fetch all existing keys
@@ -138,8 +135,15 @@ impl ParaHeaderSproofBuilder {
             .map(|result| result.unwrap())
             .collect::<Vec<_>>();
 
+        // Fetch relevant keys
+        for item in self.items {
+            let para_key = item.para_id.twox_64_concat();
+            let key = [well_known_keys::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+            relevant_keys.push(key.clone());
+        }
+
         // Insert new keys and add them to relevant keys
-        {
+ /*       {
             use parity_scale_codec::Encode as _;
 
             let mut insert = |key: Vec<u8>, _value: Vec<u8>| {
@@ -162,10 +166,33 @@ impl ParaHeaderSproofBuilder {
         }
 
         // Construct proof again
-        let root = *backend.root();
+        // let root = *backend.root();*/
         let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
 
         (root, proof)
+    }
+
+    // Construct the proof from an existing state and proof
+    pub fn key_values(
+        self
+    ) -> Vec<(Vec<u8>, Vec<u8>)> {
+        // Fetch all existing keys
+        let mut key_values = vec![];
+
+        // Fetch relevant keys
+        for item in self.items {
+            let para_key = item.para_id.twox_64_concat();
+            let key = [well_known_keys::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
+
+            let encoded = match item.author_id {
+                HeaderAs::AlreadyEncoded(encoded) => encoded,
+                HeaderAs::NonEncoded(header) => header.encode(),
+            };
+
+            let head_data: HeadData = encoded.into();
+            key_values.push((key, head_data.encode()))
+        }
+        key_values
     }
 }
 

@@ -685,6 +685,16 @@ pub async fn start_dev_node(
                     let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
 
 					async move {
+                        let mocked_authorities_noting =
+                            ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
+                                current_para_block,
+                                relay_offset: 1000,
+                                relay_blocks_per_para_block: 2,
+                                orchestrator_para_id: crate::chain_spec::ORCHESTRATOR,
+                                container_para_id: para_id,
+                                authorities: authorities_for_cidp
+                        };
+
                         let time = MockTimestampInherentDataProvider;
                         let mocked_parachain = MockValidationDataInherentDataProvider {
                             current_para_block,
@@ -701,17 +711,10 @@ pub async fn start_dev_node(
                             ),
                             raw_downward_messages: downward_xcm_receiver.drain().collect(),
                             raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
+                            additional_key_values: Some(mocked_authorities_noting.get_key_values())
                         };
 
-                        let mocked_authorities_noting =
-                            ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
-                                current_para_block,
-                                relay_offset: 1000,
-                                relay_blocks_per_para_block: 2,
-                                orchestrator_para_id: crate::chain_spec::ORCHESTRATOR,
-                                container_para_id: para_id,
-                                authorities: authorities_for_cidp
-                        };
+                        
 
 						Ok((time, mocked_parachain, mocked_authorities_noting))
 					}

@@ -153,3 +153,43 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
         None
     }
 }
+
+
+impl MockAuthoritiesNotingInherentDataProvider {
+    pub fn get_key_values(&self) -> Vec<(Vec<u8>, Vec<u8>)> {
+
+        let mut sproof_builder = ParaHeaderSproofBuilder::default();
+
+        let container_chains =
+            BTreeMap::from_iter([(self.container_para_id, self.authorities.clone())]);
+        let assignment = AuthorityAssignmentSproofBuilder::<NimbusId> {
+            authority_assignment: AssignedCollators {
+                orchestrator_chain: vec![],
+                container_chains,
+            },
+            session_index: 0,
+        };
+
+        let (orchestrator_chain_root, _orchestrator_chain_state) =
+            assignment.into_state_root_and_proof();
+
+        // Use the "sproof" (spoof proof) builder to build valid mock state root and proof.
+        let mut sproof_builder_item = ParaHeaderSproofBuilderItem {
+            para_id: self.orchestrator_para_id,
+            ..Default::default()
+        };
+
+        let header = HeaderAs::NonEncoded(tp_core::Header {
+            parent_hash: Default::default(),
+            number: Default::default(),
+            state_root: orchestrator_chain_root,
+            extrinsics_root: Default::default(),
+            digest: sp_runtime::generic::Digest { logs: vec![] },
+        });
+        sproof_builder_item.author_id = header;
+
+        sproof_builder.items.push(sproof_builder_item);
+
+        sproof_builder.key_values()
+    }
+}

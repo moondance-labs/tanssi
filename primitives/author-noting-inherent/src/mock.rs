@@ -141,3 +141,34 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
         None
     }
 }
+
+impl MockAuthorNotingInherentDataProvider {
+    pub fn get_key_values(&self) -> Vec<(Vec<u8>, Vec<u8>)> {
+        let slot_number =
+            InherentType::from(self.slots_per_para_block as u64 * self.current_para_block as u64);
+
+        let mut sproof_builder = ParaHeaderSproofBuilder::default();
+
+        // Use the "sproof" (spoof proof) builder to build valid mock state root and proof.
+        for para_id in self.para_ids.iter() {
+            let mut sproof_builder_item = ParaHeaderSproofBuilderItem {
+                para_id: *para_id,
+                ..Default::default()
+            };
+
+            let header = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: Default::default(),
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot_number.encode())],
+                },
+            });
+            sproof_builder_item.author_id = header;
+
+            sproof_builder.items.push(sproof_builder_item);
+        }
+        sproof_builder.key_values()
+    }
+}
