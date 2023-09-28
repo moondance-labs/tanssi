@@ -482,7 +482,13 @@ pub struct CollatorsFromInvulnerablesAndThenFromStaking;
 
 /// Play the role of the session manager.
 impl SessionManager<AccountId> for CollatorsFromInvulnerablesAndThenFromStaking {
-    fn new_session(_index: SessionIndex) -> Option<Vec<AccountId>> {
+    fn new_session(index: SessionIndex) -> Option<Vec<AccountId>> {
+        log::info!(
+            "assembling new collators for new session {} at #{:?}",
+            index,
+            <frame_system::Pallet<Runtime>>::block_number(),
+        );
+
         let invulnerables = Invulnerables::invulnerables().to_vec();
         let candidates_staking =
             pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
