@@ -70,7 +70,7 @@
         },
         {
             "name": "dev_frontier_template",
-            "testFileDir": ["suites/dev-frontier-template/test-eth-rpc/test-eth-rpc-index.ts"],
+            "testFileDir": ["suites/dev-frontier-template", "suites/common"],
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": true,
             "reporters": ["basic"],
@@ -81,8 +81,7 @@
                     {
                         "name": "frontier-template",
                         "binPath": "../target/release/container-chain-template-frontier-node",
-                        "options": ["--dev", "--sealing=manual", "--para-id=2000"],
-                        "disableDefaultEthProviders": false,
+                        "options": ["--dev", "--sealing=manual"],
                         "newRpcBehaviour": true
                     }
                 ]
