@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{*, mock::*, Config},
+    crate::{mock::*, Config, *},
     frame_support::{pallet_prelude::*, traits::fungible::Inspect},
     sp_runtime::Permill,
 };
@@ -39,7 +39,7 @@ fn test_increase_supply() {
             total_supply_1,
             total_supply_0 + (<Test as Config>::InflationRate::get() * total_supply_0),
         );
-        
+
         <Pallet<Test> as Hooks<u64>>::on_initialize(2);
         let total_supply_2 = get_total_issuance();
         assert_eq!(
@@ -65,8 +65,6 @@ fn test_undistributed_rewards() {
             get_balance(&OnUnbalancedInflationAccount::get()),
             initial_balance + (Permill::from_percent(30) * new_supply),
         );
-
-
     });
 }
 
@@ -85,7 +83,7 @@ fn test_reward_orchestrator_author() {
         assert_eq!(
             get_balance(&author),
             // 70% rewards for 2 chains, so 35% per chain
-            author_balance + (Permill::from_percent(35) * new_supply), 
+            author_balance + (Permill::from_percent(35) * new_supply),
         );
     });
 }
@@ -111,7 +109,7 @@ fn test_reward_orchestrator_author_less_if_more_chains() {
         assert_eq!(
             get_balance(&author),
             // 70% rewards for 3 chains, so 17.5% per chain
-            author_balance + (Permill::from_perthousand(175) * new_supply), 
+            author_balance + (Permill::from_perthousand(175) * new_supply),
         );
     });
 }
@@ -147,8 +145,7 @@ fn test_reward_container_chain_author() {
         assert_eq!(
             get_balance(&container_author),
             // 70% rewards for 2 chains, so 35% per chain
-            container_author_balance + (Permill::from_percent(35) * new_supply), 
+            container_author_balance + (Permill::from_percent(35) * new_supply),
         );
     });
 }
-

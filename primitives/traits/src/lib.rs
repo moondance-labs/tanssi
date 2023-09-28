@@ -42,11 +42,7 @@ pub trait AuthorNotingHook<AccountId> {
 }
 
 impl<AccountId> AuthorNotingHook<AccountId> for () {
-    fn on_container_author_noted(
-        _: &AccountId,
-        _: BlockNumber,
-        _: ParaId,
-    ) -> Weight {
+    fn on_container_author_noted(_: &AccountId, _: BlockNumber, _: ParaId) -> Weight {
         Weight::zero()
     }
 }
