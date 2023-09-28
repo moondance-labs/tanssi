@@ -14,6 +14,7 @@ hex-literal = { workspace = true, optional = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
+serde = { workspace = true, optional = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Local
@@ -24,8 +25,9 @@ tp-consensus = { workspace = true }
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
-pallet-maintenance-mode = { workspace = true }
+pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
+xcm-primitives = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -40,10 +42,12 @@ pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-utility = { workspace = true }
+pallet-proxy = { workspace = true }
 sp-api = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
+sp-debug-derive = { workspace = true }
 sp-inherents = { workspace = true }
 sp-offchain = { workspace = true }
 sp-runtime = { workspace = true }
@@ -94,7 +98,10 @@ substrate-wasm-builder = { workspace = true }
 default = [
 	"std",
 ]
-std = [ "ccp-xcm/std", "cumulus-pallet-dmp-queue/std", "cumulus-pallet-parachain-system/std", "cumulus-pallet-xcm/std", "cumulus-pallet-xcmp-queue/std", "cumulus-primitives-core/std", "cumulus-primitives-timestamp/std", "cumulus-primitives-utility/std", "fp-account/std", "fp-evm/std", "fp-rpc/std", "fp-self-contained/std", "frame-executive/std", "frame-support/std", "frame-system-rpc-runtime-api/std", "frame-system/std", "frame-try-runtime/std", "log/std", "pallet-balances/std", "pallet-base-fee/std", "pallet-cc-authorities-noting/std", "pallet-dynamic-fee/std", "pallet-ethereum/std", "pallet-ethereum/std", "pallet-evm-chain-id/std", "pallet-evm-precompile-modexp/std", "pallet-evm-precompile-sha3fips/std", "pallet-evm-precompile-simple/std", "pallet-evm/std", "pallet-hotfix-sufficients/std", "pallet-maintenance-mode/std", "pallet-migrations/std", "pallet-sudo/std", "pallet-timestamp/std", "pallet-transaction-payment-rpc-runtime-api/std", "pallet-utility/std", "pallet-xcm/std", "parachain-info/std", "parity-scale-codec/std", "polkadot-parachain/std", "polkadot-runtime-common/std", "scale-info/std", "sp-api/std", "sp-block-builder/std", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-offchain/std", "sp-runtime/std", "sp-std/std", "sp-transaction-pool/std", "sp-version/std", "tp-consensus/std", "xcm-builder/std", "xcm-executor/std", "xcm/std" ]
+std = [ "ccp-xcm/std", "cumulus-pallet-dmp-queue/std", "cumulus-pallet-parachain-system/std", "cumulus-pallet-xcm/std", "cumulus-pallet-xcmp-queue/std", "cumulus-primitives-core/std", "cumulus-primitives-timestamp/std", "cumulus-primitives-utility/std", "fp-account/std", "fp-evm/std", "fp-rpc/std", "fp-self-contained/std", "frame-executive/std", "frame-support/std", "frame-system-rpc-runtime-api/std", "frame-system/std", "frame-try-runtime/std", "log/std", "pallet-balances/std", "pallet-base-fee/std", "pallet-cc-authorities-noting/std", "pallet-dynamic-fee/std", "pallet-ethereum/std", "pallet-ethereum/std", "pallet-evm-chain-id/std", "pallet-evm-precompile-modexp/std", "pallet-evm-precompile-sha3fips/std", "pallet-evm-precompile-simple/std", "pallet-evm/std", "pallet-hotfix-sufficients/std", "pallet-maintenance-mode/std", "pallet-migrations/std", "pallet-proxy/std", "pallet-sudo/std", "pallet-timestamp/std", "pallet-transaction-payment-rpc-runtime-api/std", "pallet-utility/std", "pallet-xcm/std", "parachain-info/std", "parity-scale-codec/std", "polkadot-parachain/std", "polkadot-runtime-common/std", "scale-info/std", "serde", "sp-api/std", "sp-block-builder/std", "sp-consensus-aura/std", "sp-core/std", "sp-inherents/std", "sp-offchain/std", "sp-runtime/std", "sp-std/std", "sp-transaction-pool/std", "sp-version/std", "tp-consensus/std", "xcm-builder/std", "xcm-executor/std", "xcm/std", "xcm-primitives/std" ]
+
+# Allow to print logs details (no wasm:stripped)
+force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [ "cumulus-pallet-session-benchmarking/runtime-benchmarks", "frame-support/runtime-benchmarks", "frame-system/runtime-benchmarks", "hex-literal", "pallet-balances/runtime-benchmarks", "pallet-ethereum/runtime-benchmarks", "pallet-timestamp/runtime-benchmarks", "pallet-xcm/runtime-benchmarks", "sp-runtime/runtime-benchmarks", "xcm-builder/runtime-benchmarks" ]
 
@@ -118,6 +125,7 @@ try-runtime = [
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"pallet-utility/try-runtime",
+	"pallet-proxy/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",

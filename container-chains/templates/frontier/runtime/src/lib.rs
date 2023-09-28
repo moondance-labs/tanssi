@@ -34,15 +34,18 @@ pub mod xcm_config;
 use {
     crate::precompiles::FrontierPrecompiles,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
+    cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, DmpMessageHandler},
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
     fp_rpc::TransactionStatus,
     frame_support::{
         construct_runtime,
         dispatch::{DispatchClass, GetDispatchInfo},
+        pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Imbalance, OnFinalize,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Imbalance,
+            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
             OnUnbalanced,
         },
         weights::{
@@ -67,9 +70,10 @@ use {
     },
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     parity_scale_codec::{Decode, Encode},
+    scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{Get, OpaqueMetadata, H160, H256, U256},
+    sp_core::{Get, MaxEncodedLen, OpaqueMetadata, H160, H256, U256},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -153,7 +157,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    AllPalletsWithSystem,
+    pallet_maintenance_mode::ExecutiveHooks<Runtime>,
 >;
 
 impl fp_self_contained::SelfContainedCall for RuntimeCall {
@@ -320,10 +324,18 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
+pub const SUPPLY_FACTOR: Balance = 100;
+
 // Unit = the base number of indivisible units for balances
 pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = 1_000_000_000;
 pub const MICROUNIT: Balance = 1_000_000;
+
+pub const STORAGE_BYTE_FEE: Balance = 100 * MICROUNIT * SUPPLY_FACTOR;
+
+pub const fn deposit(items: u32, bytes: u32) -> Balance {
+    items as Balance * 100 * MILLIUNIT * SUPPLY_FACTOR + (bytes as Balance) * STORAGE_BYTE_FEE
+}
 
 /// The existential deposit. Set to 0 because this is an ethereum-like chain
 pub const EXISTENTIAL_DEPOSIT: Balance = 0;
@@ -493,7 +505,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type OutboundXcmpMessageSource = XcmpQueue;
-    type DmpMessageHandler = DmpQueue;
+    type DmpMessageHandler = MaintenanceMode;
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
@@ -520,10 +532,101 @@ impl pallet_utility::Config for Runtime {
     type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
 }
 
+/// The type used to represent the kinds of proxying allowed.
+#[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+#[derive(
+    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
+)]
+#[allow(clippy::unnecessary_cast)]
+pub enum ProxyType {
+    /// All calls can be proxied. This is the trivial/most permissive filter.
+    Any = 0,
+    /// Only extrinsics that do not transfer funds.
+    NonTransfer = 1,
+    /// Only extrinsics related to governance (democracy and collectives).
+    Governance = 2,
+    /// Allow to veto an announced proxy call.
+    CancelProxy = 3,
+    /// Allow extrinsic related to Balances.
+    Balances = 4,
+}
+
+impl Default for ProxyType {
+    fn default() -> Self {
+        Self::Any
+    }
+}
+
+impl InstanceFilter<RuntimeCall> for ProxyType {
+    fn filter(&self, c: &RuntimeCall) -> bool {
+        match self {
+            ProxyType::Any => true,
+            ProxyType::NonTransfer => {
+                matches!(
+                    c,
+                    RuntimeCall::System(..)
+                        | RuntimeCall::ParachainSystem(..)
+                        | RuntimeCall::Timestamp(..)
+                        | RuntimeCall::Utility(..)
+                        | RuntimeCall::Proxy(..)
+                )
+            }
+            ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
+            ProxyType::CancelProxy => matches!(
+                c,
+                RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
+            ),
+            ProxyType::Balances => {
+                matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+            }
+        }
+    }
+
+    fn is_superset(&self, o: &Self) -> bool {
+        match (self, o) {
+            (x, y) if x == y => true,
+            (ProxyType::Any, _) => true,
+            (_, ProxyType::Any) => false,
+            _ => false,
+        }
+    }
+}
+
+impl pallet_proxy::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type ProxyType = ProxyType;
+    // One storage item; key size 32, value size 8
+    type ProxyDepositBase = ConstU128<{ deposit(1, 8) }>;
+    // Additional storage item size of 21 bytes (20 bytes AccountId + 1 byte sizeof(ProxyType)).
+    type ProxyDepositFactor = ConstU128<{ deposit(0, 21) }>;
+    type MaxProxies = ConstU32<32>;
+    type MaxPending = ConstU32<32>;
+    type CallHasher = BlakeTwo256;
+    type AnnouncementDepositBase = ConstU128<{ deposit(1, 8) }>;
+    // Additional storage item size of 56 bytes:
+    // - 20 bytes AccountId
+    // - 32 bytes Hasher (Blake2256)
+    // - 4 bytes BlockNumber (u32)
+    type AnnouncementDepositFactor = ConstU128<{ deposit(0, 56) }>;
+    type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
+}
+
+pub struct XcmExecutionManager;
+impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
+    fn suspend_xcm_execution() -> DispatchResult {
+        XcmpQueue::suspend_xcm_execution(RuntimeOrigin::root())
+    }
+    fn resume_xcm_execution() -> DispatchResult {
+        XcmpQueue::resume_xcm_execution(RuntimeOrigin::root())
+    }
+}
+
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type MigrationsList = ();
-    type XcmExecutionManager = ();
+    type XcmExecutionManager = XcmExecutionManager;
 }
 
 /// Maintenance mode Call filter
@@ -534,6 +637,7 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
             RuntimeCall::Balances(_) => false,
             RuntimeCall::Ethereum(_) => false,
             RuntimeCall::EVM(_) => false,
+            RuntimeCall::PolkadotXcm(_) => false,
             _ => true,
         }
     }
@@ -554,8 +658,86 @@ impl Contains<RuntimeCall> for NormalFilter {
             // Note: It is also assumed that EVM calls are only allowed through `Origin::Root` so
             // this can be seen as an additional security
             RuntimeCall::EVM(_) => false,
+            // We filter anonymous proxy as they make "reserve" inconsistent
+            // See: https://github.com/paritytech/substrate/blob/37cca710eed3dadd4ed5364c7686608f5175cce1/frame/proxy/src/lib.rs#L270 // editorconfig-checker-disable-line
+            RuntimeCall::Proxy(method) => match method {
+                pallet_proxy::Call::create_pure { .. } => false,
+                pallet_proxy::Call::kill_pure { .. } => false,
+                _ => true,
+            },
             _ => true,
         }
+    }
+}
+
+pub struct NormalDmpHandler;
+impl DmpMessageHandler for NormalDmpHandler {
+    // This implementation makes messages be queued
+    // Since the limit is 0, messages are queued for next iteration
+    fn handle_dmp_messages(
+        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+        limit: Weight,
+    ) -> Weight {
+        (if Migrations::should_pause_xcm() {
+            DmpQueue::handle_dmp_messages(iter, Weight::zero())
+        } else {
+            DmpQueue::handle_dmp_messages(iter, limit)
+        }) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
+    }
+}
+
+pub struct MaintenanceDmpHandler;
+impl DmpMessageHandler for MaintenanceDmpHandler {
+    // This implementation makes messages be queued
+    // Since the limit is 0, messages are queued for next iteration
+    fn handle_dmp_messages(
+        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+        _limit: Weight,
+    ) -> Weight {
+        DmpQueue::handle_dmp_messages(iter, Weight::zero())
+    }
+}
+
+/// The hooks we want to run in Maintenance Mode
+pub struct MaintenanceHooks;
+
+impl OnInitialize<BlockNumber> for MaintenanceHooks {
+    fn on_initialize(n: BlockNumber) -> Weight {
+        AllPalletsWithSystem::on_initialize(n)
+    }
+}
+
+// We override onIdle for xcmQueue and dmpQueue pallets to not process messages inside it
+impl OnIdle<BlockNumber> for MaintenanceHooks {
+    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
+        Weight::zero()
+    }
+}
+
+impl OnRuntimeUpgrade for MaintenanceHooks {
+    fn on_runtime_upgrade() -> Weight {
+        AllPalletsWithSystem::on_runtime_upgrade()
+    }
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        AllPalletsWithSystem::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        AllPalletsWithSystem::post_upgrade(state)
+    }
+}
+
+impl OnFinalize<BlockNumber> for MaintenanceHooks {
+    fn on_finalize(n: BlockNumber) {
+        AllPalletsWithSystem::on_finalize(n)
+    }
+}
+
+impl OffchainWorker<BlockNumber> for MaintenanceHooks {
+    fn offchain_worker(n: BlockNumber) {
+        AllPalletsWithSystem::offchain_worker(n)
     }
 }
 
@@ -564,16 +746,13 @@ impl pallet_maintenance_mode::Config for Runtime {
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
-    // TODO: enable xcm-support feature when we enable xcm
-    /*
     type XcmExecutionManager = XcmExecutionManager;
     type NormalDmpHandler = NormalDmpHandler;
     type MaintenanceDmpHandler = MaintenanceDmpHandler;
-    */
     // We use AllPalletsWithSystem because we dont want to change the hooks in normal
     // operation
     type NormalExecutiveHooks = AllPalletsWithSystem;
-    type MaintenanceExecutiveHooks = AllPalletsWithSystem;
+    type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
 impl pallet_cc_authorities_noting::Config for Runtime {
@@ -693,7 +872,7 @@ construct_runtime!(
         ParachainInfo: parachain_info = 3,
         Sudo: pallet_sudo = 4,
         Utility: pallet_utility = 5,
-        // Proxy: pallet_proxy = 6,
+        Proxy: pallet_proxy = 6,
         Migrations: pallet_migrations = 7,
         MaintenanceMode: pallet_maintenance_mode = 8,
 

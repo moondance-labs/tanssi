@@ -35,15 +35,19 @@ pub mod weights;
 
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
+    cumulus_primitives_core::{
+        relay_chain::{BlockNumber as RelayBlockNumber, SessionIndex},
+        BodyId, DmpMessageHandler, ParaId,
+    },
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
+        pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter,
-            ValidatorRegistration,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
+            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -117,7 +121,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    AllPalletsWithSystem,
+    pallet_maintenance_mode::ExecutiveHooks<Runtime>,
 >;
 
 /// DANCE, the native token, uses 12 decimals of precision.
@@ -426,7 +430,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type OutboundXcmpMessageSource = XcmpQueue;
-    type DmpMessageHandler = DmpQueue;
+    type DmpMessageHandler = MaintenanceMode;
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
@@ -546,6 +550,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
+    type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {
@@ -735,10 +740,20 @@ impl pallet_proxy::Config for Runtime {
     type WeightInfo = pallet_proxy::weights::SubstrateWeight<Runtime>;
 }
 
+pub struct XcmExecutionManager;
+impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
+    fn suspend_xcm_execution() -> DispatchResult {
+        XcmpQueue::suspend_xcm_execution(RuntimeOrigin::root())
+    }
+    fn resume_xcm_execution() -> DispatchResult {
+        XcmpQueue::resume_xcm_execution(RuntimeOrigin::root())
+    }
+}
+
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (migrations::DanceboxMigrations<Runtime>,);
-    type XcmExecutionManager = ();
+    type XcmExecutionManager = XcmExecutionManager;
 }
 
 /// Maintenance mode Call filter
@@ -779,21 +794,89 @@ impl Contains<RuntimeCall> for NormalFilter {
     }
 }
 
+pub struct NormalDmpHandler;
+impl DmpMessageHandler for NormalDmpHandler {
+    // This implementation makes messages be queued
+    // Since the limit is 0, messages are queued for next iteration
+    fn handle_dmp_messages(
+        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+        limit: Weight,
+    ) -> Weight {
+        (if Migrations::should_pause_xcm() {
+            DmpQueue::handle_dmp_messages(iter, Weight::zero())
+        } else {
+            DmpQueue::handle_dmp_messages(iter, limit)
+        }) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
+    }
+}
+
+pub struct MaintenanceDmpHandler;
+impl DmpMessageHandler for MaintenanceDmpHandler {
+    // This implementation makes messages be queued
+    // Since the limit is 0, messages are queued for next iteration
+    fn handle_dmp_messages(
+        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+        _limit: Weight,
+    ) -> Weight {
+        DmpQueue::handle_dmp_messages(iter, Weight::zero())
+    }
+}
+
+/// The hooks we want to run in Maintenance Mode
+pub struct MaintenanceHooks;
+
+impl OnInitialize<BlockNumber> for MaintenanceHooks {
+    fn on_initialize(n: BlockNumber) -> Weight {
+        AllPalletsWithSystem::on_initialize(n)
+    }
+}
+
+// We override onIdle for xcmQueue and dmpQueue pallets to not process messages inside it
+impl OnIdle<BlockNumber> for MaintenanceHooks {
+    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
+        Weight::zero()
+    }
+}
+
+impl OnRuntimeUpgrade for MaintenanceHooks {
+    fn on_runtime_upgrade() -> Weight {
+        AllPalletsWithSystem::on_runtime_upgrade()
+    }
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        AllPalletsWithSystem::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        AllPalletsWithSystem::post_upgrade(state)
+    }
+}
+
+impl OnFinalize<BlockNumber> for MaintenanceHooks {
+    fn on_finalize(n: BlockNumber) {
+        AllPalletsWithSystem::on_finalize(n)
+    }
+}
+
+impl OffchainWorker<BlockNumber> for MaintenanceHooks {
+    fn offchain_worker(n: BlockNumber) {
+        AllPalletsWithSystem::offchain_worker(n)
+    }
+}
+
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
-    // TODO: enable xcm-support feature when we enable xcm
-    /*
     type XcmExecutionManager = XcmExecutionManager;
     type NormalDmpHandler = NormalDmpHandler;
     type MaintenanceDmpHandler = MaintenanceDmpHandler;
-    */
     // We use AllPalletsWithSystem because we dont want to change the hooks in normal
     // operation
     type NormalExecutiveHooks = AllPalletsWithSystem;
-    type MaintenanceExecutiveHooks = AllPalletsWithSystem;
+    type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
 impl pallet_root_testing::Config for Runtime {}
@@ -966,7 +1049,7 @@ construct_runtime!(
         InflationRewards: pallet_inflation_rewards = 35,
 
         //XCM
-        XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 50,
+        XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config} = 53,
@@ -980,6 +1063,7 @@ mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
         [pallet_author_noting, AuthorNoting]
+        [pallet_collator_assignment, CollatorAssignment]
         [pallet_configuration, Configuration]
         [pallet_registrar, Registrar]
         [pallet_invulnerables, Invulnerables]

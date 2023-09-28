@@ -71,6 +71,8 @@ pub trait GetCurrentContainerChains {
 /// session index.
 pub trait GetSessionContainerChains<SessionIndex> {
     fn session_container_chains(session_index: SessionIndex) -> Vec<ParaId>;
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_session_container_chains(session_index: SessionIndex, container_chains: &[ParaId]);
 }
 
 /// Returns author for a parachain id for the given slot.

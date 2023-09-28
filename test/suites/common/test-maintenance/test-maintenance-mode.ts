@@ -2,10 +2,10 @@ import "@polkadot/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock } from "../../util/block";
+import { initializeCustomCreateBlock } from "../../../util/block";
 
 describeSuite({
-    id: "C02",
+    id: "C0103",
     title: "Maintenance mode test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

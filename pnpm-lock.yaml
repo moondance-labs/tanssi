@@ -13,8 +13,8 @@ importers:
         version: 0.0.52(@polkadot/util@12.4.2)(@types/node@20.5.6)
     devDependencies:
       '@acala-network/chopsticks':
-        specifier: npm:@tanssi/chopsticks@^0.8.0-7
-        version: /@tanssi/chopsticks@0.8.0-7(@polkadot/util@12.4.2)(debug@4.3.4)
+        specifier: npm:@tanssi/chopsticks@^0.8.0-9
+        version: /@tanssi/chopsticks@0.8.0-9(@polkadot/util@12.4.2)(debug@4.3.4)
       '@moonbeam-network/api-augment':
         specifier: ^0.2400.0
         version: 0.2400.0
@@ -1395,7 +1395,7 @@ packages:
     engines: {node: '>=16'}
     dependencies:
       '@polkadot/util': 12.4.2
-      '@polkadot/x-bigint': 12.4.1
+      '@polkadot/x-bigint': 12.4.2
       tslib: 2.6.2
 
   /@polkadot/types-create@10.9.1:
@@ -1535,13 +1535,6 @@ packages:
       '@polkadot/util': '*'
     dependencies:
       '@polkadot/util': 12.4.2
-      tslib: 2.6.2
-
-  /@polkadot/x-bigint@12.4.1:
-    resolution: {integrity: sha512-Wc5udWkRvZJpdISNmnVEwgtyyb/cPHk2YyqdGv9OnEmrG/gLQpmfPVnoxCYNvxq2qyv4klgAdrKcPTG0XvBOTA==}
-    engines: {node: '>=16'}
-    dependencies:
-      '@polkadot/x-global': 12.4.1
       tslib: 2.6.2
 
   /@polkadot/x-bigint@12.4.2:
@@ -1702,12 +1695,12 @@ packages:
   /@substrate/ss58-registry@1.43.0:
     resolution: {integrity: sha512-USEkXA46P9sqClL7PZv0QFsit4S8Im97wchKG0/H/9q3AT/S76r40UHfCr4Un7eBJPE23f7fU9BZ0ITpP9MCsA==}
 
-  /@tanssi/chopsticks-core@0.8.0-7(@polkadot/util@12.4.2)(debug@4.3.4):
-    resolution: {integrity: sha512-TJ7DwHZgEy4fuPNo/ggKPwUWL1UV4TJhNdXZf3av4LVFR800/mAUK+urjDR0TCl31/VAT9qKjnUpZa1dafaxQw==}
+  /@tanssi/chopsticks-core@0.8.0-9(@polkadot/util@12.4.2)(debug@4.3.4):
+    resolution: {integrity: sha512-j2Ds4JTP5IuOkZ5HMocuVrfDrxbX+VQOO3SnThz9vvqjfmN5ZO2kPDGkPtcK3laRoWUhlhcjZ/26RO6+tosPog==}
     dependencies:
       '@polkadot/api': 10.9.1
       '@polkadot/util-crypto': 12.4.2(@polkadot/util@12.4.2)
-      '@tanssi/chopsticks-executor': 0.8.0-7(@polkadot/util@12.4.2)
+      '@tanssi/chopsticks-executor': 0.8.0-9(@polkadot/util@12.4.2)
       axios: 1.4.0(debug@4.3.4)
       eventemitter3: 5.0.1
       localforage: 1.10.0
@@ -1743,21 +1736,21 @@ packages:
       - utf-8-validate
     dev: true
 
-  /@tanssi/chopsticks-executor@0.8.0-7(@polkadot/util@12.4.2):
-    resolution: {integrity: sha512-RfpjhlPkjIZ85aCBUHWQsMo64XaAhmoP4AHbnmOwZ8sVNsyASG/JHUuWymgch65NsWel+dHdMPrVJzI02EPNFg==}
+  /@tanssi/chopsticks-executor@0.8.0-9(@polkadot/util@12.4.2):
+    resolution: {integrity: sha512-+iW4HX7nmyp5NCrxzHsmvpsDxW/73ZE+BGoPrDVBRFMklnL8LG7BM0qTFtumAHxqVfgOMLWTs7nvt19MGanmNg==}
     dependencies:
       '@polkadot/wasm-util': 7.2.2(@polkadot/util@12.4.2)
     transitivePeerDependencies:
       - '@polkadot/util'
     dev: true
 
-  /@tanssi/chopsticks@0.8.0-7(@polkadot/util@12.4.2)(debug@4.3.4):
-    resolution: {integrity: sha512-aHxss8enc+XrOMf76j/KE1nty9qskP1XOWdGZcjQV0ISVK+S0UiTk1n2zpnd7o0m3j6xTvchJXeUmrbHnq09yQ==}
+  /@tanssi/chopsticks@0.8.0-9(@polkadot/util@12.4.2)(debug@4.3.4):
+    resolution: {integrity: sha512-P/NDUtfcRx44oOtuLhg/H7EGDNMNJ/h0pKjlz+EMSvqknhyp05v6WYJjajnezKYY/ZekrXvnhlFQ+v0YZbVkZQ==}
     hasBin: true
     dependencies:
       '@pnpm/npm-conf': 2.2.2
       '@polkadot/api': 10.9.1
-      '@tanssi/chopsticks-core': 0.8.0-7(@polkadot/util@12.4.2)(debug@4.3.4)
+      '@tanssi/chopsticks-core': 0.8.0-9(@polkadot/util@12.4.2)(debug@4.3.4)
       axios: 1.4.0(debug@4.3.4)
       dotenv: 16.3.1
       global-agent: 3.0.0
@@ -4156,6 +4149,7 @@ packages:
       chalk: 2.4.2
       diff-match-patch: 1.0.5
     dev: true
+    bundledDependencies: []
 
   /jsondiffpatch@0.5.0:
     resolution: {integrity: sha512-Quz3MvAwHxVYNXsOByL7xI5EB2WYOeFswqaHIA3qOK3isRWTxiplBEocmmru6XmxDB2L7jDNYtYA4FyimoAFEw==}
