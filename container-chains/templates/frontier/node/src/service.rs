@@ -714,8 +714,6 @@ pub async fn start_dev_node(
                             additional_key_values: Some(mocked_authorities_noting.get_key_values())
                         };
 
-                        
-
 						Ok((time, mocked_parachain, mocked_authorities_noting))
 					}
 				},
