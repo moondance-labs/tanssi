@@ -191,6 +191,10 @@ describeSuite({
 
                 expect(allCollators).to.deep.equal(expectedAllCollators);
 
+                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
+                // So wait a few blocks more hoping that the current block will be finalized by then.
+                await context.waitBlock(3, "Tanssi");
+
                 // Collator2000-02 container chain db should have been deleted
                 expect(await directoryExists(container200002DbPath)).to.be.false;
 
@@ -204,7 +208,7 @@ describeSuite({
             title: "Collator1000-03 is producing blocks on Container 2000",
             timeout: 300000,
             test: async function () {
-                const blockStart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                const blockStart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber() - 3;
                 // Wait up to 8 blocks, giving the new collator 4 chances to build a block
                 const blockEnd = blockStart + 8;
                 const authors = [];
@@ -222,7 +226,10 @@ describeSuite({
                     if (author == getKeyringNimbusIdHex("Collator1000-03")) {
                         break;
                     }
-                    await context.waitBlock(1, "Container2000");
+                    const currentBlock = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                    if (currentBlock == blockNumber) {
+                        await context.waitBlock(1, "Container2000");
+                    }
                 }
 
                 expect(authors).to.contain(getKeyringNimbusIdHex("Collator1000-03"));
