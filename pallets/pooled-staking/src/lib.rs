@@ -529,7 +529,7 @@ pub mod pallet {
             Calls::<T>::update_candidate_position(&candidates)
         }
 
-        #[pallet::weight(T::Weights::swap_pool())]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
         pub fn swap_pool(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
