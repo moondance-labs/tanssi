@@ -80,6 +80,7 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
+    maintenance_primitives::{MaintenanceHooks, NormalDmpHandler, MaintenanceDmpHandler}
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -792,7 +793,7 @@ impl Contains<RuntimeCall> for NormalFilter {
     }
 }
 
-pub struct NormalDmpHandler;
+/* pub struct NormalDmpHandler;
 impl DmpMessageHandler for NormalDmpHandler {
     // This implementation makes messages be queued
     // Since the limit is 0, messages are queued for next iteration
@@ -818,9 +819,9 @@ impl DmpMessageHandler for MaintenanceDmpHandler {
     ) -> Weight {
         DmpQueue::handle_dmp_messages(iter, Weight::zero())
     }
-}
+} */
 
-/// The hooks we want to run in Maintenance Mode
+/* /// The hooks we want to run in Maintenance Mode
 pub struct MaintenanceHooks;
 
 impl OnInitialize<BlockNumber> for MaintenanceHooks {
@@ -861,7 +862,7 @@ impl OffchainWorker<BlockNumber> for MaintenanceHooks {
     fn offchain_worker(n: BlockNumber) {
         AllPalletsWithSystem::offchain_worker(n)
     }
-}
+} */
 
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -869,12 +870,12 @@ impl pallet_maintenance_mode::Config for Runtime {
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = XcmExecutionManager;
-    type NormalDmpHandler = NormalDmpHandler;
-    type MaintenanceDmpHandler = MaintenanceDmpHandler;
+    type NormalDmpHandler = NormalDmpHandler<Runtime, DmpQueue>;
+    type MaintenanceDmpHandler = MaintenanceDmpHandler<DmpQueue>;
     // We use AllPalletsWithSystem because we dont want to change the hooks in normal
     // operation
     type NormalExecutiveHooks = AllPalletsWithSystem;
-    type MaintenanceExecutiveHooks = MaintenanceHooks;
+    type MaintenanceExecutiveHooks = MaintenanceHooks<AllPalletsWithSystem>;
 }
 
 impl pallet_root_testing::Config for Runtime {}

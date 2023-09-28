@@ -38,6 +38,7 @@ pallet-author-inherent = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
+maintenance-primitives = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -137,6 +138,7 @@ std = [
 	"frame-try-runtime/std",
 	"log/std",
 	"nimbus-primitives/std",
+	"maintenance-primitives/std",
 	"pallet-author-noting-runtime-api/std",
 	"pallet-author-noting/std",
 	"pallet-authority-assignment/std",
@@ -217,6 +219,7 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
+	"maintenance-primitives/try-runtime",
 	"pallet-author-inherent/try-runtime",
 	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
