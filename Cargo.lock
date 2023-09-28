@@ -7575,6 +7575,7 @@ dependencies = [
 name = "pallet-inflation-rewards"
 version = "0.1.0"
 dependencies = [
+ "bounded-collections",
  "frame-benchmarking",
  "frame-support",
  "frame-system",

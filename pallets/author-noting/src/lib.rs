@@ -170,7 +170,6 @@ pub mod pallet {
                                     &block_info.author,
                                     block_info.block_number,
                                     para_id,
-                                    relay_chain_state.number,
                                 ),
                             );
                             LatestAuthor::<T>::insert(para_id, block_info);

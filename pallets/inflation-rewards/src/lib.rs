@@ -22,6 +22,12 @@
 
 pub use pallet::*;
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
 use frame_support::{
     pallet_prelude::*,
     traits::{
@@ -233,7 +239,6 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         author: &T::AccountId,
         block_number: BlockNumber,
         para_id: ParaId,
-        _relay_block_number: BlockNumber,
     ) -> Weight {
         let mut total_weight = T::DbWeight::get().reads_writes(1, 1);
         let pending_authors_per_chain = if let Some(mut pending_authors_per_chain) =

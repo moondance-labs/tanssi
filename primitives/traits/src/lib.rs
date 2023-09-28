@@ -38,7 +38,6 @@ pub trait AuthorNotingHook<AccountId> {
         author: &AccountId,
         block_number: BlockNumber,
         para_id: ParaId,
-        relay_block_number: BlockNumber,
     ) -> Weight;
 }
 
@@ -47,7 +46,6 @@ impl<AccountId> AuthorNotingHook<AccountId> for () {
         _: &AccountId,
         _: BlockNumber,
         _: ParaId,
-        _: BlockNumber,
     ) -> Weight {
         Weight::zero()
     }
