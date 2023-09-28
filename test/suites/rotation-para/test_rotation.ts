@@ -2,8 +2,9 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { Signer } from "ethers";
+import fs from "fs/promises";
 import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitSessions, waitToSession } from "../../util/block";
+import { signAndSendAndInclude, waitToSession } from "../../util/block";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
@@ -17,19 +18,18 @@ describeSuite({
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
         let container2001Api: ApiPromise;
-        let container2002Api: ApiPromise;
         let ethersSigner: Signer;
         let assignment3;
         let assignment5;
-        let allCollators;
-        let collatorName;
+        let allCollators: string[];
+        let collatorName: Record<string, string>;
+        let containerDbPaths: string[];
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
             relayApi = context.polkadotJs("Relay");
             container2000Api = context.polkadotJs("Container2000");
             container2001Api = context.polkadotJs("Container2001");
-            container2002Api = context.polkadotJs("Container2002");
             ethersSigner = context.ethers();
 
             const relayNetwork = relayApi.consts.system.version.specName.toString();
@@ -50,19 +50,12 @@ describeSuite({
             expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
             expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
 
-            const container2002Network = container2002Api.consts.system.version.specName.toString();
-            const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
-            expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
-            expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
-
             // Test block numbers in relay are 0 yet
             const header2000 = await getHeaderFromRelay(relayApi, 2000);
             const header2001 = await getHeaderFromRelay(relayApi, 2001);
-            const header2002 = await getHeaderFromRelay(relayApi, 2002);
 
             expect(header2000.number.toNumber()).to.be.equal(0);
             expect(header2001.number.toNumber()).to.be.equal(0);
-            expect(header2002.number.toNumber()).to.be.equal(0);
 
             // Initialize list of all collators, this should match the names from build-spec.sh script
             allCollators = [
@@ -78,6 +71,11 @@ describeSuite({
             // Initialize reverse map of collator key to collator name
             collatorName = createCollatorKeyToNameMap(paraApi, allCollators);
             console.log(collatorName);
+
+            containerDbPaths = [
+                "/data/containers/chains/simple_container_2000/db/full-container-2000",
+                "/data/containers/chains/frontier_container_2001/db/full-container-2001",
+            ];
         }, 120000);
 
         it({
@@ -86,9 +84,6 @@ describeSuite({
             test: async function () {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
-
-                const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
-                console.log("assignment session 0: ", assignment.toJSON());
             },
         });
 
@@ -255,9 +250,15 @@ describeSuite({
             timeout: 90000,
             test: async function () {
                 await waitToSession(context, paraApi, 3);
+
+                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
+                // So wait a few blocks more hoping that the current block will be finalized by then.
+                await context.waitBlock(3, "Tanssi");
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 assignment3 = assignment.toJSON();
-                console.log("assignment session 3: ", assignment.toJSON());
+                console.log("assignment session 3:");
+                logAssignment(collatorName, assignment3);
+
                 expect(assignment.orchestratorChain.length).toBe(1);
                 expect(assignment.containerChains.toJSON()[2000].length).toBe(1);
                 expect(assignment.containerChains.toJSON()[2001].length).toBe(1);
@@ -266,11 +267,14 @@ describeSuite({
         it({
             id: "T13",
             title: "On session 4 collators start syncing the new chains",
-            timeout: 300000,
+            timeout: 90000,
             test: async function () {
                 await waitToSession(context, paraApi, 4);
+
+                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
+                // So wait a few blocks more hoping that the current block will be finalized by then.
+                await context.waitBlock(3, "Tanssi");
                 const futureAssignment = await paraApi.query.collatorAssignment.pendingCollatorContainerChain();
-                console.log("future assignment session 5: ", futureAssignment.toJSON());
                 // The assignment is random, so there is a small chance that it will be the same,
                 // and in that case this test shouldn't fail
                 if (futureAssignment.isNone) {
@@ -278,54 +282,172 @@ describeSuite({
                 } else {
                     assignment5 = futureAssignment.toJSON();
                 }
+                console.log("assignment session 5:");
+                logAssignment(collatorName, assignment5);
 
-                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
-                // So wait a few blocks more hoping that the current block will be finalized by then.
-                await context.waitBlock(3, "Tanssi");
+                // First, check that nodes are still running in their previously assigned chain
+                const oldC2000 = collatorName[assignment3.containerChains[2000][0]];
+                const oldC2001 = collatorName[assignment3.containerChains[2001][0]];
+                const oldContainer2000DbPath =
+                    getTmpZombiePath() +
+                    `/${oldC2000}/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                const oldContainer2001DbPath =
+                    getTmpZombiePath() +
+                    `/${oldC2001}/data/containers/chains/frontier_container_2001/db/full-container-2001`;
+                expect(await directoryExists(oldContainer2000DbPath)).to.be.true;
+                expect(await directoryExists(oldContainer2001DbPath)).to.be.true;
 
-                let c2000 = collatorName[assignment5.containerChains[2000][0]];
-                let c2001 = collatorName[assignment5.containerChains[2001][0]];
-                console.log("c2000: ", c2000);
-                console.log("c2001: ", c2001);
-                let otherCollators = getUnassignedCollators(allCollators, [c2000, c2001]);
-                console.log("otherCollators: ", otherCollators);
+                // Check that new assigned collators have started syncing
+                const c2000 = collatorName[assignment5.containerChains[2000][0]];
+                const c2001 = collatorName[assignment5.containerChains[2001][0]];
+                let unassignedCollators = getUnassignedCollators(allCollators, [c2000, c2001]);
+                // Remove old collators because they will still have some chains running
+                unassignedCollators = unassignedCollators.filter((x) => x !== oldC2000);
+                unassignedCollators = unassignedCollators.filter((x) => x !== oldC2001);
 
-                // TODO: verify that collators have db path running, and otherCollators do not have the db path
+                // Verify that collators have container chain running by looking at db path,
+                // and unassignedCollators should not have any db path
+                const container2000DbPath =
+                    getTmpZombiePath() +
+                    `/${c2000}/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                const container2001DbPath =
+                    getTmpZombiePath() +
+                    `/${c2001}/data/containers/chains/frontier_container_2001/db/full-container-2001`;
+                expect(await directoryExists(container2000DbPath)).to.be.true;
+                expect(await directoryExists(container2001DbPath)).to.be.true;
+
+                await ensureContainerDbPathsDontExist(unassignedCollators, containerDbPaths);
             },
         });
         it({
             id: "T14",
             title: "On session 5 collators stop the previously assigned chains",
-            timeout: 300000,
+            timeout: 90000,
             test: async function () {
                 await waitToSession(context, paraApi, 5);
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
-                console.log("assignment session 5: ", assignment.toJSON());
-                expect(assignment.orchestratorChain.length).toBe(1);
-                expect(assignment.containerChains.toJSON()[2000].length).toBe(1);
-                expect(assignment.containerChains.toJSON()[2001].length).toBe(1);
-                // TODO: for the missing tests:
-                // go to session 4, check that future assignment changes
-                // also check that collators start syncing the new chains (check if db path exists)
-                // go to session 5, check that collators stopped the previously assigned chain
-                // check that all the chains are still producing blocks
+                expect(assignment.toJSON()).to.deep.equal(assignment5);
+
+                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
+                // So wait a few blocks more hoping that the current block will be finalized by then.
+                // This also serves to check that Tanssi is producing blocks after the rotation
+                await context.waitBlock(3, "Tanssi");
+
+                // First, check that nodes have stopped in their previously assigned chain
+                const oldC2000 = collatorName[assignment3.containerChains[2000][0]];
+                const oldC2001 = collatorName[assignment3.containerChains[2001][0]];
+                const c2000 = collatorName[assignment5.containerChains[2000][0]];
+                const c2001 = collatorName[assignment5.containerChains[2001][0]];
+                const oldContainer2000DbPath =
+                    getTmpZombiePath() +
+                    `/${oldC2000}/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                const oldContainer2001DbPath =
+                    getTmpZombiePath() +
+                    `/${oldC2001}/data/containers/chains/frontier_container_2001/db/full-container-2001`;
+                // Edge case: collators may be assigned to the same chain, in that case the directory will still exist
+                if (oldC2000 != c2000) {
+                    expect(await directoryExists(oldContainer2000DbPath)).to.be.false;
+                }
+                if (oldC2001 != c2001) {
+                    expect(await directoryExists(oldContainer2001DbPath)).to.be.false;
+                }
+
+                // Check that new assigned collators are running
+                const unassignedCollators = getUnassignedCollators(allCollators, [c2000, c2001]);
+
+                // Verify that collators have container chain running by looking at db path,
+                // and unassignedCollators should not have any db path
+                const container2000DbPath =
+                    getTmpZombiePath() +
+                    `/${c2000}/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                const container2001DbPath =
+                    getTmpZombiePath() +
+                    `/${c2001}/data/containers/chains/frontier_container_2001/db/full-container-2001`;
+                expect(await directoryExists(container2000DbPath)).to.be.true;
+                expect(await directoryExists(container2001DbPath)).to.be.true;
+                await ensureContainerDbPathsDontExist(unassignedCollators, containerDbPaths);
+            },
+        });
+
+        it({
+            id: "T15",
+            title: "Blocks are being produced on container 2000",
+            test: async function () {
+                await context.waitBlock(1, "Container2000");
+            },
+        });
+
+        it({
+            id: "T16",
+            title: "Blocks are being produced on container 2001",
+            test: async function () {
+                await context.waitBlock(1, "Container2001");
             },
         });
     },
 });
 
+async function directoryExists(directoryPath) {
+    try {
+        await fs.access(directoryPath, fs.constants.F_OK);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
+/// Returns the /tmp/zombie-52234... path
+function getTmpZombiePath() {
+    const logFilePath = process.env.MOON_MONITORED_NODE;
+
+    if (logFilePath) {
+        const lastIndex = logFilePath.lastIndexOf("/");
+        return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
+    }
+
+    // Return null if the environment variable is not set
+    return null;
+}
+
+/// Given a list of collators and a list of dbPaths, checks that the path does not exist for all the collators.
+/// This can be used to ensure that all the unassigned collators do not have any container chains running.
+async function ensureContainerDbPathsDontExist(collators: string[], pathsToVerify: string[]) {
+    for (const collator of collators) {
+        for (const path of pathsToVerify) {
+            const fullPath = getTmpZombiePath() + `/${collator}${path}`;
+            expect(await directoryExists(fullPath), `Container DB path exists for ${collator}: ${fullPath}`).to.be
+                .false;
+        }
+    }
+}
+
+/// Create a map of collator key "5C5p..." to collator name "Collator1000-01".
 function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<string, string> {
     const collatorName: Record<string, string> = {};
-    
-    collatorNames.forEach(name => {
+
+    collatorNames.forEach((name) => {
         const hexAddress = getKeyringNimbusIdHex(name);
         const k = paraApi.createType("AccountId", hexAddress);
         collatorName[k] = name;
     });
-    
+
     return collatorName;
 }
 
+/// Given a list of all collators and collators assigned to containers, returns the collators that are not assigned to
+/// containers.
 function getUnassignedCollators(allCollators: string[], assignedToContainers: string[]): string[] {
-    return allCollators.filter(collator => !assignedToContainers.includes(collator));
+    return allCollators.filter((collator) => !assignedToContainers.includes(collator));
+}
+
+function logAssignment(collatorName, assignment) {
+    const nameAssignment = {
+        orchestratorChain: assignment.orchestratorChain.map((x) => collatorName[x]),
+        containerChains: Object.keys(assignment.containerChains).reduce((result, key) => {
+            result[key] = assignment.containerChains[key].map((x) => collatorName[x]);
+            return result;
+        }, {}),
+    };
+
+    console.log(nameAssignment);
 }

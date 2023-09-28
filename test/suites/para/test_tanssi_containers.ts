@@ -220,7 +220,7 @@ describeSuite({
         it({
             id: "T12",
             title: "Test live registration of container chain 2002",
-            timeout: 360000,
+            timeout: 240000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -278,16 +278,8 @@ describeSuite({
         it({
             id: "T13",
             title: "Blocks are being produced on container 2002",
-            timeout: 120000,
+            timeout: 60000,
             test: async function () {
-                // This test uses a high timeout because container-chains verify authorship against a state of tanssi
-                // seen by the relay, and this only happens when the tanssi block is included in the relay.
-                // However nodes are notified of their assignment sooner, because they have a direct connection to
-                // tanssi.
-                // Therefore it might happen that container-chain collators try to collate for a container-chain that
-                // has not yet seen the latest state of tanssi.
-                // This is the error message in that case:
-                // [Container-2002] panicked at 'Block invalid, supplied author is not eligible.'
                 let blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 // Wait 3 blocks because the next test needs to get a non empty value from
