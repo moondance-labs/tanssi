@@ -896,6 +896,17 @@ parameter_types! {
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
 
+pub struct GetSelfChainBlockAuthor;
+impl Get<AccountId32> for GetSelfChainBlockAuthor {
+    fn get() -> AccountId32 {
+        AuthorityMapping::authority_id_mapping(Session::current_index())
+            .expect("no authorities for this session")
+            .get(&AuthorInherent::get())
+            .expect("invalid block author")
+            .to_owned()
+    }
+}
+
 pub struct OnUnbalancedInflation;
 impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
     fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
@@ -906,6 +917,7 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 impl pallet_inflation_rewards::Config for Runtime {
     type Currency = Balances;
     type ContainerChains = Registrar;
+    type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type InflationRate = InflationRate;
     type MaxAuthors = ConstU32<80>;
     type OnUnbalanced = OnUnbalancedInflation;
@@ -944,12 +956,13 @@ construct_runtime!(
         AuthorNoting: pallet_author_noting = 24,
         AuthorityAssignment: pallet_authority_assignment = 25,
 
-        // Collator support. The order of these 4 are important and shall not change.
+        // Collator support. The order of these 6 are important and shall not change.
         Invulnerables: pallet_invulnerables = 30,
         Session: pallet_session = 31,
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
         PooledStaking: pallet_pooled_staking = 34,
+        // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
 
         //XCM

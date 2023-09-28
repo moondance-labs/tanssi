@@ -107,6 +107,9 @@ pub mod pallet {
             // Let the runtime handle the non-staking part
             T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
 
+            // Reward orchestrator chain author
+            weight += Self::reward_orchestrator_author();
+
             weight
         }
     }
@@ -116,6 +119,9 @@ pub mod pallet {
         type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
 
         type ContainerChains: GetCurrentContainerChains;
+
+        /// Get block author for self chain
+        type GetSelfChainBlockAuthor: Get<Self::AccountId>;
 
         /// Inflation rate per relay block (proportion of the total issuance)
         type InflationRate: Get<Perbill>;
@@ -185,6 +191,41 @@ pub mod pallet {
             }
         }
     }
+
+    impl<T: Config> Pallet<T> {
+        fn reward_orchestrator_author() -> Weight {
+            let mut total_weight = T::DbWeight::get().reads(1);
+            let orchestrator_author = T::GetSelfChainBlockAuthor::get();
+
+            if let Some(chains_to_reward) = ChainsToReward::<T>::get() {
+                total_weight += T::DbWeight::get().reads(1);
+                match T::StakingRewardsDistributor::distribute_rewards(
+                    orchestrator_author,
+                    T::Currency::withdraw(
+                        &T::PendingRewardsAccount::get(),
+                        chains_to_reward.rewards_per_chain,
+                        Precision::BestEffort,
+                        Preservation::Expendable,
+                        Fortitude::Force,
+                    )
+                    .unwrap_or(CreditOf::<T>::zero()),
+                ) {
+                    Ok(frame_support::dispatch::PostDispatchInfo {
+                        actual_weight: Some(weight),
+                        ..
+                    }) => total_weight += weight,
+                    Err(e) => {
+                        log::debug!("Fail to distribute rewards: {:?}", e)
+                    }
+                    _ => {}
+                }
+            } else {
+                panic!("ChainsToReward not filled");
+            }
+
+            total_weight
+        }
+    }
 }
 
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
@@ -236,7 +277,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
                         // Reward all blocks authors in `authors_to_reward`
                         for (author, blocks) in authors_to_reward.authors {
-                            let _result = T::StakingRewardsDistributor::distribute_rewards(
+                            match T::StakingRewardsDistributor::distribute_rewards(
                                 author,
                                 T::Currency::withdraw(
                                     &T::PendingRewardsAccount::get(),
@@ -246,8 +287,16 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                                     Fortitude::Force,
                                 )
                                 .unwrap_or(CreditOf::<T>::zero()),
-                            );
-                            debug_assert!(_result.is_ok(), "Fail to distribute rewards");
+                            ) {
+                                Ok(frame_support::dispatch::PostDispatchInfo {
+                                    actual_weight: Some(weight),
+                                    ..
+                                }) => total_weight += weight,
+                                Err(e) => {
+                                    log::debug!("Fail to distribute rewards: {:?}", e)
+                                }
+                                _ => {}
+                            }
                         }
                     }
                 }
