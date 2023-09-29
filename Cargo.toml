@@ -55,12 +55,12 @@ tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
 # Moonkit (wasm)
-nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "girazoki-try-full-crypto" }
-nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "girazoki-try-full-crypto", default-features = false }
-pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "girazoki-try-full-crypto", default-features = false }
-pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "girazoki-try-full-crypto", default-features = false }
-pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "girazoki-try-full-crypto", default-features = false }
-xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "girazoki-try-full-crypto", default-features = false }
+nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0" }
+nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 
 # Substrate (wasm)
 sp-consensus-beefy = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
