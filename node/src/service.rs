@@ -230,7 +230,9 @@ pub fn build_check_assigned_para_id(
     spawner: impl SpawnEssentialNamed,
 ) {
     // Subscribe to new blocks in order to react to para id assignment
-    let mut import_notifications = client.import_notification_stream();
+    // This must be the stream of finalized blocks, otherwise the collators may rotate to a
+    // different chain before the block is finalized, and that could lead to a stalled chain
+    let mut import_notifications = client.finality_notification_stream();
 
     let check_assigned_para_id_task = async move {
         while let Some(msg) = import_notifications.next().await {

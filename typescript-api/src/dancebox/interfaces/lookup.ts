@@ -503,6 +503,17 @@ export default {
                 delegator: "AccountId32",
                 rewards: "u128",
             },
+            SwappedPool: {
+                candidate: "AccountId32",
+                delegator: "AccountId32",
+                sourcePool: "PalletPooledStakingTargetPool",
+                sourceShares: "u128",
+                sourceStake: "u128",
+                targetShares: "u128",
+                targetStake: "u128",
+                pendingLeaving: "u128",
+                released: "u128",
+            },
         },
     },
     /** Lookup53: pallet_pooled_staking::pallet::TargetPool */
@@ -1945,6 +1956,11 @@ export default {
             update_candidate_position: {
                 candidates: "Vec<AccountId32>",
             },
+            swap_pool: {
+                candidate: "AccountId32",
+                sourcePool: "PalletPooledStakingTargetPool",
+                amount: "PalletPooledStakingSharesOrStake",
+            },
         },
     },
     /** Lookup217: pallet_pooled_staking::pallet::AllTargetPool */
@@ -2496,6 +2512,7 @@ export default {
             UnsufficientSharesForTransfer: "Null",
             CandidateTransferingOwnSharesForbidden: "Null",
             RequestCannotBeExecuted: "u16",
+            SwapResultsInZeroShares: "Null",
         },
     },
     /** Lookup324: cumulus_pallet_xcmp_queue::InboundChannelDetails */

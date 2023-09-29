@@ -88,6 +88,10 @@ impl Default for HostConfiguration {
 pub enum InconsistentError {
     /// `max_orchestrator_collators` is lower than `min_orchestrator_collators`
     MaxCollatorsLowerThanMinCollators,
+    /// `min_orchestrator_collators` must be at least 1
+    MinOrchestratorCollatorsTooLow,
+    /// `max_collators` must be at least 1
+    MaxCollatorsTooLow,
 }
 
 impl HostConfiguration {
@@ -97,6 +101,12 @@ impl HostConfiguration {
     ///
     /// This function returns an error if the configuration is inconsistent.
     pub fn check_consistency(&self) -> Result<(), InconsistentError> {
+        if self.max_collators < 1 {
+            return Err(InconsistentError::MaxCollatorsTooLow);
+        }
+        if self.min_orchestrator_collators < 1 {
+            return Err(InconsistentError::MinOrchestratorCollatorsTooLow);
+        }
         if self.max_orchestrator_collators < self.min_orchestrator_collators {
             return Err(InconsistentError::MaxCollatorsLowerThanMinCollators);
         }

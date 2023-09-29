@@ -343,10 +343,10 @@ where
                 Ok(x) => x,
                 Err(e) => {
                     log::warn!(
-                            target: LOG_TARGET,
-                            "Unable to author block in slot. Failure creating inherent data provider: {}",
-                            e,
-                        );
+                        target: LOG_TARGET,
+                        "Unable to author block in slot. Failure creating inherent data provider: {}",
+                        e,
+                    );
                     // Let's retry at the next slot.
                     continue;
                 }

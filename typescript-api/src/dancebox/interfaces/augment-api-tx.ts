@@ -508,6 +508,20 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
             >;
+            /** See `Pallet::swap_pool`. */
+            swapPool: AugmentedSubmittable<
+                (
+                    candidate: AccountId32 | string | Uint8Array,
+                    sourcePool:
+                        | PalletPooledStakingTargetPool
+                        | "AutoCompounding"
+                        | "ManualRewards"
+                        | number
+                        | Uint8Array,
+                    amount: PalletPooledStakingSharesOrStake | { Shares: any } | { Stake: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
+            >;
             /** See `Pallet::update_candidate_position`. */
             updateCandidatePosition: AugmentedSubmittable<
                 (candidates: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,

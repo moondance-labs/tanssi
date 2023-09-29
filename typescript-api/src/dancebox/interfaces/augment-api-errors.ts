@@ -184,6 +184,7 @@ declare module "@polkadot/api-base/types/errors" {
             RequestCannotBeExecuted: AugmentedError<ApiType>;
             RewardsMustBeNonZero: AugmentedError<ApiType>;
             StakeMustBeNonZero: AugmentedError<ApiType>;
+            SwapResultsInZeroShares: AugmentedError<ApiType>;
             TryingToLeaveTooSoon: AugmentedError<ApiType>;
             UnsufficientSharesForTransfer: AugmentedError<ApiType>;
             /** Generic error */

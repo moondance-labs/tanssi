@@ -597,6 +597,32 @@ declare module "@polkadot/api-base/types/events" {
                 [candidate: AccountId32, delegator: AccountId32, shares: u128, stake: u128],
                 { candidate: AccountId32; delegator: AccountId32; shares: u128; stake: u128 }
             >;
+            /** Swapped between AutoCompounding and ManualReward shares */
+            SwappedPool: AugmentedEvent<
+                ApiType,
+                [
+                    candidate: AccountId32,
+                    delegator: AccountId32,
+                    sourcePool: PalletPooledStakingTargetPool,
+                    sourceShares: u128,
+                    sourceStake: u128,
+                    targetShares: u128,
+                    targetStake: u128,
+                    pendingLeaving: u128,
+                    released: u128
+                ],
+                {
+                    candidate: AccountId32;
+                    delegator: AccountId32;
+                    sourcePool: PalletPooledStakingTargetPool;
+                    sourceShares: u128;
+                    sourceStake: u128;
+                    targetShares: u128;
+                    targetStake: u128;
+                    pendingLeaving: u128;
+                    released: u128;
+                }
+            >;
             /** Delegator unstaked towards a candidate with AutoCompounding Shares. */
             UnstakedAutoCompounding: AugmentedEvent<
                 ApiType,

@@ -31,8 +31,8 @@ use {
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_migrations::Migration,
     pallet_pooled_staking::{
-        traits::IsCandidateEligible, EligibleCandidate, PendingOperationKey, PendingOperationQuery,
-        PoolsKey, SharesOrStake, TargetPool,
+        traits::IsCandidateEligible, AllTargetPool, EligibleCandidate, PendingOperationKey,
+        PendingOperationQuery, PoolsKey, SharesOrStake, TargetPool,
     },
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -3203,6 +3203,68 @@ fn test_staking_leave_execute_bad_origin() {
             );
         },
     );
+}
+
+#[test]
+fn test_staking_swap() {
+    setup_staking_join_and_execute(
+        vec![A {
+            delegator: ALICE.into(),
+            candidate: ALICE.into(),
+            target_pool: TargetPool::AutoCompounding,
+            stake: 10 * MinimumSelfDelegation::get(),
+        }],
+        || {
+            let stake = 10 * MinimumSelfDelegation::get();
+            assert_ok!(PooledStaking::swap_pool(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                SharesOrStake::Stake(stake),
+            ));
+
+            assert_eq!(
+                PooledStaking::computed_stake(
+                    ALICE.into(),
+                    ALICE.into(),
+                    AllTargetPool::AutoCompounding
+                ),
+                Some(0u32.into())
+            );
+            assert_eq!(
+                PooledStaking::computed_stake(
+                    ALICE.into(),
+                    ALICE.into(),
+                    AllTargetPool::ManualRewards
+                ),
+                Some(stake)
+            );
+
+            assert_ok!(PooledStaking::swap_pool(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::ManualRewards,
+                SharesOrStake::Stake(stake),
+            ));
+
+            assert_eq!(
+                PooledStaking::computed_stake(
+                    ALICE.into(),
+                    ALICE.into(),
+                    AllTargetPool::AutoCompounding
+                ),
+                Some(stake)
+            );
+            assert_eq!(
+                PooledStaking::computed_stake(
+                    ALICE.into(),
+                    ALICE.into(),
+                    AllTargetPool::ManualRewards
+                ),
+                Some(0u32.into())
+            );
+        },
+    )
 }
 
 #[test]
