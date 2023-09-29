@@ -81,7 +81,7 @@
                     {
                         "name": "frontier-template",
                         "binPath": "../target/release/container-chain-template-frontier-node",
-                        "options": ["--dev", "--sealing=manual"],
+                        "options": ["--dev", "--sealing=manual", "--para-id=2000"],
                         "newRpcBehaviour": true
                     }
                 ]
