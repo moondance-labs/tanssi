@@ -165,14 +165,28 @@ pub mod pallet {
                 for para_id in registered_para_ids {
                     match Self::fetch_block_info_from_proof(&relay_storage_rooted_proof, para_id) {
                         Ok(block_info) => {
-                            total_weight = total_weight.saturating_add(
-                                T::AuthorNotingHook::on_container_author_noted(
-                                    &block_info.author,
-                                    block_info.block_number,
-                                    para_id,
-                                ),
+                            LatestAuthor::<T>::mutate(
+                                para_id,
+                                |maybe_old_block_info: &mut Option<ContainerChainBlockInfo<T>>| {
+                                    if let Some(ref mut old_block_info) = maybe_old_block_info {
+                                        total_weight = total_weight.saturating_add(
+                                            T::AuthorNotingHook::on_container_author_noted(
+                                                &block_info.author,
+                                                block_info.block_number,
+                                                para_id,
+                                            ),
+                                        );
+                                        if block_info.block_number > old_block_info.block_number {
+                                            let _ = core::mem::replace(old_block_info, block_info);
+                                        }
+                                    } else {
+                                        let _ = core::mem::replace(
+                                            maybe_old_block_info,
+                                            Some(block_info),
+                                        );
+                                    }
+                                },
                             );
-                            LatestAuthor::<T>::insert(para_id, block_info);
                         }
                         Err(e) => log::warn!(
                             "Author-noting error {:?} found in para {:?}",
