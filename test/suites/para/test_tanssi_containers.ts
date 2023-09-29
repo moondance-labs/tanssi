@@ -269,6 +269,9 @@ describeSuite({
                 expect(await directoryExists(container2002DbPath)).to.be.false;
                 // The node starts one session before the container chain is in registered list
                 await waitSessions(context, paraApi, 1);
+                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
+                // So wait a few blocks more hoping that the current block will be finalized by then.
+                await context.waitBlock(3, "Tanssi");
                 expect(await directoryExists(container2002DbPath)).to.be.true;
                 // Not registered yet, still pending
                 const registered4 = await paraApi.query.registrar.registeredParaIds();

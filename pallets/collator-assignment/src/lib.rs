@@ -43,6 +43,7 @@
 
 pub use pallet::*;
 use {
+    crate::weights::WeightInfo,
     frame_support::pallet_prelude::*,
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, One, Zero},
@@ -54,6 +55,10 @@ use {
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId, Slot,
     },
 };
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+pub mod weights;
 
 #[cfg(test)]
 mod mock;
@@ -78,6 +83,8 @@ pub mod pallet {
         // which guarantees that at least one full session has passed before any changes are applied.
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
         type ContainerChains: GetSessionContainerChains<Self::SessionIndex>;
+        /// The weight information of this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::storage]
@@ -266,7 +273,16 @@ pub mod pallet {
             session_index: &T::SessionIndex,
             collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
-            Self::assign_collators(session_index, collators)
+            let num_collators = collators.len();
+            let assigned_collators = Self::assign_collators(session_index, collators);
+            let num_parachains = assigned_collators.next_assignment.container_chains.len();
+
+            frame_system::Pallet::<T>::register_extra_weight_unchecked(
+                T::WeightInfo::new_session(num_collators as u32, num_parachains as u32),
+                DispatchClass::Mandatory,
+            );
+
+            assigned_collators
         }
     }
 

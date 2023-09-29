@@ -15,8 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{mock::*, HostConfiguration, PendingConfigs},
-    frame_support::{assert_ok, dispatch::GetDispatchInfo},
+    crate::{mock::*, Error, HostConfiguration, PendingConfigs},
+    frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo},
     sp_std::vec,
 };
 
@@ -51,14 +51,14 @@ fn config_sets_default_values() {
 #[test]
 fn config_set_value() {
     new_test_ext_with_genesis(HostConfiguration {
-        max_collators: 0,
-        min_orchestrator_collators: 0,
-        max_orchestrator_collators: 0,
-        collators_per_container: 0,
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
+        collators_per_container: 2,
     })
     .execute_with(|| {
         run_to_block(1);
-        assert_eq!(Configuration::config().max_collators, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
         assert_ok!(
             Configuration::set_max_collators(RuntimeOrigin::root(), 50),
             ()
@@ -70,23 +70,23 @@ fn config_set_value() {
                 2,
                 HostConfiguration {
                     max_collators: 50,
-                    min_orchestrator_collators: 0,
-                    max_orchestrator_collators: 0,
-                    collators_per_container: 0,
+                    min_orchestrator_collators: 2,
+                    max_orchestrator_collators: 5,
+                    collators_per_container: 2,
                 }
             )]
         );
 
         // The session delay is set to 2, and one session is 5 blocks,
         // so the change should not happen until block 11
-        assert_eq!(Configuration::config().max_collators, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
         run_to_block(2);
-        assert_eq!(Configuration::config().max_collators, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
         // First block of session 1
         run_to_block(6);
-        assert_eq!(Configuration::config().max_collators, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
         run_to_block(10);
-        assert_eq!(Configuration::config().max_collators, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
         // First block of session 2
         run_to_block(11);
         assert_eq!(Configuration::config().max_collators, 50);
@@ -96,16 +96,16 @@ fn config_set_value() {
 #[test]
 fn config_set_many_values_same_block() {
     new_test_ext_with_genesis(HostConfiguration {
-        max_collators: 0,
-        min_orchestrator_collators: 0,
-        max_orchestrator_collators: 0,
-        collators_per_container: 0,
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
+        collators_per_container: 2,
     })
     .execute_with(|| {
         run_to_block(1);
-        assert_eq!(Configuration::config().max_collators, 0);
-        assert_eq!(Configuration::config().collators_per_container, 0);
-        assert_eq!(Configuration::config().min_orchestrator_collators, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
+        assert_eq!(Configuration::config().collators_per_container, 2);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
         assert_ok!(
             Configuration::set_max_collators(RuntimeOrigin::root(), 50),
             ()
@@ -135,9 +135,9 @@ fn config_set_many_values_same_block() {
         // The session delay is set to 2, and one session is 5 blocks,
         // so the change should not happen until block 11
         run_to_block(10);
-        assert_eq!(Configuration::config().max_collators, 0);
-        assert_eq!(Configuration::config().collators_per_container, 0);
-        assert_eq!(Configuration::config().min_orchestrator_collators, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
+        assert_eq!(Configuration::config().collators_per_container, 2);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
         // First block of session 2
         run_to_block(11);
         assert_eq!(Configuration::config().max_collators, 50);
@@ -149,16 +149,16 @@ fn config_set_many_values_same_block() {
 #[test]
 fn config_set_many_values_different_blocks() {
     new_test_ext_with_genesis(HostConfiguration {
-        max_collators: 0,
-        min_orchestrator_collators: 0,
-        max_orchestrator_collators: 0,
-        collators_per_container: 0,
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
+        collators_per_container: 2,
     })
     .execute_with(|| {
         run_to_block(1);
-        assert_eq!(Configuration::config().max_collators, 0);
-        assert_eq!(Configuration::config().collators_per_container, 0);
-        assert_eq!(Configuration::config().min_orchestrator_collators, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
+        assert_eq!(Configuration::config().collators_per_container, 2);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
         assert_ok!(
             Configuration::set_max_collators(RuntimeOrigin::root(), 50),
             ()
@@ -190,9 +190,9 @@ fn config_set_many_values_different_blocks() {
         // The session delay is set to 2, and one session is 5 blocks,
         // so the change should not happen until block 11
         run_to_block(10);
-        assert_eq!(Configuration::config().max_collators, 0);
-        assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-        assert_eq!(Configuration::config().collators_per_container, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+        assert_eq!(Configuration::config().collators_per_container, 2);
         // First block of session 2
         run_to_block(11);
         assert_eq!(Configuration::config().max_collators, 50);
@@ -204,16 +204,16 @@ fn config_set_many_values_different_blocks() {
 #[test]
 fn config_set_many_values_different_sessions() {
     new_test_ext_with_genesis(HostConfiguration {
-        max_collators: 0,
-        min_orchestrator_collators: 0,
-        max_orchestrator_collators: 0,
-        collators_per_container: 0,
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
+        collators_per_container: 2,
     })
     .execute_with(|| {
         run_to_block(1);
-        assert_eq!(Configuration::config().max_collators, 0);
-        assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-        assert_eq!(Configuration::config().collators_per_container, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+        assert_eq!(Configuration::config().collators_per_container, 2);
         assert_ok!(
             Configuration::set_max_collators(RuntimeOrigin::root(), 50),
             ()
@@ -223,9 +223,9 @@ fn config_set_many_values_different_sessions() {
             Configuration::set_min_orchestrator_collators(RuntimeOrigin::root(), 20),
             ()
         );
-        assert_eq!(Configuration::config().max_collators, 0);
-        assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-        assert_eq!(Configuration::config().collators_per_container, 0);
+        assert_eq!(Configuration::config().max_collators, 100);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+        assert_eq!(Configuration::config().collators_per_container, 2);
         run_to_block(11);
         assert_ok!(
             Configuration::set_collators_per_container(RuntimeOrigin::root(), 10),
@@ -241,7 +241,7 @@ fn config_set_many_values_different_sessions() {
                         max_collators: 50,
                         min_orchestrator_collators: 20,
                         max_orchestrator_collators: 20,
-                        collators_per_container: 0,
+                        collators_per_container: 2,
                     }
                 ),
                 (
@@ -257,16 +257,41 @@ fn config_set_many_values_different_sessions() {
         );
 
         assert_eq!(Configuration::config().max_collators, 50);
-        assert_eq!(Configuration::config().min_orchestrator_collators, 0);
-        assert_eq!(Configuration::config().collators_per_container, 0);
+        assert_eq!(Configuration::config().min_orchestrator_collators, 2);
+        assert_eq!(Configuration::config().collators_per_container, 2);
         run_to_block(16);
         assert_eq!(Configuration::config().max_collators, 50);
         assert_eq!(Configuration::config().min_orchestrator_collators, 20);
-        assert_eq!(Configuration::config().collators_per_container, 0);
+        assert_eq!(Configuration::config().collators_per_container, 2);
         run_to_block(21);
         assert_eq!(Configuration::config().max_collators, 50);
         assert_eq!(Configuration::config().min_orchestrator_collators, 20);
         assert_eq!(Configuration::config().collators_per_container, 10);
+    });
+}
+
+#[test]
+fn config_cannot_set_invalid_values() {
+    new_test_ext_with_genesis(HostConfiguration {
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
+        collators_per_container: 2,
+    })
+    .execute_with(|| {
+        run_to_block(1);
+        assert_noop!(
+            Configuration::set_max_collators(RuntimeOrigin::root(), 0),
+            Error::<Test>::InvalidNewValue
+        );
+        assert_noop!(
+            Configuration::set_min_orchestrator_collators(RuntimeOrigin::root(), 0),
+            Error::<Test>::InvalidNewValue
+        );
+        assert_noop!(
+            Configuration::set_max_orchestrator_collators(RuntimeOrigin::root(), 0),
+            Error::<Test>::InvalidNewValue
+        );
     });
 }
 

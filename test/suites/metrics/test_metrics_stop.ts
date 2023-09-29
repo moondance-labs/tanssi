@@ -1,16 +1,14 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { u8aToHex, stringToHex } from "@polkadot/util";
-import { decodeAddress } from "@polkadot/util-crypto";
 import { getAuthorFromDigest } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
-import fs from "fs/promises";
+import net from "net";
 
 describeSuite({
-    id: "W01",
-    title: "Zombie Tanssi Warp Sync Test",
+    id: "ZM01",
+    title: "Zombie Tanssi Metrics Test",
     foundationMethods: "zombie",
     testCases: function ({ it, context }) {
         let paraApi: ApiPromise;
@@ -142,120 +140,81 @@ describeSuite({
 
         it({
             id: "T12",
-            title: "Test warp sync: collator rotation from tanssi to container with blocks",
+            title: "Test metrics: deregister container chain and metrics should stop",
             timeout: 300000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-                // Collator2000-02 should have a container 2000 db, and Collator1000-03 should not
-                const collator100003DbPath =
-                    getTmpZombiePath() +
-                    "/Collator1000-03/data/containers/chains/simple_container_2000/db/full-container-2000";
-                const container200002DbPath =
-                    getTmpZombiePath() +
-                    "/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000";
-                expect(await directoryExists(container200002DbPath)).to.be.true;
-                expect(await directoryExists(collator100003DbPath)).to.be.false;
+                // Begin sending GET /metrics requests in a loop to try to prevent the server from closing
+                const connectionHandle = sendMetricsRequestLoop("127.0.0.1", 27124, 1000);
+                expect(isServerAlive(connectionHandle)).to.be.true;
 
-                // Deregister Collator2000-02, it should delete the db
-                const invuln = (await paraApi.query.invulnerables.invulnerables()).toJSON();
+                const registered1 = await paraApi.query.registrar.registeredParaIds();
+                // TODO: fix once we have types
+                expect(registered1.toJSON().includes(2000)).to.be.true;
 
-                const newInvuln = invuln.filter((addr) => {
-                    return u8aToHex(decodeAddress(addr)) != getKeyringNimbusIdHex("Collator2000-02");
-                });
-                // It must have changed
-                expect(newInvuln).to.not.deep.equal(invuln);
-
-                const tx = paraApi.tx.invulnerables.setInvulnerables(newInvuln);
+                const tx = paraApi.tx.registrar.deregister(2000);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-
                 await waitSessions(context, paraApi, 2);
 
-                // Collator1000-03 should rotate to container chain 2000
-
-                const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+                // Check that pending para ids removes 2000
+                const registered = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
-                const allCollators = (
-                    await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON();
-                const expectedAllCollators = {
-                    orchestratorChain: [
-                        getKeyringNimbusIdHex("Collator1000-01"),
-                        getKeyringNimbusIdHex("Collator1000-02"),
-                    ],
-                    containerChains: {
-                        "2000": [getKeyringNimbusIdHex("Collator2000-01"), getKeyringNimbusIdHex("Collator1000-03")],
-                    },
-                };
-
-                expect(allCollators).to.deep.equal(expectedAllCollators);
-
-                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
-                // So wait a few blocks more hoping that the current block will be finalized by then.
-                await context.waitBlock(3, "Tanssi");
-
-                // Collator2000-02 container chain db should have been deleted
-                expect(await directoryExists(container200002DbPath)).to.be.false;
-
-                // Collator1000-03 container chain db should be created
-                expect(await directoryExists(collator100003DbPath)).to.be.true;
-            },
-        });
-
-        it({
-            id: "T13",
-            title: "Collator1000-03 is producing blocks on Container 2000",
-            timeout: 300000,
-            test: async function () {
-                const blockStart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber() - 3;
-                // Wait up to 8 blocks, giving the new collator 4 chances to build a block
-                const blockEnd = blockStart + 8;
-                const authors = [];
-
-                for (let blockNumber = blockStart; blockNumber <= blockEnd; blockNumber += 1) {
-                    // Get the latest author from Digest
-                    const blockHash = await container2000Api.rpc.chain.getBlockHash(blockNumber);
-                    const apiAt = await container2000Api.at(blockHash);
-                    const digests = (await apiAt.query.system.digest()).logs;
-                    const filtered = digests.filter(
-                        (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() == stringToHex("nmbs")
-                    );
-                    const author = filtered[0].asPreRuntime[1].toHex();
-                    authors.push(author);
-                    if (author == getKeyringNimbusIdHex("Collator1000-03")) {
-                        break;
-                    }
-                    const currentBlock = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
-                    if (currentBlock == blockNumber) {
-                        await context.waitBlock(1, "Container2000");
-                    }
-                }
-
-                expect(authors).to.contain(getKeyringNimbusIdHex("Collator1000-03"));
+                expect(registered.toJSON().includes(2000)).to.be.false;
+                expect(isServerAlive(connectionHandle)).to.be.false;
             },
         });
     },
 });
 
-async function directoryExists(directoryPath) {
-    try {
-        await fs.access(directoryPath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
+// Send periodic "GET /metrics" requests using the same socket every time.
+// This is to reproduce a bug where the metrics server would not close if there are any open connections.
+function sendMetricsRequestLoop(hostname: string, port: number, period: number) {
+    // Use a TCP client instead of an HTTP client because I was unable to configure the HTTP client to use only
+    // one socket
+    const client = new net.Socket();
+
+    // Connect to the server
+    client.connect(port, hostname, () => {
+        console.log(`Connected to ${hostname}:${port}`);
+
+        // Define the function to send the metrics request
+        const sendMetrics = () => {
+            if (!client.destroyed) {
+                const request = "GET /metrics HTTP/1.1\r\n\r\n";
+                client.write(request);
+                console.log(`Sent request: ${request}`);
+            }
+        };
+
+        // Initially send the request
+        sendMetrics();
+
+        // Set up periodic sending of the request
+        const intervalId = setInterval(sendMetrics, period);
+
+        // Handle data received from the server
+        client.on("data", (data) => {
+            console.log(`Received data: ${data}`);
+        });
+
+        // Handle errors
+        client.on("error", (error) => {
+            console.error(`Error: ${error}`);
+        });
+
+        // Handle connection close
+        client.on("close", () => {
+            console.log("Connection closed");
+            clearInterval(intervalId);
+        });
+    });
+
+    return client;
 }
 
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    const logFilePath = process.env.MOON_MONITORED_NODE;
-
-    if (logFilePath) {
-        const lastIndex = logFilePath.lastIndexOf("/");
-        return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
-    }
-
-    // Return null if the environment variable is not set
-    return null;
+// Check if the connection is still alive
+function isServerAlive(socket: net.Socket): boolean {
+    return !socket.destroyed && !socket.closed;
 }

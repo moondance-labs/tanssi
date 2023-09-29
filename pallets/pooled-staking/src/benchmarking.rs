@@ -454,6 +454,77 @@ mod benchmarks {
         Ok(())
     }
 
+    #[benchmark]
+    fn swap_pool() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+
+        let source_stake = min_candidate_stk::<T>() * 10u32.into();
+
+        let (caller, _deposit_amount) = create_funded_user::<T>("caller", USER_SEED, source_stake);
+
+        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
+
+        PooledStaking::<T>::request_delegate(
+            RawOrigin::Signed(caller.clone()).into(),
+            caller.clone(),
+            TargetPool::AutoCompounding,
+            source_stake,
+        )?;
+
+        let timer = T::JoiningRequestTimer::now();
+
+        T::JoiningRequestTimer::skip_to_elapsed();
+
+        PooledStaking::<T>::execute_pending_operations(
+            RawOrigin::Signed(caller.clone()).into(),
+            vec![PendingOperationQuery {
+                delegator: caller.clone(),
+                operation: JoiningAutoCompounding {
+                    candidate: caller.clone(),
+                    at: timer.clone(),
+                },
+            }],
+        )?;
+
+        #[extrinsic_call]
+        _(
+            RawOrigin::Signed(caller.clone()),
+            caller.clone(),
+            TargetPool::AutoCompounding,
+            SharesOrStake::Stake(source_stake),
+        );
+
+        let target_stake = source_stake;
+        let source_shares = crate::pools::AutoCompounding::<T>::stake_to_shares_or_init(
+            &caller,
+            Stake(source_stake),
+        )
+        .unwrap()
+        .0;
+
+        let target_shares =
+            crate::pools::ManualRewards::<T>::stake_to_shares_or_init(&caller, Stake(target_stake))
+                .unwrap()
+                .0;
+
+        assert_last_event::<T>(
+            Event::SwappedPool {
+                candidate: caller.clone(),
+                delegator: caller,
+                source_pool: TargetPool::AutoCompounding,
+                source_shares,
+                source_stake,
+                target_shares,
+                target_stake,
+                pending_leaving: 0u32.into(),
+                released: 0u32.into(),
+            }
+            .into(),
+        );
+
+        Ok(())
+    }
+
     impl_benchmark_test_suite!(
         PooledStaking,
         crate::mock::ExtBuilder::default().build(),

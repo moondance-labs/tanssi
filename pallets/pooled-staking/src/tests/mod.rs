@@ -481,3 +481,105 @@ pub(crate) fn do_rebalance_hold<P: Pool<Runtime>>(
     // Stake stay the same.
     assert_fields_eq!(pool_before, pool_after, stake);
 }
+
+#[must_use]
+pub(crate) struct Swap {
+    candidate: AccountId,
+    delegator: AccountId,
+    requested_amount: SharesOrStake<Balance>,
+
+    expected_removed: Balance,
+    expected_restaked: Balance,
+    expected_leaving: Balance,
+    expected_released: Balance,
+    expected_hold_rebalance: Balance,
+}
+
+impl Default for Swap {
+    fn default() -> Self {
+        Self {
+            candidate: 0,
+            delegator: 0,
+            requested_amount: SharesOrStake::Stake(0),
+            expected_removed: 0,
+            expected_restaked: 0,
+            expected_leaving: 0,
+            expected_released: 0,
+            expected_hold_rebalance: 0,
+        }
+    }
+}
+
+impl Swap {
+    pub fn test<P: PoolExt<Runtime>>(self) {
+        let Self {
+            candidate,
+            delegator,
+            requested_amount,
+            expected_removed,
+            expected_restaked,
+            expected_leaving,
+            expected_released,
+            expected_hold_rebalance,
+        } = self;
+
+        let before = State::extract(candidate, delegator);
+        let source_pool_before = PoolState::extract::<P>(candidate, delegator);
+        let target_pool_before = PoolState::extract::<P::OppositePool>(candidate, delegator);
+        let leaving_before = PoolState::extract::<Leaving>(candidate, delegator);
+
+        assert_ok!(Staking::swap_pool(
+            RuntimeOrigin::signed(delegator),
+            candidate,
+            P::target_pool(),
+            requested_amount
+        ));
+
+        let after = State::extract(candidate, delegator);
+        let source_pool_after = PoolState::extract::<P>(candidate, delegator);
+        let target_pool_after = PoolState::extract::<P::OppositePool>(candidate, delegator);
+        let leaving_after = PoolState::extract::<Leaving>(candidate, delegator);
+
+        // Actual balances changes due to hold rebalance.
+        assert_eq!(
+            before.delegator_balance + expected_hold_rebalance,
+            after.delegator_balance
+        );
+        assert_eq!(
+            before.staking_balance - expected_hold_rebalance,
+            after.staking_balance
+        );
+
+        // Pool change.
+        assert_eq!(
+            source_pool_before.stake - expected_removed,
+            source_pool_after.stake
+        );
+        assert_eq!(
+            source_pool_before.hold + expected_hold_rebalance - expected_removed,
+            source_pool_after.stake
+        );
+
+        assert_eq!(
+            target_pool_before.stake + expected_restaked,
+            target_pool_after.stake
+        );
+        assert_eq!(
+            target_pool_before.hold + expected_restaked,
+            target_pool_after.hold
+        );
+
+        assert_eq!(leaving_before.stake + expected_leaving, leaving_after.stake);
+        assert_eq!(leaving_before.hold + expected_leaving, leaving_after.stake);
+
+        assert_eq!(
+            before.candidate_total_stake - expected_leaving - expected_released,
+            after.candidate_total_stake
+        );
+        // Dust is released immediately.
+        assert_eq!(
+            before.delegator_hold - expected_released + expected_hold_rebalance,
+            after.delegator_hold
+        );
+    }
+}

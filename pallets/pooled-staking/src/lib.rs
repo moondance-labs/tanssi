@@ -421,6 +421,18 @@ pub mod pallet {
             delegator: Delegator<T>,
             rewards: T::Balance,
         },
+        /// Swapped between AutoCompounding and ManualReward shares
+        SwappedPool {
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            source_pool: TargetPool,
+            source_shares: T::Balance,
+            source_stake: T::Balance,
+            target_shares: T::Balance,
+            target_stake: T::Balance,
+            pending_leaving: T::Balance,
+            released: T::Balance,
+        },
     }
 
     #[pallet::error]
@@ -438,6 +450,7 @@ pub mod pallet {
         UnsufficientSharesForTransfer,
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
+        SwapResultsInZeroShares,
     }
 
     #[pallet::call]
@@ -514,6 +527,44 @@ pub mod pallet {
             let _ = ensure_signed(origin)?;
 
             Calls::<T>::update_candidate_position(&candidates)
+        }
+
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn swap_pool(
+            origin: OriginFor<T>,
+            candidate: Candidate<T>,
+            source_pool: TargetPool,
+            amount: SharesOrStake<T::Balance>,
+        ) -> DispatchResultWithPostInfo {
+            let delegator = ensure_signed(origin)?;
+
+            Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        pub fn computed_stake(
+            candidate: Candidate<T>,
+            delegator: Delegator<T>,
+            pool: AllTargetPool,
+        ) -> Option<T::Balance> {
+            use pools::Pool;
+            match pool {
+                AllTargetPool::Joining => {
+                    pools::Joining::<T>::computed_stake(&candidate, &delegator)
+                }
+                AllTargetPool::AutoCompounding => {
+                    pools::AutoCompounding::<T>::computed_stake(&candidate, &delegator)
+                }
+                AllTargetPool::ManualRewards => {
+                    pools::ManualRewards::<T>::computed_stake(&candidate, &delegator)
+                }
+                AllTargetPool::Leaving => {
+                    pools::Leaving::<T>::computed_stake(&candidate, &delegator)
+                }
+            }
+            .ok()
+            .map(|x| x.0)
         }
     }
 
