@@ -1,4 +1,4 @@
-endpoint: wss://fraa-dancebox-rpc.a.dancebox.tanssi.network
+endpoint: wss://dancebox.tanssi-api.network
 mock-signature-host: true
 db: ./tmp/db_mba.sqlite
 
