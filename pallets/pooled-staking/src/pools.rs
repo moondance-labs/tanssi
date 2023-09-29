@@ -478,10 +478,6 @@ fn distribute_rewards_inner<T: Config>(
     candidate: &Candidate<T>,
     rewards: T::Balance,
 ) -> Result<T::Balance, Error<T>> {
-    {
-        let candidate_auto_stake = AutoCompounding::<T>::computed_stake(candidate, candidate)?.0;
-        candidate_auto_stake
-    };
 
     // `RewardsCollatorCommission` is a `Perbill` so we're not worried about overflow.
     let candidate_rewards = T::RewardsCollatorCommission::get() * rewards;
