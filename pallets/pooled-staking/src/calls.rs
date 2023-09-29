@@ -24,6 +24,7 @@ use {
         Stake, TargetPool,
     },
     frame_support::{
+        dispatch::DispatchErrorWithPostInfo,
         pallet_prelude::*,
         traits::{
             fungible::{Mutate, MutateHold},
@@ -188,88 +189,14 @@ impl<T: Config> Calls<T> {
         }
 
         // Destroy shares
-        let removed_stake = match pool {
-            TargetPool::AutoCompounding => {
-                let stake =
-                    pools::AutoCompounding::<T>::shares_to_stake(&candidate, Shares(shares))?;
-
-                if stake.0 > pools::AutoCompounding::<T>::hold(&candidate, &delegator).0 {
-                    Self::rebalance_hold(
-                        candidate.clone(),
-                        delegator.clone(),
-                        AllTargetPool::AutoCompounding,
-                    )?;
-                }
-
-                // This should be the same `stake` as before.
-                let stake = pools::AutoCompounding::<T>::sub_shares(
-                    &candidate,
-                    &delegator,
-                    Shares(shares),
-                )?;
-
-                pools::AutoCompounding::<T>::decrease_hold(&candidate, &delegator, &stake)?;
-                stake
-            }
-            TargetPool::ManualRewards => {
-                let stake = pools::ManualRewards::<T>::shares_to_stake(&candidate, Shares(shares))?;
-
-                if stake.0 > pools::ManualRewards::<T>::hold(&candidate, &delegator).0 {
-                    Self::rebalance_hold(
-                        candidate.clone(),
-                        delegator.clone(),
-                        AllTargetPool::ManualRewards,
-                    )?;
-                }
-
-                // This should be the same `stake` as before.
-                let stake =
-                    pools::ManualRewards::<T>::sub_shares(&candidate, &delegator, Shares(shares))?;
-
-                pools::ManualRewards::<T>::decrease_hold(&candidate, &delegator, &stake)?;
-                stake
-            }
-        };
+        let removed_stake = Self::destroy_shares(&candidate, &delegator, pool, Shares(shares))?;
 
         // All this stake no longer contribute to the election of the candidate.
         Candidates::<T>::sub_total_stake(&candidate, removed_stake)?;
 
-        // Create leaving shares.
-        // As with all pools there will be some rounding error, this amount
-        // should be small enough so that it is safe to directly release it
-        // in the delegator account.
-        let leaving_shares =
-            pools::Leaving::<T>::stake_to_shares_or_init(&candidate, removed_stake)?;
-        let leaving_stake =
-            pools::Leaving::<T>::add_shares(&candidate, &delegator, leaving_shares)?;
-        pools::Leaving::<T>::increase_hold(&candidate, &delegator, &leaving_stake)?;
-
-        // We create/mutate a request for leaving.
-        let now = T::LeavingRequestTimer::now();
-        let operation_key = PendingOperationKey::Leaving {
-            candidate: candidate.clone(),
-            at: now,
-        };
-        let operation = PendingOperations::<T>::get(&delegator, &operation_key);
-        let operation = operation
-            .err_add(&leaving_shares.0)
-            .map_err(|_| Error::<T>::MathOverflow)?;
-        PendingOperations::<T>::set(&delegator, &operation_key, operation);
-
-        // We release the dust if non-zero.
-        let dust = removed_stake
-            .0
-            .err_sub(&leaving_stake.0)
-            .map_err(Error::<T>::from)?;
-
-        if !dust.is_zero() {
-            T::Currency::release(
-                &T::CurrencyHoldReason::get(),
-                &delegator,
-                dust,
-                Precision::Exact,
-            )?;
-        }
+        // We proceed with the leaving, which create Leaving shares and request,
+        // and release the dust from the convertion to Leaving shares.
+        let (leaving_stake, dust) = Self::leave_stake(&candidate, &delegator, removed_stake)?;
 
         pools::check_candidate_consistency::<T>(&candidate)?;
 
@@ -278,7 +205,7 @@ impl<T: Config> Calls<T> {
             delegator,
             from: pool,
             pending: leaving_stake.0,
-            released: dust,
+            released: dust.0,
         });
 
         Ok(().into())
@@ -509,5 +436,188 @@ impl<T: Config> Calls<T> {
         }
 
         Ok(().into())
+    }
+
+    pub fn swap_pool(
+        candidate: Candidate<T>,
+        delegator: Delegator<T>,
+        source_pool: TargetPool,
+        amount: SharesOrStake<T::Balance>,
+    ) -> DispatchResultWithPostInfo {
+        // Converts amount to shares of the correct pool
+        let old_shares = match (amount, source_pool) {
+            (SharesOrStake::Shares(s), _) => s,
+            (SharesOrStake::Stake(s), TargetPool::AutoCompounding) => {
+                pools::AutoCompounding::<T>::stake_to_shares(&candidate, Stake(s))?.0
+            }
+            (SharesOrStake::Stake(s), TargetPool::ManualRewards) => {
+                pools::ManualRewards::<T>::stake_to_shares(&candidate, Stake(s))?.0
+            }
+        };
+
+        // As it will either move in or out of the ManualRewards pool, manual rewards
+        // needs to be claimed.
+        Self::claim_manual_rewards(&[(candidate.clone(), delegator.clone())])?;
+
+        // Destroy shares from the old pool.
+        let removed_stake =
+            Self::destroy_shares(&candidate, &delegator, source_pool, Shares(old_shares))?;
+
+        // Convert removed amount to new pool shares.
+        let new_shares = match source_pool {
+            TargetPool::AutoCompounding => {
+                pools::ManualRewards::<T>::stake_to_shares_or_init(&candidate, removed_stake)?
+            }
+            TargetPool::ManualRewards => {
+                pools::AutoCompounding::<T>::stake_to_shares_or_init(&candidate, removed_stake)?
+            }
+        };
+
+        ensure!(!new_shares.0.is_zero(), Error::<T>::SwapResultsInZeroShares);
+
+        // We create new shares in the new pool. It returns the actual amount of stake those shares
+        // represents (due to rounding).
+        let actually_staked = match source_pool {
+            TargetPool::ManualRewards => {
+                let stake =
+                    pools::AutoCompounding::<T>::add_shares(&candidate, &delegator, new_shares)?;
+                pools::AutoCompounding::<T>::increase_hold(&candidate, &delegator, &stake)?;
+                stake
+            }
+            TargetPool::AutoCompounding => {
+                let stake =
+                    pools::ManualRewards::<T>::add_shares(&candidate, &delegator, new_shares)?;
+                pools::ManualRewards::<T>::increase_hold(&candidate, &delegator, &stake)?;
+                stake
+            }
+        };
+
+        let stake_decrease = removed_stake
+            .0
+            .err_sub(&actually_staked.0)
+            .map_err(Error::<T>::from)?;
+
+        // The left-over no longer contribute to the election of the candidate.
+        Candidates::<T>::sub_total_stake(&candidate, Stake(stake_decrease))?;
+
+        // We proceed with the leaving, which create Leaving shares and request,
+        // and release the dust from the convertion to Leaving shares.
+        let (leaving_stake, dust) = if stake_decrease.is_zero() {
+            (Stake(0u32.into()), Stake(0u32.into()))
+        } else {
+            Self::leave_stake(&candidate, &delegator, Stake(stake_decrease))?
+        };
+
+        pools::check_candidate_consistency::<T>(&candidate)?;
+
+        Pallet::<T>::deposit_event(Event::<T>::SwappedPool {
+            candidate: candidate.clone(),
+            delegator: delegator.clone(),
+            source_pool,
+            source_shares: old_shares,
+            source_stake: removed_stake.0,
+            target_shares: new_shares.0,
+            target_stake: actually_staked.0,
+            pending_leaving: leaving_stake.0,
+            released: dust.0,
+        });
+
+        Ok(().into())
+    }
+
+    /// Destory ManualReward or AutoCompounding shares while performing hold rebalancing if
+    /// necessary.
+    fn destroy_shares(
+        candidate: &Candidate<T>,
+        delegator: &Delegator<T>,
+        pool: TargetPool,
+        shares: Shares<T::Balance>,
+    ) -> Result<Stake<T::Balance>, DispatchErrorWithPostInfo> {
+        match pool {
+            TargetPool::AutoCompounding => {
+                let stake = pools::AutoCompounding::<T>::shares_to_stake(&candidate, shares)?;
+
+                if stake.0 > pools::AutoCompounding::<T>::hold(&candidate, &delegator).0 {
+                    Self::rebalance_hold(
+                        candidate.clone(),
+                        delegator.clone(),
+                        AllTargetPool::AutoCompounding,
+                    )?;
+                }
+
+                // This should be the same `stake` as before.
+                let stake =
+                    pools::AutoCompounding::<T>::sub_shares(&candidate, &delegator, shares)?;
+
+                pools::AutoCompounding::<T>::decrease_hold(&candidate, &delegator, &stake)?;
+                Ok(stake)
+            }
+            TargetPool::ManualRewards => {
+                let stake = pools::ManualRewards::<T>::shares_to_stake(&candidate, shares)?;
+
+                if stake.0 > pools::ManualRewards::<T>::hold(&candidate, &delegator).0 {
+                    Self::rebalance_hold(
+                        candidate.clone(),
+                        delegator.clone(),
+                        AllTargetPool::ManualRewards,
+                    )?;
+                }
+
+                // This should be the same `stake` as before.
+                let stake = pools::ManualRewards::<T>::sub_shares(&candidate, &delegator, shares)?;
+
+                pools::ManualRewards::<T>::decrease_hold(&candidate, &delegator, &stake)?;
+                Ok(stake)
+            }
+        }
+    }
+
+    /// Perform the leaving proceduce with provided stake, which will create
+    /// Leaving shares and request, and release the rounding dust. It DOES NOT
+    /// destroy shares in other pools.
+    /// Returns a tuple of the amount of stake in the leaving pool and the dust
+    /// that was released.
+    fn leave_stake(
+        candidate: &Candidate<T>,
+        delegator: &Delegator<T>,
+        stake: Stake<T::Balance>,
+    ) -> Result<(Stake<T::Balance>, Stake<T::Balance>), DispatchErrorWithPostInfo> {
+        // Create leaving shares.
+        // As with all pools there will be some rounding error, this amount
+        // should be small enough so that it is safe to directly release it
+        // in the delegator account.
+        let leaving_shares = pools::Leaving::<T>::stake_to_shares_or_init(&candidate, stake)?;
+        let leaving_stake =
+            pools::Leaving::<T>::add_shares(&candidate, &delegator, leaving_shares)?;
+        pools::Leaving::<T>::increase_hold(&candidate, &delegator, &leaving_stake)?;
+
+        // We create/mutate a request for leaving.
+        let now = T::LeavingRequestTimer::now();
+        let operation_key = PendingOperationKey::Leaving {
+            candidate: candidate.clone(),
+            at: now,
+        };
+        let operation = PendingOperations::<T>::get(&delegator, &operation_key);
+        let operation = operation
+            .err_add(&leaving_shares.0)
+            .map_err(|_| Error::<T>::MathOverflow)?;
+        PendingOperations::<T>::set(&delegator, &operation_key, operation);
+
+        // We release the dust if non-zero.
+        let dust = stake
+            .0
+            .err_sub(&leaving_stake.0)
+            .map_err(Error::<T>::from)?;
+
+        if !dust.is_zero() {
+            T::Currency::release(
+                &T::CurrencyHoldReason::get(),
+                &delegator,
+                dust,
+                Precision::Exact,
+            )?;
+        }
+
+        Ok((leaving_stake, Stake(dust)))
     }
 }

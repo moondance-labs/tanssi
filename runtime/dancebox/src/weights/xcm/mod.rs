@@ -16,14 +16,15 @@
 
 pub mod pallet_xcm_benchmarks_generic;
 
-use crate::weights::xcm::pallet_xcm_benchmarks_generic::WeightInfo;
-use crate::Runtime;
-use frame_support::weights::Weight;
-use pallet_xcm_benchmarks_generic::SubstrateWeight as XcmGeneric;
-use sp_std::prelude::*;
-use xcm::{
-    latest::{prelude::*, Weight as XCMWeight},
-    DoubleEncoded,
+use {
+    crate::{weights::xcm::pallet_xcm_benchmarks_generic::WeightInfo, Runtime},
+    frame_support::weights::Weight,
+    pallet_xcm_benchmarks_generic::SubstrateWeight as XcmGeneric,
+    sp_std::prelude::*,
+    xcm::{
+        latest::{prelude::*, Weight as XCMWeight},
+        DoubleEncoded,
+    },
 };
 
 trait WeighMultiAssets {

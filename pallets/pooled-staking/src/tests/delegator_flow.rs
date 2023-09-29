@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use super::*;
+use {super::*, crate::assert_eq_last_events};
 
 pool_test!(
     fn empty_delegation<P>() {
@@ -115,7 +115,7 @@ pool_test!(
 pool_test!(
     fn delegation_execution<P>() {
         ExtBuilder::default().build().execute_with(|| {
-            let final_amount = 2 * InitialManualClaimShareValue::get();
+            let final_amount = 2 * SHARE_INIT;
             let requested_amount = final_amount + 10; // test share rounding
 
             FullDelegation {
@@ -172,7 +172,7 @@ pool_test!(
 pool_test!(
     fn delegation_execution_too_soon<P>() {
         ExtBuilder::default().build().execute_with(|| {
-            let final_amount = 2 * InitialManualClaimShareValue::get();
+            let final_amount = 2 * SHARE_INIT;
             let block_number = block_number();
 
             RequestDelegation {
@@ -202,7 +202,7 @@ pool_test!(
 pool_test!(
     fn undelegation_execution_too_soon<P>() {
         ExtBuilder::default().build().execute_with(|| {
-            let final_amount = 2 * InitialManualClaimShareValue::get();
+            let final_amount = 2 * SHARE_INIT;
             let leaving_amount = round_down(final_amount, 3); // test leaving rounding
 
             FullDelegation {
@@ -247,7 +247,7 @@ pool_test!(
 pool_test!(
     fn undelegation_execution<P>() {
         ExtBuilder::default().build().execute_with(|| {
-            let final_amount = 2 * InitialManualClaimShareValue::get();
+            let final_amount = 2 * SHARE_INIT;
             let requested_amount = final_amount + 10; // test share rounding
             let leaving_amount = round_down(final_amount, 3); // test leaving rounding
 
@@ -344,10 +344,10 @@ pool_test!(
 pool_test!(
     fn undelegation_execution_amount_in_shares<P>() {
         ExtBuilder::default().build().execute_with(|| {
-            let joining_amount = 2 * InitialManualClaimShareValue::get();
+            let joining_amount = 2 * SHARE_INIT;
             let joining_requested_amount = joining_amount + 10; // test share rounding
 
-            let leaving_requested_amount = InitialManualClaimShareValue::get();
+            let leaving_requested_amount = SHARE_INIT;
             let leaving_amount = round_down(leaving_requested_amount, 3); // test leaving rounding
 
             assert_eq!(leaving_amount, 999_999);
@@ -436,6 +436,136 @@ pool_test!(
                     released: leaving_amount,
                 },
             ]);
+        })
+    }
+);
+
+pool_test!(
+    fn swap_works<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: 10 * SHARE_INIT,
+                expected_increase: 10 * SHARE_INIT,
+                ..default()
+            }
+            .test::<P>();
+
+            Swap {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                requested_amount: SharesOrStake::Stake(5 * SHARE_INIT + 10),
+                expected_removed: 5 * SHARE_INIT,
+                expected_restaked: 5 * SHARE_INIT,
+                ..default()
+            }
+            .test::<P>();
+
+            assert_eq_last_events!(vec![Event::<Runtime>::SwappedPool {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                source_pool: P::target_pool(),
+                source_shares: 5,
+                source_stake: 5 * SHARE_INIT,
+                target_shares: 5,
+                target_stake: 5 * SHARE_INIT,
+                pending_leaving: 0,
+                released: 0,
+            }]);
+        })
+    }
+);
+
+pool_test!(
+    fn swap_too_much<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: 10 * SHARE_INIT,
+                expected_increase: 10 * SHARE_INIT,
+                ..default()
+            }
+            .test::<P>();
+
+            assert_noop!(
+                Staking::swap_pool(
+                    RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                    ACCOUNT_CANDIDATE_1,
+                    P::target_pool(),
+                    SharesOrStake::Shares(11),
+                ),
+                Error::<Runtime>::MathUnderflow
+            );
+        })
+    }
+);
+
+pool_test!(
+    fn swap_with_rounding<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: 10 * SHARE_INIT,
+                expected_increase: 10 * SHARE_INIT,
+                ..default()
+            }
+            .test::<P>();
+
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: 1 * SHARE_INIT,
+                expected_increase: 1 * SHARE_INIT,
+                ..default()
+            }
+            .test::<P::OppositePool>();
+
+            // We then artificialy distribute rewards to the target by increasing the value of the pool
+            // and minting currency to the staking account (this is not how manual rewards would
+            // be distributed but whatever).
+            let rewards = 5 * KILO;
+            assert_ok!(Balances::mint_into(&ACCOUNT_STAKING, rewards));
+            assert_ok!(P::OppositePool::share_stake_among_holders(
+                &ACCOUNT_CANDIDATE_1,
+                Stake(rewards)
+            ));
+            assert_ok!(Candidates::<Runtime>::add_total_stake(
+                &ACCOUNT_CANDIDATE_1,
+                &Stake(rewards)
+            ));
+
+            Swap {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                requested_amount: SharesOrStake::Stake(5 * SHARE_INIT + 10),
+                expected_removed: 5 * SHARE_INIT,
+                // due to 1 target share now being worth a bit more than SHARE_INIT,
+                // only 4 target shares can be restaked
+                expected_restaked: 4_020_000,
+                // remaining amount is put in the leaving pool, rounded down
+                // to the closest multiple of 3 (test leaving share init value)
+                expected_leaving: 979_998,
+                // thus the 2 stake that could not be put in the leaving pool
+                // are directly released
+                expected_released: 2,
+                ..default()
+            }
+            .test::<P>();
+
+            assert_eq_last_events!(vec![Event::<Runtime>::SwappedPool {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                source_pool: P::target_pool(),
+                source_shares: 5,
+                source_stake: 5 * SHARE_INIT,
+                target_shares: 4,
+                target_stake: 4_020_000,
+                pending_leaving: 979_998,
+                released: 2,
+            }]);
         })
     }
 );

@@ -21,7 +21,7 @@ pool_test!(
         ExtBuilder::default().build().execute_with(|| {
             // Preparation:
             // We naturaly delegate towards a candidate.
-            let initial_amount = 2 * InitialManualClaimShareValue::get();
+            let initial_amount = 2 * SHARE_INIT;
             let rewards = 5 * KILO;
             let final_amount = initial_amount + rewards;
 
@@ -86,7 +86,7 @@ pool_test!(
         ExtBuilder::default().build().execute_with(|| {
             // Preparation:
             // We naturaly delegate towards a candidate.
-            let initial_amount = 2 * InitialManualClaimShareValue::get();
+            let initial_amount = 2 * SHARE_INIT;
             let slash = 5 * KILO;
             let final_amount = initial_amount - slash;
 
@@ -148,7 +148,7 @@ pool_test!(
         ExtBuilder::default().build().execute_with(|| {
             // Preparation:
             // We naturaly delegate towards a candidate.
-            let initial_amount = 2 * InitialManualClaimShareValue::get();
+            let initial_amount = 2 * SHARE_INIT;
 
             FullDelegation {
                 candidate: ACCOUNT_CANDIDATE_1,
@@ -173,7 +173,7 @@ pool_test!(
 pool_test!(
     fn rebalance_in_undelegation_request<P>() {
         ExtBuilder::default().build().execute_with(|| {
-            let joining_amount = 2 * InitialManualClaimShareValue::get();
+            let joining_amount = 2 * SHARE_INIT;
             let rewards = 5 * KILO;
             let leaving_requested_amount = joining_amount + rewards;
             let leaving_amount = round_down(leaving_requested_amount, 3); // test leaving rounding
@@ -210,6 +210,47 @@ pool_test!(
                 expected_leaving: leaving_amount,
                 expected_hold_rebalance: rewards,
                 ..default()
+            }
+            .test::<P>();
+        })
+    }
+);
+
+pool_test!(
+    fn rebalance_in_swap<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: 10 * SHARE_INIT,
+                expected_increase: 10 * SHARE_INIT,
+                ..default()
+            }
+            .test::<P>();
+
+            // We then artificialy distribute rewards to the source pool by increasing the value of the pool
+            // and minting currency to the staking account (this is not how manual rewards would
+            // be distributed but whatever).
+            let rewards = 2 * SHARE_INIT;
+            assert_ok!(Balances::mint_into(&ACCOUNT_STAKING, rewards));
+            assert_ok!(P::share_stake_among_holders(
+                &ACCOUNT_CANDIDATE_1,
+                Stake(rewards)
+            ));
+            assert_ok!(Candidates::<Runtime>::add_total_stake(
+                &ACCOUNT_CANDIDATE_1,
+                &Stake(rewards)
+            ));
+
+            Swap {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                requested_amount: SharesOrStake::Shares(9),
+                expected_removed: 10_800_000,
+                expected_restaked: 10_000_000,
+                expected_leaving: 799998,
+                expected_released: 2,
+                expected_hold_rebalance: rewards,
             }
             .test::<P>();
         })
