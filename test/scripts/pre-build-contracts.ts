@@ -121,7 +121,8 @@ const main = async () => {
     // Order is important so precompiles are available first
     const contractSourcePaths = [
         {
-            filepath: args.length > 0 && args[0] != 'undefined' ? args[0] : path.join(__dirname, "../contracts/solidity"),
+            filepath:
+                args.length > 0 && args[0] != "undefined" ? args[0] : path.join(__dirname, "../contracts/solidity"),
             importPath: "", // Reference in contracts are local
             compile: true,
         },
