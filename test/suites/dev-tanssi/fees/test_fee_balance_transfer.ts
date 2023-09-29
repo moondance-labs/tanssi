@@ -21,9 +21,7 @@ describeSuite({
             alice = context.keyring.alice;
             bob = context.keyring.bob;
             polkadotJs = context.polkadotJs();
-            baseWeight = extractWeight(
-                polkadotJs.consts.system.blockWeights.perClass.normal.baseExtrinsic
-              ).toBigInt();
+            baseWeight = extractWeight(polkadotJs.consts.system.blockWeights.perClass.normal.baseExtrinsic).toBigInt();
         });
 
         it({
@@ -63,7 +61,7 @@ describeSuite({
                 expectedBasePlusWeightFee = basePlusWeightFee;
 
                 // TODO: revisit this 1 unit that is getting injected here
-                const expectedFee = basePlusWeightFee + BigInt(signedTx.encodedLength) +1n;
+                const expectedFee = basePlusWeightFee + BigInt(signedTx.encodedLength) + 1n;
                 expect(fee).to.equal(expectedFee);
 
                 const tip = 0n;
@@ -91,16 +89,16 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength) +1n;
+                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength) + 1n;
                 expect(fee).to.equal(expectedFee);
 
-                console.log(expectedFee)
-                console.log("fee dtails are", feeDetails.toString())
+                console.log(expectedFee);
+                console.log("fee dtails are", feeDetails.toString());
                 const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
                 const tip = 0n;
                 expect(fee).to.equal(
                     inclusionFee.lenFee.toBigInt() +
-                    inclusionFee.baseFee.toBigInt() +
+                        inclusionFee.baseFee.toBigInt() +
                         inclusionFee.adjustedWeightFee.toBigInt() +
                         tip
                 );
@@ -146,7 +144,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength) +1n;
+                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength) + 1n;
                 expect(fee).to.equal(expectedFee);
 
                 const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
@@ -177,7 +175,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength) +1n;
+                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength) + 1n;
                 expect(fee).to.equal(expectedFee);
 
                 const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
