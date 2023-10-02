@@ -479,7 +479,6 @@ fn distribute_rewards_inner<T: Config>(
     candidate: &Candidate<T>,
     rewards: T::Balance,
 ) -> Result<T::Balance, Error<T>> {
-
     // `RewardsCollatorCommission` is a `Perbill` so we're not worried about overflow.
     let candidate_rewards = T::RewardsCollatorCommission::get() * rewards;
     let delegators_rewards = rewards.err_sub(&candidate_rewards)?;
