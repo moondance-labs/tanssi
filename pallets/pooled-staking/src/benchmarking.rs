@@ -525,6 +525,60 @@ mod benchmarks {
         Ok(())
     }
 
+    #[benchmark]
+    fn distribute_rewards() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+
+        let source_stake = min_candidate_stk::<T>() * 10u32.into();
+
+        let (caller, _deposit_amount) = create_funded_user::<T>("caller", USER_SEED, source_stake * 2u32.into());
+
+        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
+
+        PooledStaking::<T>::request_delegate(
+            RawOrigin::Signed(caller.clone()).into(),
+            caller.clone(),
+            TargetPool::AutoCompounding,
+            source_stake,
+        )?;
+        PooledStaking::<T>::request_delegate(
+            RawOrigin::Signed(caller.clone()).into(),
+            caller.clone(),
+            TargetPool::ManualRewards,
+            source_stake,
+        )?;
+
+        let timer = T::JoiningRequestTimer::now();
+
+        T::JoiningRequestTimer::skip_to_elapsed();
+
+        PooledStaking::<T>::execute_pending_operations(
+            RawOrigin::Signed(caller.clone()).into(),
+            vec![PendingOperationQuery {
+                delegator: caller.clone(),
+                operation: JoiningAutoCompounding {
+                    candidate: caller.clone(),
+                    at: timer.clone(),
+                },
+            }, PendingOperationQuery {
+                delegator: caller.clone(),
+                operation: JoiningManualRewards {
+                    candidate: caller.clone(),
+                    at: timer.clone(),
+                },
+            }],
+        )?;
+
+        T::Currency::mint_into(&caller, source_stake).unwrap();
+
+        #[block]
+        {
+            frame_support::assert_ok!(crate::pools::distribute_rewards::<T>(&caller, source_stake));
+        }
+
+        Ok(())
+    }
+
     impl_benchmark_test_suite!(
         PooledStaking,
         crate::mock::ExtBuilder::default().build(),
