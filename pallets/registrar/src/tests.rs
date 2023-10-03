@@ -282,6 +282,124 @@ fn mark_valid_for_collating_bad_origin() {
 }
 
 #[test]
+fn pause_para_id_42_works() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+
+        // Set boot nodes to check their existence later on
+        assert_ok!(ParaRegistrar::set_boot_nodes(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            vec![
+                b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9".to_vec().try_into().unwrap()
+            ].try_into().unwrap()
+            )
+        );
+
+        // Enable the container-chain for the first time
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_eq!(
+            ParaRegistrar::pending_registered_para_ids(),
+            vec![(2u32, BoundedVec::try_from(vec![42u32.into()]).unwrap())]
+        );
+
+        ParaRegistrar::initializer_on_new_session(&2);
+        assert_eq!(ParaRegistrar::registered_para_ids(), vec![42.into()]);
+
+        // Pause the container-chain
+        assert_ok!(ParaRegistrar::pause_container_chain(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+
+        // Check the container-chain is not in PendingParaIds
+        assert_eq!(
+            ParaRegistrar::pending_registered_para_ids(),
+            vec![(2u32, BoundedVec::try_from(vec![]).unwrap())]
+        );
+
+        // Assert that the ParaIdPaused event was emitted
+        System::assert_last_event(Event::ParaIdPaused { para_id: 42.into() }.into());
+
+        // Check boot nodes and genesis data were not removed
+        assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)).is_empty(), false);
+        assert_eq!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_some(), true);
+
+        // Check the container chain was not selected for the next period
+        ParaRegistrar::initializer_on_new_session(&4);
+        assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
+    });
+}
+
+#[test]
+fn pause_para_id_42_twice_fails() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+
+        // Enable the container-chain for collating
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_eq!(
+            ParaRegistrar::pending_registered_para_ids(),
+            vec![(2u32, BoundedVec::try_from(vec![42u32.into()]).unwrap())]
+        );
+
+        ParaRegistrar::initializer_on_new_session(&2);
+        assert_eq!(ParaRegistrar::registered_para_ids(), vec![42.into()]);
+
+        // Pause the container-chain
+        assert_ok!(ParaRegistrar::pause_container_chain(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+
+        // Try to pause again
+        assert_noop!(
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into()),
+            Error::<Test>::ParaIdAlreadyPaused
+        );
+    });
+}
+
+#[test]
+fn pause_para_id_42_fails_not_registered() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        // Try to pause
+        assert_noop!(
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into()),
+            Error::<Test>::ParaIdNotRegistered
+        );
+    });
+}
+
+#[test]
+fn pause_container_chain_bad_origin() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_noop!(
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::signed(1), 42.into()),
+            DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
 fn genesis_loads_para_ids() {
     new_test_ext_with_genesis(vec![
         (1.into(), empty_genesis_data(), vec![]),
