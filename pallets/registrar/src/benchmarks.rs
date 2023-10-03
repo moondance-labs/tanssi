@@ -126,8 +126,8 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn mark_valid_for_collating(x: Linear<5, 3_000_000>, y: Linear<1, 50>) {
-        let storage = vec![(vec![1; 4], vec![1; x as usize]).into()];
+    fn mark_valid_for_collating(y: Linear<1, 50>) {
+        let storage = vec![(vec![1; 4], vec![1; 3_000_000 as usize]).into()];
         let storage = new_genesis_data(storage);
 
         for i in 0..y {
@@ -177,6 +177,54 @@ mod benchmarks {
 
         #[extrinsic_call]
         Pallet::<T>::set_boot_nodes(RawOrigin::Signed(caller), Default::default(), boot_nodes);
+    }
+
+    #[benchmark]
+    fn pause_container_chain(y: Linear<1, 50>) {
+        let storage = vec![(vec![1; 4], vec![1; 3_000_000 as usize]).into()];
+        let storage = new_genesis_data(storage);
+
+        // Deregister all the existing chains to avoid conflicts with the new ones
+        for para_id in Pallet::<T>::registered_para_ids() {
+            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id.into()).unwrap();
+        }
+
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
+        }
+
+        // Check PendingParaIds has a length of y
+        assert_eq!(
+            Pallet::<T>::pending_registered_para_ids()[0].1.len(),
+            y as usize
+        );
+
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+
+        // Check y-1 is not in PendingVerification
+        assert!(!Pallet::<T>::pending_verification().contains(&ParaId::from(y - 1)));
+
+        #[extrinsic_call]
+        Pallet::<T>::pause_container_chain(RawOrigin::Root, (y - 1).into());
+
+        // y-1 should be included again in PendingVerification
+        assert!(Pallet::<T>::pending_verification().contains(&ParaId::from(y - 1)));
+
+        // y-1 should not be in PendingParaIds
+        assert_eq!(
+            Pallet::<T>::pending_registered_para_ids()[0].1.len(),
+            (y - 1) as usize
+        );
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
