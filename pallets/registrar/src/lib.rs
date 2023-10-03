@@ -376,10 +376,7 @@ pub mod pallet {
 
         /// Mark container-chain valid for collating
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::mark_valid_for_collating(
-            T::MaxGenesisDataSize::get(),
-            T::MaxLengthParaIds::get(),
-        ))]
+        #[pallet::weight(T::WeightInfo::mark_valid_for_collating(T::MaxLengthParaIds::get()))]
         pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
@@ -448,11 +445,7 @@ pub mod pallet {
 
         /// Pause container-chain from collating without removing its boot nodes nor its genesis config
         #[pallet::call_index(4)]
-        // TODO: use the proper benchmarked function
-        #[pallet::weight(T::WeightInfo::mark_valid_for_collating(
-            T::MaxGenesisDataSize::get(),
-            T::MaxLengthParaIds::get(),
-        ))]
+        #[pallet::weight(T::WeightInfo::pause_container_chain(T::MaxLengthParaIds::get()))]
         pub fn pause_container_chain(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 

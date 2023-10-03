@@ -717,7 +717,6 @@ fn weights_assigned_to_extrinsics_are_correct() {
                 .get_dispatch_info()
                 .weight,
             <() as crate::weights::WeightInfo>::mark_valid_for_collating(
-                <Test as crate::Config>::MaxGenesisDataSize::get(),
                 <Test as crate::Config>::MaxLengthParaIds::get()
             )
         );
