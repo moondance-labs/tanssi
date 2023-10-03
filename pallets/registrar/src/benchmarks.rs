@@ -127,7 +127,7 @@ mod benchmarks {
 
     #[benchmark]
     fn mark_valid_for_collating(y: Linear<1, 50>) {
-        let storage = vec![(vec![1; 4], vec![1; 3_000_000 as usize]).into()];
+        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
         let storage = new_genesis_data(storage);
 
         for i in 0..y {
@@ -181,12 +181,12 @@ mod benchmarks {
 
     #[benchmark]
     fn pause_container_chain(y: Linear<1, 50>) {
-        let storage = vec![(vec![1; 4], vec![1; 3_000_000 as usize]).into()];
+        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
         let storage = new_genesis_data(storage);
 
         // Deregister all the existing chains to avoid conflicts with the new ones
         for para_id in Pallet::<T>::registered_para_ids() {
-            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id.into()).unwrap();
+            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
         }
 
         for i in 0..y {
