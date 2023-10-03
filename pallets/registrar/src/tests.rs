@@ -330,8 +330,8 @@ fn pause_para_id_42_works() {
         System::assert_last_event(Event::ParaIdPaused { para_id: 42.into() }.into());
 
         // Check boot nodes and genesis data were not removed
-        assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)).is_empty(), false);
-        assert_eq!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_some(), true);
+        assert!(!ParaRegistrar::boot_nodes(ParaId::from(42)).is_empty());
+        assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_some());
 
         // Check the container chain was not selected for the next period
         ParaRegistrar::initializer_on_new_session(&4);
