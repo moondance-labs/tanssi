@@ -158,6 +158,9 @@ mod benchmarks {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+
         // We should have registered y
         assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
 

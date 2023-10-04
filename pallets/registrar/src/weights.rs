@@ -131,7 +131,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		Weight::from_parts(32_834_209, 1899)
 			// Standard Error: 16_866
 			.saturating_add(Weight::from_parts(391_115, 0).saturating_mul(y.into()))
-			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
 	}
