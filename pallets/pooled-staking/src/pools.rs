@@ -455,7 +455,6 @@ impl<T: Config> ManualRewards<T> {
 /// AutoCompounding shares. This can lead to some rounding, which will be
 /// absorbed in the ManualRewards distribution, which simply consist of
 /// transfering the funds to the candidate account.
-#[allow(dead_code)]
 pub fn distribute_rewards<T: Config>(
     candidate: &Candidate<T>,
     rewards: T::Balance,
@@ -478,7 +477,6 @@ fn distribute_rewards_inner<T: Config>(
     candidate: &Candidate<T>,
     rewards: T::Balance,
 ) -> Result<T::Balance, Error<T>> {
-
     // `RewardsCollatorCommission` is a `Perbill` so we're not worried about overflow.
     let candidate_rewards = T::RewardsCollatorCommission::get() * rewards;
     let delegators_rewards = rewards.err_sub(&candidate_rewards)?;
@@ -518,14 +516,23 @@ fn distribute_rewards_inner<T: Config>(
     let candidate_auto_rewards = if auto_total_stake.is_zero() {
         Zero::zero()
     } else {
-        let candidate_auto_stake = AutoCompounding::<T>::computed_stake(candidate, candidate)?.0;
-        let candidate_combined_stake = candidate_manual_stake.err_add(&candidate_auto_stake)?;
-        let rewards = candidate_rewards.mul_div(candidate_auto_stake, candidate_combined_stake)?;
-        let new_shares = AutoCompounding::<T>::stake_to_shares(candidate, Stake(rewards))?;
+        'a: {
+            let candidate_auto_stake =
+                AutoCompounding::<T>::computed_stake(candidate, candidate)?.0;
+            let candidate_combined_stake = candidate_manual_stake.err_add(&candidate_auto_stake)?;
 
-        if new_shares.0.is_zero() {
-            Zero::zero()
-        } else {
+            if candidate_combined_stake.is_zero() {
+                break 'a Zero::zero();
+            }
+
+            let rewards =
+                candidate_rewards.mul_div(candidate_auto_stake, candidate_combined_stake)?;
+            let new_shares = AutoCompounding::<T>::stake_to_shares(candidate, Stake(rewards))?;
+
+            if new_shares.0.is_zero() {
+                break 'a Zero::zero();
+            }
+
             AutoCompounding::<T>::add_shares(candidate, candidate, new_shares)?.0
         }
     };

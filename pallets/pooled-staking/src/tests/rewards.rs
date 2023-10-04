@@ -495,3 +495,85 @@ fn delegators_mixed() {
         );
     });
 }
+
+#[test]
+fn candidate_only_no_stake() {
+    // Rewarding a candidate that does not have any stake works
+    ExtBuilder::default().build().execute_with(|| {
+        test_distribution(
+            &[],
+            RewardRequest {
+                collator: ACCOUNT_CANDIDATE_1,
+                rewards: 1_000_000,
+            },
+            &[],
+            Distribution {
+                collator_auto: 0,
+                collator_manual: 1_000_000, // 100% of rewards
+                delegators_auto: 0,
+                delegators_manual: 0, // 0% of rewards
+            },
+        )
+    });
+}
+
+#[test]
+fn delegator_only_candidate_zero() {
+    // Rewarding a candidate that does not have any stake works
+    ExtBuilder::default().build().execute_with(|| {
+        test_distribution(
+            &[Delegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                pool: TargetPool::ManualRewards,
+                stake: 250_000_000,
+            }],
+            RewardRequest {
+                collator: ACCOUNT_CANDIDATE_1,
+                rewards: 1_000_000,
+            },
+            &[DelegatorState {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                auto_shares: 0,
+                auto_stake: 0,
+                manual_shares: 250,
+                manual_stake: 250_000_000,
+                pending_rewards: 800_000,
+            }],
+            Distribution {
+                collator_auto: 0,
+                collator_manual: 200_000, // 20% of rewards
+                delegators_auto: 0,
+                delegators_manual: 800_000, // 80% of rewards
+            },
+        )
+    });
+}
+
+#[test]
+fn delegator_only_candidate_no_stake_auto_compounding() {
+    // Rewarding a candidate that does not have any stake, while some delegator
+    // has stake for that candidate
+    ExtBuilder::default().build().execute_with(|| {
+        test_distribution(
+            &[Delegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                pool: TargetPool::AutoCompounding,
+                stake: 250_000_000,
+            }],
+            RewardRequest {
+                collator: ACCOUNT_CANDIDATE_1,
+                rewards: 1_000_000,
+            },
+            &[],
+            Distribution {
+                collator_auto: 0,
+                collator_manual: 200_000, // 20% of rewards
+                delegators_auto: 800_000, // 80% of rewards
+                delegators_manual: 0,
+            },
+        )
+    });
+}
