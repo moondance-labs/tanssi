@@ -130,6 +130,8 @@ mod benchmarks {
         let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
         let storage = new_genesis_data(storage);
 
+        // Worst case: when RegisteredParaIds and PendingVerification are both full
+        // First loop to fill PendingVerification to its maximum
         for i in 0..y {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
@@ -140,6 +142,20 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+        }
+
+        // Second loop to fill RegisteredParaIds to its maximum
+        for k in 1000..(1000 + y) {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                k.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
         // We should have registered y
@@ -189,6 +205,8 @@ mod benchmarks {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
         }
 
+        // Worst case: when RegisteredParaIds and PendingVerification are both full
+        // First loop to fill RegisteredParaIds to its maximum
         for i in 0..y {
             // Twice the deposit just in case
             let (caller, _deposit_amount) =
@@ -200,6 +218,18 @@ mod benchmarks {
             )
             .unwrap();
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
+        }
+
+        // Second loop to fill PendingVerification to its maximum
+        for k in 1000..(1000 + y) {
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                k.into(),
+                storage.clone(),
+            )
+            .unwrap();
         }
 
         // Check PendingParaIds has a length of y
