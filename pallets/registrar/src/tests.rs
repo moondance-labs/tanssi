@@ -733,5 +733,14 @@ fn weights_assigned_to_extrinsics_are_correct() {
                 0
             )
         );
+
+        assert_eq!(
+            crate::Call::<Test>::pause_container_chain { para_id: 42.into() }
+                .get_dispatch_info()
+                .weight,
+            <() as crate::weights::WeightInfo>::pause_container_chain(
+                <Test as crate::Config>::MaxLengthParaIds::get()
+            )
+        );
     });
 }
