@@ -24,7 +24,12 @@ use {
     sc_network::config::MultiaddrWithPeerId,
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{Block as BlockT, Get},
-    std::{collections::BTreeMap, fs, io, io::Write, path::PathBuf},
+    std::{
+        collections::BTreeMap,
+        fs,
+        io::{self, Write},
+        path::PathBuf,
+    },
     tp_container_chain_genesis_data::json::properties_to_map,
 };
 
