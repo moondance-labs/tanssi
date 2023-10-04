@@ -229,4 +229,43 @@ yargs(hideBin(process.argv))
             }
         }
     )
+    .command(
+        `pauseContainerChain`,
+        "Pause a container-chain from collating, without modifying its boot nodes nor its parachain config",
+        (yargs) => {
+            return yargs
+                .options({
+                    ...NETWORK_YARGS_OPTIONS,
+                    "account-priv-key": {
+                        type: "string",
+                        demandOption: false,
+                        alias: "account",
+                    },
+                    "para-id": {
+                        describe: "Container chain para id",
+                        type: "number",
+                    },
+                })
+                .demandOption(["para-id", "account-priv-key"]);
+        },
+        async (argv) => {
+            const api = await getApiFor(argv);
+            const keyring = new Keyring({ type: "sr25519" });
+
+            try {
+                const privKey = argv["account-priv-key"];
+                const account = keyring.addFromUri(privKey);
+
+                let tx = api.tx.registrar.pauseContainerChain(argv.paraId);
+                tx = api.tx.sudo.sudo(tx);
+                process.stdout.write(`Sending transaction... `);
+                const txHash = await tx.signAndSend(account);
+                process.stdout.write(`${txHash.toHex()}\n`);
+                // TODO: this will always print Done, even if the extrinsic has failed
+                process.stdout.write(`Done ✅\n`);
+            } finally {
+                await api.disconnect();
+            }
+        }
+    )
     .parse();

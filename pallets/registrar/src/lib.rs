@@ -220,6 +220,8 @@ pub mod pallet {
         ParaIdDeregistered { para_id: ParaId },
         /// A new para id is now valid for collating. [para_id]
         ParaIdValidForCollating { para_id: ParaId },
+        /// A para id has been paused from collating.
+        ParaIdPaused { para_id: ParaId },
         /// The list of boot_nodes
         BootNodesChanged { para_id: ParaId },
     }
@@ -228,6 +230,8 @@ pub mod pallet {
     pub enum Error<T> {
         /// Attempted to register a ParaId that was already registered
         ParaIdAlreadyRegistered,
+        /// Attempted to pause a ParaId that was already in PendingVerification
+        ParaIdAlreadyPaused,
         /// Attempted to deregister a ParaId that is not registered
         ParaIdNotRegistered,
         /// The bounded list of ParaIds has reached its limit
@@ -372,10 +376,7 @@ pub mod pallet {
 
         /// Mark container-chain valid for collating
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::mark_valid_for_collating(
-            T::MaxGenesisDataSize::get(),
-            T::MaxLengthParaIds::get(),
-        ))]
+        #[pallet::weight(T::WeightInfo::mark_valid_for_collating(T::MaxLengthParaIds::get()))]
         pub fn mark_valid_for_collating(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
@@ -438,6 +439,37 @@ pub mod pallet {
             BootNodes::<T>::insert(para_id, boot_nodes);
 
             Self::deposit_event(Event::BootNodesChanged { para_id });
+
+            Ok(())
+        }
+
+        /// Pause container-chain from collating without removing its boot nodes nor its genesis config
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::WeightInfo::pause_container_chain(T::MaxLengthParaIds::get()))]
+        pub fn pause_container_chain(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            T::RegistrarOrigin::ensure_origin(origin)?;
+
+            let mut pending_verification = PendingVerification::<T>::get();
+            match pending_verification.binary_search(&para_id) {
+                Ok(_) => return Err(Error::<T>::ParaIdAlreadyPaused.into()),
+                Err(index) => {
+                    pending_verification
+                        .try_insert(index, para_id)
+                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                }
+            };
+
+            Self::schedule_parachain_change(|para_ids| match para_ids.binary_search(&para_id) {
+                Ok(index) => {
+                    para_ids.remove(index);
+                    Ok(())
+                }
+                Err(_) => return Err(Error::<T>::ParaIdNotRegistered.into()),
+            })?;
+
+            PendingVerification::<T>::put(pending_verification);
+
+            Self::deposit_event(Event::ParaIdPaused { para_id });
 
             Ok(())
         }

@@ -1044,6 +1044,11 @@ declare module "@polkadot/api-base/types/submittable" {
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
+            /** Pause container-chain from collating without removing its boot nodes nor its genesis config */
+            pauseContainerChain: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
             /** Register container-chain */
             register: AugmentedSubmittable<
                 (
