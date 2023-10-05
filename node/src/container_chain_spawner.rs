@@ -219,7 +219,7 @@ impl ContainerChainSpawner {
             container_chain_cli_config.database.set_path(&db_path);
 
             // Delete existing database if running as collator
-            if validator {
+            if validator && !container_chain_cli.base.keep_db {
                 delete_container_chain_db(&db_path);
             }
 
@@ -289,7 +289,7 @@ impl ContainerChainSpawner {
                     _ = on_exit_future => {
                         // Graceful shutdown
                         // Delete existing database if running as collator
-                        if validator {
+                        if validator && !container_chain_cli.base.keep_db {
                             delete_container_chain_db(&db_path);
                         }
                     }
