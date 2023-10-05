@@ -531,7 +531,8 @@ mod benchmarks {
 
         let source_stake = min_candidate_stk::<T>() * 10u32.into();
 
-        let (caller, _deposit_amount) = create_funded_user::<T>("caller", USER_SEED, source_stake * 2u32.into());
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", USER_SEED, source_stake * 2u32.into());
 
         T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
 
@@ -554,26 +555,29 @@ mod benchmarks {
 
         PooledStaking::<T>::execute_pending_operations(
             RawOrigin::Signed(caller.clone()).into(),
-            vec![PendingOperationQuery {
-                delegator: caller.clone(),
-                operation: JoiningAutoCompounding {
-                    candidate: caller.clone(),
-                    at: timer.clone(),
+            vec![
+                PendingOperationQuery {
+                    delegator: caller.clone(),
+                    operation: JoiningAutoCompounding {
+                        candidate: caller.clone(),
+                        at: timer.clone(),
+                    },
                 },
-            }, PendingOperationQuery {
-                delegator: caller.clone(),
-                operation: JoiningManualRewards {
-                    candidate: caller.clone(),
-                    at: timer.clone(),
+                PendingOperationQuery {
+                    delegator: caller.clone(),
+                    operation: JoiningManualRewards {
+                        candidate: caller.clone(),
+                        at: timer.clone(),
+                    },
                 },
-            }],
+            ],
         )?;
 
-        T::Currency::mint_into(&caller, source_stake).unwrap();
+        T::Currency::mint_into(&T::StakingAccount::get(), source_stake).unwrap();
 
         #[block]
         {
-            frame_support::assert_ok!(crate::pools::distribute_rewards::<T>(&caller, source_stake));
+            crate::pools::distribute_rewards::<T>(&caller, source_stake)?;
         }
 
         Ok(())
