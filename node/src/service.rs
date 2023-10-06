@@ -102,7 +102,7 @@ type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
 
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 
-type ParachainBackend = TFullBackend<Block>;
+pub type ParachainBackend = TFullBackend<Block>;
 
 type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
 
@@ -169,6 +169,8 @@ pub fn new_partial(
             executor,
         )?;
     let client = Arc::new(client);
+    log::info!("backend in new_partial refcount: {}", Arc::strong_count(&backend));
+    log::info!("client in new_partial refcount: {}", Arc::strong_count(&client));
 
     let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
 
@@ -396,6 +398,7 @@ async fn start_node_impl(
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
+    db_ref_out: &mut Option<Arc<ParachainBackend>>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(orchestrator_config);
 
@@ -411,6 +414,7 @@ async fn start_node_impl(
 
     let client = params.client.clone();
     let backend = params.backend.clone();
+    *db_ref_out = Some(backend.clone());
     let mut task_manager = params.task_manager;
 
     let (relay_chain_interface, collator_key) = build_relay_chain_interface(
@@ -626,6 +630,46 @@ async fn start_node_impl(
             }
         }
 
+        let debug_start_same_cc = async move {
+            loop {
+                let sleep_delay = Duration::from_secs(10);
+                use tokio::time::{sleep, Duration};
+                sleep(sleep_delay).await;
+                cc_spawn_tx
+                    .send(CcSpawnMsg::UpdateAssignment {
+                        current: Some(2000u32.into()),
+                        next: None,
+                    })
+                    .unwrap();
+                sleep(sleep_delay).await;
+                cc_spawn_tx
+                    .send(CcSpawnMsg::UpdateAssignment {
+                        current: None,
+                        next: None,
+                    })
+                    .unwrap();
+                sleep(sleep_delay).await;
+                cc_spawn_tx
+                    .send(CcSpawnMsg::UpdateAssignment {
+                        current: None,
+                        next: Some(2001u32.into()),
+                    })
+                    .unwrap();
+                sleep(sleep_delay).await;
+                cc_spawn_tx
+                    .send(CcSpawnMsg::UpdateAssignment {
+                        current: None,
+                        next: None,
+                    })
+                    .unwrap();
+            }
+        };
+        task_manager.spawn_handle().spawn(
+            "container-chain-spawner-debug-same-cc",
+            None,
+            debug_start_same_cc,
+        );
+
         // Start container chain spawner task. This will start and stop container chains on demand.
         let orchestrator_client = client.clone();
         let spawn_handle = task_manager.spawn_handle();
@@ -643,14 +687,55 @@ async fn start_node_impl(
             validator,
             spawn_handle,
             state: Default::default(),
+            debug_state: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
+
+        let debug_state = container_chain_spawner.debug_state.clone();
 
         task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
             container_chain_spawner.rx_loop(cc_spawn_rx),
         );
+
+        task_manager.spawn_essential_handle().spawn(
+            "container-chain-spawner-debug-state",
+            None,
+            async move {
+                use tokio::time::{sleep, Duration};
+                let mut i = 0;
+                loop {
+                    i += 1;
+                    sleep(Duration::from_secs(10)).await;
+                    let debug_state = debug_state.lock().unwrap();
+                    let refcounts: Vec<_> = debug_state.list.iter().map(|(para_id, arc_db, arc_client)| (*para_id, std::sync::Weak::strong_count(arc_db), std::sync::Weak::strong_count(arc_client))).collect();
+                    let mut startcounts: Vec<_> = debug_state.counter.iter().map(|(k, v)| (*k, *v)).collect();
+                    //drop(debug_state);
+                    startcounts.sort();
+                    log::info!("container chain spawner debug_state (para_id, db, client) refcounts: {:?}", refcounts);
+                    log::info!("started container chains counter: {:?}", startcounts);
+
+                    if i == 120 {
+                        log::error!("DANGER, will force deallocate client to see what happens");
+                        unsafe {
+                            let weak0 = debug_state.list[0].2.clone();
+                            if let Some(client_arc) = weak0.upgrade() {
+                                let ptr = Arc::into_raw(client_arc.clone());
+
+                                while Arc::strong_count(&client_arc) > 1 {
+                                    log::info!("decrement");
+                                    Arc::decrement_strong_count(ptr);
+                                }
+
+                                // strong count is 1 and client_arc is still alive, when it is dropped count will be 0 and client will be dropped
+                            }
+
+                        }
+                    }
+                }
+            }
+        )
     }
 
     Ok((task_manager, client))
@@ -677,6 +762,7 @@ pub async fn start_node_impl_container(
     para_id: ParaId,
     orchestrator_para_id: ParaId,
     collator: bool,
+    db_ref_out: &mut Option<Arc<ParachainBackend>>,
 ) -> sc_service::error::Result<(
     TaskManager,
     Arc<ParachainClient>,
@@ -709,6 +795,9 @@ pub async fn start_node_impl_container(
         import_queue_service = params.import_queue.service();
         params_import_queue = params.import_queue;
     }
+    log::info!("backend start_node_impl_container refcount: {}", Arc::strong_count(&backend));
+    log::info!("client start_node_impl_container refcount: {}", Arc::strong_count(&client));
+    *db_ref_out = Some(backend.clone());
 
     let spawn_handle = task_manager.spawn_handle();
 
@@ -1287,6 +1376,7 @@ pub async fn start_parachain_node(
         collator_options,
         para_id,
         hwbench,
+        &mut None,
     )
     .await
 }

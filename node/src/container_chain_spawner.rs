@@ -61,9 +61,17 @@ pub struct ContainerChainSpawner {
 
     // State
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
+    pub debug_state: Arc<Mutex<DbLockDebugState>>,
 
     // Async callback that enables collation on the orchestrator chain
     pub collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+}
+
+use crate::service::ParachainBackend;
+#[derive(Default)]
+pub struct DbLockDebugState {
+    pub list: Vec<(ParaId, std::sync::Weak<ParachainBackend>, std::sync::Weak<ParachainClient>)>,
+    pub counter: HashMap<ParaId, u64>,
 }
 
 #[derive(Default)]
@@ -117,6 +125,7 @@ impl ContainerChainSpawner {
             validator,
             spawn_handle,
             state,
+            debug_state,
             collate_on_tanssi: _,
         } = self.clone();
 
@@ -223,8 +232,9 @@ impl ContainerChainSpawner {
                 delete_container_chain_db(&db_path);
             }
 
+            let mut db_ref = None;
             // Start container chain node
-            let (mut container_chain_task_manager, _container_chain_client, collate_on) =
+            let (mut container_chain_task_manager, container_chain_client, collate_on) =
                 start_node_impl_container(
                     container_chain_cli_config,
                     orchestrator_client.clone(),
@@ -235,8 +245,12 @@ impl ContainerChainSpawner {
                     container_chain_para_id,
                     orchestrator_para_id,
                     validator,
+                    &mut db_ref,
                 )
                 .await?;
+
+            debug_state.lock().unwrap().list.push((container_chain_para_id, Arc::downgrade(&db_ref.unwrap()), Arc::downgrade(&container_chain_client)));
+            *debug_state.lock().unwrap().counter.entry(container_chain_para_id).or_default() += 1;
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = exit_future::signal();
