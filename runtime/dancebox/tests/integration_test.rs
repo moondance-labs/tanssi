@@ -1562,6 +1562,114 @@ fn test_author_noting_not_self_para() {
 }
 
 #[test]
+fn test_kill_author_data() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: 1,
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
+            );
+            assert_ok!(AuthorNoting::kill_author_data(
+                RuntimeOrigin::root(),
+                1001.into(),
+            ));
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
+            System::assert_last_event(
+                Event::RemovedAuthorData {
+                    para_id: 1001.into(),
+                }
+                .into(),
+            );
+        });
+}
+
+#[test]
+fn test_author_noting_runtime_api() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .build()
+        .execute_with(|| {
+            let mut sproof = ParaHeaderSproofBuilder::default();
+            let slot: u64 = 5;
+            let other_para: ParaId = 1001u32.into();
+
+            // Charlie and Dave to 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            let mut s = ParaHeaderSproofBuilderItem::default();
+            s.para_id = other_para;
+            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: 1,
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                },
+            });
+            sproof.items.push(s);
+
+            set_author_noting_inherent_data(sproof);
+
+            assert_eq!(
+                AuthorNoting::latest_author(other_para),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: AccountId::from(DAVE)
+                })
+            );
+
+            assert_eq!(
+                Runtime::latest_author(other_para),
+                Some(AccountId::from(DAVE))
+            );
+            assert_eq!(Runtime::latest_block_number(other_para), Some(1));
+        });
+}
+
+#[test]
 fn test_collator_assignment_rotation() {
     ExtBuilder::default()
         .with_balances(vec![
@@ -1655,70 +1763,6 @@ fn test_collator_assignment_rotation() {
                 CollatorAssignment::collator_container_chain(),
                 initial_assignment,
             );
-        });
-}
-
-#[test]
-fn test_author_noting_runtime_api() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
-        ])
-        .build()
-        .execute_with(|| {
-            let mut sproof = ParaHeaderSproofBuilder::default();
-            let slot: u64 = 5;
-            let other_para: ParaId = 1001u32.into();
-
-            // Charlie and Dave to 1001
-            let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
-            );
-
-            let mut s = ParaHeaderSproofBuilderItem::default();
-            s.para_id = other_para;
-            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
-                parent_hash: Default::default(),
-                number: 1,
-                state_root: Default::default(),
-                extrinsics_root: Default::default(),
-                digest: sp_runtime::generic::Digest {
-                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
-                },
-            });
-            sproof.items.push(s);
-
-            set_author_noting_inherent_data(sproof);
-
-            assert_eq!(
-                AuthorNoting::latest_author(other_para),
-                Some(ContainerChainBlockInfo {
-                    block_number: 1,
-                    author: AccountId::from(DAVE)
-                })
-            );
-
-            assert_eq!(
-                Runtime::latest_author(other_para),
-                Some(AccountId::from(DAVE))
-            );
-            assert_eq!(Runtime::latest_block_number(other_para), Some(1));
         });
 }
 

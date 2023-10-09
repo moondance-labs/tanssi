@@ -215,6 +215,8 @@ declare module "@polkadot/api-base/types/errors" {
             GenesisDataTooBig: AugmentedError<ApiType>;
             /** Tried to register a ParaId with an account that did not have enough balance for the deposit */
             NotSufficientDeposit: AugmentedError<ApiType>;
+            /** Attempted to pause a ParaId that was already in PendingVerification */
+            ParaIdAlreadyPaused: AugmentedError<ApiType>;
             /** Attempted to register a ParaId that was already registered */
             ParaIdAlreadyRegistered: AugmentedError<ApiType>;
             /** The bounded list of ParaIds has reached its limit */

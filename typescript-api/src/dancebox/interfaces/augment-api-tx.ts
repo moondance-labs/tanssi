@@ -50,6 +50,10 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         authorNoting: {
+            killAuthorData: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
             setAuthor: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
@@ -1041,6 +1045,11 @@ declare module "@polkadot/api-base/types/submittable" {
             >;
             /** Mark container-chain valid for collating */
             markValidForCollating: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /** Pause container-chain from collating without removing its boot nodes nor its genesis config */
+            pauseContainerChain: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;

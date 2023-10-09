@@ -566,11 +566,20 @@ declare module "@polkadot/types/lookup" {
         readonly asParaIdValidForCollating: {
             readonly paraId: u32;
         } & Struct;
+        readonly isParaIdPaused: boolean;
+        readonly asParaIdPaused: {
+            readonly paraId: u32;
+        } & Struct;
         readonly isBootNodesChanged: boolean;
         readonly asBootNodesChanged: {
             readonly paraId: u32;
         } & Struct;
-        readonly type: "ParaIdRegistered" | "ParaIdDeregistered" | "ParaIdValidForCollating" | "BootNodesChanged";
+        readonly type:
+            | "ParaIdRegistered"
+            | "ParaIdDeregistered"
+            | "ParaIdValidForCollating"
+            | "ParaIdPaused"
+            | "BootNodesChanged";
     }
 
     /** @name PalletAuthorNotingEvent (47) */
@@ -581,7 +590,11 @@ declare module "@polkadot/types/lookup" {
             readonly blockNumber: u32;
             readonly newAuthor: AccountId32;
         } & Struct;
-        readonly type: "LatestAuthorChanged";
+        readonly isRemovedAuthorData: boolean;
+        readonly asRemovedAuthorData: {
+            readonly paraId: u32;
+        } & Struct;
+        readonly type: "LatestAuthorChanged" | "RemovedAuthorData";
     }
 
     /** @name PalletInvulnerablesEvent (48) */
@@ -2312,7 +2325,11 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly bootNodes: Vec<Bytes>;
         } & Struct;
-        readonly type: "Register" | "Deregister" | "MarkValidForCollating" | "SetBootNodes";
+        readonly isPauseContainerChain: boolean;
+        readonly asPauseContainerChain: {
+            readonly paraId: u32;
+        } & Struct;
+        readonly type: "Register" | "Deregister" | "MarkValidForCollating" | "SetBootNodes" | "PauseContainerChain";
     }
 
     /** @name TpContainerChainGenesisDataContainerChainGenesisData (184) */
@@ -2389,7 +2406,11 @@ declare module "@polkadot/types/lookup" {
             readonly blockNumber: u32;
             readonly author: AccountId32;
         } & Struct;
-        readonly type: "SetLatestAuthorData" | "SetAuthor";
+        readonly isKillAuthorData: boolean;
+        readonly asKillAuthorData: {
+            readonly paraId: u32;
+        } & Struct;
+        readonly type: "SetLatestAuthorData" | "SetAuthor" | "KillAuthorData";
     }
 
     /** @name TpAuthorNotingInherentOwnParachainInherentData (197) */
@@ -3081,6 +3102,7 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletRegistrarError (273) */
     interface PalletRegistrarError extends Enum {
         readonly isParaIdAlreadyRegistered: boolean;
+        readonly isParaIdAlreadyPaused: boolean;
         readonly isParaIdNotRegistered: boolean;
         readonly isParaIdListFull: boolean;
         readonly isGenesisDataTooBig: boolean;
@@ -3088,6 +3110,7 @@ declare module "@polkadot/types/lookup" {
         readonly isNotSufficientDeposit: boolean;
         readonly type:
             | "ParaIdAlreadyRegistered"
+            | "ParaIdAlreadyPaused"
             | "ParaIdNotRegistered"
             | "ParaIdListFull"
             | "GenesisDataTooBig"
