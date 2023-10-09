@@ -1786,20 +1786,22 @@ fn test_collator_assignment_rotation() {
                 );
             }
 
-            run_to_session(3);
+            let rotation_period = dancebox_runtime::CollatorRotationSessionPeriod::get();
+
+            run_to_session(rotation_period - 2);
 
             set_parachain_inherent_data_random_seed([1; 32]);
 
             assert!(CollatorAssignment::pending_collator_container_chain().is_none());
 
-            run_to_session(4);
+            run_to_session(rotation_period - 1);
             assert_eq!(
                 CollatorAssignment::collator_container_chain(),
                 initial_assignment,
             );
             assert!(CollatorAssignment::pending_collator_container_chain().is_some());
 
-            run_to_session(5);
+            run_to_session(rotation_period);
             // Assignment changed
             assert_ne!(
                 CollatorAssignment::collator_container_chain(),

@@ -15,10 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{self as pallet_collator_assignment},
+    crate::{self as pallet_collator_assignment, RotateCollatorsEveryNSessions},
     frame_support::{
         parameter_types,
-        traits::{ConstU16, ConstU64, Get},
+        traits::{ConstU16, ConstU64},
     },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
@@ -27,9 +27,7 @@ use {
         testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
     },
-    std::marker::PhantomData,
     tp_traits::ParaId,
-    tp_traits::ShouldRotateAllCollators,
 };
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
@@ -165,17 +163,6 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
         MockData::mutate(|mocks| {
             mocks.container_chains = para_ids.iter().cloned().map(|x| x.into()).collect();
         })
-    }
-}
-
-pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
-
-impl<Period> ShouldRotateAllCollators<u32> for RotateCollatorsEveryNSessions<Period>
-where
-    Period: Get<u32>,
-{
-    fn should_rotate_all_collators(session_index: u32) -> bool {
-        session_index % Period::get() == 0
     }
 }
 

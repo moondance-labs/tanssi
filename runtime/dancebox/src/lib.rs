@@ -63,6 +63,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
+    pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::{SessionManager, ShouldEndSession},
@@ -82,7 +83,6 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
-    tp_traits::ShouldRotateAllCollators,
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -616,7 +616,7 @@ impl SessionManager<AccountId> for CollatorsFromInvulnerablesAndThenFromStaking 
 parameter_types! {
     pub const Period: u32 = prod_or_fast!(1 * HOURS, 1 * MINUTES);
     pub const Offset: u32 = 0;
-    pub const CollatorRotationSessionPeriod: u32 = 5;
+    pub const CollatorRotationSessionPeriod: u32 = prod_or_fast!(24, 5);
 }
 
 impl pallet_session::Config for Runtime {
@@ -631,17 +631,6 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
-}
-
-pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
-
-impl<Period> ShouldRotateAllCollators<SessionIndex> for RotateCollatorsEveryNSessions<Period>
-where
-    Period: Get<SessionIndex>,
-{
-    fn should_rotate_all_collators(session_index: SessionIndex) -> bool {
-        session_index % Period::get() == 0
-    }
 }
 
 impl pallet_collator_assignment::Config for Runtime {

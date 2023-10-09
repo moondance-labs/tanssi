@@ -379,3 +379,14 @@ pub mod pallet {
         }
     }
 }
+
+pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
+
+impl<Period> ShouldRotateAllCollators<u32> for RotateCollatorsEveryNSessions<Period>
+where
+    Period: Get<u32>,
+{
+    fn should_rotate_all_collators(session_index: u32) -> bool {
+        session_index % Period::get() == 0
+    }
+}
