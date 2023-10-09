@@ -397,6 +397,9 @@ export default {
                 blockNumber: "u32",
                 newAuthor: "AccountId32",
             },
+            RemovedAuthorData: {
+                paraId: "u32",
+            },
         },
     },
     /** Lookup48: pallet_invulnerables::pallet::Event<T> */
@@ -1884,6 +1887,9 @@ export default {
                 paraId: "u32",
                 blockNumber: "u32",
                 author: "AccountId32",
+            },
+            kill_author_data: {
+                paraId: "u32",
             },
         },
     },

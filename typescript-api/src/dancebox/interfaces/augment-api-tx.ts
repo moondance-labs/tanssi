@@ -50,6 +50,11 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         authorNoting: {
+            /** See [`Pallet::kill_author_data`]. */
+            killAuthorData: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
             /** See [`Pallet::set_author`]. */
             setAuthor: AugmentedSubmittable<
                 (

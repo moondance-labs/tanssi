@@ -590,7 +590,11 @@ declare module "@polkadot/types/lookup" {
             readonly blockNumber: u32;
             readonly newAuthor: AccountId32;
         } & Struct;
-        readonly type: "LatestAuthorChanged";
+        readonly isRemovedAuthorData: boolean;
+        readonly asRemovedAuthorData: {
+            readonly paraId: u32;
+        } & Struct;
+        readonly type: "LatestAuthorChanged" | "RemovedAuthorData";
     }
 
     /** @name PalletInvulnerablesEvent (48) */
@@ -2580,7 +2584,11 @@ declare module "@polkadot/types/lookup" {
             readonly blockNumber: u32;
             readonly author: AccountId32;
         } & Struct;
-        readonly type: "SetLatestAuthorData" | "SetAuthor";
+        readonly isKillAuthorData: boolean;
+        readonly asKillAuthorData: {
+            readonly paraId: u32;
+        } & Struct;
+        readonly type: "SetLatestAuthorData" | "SetAuthor" | "KillAuthorData";
     }
 
     /** @name TpAuthorNotingInherentOwnParachainInherentData (208) */
