@@ -683,6 +683,8 @@ declare module "@polkadot/api-base/types/events" {
             BootNodesChanged: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /** A para id has been deregistered. [para_id] */
             ParaIdDeregistered: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
+            /** A para id has been paused from collating. */
+            ParaIdPaused: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /** A new para id has been registered. [para_id] */
             ParaIdRegistered: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /** A new para id is now valid for collating. [para_id] */

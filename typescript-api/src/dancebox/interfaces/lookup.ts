@@ -381,6 +381,9 @@ export default {
             ParaIdValidForCollating: {
                 paraId: "u32",
             },
+            ParaIdPaused: {
+                paraId: "u32",
+            },
             BootNodesChanged: {
                 paraId: "u32",
             },
@@ -1764,6 +1767,9 @@ export default {
                 paraId: "u32",
                 bootNodes: "Vec<Bytes>",
             },
+            pause_container_chain: {
+                paraId: "u32",
+            },
         },
     },
     /** Lookup195: tp_container_chain_genesis_data::ContainerChainGenesisData<MaxLengthTokenSymbol> */
@@ -2383,6 +2389,7 @@ export default {
     PalletRegistrarError: {
         _enum: [
             "ParaIdAlreadyRegistered",
+            "ParaIdAlreadyPaused",
             "ParaIdNotRegistered",
             "ParaIdListFull",
             "GenesisDataTooBig",
