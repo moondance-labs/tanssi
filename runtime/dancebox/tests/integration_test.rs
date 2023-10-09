@@ -1630,17 +1630,20 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
         .execute_with(|| {
             let other_para: ParaId = 1001u32.into();
 
-            assert_noop!(AuthorNoting::set_author(
-                origin_of(ALICE.into()),
-                other_para,
-                1,
-                AccountId::from(DAVE)
-            ), BadOrigin);
+            assert_noop!(
+                AuthorNoting::set_author(
+                    origin_of(ALICE.into()),
+                    other_para,
+                    1,
+                    AccountId::from(DAVE)
+                ),
+                BadOrigin
+            );
 
-            assert_noop!(AuthorNoting::kill_author_data(
-                origin_of(ALICE.into()),
-                other_para
-            ), BadOrigin);
+            assert_noop!(
+                AuthorNoting::kill_author_data(origin_of(ALICE.into()), other_para),
+                BadOrigin
+            );
         });
 }
 
