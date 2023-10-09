@@ -201,6 +201,15 @@ pub mod pallet {
             });
             Ok(())
         }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::kill_author_data())]
+        pub fn kill_author_data(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            ensure_root(origin)?;
+            LatestAuthor::<T>::remove(para_id);
+            Self::deposit_event(Event::RemovedAuthorData { para_id });
+            Ok(())
+        }
     }
 
     #[pallet::event]
@@ -212,6 +221,8 @@ pub mod pallet {
             block_number: BlockNumber,
             new_author: T::AccountId,
         },
+        /// Removed author data
+        RemovedAuthorData { para_id: ParaId },
     }
 
     #[pallet::storage]
