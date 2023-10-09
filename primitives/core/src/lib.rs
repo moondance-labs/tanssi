@@ -100,6 +100,7 @@ pub mod well_known_keys {
         &hex_literal::hex!["cec5070d609dd3497f72bde07fc96ba072763800a36a99fdfc7c10f6415f6ee6"];
 }
 
+/// Distribute rewards to an account.
 pub trait DistributeRewards<AccountId, Balance> {
     fn distribute_rewards(rewarded: AccountId, amount: Balance) -> DispatchResultWithPostInfo;
 }
