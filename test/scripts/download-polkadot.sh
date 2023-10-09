@@ -17,7 +17,7 @@ if [[ -f tmp/polkadot ]]; then
 	else
 		echo "Updating polkadot binary..."
 
-		wget https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-v$polkadot_release/polkadot -P tmp
+		pnpm moonwall download polkadot $polkadot_release tmp
 		chmod +x tmp/polkadot
 
 		pnpm moonwall download polkadot-execute-worker $polkadot_release tmp
@@ -29,7 +29,7 @@ if [[ -f tmp/polkadot ]]; then
 	fi
 else
 	echo "Polkadot binary not found, downloading..."
-	wget https://github.com/paritytech/polkadot-sdk/releases/download/polkadot-v$polkadot_release/polkadot -P tmp
+	pnpm moonwall download polkadot $polkadot_release tmp
 	chmod +x tmp/polkadot
 
 	pnpm moonwall download polkadot-execute-worker $polkadot_release tmp
