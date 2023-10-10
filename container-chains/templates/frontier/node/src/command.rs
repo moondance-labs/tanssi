@@ -360,10 +360,14 @@ pub fn run() -> Result<()> {
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
-                // TODO: modify
-				let block: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
+                // We log both genesis states for reference, as fetching it from runtime would take significant timw
+				let block_state_v0: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V0)
 					.map_err(|e| format!("{:?}", e))?;
-				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
+                let block_state_v1: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
+					.map_err(|e| format!("{:?}", e))?;
+
+				let genesis_state_v0 = format!("0x{:?}", HexDisplay::from(&block_state_v0.header().encode()));
+				let genesis_state_v1 = format!("0x{:?}", HexDisplay::from(&block_state_v1.header().encode()));
 
 				let tokio_handle = config.tokio_handle.clone();
 				let polkadot_config =
@@ -372,7 +376,9 @@ pub fn run() -> Result<()> {
 
 				info!("Parachain id: {:?}", id);
 				info!("Parachain Account: {}", parachain_account);
-				info!("Parachain genesis state: {}", genesis_state);
+				info!("Parachain genesis state V0: {}", genesis_state_v0);
+                info!("Parachain genesis state V1: {}", genesis_state_v1);
+
 				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
 
                 if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
