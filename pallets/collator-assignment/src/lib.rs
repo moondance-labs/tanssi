@@ -51,7 +51,7 @@ use {
         traits::{AtLeast32BitUnsigned, One, Zero},
         Saturating,
     },
-    sp_std::{prelude::*, vec},
+    sp_std::{fmt::Debug, prelude::*, vec},
     tp_collator_assignment::AssignedCollators,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
@@ -86,7 +86,7 @@ pub mod pallet {
             + TypeInfo
             + Copy
             + AtLeast32BitUnsigned
-            + std::fmt::Debug;
+            + Debug;
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
