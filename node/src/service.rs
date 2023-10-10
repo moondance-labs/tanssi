@@ -591,6 +591,7 @@ async fn start_node_impl(
 
         let client = client.clone();
         let collator_key = collator_key.clone();
+        // TODO: change for async backing
         collate_on_tanssi = Some(move || async move {
             #[allow(deprecated)]
             cumulus_client_collator::start_collator(cumulus_client_collator::StartCollatorParams {
@@ -608,6 +609,7 @@ async fn start_node_impl(
             .await;
         });
 
+        // TODO: change for async backing
         #[allow(deprecated)]
         start_collator(params).await?;
     } else {
@@ -623,6 +625,7 @@ async fn start_node_impl(
             sync_service,
         };
 
+        // TODO: change for async backing
         #[allow(deprecated)]
         start_full_node(params)?;
     }
@@ -877,6 +880,8 @@ pub async fn start_node_impl_container(
             {
                 f.await
             }
+            
+            // TODO: change for async backing
             #[allow(deprecated)]
             wrap(
                 para_id,
@@ -909,6 +914,7 @@ pub async fn start_node_impl_container(
             sync_service,
         };
 
+        // TODO: change for async backing
         #[allow(deprecated)]
         start_full_node(params)?;
     }

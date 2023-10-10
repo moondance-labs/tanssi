@@ -294,6 +294,7 @@ async fn start_node_impl(
         sync_service,
     };
 
+    // TODO: change for async backing
     #[allow(deprecated)]
     start_full_node(params)?;
 
