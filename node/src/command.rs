@@ -329,13 +329,7 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let partials = new_partial(&config)?;
-                // Cumulus approach here, we directly call the generic load_spec func
-                let chain_spec = load_spec(
-                    &cmd.chain.clone().unwrap_or_default(),
-                    cmd.parachain_id.unwrap_or(1000).into(),
-                )?;
-
-                cmd.run(&*chain_spec, &*partials.client)
+                cmd.run(&*config.chain_spec, &*partials.client)
             })
         }
         Some(Subcommand::ExportGenesisWasm(params)) => {
@@ -474,6 +468,9 @@ pub fn run() -> Result<()> {
 
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
+
+                
+                
                 // TODO: fetch it from
 				let block: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
 					.map_err(|e| format!("{:?}", e))?;

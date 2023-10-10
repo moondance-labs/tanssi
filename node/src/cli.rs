@@ -16,18 +16,12 @@
 
 use {
     crate::{chain_spec::RawGenesisConfig, service::Sealing},
-    cumulus_client_cli::generate_genesis_block,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    parity_scale_codec::Encode,
-    sc_cli::{ChainSpec, CliConfiguration, NodeKeyParams, SharedParams},
-    sc_client_api::ExecutorProvider,
+    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     sc_network::config::MultiaddrWithPeerId,
-    sp_core::hexdisplay::HexDisplay,
-    sp_runtime::traits::{Block as BlockT, Get},
+    sp_runtime::traits::{Get},
     std::{
         collections::BTreeMap,
-        fs,
-        io::{self, Write},
         path::PathBuf,
     },
     tp_container_chain_genesis_data::json::properties_to_map,
@@ -59,8 +53,7 @@ pub enum Subcommand {
     PurgeChain(cumulus_client_cli::PurgeChainCmd),
 
     /// Export the genesis state of the parachain.
-    // TODO: use cumulus_client_cli::ExportGenesisStateCommand after 1.0.0 upgrade
-    ExportGenesisState(ExportGenesisStateCommand),
+    ExportGenesisState(cumulus_client_cli::ExportGenesisStateCommand),
 
     /// Export the genesis wasm of the parachain.
     ExportGenesisWasm(ExportGenesisWasmCommand),
@@ -109,65 +102,6 @@ impl CliConfiguration for BuildSpecCmd {
 
     fn node_key_params(&self) -> Option<&NodeKeyParams> {
         Some(&self.base.node_key_params)
-    }
-}
-
-/// Command for exporting the genesis state of the parachain
-#[derive(Debug, clap::Parser)]
-pub struct ExportGenesisStateCommand {
-    /// Output file name or stdout if unspecified.
-    pub output: Option<PathBuf>,
-
-    /// Id of the parachain this state is for.
-    #[arg(long)]
-    pub parachain_id: Option<u32>,
-
-    /// Write output in binary. Default is to write in hex.
-    #[arg(short, long)]
-    pub raw: bool,
-
-    /// The name of the chain for that the genesis state should be exported.
-    #[arg(long)]
-    pub chain: Option<String>,
-
-    #[allow(missing_docs)]
-    #[command(flatten)]
-    pub shared_params: sc_cli::SharedParams,
-}
-
-impl ExportGenesisStateCommand {
-    /// Run the export-genesis-state command
-    pub fn run<Block: BlockT>(
-        &self,
-        chain_spec: &dyn ChainSpec,
-        client: &impl ExecutorProvider<Block>,
-    ) -> sc_cli::Result<()> {
-        let state_version = sc_chain_spec::resolve_state_version_from_wasm(
-            &chain_spec.build_storage()?,
-            client.executor(),
-        )?;
-
-        let block: Block = generate_genesis_block(chain_spec, state_version)?;
-        let raw_header = block.header().encode();
-        let output_buf = if self.raw {
-            raw_header
-        } else {
-            format!("0x{:?}", HexDisplay::from(&block.header().encode())).into_bytes()
-        };
-
-        if let Some(output) = &self.output {
-            fs::write(output, output_buf)?;
-        } else {
-            io::stdout().write_all(&output_buf)?;
-        }
-
-        Ok(())
-    }
-}
-
-impl sc_cli::CliConfiguration for ExportGenesisStateCommand {
-    fn shared_params(&self) -> &sc_cli::SharedParams {
-        &self.shared_params
     }
 }
 
