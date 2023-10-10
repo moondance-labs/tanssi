@@ -567,4 +567,13 @@ pub mod pallet {
             .map(|x| x.0)
         }
     }
+
+    impl<T: Config> tp_core::DistributeRewards<Candidate<T>, T::Balance> for Pallet<T> {
+        fn distribute_rewards(
+            candidate: Candidate<T>,
+            rewards: T::Balance,
+        ) -> DispatchResultWithPostInfo {
+            pools::distribute_rewards::<T>(&candidate, rewards)
+        }
+    }
 }
