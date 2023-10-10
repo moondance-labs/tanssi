@@ -634,6 +634,7 @@ impl pallet_session::Config for Runtime {
 }
 
 impl pallet_collator_assignment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;

@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{mock::*, CollatorContainerChain, PendingCollatorContainerChain},
+    crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
     std::collections::BTreeMap,
 };
 
@@ -852,5 +852,98 @@ fn assign_collators_rotation_collators_are_shuffled() {
         ]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
+    });
+}
+
+#[test]
+fn rotation_events() {
+    // Ensure that the NewPendingAssignment is correct
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+            m.container_chains = vec![1001, 1002, 1003, 1004];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+
+        // Block 1 should emit event, random seed was not set
+        System::assert_last_event(
+            Event::NewPendingAssignment {
+                random_seed: [0; 32],
+                full_rotation: false,
+                target_session: 1,
+            }
+            .into(),
+        );
+
+        for i in 2..=11 {
+            run_to_block(i);
+            match i {
+                6 | 11 => {
+                    System::assert_last_event(
+                        Event::NewPendingAssignment {
+                            random_seed: [0; 32],
+                            full_rotation: false,
+                            target_session: (i / 5) as u32 + 1,
+                        }
+                        .into(),
+                    );
+                }
+                _ => {
+                    assert_eq!(
+                        System::events(),
+                        vec![],
+                        "Block #{} should not have any events",
+                        i
+                    );
+                }
+            }
+        }
+
+        MockData::mutate(|m| {
+            m.random_seed = [1; 32];
+        });
+
+        // The rotation period is every 5 sessions, so the first session with a different assignment
+        // will be session 5. Collators are calculated one session in advance, so they will be decided
+        // on session 4, which starts on block 21.
+        for i in 12..=51 {
+            run_to_block(i);
+            match i {
+                16 | 26 | 31 | 36 | 41 | 51 => {
+                    System::assert_last_event(
+                        Event::NewPendingAssignment {
+                            random_seed: [1; 32],
+                            full_rotation: false,
+                            target_session: (i / 5) as u32 + 1,
+                        }
+                        .into(),
+                    );
+                }
+                21 | 46 => {
+                    System::assert_last_event(
+                        Event::NewPendingAssignment {
+                            random_seed: [1; 32],
+                            full_rotation: true,
+                            target_session: (i / 5) as u32 + 1,
+                        }
+                        .into(),
+                    );
+                }
+                _ => {
+                    assert_eq!(
+                        System::events(),
+                        vec![],
+                        "Block #{} should not have any events",
+                        i
+                    );
+                }
+            }
+        }
     });
 }

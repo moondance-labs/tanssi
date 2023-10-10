@@ -171,6 +171,7 @@ parameter_types! {
 }
 
 impl pallet_collator_assignment::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
@@ -195,6 +196,7 @@ pub fn run_to_block(n: u64) {
     let session_len = 5;
 
     for x in (old_block_number + 1)..=n {
+        System::reset_events();
         System::set_block_number(x);
         let randomness = MockData::mock().random_seed;
 

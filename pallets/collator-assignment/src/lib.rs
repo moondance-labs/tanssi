@@ -80,7 +80,13 @@ pub mod pallet {
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
+        /// The overarching event type.
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type SessionIndex: parity_scale_codec::FullCodec
+            + TypeInfo
+            + Copy
+            + AtLeast32BitUnsigned
+            + std::fmt::Debug;
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
@@ -89,6 +95,17 @@ pub mod pallet {
         type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
+    }
+
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        // TODO: rename
+        NewPendingAssignment {
+            random_seed: [u8; 32],
+            full_rotation: bool,
+            target_session: T::SessionIndex,
+        },
     }
 
     #[pallet::storage]
@@ -156,6 +173,12 @@ pub mod pallet {
                         random_seed
                     );
 
+                    Self::deposit_event(Event::NewPendingAssignment {
+                        random_seed,
+                        full_rotation: true,
+                        target_session: target_session_index,
+                    });
+
                     Self::assign_collators_rotate_all(
                         collators,
                         &container_chain_ids,
@@ -172,6 +195,12 @@ pub mod pallet {
                         current_session_index.encode(),
                         random_seed
                     );
+
+                    Self::deposit_event(Event::NewPendingAssignment {
+                        random_seed,
+                        full_rotation: false,
+                        target_session: target_session_index,
+                    });
 
                     Self::assign_collators_always_keep_old(
                         collators,
