@@ -169,8 +169,14 @@ pub fn new_partial(
             executor,
         )?;
     let client = Arc::new(client);
-    log::info!("backend in new_partial refcount: {}", Arc::strong_count(&backend));
-    log::info!("client in new_partial refcount: {}", Arc::strong_count(&client));
+    log::info!(
+        "backend in new_partial refcount: {}",
+        Arc::strong_count(&backend)
+    );
+    log::info!(
+        "client in new_partial refcount: {}",
+        Arc::strong_count(&client)
+    );
 
     let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
 
@@ -398,7 +404,6 @@ async fn start_node_impl(
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
-    db_ref_out: &mut Option<Arc<ParachainBackend>>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(orchestrator_config);
 
@@ -414,7 +419,6 @@ async fn start_node_impl(
 
     let client = params.client.clone();
     let backend = params.backend.clone();
-    *db_ref_out = Some(backend.clone());
     let mut task_manager = params.task_manager;
 
     let (relay_chain_interface, collator_key) = build_relay_chain_interface(
@@ -687,11 +691,9 @@ async fn start_node_impl(
             validator,
             spawn_handle,
             state: Default::default(),
-            debug_state: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
-
-        let debug_state = container_chain_spawner.debug_state.clone();
+        let state = container_chain_spawner.state.clone();
 
         task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
@@ -702,39 +704,7 @@ async fn start_node_impl(
         task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-debug-state",
             None,
-            async move {
-                use tokio::time::{sleep, Duration};
-                let mut i = 0;
-                loop {
-                    i += 1;
-                    sleep(Duration::from_secs(10)).await;
-                    let debug_state = debug_state.lock().unwrap();
-                    let refcounts: Vec<_> = debug_state.list.iter().map(|(para_id, arc_db, arc_client)| (*para_id, std::sync::Weak::strong_count(arc_db), std::sync::Weak::strong_count(arc_client))).collect();
-                    let mut startcounts: Vec<_> = debug_state.counter.iter().map(|(k, v)| (*k, *v)).collect();
-                    //drop(debug_state);
-                    startcounts.sort();
-                    log::info!("container chain spawner debug_state (para_id, db, client) refcounts: {:?}", refcounts);
-                    log::info!("started container chains counter: {:?}", startcounts);
-
-                    if i == 120 {
-                        log::error!("DANGER, will force deallocate client to see what happens");
-                        unsafe {
-                            let weak0 = debug_state.list[0].2.clone();
-                            if let Some(client_arc) = weak0.upgrade() {
-                                let ptr = Arc::into_raw(client_arc.clone());
-
-                                while Arc::strong_count(&client_arc) > 1 {
-                                    log::info!("decrement");
-                                    Arc::decrement_strong_count(ptr);
-                                }
-
-                                // strong count is 1 and client_arc is still alive, when it is dropped count will be 0 and client will be dropped
-                            }
-
-                        }
-                    }
-                }
-            }
+            crate::container_chain_monitor::monitor_task(state),
         )
     }
 
@@ -762,10 +732,10 @@ pub async fn start_node_impl_container(
     para_id: ParaId,
     orchestrator_para_id: ParaId,
     collator: bool,
-    db_ref_out: &mut Option<Arc<ParachainBackend>>,
 ) -> sc_service::error::Result<(
     TaskManager,
     Arc<ParachainClient>,
+    Arc<ParachainBackend>,
     Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
 )> {
     let parachain_config = prepare_node_config(parachain_config);
@@ -795,9 +765,14 @@ pub async fn start_node_impl_container(
         import_queue_service = params.import_queue.service();
         params_import_queue = params.import_queue;
     }
-    log::info!("backend start_node_impl_container refcount: {}", Arc::strong_count(&backend));
-    log::info!("client start_node_impl_container refcount: {}", Arc::strong_count(&client));
-    *db_ref_out = Some(backend.clone());
+    log::info!(
+        "backend start_node_impl_container refcount: {}",
+        Arc::strong_count(&backend)
+    );
+    log::info!(
+        "client start_node_impl_container refcount: {}",
+        Arc::strong_count(&client)
+    );
 
     let spawn_handle = task_manager.spawn_handle();
 
@@ -852,7 +827,7 @@ pub async fn start_node_impl_container(
         task_manager: &mut task_manager,
         config: parachain_config,
         keystore: keystore.clone(),
-        backend,
+        backend: backend.clone(),
         network: network.clone(),
         system_rpc_tx,
         tx_handler_controller,
@@ -968,7 +943,7 @@ pub async fn start_node_impl_container(
 
     start_network.start_network();
 
-    Ok((task_manager, client, start_collation))
+    Ok((task_manager, client, backend, start_collation))
 }
 
 // Copy of `cumulus_client_service::start_collator`, that doesn't fully start the collator: it is
@@ -1376,7 +1351,6 @@ pub async fn start_parachain_node(
         collator_options,
         para_id,
         hwbench,
-        &mut None,
     )
     .await
 }

@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use crate::container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor};
+
 use {
     crate::{
         cli::ContainerChainCli,
@@ -36,6 +38,7 @@ use {
         path::Path,
         pin::Pin,
         sync::{Arc, Mutex},
+        time::Instant,
     },
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
     tokio::sync::mpsc::UnboundedReceiver,
@@ -61,17 +64,9 @@ pub struct ContainerChainSpawner {
 
     // State
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
-    pub debug_state: Arc<Mutex<DbLockDebugState>>,
 
     // Async callback that enables collation on the orchestrator chain
     pub collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
-}
-
-use crate::service::ParachainBackend;
-#[derive(Default)]
-pub struct DbLockDebugState {
-    pub list: Vec<(ParaId, std::sync::Weak<ParachainBackend>, std::sync::Weak<ParachainClient>)>,
-    pub counter: HashMap<ParaId, u64>,
 }
 
 #[derive(Default)]
@@ -79,6 +74,8 @@ pub struct ContainerChainSpawnerState {
     spawned_container_chains: HashMap<ParaId, ContainerChainState>,
     assigned_para_id: Option<ParaId>,
     next_assigned_para_id: Option<ParaId>,
+    // For debugging and detecting errors
+    pub spawned_containers_monitor: SpawnedContainersMonitor,
 }
 
 pub struct ContainerChainState {
@@ -125,7 +122,6 @@ impl ContainerChainSpawner {
             validator,
             spawn_handle,
             state,
-            debug_state,
             collate_on_tanssi: _,
         } = self.clone();
 
@@ -232,25 +228,24 @@ impl ContainerChainSpawner {
                 delete_container_chain_db(&db_path);
             }
 
-            let mut db_ref = None;
             // Start container chain node
-            let (mut container_chain_task_manager, container_chain_client, collate_on) =
-                start_node_impl_container(
-                    container_chain_cli_config,
-                    orchestrator_client.clone(),
-                    relay_chain_interface.clone(),
-                    orchestrator_chain_interface.clone(),
-                    collator_key.clone(),
-                    sync_keystore.clone(),
-                    container_chain_para_id,
-                    orchestrator_para_id,
-                    validator,
-                    &mut db_ref,
-                )
-                .await?;
-
-            debug_state.lock().unwrap().list.push((container_chain_para_id, Arc::downgrade(&db_ref.unwrap()), Arc::downgrade(&container_chain_client)));
-            *debug_state.lock().unwrap().counter.entry(container_chain_para_id).or_default() += 1;
+            let (
+                mut container_chain_task_manager,
+                container_chain_client,
+                container_chain_db,
+                collate_on,
+            ) = start_node_impl_container(
+                container_chain_cli_config,
+                orchestrator_client.clone(),
+                relay_chain_interface.clone(),
+                orchestrator_chain_interface.clone(),
+                collator_key.clone(),
+                sync_keystore.clone(),
+                container_chain_para_id,
+                orchestrator_para_id,
+                validator,
+            )
+            .await?;
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = exit_future::signal();
@@ -264,17 +259,25 @@ impl ContainerChainSpawner {
                 Arc::new(move || Box::pin(std::future::ready(())))
             });
 
-            state
-                .lock()
-                .expect("poison error")
-                .spawned_container_chains
-                .insert(
+            {
+                let mut state = state.lock().expect("poison error");
+
+                state.spawned_container_chains.insert(
                     container_chain_para_id,
                     ContainerChainState {
                         collate_on: collate_on.clone(),
                         stop_handle: StopContainerChain(signal),
                     },
                 );
+
+                state.spawned_containers_monitor.push(SpawnedContainer {
+                    para_id: container_chain_para_id,
+                    start_time: Instant::now(),
+                    stop_time: None,
+                    backend: Arc::downgrade(&container_chain_db),
+                    client: Arc::downgrade(&container_chain_client),
+                });
+            }
 
             if start_collation {
                 collate_on().await;
