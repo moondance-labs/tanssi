@@ -880,7 +880,7 @@ pub async fn start_node_impl_container(
             {
                 f.await
             }
-            
+
             // TODO: change for async backing
             #[allow(deprecated)]
             wrap(
