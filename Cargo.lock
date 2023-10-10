@@ -7831,6 +7831,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tp-core",
 ]
 
 [[package]]
@@ -14620,6 +14621,7 @@ name = "tp-core"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
+ "frame-support",
  "hex-literal 0.3.4",
  "parity-scale-codec",
  "sp-core",

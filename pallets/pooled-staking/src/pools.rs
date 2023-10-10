@@ -16,11 +16,16 @@
 
 use {
     crate::{
+        candidate::Candidates,
         traits::{ErrAdd, ErrMul, ErrSub, MulDiv},
-        Candidate, Config, Delegator, Error, Pools, PoolsKey, Shares, Stake,
+        Candidate, Config, Delegator, Error, Event, Pallet, Pools, PoolsKey, Shares, Stake,
     },
     core::marker::PhantomData,
-    frame_support::ensure,
+    frame_support::{
+        ensure,
+        pallet_prelude::DispatchResultWithPostInfo,
+        traits::{fungible::Mutate, tokens::Preservation},
+    },
     sp_core::Get,
     sp_runtime::traits::{CheckedAdd, CheckedDiv, Zero},
 };
@@ -361,6 +366,34 @@ impl<T: Config> ManualRewards<T> {
         Ok(Stake(diff.err_mul(&shares.0)?))
     }
 
+    /// Increase the rewards of the ManualRewards pool with best effort.
+    /// Returns the actual amount distributed (after rounding).
+    pub fn increase_rewards(
+        candidate: &Candidate<T>,
+        rewards: Stake<T::Balance>,
+    ) -> Result<Stake<T::Balance>, Error<T>> {
+        let Shares(supply) = Self::shares_supply(&candidate);
+        if supply.is_zero() {
+            return Ok(Stake(Zero::zero()));
+        }
+
+        let rewards_per_share = rewards
+            .0
+            .checked_div(&supply)
+            .ok_or(Error::<T>::InconsistentState)?;
+        if rewards_per_share.is_zero() {
+            return Ok(Stake(Zero::zero()));
+        }
+
+        let rewards = rewards_per_share.err_mul(&supply)?;
+
+        let counter = Pools::<T>::get(candidate, &PoolsKey::ManualRewardsCounter);
+        let counter = counter.err_add(&rewards_per_share)?;
+        Pools::<T>::set(candidate, &PoolsKey::ManualRewardsCounter, counter);
+
+        Ok(Stake(rewards))
+    }
+
     pub fn claim_rewards(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
@@ -395,4 +428,134 @@ impl<T: Config> ManualRewards<T> {
 
         Ok(Stake(rewards))
     }
+}
+
+/// Perform rewards distribution for the provided candidate.
+///
+/// The pallet considered that it already posses the rewards in its account,
+/// and it is the responsibility of the caller to transfer or mint the currency
+/// to the staking pallet account.
+///
+/// Rewards are split using `RewardsCollatorCommission` between the candidate
+/// and all the delegators (including the candidate self-delegation). For each,
+/// the rewards are then split according to the value of all the ManualRewards
+/// and AutoCompounding shares.
+///
+/// As candidate rewards will give increase the candidate auto compounding
+/// self-delegation, the delegator rewards are distributed first. ManualRewards
+/// pool rewards are first distributed by increasing the pool counter, which may
+/// result in some rounding. As distributing the AutoCompounding pool rewards
+/// consists of simply increasing `AutoCompoundingSharesTotalStaked`, it is not
+/// subject to rounding and it can absorb the rounding dust from ManualRewards
+/// reward distribution.
+///
+/// Then it is time to distribute the candidate dedicated rewards. For
+/// AutoCompounding, it is as if the candidate received the rewards then
+/// self-delegated (instantly). It is thus implemented by creating new
+/// AutoCompounding shares. This can lead to some rounding, which will be
+/// absorbed in the ManualRewards distribution, which simply consist of
+/// transfering the funds to the candidate account.
+pub fn distribute_rewards<T: Config>(
+    candidate: &Candidate<T>,
+    rewards: T::Balance,
+) -> DispatchResultWithPostInfo {
+    let candidate_manual_rewards = distribute_rewards_inner::<T>(candidate, rewards)?;
+
+    if !candidate_manual_rewards.is_zero() {
+        T::Currency::transfer(
+            &T::StakingAccount::get(),
+            &candidate,
+            candidate_manual_rewards,
+            Preservation::Preserve,
+        )?;
+    }
+
+    Ok(().into())
+}
+
+fn distribute_rewards_inner<T: Config>(
+    candidate: &Candidate<T>,
+    rewards: T::Balance,
+) -> Result<T::Balance, Error<T>> {
+    // `RewardsCollatorCommission` is a `Perbill` so we're not worried about overflow.
+    let candidate_rewards = T::RewardsCollatorCommission::get() * rewards;
+    let delegators_rewards = rewards.err_sub(&candidate_rewards)?;
+
+    let Stake(auto_total_stake) = AutoCompounding::<T>::total_staked(candidate);
+    let Stake(manual_total_stake) = ManualRewards::<T>::total_staked(candidate);
+    let combined_total_stake = auto_total_stake.err_add(&manual_total_stake)?;
+
+    let candidate_manual_stake = if manual_total_stake.is_zero() {
+        Zero::zero()
+    } else {
+        ManualRewards::<T>::computed_stake(candidate, candidate)?.0
+    };
+
+    // Distribute delegators ManualRewards rewards, it implies some rounding.
+    let delegators_manual_rewards = if manual_total_stake.is_zero() {
+        Zero::zero()
+    } else {
+        let rewards = delegators_rewards.mul_div(manual_total_stake, combined_total_stake)?;
+        ManualRewards::<T>::increase_rewards(&candidate, Stake(rewards))?.0
+    };
+
+    // Distribute delegators AutoCompounding rewards with dust from ManualRewards.
+    // If there is no auto compounding stake but auto compounding rewards it
+    // means it comes from manual rewards rounding. Having non-zero total stake
+    // with 0 share supply will cause issues, so in this case we distribute this
+    // dust as candidate manual rewards.
+    let delegators_auto_rewards = delegators_rewards.err_sub(&delegators_manual_rewards)?;
+    let (delegators_auto_rewards, delegators_auto_dust) = if !auto_total_stake.is_zero() {
+        AutoCompounding::<T>::share_stake_among_holders(candidate, Stake(delegators_auto_rewards))?;
+        (delegators_auto_rewards, Zero::zero())
+    } else {
+        (Zero::zero(), delegators_auto_rewards)
+    };
+
+    // Distribute candidate AutoCompounding rewards, it implies some rounding.
+    let candidate_auto_rewards = if auto_total_stake.is_zero() {
+        Zero::zero()
+    } else {
+        'a: {
+            let candidate_auto_stake =
+                AutoCompounding::<T>::computed_stake(candidate, candidate)?.0;
+            let candidate_combined_stake = candidate_manual_stake.err_add(&candidate_auto_stake)?;
+
+            if candidate_combined_stake.is_zero() {
+                break 'a Zero::zero();
+            }
+
+            let rewards =
+                candidate_rewards.mul_div(candidate_auto_stake, candidate_combined_stake)?;
+            let new_shares = AutoCompounding::<T>::stake_to_shares(candidate, Stake(rewards))?;
+
+            if new_shares.0.is_zero() {
+                break 'a Zero::zero();
+            }
+
+            AutoCompounding::<T>::add_shares(candidate, candidate, new_shares)?.0
+        }
+    };
+
+    // Distribute candidate ManualRewards rewards with dust from AutoCompounding.
+    // The amount is returned by the function and will be transfered to the candidate account.
+    let candidate_manual_rewards = candidate_rewards
+        .err_sub(&candidate_auto_rewards)?
+        .err_add(&delegators_auto_dust)?;
+
+    let additional_stake = delegators_auto_rewards.err_add(&candidate_auto_rewards)?;
+    Candidates::<T>::add_total_stake(candidate, &Stake(additional_stake))?;
+
+    Pallet::<T>::deposit_event(Event::<T>::RewardedCollator {
+        collator: candidate.clone(),
+        auto_compounding_rewards: candidate_auto_rewards,
+        manual_claim_rewards: candidate_manual_rewards,
+    });
+    Pallet::<T>::deposit_event(Event::<T>::RewardedDelegators {
+        collator: candidate.clone(),
+        auto_compounding_rewards: delegators_auto_rewards,
+        manual_claim_rewards: delegators_manual_rewards,
+    });
+
+    Ok(candidate_manual_rewards)
 }
