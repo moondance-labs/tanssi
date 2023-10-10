@@ -60,6 +60,7 @@ pub struct MockAuthoritiesNotingInherentDataProvider {
     pub authorities: Vec<NimbusId>,
 }
 
+// TODO: lots of duplicated code between these two funcs, we should refactor
 #[async_trait::async_trait]
 impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
     async fn provide_inherent_data(
