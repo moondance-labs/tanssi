@@ -100,7 +100,6 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        // TODO: rename
         NewPendingAssignment {
             random_seed: [u8; 32],
             full_rotation: bool,
