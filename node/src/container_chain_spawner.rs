@@ -254,8 +254,7 @@ impl ContainerChainSpawner {
             if container_client_genesis_hash != chain_spec_genesis_hash {
                 log::info!(
                     "Container genesis {:?} different from chain spec genesis {:?} - Deleting container db", 
-                    container_client_genesis_hash, 
-                    chain_spec_genesis_hash
+                    container_client_genesis_hash, chain_spec_genesis_hash
                 );
                 delete_container_chain_db(&db_path);
             }
