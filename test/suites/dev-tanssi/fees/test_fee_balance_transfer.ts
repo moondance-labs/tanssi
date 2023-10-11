@@ -12,7 +12,8 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
-        let expectedBasePlusWeightFee;
+        let adjustedExpectedBasePlusWeightFee;
+
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
         // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
         let baseWeight;
@@ -56,12 +57,15 @@ describeSuite({
                 const basePlusWeightFee = (
                     await polkadotJs.call.transactionPaymentApi.queryWeightToFee(info2.weight)
                 ).toBigInt();
-                // TODO: where do these values come from?
+                // These values are: 1000000 for base fee plus fee coming from the weight of the extrinsic
                 expect(basePlusWeightFee).to.equal(1000000n + 1479873n);
-                expectedBasePlusWeightFee = basePlusWeightFee;
+                // Caution: this +1 comes from the fact that even if qeryWeightToFee applies unadjusted
+                // but when we pay fees (or compare with queryFeeDetails), we do it adjusted (with multiplier). In our case we are using
+                // a constant multiplier, but because of rounding issues with the weight, we migth obtain
+                // a +-1 difference
+                adjustedExpectedBasePlusWeightFee = basePlusWeightFee + 1n;
 
-                // TODO: revisit this 1 unit that is getting injected here
-                const expectedFee = basePlusWeightFee + BigInt(signedTx.encodedLength) + 1n;
+                const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const tip = 0n;
@@ -89,11 +93,10 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength) + 1n;
+                // This
+                const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
-                console.log(expectedFee);
-                console.log("fee dtails are", feeDetails.toString());
                 const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
                 const tip = 0n;
                 expect(fee).to.equal(
@@ -144,7 +147,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength) + 1n;
+                const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const inclusionFee = feeDetails.inclusionFee.unwrapOrDefault();
@@ -175,7 +178,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFee(events).amount.toBigInt();
-                const expectedFee = expectedBasePlusWeightFee + BigInt(signedTx.encodedLength) + 1n;
+                const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
