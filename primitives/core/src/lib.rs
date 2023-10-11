@@ -18,10 +18,13 @@
 
 pub use cumulus_primitives_core::ParaId;
 
-use sp_runtime::{
-    generic,
-    traits::{BlakeTwo256, IdentifyAccount, Verify},
-    MultiAddress, MultiSignature, OpaqueExtrinsic,
+use {
+    frame_support::pallet_prelude::DispatchResultWithPostInfo,
+    sp_runtime::{
+        generic,
+        traits::{BlakeTwo256, IdentifyAccount, Verify},
+        MultiAddress, MultiSignature, OpaqueExtrinsic,
+    },
 };
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
@@ -97,4 +100,9 @@ pub mod well_known_keys {
 
     pub const SESSION_INDEX: &[u8] =
         &hex_literal::hex!["cec5070d609dd3497f72bde07fc96ba072763800a36a99fdfc7c10f6415f6ee6"];
+}
+
+/// Distribute rewards to an account.
+pub trait DistributeRewards<AccountId, Balance> {
+    fn distribute_rewards(rewarded: AccountId, amount: Balance) -> DispatchResultWithPostInfo;
 }

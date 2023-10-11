@@ -28,18 +28,20 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
-use frame_support::{
-    pallet_prelude::*,
-    traits::{
-        fungible::{Balanced, Credit, Inspect},
-        tokens::{Fortitude, Precision, Preservation},
-        Imbalance, OnUnbalanced,
+use {
+    frame_support::{
+        pallet_prelude::*,
+        traits::{
+            fungible::{Balanced, Credit, Inspect},
+            tokens::{Fortitude, Precision, Preservation},
+            Imbalance, OnUnbalanced,
+        },
     },
+    frame_system::pallet_prelude::*,
+    sp_runtime::{traits::Get, Perbill},
+    tp_core::{BlockNumber, ParaId},
+    tp_traits::{AuthorNotingHook, DistributeRewards, GetCurrentContainerChains},
 };
-use frame_system::pallet_prelude::*;
-use sp_runtime::{traits::Get, Perbill};
-use tp_core::{BlockNumber, ParaId};
-use tp_traits::{AuthorNotingHook, DistributeRewards, GetCurrentContainerChains};
 
 #[frame_support::pallet]
 pub mod pallet {

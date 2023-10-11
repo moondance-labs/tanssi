@@ -23,11 +23,13 @@ pub use cumulus_primitives_core::{
     relay_chain::{BlockNumber, Slot},
     ParaId,
 };
-use frame_support::{
-    pallet_prelude::{DispatchResultWithPostInfo, Get, Weight},
-    BoundedVec,
+use {
+    frame_support::{
+        pallet_prelude::{DispatchResultWithPostInfo, Get, Weight},
+        BoundedVec,
+    },
+    sp_std::vec::Vec,
 };
-use sp_std::vec::Vec;
 
 /// The author-noting hook to react to container chains authoring.
 pub trait AuthorNotingHook<AccountId> {

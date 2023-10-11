@@ -526,7 +526,26 @@ fn distribute_rewards_inner<T: Config>(
         if new_shares.0.is_zero() {
             Zero::zero()
         } else {
-            AutoCompounding::<T>::add_shares(candidate, candidate, new_shares)?.0
+            'a: {
+                let candidate_auto_stake =
+                    AutoCompounding::<T>::computed_stake(candidate, candidate)?.0;
+                let candidate_combined_stake =
+                    candidate_manual_stake.err_add(&candidate_auto_stake)?;
+
+                if candidate_combined_stake.is_zero() {
+                    break 'a Zero::zero();
+                }
+
+                let rewards =
+                    candidate_rewards.mul_div(candidate_auto_stake, candidate_combined_stake)?;
+                let new_shares = AutoCompounding::<T>::stake_to_shares(candidate, Stake(rewards))?;
+
+                if new_shares.0.is_zero() {
+                    break 'a Zero::zero();
+                }
+
+                AutoCompounding::<T>::add_shares(candidate, candidate, new_shares)?.0
+            }
         }
     };
 

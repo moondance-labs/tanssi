@@ -651,3 +651,47 @@ fn weights_assigned_to_extrinsics_are_correct() {
         );
     });
 }
+
+#[test]
+fn test_kill_author_data() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: 1,
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
+            );
+            assert_ok!(AuthorNoting::kill_author_data(
+                RuntimeOrigin::root(),
+                1001.into(),
+            ));
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
+            System::assert_last_event(
+                Event::RemovedAuthorData {
+                    para_id: 1001.into(),
+                }
+                .into(),
+            );
+        });
+}

@@ -195,7 +195,7 @@
                 {
                     "name": "DBX",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://fraa-dancebox-rpc.a.dancebox.tanssi.network"]
+                    "endpoints": ["wss://dancebox.tanssi-api.network"]
                 }
             ]
         },

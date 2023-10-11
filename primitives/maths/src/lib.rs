@@ -16,8 +16,10 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sp_core::U256;
-use sp_runtime::traits::{CheckedAdd, CheckedMul, CheckedSub, Zero};
+use {
+    sp_core::U256,
+    sp_runtime::traits::{CheckedAdd, CheckedMul, CheckedSub, Zero},
+};
 
 /// Error returned by math operations which can overflow.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
