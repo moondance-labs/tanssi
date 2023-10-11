@@ -161,6 +161,7 @@ pub fn new_partial(
         .build();
 
     let executor = ParachainExecutor::new_with_wasm_executor(wasm);
+    //let wasm_cache = executor.cache;
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -169,14 +170,6 @@ pub fn new_partial(
             executor,
         )?;
     let client = Arc::new(client);
-    log::info!(
-        "backend in new_partial refcount: {}",
-        Arc::strong_count(&backend)
-    );
-    log::info!(
-        "client in new_partial refcount: {}",
-        Arc::strong_count(&client)
-    );
 
     let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
 
@@ -634,46 +627,6 @@ async fn start_node_impl(
             }
         }
 
-        let debug_start_same_cc = async move {
-            loop {
-                let sleep_delay = Duration::from_secs(10);
-                use tokio::time::{sleep, Duration};
-                sleep(sleep_delay).await;
-                cc_spawn_tx
-                    .send(CcSpawnMsg::UpdateAssignment {
-                        current: Some(2000u32.into()),
-                        next: None,
-                    })
-                    .unwrap();
-                sleep(sleep_delay).await;
-                cc_spawn_tx
-                    .send(CcSpawnMsg::UpdateAssignment {
-                        current: None,
-                        next: None,
-                    })
-                    .unwrap();
-                sleep(sleep_delay).await;
-                cc_spawn_tx
-                    .send(CcSpawnMsg::UpdateAssignment {
-                        current: None,
-                        next: Some(2001u32.into()),
-                    })
-                    .unwrap();
-                sleep(sleep_delay).await;
-                cc_spawn_tx
-                    .send(CcSpawnMsg::UpdateAssignment {
-                        current: None,
-                        next: None,
-                    })
-                    .unwrap();
-            }
-        };
-        task_manager.spawn_handle().spawn(
-            "container-chain-spawner-debug-same-cc",
-            None,
-            debug_start_same_cc,
-        );
-
         // Start container chain spawner task. This will start and stop container chains on demand.
         let orchestrator_client = client.clone();
         let spawn_handle = task_manager.spawn_handle();
@@ -765,14 +718,6 @@ pub async fn start_node_impl_container(
         import_queue_service = params.import_queue.service();
         params_import_queue = params.import_queue;
     }
-    log::info!(
-        "backend start_node_impl_container refcount: {}",
-        Arc::strong_count(&backend)
-    );
-    log::info!(
-        "client start_node_impl_container refcount: {}",
-        Arc::strong_count(&client)
-    );
 
     let spawn_handle = task_manager.spawn_handle();
 

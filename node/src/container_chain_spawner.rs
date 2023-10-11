@@ -14,11 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor};
-
 use {
     crate::{
         cli::ContainerChainCli,
+        container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
         service::{start_node_impl_container, ParachainClient},
     },
     cumulus_primitives_core::ParaId,
@@ -79,15 +78,18 @@ pub struct ContainerChainSpawnerState {
 }
 
 pub struct ContainerChainState {
-    /// Async callback that enables collation on the orchestrator chain
+    /// Async callback that enables collation on this container chain
     collate_on: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     /// Handle that stops the container chain when dropped
-    #[allow(dead_code)]
     stop_handle: StopContainerChain,
 }
 
 /// Stops a container chain when dropped
-pub struct StopContainerChain(exit_future::Signal);
+pub struct StopContainerChain {
+    #[allow(dead_code)]
+    signal: exit_future::Signal,
+    id: usize,
+}
 
 /// Messages used to control the `ContainerChainSpawner`. This is needed because one of the fields
 /// of `ContainerChainSpawner` is not `Sync`, so we cannot simply pass an
@@ -259,24 +261,31 @@ impl ContainerChainSpawner {
                 Arc::new(move || Box::pin(std::future::ready(())))
             });
 
+            let monitor_id;
             {
                 let mut state = state.lock().expect("poison error");
+
+                monitor_id = state.spawned_containers_monitor.push(SpawnedContainer {
+                    id: 0,
+                    para_id: container_chain_para_id,
+                    start_time: Instant::now(),
+                    stop_signal_time: None,
+                    stop_task_manager_time: None,
+                    stop_refcount_time: Default::default(),
+                    backend: Arc::downgrade(&container_chain_db),
+                    client: Arc::downgrade(&container_chain_client),
+                });
 
                 state.spawned_container_chains.insert(
                     container_chain_para_id,
                     ContainerChainState {
                         collate_on: collate_on.clone(),
-                        stop_handle: StopContainerChain(signal),
+                        stop_handle: StopContainerChain {
+                            signal,
+                            id: monitor_id,
+                        },
                     },
                 );
-
-                state.spawned_containers_monitor.push(SpawnedContainer {
-                    para_id: container_chain_para_id,
-                    start_time: Instant::now(),
-                    stop_time: None,
-                    backend: Arc::downgrade(&container_chain_db),
-                    client: Arc::downgrade(&container_chain_client),
-                });
             }
 
             if start_collation {
@@ -311,6 +320,11 @@ impl ContainerChainSpawner {
                         }
                     }
                 }
+
+                let mut state = state.lock().expect("poison error");
+                state
+                    .spawned_containers_monitor
+                    .set_stop_task_manager_time(monitor_id, Instant::now());
             });
 
             sc_service::error::Result::Ok(())
@@ -328,16 +342,19 @@ impl ContainerChainSpawner {
 
     /// Stop a container chain. Prints a warning if the container chain was not running.
     fn stop(&self, container_chain_para_id: ParaId) {
-        let stop_handle = self
-            .state
-            .lock()
-            .expect("poison error")
+        let mut state = self.state.lock().expect("poison error");
+        let stop_handle = state
             .spawned_container_chains
             .remove(&container_chain_para_id);
 
         match stop_handle {
-            Some(_stop_handle) => {
+            Some(stop_handle) => {
                 log::info!("Stopping container chain {}", container_chain_para_id);
+
+                let id = stop_handle.stop_handle.id;
+                state
+                    .spawned_containers_monitor
+                    .set_stop_signal_time(id, Instant::now());
             }
             None => {
                 log::warn!(
@@ -527,6 +544,7 @@ mod tests {
                     spawned_container_chains: Default::default(),
                     assigned_para_id: None,
                     next_assigned_para_id: None,
+                    spawned_containers_monitor: Default::default(),
                 })),
                 orchestrator_para_id,
                 collate_on_tanssi,
@@ -563,7 +581,7 @@ mod tests {
                     container_chain_para_id,
                     ContainerChainState {
                         collate_on: collate_on.clone(),
-                        stop_handle: StopContainerChain(signal),
+                        stop_handle: StopContainerChain { signal, id: 0 },
                     },
                 );
 
