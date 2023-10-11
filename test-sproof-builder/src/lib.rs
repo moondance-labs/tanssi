@@ -142,31 +142,6 @@ impl ParaHeaderSproofBuilder {
             relevant_keys.push(key.clone());
         }
 
-        // Insert new keys and add them to relevant keys
-        /*       {
-            use parity_scale_codec::Encode as _;
-
-            let mut insert = |key: Vec<u8>, _value: Vec<u8>| {
-                relevant_keys.push(key.clone());
-                //backend.insert(vec![(None, vec![(key, Some(value))])], state_version);
-            };
-
-            for item in self.items {
-                let para_key = item.para_id.twox_64_concat();
-                let key = [well_known_keys::PARAS_HEADS_INDEX, para_key.as_slice()].concat();
-
-                let encoded = match item.author_id {
-                    HeaderAs::AlreadyEncoded(encoded) => encoded,
-                    HeaderAs::NonEncoded(header) => header.encode(),
-                };
-
-                let head_data: HeadData = encoded.into();
-                insert(key, head_data.encode());
-            }
-        }
-
-        // Construct proof again
-        // let root = *backend.root();*/
         let proof = sp_state_machine::prove_read(backend, relevant_keys).expect("prove read");
 
         (root, proof)
