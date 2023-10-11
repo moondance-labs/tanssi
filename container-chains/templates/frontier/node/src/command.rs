@@ -360,7 +360,7 @@ pub fn run() -> Result<()> {
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
-                // We log both genesis states for reference, as fetching it from runtime would take significant timw
+                // We log both genesis states for reference, as fetching it from runtime would take significant time
 				let block_state_v0: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V0)
 					.map_err(|e| format!("{:?}", e))?;
                 let block_state_v1: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
