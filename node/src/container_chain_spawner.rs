@@ -16,9 +16,10 @@
 
 use {
     crate::{
-        cli::ContainerChainCli,
+        cli::{Cli, ContainerChainCli},
         service::{start_node_impl_container, ParachainClient},
     },
+    cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{AccountId, Block, BlockNumber},
@@ -26,10 +27,11 @@ use {
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
-    sc_cli::SyncMode,
+    sc_cli::{SubstrateCli, SyncMode},
     sc_service::SpawnTaskHandle,
     sp_api::{ApiExt, ProvideRuntimeApi},
     sp_keystore::KeystorePtr,
+    sp_runtime::traits::Block as BlockT,
     std::{
         collections::{HashMap, HashSet},
         future::Future,
@@ -224,7 +226,7 @@ impl ContainerChainSpawner {
             }
 
             // Start container chain node
-            let (mut container_chain_task_manager, _container_chain_client, collate_on) =
+            let (mut container_chain_task_manager, container_chain_client, collate_on) =
                 start_node_impl_container(
                     container_chain_cli_config,
                     orchestrator_client.clone(),
@@ -237,6 +239,26 @@ impl ContainerChainSpawner {
                     validator,
                 )
                 .await?;
+
+            // Generate genesis hash to compare against container client's genesis hash
+            let container_preloaded_genesis = container_chain_cli.preloaded_chain_spec.unwrap();
+            let state_version =
+                Cli::native_runtime_version(&container_preloaded_genesis.cloned_box())
+                    .state_version();
+            let block: Block = generate_genesis_block(&*container_preloaded_genesis, state_version)
+                .map_err(|e| format!("{:?}", e))?;
+            let chain_spec_genesis_hash = block.header().hash();
+
+            let container_client_genesis_hash = container_chain_client.chain_info().genesis_hash;
+
+            if container_client_genesis_hash != chain_spec_genesis_hash {
+                log::info!(
+                    "Container genesis {:?} different from chain spec genesis {:?} - Deleting container db", 
+                    container_client_genesis_hash, 
+                    chain_spec_genesis_hash
+                );
+                delete_container_chain_db(&db_path);
+            }
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = exit_future::signal();
