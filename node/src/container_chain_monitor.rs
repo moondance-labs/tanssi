@@ -158,9 +158,7 @@ impl SpawnedContainersMonitor {
     pub fn running_chains(&self) -> Vec<&SpawnedContainer> {
         self.list
             .iter()
-            .filter(|container| {
-                !container.is_stopped()
-            })
+            .filter(|container| !container.is_stopped())
             .collect()
     }
 
