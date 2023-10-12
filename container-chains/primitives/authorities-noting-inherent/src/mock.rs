@@ -66,7 +66,6 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
         &self,
         inherent_data: &mut InherentData,
     ) -> Result<(), sp_inherents::Error> {
-
         let (sproof, orchestrator_chain_state) = self.build_sproof_builder();
 
         if let Ok(Some(validation_system_inherent_data)) =
