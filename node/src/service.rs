@@ -16,6 +16,9 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use futures::FutureExt;
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
+#[allow(deprecated)]
 use {
     crate::{
         cli::ContainerChainCli,
@@ -30,7 +33,7 @@ use {
     cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
     cumulus_client_service::{
         build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
-        StartCollatorParams, StartFullNodeParams,
+        CollatorSybilResistance, StartCollatorParams, StartFullNodeParams,
     },
     cumulus_primitives_core::{
         relay_chain::{CollatorPair, Hash as PHash},
@@ -125,7 +128,7 @@ pub fn new_partial(
         ParachainClient,
         ParachainBackend,
         MaybeSelectChain,
-        sc_consensus::DefaultImportQueue<Block, ParachainClient>,
+        sc_consensus::DefaultImportQueue<Block>,
         sc_transaction_pool::FullPool<Block, ParachainClient>,
         (
             ParachainBlockImport,
@@ -301,7 +304,7 @@ pub fn new_partial_dev(
         ParachainClient,
         ParachainBackend,
         MaybeSelectChain,
-        sc_consensus::DefaultImportQueue<Block, ParachainClient>,
+        sc_consensus::DefaultImportQueue<Block>,
         sc_transaction_pool::FullPool<Block, ParachainClient>,
         (
             DevParachainBlockImport,
@@ -442,15 +445,28 @@ async fn start_node_impl(
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
             net_config,
+            sybil_resistance_level: CollatorSybilResistance::Resistant,
         })
         .await?;
 
     if parachain_config.offchain_worker.enabled {
-        sc_service::build_offchain_workers(
-            &parachain_config,
-            task_manager.spawn_handle(),
-            client.clone(),
-            network.clone(),
+        task_manager.spawn_handle().spawn(
+            "offchain-workers-runner",
+            "offchain-work",
+            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+                runtime_api_provider: client.clone(),
+                keystore: Some(params.keystore_container.keystore()),
+                offchain_db: backend.offchain_storage(),
+                transaction_pool: Some(OffchainTransactionPoolFactory::new(
+                    transaction_pool.clone(),
+                )),
+                network_provider: network.clone(),
+                is_validator: parachain_config.role.is_authority(),
+                enable_http_requests: false,
+                custom_extensions: move |_| vec![],
+            })
+            .run(client.clone(), task_manager.spawn_handle())
+            .boxed(),
         );
     }
 
@@ -576,7 +592,9 @@ async fn start_node_impl(
 
         let client = client.clone();
         let collator_key = collator_key.clone();
+        // TODO: change for async backing
         collate_on_tanssi = Some(move || async move {
+            #[allow(deprecated)]
             cumulus_client_collator::start_collator(cumulus_client_collator::StartCollatorParams {
                 runtime_api: client.clone(),
                 block_status: client.clone(),
@@ -592,6 +610,8 @@ async fn start_node_impl(
             .await;
         });
 
+        // TODO: change for async backing
+        #[allow(deprecated)]
         start_collator(params).await?;
     } else {
         let params = StartFullNodeParams {
@@ -606,6 +626,8 @@ async fn start_node_impl(
             sync_service,
         };
 
+        // TODO: change for async backing
+        #[allow(deprecated)]
         start_full_node(params)?;
     }
 
@@ -700,6 +722,7 @@ pub async fn start_node_impl_container(
     let transaction_pool;
     let import_queue_service;
     let params_import_queue;
+    let keystore_container;
     {
         // Some fields of params are not `Send`, and that causes problems with async/await.
         // We take all the needed fields here inside a block to ensure that params
@@ -717,6 +740,7 @@ pub async fn start_node_impl_container(
         transaction_pool = params.transaction_pool.clone();
         import_queue_service = params.import_queue.service();
         params_import_queue = params.import_queue;
+        keystore_container = params.keystore_container;
     }
 
     let spawn_handle = task_manager.spawn_handle();
@@ -736,15 +760,28 @@ pub async fn start_node_impl_container(
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
             net_config,
+            sybil_resistance_level: CollatorSybilResistance::Resistant,
         })
         .await?;
 
     if parachain_config.offchain_worker.enabled {
-        sc_service::build_offchain_workers(
-            &parachain_config,
-            task_manager.spawn_handle(),
-            client.clone(),
-            network.clone(),
+        task_manager.spawn_handle().spawn(
+            "offchain-workers-runner",
+            "offchain-work",
+            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+                runtime_api_provider: client.clone(),
+                keystore: Some(keystore_container.keystore()),
+                offchain_db: backend.offchain_storage(),
+                transaction_pool: Some(OffchainTransactionPoolFactory::new(
+                    transaction_pool.clone(),
+                )),
+                network_provider: network.clone(),
+                is_validator: parachain_config.role.is_authority(),
+                enable_http_requests: false,
+                custom_extensions: move |_| vec![],
+            })
+            .run(client.clone(), task_manager.spawn_handle())
+            .boxed(),
         );
     }
 
@@ -852,6 +889,9 @@ pub async fn start_node_impl_container(
             {
                 f.await
             }
+
+            // TODO: change for async backing
+            #[allow(deprecated)]
             wrap(
                 para_id,
                 cumulus_client_collator::start_collator(
@@ -883,6 +923,8 @@ pub async fn start_node_impl_container(
             sync_service,
         };
 
+        // TODO: change for async backing
+        #[allow(deprecated)]
         start_full_node(params)?;
     }
 
@@ -994,7 +1036,7 @@ fn build_manual_seal_import_queue(
     config: &Configuration,
     _telemetry: Option<TelemetryHandle>,
     task_manager: &TaskManager,
-) -> Result<sc_consensus::DefaultImportQueue<Block, ParachainClient>, sc_service::Error> {
+) -> Result<sc_consensus::DefaultImportQueue<Block>, sc_service::Error> {
     Ok(sc_consensus_manual_seal::import_queue(
         Box::new(block_import),
         &task_manager.spawn_essential_handle(),
@@ -1342,11 +1384,23 @@ pub fn new_dev(
         })?;
 
     if config.offchain_worker.enabled {
-        sc_service::build_offchain_workers(
-            &config,
-            task_manager.spawn_handle(),
-            client.clone(),
-            network.clone(),
+        task_manager.spawn_handle().spawn(
+            "offchain-workers-runner",
+            "offchain-work",
+            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+                runtime_api_provider: client.clone(),
+                keystore: Some(keystore_container.keystore()),
+                offchain_db: backend.offchain_storage(),
+                transaction_pool: Some(OffchainTransactionPoolFactory::new(
+                    transaction_pool.clone(),
+                )),
+                network_provider: network.clone(),
+                is_validator: config.role.is_authority(),
+                enable_http_requests: false,
+                custom_extensions: move |_| vec![],
+            })
+            .run(client.clone(), task_manager.spawn_handle())
+            .boxed(),
         );
     }
 
@@ -1468,7 +1522,15 @@ pub fn new_dev(
 
                     let client_for_xcm = client_set_aside_for_cidp.clone();
                     async move {
-                        //let time = sp_timestamp::InherentDataProvider::from_system_time();
+                        let mocked_author_noting =
+                            tp_author_noting_inherent::MockAuthorNotingInherentDataProvider {
+                                current_para_block,
+                                relay_offset: 1000,
+                                relay_blocks_per_para_block: 2,
+                                para_ids,
+                                slots_per_para_block: 1,
+                            };
+
                         let time = MockTimestampInherentDataProvider;
                         let mocked_parachain = MockValidationDataInherentDataProvider {
                             current_para_block,
@@ -1485,16 +1547,10 @@ pub fn new_dev(
                             ),
                             raw_downward_messages: downward_xcm_receiver.drain().collect(),
                             raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
+                            additional_key_values: Some(
+                                mocked_author_noting.get_key_values().clone(),
+                            ),
                         };
-
-                        let mocked_author_noting =
-                            tp_author_noting_inherent::MockAuthorNotingInherentDataProvider {
-                                current_para_block,
-                                relay_offset: 1000,
-                                relay_blocks_per_para_block: 2,
-                                para_ids,
-                                slots_per_para_block: 1,
-                            };
 
                         Ok((time, mocked_parachain, mocked_author_noting))
                     }
@@ -1617,7 +1673,6 @@ where
     BI: BlockImport<Block> + Send,
 {
     type Error = BI::Error;
-    type Transaction = BI::Transaction;
 
     async fn check_block(
         &mut self,
@@ -1628,7 +1683,7 @@ where
 
     async fn import_block(
         &mut self,
-        params: sc_consensus::BlockImportParams<Block, Self::Transaction>,
+        params: sc_consensus::BlockImportParams<Block>,
     ) -> Result<sc_consensus::ImportResult, Self::Error> {
         let res = self.inner.import_block(params).await?;
 

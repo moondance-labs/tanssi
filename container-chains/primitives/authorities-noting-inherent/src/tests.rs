@@ -18,6 +18,7 @@ use {
     super::*,
     crate::ContainerChainAuthoritiesInherentData,
     async_trait::async_trait,
+    cumulus_primitives_core::relay_chain::BlockId,
     cumulus_primitives_core::{
         relay_chain::{
             CommittedCandidateReceipt, HeadData, OccupiedCoreAssumption, SessionIndex, ValidatorId,
@@ -27,6 +28,7 @@ use {
     cumulus_relay_chain_interface::{PHash, PHeader, RelayChainInterface, RelayChainResult},
     futures::Stream,
     polkadot_overseer::Handle,
+    sc_client_api::HeaderBackend,
     sc_client_api::{StorageKey, StorageProvider},
     sp_inherents::{InherentData, InherentDataProvider},
     sp_state_machine::{prove_read, StorageValue},
@@ -215,6 +217,30 @@ impl RelayChainInterface for DummyRelayChainInterface {
             .map(|state| prove_read(state, keys))
             .unwrap()
             .unwrap())
+    }
+
+    async fn header(&self, block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
+        let hash = match block_id {
+            BlockId::Hash(hash) => hash,
+            BlockId::Number(num) => {
+                if let Some(hash) = self.relay_client.hash(num.into())? {
+                    hash
+                } else {
+                    return Ok(None);
+                }
+            }
+        };
+        let header = self.relay_client.header(hash)?;
+
+        // this returns a substrate client header, we should convert
+        let relay_header = header.map(|header| PHeader {
+            parent_hash: header.parent_hash,
+            number: header.number.try_into().unwrap(),
+            state_root: header.state_root,
+            extrinsics_root: header.extrinsics_root,
+            digest: header.digest,
+        });
+        Ok(relay_header)
     }
 }
 

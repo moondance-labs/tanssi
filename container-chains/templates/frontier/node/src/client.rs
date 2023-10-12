@@ -18,7 +18,6 @@
 use {
     sc_executor::{NativeExecutionDispatch, NativeVersion},
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
-    sp_runtime::traits::BlakeTwo256,
 };
 // Local
 use container_chain_template_frontier_runtime::{opaque::Block, AccountId, Index};
@@ -53,20 +52,16 @@ pub trait BaseRuntimeApiCollection:
     + sp_offchain::OffchainWorkerApi<Block>
     + sp_session::SessionKeys<Block>
     + sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
-where
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
-impl<Api> BaseRuntimeApiCollection for Api
-where
+impl<Api> BaseRuntimeApiCollection for Api where
     Api: sp_api::ApiExt<Block>
         + sp_api::Metadata<Block>
         + sp_block_builder::BlockBuilder<Block>
         + sp_offchain::OffchainWorkerApi<Block>
         + sp_session::SessionKeys<Block>
-        + sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>,
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
+        + sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
 {
 }
 
@@ -76,17 +71,13 @@ pub trait RuntimeApiCollection:
     + EthCompatRuntimeApiCollection
     + sp_consensus_aura::AuraApi<Block, AuraId>
     + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
-where
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
-impl<Api> RuntimeApiCollection for Api
-where
+impl<Api> RuntimeApiCollection for Api where
     Api: BaseRuntimeApiCollection
         + EthCompatRuntimeApiCollection
         + sp_consensus_aura::AuraApi<Block, AuraId>
-        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>,
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
+        + frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index>
 {
 }

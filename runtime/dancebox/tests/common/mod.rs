@@ -19,17 +19,16 @@ use {
     dancebox_runtime::{AuthorInherent, AuthorityAssignment},
     frame_support::{
         assert_ok,
-        dispatch::Dispatchable,
-        traits::{GenesisBuild, OnFinalize, OnInitialize},
+        traits::{OnFinalize, OnInitialize},
     },
     nimbus_primitives::{NimbusId, NIMBUS_ENGINE_ID},
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     parity_scale_codec::Encode,
-    polkadot_parachain::primitives::HeadData,
+    polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::{Get, Pair},
-    sp_runtime::{Digest, DigestItem},
+    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
@@ -150,8 +149,8 @@ impl ExtBuilder {
     }
 
     pub fn build_storage(self) -> sp_core::storage::Storage {
-        let mut t = frame_system::GenesisConfig::default()
-            .build_storage::<Runtime>()
+        let mut t = frame_system::GenesisConfig::<Runtime>::default()
+            .build_storage()
             .unwrap();
 
         pallet_balances::GenesisConfig::<Runtime> {
@@ -162,43 +161,39 @@ impl ExtBuilder {
 
         // We need to initialize these pallets first. When initializing pallet-session,
         // these values will be taken into account for collator-assignment.
-        <pallet_registrar::GenesisConfig<Runtime> as GenesisBuild<Runtime>>::assimilate_storage(
-            &pallet_registrar::GenesisConfig {
-                para_ids: self
-                    .para_ids
-                    .into_iter()
-                    .map(|(para_id, genesis_data, boot_nodes)| {
-                        (para_id.into(), genesis_data, boot_nodes)
-                    })
-                    .collect(),
-            },
-            &mut t,
-        )
+
+        pallet_registrar::GenesisConfig::<Runtime> {
+            para_ids: self
+                .para_ids
+                .into_iter()
+                .map(|(para_id, genesis_data, boot_nodes)| {
+                    (para_id.into(), genesis_data, boot_nodes)
+                })
+                .collect(),
+        }
+        .assimilate_storage(&mut t)
         .unwrap();
 
-        <pallet_configuration::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-            &pallet_configuration::GenesisConfig {
-                config: self.config,
-            },
-            &mut t,
-        )
+        pallet_configuration::GenesisConfig::<Runtime> {
+            config: self.config,
+            ..Default::default()
+        }
+        .assimilate_storage(&mut t)
         .unwrap();
 
-        <pallet_xcm::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-            &pallet_xcm::GenesisConfig {
-                safe_xcm_version: self.safe_xcm_version,
-            },
-            &mut t,
-        )
+        pallet_xcm::GenesisConfig::<Runtime> {
+            safe_xcm_version: self.safe_xcm_version,
+            ..Default::default()
+        }
+        .assimilate_storage(&mut t)
         .unwrap();
 
         if let Some(own_para_id) = self.own_para_id {
-            <parachain_info::GenesisConfig as GenesisBuild<Runtime>>::assimilate_storage(
-                &parachain_info::GenesisConfig {
-                    parachain_id: own_para_id,
-                },
-                &mut t,
-            )
+            parachain_info::GenesisConfig::<Runtime> {
+                parachain_id: own_para_id,
+                ..Default::default()
+            }
+            .assimilate_storage(&mut t)
             .unwrap();
         }
 
@@ -230,11 +225,9 @@ impl ExtBuilder {
                     )
                 })
                 .collect();
-            <pallet_session::GenesisConfig<Runtime> as GenesisBuild<Runtime>>::assimilate_storage(
-                &pallet_session::GenesisConfig { keys },
-                &mut t,
-            )
-            .unwrap();
+            pallet_session::GenesisConfig::<Runtime> { keys }
+                .assimilate_storage(&mut t)
+                .unwrap();
         }
         t
     }

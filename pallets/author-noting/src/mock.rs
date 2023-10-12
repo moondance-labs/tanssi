@@ -25,30 +25,25 @@ use {
             ConstU32, ConstU64, Everything, OnFinalize, OnInitialize, UnfilteredDispatchable,
         },
     },
+    frame_system::pallet_prelude::BlockNumberFor,
     frame_system::RawOrigin,
     parity_scale_codec::{Decode, Encode},
-    polkadot_parachain::primitives::RelayChainBlockNumber,
+    polkadot_parachain_primitives::primitives::RelayChainBlockNumber,
     polkadot_primitives::Slot,
     sp_core::H256,
-    sp_runtime::{
-        testing::Header,
-        traits::{BlakeTwo256, IdentityLookup},
-    },
+    sp_runtime::traits::{BlakeTwo256, IdentityLookup},
+    sp_runtime::BuildStorage,
     sp_state_machine::StorageProof,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 type AccountId = u64;
 
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
-        System: frame_system::{Pallet, Call, Config, Storage, Event<T>},
+        System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>},
         AuthorNoting: author_noting_pallet::{Pallet, Call, Storage, Event<T>},
         MockData: mock_data,
     }
@@ -61,13 +56,12 @@ impl frame_system::Config for Test {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
+    type Nonce = u64;
+    type Block = Block;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
@@ -191,7 +185,7 @@ impl Config for Test {
 }
 
 struct BlockTest {
-    n: <Test as frame_system::Config>::BlockNumber,
+    n: BlockNumberFor<Test>,
     within_block: Box<dyn Fn()>,
     after_block: Option<Box<dyn Fn()>>,
 }
@@ -199,8 +193,8 @@ struct BlockTest {
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::default()
-        .build_storage::<Test>()
+    frame_system::GenesisConfig::<Test>::default()
+        .build_storage()
         .unwrap()
         .into()
 }
@@ -245,7 +239,7 @@ impl BlockTests {
         self
     }
 
-    pub fn add<F>(self, n: <Test as frame_system::Config>::BlockNumber, within_block: F) -> Self
+    pub fn add<F>(self, n: BlockNumberFor<Test>, within_block: F) -> Self
     where
         F: 'static + Fn(),
     {

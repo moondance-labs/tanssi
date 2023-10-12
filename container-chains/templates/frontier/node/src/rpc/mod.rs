@@ -53,6 +53,18 @@ use {
     std::{sync::Arc, time::Duration},
 };
 
+pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
+
+impl<C, BE> fc_rpc::EthConfig<Block, C> for DefaultEthConfig<C, BE>
+where
+    C: StorageProvider<Block, BE> + Sync + Send + 'static,
+    BE: Backend<Block> + 'static,
+{
+    type EstimateGasAdapter = ();
+    type RuntimeStorageOverride =
+        fc_rpc::frontier_backend_client::SystemAccountId20StorageOverride<Block, C, BE>;
+}
+
 mod eth;
 pub use eth::*;
 
@@ -73,7 +85,8 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     /// EthFilterApi pool.
     pub filter_pool: Option<FilterPool>,
     /// Frontier Backend.
-    pub frontier_backend: Arc<dyn fc_db::BackendReader<Block> + Send + Sync>,
+    // TODO: log indexer?
+    pub frontier_backend: Arc<dyn fc_api::Backend<Block>>,
     /// Backend.
     pub backend: Arc<BE>,
     /// Maximum number of logs in a query.
@@ -114,7 +127,7 @@ where
     C: CallApiAt<Block>,
     C: Send + Sync + 'static,
     A: ChainApi<Block = Block> + 'static,
-    C::Api: RuntimeApiCollection<StateBackend = BE::State>,
+    C::Api: RuntimeApiCollection,
     P: TransactionPool<Block = Block> + 'static,
 {
     use {
@@ -162,8 +175,10 @@ where
     }
     let convert_transaction: Option<Never> = None;
 
+    let pending_create_inherent_data_providers = move |_, _| async move { Ok(()) };
+
     io.merge(
-        Eth::new(
+        Eth::<_, _, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
             Arc::clone(&client),
             Arc::clone(&pool),
             Arc::clone(&graph),
@@ -178,17 +193,20 @@ where
             fee_history_limit,
             10,
             None,
+            // TODO: resvisit
+            pending_create_inherent_data_providers,
+            None,
         )
         .into_rpc(),
     )?;
 
-    let tx_pool = TxPool::new(client.clone(), graph);
+    let tx_pool = TxPool::new(client.clone(), graph.clone());
     if let Some(filter_pool) = filter_pool {
         io.merge(
             EthFilter::new(
                 client.clone(),
                 frontier_backend,
-                tx_pool.clone(),
+                graph.clone(),
                 filter_pool,
                 500_usize, // max stored filters
                 max_past_logs,
@@ -368,13 +386,10 @@ pub trait RuntimeApiCollection:
     + fp_rpc::ConvertTransactionRuntimeApi<Block>
     + fp_rpc::EthereumRuntimeRPCApi<Block>
     + cumulus_primitives_core::CollectCollationInfo<Block>
-where
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
-impl<Api> RuntimeApiCollection for Api
-where
+impl<Api> RuntimeApiCollection for Api where
     Api: sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
         + sp_api::ApiExt<Block>
         + sp_block_builder::BlockBuilder<Block>
@@ -384,7 +399,6 @@ where
         + sp_session::SessionKeys<Block>
         + fp_rpc::ConvertTransactionRuntimeApi<Block>
         + fp_rpc::EthereumRuntimeRPCApi<Block>
-        + cumulus_primitives_core::CollectCollationInfo<Block>,
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
+        + cumulus_primitives_core::CollectCollationInfo<Block>
 {
 }

@@ -31,7 +31,7 @@ use {
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<
-    container_chain_template_frontier_runtime::GenesisConfig,
+    container_chain_template_frontier_runtime::RuntimeGenesisConfig,
     Extensions,
 >;
 
@@ -154,12 +154,13 @@ fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-) -> container_chain_template_frontier_runtime::GenesisConfig {
-    container_chain_template_frontier_runtime::GenesisConfig {
+) -> container_chain_template_frontier_runtime::RuntimeGenesisConfig {
+    container_chain_template_frontier_runtime::RuntimeGenesisConfig {
         system: container_chain_template_frontier_runtime::SystemConfig {
             code: container_chain_template_frontier_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
                 .to_vec(),
+            ..Default::default()
         },
         balances: container_chain_template_frontier_runtime::BalancesConfig {
             balances: endowed_accounts
@@ -170,6 +171,7 @@ fn testnet_genesis(
         },
         parachain_info: container_chain_template_frontier_runtime::ParachainInfoConfig {
             parachain_id: id,
+            ..Default::default()
         },
         parachain_system: Default::default(),
         // EVM compatibility
@@ -177,6 +179,7 @@ fn testnet_genesis(
         // For now moonwall is very tailored for moonbeam so we need it for tests
         evm_chain_id: EVMChainIdConfig {
             chain_id: 1281u32 as u64,
+            ..Default::default()
         },
         evm: EVMConfig {
             accounts: {
@@ -222,6 +225,7 @@ fn testnet_genesis(
                 );
                 map
             },
+            ..Default::default()
         },
         ethereum: Default::default(),
         dynamic_fee: Default::default(),
@@ -232,10 +236,14 @@ fn testnet_genesis(
         },
         authorities_noting: container_chain_template_frontier_runtime::AuthoritiesNotingConfig {
             orchestrator_para_id: ORCHESTRATOR,
+            ..Default::default()
         },
-        migrations: MigrationsConfig {},
+        migrations: MigrationsConfig {
+            ..Default::default()
+        },
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
+            ..Default::default()
         },
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),

@@ -147,7 +147,7 @@ describeSuite({
 
                 // This XCM message coming by DMP should not be executed since we are in maintenance mode
                 await injectDmpMessageAndSeal(context, {
-                    type: "XcmVersionedXcm",
+                    type: "StagingXcmVersionedXcm",
                     payload: xcmMessage,
                 } as RawXcmMessage);
 

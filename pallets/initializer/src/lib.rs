@@ -98,7 +98,7 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn on_finalize(_now: T::BlockNumber) {
+        fn on_finalize(_now: BlockNumberFor<T>) {
             // Apply buffered session changes as the last thing. This way the runtime APIs and the
             // next block will observe the next session.
             //

@@ -68,7 +68,7 @@ pub mod pallet {
         /// Provider of a block cost which can adjust from block to block
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
         /// The maximum number of credits that can be accumulated
-        type MaxCreditsStored: Get<Self::BlockNumber>;
+        type MaxCreditsStored: Get<BlockNumberFor<Self>>;
     }
 
     #[pallet::error]
@@ -88,19 +88,19 @@ pub mod pallet {
             para_id: ParaId,
             payer: T::AccountId,
             fee: BalanceOf<T>,
-            credits_purchased: T::BlockNumber,
-            credits_remaining: T::BlockNumber,
+            credits_purchased: BlockNumberFor<T>,
+            credits_remaining: BlockNumberFor<T>,
         },
         CreditBurned {
             para_id: ParaId,
-            credits_remaining: T::BlockNumber,
+            credits_remaining: BlockNumberFor<T>,
         },
     }
 
     #[pallet::storage]
     #[pallet::getter(fn collator_commission)]
     pub type BlockProductionCredits<T: Config> =
-        StorageMap<_, Blake2_128Concat, ParaId, T::BlockNumber, OptionQuery>;
+        StorageMap<_, Blake2_128Concat, ParaId, BlockNumberFor<T>, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T>
@@ -112,13 +112,13 @@ pub mod pallet {
         pub fn purchase_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
-            credits: T::BlockNumber,
+            credits: BlockNumberFor<T>,
             max_price_per_credit: Option<BalanceOf<T>>,
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
             let existing_credits =
-                BlockProductionCredits::<T>::get(para_id).unwrap_or(T::BlockNumber::zero());
+                BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
             let credits_purchasable = T::MaxCreditsStored::get().saturating_sub(existing_credits);
             let actual_credits_purchased = credits.min(credits_purchasable);
 
@@ -160,7 +160,7 @@ pub mod pallet {
         /// Burn a credit for the given para. Deducts one credit if possible, errors otherwise.
         pub fn burn_credit_for_para(para_id: &ParaId) -> DispatchResultWithPostInfo {
             let existing_credits =
-                BlockProductionCredits::<T>::get(para_id).unwrap_or(T::BlockNumber::zero());
+                BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
 
             ensure!(
                 existing_credits >= 1u32.into(),
@@ -194,7 +194,7 @@ pub mod pallet {
     }
 
     #[pallet::genesis_build]
-    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {}
     }
 }
@@ -209,7 +209,7 @@ pub trait OnChargeForBlockCredit<T: Config> {
     fn charge_credits(
         payer: &T::AccountId,
         para_id: &ParaId,
-        credits: T::BlockNumber,
+        credits: BlockNumberFor<T>,
         fee: BalanceOf<T>,
     ) -> Result<(), Error<T>>;
 }
