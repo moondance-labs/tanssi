@@ -158,12 +158,8 @@ impl SpawnedContainersMonitor {
     pub fn running_chains(&self) -> Vec<&SpawnedContainer> {
         self.list
             .iter()
-            .filter_map(|container| {
-                if container.is_stopped() {
-                    None
-                } else {
-                    Some(container)
-                }
+            .filter(|container| {
+                !container.is_stopped()
             })
             .collect()
     }
@@ -191,16 +187,16 @@ impl SpawnedContainersMonitor {
 
             if container.is_stopped() {
                 to_retain -= 1;
-                return false;
+                false
             } else {
-                return true;
+                true
             }
         });
 
         if self.list.len() <= new_len {
-            return Ok(());
+            Ok(())
         } else {
-            return Err(());
+            Err(())
         }
     }
 }
