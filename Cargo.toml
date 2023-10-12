@@ -253,17 +253,17 @@ opt-level = 3
 panic = "unwind"
 
 [patch.crates-io]
-jsonrpsee-examples = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-client-transport = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-core = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-types = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-http-client = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-test-utils = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-proc-macros = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-server = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-wasm-client = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-ws-client = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-benchmarks = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-jsonrpsee-integration-tests = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
-wasm-test = { git = "https://github.com/tmpolaczyk/jsonrpsee", branch = "tomasz-fix-shutdown" }
+jsonrpsee-examples = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-client-transport = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-core = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-types = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-http-client = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-test-utils = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-proc-macros = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-server = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-wasm-client = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-ws-client = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-benchmarks = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-integration-tests = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+wasm-test = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
