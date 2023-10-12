@@ -41,7 +41,7 @@ nimbus-primitives = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
-polkadot-parachain = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
 polkadot-primitives = { workspace = true }
 sp-externalities = { workspace = true }
 sp-io = { workspace = true }

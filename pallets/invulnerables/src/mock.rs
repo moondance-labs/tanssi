@@ -18,27 +18,23 @@ use {
     crate as invulnerables,
     frame_support::{
         ord_parameter_types, parameter_types,
-        traits::{ConstU32, GenesisBuild, ValidatorRegistration},
+        traits::{ConstU32, ValidatorRegistration},
     },
     frame_system::{self as system, EnsureSignedBy},
     pallet_balances::AccountData,
     sp_core::H256,
     sp_runtime::{
-        testing::{Header, UintAuthorityId},
+        testing::UintAuthorityId,
         traits::{BlakeTwo256, IdentityLookup, OpaqueKeys},
-        RuntimeAppPublic,
+        BuildStorage, RuntimeAppPublic,
     },
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
         System: frame_system,
         Invulnerables: invulnerables,
@@ -74,9 +70,8 @@ impl system::Config for Test {
     type SS58Prefix = SS58Prefix;
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
-    type Index = u64;
-    type BlockNumber = u64;
-    type Header = Header;
+    type Nonce = u64;
+    type Block = Block;
 }
 
 parameter_types! {
@@ -92,7 +87,7 @@ impl pallet_balances::Config for Test {
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
     type ReserveIdentifier = [u8; 8];
-    type HoldIdentifier = ();
+    type RuntimeHoldReason = ();
     type FreezeIdentifier = ();
     type MaxLocks = ();
     type MaxReserves = MaxReserves;
@@ -172,8 +167,8 @@ impl pallet_session::Config for Test {
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut t = frame_system::GenesisConfig::default()
-        .build_storage::<Test>()
+    let mut t = frame_system::GenesisConfig::<Test>::default()
+        .build_storage()
         .unwrap();
     let invulnerables = vec![1, 2];
 
@@ -194,11 +189,9 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     pallet_balances::GenesisConfig::<Test> { balances }
         .assimilate_storage(&mut t)
         .unwrap();
-    GenesisBuild::<Test>::assimilate_storage(
-        &invulnerables::GenesisConfig { invulnerables },
-        &mut t,
-    )
-    .unwrap();
+    invulnerables::GenesisConfig::<Test> { invulnerables }
+        .assimilate_storage(&mut t)
+        .unwrap();
     session.assimilate_storage(&mut t).unwrap();
 
     t.into()

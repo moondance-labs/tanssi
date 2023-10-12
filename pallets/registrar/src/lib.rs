@@ -77,7 +77,7 @@ pub mod pallet {
     }
 
     #[pallet::genesis_build]
-    impl<T: Config> GenesisBuild<T> for GenesisConfig<T> {
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
             // Sort para ids and detect duplicates, but do it using a vector of
             // references to avoid cloning the genesis data, which may be big.
@@ -85,7 +85,7 @@ pub mod pallet {
             para_ids.sort_by(|a, b| a.0.cmp(&b.0));
             para_ids.dedup_by(|a, b| {
                 if a.0 == b.0 {
-                    panic!("Duplicate para_id: {}", a.0);
+                    panic!("Duplicate para_id: {}", u32::from(a.0));
                 } else {
                     false
                 }

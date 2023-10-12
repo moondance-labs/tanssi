@@ -35,9 +35,8 @@ use {
     scale_info::TypeInfo,
     sp_core::{ConstU32, ConstU64, RuntimeDebug, H256},
     sp_runtime::{
-        testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
-        Perbill,
+        BuildStorage, Perbill,
     },
 };
 
@@ -58,7 +57,6 @@ pub enum HoldIdentifier {
     Staking,
 }
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
 pub type AccountId = u64;
 pub type Balance = u128;
@@ -78,10 +76,7 @@ pub const DEFAULT_BALANCE: u128 = PETA;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Runtime where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Runtime
     {
         System: frame_system,
         Balances: pallet_balances,
@@ -96,13 +91,12 @@ impl frame_system::Config for Runtime {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
+    type Nonce = u64;
+    type Block = Block;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
@@ -131,7 +125,7 @@ impl pallet_balances::Config for Runtime {
     type AccountStore = System;
     type FreezeIdentifier = ();
     type MaxFreezes = ();
-    type HoldIdentifier = HoldIdentifier;
+    type RuntimeHoldReason = HoldIdentifier;
     type MaxHolds = ConstU32<5>;
     type WeightInfo = ();
 }
@@ -352,8 +346,8 @@ impl ExtBuilder {
     }
 
     pub(crate) fn build(self) -> sp_io::TestExternalities {
-        let mut t = frame_system::GenesisConfig::default()
-            .build_storage::<Runtime>()
+        let mut t = frame_system::GenesisConfig::<Runtime>::default()
+            .build_storage()
             .expect("Frame system builds valid default genesis config");
 
         pallet_balances::GenesisConfig::<Runtime> {
