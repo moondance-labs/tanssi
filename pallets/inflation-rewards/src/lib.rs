@@ -62,6 +62,7 @@ pub mod pallet {
             let mut weight = T::DbWeight::get().reads(1);
 
             // Collect indistributed rewards, if any
+            // Any parachain we have not rewarded is handled by onUnbalanced
             let not_distributed_rewards =
                 if let Some(chains_to_reward) = ChainsToReward::<T>::take() {
                     // Collect and sum all undistributed rewards
@@ -93,6 +94,7 @@ pub mod pallet {
             // Split staking reward portion
             let total_rewards = T::RewardsPortion::get() * new_supply.peek();
             let (rewards_credit, reminder_credit) = new_supply.split(total_rewards);
+
             let rewards_per_chain: BalanceOf<T> = rewards_credit.peek() / number_of_chains;
             let (mut total_reminder, staking_rewards) = rewards_credit.split_merge(
                 total_rewards % number_of_chains,
