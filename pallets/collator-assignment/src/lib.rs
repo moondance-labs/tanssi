@@ -292,11 +292,10 @@ pub mod pallet {
             let assigned_collators = Pallet::<T>::collator_container_chain();
             let collators = if para_id == T::SelfParaId::get() {
                 Some(&assigned_collators.orchestrator_chain)
-            }
-            else {
+            } else {
                 assigned_collators.container_chains.get(&para_id)
             }?;
-            
+
             if collators.is_empty() {
                 // Avoid division by zero below
                 return None;
