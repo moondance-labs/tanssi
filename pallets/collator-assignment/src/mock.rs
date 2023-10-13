@@ -16,7 +16,10 @@
 
 use {
     crate::{self as pallet_collator_assignment},
-    frame_support::traits::{ConstU16, ConstU64},
+    frame_support::{
+        parameter_types,
+        traits::{ConstU16, ConstU64},
+    },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
     sp_core::H256,
