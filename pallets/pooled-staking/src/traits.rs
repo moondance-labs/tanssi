@@ -16,6 +16,7 @@
 
 use {
     core::{fmt::Debug, marker::PhantomData},
+    frame_system::pallet_prelude::BlockNumberFor,
     parity_scale_codec::FullCodec,
     scale_info::TypeInfo,
     sp_runtime::traits::{CheckedAdd, Get},
@@ -49,9 +50,9 @@ pub struct BlockNumberTimer<T, G>(PhantomData<(T, G)>);
 impl<T, G> Timer for BlockNumberTimer<T, G>
 where
     T: frame_system::Config,
-    G: Get<<T as frame_system::Config>::BlockNumber>,
+    G: Get<BlockNumberFor<T>>,
 {
-    type Instant = <T as frame_system::Config>::BlockNumber;
+    type Instant = BlockNumberFor<T>;
 
     fn now() -> Self::Instant {
         frame_system::Pallet::<T>::block_number()

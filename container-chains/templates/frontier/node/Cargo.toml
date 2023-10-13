@@ -47,6 +47,7 @@ sc-executor = { workspace = true }
 sc-network = { workspace = true }
 sc-network-common = { workspace = true }
 sc-network-sync = { workspace = true }
+sc-offchain = { workspace = true }
 sc-rpc = { workspace = true }
 sc-service = { workspace = true }
 sc-sysinfo = { workspace = true }
@@ -90,12 +91,13 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 
 # Frontier
+fc-api = { workspace = true }
 fc-cli = { workspace = true }
 fc-consensus = { workspace = true }
 fc-db = { workspace = true, features = [ "sql" ] }
 fc-mapping-sync = { workspace = true, features = [ "sql" ] }
-fc-rpc = { workspace = true }
-fc-rpc-core = { workspace = true }
+fc-rpc = { workspace = true, features = ["txpool"] }
+fc-rpc-core = { workspace = true, features = ["txpool"] }
 fc-storage = { workspace = true }
 fp-evm = { workspace = true }
 fp-rpc = { workspace = true }
@@ -108,8 +110,7 @@ default = []
 runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
 	"pallet-ethereum/runtime-benchmarks",
-	"polkadot-cli/runtime-benchmarks",
-	"try-runtime-cli/try-runtime",
+	"polkadot-cli/runtime-benchmarks"
 ]
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",

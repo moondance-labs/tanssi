@@ -14,7 +14,7 @@ sc-consensus-manual-seal = { workspace = true }
 sc-consensus-slots = { workspace = true }
 sc-telemetry = { workspace = true }
 sp-api = { workspace = true }
-sp-application-crypto = { workspace = true, features = [ "std" ] }
+sp-application-crypto = { workspace = true, features = [ "std", "full_crypto"] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }

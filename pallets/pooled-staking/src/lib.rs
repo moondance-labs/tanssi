@@ -67,7 +67,7 @@ pub mod pallet {
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
             traits::{fungible, tokens::Balance, IsType},
-            Blake2_128Concat, RuntimeDebug,
+            Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
         parity_scale_codec::{Decode, Encode, FullCodec},

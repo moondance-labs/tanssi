@@ -18,7 +18,7 @@ use {
     crate::common::xcm::{
         mocknets::{
             Dancebox, DanceboxPallet, EthereumEmptyReceiver, EthereumSender, FrontierTemplate,
-            Westend, WestendEmptyReceiver, WestendSender,
+            FrontierTemplatePallet, Westend, WestendEmptyReceiver, WestendPallet, WestendSender,
         },
         *,
     },
@@ -27,15 +27,16 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
+    staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
+    staging_xcm_executor::traits::ConvertLocation,
     westend_runtime_constants::currency::UNITS as WND,
-    xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
-    xcm_executor::traits::Convert,
+    xcm_emulator::Chain,
 };
 
 #[test]
 fn using_sovereign_works_from_tanssi() {
     // XcmPallet send arguments
-    let sudo_origin = <Dancebox as Para>::RuntimeOrigin::root();
+    let sudo_origin = <Dancebox as Chain>::RuntimeOrigin::root();
     let relay_destination: VersionedMultiLocation = MultiLocation::parent().into();
 
     let buy_execution_fee_amount = westend_runtime_constants::fee::WeightToFee::weight_to_fee(
@@ -68,21 +69,21 @@ fn using_sovereign_works_from_tanssi() {
     Westend::execute_with(|| {
         // We also need to transfer first sufficient amount to the sovereign
         let sovereign_account =
-            westend_runtime::xcm_config::LocationConverter::convert_ref(MultiLocation {
+            westend_runtime::xcm_config::LocationConverter::convert_location(&MultiLocation {
                 parents: 0,
                 interior: X1(Parachain(2000u32.into())),
             })
             .unwrap();
 
-        let origin = <Westend as Relay>::RuntimeOrigin::signed(WestendSender::get());
-        assert_ok!(<Westend as Relay>::Balances::transfer(
+        let origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
+        assert_ok!(<Westend as WestendPallet>::Balances::transfer(
             origin,
             sp_runtime::MultiAddress::Id(sovereign_account),
             100 * WND
         ));
         // Assert empty receiver has 0 funds
         assert_eq!(
-            <Westend as Relay>::System::account(WestendEmptyReceiver::get())
+            <Westend as Chain>::System::account(WestendEmptyReceiver::get())
                 .data
                 .free,
             0
@@ -97,7 +98,7 @@ fn using_sovereign_works_from_tanssi() {
             bx!(xcm),
         ));
 
-        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
 
         assert_expected_events!(
             Dancebox,
@@ -109,7 +110,7 @@ fn using_sovereign_works_from_tanssi() {
 
     // Receive XCM message in Relay
     Westend::execute_with(|| {
-        type RuntimeEvent = <Westend as Relay>::RuntimeEvent;
+        type RuntimeEvent = <Westend as Chain>::RuntimeEvent;
         assert_expected_events!(
             Westend,
             vec![
@@ -124,7 +125,7 @@ fn using_sovereign_works_from_tanssi() {
         );
         // Assert empty receiver received funds
         assert!(
-            <Westend as Relay>::System::account(WestendEmptyReceiver::get())
+            <Westend as Chain>::System::account(WestendEmptyReceiver::get())
                 .data
                 .free
                 > 0
@@ -135,7 +136,7 @@ fn using_sovereign_works_from_tanssi() {
 #[test]
 fn using_sovereign_works_from_tanssi_frontier_template() {
     // XcmPallet send arguments
-    let sudo_origin = <Dancebox as Para>::RuntimeOrigin::root();
+    let sudo_origin = <Dancebox as Chain>::RuntimeOrigin::root();
     let frontier_destination: VersionedMultiLocation = MultiLocation {
         parents: 1,
         interior: X1(Parachain(2001)),
@@ -174,23 +175,27 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
     FrontierTemplate::execute_with(|| {
         // We also need to transfer first sufficient amount to the sovereign
         let sovereign_account =
-            container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_ref(MultiLocation {
+            container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(&MultiLocation {
                 parents: 1,
                 interior: X1(Parachain(2000u32.into())),
             })
             .unwrap();
 
-        let origin = <FrontierTemplate as Para>::RuntimeOrigin::signed(EthereumSender::get());
-        assert_ok!(<FrontierTemplate as Para>::Balances::transfer(
-            origin,
-            sovereign_account,
-            100 * FRONTIER_DEV
-        ));
+        let origin = <FrontierTemplate as Chain>::RuntimeOrigin::signed(EthereumSender::get());
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplatePallet>::Balances::transfer(
+                origin,
+                sovereign_account,
+                100 * FRONTIER_DEV
+            )
+        );
         // Assert empty receiver has 0 funds
         assert_eq!(
-            <FrontierTemplate as Para>::System::account(EthereumEmptyReceiver::get())
-                .data
-                .free,
+            <FrontierTemplate as FrontierTemplatePallet>::System::account(
+                EthereumEmptyReceiver::get()
+            )
+            .data
+            .free,
             0
         );
     });
@@ -203,7 +208,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
             bx!(xcm),
         ));
 
-        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
 
         assert_expected_events!(
             Dancebox,
@@ -215,7 +220,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
     });
 
     FrontierTemplate::execute_with(|| {
-        type RuntimeEvent = <FrontierTemplate as Para>::RuntimeEvent;
+        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
         assert_expected_events!(
             FrontierTemplate,
             vec![
@@ -227,9 +232,11 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
         );
         // Assert empty receiver received funds
         assert!(
-            <FrontierTemplate as Para>::System::account(EthereumEmptyReceiver::get())
-                .data
-                .free
+            <FrontierTemplate as FrontierTemplatePallet>::System::account(
+                EthereumEmptyReceiver::get()
+            )
+            .data
+            .free
                 > 0
         );
     });

@@ -107,7 +107,7 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn on_initialize(_n: T::BlockNumber) -> Weight {
+        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
             let mut weight = Weight::zero();
 
             // We clear this storage item to make sure its always included
@@ -121,7 +121,7 @@ pub mod pallet {
             weight
         }
 
-        fn on_finalize(_: T::BlockNumber) {
+        fn on_finalize(_: BlockNumberFor<T>) {
             assert!(
                 <DidSetContainerAuthorData<T>>::exists(),
                 "Container chain author data needs to be present in every block!"

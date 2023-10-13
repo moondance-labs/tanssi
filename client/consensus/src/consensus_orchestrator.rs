@@ -128,11 +128,11 @@ where
     C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     PF: Environment<B, Error = Error> + Send + Sync + 'static,
-    PF::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
+    PF::Proposer: Proposer<B, Error = Error>,
     P: Pair + Send + Sync,
     P::Public: AppPublic + Hash + Member + Encode + Decode,
     P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
-    I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
+    I: BlockImport<B> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
     SO: SyncOracle + Send + Sync + Clone,
     L: sc_consensus::JustificationSyncLink<B>,
@@ -201,19 +201,18 @@ where
         Client:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
         AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
-        BI: BlockImport<B, Transaction = sp_api::TransactionFor<Client, B>> + Send + Sync + 'static,
+        BI: BlockImport<B> + Send + Sync + 'static,
         SO: SyncOracle + Send + Sync + Clone + 'static,
         BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
         PF: Environment<B, Error = Error> + Send + Sync + 'static,
         PF::Proposer: Proposer<
             B,
             Error = Error,
-            Transaction = sp_api::TransactionFor<Client, B>,
             ProofRecording = EnableProofRecording,
             Proof = <EnableProofRecording as ProofRecording>::Proof,
         >,
         Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
-        P: Pair + Send + Sync,
+        P: Pair + Send + Sync + 'static,
         P::Public: AppPublic + Hash + Member + Encode + Decode,
         P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
         GOH: RetrieveAuthoritiesFromOrchestrator<
@@ -369,8 +368,8 @@ where
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
-    E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
-    I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
+    E::Proposer: Proposer<B, Error = Error>,
+    I: BlockImport<B> + Send + Sync + 'static,
     P: Pair + Send + Sync,
     P::Public: AppPublic + Public + Member + Encode + Decode + Hash,
     P::Signature: TryFrom<Vec<u8>> + Member + Encode + Decode + Hash + Debug,
@@ -409,7 +408,7 @@ where
     }
 
     async fn claim_slot(
-        &self,
+        &mut self,
         _header: &B::Header,
         slot: Slot,
         epoch_data: &Self::AuxData,
@@ -453,13 +452,10 @@ where
         header: B::Header,
         header_hash: &B::Hash,
         body: Vec<B::Extrinsic>,
-        storage_changes: StorageChanges<<Self::BlockImport as BlockImport<B>>::Transaction, B>,
+        storage_changes: StorageChanges<B>,
         public: Self::Claim,
         _epoch: Self::AuxData,
-    ) -> Result<
-        sc_consensus::BlockImportParams<B, <Self::BlockImport as BlockImport<B>>::Transaction>,
-        sp_consensus::Error,
-    > {
+    ) -> Result<sc_consensus::BlockImportParams<B>, sp_consensus::Error> {
         // sign the pre-sealed hash of the block and then
         // add it to a digest item.
         let signature = Keystore::sign_with(
@@ -632,8 +628,8 @@ where
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
-    E::Proposer: Proposer<B, Error = Error, Transaction = sp_api::TransactionFor<C, B>>,
-    I: BlockImport<B, Transaction = sp_api::TransactionFor<C, B>> + Send + Sync + 'static,
+    E::Proposer: Proposer<B, Error = Error>,
+    I: BlockImport<B> + Send + Sync + 'static,
     P: Pair + Send + Sync,
     P::Public: AppPublic + Public + Member + Encode + Decode + Hash,
     P::Signature: TryFrom<Vec<u8>> + Member + Encode + Decode + Hash + Debug,
