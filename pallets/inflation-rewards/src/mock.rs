@@ -27,24 +27,19 @@ use {
     },
     sp_core::H256,
     sp_runtime::{
-        testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
-        Perbill,
+        BuildStorage, Perbill,
     },
     tp_core::ParaId,
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 pub type AccountId = u64;
 pub type Balance = u128;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
         System: frame_system,
         Balances: pallet_balances,
@@ -55,18 +50,17 @@ frame_support::construct_runtime!(
 
 impl frame_system::Config for Test {
     type BaseCallFilter = Everything;
+    type Block = Block;
     type BlockWeights = ();
     type BlockLength = ();
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
+    type Nonce = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
@@ -95,7 +89,7 @@ impl pallet_balances::Config for Test {
     type AccountStore = System;
     type FreezeIdentifier = ();
     type MaxFreezes = ();
-    type HoldIdentifier = ();
+    type RuntimeHoldReason = ();
     type MaxHolds = ConstU32<5>;
     type WeightInfo = ();
 }
@@ -219,8 +213,8 @@ impl pallet_inflation_rewards::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    let mut t = frame_system::GenesisConfig::default()
-        .build_storage::<Test>()
+    let mut t = frame_system::GenesisConfig::<Test>::default()
+        .build_storage()
         .unwrap();
 
     let balances = vec![(0, 10_000)];
