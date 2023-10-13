@@ -115,6 +115,10 @@ impl mock_data::Config for Test {}
 
 pub struct HostConfigurationGetter;
 
+parameter_types! {
+    pub const ParachainId: ParaId = ParaId::new(200);
+}
+
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
     fn min_collators_for_orchestrator(_session_index: u32) -> u32 {
         MockData::mock().min_orchestrator_chain_collators
@@ -161,6 +165,7 @@ impl pallet_collator_assignment::Config for Test {
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
+    type SelfParaId = ParachainId;
     type WeightInfo = ();
 }
 

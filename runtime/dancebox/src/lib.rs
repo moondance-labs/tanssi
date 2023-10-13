@@ -549,6 +549,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
+    type SelfParaId = ParachainInfo;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
@@ -978,14 +979,19 @@ parameter_types! {
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
 
+use nimbus_primitives::SlotBeacon;
+use tp_traits::GetContainerChainAuthor;
+
 pub struct GetSelfChainBlockAuthor;
 impl Get<AccountId32> for GetSelfChainBlockAuthor {
     fn get() -> AccountId32 {
-        AuthorityMapping::authority_id_mapping(Session::current_index())
-            .expect("no authorities for this session")
-            .get(&AuthorInherent::get())
-            .expect("invalid block author")
-            .to_owned()
+        // TODO: we should do a refactor here, and use either authority-mapping or collator-assignemnt
+        // we should also make sure we actually account for the weight of these
+        // although most of these should be cached as they are read every block
+        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        let self_para_id = ParachainInfo::get();
+        let author = CollatorAssignment::author_for_slot(slot.into(), self_para_id);
+        author.expect("author should be set")
     }
 }
 
@@ -1412,6 +1418,7 @@ impl_runtime_apis! {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
             let parent_number = System::block_number();
+
             let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
 
             let session_index = if should_end_session {
@@ -1422,6 +1429,7 @@ impl_runtime_apis! {
             };
 
             let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+
             let self_para_id = ParachainInfo::get();
 
             if para_id == self_para_id {
