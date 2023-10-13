@@ -16,8 +16,6 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use futures::FutureExt;
-use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 #[allow(deprecated)]
 use {
     crate::{
@@ -82,6 +80,7 @@ use {
     },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
+use {futures::FutureExt, sc_transaction_pool_api::OffchainTransactionPoolFactory};
 
 type FullBackend = TFullBackend<Block>;
 type MaybeSelectChain = Option<sc_consensus::LongestChain<FullBackend, Block>>;

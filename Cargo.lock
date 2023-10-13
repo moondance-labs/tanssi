@@ -7947,6 +7947,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "tp-traits",
 ]
 
 [[package]]

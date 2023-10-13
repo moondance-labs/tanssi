@@ -23,8 +23,7 @@ use {
     frame_support::{traits::Currency, BoundedVec},
     frame_system::RawOrigin,
     sp_core::Get,
-    sp_std::vec,
-    sp_std::vec::Vec,
+    sp_std::{vec, vec::Vec},
     tp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
     tp_traits::ParaId,
 };

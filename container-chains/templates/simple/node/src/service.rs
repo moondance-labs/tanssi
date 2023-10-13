@@ -37,8 +37,8 @@ use {
 };
 
 // Substrate Imports
-use futures::FutureExt;
 use {
+    futures::FutureExt,
     sc_client_api::Backend,
     sc_consensus::ImportQueue,
     sc_executor::NativeElseWasmExecutor,
