@@ -880,8 +880,8 @@ impl pallet_root_testing::Config for Runtime {}
 parameter_types! {
     pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
     pub const CurrencyHoldReason: HoldReason = HoldReason::PooledStake;
-    pub const InitialManualClaimShareValue: u128 = currency::KILODANCE;
-    pub const InitialAutoCompoundingShareValue: u128 = currency::KILODANCE;
+    pub const InitialManualClaimShareValue: u128 = currency::MILLIDANCE;
+    pub const InitialAutoCompoundingShareValue: u128 = currency::MILLIDANCE;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     // Need to wait 2 sessions before being able to join or leave staking pools
