@@ -35,8 +35,7 @@ use {
     sp_runtime::{
         testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
-        BoundedVec,
-        BuildStorage
+        BoundedVec, BuildStorage,
     },
     sp_state_machine::StorageProof,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
