@@ -64,6 +64,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
+    pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::{SessionManager, ShouldEndSession},
@@ -1003,7 +1004,7 @@ impl pallet_inflation_rewards::Config for Runtime {
     type MaxAuthors = ConstU32<80>;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
-    type StakingRewardsDistributor = PooledStaking;
+    type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
     type RewardsPortion = RewardsPortion;
 }
 

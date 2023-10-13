@@ -26,6 +26,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
+use {core::marker::PhantomData, sp_runtime::TokenError};
 
 #[cfg(test)]
 mod mock;
@@ -280,5 +281,37 @@ pub mod pallet {
         fn end_session(_: SessionIndex) {
             // we don't care.
         }
+    }
+}
+
+/// If the rewarded account is an Invulnerable, distribute the entire reward
+/// amount to them. Otherwise use the `Fallback` distribution.
+pub struct InvulnerableRewardDistribution<Runtime, Currency, Fallback>(
+    PhantomData<(Runtime, Currency, Fallback)>,
+);
+
+type CreditOf<Runtime, Currency> =
+    frame_support::traits::fungible::Credit<<Runtime as frame_system::Config>::AccountId, Currency>;
+pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
+impl<Runtime, Currency, Fallback>
+    tp_traits::DistributeRewards<AccountIdOf<Runtime>, CreditOf<Runtime, Currency>>
+    for InvulnerableRewardDistribution<Runtime, Currency, Fallback>
+where
+    Runtime: frame_system::Config + Config,
+    Fallback: tp_traits::DistributeRewards<AccountIdOf<Runtime>, CreditOf<Runtime, Currency>>,
+    Currency: frame_support::traits::fungible::Balanced<AccountIdOf<Runtime>>,
+{
+    fn distribute_rewards(
+        rewarded: AccountIdOf<Runtime>,
+        amount: CreditOf<Runtime, Currency>,
+    ) -> frame_support::pallet_prelude::DispatchResultWithPostInfo {
+        if !Invulnerables::<Runtime>::get().contains(&rewarded) {
+            return Fallback::distribute_rewards(rewarded, amount);
+        }
+
+        Currency::resolve(&rewarded, amount).map_err(|_| TokenError::NotExpendable)?;
+
+        Ok(().into())
     }
 }
