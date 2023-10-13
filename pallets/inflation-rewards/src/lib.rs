@@ -165,41 +165,6 @@ pub mod pallet {
         pub rewards_per_chain: BalanceOf<T>,
     }
 
-    /// Pending authors per block and per container chain
-    #[pallet::storage]
-    #[pallet::getter(fn pending_rewards)]
-    pub(super) type PendingAuthors<T: Config> = StorageDoubleMap<
-        _,
-        Blake2_128Concat,
-        BlockNumber,
-        Twox64Concat,
-        ParaId,
-        PendingAuthorsValue<T>,
-        OptionQuery,
-    >;
-
-    /// Information extracted from a container chain header
-    #[derive(
-        Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
-    )]
-    #[scale_info(skip_type_params(T))]
-    pub struct PendingAuthorsValue<T: Config> {
-        pub authors: BoundedVec<(T::AccountId, u32), T::MaxAuthors>,
-        pub last_block_number: BlockNumber,
-    }
-    impl<T: Config> PendingAuthorsValue<T> {
-        pub(super) fn new(author: T::AccountId, block_number: BlockNumber) -> Self {
-            let mut authors = BoundedVec::new();
-            authors
-                .try_push((author, 1))
-                .expect("MaxAuthors should be greather than zero");
-            Self {
-                authors,
-                last_block_number: block_number,
-            }
-        }
-    }
-
     impl<T: Config> Pallet<T> {
         fn reward_orchestrator_author() -> Weight {
             let mut total_weight = T::DbWeight::get().reads(1);
@@ -236,83 +201,51 @@ pub mod pallet {
     }
 }
 
+// This function should only be used to **reward** a container author.
+// There will be no additional check other than checking if we have already
+// rewarded this author for **in this tanssi block**
+// Any additional check should be done in the calling function
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     fn on_container_author_noted(
         author: &T::AccountId,
-        block_number: BlockNumber,
+        _block_number: BlockNumber,
         para_id: ParaId,
     ) -> Weight {
-        let mut total_weight = T::DbWeight::get().reads_writes(1, 1);
-        let pending_authors_per_chain = if let Some(mut pending_authors_per_chain) =
-            PendingAuthors::<T>::get(block_number, para_id)
-        {
-            // track how many blocks produced by each author
-            if block_number > pending_authors_per_chain.last_block_number {
-                match pending_authors_per_chain
-                    .authors
-                    .binary_search_by(|(account, _)| account.cmp(author))
-                {
-                    Ok(index) => {
-                        pending_authors_per_chain.authors[index].1 += 1;
+        let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
+        // We take chains to reward, to see what containers are left to reward
+        if let Some(mut container_chains_to_reward) = ChainsToReward::<T>::get() {
+            // If we find the index is because we still have not rewarded it
+            if let Ok(index) = container_chains_to_reward.para_ids.binary_search(&para_id) {
+                // we distribute rewards to the author
+                match T::StakingRewardsDistributor::distribute_rewards(
+                    author.clone(),
+                    T::Currency::withdraw(
+                        &T::PendingRewardsAccount::get(),
+                        container_chains_to_reward.rewards_per_chain,
+                        Precision::BestEffort,
+                        Preservation::Expendable,
+                        Fortitude::Force,
+                    )
+                    .unwrap_or(CreditOf::<T>::zero()),
+                ) {
+                    Ok(frame_support::dispatch::PostDispatchInfo {
+                        actual_weight: Some(weight),
+                        ..
+                    }) => total_weight += weight,
+                    Err(e) => {
+                        log::debug!("Fail to distribute rewards: {:?}", e)
                     }
-                    Err(index) => {
-                        if pending_authors_per_chain
-                            .authors
-                            .try_insert(index, (author.clone(), 1))
-                            .is_err()
-                        {
-                            log::warn!("too many authors");
-                        }
-                    }
+                    _ => {}
                 }
-            }
-            pending_authors_per_chain
-        } else if block_number > 0 {
-            let previous_block_number = block_number - 1;
-            if let Some(authors_to_reward) =
-                PendingAuthors::<T>::take(previous_block_number, para_id)
-            {
-                if !authors_to_reward.authors.is_empty() {
-                    total_weight += T::DbWeight::get().reads(1);
-                    if let Some(container_chains_to_reward) = ChainsToReward::<T>::get() {
-                        total_weight += T::DbWeight::get().reads(1);
+                // we remove the para id from container-chains to reward
+                // this makes sure we dont reward it twice in the same block
+                container_chains_to_reward.para_ids.remove(index);
 
-                        // Compute amount to reward per block
-                        let rewards_per_block: BalanceOf<T> = container_chains_to_reward
-                            .rewards_per_chain
-                            / (authors_to_reward.authors.len() as u32).into();
-
-                        // Reward all blocks authors in `authors_to_reward`
-                        for (author, blocks) in authors_to_reward.authors {
-                            match T::StakingRewardsDistributor::distribute_rewards(
-                                author,
-                                T::Currency::withdraw(
-                                    &T::PendingRewardsAccount::get(),
-                                    rewards_per_block * blocks.into(),
-                                    Precision::BestEffort,
-                                    Preservation::Expendable,
-                                    Fortitude::Force,
-                                )
-                                .unwrap_or(CreditOf::<T>::zero()),
-                            ) {
-                                Ok(frame_support::dispatch::PostDispatchInfo {
-                                    actual_weight: Some(weight),
-                                    ..
-                                }) => total_weight += weight,
-                                Err(e) => {
-                                    log::debug!("Fail to distribute rewards: {:?}", e)
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                }
+                total_weight += T::DbWeight::get().writes(1);
+                // Keep track of chains to reward
+                ChainsToReward::<T>::put(container_chains_to_reward);
             }
-            PendingAuthorsValue::new(author.clone(), block_number)
-        } else {
-            PendingAuthorsValue::new(author.clone(), block_number)
-        };
-        PendingAuthors::<T>::insert(block_number, para_id, pending_authors_per_chain);
+        }
         total_weight
     }
 }

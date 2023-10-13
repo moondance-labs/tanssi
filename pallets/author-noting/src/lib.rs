@@ -169,14 +169,15 @@ pub mod pallet {
                                 para_id,
                                 |maybe_old_block_info: &mut Option<ContainerChainBlockInfo<T>>| {
                                     if let Some(ref mut old_block_info) = maybe_old_block_info {
-                                        total_weight = total_weight.saturating_add(
-                                            T::AuthorNotingHook::on_container_author_noted(
-                                                &block_info.author,
-                                                block_info.block_number,
-                                                para_id,
-                                            ),
-                                        );
                                         if block_info.block_number > old_block_info.block_number {
+                                            // We only reward author if the block increases
+                                            total_weight = total_weight.saturating_add(
+                                                T::AuthorNotingHook::on_container_author_noted(
+                                                    &block_info.author,
+                                                    block_info.block_number,
+                                                    para_id,
+                                                ),
+                                            );
                                             let _ = core::mem::replace(old_block_info, block_info);
                                         }
                                     } else {
