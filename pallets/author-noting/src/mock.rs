@@ -33,7 +33,6 @@ use {
     polkadot_primitives::Slot,
     sp_core::H256,
     sp_runtime::{
-        testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
         BoundedVec, BuildStorage,
     },

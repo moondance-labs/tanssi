@@ -33,6 +33,7 @@ import type {
     PalletBalancesIdAmount,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
+    PalletInflationRewardsChainsToRewardValue,
     PalletInitializerBufferedSessionChange,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingPendingOperationKey,
@@ -260,6 +261,17 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        inflationRewards: {
+            /** Container chains to reward per block */
+            chainsToReward: AugmentedQuery<
+                ApiType,
+                () => Observable<Option<PalletInflationRewardsChainsToRewardValue>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

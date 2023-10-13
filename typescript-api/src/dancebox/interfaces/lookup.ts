@@ -2528,21 +2528,26 @@ export default {
             SwapResultsInZeroShares: "Null",
         },
     },
-    /** Lookup324: cumulus_pallet_xcmp_queue::InboundChannelDetails */
+    /** Lookup323: pallet_inflation_rewards::pallet::ChainsToRewardValue<T> */
+    PalletInflationRewardsChainsToRewardValue: {
+        paraIds: "Vec<u32>",
+        rewardsPerChain: "u128",
+    },
+    /** Lookup325: cumulus_pallet_xcmp_queue::InboundChannelDetails */
     CumulusPalletXcmpQueueInboundChannelDetails: {
         sender: "u32",
         state: "CumulusPalletXcmpQueueInboundState",
         messageMetadata: "Vec<(u32,PolkadotParachainPrimitivesPrimitivesXcmpMessageFormat)>",
     },
-    /** Lookup325: cumulus_pallet_xcmp_queue::InboundState */
+    /** Lookup326: cumulus_pallet_xcmp_queue::InboundState */
     CumulusPalletXcmpQueueInboundState: {
         _enum: ["Ok", "Suspended"],
     },
-    /** Lookup328: polkadot_parachain_primitives::primitives::XcmpMessageFormat */
+    /** Lookup329: polkadot_parachain_primitives::primitives::XcmpMessageFormat */
     PolkadotParachainPrimitivesPrimitivesXcmpMessageFormat: {
         _enum: ["ConcatenatedVersionedXcm", "ConcatenatedEncodedBlob", "Signals"],
     },
-    /** Lookup331: cumulus_pallet_xcmp_queue::OutboundChannelDetails */
+    /** Lookup332: cumulus_pallet_xcmp_queue::OutboundChannelDetails */
     CumulusPalletXcmpQueueOutboundChannelDetails: {
         recipient: "u32",
         state: "CumulusPalletXcmpQueueOutboundState",
@@ -2550,11 +2555,11 @@ export default {
         firstIndex: "u16",
         lastIndex: "u16",
     },
-    /** Lookup332: cumulus_pallet_xcmp_queue::OutboundState */
+    /** Lookup333: cumulus_pallet_xcmp_queue::OutboundState */
     CumulusPalletXcmpQueueOutboundState: {
         _enum: ["Ok", "Suspended"],
     },
-    /** Lookup334: cumulus_pallet_xcmp_queue::QueueConfigData */
+    /** Lookup335: cumulus_pallet_xcmp_queue::QueueConfigData */
     CumulusPalletXcmpQueueQueueConfigData: {
         suspendThreshold: "u32",
         dropThreshold: "u32",
@@ -2563,27 +2568,27 @@ export default {
         weightRestrictDecay: "SpWeightsWeightV2Weight",
         xcmpMaxIndividualWeight: "SpWeightsWeightV2Weight",
     },
-    /** Lookup336: cumulus_pallet_xcmp_queue::pallet::Error<T> */
+    /** Lookup337: cumulus_pallet_xcmp_queue::pallet::Error<T> */
     CumulusPalletXcmpQueueError: {
         _enum: ["FailedToSend", "BadXcmOrigin", "BadXcm", "BadOverweightIndex", "WeightOverLimit"],
     },
-    /** Lookup337: cumulus_pallet_xcm::pallet::Error<T> */
+    /** Lookup338: cumulus_pallet_xcm::pallet::Error<T> */
     CumulusPalletXcmError: "Null",
-    /** Lookup338: cumulus_pallet_dmp_queue::ConfigData */
+    /** Lookup339: cumulus_pallet_dmp_queue::ConfigData */
     CumulusPalletDmpQueueConfigData: {
         maxIndividual: "SpWeightsWeightV2Weight",
     },
-    /** Lookup339: cumulus_pallet_dmp_queue::PageIndexData */
+    /** Lookup340: cumulus_pallet_dmp_queue::PageIndexData */
     CumulusPalletDmpQueuePageIndexData: {
         beginUsed: "u32",
         endUsed: "u32",
         overweightCount: "u64",
     },
-    /** Lookup342: cumulus_pallet_dmp_queue::pallet::Error<T> */
+    /** Lookup343: cumulus_pallet_dmp_queue::pallet::Error<T> */
     CumulusPalletDmpQueueError: {
         _enum: ["Unknown", "OverLimit"],
     },
-    /** Lookup343: pallet_xcm::pallet::QueryStatus<BlockNumber> */
+    /** Lookup344: pallet_xcm::pallet::QueryStatus<BlockNumber> */
     PalletXcmQueryStatus: {
         _enum: {
             Pending: {
@@ -2602,7 +2607,7 @@ export default {
             },
         },
     },
-    /** Lookup347: staging_xcm::VersionedResponse */
+    /** Lookup348: staging_xcm::VersionedResponse */
     StagingXcmVersionedResponse: {
         _enum: {
             __Unused0: "Null",
@@ -2611,7 +2616,7 @@ export default {
             V3: "StagingXcmV3Response",
         },
     },
-    /** Lookup353: pallet_xcm::pallet::VersionMigrationStage */
+    /** Lookup354: pallet_xcm::pallet::VersionMigrationStage */
     PalletXcmVersionMigrationStage: {
         _enum: {
             MigrateSupportedVersion: "Null",
@@ -2620,7 +2625,7 @@ export default {
             MigrateAndNotifyOldTargets: "Null",
         },
     },
-    /** Lookup355: staging_xcm::VersionedAssetId */
+    /** Lookup356: staging_xcm::VersionedAssetId */
     StagingXcmVersionedAssetId: {
         _enum: {
             __Unused0: "Null",
@@ -2629,14 +2634,14 @@ export default {
             V3: "StagingXcmV3MultiassetAssetId",
         },
     },
-    /** Lookup356: pallet_xcm::pallet::RemoteLockedFungibleRecord<ConsumerIdentifier, MaxConsumers> */
+    /** Lookup357: pallet_xcm::pallet::RemoteLockedFungibleRecord<ConsumerIdentifier, MaxConsumers> */
     PalletXcmRemoteLockedFungibleRecord: {
         amount: "u128",
         owner: "StagingXcmVersionedMultiLocation",
         locker: "StagingXcmVersionedMultiLocation",
         consumers: "Vec<(Null,u128)>",
     },
-    /** Lookup363: pallet_xcm::pallet::Error<T> */
+    /** Lookup364: pallet_xcm::pallet::Error<T> */
     PalletXcmError: {
         _enum: [
             "Unreachable",
@@ -2661,7 +2666,7 @@ export default {
             "InUse",
         ],
     },
-    /** Lookup365: sp_runtime::MultiSignature */
+    /** Lookup366: sp_runtime::MultiSignature */
     SpRuntimeMultiSignature: {
         _enum: {
             Ed25519: "SpCoreEd25519Signature",
@@ -2669,26 +2674,26 @@ export default {
             Ecdsa: "SpCoreEcdsaSignature",
         },
     },
-    /** Lookup366: sp_core::ed25519::Signature */
+    /** Lookup367: sp_core::ed25519::Signature */
     SpCoreEd25519Signature: "[u8;64]",
-    /** Lookup368: sp_core::sr25519::Signature */
+    /** Lookup369: sp_core::sr25519::Signature */
     SpCoreSr25519Signature: "[u8;64]",
-    /** Lookup369: sp_core::ecdsa::Signature */
+    /** Lookup370: sp_core::ecdsa::Signature */
     SpCoreEcdsaSignature: "[u8;65]",
-    /** Lookup372: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
+    /** Lookup373: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
     FrameSystemExtensionsCheckNonZeroSender: "Null",
-    /** Lookup373: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
+    /** Lookup374: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
     FrameSystemExtensionsCheckSpecVersion: "Null",
-    /** Lookup374: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
+    /** Lookup375: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
     FrameSystemExtensionsCheckTxVersion: "Null",
-    /** Lookup375: frame_system::extensions::check_genesis::CheckGenesis<T> */
+    /** Lookup376: frame_system::extensions::check_genesis::CheckGenesis<T> */
     FrameSystemExtensionsCheckGenesis: "Null",
-    /** Lookup378: frame_system::extensions::check_nonce::CheckNonce<T> */
+    /** Lookup379: frame_system::extensions::check_nonce::CheckNonce<T> */
     FrameSystemExtensionsCheckNonce: "Compact<u32>",
-    /** Lookup379: frame_system::extensions::check_weight::CheckWeight<T> */
+    /** Lookup380: frame_system::extensions::check_weight::CheckWeight<T> */
     FrameSystemExtensionsCheckWeight: "Null",
-    /** Lookup380: pallet_transaction_payment::ChargeTransactionPayment<T> */
+    /** Lookup381: pallet_transaction_payment::ChargeTransactionPayment<T> */
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-    /** Lookup381: dancebox_runtime::Runtime */
+    /** Lookup382: dancebox_runtime::Runtime */
     DanceboxRuntimeRuntime: "Null",
 };

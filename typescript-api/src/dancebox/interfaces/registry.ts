@@ -82,6 +82,7 @@ import type {
     PalletConfigurationCall,
     PalletConfigurationError,
     PalletConfigurationHostConfiguration,
+    PalletInflationRewardsChainsToRewardValue,
     PalletInitializerBufferedSessionChange,
     PalletInvulnerablesCall,
     PalletInvulnerablesError,
@@ -296,6 +297,7 @@ declare module "@polkadot/types/types/registry" {
         PalletConfigurationCall: PalletConfigurationCall;
         PalletConfigurationError: PalletConfigurationError;
         PalletConfigurationHostConfiguration: PalletConfigurationHostConfiguration;
+        PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInitializerBufferedSessionChange: PalletInitializerBufferedSessionChange;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
         PalletInvulnerablesError: PalletInvulnerablesError;
