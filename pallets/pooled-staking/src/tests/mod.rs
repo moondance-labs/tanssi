@@ -18,6 +18,7 @@ mod candidates;
 mod delegator_flow;
 mod manual_rewards;
 mod rebalance;
+mod rewards;
 
 use {
     crate::{

@@ -102,7 +102,7 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn on_initialize(_n: T::BlockNumber) -> Weight {
+        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
             let mut weight = Weight::zero();
 
             // We clear this storage item to make sure its always included
@@ -116,7 +116,7 @@ pub mod pallet {
             weight
         }
 
-        fn on_finalize(_: T::BlockNumber) {
+        fn on_finalize(_: BlockNumberFor<T>) {
             assert!(
                 <DidSetContainerAuthorData<T>>::exists(),
                 "Container chain author data needs to be present in every block!"
@@ -201,6 +201,15 @@ pub mod pallet {
             });
             Ok(())
         }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::kill_author_data())]
+        pub fn kill_author_data(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            ensure_root(origin)?;
+            LatestAuthor::<T>::remove(para_id);
+            Self::deposit_event(Event::RemovedAuthorData { para_id });
+            Ok(())
+        }
     }
 
     #[pallet::event]
@@ -212,6 +221,8 @@ pub mod pallet {
             block_number: BlockNumber,
             new_author: T::AccountId,
         },
+        /// Removed author data
+        RemovedAuthorData { para_id: ParaId },
     }
 
     #[pallet::storage]

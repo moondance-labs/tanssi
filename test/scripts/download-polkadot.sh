@@ -5,7 +5,7 @@ set -e
 
 # Grab Polkadot version
 branch=$(egrep -o '/polkadot.*#([^\"]*)' $(dirname $0)/../../Cargo.lock | head -1 | sed 's/.*release-//#')
-polkadot_release=$(echo $branch | sed 's/#.*//' | sed 's/\/polkadot?branch=tanssi-polkadot-v//')
+polkadot_release=$(echo $branch | sed 's/#.*//' | sed 's/\/polkadot-sdk?branch=tanssi-polkadot-v//')
 
 # Always run the commands from the "test" dir
 cd $(dirname $0)/..
@@ -16,11 +16,25 @@ if [[ -f tmp/polkadot ]]; then
 		exit 0
 	else
 		echo "Updating polkadot binary..."
+
 		pnpm moonwall download polkadot $polkadot_release tmp
 		chmod +x tmp/polkadot
+
+		pnpm moonwall download polkadot-execute-worker $polkadot_release tmp
+		chmod +x tmp/polkadot-execute-worker
+
+		pnpm moonwall download polkadot-prepare-worker $polkadot_release tmp
+		chmod +x tmp/polkadot-prepare-worker
+
 	fi
 else
 	echo "Polkadot binary not found, downloading..."
 	pnpm moonwall download polkadot $polkadot_release tmp
 	chmod +x tmp/polkadot
+
+	pnpm moonwall download polkadot-execute-worker $polkadot_release tmp
+	chmod +x tmp/polkadot-execute-worker
+
+	pnpm moonwall download polkadot-prepare-worker $polkadot_release tmp
+	chmod +x tmp/polkadot-prepare-worker
 fi

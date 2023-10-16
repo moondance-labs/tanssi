@@ -22,7 +22,7 @@
 
 use {
     parity_scale_codec::Decode,
-    sp_runtime::traits::HashFor,
+    sp_runtime::traits::HashingFor,
     sp_state_machine::{Backend, TrieBackend, TrieBackendBuilder},
     sp_trie::{HashDBT, MemoryDB, StorageProof, EMPTY_PREFIX},
 };
@@ -48,7 +48,7 @@ pub enum ReadEntryErr {
 fn read_entry<T, B, Block>(backend: &B, key: &[u8], fallback: Option<T>) -> Result<T, ReadEntryErr>
 where
     T: Decode,
-    B: Backend<HashFor<Block>>,
+    B: Backend<HashingFor<Block>>,
     Block: sp_runtime::traits::Block,
 {
     backend
@@ -68,7 +68,7 @@ where
 fn read_optional_entry<T, B, Block>(backend: &B, key: &[u8]) -> Result<Option<T>, ReadEntryErr>
 where
     T: Decode,
-    B: Backend<HashFor<Block>>,
+    B: Backend<HashingFor<Block>>,
     Block: sp_runtime::traits::Block,
 {
     match read_entry::<T, B, Block>(backend, key, None) {
@@ -82,7 +82,7 @@ where
 ///
 /// This state proof is extracted from the relay chain block we are building on top of.
 pub struct GenericStateProof<Block: sp_runtime::traits::Block> {
-    trie_backend: TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>,
+    trie_backend: TrieBackend<MemoryDB<HashingFor<Block>>, HashingFor<Block>>,
 }
 
 impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
@@ -97,7 +97,7 @@ impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
         // Retrieve whether the proof is empty
         let proof_empty = proof.is_empty();
 
-        let db = proof.into_memory_db::<HashFor<Block>>();
+        let db = proof.into_memory_db::<HashingFor<Block>>();
         // If the proof is empty we should not compare against any root, but rather, expect that the pallet
         // will dot he job when looking for certain keys
         if !db.contains(&relay_parent_storage_root, EMPTY_PREFIX) && !proof_empty {
@@ -118,7 +118,7 @@ impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
     where
         T: Decode,
     {
-        read_entry::<T, TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>, Block>(
+        read_entry::<T, TrieBackend<MemoryDB<HashingFor<Block>>, HashingFor<Block>>, Block>(
             &self.trie_backend,
             key,
             fallback,
@@ -133,7 +133,7 @@ impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
     where
         T: Decode,
     {
-        read_optional_entry::<T, TrieBackend<MemoryDB<HashFor<Block>>, HashFor<Block>>, Block>(
+        read_optional_entry::<T, TrieBackend<MemoryDB<HashingFor<Block>>, HashingFor<Block>>, Block>(
             &self.trie_backend,
             key,
         )

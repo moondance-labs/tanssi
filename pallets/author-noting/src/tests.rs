@@ -30,7 +30,7 @@ use {
     sp_core::H256,
     sp_runtime::{
         generic::DigestItem,
-        traits::{BlakeTwo256, HashFor},
+        traits::{BlakeTwo256, HashingFor},
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::GetCurrentContainerChains,
@@ -313,7 +313,7 @@ fn test_should_panic_with_proof_for_not_including_required_para() {
 
     // lets get the generated proof here. However we will modify later on the proof we pass to include para id 1002
     let (root, proof) = proof_item.clone().into_state_root_and_proof();
-    let db = proof.into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
+    let db = proof.into_memory_db::<HashingFor<cumulus_primitives_core::relay_chain::Block>>();
     let backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
 
     // this should contain both keys (1001, 1002). but we will now generate a proof without one of the keys (1001)
@@ -361,7 +361,7 @@ fn test_should_panic_with_empty_proof() {
 
     // lets get the generated proof here. However we will modify later on the proof to not include anything
     let (root, proof) = proof_item.clone().into_state_root_and_proof();
-    let db = proof.into_memory_db::<HashFor<cumulus_primitives_core::relay_chain::Block>>();
+    let db = proof.into_memory_db::<HashingFor<cumulus_primitives_core::relay_chain::Block>>();
     let backend = sp_state_machine::TrieBackendBuilder::new(db, root).build();
 
     // Empty relevant keys
@@ -649,4 +649,48 @@ fn weights_assigned_to_extrinsics_are_correct() {
             )
         );
     });
+}
+
+#[test]
+fn test_kill_author_data() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: 1,
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
+            );
+            assert_ok!(AuthorNoting::kill_author_data(
+                RuntimeOrigin::root(),
+                1001.into(),
+            ));
+            assert_eq!(AuthorNoting::latest_author(ParaId::from(1001)), None);
+            System::assert_last_event(
+                Event::RemovedAuthorData {
+                    para_id: 1001.into(),
+                }
+                .into(),
+            );
+        });
 }

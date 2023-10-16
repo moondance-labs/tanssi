@@ -24,7 +24,7 @@ use {
     sc_client_api::{AuxStore, UsageProvider},
     sc_consensus::BlockImportParams,
     sc_consensus_manual_seal::{ConsensusDataProvider, Error},
-    sp_api::{HeaderT, ProvideRuntimeApi, TransactionFor},
+    sp_api::{HeaderT, ProvideRuntimeApi},
     sp_blockchain::{HeaderBackend, HeaderMetadata},
     sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, Slot, SlotDuration},
     sp_core::Pair,
@@ -84,7 +84,6 @@ where
     C::Api: TanssiAuthorityAssignmentApi<B, nimbus_primitives::NimbusId>,
     P: Send + Sync,
 {
-    type Transaction = TransactionFor<C, B>;
     type Proof = P;
 
     fn create_digest(&self, parent: &B::Header, inherents: &InherentData) -> Result<Digest, Error> {
@@ -129,7 +128,7 @@ where
     fn append_block_import(
         &self,
         _parent: &B::Header,
-        _params: &mut BlockImportParams<B, Self::Transaction>,
+        _params: &mut BlockImportParams<B>,
         _inherents: &InherentData,
         _proof: Self::Proof,
     ) -> Result<(), Error> {
@@ -192,7 +191,6 @@ where
         + ProvideRuntimeApi<B>,
     P: Send + Sync,
 {
-    type Transaction = TransactionFor<C, B>;
     type Proof = P;
 
     fn create_digest(
@@ -233,7 +231,7 @@ where
     fn append_block_import(
         &self,
         _parent: &B::Header,
-        _params: &mut BlockImportParams<B, Self::Transaction>,
+        _params: &mut BlockImportParams<B>,
         _inherents: &InherentData,
         _proof: Self::Proof,
     ) -> Result<(), Error> {

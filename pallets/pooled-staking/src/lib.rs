@@ -67,7 +67,7 @@ pub mod pallet {
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
             traits::{fungible, tokens::Balance, IsType},
-            Blake2_128Concat, RuntimeDebug,
+            Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
         parity_scale_codec::{Decode, Encode, FullCodec},
@@ -565,6 +565,15 @@ pub mod pallet {
             }
             .ok()
             .map(|x| x.0)
+        }
+    }
+
+    impl<T: Config> tp_core::DistributeRewards<Candidate<T>, T::Balance> for Pallet<T> {
+        fn distribute_rewards(
+            candidate: Candidate<T>,
+            rewards: T::Balance,
+        ) -> DispatchResultWithPostInfo {
+            pools::distribute_rewards::<T>(&candidate, rewards)
         }
     }
 }

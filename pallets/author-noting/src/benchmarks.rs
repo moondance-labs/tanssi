@@ -21,6 +21,7 @@ use {
     crate::{Call, Config, Pallet},
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     frame_benchmarking::{account, benchmarks},
+    frame_support::assert_ok,
     frame_system::RawOrigin,
     sp_std::vec,
     tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
@@ -88,6 +89,13 @@ benchmarks! {
         let block_number = 1;
         let author: T::AccountId = account("account id", 0u32, 0u32);
     }: _(RawOrigin::Root, para_id, block_number, author)
+
+    kill_author_data {
+        let para_id = 1000.into();
+        let block_number = 1;
+        let author: T::AccountId = account("account id", 0u32, 0u32);
+        assert_ok!(Pallet::<T>::set_author(RawOrigin::Root.into(), para_id, block_number, author));
+    }: _(RawOrigin::Root, para_id)
 
     impl_benchmark_test_suite!(
         Pallet,

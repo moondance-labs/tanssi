@@ -24,6 +24,7 @@ use {
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::vec,
+    sp_std::vec::Vec,
     tp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
     tp_traits::ParaId,
 };

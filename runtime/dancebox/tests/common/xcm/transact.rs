@@ -26,21 +26,22 @@ use {
         weights::{Weight, WeightToFee},
     },
     parity_scale_codec::Encode,
-    xcm::{
+    staging_xcm::{
         latest::{
             prelude::*,
             Error::{BadOrigin, Barrier},
         },
         VersionedMultiLocation, VersionedXcm,
     },
-    xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
-    xcm_executor::traits::Convert,
+    staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
+    staging_xcm_executor::traits::ConvertLocation,
+    xcm_emulator::Chain,
 };
 
 #[test]
 fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
-    let call = <Dancebox as Para>::RuntimeCall::Configuration(pallet_configuration::Call::<
-        <Dancebox as Para>::Runtime,
+    let call = <Dancebox as Chain>::RuntimeCall::Configuration(pallet_configuration::Call::<
+        <Dancebox as Chain>::Runtime,
     >::set_max_collators {
         new: 50,
     })
@@ -48,7 +49,7 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
     .into();
 
     // XcmPallet send arguments
-    let sudo_origin = <Westend as Relay>::RuntimeOrigin::root();
+    let sudo_origin = <Westend as Chain>::RuntimeOrigin::root();
     let dancebox_para_destination: VersionedMultiLocation =
         Westend::child_location_of(Dancebox::para_id()).into();
 
@@ -77,7 +78,7 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
             bx!(xcm),
         ));
 
-        type RuntimeEvent = <Westend as Relay>::RuntimeEvent;
+        type RuntimeEvent = <Westend as Chain>::RuntimeEvent;
 
         assert_expected_events!(
             Westend,
@@ -89,7 +90,7 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
 
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
         assert_expected_events!(
             Dancebox,
             vec![
@@ -103,8 +104,8 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
 
 #[test]
 fn transact_sudo_from_relay_does_not_have_sudo_power() {
-    let call = <Dancebox as Para>::RuntimeCall::Configuration(pallet_configuration::Call::<
-        <Dancebox as Para>::Runtime,
+    let call = <Dancebox as Chain>::RuntimeCall::Configuration(pallet_configuration::Call::<
+        <Dancebox as Chain>::Runtime,
     >::set_max_collators {
         new: 50,
     })
@@ -112,7 +113,7 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
     .into();
 
     // XcmPallet send arguments
-    let sudo_origin = <Westend as Relay>::RuntimeOrigin::root();
+    let sudo_origin = <Westend as Chain>::RuntimeOrigin::root();
     let dancebox_para_destination: VersionedMultiLocation =
         Westend::child_location_of(Dancebox::para_id()).into();
 
@@ -150,7 +151,7 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
             bx!(xcm),
         ));
 
-        type RuntimeEvent = <Westend as Relay>::RuntimeEvent;
+        type RuntimeEvent = <Westend as Chain>::RuntimeEvent;
 
         assert_expected_events!(
             Westend,
@@ -162,7 +163,7 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
 
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
         assert_expected_events!(
             Dancebox,
             vec![
@@ -179,8 +180,8 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
 
 #[test]
 fn transact_sudo_from_relay_has_signed_origin_powers() {
-    let call = <Dancebox as Para>::RuntimeCall::System(frame_system::Call::<
-        <Dancebox as Para>::Runtime,
+    let call = <Dancebox as Chain>::RuntimeCall::System(frame_system::Call::<
+        <Dancebox as Chain>::Runtime,
     >::remark_with_event {
         remark: b"Test".to_vec(),
     })
@@ -188,7 +189,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
     .into();
 
     // XcmPallet send arguments
-    let sudo_origin = <Westend as Relay>::RuntimeOrigin::root();
+    let sudo_origin = <Westend as Chain>::RuntimeOrigin::root();
     let dancebox_para_destination: VersionedMultiLocation =
         Westend::child_location_of(Dancebox::para_id()).into();
 
@@ -227,7 +228,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
             bx!(xcm),
         ));
 
-        type RuntimeEvent = <Westend as Relay>::RuntimeEvent;
+        type RuntimeEvent = <Westend as Chain>::RuntimeEvent;
 
         assert_expected_events!(
             Westend,
@@ -239,7 +240,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
 
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
         assert_expected_events!(
             Dancebox,
             vec![
@@ -248,7 +249,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
                         sender,
                         ..
                     }) => {
-                    sender: *sender == ParentIsPreset::<dancebox_runtime::AccountId>::convert_ref(MultiLocation::parent()).unwrap(),
+                    sender: *sender == ParentIsPreset::<dancebox_runtime::AccountId>::convert_location(&MultiLocation::parent()).unwrap(),
                 },
             ]
         );
@@ -257,8 +258,8 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
 
 #[test]
 fn transact_sudo_from_frontier_has_signed_origin_powers() {
-    let call = <Dancebox as Para>::RuntimeCall::System(frame_system::Call::<
-        <Dancebox as Para>::Runtime,
+    let call = <Dancebox as Chain>::RuntimeCall::System(frame_system::Call::<
+        <Dancebox as Chain>::Runtime,
     >::remark_with_event {
         remark: b"Test".to_vec(),
     })
@@ -266,7 +267,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     .into();
 
     // XcmPallet send arguments
-    let sudo_origin = <FrontierTemplate as Para>::RuntimeOrigin::root();
+    let sudo_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
     let dancebox_para_destination: VersionedMultiLocation = MultiLocation {
         parents: 1,
         interior: X1(Parachain(Dancebox::para_id().into())),
@@ -310,7 +311,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
             )
         );
 
-        type RuntimeEvent = <FrontierTemplate as Para>::RuntimeEvent;
+        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
 
         assert_expected_events!(
             FrontierTemplate,
@@ -322,7 +323,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
 
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
         assert_expected_events!(
             Dancebox,
             vec![
@@ -331,8 +332,8 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
                         sender,
                         ..
                     }) => {
-                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
-                        MultiLocation{ parents: 1, interior: X1(Parachain(2001u32))}
+                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
+                        &MultiLocation{ parents: 1, interior: X1(Parachain(2001u32))}
                     ).unwrap(),
                 },
             ]
@@ -342,8 +343,8 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
 
 #[test]
 fn transact_sudo_from_simple_has_signed_origin_powers() {
-    let call = <Dancebox as Para>::RuntimeCall::System(frame_system::Call::<
-        <Dancebox as Para>::Runtime,
+    let call = <Dancebox as Chain>::RuntimeCall::System(frame_system::Call::<
+        <Dancebox as Chain>::Runtime,
     >::remark_with_event {
         remark: b"Test".to_vec(),
     })
@@ -351,7 +352,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
     .into();
 
     // XcmPallet send arguments
-    let sudo_origin = <SimpleTemplate as Para>::RuntimeOrigin::root();
+    let sudo_origin = <SimpleTemplate as Chain>::RuntimeOrigin::root();
     let dancebox_para_destination: VersionedMultiLocation = MultiLocation {
         parents: 1,
         interior: X1(Parachain(Dancebox::para_id().into())),
@@ -393,7 +394,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
             bx!(xcm),
         ));
 
-        type RuntimeEvent = <SimpleTemplate as Para>::RuntimeEvent;
+        type RuntimeEvent = <SimpleTemplate as Chain>::RuntimeEvent;
 
         assert_expected_events!(
             SimpleTemplate,
@@ -405,7 +406,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
 
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Para>::RuntimeEvent;
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
         assert_expected_events!(
             Dancebox,
             vec![
@@ -414,8 +415,8 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
                         sender,
                         ..
                     }) => {
-                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain::primitives::Sibling, crate::AccountId>::convert_ref(
-                        MultiLocation{ parents: 1, interior: X1(Parachain(2002u32))}
+                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
+                        &MultiLocation{ parents: 1, interior: X1(Parachain(2002u32))}
                     ).unwrap(),
                 },
             ]

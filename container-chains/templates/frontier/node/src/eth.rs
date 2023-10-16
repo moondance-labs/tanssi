@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-// Substrate
-use sp_runtime::traits::BlakeTwo256;
 // Frontier
 pub use {
     fc_consensus::FrontierBlockImport,
@@ -29,16 +27,12 @@ pub trait EthCompatRuntimeApiCollection:
     sp_api::ApiExt<Block>
     + fp_rpc::EthereumRuntimeRPCApi<Block>
     + fp_rpc::ConvertTransactionRuntimeApi<Block>
-where
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
 {
 }
 
-impl<Api> EthCompatRuntimeApiCollection for Api
-where
+impl<Api> EthCompatRuntimeApiCollection for Api where
     Api: sp_api::ApiExt<Block>
         + fp_rpc::EthereumRuntimeRPCApi<Block>
-        + fp_rpc::ConvertTransactionRuntimeApi<Block>,
-    <Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
+        + fp_rpc::ConvertTransactionRuntimeApi<Block>
 {
 }

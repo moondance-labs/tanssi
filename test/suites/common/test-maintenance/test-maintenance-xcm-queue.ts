@@ -125,7 +125,7 @@ describeSuite({
 
                 // This XCM message coming by HRMP should not be executed since we are in maintenance mode
                 await injectHrmpMessageAndSeal(context, 1, {
-                    type: "XcmVersionedXcm",
+                    type: "StagingXcmVersionedXcm",
                     payload: xcmMessage,
                 } as RawXcmMessage);
 
