@@ -33,10 +33,7 @@ pub use pallet::*;
 use {
     frame_support::{pallet_prelude::*, traits::OneSessionHandler},
     scale_info::TypeInfo,
-    sp_runtime::{
-        traits::{AtLeast32BitUnsigned, Zero},
-        RuntimeAppPublic,
-    },
+    sp_runtime::{traits::AtLeast32BitUnsigned, RuntimeAppPublic},
     sp_std::prelude::*,
 };
 
@@ -91,12 +88,7 @@ impl<T: Config> Pallet<T> {
             validators.clone()
         };
 
-        if session_index == T::SessionIndex::zero() {
-            // Genesis session should be immediately enacted.
-            T::SessionHandler::apply_new_session(false, 0u32.into(), validators, queued);
-        } else {
-            T::SessionHandler::apply_new_session(changed, session_index, validators, queued);
-        }
+        T::SessionHandler::apply_new_session(changed, session_index, validators, queued);
     }
 
     /// Should be called when a new session occurs. Buffers the session notification to be applied
