@@ -41,7 +41,7 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
 }
 
 /// Orcherstrator's parachain id
-const ORCHESTRATOR: ParaId = ParaId::new(1000);
+const ORCHESTRATOR: ParaId = ParaId::new(3000);
 
 /// The extensions for the [`ChainSpec`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
@@ -71,9 +71,9 @@ where
 }
 
 pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
-    // Give your base currency a unit name and decimal places
+    // Give your base currency a XCAV name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "UNIT".into());
+    properties.insert("tokenSymbol".into(), "XCAV".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
@@ -115,9 +115,9 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
 }
 
 pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
-    // Give your base currency a unit name and decimal places
+    // Give your base currency a XCAV name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "UNIT".into());
+    properties.insert("tokenSymbol".into(), "XCAV".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());

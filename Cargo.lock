@@ -1813,17 +1813,20 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "nimbus-primitives",
+ "node-primitives",
  "pallet-author-inherent",
  "pallet-balances",
  "pallet-cc-authorities-noting",
  "pallet-maintenance-mode",
  "pallet-migrations",
+ "pallet-nfts",
  "pallet-proxy",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-uniques",
  "pallet-utility",
  "pallet-xcm",
  "parachain-info",
@@ -6843,6 +6846,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43794a0ace135be66a25d3ae77d41b91615fb68ae937f904090203e81f755b65"
 
 [[package]]
+name = "node-primitives"
+version = "2.0.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.1.0#b3aad072b812b51c18f5cda9575cf3c7b5095451"
+dependencies = [
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
 name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8028,6 +8040,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-nfts"
+version = "4.0.0-dev"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.1.0#b3aad072b812b51c18f5cda9575cf3c7b5095451"
+dependencies = [
+ "enumflags2",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-nis"
 version = "4.0.0-dev"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.1.0#b3aad072b812b51c18f5cda9575cf3c7b5095451"
@@ -8559,6 +8589,21 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-uniques"
+version = "4.0.0-dev"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.1.0#b3aad072b812b51c18f5cda9575cf3c7b5095451"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
  "sp-runtime",
  "sp-std",
 ]
