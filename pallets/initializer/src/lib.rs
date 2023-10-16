@@ -18,10 +18,8 @@
 //!
 //! This pallet is in charge of organizing what happens on session changes.
 //! In particular this pallet has implemented the OneSessionHandler trait
-//! which will be called upon a session change. This pallet will then store
-//! the bufferedSessionChanges (collators, new session index, etc) in the
-//! BufferedSessionChanges storage item. This storage item gets read on_finalize
-//! and calls the  SessionHandler config trait
+//! which will be called upon a session change. There it will call the
+//! SessionHandler config trait
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -34,7 +32,6 @@ mod tests;
 pub use pallet::*;
 use {
     frame_support::{pallet_prelude::*, traits::OneSessionHandler},
-    frame_system::pallet_prelude::*,
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
     sp_runtime::{
@@ -57,7 +54,7 @@ pub mod pallet {
         pub session_index: T::SessionIndex,
     }
 
-    // The apply_new_sseion trait. We need to comply with this
+    // The apply_new_session trait. We need to comply with this
     pub trait ApplyNewSession<T: Config> {
         fn apply_new_session(
             changed: bool,
@@ -84,42 +81,11 @@ pub mod pallet {
 
         type SessionHandler: ApplyNewSession<Self>;
     }
-
-    /// Buffered session changes along with the block number at which they should be applied.
-    ///
-    /// Typically this will be empty or one element long. Apart from that this item never hits
-    /// the storage.
-    ///
-    /// However this is a `Vec` regardless to handle various edge cases that may occur at runtime
-    /// upgrade boundaries or if governance intervenes.
-    #[pallet::storage]
-    pub(super) type BufferedSessionChanges<T: Config> =
-        StorageValue<_, BufferedSessionChange<T>, OptionQuery>;
-
-    #[pallet::hooks]
-    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        fn on_finalize(_now: BlockNumberFor<T>) {
-            // Apply buffered session changes as the last thing. This way the runtime APIs and the
-            // next block will observe the next session.
-            //
-            // Note that we only apply the last session as all others lasted less than a block (weirdly).
-            if let Some(BufferedSessionChange {
-                changed,
-                session_index,
-                validators,
-                queued,
-            }) = BufferedSessionChanges::<T>::take()
-            {
-                // Changes to be applied on new session
-                T::SessionHandler::apply_new_session(changed, session_index, validators, queued);
-            }
-        }
-    }
 }
 
 impl<T: Config> Pallet<T> {
-    /// Should be called when a new session occurs. Buffers the session notification to be applied
-    /// at the end of the block. If `queued` is `None`, the `validators` are considered queued.
+    /// Should be called when a new session occurs. If `queued` is `None`,
+    /// the `validators` are considered queued.
     fn on_new_session<'a, I: 'a>(
         changed: bool,
         session_index: T::SessionIndex,
@@ -139,14 +105,7 @@ impl<T: Config> Pallet<T> {
             // Genesis session should be immediately enacted.
             T::SessionHandler::apply_new_session(false, 0u32.into(), validators, queued);
         } else {
-            BufferedSessionChanges::<T>::mutate(|v| {
-                *v = Some(BufferedSessionChange {
-                    changed,
-                    validators,
-                    queued,
-                    session_index,
-                })
-            });
+            T::SessionHandler::apply_new_session(changed, session_index, validators, queued);
         }
     }
 
