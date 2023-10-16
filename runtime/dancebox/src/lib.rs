@@ -644,7 +644,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
-    type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
+    type ShouldRotateAllCollators =
+        RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
