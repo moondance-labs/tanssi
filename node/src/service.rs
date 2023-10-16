@@ -164,7 +164,6 @@ pub fn new_partial(
         .build();
 
     let executor = ParachainExecutor::new_with_wasm_executor(wasm);
-    //let wasm_cache = executor.cache;
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
