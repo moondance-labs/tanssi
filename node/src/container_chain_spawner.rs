@@ -35,7 +35,7 @@ use {
     std::{
         collections::{HashMap, HashSet},
         future::Future,
-        path::Path,
+        path::{Path, PathBuf},
         pin::Pin,
         sync::{Arc, Mutex},
     },
@@ -98,13 +98,37 @@ pub enum CcSpawnMsg {
     },
 }
 
+/// Error thrown when a container chain needs to restart and remove the database.
+struct NeedsRestartAndDbRemoval {
+    db_path: PathBuf,
+    validator: bool,
+    keep_db: bool,
+    self2: ContainerChainSpawner,
+}
+impl std::fmt::Debug for NeedsRestartAndDbRemoval {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("NeedsRestartAndDbRemoval")
+            .field("db_path", &self.db_path)
+            .field("validator", &self.validator)
+            .field("keep_db", &self.keep_db)
+            .field("self2", &"<ContainerChainSpawner>")
+            .finish()
+    }
+}
+impl std::fmt::Display for NeedsRestartAndDbRemoval {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+impl std::error::Error for NeedsRestartAndDbRemoval {}
+
 impl ContainerChainSpawner {
     /// Try to start a new container chain. In case of error, this panics and stops the node.
     fn spawn(
         &self,
         container_chain_para_id: ParaId,
         start_collation: bool,
-    ) -> impl Future<Output = ()> {
+    ) -> Pin<Box<dyn Future<Output = ()> + Send>> {
         let ContainerChainSpawner {
             orchestrator_chain_interface,
             orchestrator_client,
@@ -121,6 +145,8 @@ impl ContainerChainSpawner {
             state,
             collate_on_tanssi: _,
         } = self.clone();
+        // Additional copy only needed in case of restart
+        let self2 = self.clone();
 
         // This closure is used to emulate a try block, it enables using the `?` operator inside
         let try_closure = move || async move {
@@ -256,7 +282,14 @@ impl ContainerChainSpawner {
                     "Container genesis {:?} different from chain spec genesis {:?} - Deleting container db", 
                     container_client_genesis_hash, chain_spec_genesis_hash
                 );
-                delete_container_chain_db(&db_path);
+                return Err(sc_service::error::Error::Application(Box::new(
+                    NeedsRestartAndDbRemoval {
+                        db_path,
+                        validator,
+                        keep_db: container_chain_cli.base.keep_db,
+                        self2,
+                    },
+                )));
             }
 
             // Signal that allows to gracefully stop a container chain
@@ -320,14 +353,31 @@ impl ContainerChainSpawner {
             sc_service::error::Result::Ok(())
         };
 
-        async {
+        async move {
             match try_closure().await {
                 Ok(()) => {}
+                Err(sc_service::error::Error::Application(e))
+                    if e.is::<NeedsRestartAndDbRemoval>() =>
+                {
+                    let e = e.downcast::<NeedsRestartAndDbRemoval>().unwrap();
+                    // Delete container chain
+                    // TODO: shouldn't need to check this condition here because this error is only returned if this condition is true
+                    if e.validator && !e.keep_db {
+                        delete_container_chain_db(&e.db_path);
+                    }
+
+                    log::info!("Restarting container chain {}", container_chain_para_id);
+                    // self.spawn must return a boxed future because of the recursion here
+                    e.self2
+                        .spawn(container_chain_para_id, start_collation)
+                        .await;
+                }
                 Err(e) => {
                     panic!("Failed to start container chain node: {}", e);
                 }
             }
         }
+        .boxed()
     }
 
     /// Stop a container chain. Prints a warning if the container chain was not running.
