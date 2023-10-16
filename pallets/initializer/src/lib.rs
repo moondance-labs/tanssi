@@ -32,7 +32,6 @@ mod tests;
 pub use pallet::*;
 use {
     frame_support::{pallet_prelude::*, traits::OneSessionHandler},
-    parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, Zero},
@@ -44,15 +43,6 @@ use {
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
-
-    #[derive(Encode, Decode, TypeInfo)]
-    #[scale_info(skip_type_params(T))]
-    pub struct BufferedSessionChange<T: Config> {
-        pub changed: bool,
-        pub validators: Vec<(T::AccountId, T::AuthorityId)>,
-        pub queued: Vec<(T::AccountId, T::AuthorityId)>,
-        pub session_index: T::SessionIndex,
-    }
 
     // The apply_new_session trait. We need to comply with this
     pub trait ApplyNewSession<T: Config> {

@@ -34,7 +34,7 @@ fn session_0_is_instantly_applied() {
 }
 
 #[test]
-fn session_change_before_initialize_is_still_buffered_after() {
+fn session_change_applied() {
     new_test_ext().execute_with(|| {
         Initializer::test_trigger_on_new_session(
             false,
