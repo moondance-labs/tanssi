@@ -41,7 +41,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
-        traits::{BadOrigin, BlakeTwo256, OpaqueKeys, Dispatchable},
+        traits::{BadOrigin, BlakeTwo256, Dispatchable, OpaqueKeys},
         DigestItem,
     },
     sp_std::vec,
@@ -96,6 +96,16 @@ fn genesis_para_registrar() {
         });
 }
 
+fn default_config() -> pallet_configuration::HostConfiguration {
+    pallet_configuration::HostConfiguration {
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 2,
+        collators_per_container: 2,
+        full_rotation_period: 24,
+    }
+}
+
 #[test]
 fn genesis_para_registrar_deregister() {
     ExtBuilder::default()
@@ -112,12 +122,7 @@ fn genesis_para_registrar_deregister() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -166,12 +171,7 @@ fn genesis_para_registrar_runtime_api() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -222,12 +222,7 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             assert_eq!(
@@ -299,12 +294,7 @@ fn test_author_collation_aura() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(5);
@@ -339,12 +329,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -416,12 +401,7 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -490,12 +470,7 @@ fn test_authors_without_paras() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -543,12 +518,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -615,6 +585,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             min_orchestrator_collators: 2,
             max_orchestrator_collators: 5,
             collators_per_container: 2,
+            full_rotation_period: 24,
         })
         .build()
         .execute_with(|| {
@@ -679,12 +650,7 @@ fn test_parachains_deregister_collators_re_assigned() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -747,12 +713,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -819,12 +780,7 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -851,12 +807,7 @@ fn test_configuration_on_session_change() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(1);
@@ -916,12 +867,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1085,12 +1031,7 @@ fn test_consensus_runtime_api() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1185,12 +1126,7 @@ fn test_consensus_runtime_api_session_changes() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1306,12 +1242,7 @@ fn test_consensus_runtime_api_next_session() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1785,7 +1716,7 @@ fn test_collator_assignment_rotation() {
                 );
             }
 
-            let rotation_period = dancebox_runtime::CollatorRotationSessionPeriod::get();
+            let rotation_period = Configuration::config().full_rotation_period;
 
             run_to_session(rotation_period - 2);
 
@@ -1835,12 +1766,7 @@ fn test_session_keys_with_authority_mapping() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -1925,12 +1851,7 @@ fn test_session_keys_with_authority_assignment() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2064,12 +1985,7 @@ fn test_proxy_any() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2110,12 +2026,7 @@ fn test_proxy_non_transfer() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2186,12 +2097,7 @@ fn test_invulnerables_migration() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             // Populate the invulnerables storage
@@ -2236,12 +2142,7 @@ fn test_staking_no_candidates_in_genesis() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2273,12 +2174,7 @@ fn test_staking_join() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2331,12 +2227,7 @@ fn test_staking_join_no_keys_registered() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2392,12 +2283,7 @@ fn test_staking_register_keys_after_joining() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2486,12 +2372,7 @@ fn test_staking_join_bad_origin() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2529,12 +2410,7 @@ fn test_staking_join_below_self_delegation_min() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2607,12 +2483,7 @@ fn test_staking_join_no_self_delegation() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2652,12 +2523,7 @@ fn test_staking_join_before_self_delegation() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2728,12 +2594,7 @@ fn test_staking_join_twice_in_same_block() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2803,12 +2664,7 @@ fn test_staking_join_execute_before_time() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2884,12 +2740,7 @@ fn test_staking_join_execute_any_origin() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -2949,12 +2800,7 @@ fn test_staking_join_execute_bad_origin() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3023,12 +2869,7 @@ fn setup_staking_join_and_execute<R>(ops: Vec<A>, f: impl FnOnce() -> R) {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3473,12 +3314,7 @@ fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             run_to_block(2);
@@ -3574,6 +3410,7 @@ fn test_pallet_session_limits_num_validators() {
             min_orchestrator_collators: 2,
             max_orchestrator_collators: 2,
             collators_per_container: 2,
+            full_rotation_period: 24,
         })
         .build()
         .execute_with(|| {
@@ -3661,6 +3498,7 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             min_orchestrator_collators: 2,
             max_orchestrator_collators: 2,
             collators_per_container: 2,
+            full_rotation_period: 24,
         })
         .build()
         .execute_with(|| {
@@ -3766,12 +3604,7 @@ fn test_migration_holds() {
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
         ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-        })
+        .with_config(default_config())
         .build()
         .execute_with(|| {
             let pallet_prefix: &[u8] = b"Balances";

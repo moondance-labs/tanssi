@@ -614,7 +614,6 @@ impl SessionManager<AccountId> for CollatorsFromInvulnerablesAndThenFromStaking 
 parameter_types! {
     pub const Period: u32 = prod_or_fast!(1 * HOURS, 1 * MINUTES);
     pub const Offset: u32 = 0;
-    pub const CollatorRotationSessionPeriod: u32 = prod_or_fast!(24, 5);
 }
 
 impl pallet_session::Config for Runtime {
@@ -631,12 +630,21 @@ impl pallet_session::Config for Runtime {
     type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
+/// Read full_rotation_period from pallet_configuration
+pub struct ConfigurationCollatorRotationSessionPeriod;
+
+impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
+    fn get() -> u32 {
+        Configuration::config().full_rotation_period
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
-    type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<CollatorRotationSessionPeriod>;
+    type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 

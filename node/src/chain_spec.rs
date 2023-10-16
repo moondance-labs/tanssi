@@ -195,6 +195,7 @@ pub fn development_config(
                         min_orchestrator_collators: 1u32,
                         max_orchestrator_collators: 1u32,
                         collators_per_container: 2u32,
+                        full_rotation_period: 24u32,
                     },
                     ..Default::default()
                 },
@@ -259,6 +260,7 @@ pub fn local_dancebox_config(
                         min_orchestrator_collators: 2u32,
                         max_orchestrator_collators: 5u32,
                         collators_per_container: 2u32,
+                        full_rotation_period: 24u32,
                     },
                     ..Default::default()
                 },

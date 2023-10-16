@@ -24,9 +24,10 @@ use frame_support::{
 };
 
 use {
-    crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    crate::{Configuration, Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
     pallet_balances::IdAmount,
-    pallet_invulnerables::WeightInfo,
+    pallet_configuration::weights::WeightInfo as _,
+    pallet_invulnerables::weights::WeightInfo as _,
     pallet_migrations::{GetMigrations, Migration},
     sp_core::Get,
     sp_runtime::BoundedVec,
@@ -209,6 +210,44 @@ where
     }
 }
 
+pub struct MigrateConfigurationFullRotationPeriod<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateConfigurationFullRotationPeriod<T>
+where
+    T: pallet_configuration::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateConfigurationFullRotationPeriod"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        log::info!(target: LOG_TARGET, "migrate");
+
+        Configuration::set_full_rotation_period(RuntimeOrigin::root(), 24u32)
+            .expect("Failed to set full_rotation_period");
+        <T as pallet_configuration::Config>::WeightInfo::set_config_with_u32()
+    }
+
+    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        let zero_period = Configuration::config().full_rotation_period;
+        assert_eq!(zero_period, 0);
+
+        Ok((zero_period).encode())
+    }
+
+    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(
+        &self,
+        number_of_invulnerables: Vec<u8>,
+    ) -> Result<(), sp_runtime::DispatchError> {
+        let new_period = Configuration::config().full_rotation_period;
+        assert_ne!(new_period, 0);
+
+        Ok(())
+    }
+}
 pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
@@ -216,12 +255,18 @@ where
     Runtime: pallet_invulnerables::Config,
     Runtime: pallet_pooled_staking::Config,
     Runtime: pallet_balances::Config,
+    Runtime: pallet_configuration::Config,
     Runtime::RuntimeHoldReason: From<crate::HoldReason>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
         let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
+        let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
 
-        vec![Box::new(migrate_invulnerables), Box::new(migrate_holds)]
+        vec![
+            Box::new(migrate_invulnerables),
+            Box::new(migrate_holds),
+            Box::new(migrate_config),
+        ]
     }
 }
