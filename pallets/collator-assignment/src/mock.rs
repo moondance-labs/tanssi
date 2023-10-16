@@ -30,7 +30,7 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
-    tp_traits::ParaId,
+    tp_traits::{ParaId, RemoveInvulnerables},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -187,6 +187,7 @@ impl pallet_collator_assignment::Config for Test {
     type ContainerChains = ContainerChainsGetter;
     type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<CollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
+    type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type WeightInfo = ();
 }
 
@@ -220,5 +221,22 @@ pub fn run_to_block(n: u64) {
         }
 
         CollatorAssignment::on_finalize(x);
+    }
+}
+
+/// Any AccountId >= 100 will be considered an invulnerable
+pub struct RemoveAccountIdsAbove100;
+
+impl RemoveInvulnerables<u64> for RemoveAccountIdsAbove100 {
+    fn remove_invulnerables(collators: &mut Vec<u64>, num_invulnerables: usize) -> Vec<u64> {
+        let mut invulnerables = vec![];
+        collators.retain(|x| if invulnerables.len() < num_invulnerables && x >= 100 {
+            invulnerables.push(*x);
+            false
+        } else {
+            true
+        });
+
+        invulnerables
     }
 }

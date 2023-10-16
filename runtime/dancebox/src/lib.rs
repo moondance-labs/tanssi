@@ -29,6 +29,7 @@ use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+use tp_traits::RemoveInvulnerables;
 
 pub mod migrations;
 pub mod weights;
@@ -650,6 +651,25 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
     }
 }
 
+pub struct RemoveInvulnerablesImpl;
+
+impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
+    fn remove_invulnerables(collators: &mut Vec<AccountId>, num_invulnerables: usize) -> Vec<AccountId> {
+        // TODO: check if this works on session changes
+        let all_invulnerables = pallet_invulnerables::Invulnerables::<Runtime>::get();
+        let mut invulnerables = vec![];
+        // TODO: use binary_search when invulnerables are sorted
+        collators.retain(|x| if invulnerables.len() < num_invulnerables && all_invulnerables.contains(x) {
+            invulnerables.push(x.clone());
+            false
+        } else {
+            true
+        });
+
+        invulnerables
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
@@ -658,6 +678,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
+    type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
