@@ -1,7 +1,7 @@
 [package]
-name = "pallet-community-loan-pool"
+name = "pallet-xcavate-staking"
 version = "4.0.0-dev"
-description = "The Xcavate pallet community-loan-pool"
+description = "The Xcavate pallet xcavate-staking"
 authors = ["Xcavate Network"]
 homepage = "https://xcavate.io"
 edition = "2021"
@@ -20,25 +20,25 @@ scale-info = { version = "2.1.1", default-features = false, features = [
 	"derive",
 ] }
 serde = { version = "1.0.163", features = ["derive"], optional = true }
+
 frame-benchmarking = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
-sp-std = { workspace = true }
 
-pallet-nfts = { workspace = true }
 pallet-balances = { workspace = true }
+sp-std = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-insecure-randomness-collective-flip = { workspace = true }
-enumflags2 = { version = "0.7.7" }
+pallet-nfts = { workspace = true }
+
+# Local dependencies
+pallet-community-loan-pool = { path = "../community-loan-pool", default-features = false }
 
 [dev-dependencies]
 sp-core = { workspace = true }
 sp-io = { workspace = true }
 sp-runtime = { workspace = true }
-
-
-
 
 [features]
 default = ["std"]
@@ -48,12 +48,14 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"scale-info/std",
-	"serde",
-	"pallet-nfts/std",
 	"pallet-balances/std",
+	"sp-std/std",
+	"serde",
+	"pallet-community-loan-pool/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment/std",
 	"pallet-insecure-randomness-collective-flip/std",
+	"pallet-nfts/std",
 ]
 runtime-benchmarks = ["frame-benchmarking/runtime-benchmarks"]
 try-runtime = ["frame-support/try-runtime"]

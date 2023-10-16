@@ -799,7 +799,7 @@ pub mod pallet {
 				<OngoingVotes<T>>::take(proposal_index).ok_or(Error::<T>::InvalidIndex)?;
 			let voted = <UserVotes<T>>::get((proposal_index, origin.clone()));
 			ensure!(voted.is_none(), Error::<T>::AlreadyVoted);
-			let proposal = Self::proposals(proposal_index).unwrap_or_default();
+			let proposal = Self::proposals(proposal_index).unwrap();
 			ensure!(proposal.milestones.len() > 0, Error::<T>::NoMilestones);
 			if vote == Vote::Yes {
 				current_vote.yes_votes += 1;

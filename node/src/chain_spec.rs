@@ -18,7 +18,7 @@ use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
         AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, RegistrarConfig,
-        Signature, SudoConfig,
+        Signature, SudoConfig, CouncilConfig, TechnicalCommitteeConfig,
     },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
@@ -357,6 +357,13 @@ fn testnet_genesis(
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
+        alliance_motion: Default::default(),
+        community_loan_pool: Default::default(),
+        council: CouncilConfig { members: vec![], phantom: Default::default() },
+        technical_committee: TechnicalCommitteeConfig {
+			members: vec![],
+			phantom: Default::default(),
+		},
     }
 }
 

@@ -26,6 +26,9 @@ pallet-author-noting-runtime-api = { path = "pallets/author-noting/rpc/runtime-a
 pallet-authority-assignment = { path = "pallets/authority-assignment", default-features = false }
 pallet-authority-mapping = { path = "pallets/authority-mapping", default-features = false }
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
+pallet-community-loan-pool = { path = "pallets/community-loan-pool", default-features = false }
+pallet-xcavate-staking = { path = "pallets/xcavate-staking", default-features = false }
+pallet-nft-marketplace = { path = "pallets/nft-marketplace", default-features = false }
 pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/rpc/runtime-api", default-features = false }
 pallet-configuration = { path = "pallets/configuration", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
@@ -83,6 +86,8 @@ pallet-timestamp = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 pallet-transaction-payment = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 pallet-utility = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 
+pallet-collective = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+pallet-insecure-randomness-collective-flip = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 pallet-assets = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 pallet-nfts = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 pallet-uniques = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }

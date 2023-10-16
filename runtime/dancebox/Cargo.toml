@@ -31,6 +31,9 @@ pallet-proxy = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 tp-core = { workspace = true }
+pallet-community-loan-pool = { workspace = true }
+pallet-xcavate-staking = { workspace = true }
+pallet-nft-marketplace = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -52,6 +55,9 @@ pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-utility = { workspace = true }
+pallet-nfts = { workspace = true }
+pallet-collective = { workspace = true }
+pallet-insecure-randomness-collective-flip = { workspace = true }
 sp-api = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-block-builder = { workspace = true }
@@ -141,6 +147,9 @@ std = [
 	"pallet-author-noting-runtime-api/std",
 	"pallet-author-noting/std",
 	"pallet-authority-assignment/std",
+	"pallet-community-loan-pool/std",
+	"pallet-xcavate-staking/std",
+	"pallet-nft-marketplace/std",
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-configuration/std",
@@ -156,6 +165,9 @@ std = [
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-utility/std",
+	"pallet-nfts/std",
+	"pallet-collective/std",
+	"pallet-insecure-randomness-collective-flip/std",
 	"pallet-xcm/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
@@ -195,6 +207,7 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"hex-literal",
 	"pallet-author-noting/runtime-benchmarks",
+	"pallet-community-loan-pool/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
@@ -206,6 +219,8 @@ runtime-benchmarks = [
 	"pallet-xcm-benchmarks/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
+	"pallet-nfts/runtime-benchmarks",
+	"pallet-collective/runtime-benchmarks",
  ]
 
 try-runtime = [
@@ -222,6 +237,9 @@ try-runtime = [
 	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
 	"pallet-authority-mapping/try-runtime",
+	"pallet-community-loan-pool/try-runtime",
+	"pallet-xcavate-staking/try-runtime",
+	"pallet-nft-marketplace/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-collator-assignment/try-runtime",
 	"pallet-configuration/try-runtime",
@@ -238,6 +256,9 @@ try-runtime = [
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-utility/try-runtime",
+	"pallet-nfts/try-runtime",
+	"pallet-collective/try-runtime",
+	"pallet-insecure-randomness-collective-flip/try-runtime",
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
