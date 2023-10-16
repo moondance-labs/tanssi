@@ -44,9 +44,9 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Imbalance,
-            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
-            OnUnbalanced,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, FindAuthor,
+            Imbalance, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
+            OnRuntimeUpgrade, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -405,15 +405,13 @@ impl frame_system::Config for Runtime {
     /// The lookup mechanism to get account ID from whatever is passed in dispatchers.
     type Lookup = IdentityLookup<AccountId>;
     /// The index type for storing how many extrinsics an account has signed.
-    type Index = Index;
+    type Nonce = Index;
     /// The index type for blocks.
-    type BlockNumber = BlockNumber;
+    type Block = Block;
     /// The type for hashing blocks and tries.
     type Hash = Hash;
     /// The hashing algorithm used.
     type Hashing = BlakeTwo256;
-    /// The header type.
-    type Header = generic::Header<BlockNumber, BlakeTwo256>;
     /// The ubiquitous event type.
     type RuntimeEvent = RuntimeEvent;
     /// The ubiquitous origin type.
@@ -490,7 +488,7 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = [u8; 8];
     type MaxFreezes = ConstU32<0>;
-    type HoldIdentifier = [u8; 8];
+    type RuntimeHoldReason = [u8; 8];
     type MaxHolds = ConstU32<0>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
@@ -768,6 +766,19 @@ const BLOCK_GAS_LIMIT: u64 = 15_000_000;
 
 impl pallet_evm_chain_id::Config for Runtime {}
 
+pub struct FindAuthorAdapter;
+impl FindAuthor<H160> for FindAuthorAdapter {
+    fn find_author<'a, I>(digests: I) -> Option<H160>
+    where
+        I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
+    {
+        if let Some(author) = AuthorInherent::find_author(digests) {
+            return Some(H160::from_slice(&author.encode()[0..20]));
+        }
+        None
+    }
+}
+
 parameter_types! {
     pub BlockGasLimit: U256 = U256::from(BLOCK_GAS_LIMIT);
     pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
@@ -792,7 +803,7 @@ impl pallet_evm::Config for Runtime {
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = OnChargeEVMTransaction<()>;
     type OnCreate = ();
-    type FindAuthor = ();
+    type FindAuthor = FindAuthorAdapter;
     // TODO: update in the future
     type GasLimitPovSizeRatio = ();
     type Timestamp = Timestamp;
@@ -860,10 +871,7 @@ impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
-    pub enum Runtime where
-        Block = Block,
-        NodeBlock = opaque::Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Runtime
     {
         // System support stuff.
         System: frame_system = 0,
@@ -896,7 +904,7 @@ construct_runtime!(
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Storage, Event<T>} = 70,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
-        PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config} = 73,
+        PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
 
         RootTesting: pallet_root_testing = 100,
     }

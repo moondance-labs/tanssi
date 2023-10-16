@@ -4,7 +4,7 @@ import { ALITH_ADDRESS, DEFAULT_GENESIS_BALANCE, BALTATHAR_ADDRESS, baltathar, a
 // A call from root (sudo) can make a transfer directly in pallet_evm
 // A signed call cannot make a transfer directly in pallet_evm
 describeSuite({
-    id: "DF0702",
+    id: "DF0703",
     title: "Pallet EVM - call",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

@@ -20,21 +20,17 @@ use {
     frame_system as system,
     sp_core::{ConstU32, H256},
     sp_runtime::{
-        testing::{Header, UintAuthorityId},
+        testing::UintAuthorityId,
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
 };
 
-type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 type Block = frame_system::mocking::MockBlock<Test>;
 
 // Configure a mock runtime to test the pallet.
 frame_support::construct_runtime!(
-    pub enum Test where
-        Block = Block,
-        NodeBlock = Block,
-        UncheckedExtrinsic = UncheckedExtrinsic,
+    pub enum Test
     {
         System: frame_system,
         Configuration: pallet_configuration,
@@ -48,13 +44,12 @@ impl system::Config for Test {
     type DbWeight = ();
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
-    type Index = u64;
-    type BlockNumber = u64;
+    type Nonce = u64;
+    type Block = Block;
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
-    type Header = Header;
     type RuntimeEvent = RuntimeEvent;
     type BlockHashCount = ConstU64<250>;
     type Version = ();
@@ -88,17 +83,20 @@ impl pallet_configuration::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    system::GenesisConfig::default()
-        .build_storage::<Test>()
+    system::GenesisConfig::<Test>::default()
+        .build_storage()
         .unwrap()
         .into()
 }
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(config: HostConfiguration) -> sp_io::TestExternalities {
-    GenesisConfig {
+    RuntimeGenesisConfig {
         system: Default::default(),
-        configuration: pallet_configuration::GenesisConfig { config },
+        configuration: pallet_configuration::GenesisConfig {
+            config,
+            ..Default::default()
+        },
     }
     .build_storage()
     .unwrap()

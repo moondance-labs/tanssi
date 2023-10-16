@@ -131,8 +131,8 @@ impl SealExtractorVerfier {
 impl<B: BlockT> sc_consensus::Verifier<B> for SealExtractorVerfier {
     async fn verify(
         &mut self,
-        mut block: sc_consensus::BlockImportParams<B, ()>,
-    ) -> Result<sc_consensus::BlockImportParams<B, ()>, String> {
+        mut block: sc_consensus::BlockImportParams<B>,
+    ) -> Result<sc_consensus::BlockImportParams<B>, String> {
         if block.fork_choice.is_none() {
             block.fork_choice = Some(ForkChoiceStrategy::LongestChain);
         };
@@ -199,10 +199,7 @@ impl Environment<TestBlock> for DummyFactory {
 // how to propose the block by Dummy Proposer
 impl Proposer<TestBlock> for DummyProposer {
     type Error = Error;
-    type Transaction =
-        sc_client_api::TransactionFor<substrate_test_runtime_client::Backend, TestBlock>;
-    type Proposal =
-        future::Ready<Result<Proposal<TestBlock, Self::Transaction, Self::Proof>, Error>>;
+    type Proposal = future::Ready<Result<Proposal<TestBlock, Self::Proof>, Error>>;
     type ProofRecording = EnableProofRecording;
     type Proof = sc_client_api::StorageProof;
 
@@ -581,7 +578,7 @@ async fn current_node_authority_should_claim_slot() {
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
 
-    let worker =
+    let mut worker =
         build_orchestrator_aura_worker::<nimbus_primitives::NimbusPair, _, _, _, _, _, _, _, _>(
             BuildOrchestratorAuraWorkerParams {
                 client: client.clone(),

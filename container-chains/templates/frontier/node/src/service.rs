@@ -22,12 +22,14 @@ use {
     sc_network::config::FullNetworkConfiguration,
 };
 // std
+use futures::FutureExt;
+use sc_client_api::Backend;
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},
     time::Duration,
 };
-
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_primitives_parachain_inherent::{
@@ -45,9 +47,11 @@ use {
 };
 
 // Cumulus Imports
+#[allow(deprecated)]
 use {
     cumulus_client_service::{
-        build_relay_chain_interface, prepare_node_config, start_full_node, StartFullNodeParams,
+        build_relay_chain_interface, prepare_node_config, start_full_node, CollatorSybilResistance,
+        StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -136,7 +140,7 @@ pub fn new_partial(
         ParachainClient,
         ParachainBackend,
         MaybeSelectChain,
-        sc_consensus::DefaultImportQueue<Block, ParachainClient>,
+        sc_consensus::DefaultImportQueue<Block>,
         sc_transaction_pool::FullPool<Block, ParachainClient>,
         (
             ParachainBlockImport<
@@ -316,6 +320,7 @@ async fn start_node_impl(
             para_id,
             relay_chain_interface: relay_chain_interface.clone(),
             net_config,
+            sybil_resistance_level: CollatorSybilResistance::Resistant,
         })
         .await?;
 
@@ -341,11 +346,23 @@ async fn start_node_impl(
     });
 
     if parachain_config.offchain_worker.enabled {
-        sc_service::build_offchain_workers(
-            &parachain_config,
-            task_manager.spawn_handle(),
-            client.clone(),
-            network.clone(),
+        task_manager.spawn_handle().spawn(
+            "offchain-workers-runner",
+            "offchain-work",
+            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+                runtime_api_provider: client.clone(),
+                keystore: Some(params.keystore_container.keystore()),
+                offchain_db: backend.offchain_storage(),
+                transaction_pool: Some(OffchainTransactionPoolFactory::new(
+                    transaction_pool.clone(),
+                )),
+                network_provider: network.clone(),
+                is_validator: parachain_config.role.is_authority(),
+                enable_http_requests: false,
+                custom_extensions: move |_| vec![],
+            })
+            .run(client.clone(), task_manager.spawn_handle())
+            .boxed(),
         );
     }
 
@@ -440,6 +457,8 @@ async fn start_node_impl(
         sync_service,
     };
 
+    // TODO: change for async backing
+    #[allow(deprecated)]
     start_full_node(params)?;
 
     start_network.start_network();
@@ -526,11 +545,23 @@ pub async fn start_dev_node(
         })?;
 
     if config.offchain_worker.enabled {
-        sc_service::build_offchain_workers(
-            &config,
-            task_manager.spawn_handle(),
-            client.clone(),
-            network.clone(),
+        task_manager.spawn_handle().spawn(
+            "offchain-workers-runner",
+            "offchain-work",
+            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+                runtime_api_provider: client.clone(),
+                keystore: Some(keystore_container.keystore()),
+                offchain_db: backend.offchain_storage(),
+                transaction_pool: Some(OffchainTransactionPoolFactory::new(
+                    transaction_pool.clone(),
+                )),
+                network_provider: network.clone(),
+                is_validator: config.role.is_authority(),
+                enable_http_requests: false,
+                custom_extensions: move |_| vec![],
+            })
+            .run(client.clone(), task_manager.spawn_handle())
+            .boxed(),
         );
     }
 
@@ -655,6 +686,16 @@ pub async fn start_dev_node(
                     let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
 
 					async move {
+                        let mocked_authorities_noting =
+                            ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
+                                current_para_block,
+                                relay_offset: 1000,
+                                relay_blocks_per_para_block: 2,
+                                orchestrator_para_id: crate::chain_spec::ORCHESTRATOR,
+                                container_para_id: para_id,
+                                authorities: authorities_for_cidp
+                        };
+
                         let time = MockTimestampInherentDataProvider;
                         let mocked_parachain = MockValidationDataInherentDataProvider {
                             current_para_block,
@@ -671,16 +712,7 @@ pub async fn start_dev_node(
                             ),
                             raw_downward_messages: downward_xcm_receiver.drain().collect(),
                             raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
-                        };
-
-                        let mocked_authorities_noting =
-                            ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
-                                current_para_block,
-                                relay_offset: 1000,
-                                relay_blocks_per_para_block: 2,
-                                orchestrator_para_id: crate::chain_spec::ORCHESTRATOR,
-                                container_para_id: para_id,
-                                authorities: authorities_for_cidp
+                            additional_key_values: Some(mocked_authorities_noting.get_key_values())
                         };
 
 						Ok((time, mocked_parachain, mocked_authorities_noting))

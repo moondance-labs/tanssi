@@ -116,7 +116,7 @@ impl<T> Migration for MigrateHoldReason<T>
 where
     T: pallet_balances::Config,
     T: pallet_pooled_staking::Config,
-    T::HoldIdentifier: From<crate::HoldReason>,
+    T::RuntimeHoldReason: From<crate::HoldReason>,
 {
     fn friendly_name(&self) -> &str {
         "TM_MigrateHoldReason"
@@ -143,7 +143,7 @@ where
 
             for hold in holds {
                 let new_item: pallet_balances::IdAmount<
-                    T::HoldIdentifier,
+                    T::RuntimeHoldReason,
                     <T as pallet_balances::Config>::Balance,
                 > = pallet_balances::IdAmount {
                     id: crate::HoldReason::PooledStake.into(),
@@ -216,7 +216,7 @@ where
     Runtime: pallet_invulnerables::Config,
     Runtime: pallet_pooled_staking::Config,
     Runtime: pallet_balances::Config,
-    Runtime::HoldIdentifier: From<crate::HoldReason>,
+    Runtime::RuntimeHoldReason: From<crate::HoldReason>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());

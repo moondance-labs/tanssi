@@ -29,7 +29,7 @@ use {
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<
-    container_chain_template_simple_runtime::GenesisConfig,
+    container_chain_template_simple_runtime::RuntimeGenesisConfig,
     Extensions,
 >;
 
@@ -169,12 +169,13 @@ fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-) -> container_chain_template_simple_runtime::GenesisConfig {
-    container_chain_template_simple_runtime::GenesisConfig {
+) -> container_chain_template_simple_runtime::RuntimeGenesisConfig {
+    container_chain_template_simple_runtime::RuntimeGenesisConfig {
         system: container_chain_template_simple_runtime::SystemConfig {
             code: container_chain_template_simple_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!")
                 .to_vec(),
+            ..Default::default()
         },
         balances: container_chain_template_simple_runtime::BalancesConfig {
             balances: endowed_accounts
@@ -185,6 +186,7 @@ fn testnet_genesis(
         },
         parachain_info: container_chain_template_simple_runtime::ParachainInfoConfig {
             parachain_id: id,
+            ..Default::default()
         },
         parachain_system: Default::default(),
         sudo: container_chain_template_simple_runtime::SudoConfig {
@@ -192,10 +194,12 @@ fn testnet_genesis(
         },
         authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
             orchestrator_para_id: ORCHESTRATOR,
+            ..Default::default()
         },
-        migrations: MigrationsConfig {},
+        migrations: MigrationsConfig::default(),
         maintenance_mode: MaintenanceModeConfig {
             start_in_maintenance_mode: false,
+            ..Default::default()
         },
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),

@@ -66,6 +66,72 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
         &self,
         inherent_data: &mut InherentData,
     ) -> Result<(), sp_inherents::Error> {
+        let (sproof, orchestrator_chain_state) = self.build_sproof_builder();
+
+        if let Ok(Some(validation_system_inherent_data)) =
+            inherent_data.get_data::<ParachainInherentData>(&PARACHAIN_SYSTEM_INHERENT_IDENTIFIER)
+        {
+            let mut previous_validation_data = validation_system_inherent_data.clone();
+
+            // We need to construct a new proof, based on previously inserted backend data
+            let (root, proof) = sproof.from_existing_state(
+                validation_system_inherent_data
+                    .validation_data
+                    .relay_parent_storage_root,
+                validation_system_inherent_data.relay_chain_state,
+            );
+
+            // We push the new computed proof
+            inherent_data.put_data(
+                crate::INHERENT_IDENTIFIER,
+                &ContainerChainAuthoritiesInherentData {
+                    relay_chain_state: proof.clone(),
+                    orchestrator_chain_state,
+                },
+            )?;
+
+            // But we also need to override the previous one for parachain-system-validation-data
+            previous_validation_data
+                .validation_data
+                .relay_parent_storage_root = root;
+            previous_validation_data.relay_chain_state = proof;
+
+            inherent_data.replace_data(
+                PARACHAIN_SYSTEM_INHERENT_IDENTIFIER,
+                &previous_validation_data,
+            );
+        } else {
+            let (_root, proof) = sproof.into_state_root_and_proof();
+            inherent_data.put_data(
+                crate::INHERENT_IDENTIFIER,
+                &ContainerChainAuthoritiesInherentData {
+                    relay_chain_state: proof,
+                    orchestrator_chain_state,
+                },
+            )?;
+        }
+
+        Ok(())
+    }
+
+    // Copied from the real implementation
+    async fn try_handle_error(
+        &self,
+        _: &sp_inherents::InherentIdentifier,
+        _: &[u8],
+    ) -> Option<Result<(), sp_inherents::Error>> {
+        None
+    }
+}
+
+impl MockAuthoritiesNotingInherentDataProvider {
+    pub fn get_key_values(&self) -> Vec<(Vec<u8>, Vec<u8>)> {
+        let (sproof, _) = self.build_sproof_builder();
+
+        sproof.key_values()
+    }
+
+    pub fn build_sproof_builder(&self) -> (ParaHeaderSproofBuilder, sp_trie::StorageProof) {
         let mut sproof_builder = ParaHeaderSproofBuilder::default();
 
         let container_chains =
@@ -98,58 +164,6 @@ impl InherentDataProvider for MockAuthoritiesNotingInherentDataProvider {
 
         sproof_builder.items.push(sproof_builder_item);
 
-        if let Ok(Some(validation_system_inherent_data)) =
-            inherent_data.get_data::<ParachainInherentData>(&PARACHAIN_SYSTEM_INHERENT_IDENTIFIER)
-        {
-            let mut previous_validation_data = validation_system_inherent_data.clone();
-
-            // We need to construct a new proof, based on previously inserted backend data
-            let (root, proof) = sproof_builder.from_existing_state(
-                validation_system_inherent_data
-                    .validation_data
-                    .relay_parent_storage_root,
-                validation_system_inherent_data.relay_chain_state,
-            );
-
-            // We push the new computed proof
-            inherent_data.put_data(
-                crate::INHERENT_IDENTIFIER,
-                &ContainerChainAuthoritiesInherentData {
-                    relay_chain_state: proof.clone(),
-                    orchestrator_chain_state,
-                },
-            )?;
-
-            // But we also need to override the previous one for parachain-system-validation-data
-            previous_validation_data
-                .validation_data
-                .relay_parent_storage_root = root;
-            previous_validation_data.relay_chain_state = proof;
-
-            inherent_data.replace_data(
-                PARACHAIN_SYSTEM_INHERENT_IDENTIFIER,
-                &previous_validation_data,
-            );
-        } else {
-            let (_root, proof) = sproof_builder.into_state_root_and_proof();
-            inherent_data.put_data(
-                crate::INHERENT_IDENTIFIER,
-                &ContainerChainAuthoritiesInherentData {
-                    relay_chain_state: proof,
-                    orchestrator_chain_state,
-                },
-            )?;
-        }
-
-        Ok(())
-    }
-
-    // Copied from the real implementation
-    async fn try_handle_error(
-        &self,
-        _: &sp_inherents::InherentIdentifier,
-        _: &[u8],
-    ) -> Option<Result<(), sp_inherents::Error>> {
-        None
+        (sproof_builder, orchestrator_chain_state)
     }
 }
