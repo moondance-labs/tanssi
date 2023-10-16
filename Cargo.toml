@@ -186,6 +186,7 @@ cumulus-client-pov-recovery = { git = "https://github.com/moondance-labs/polkado
 cumulus-client-service = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 cumulus-primitives-parachain-inherent = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 cumulus-relay-chain-interface = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+cumulus-test-relay-sproof-builder = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 xcm-emulator = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 
 # Frontier (wasm)
