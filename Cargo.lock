@@ -16885,33 +16885,3 @@ dependencies = [
  "libc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "jsonrpsee-benchmarks"
-version = "0.16.3"
-source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
-
-[[patch.unused]]
-name = "jsonrpsee-examples"
-version = "0.16.3"
-source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
-
-[[patch.unused]]
-name = "jsonrpsee-integration-tests"
-version = "0.16.3"
-source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
-
-[[patch.unused]]
-name = "jsonrpsee-test-utils"
-version = "0.16.3"
-source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
-
-[[patch.unused]]
-name = "jsonrpsee-wasm-client"
-version = "0.16.3"
-source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
-
-[[patch.unused]]
-name = "wasm-test"
-version = "0.1.0"
-source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
