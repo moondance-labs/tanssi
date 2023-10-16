@@ -105,7 +105,7 @@ type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
 
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 
-type ParachainBackend = TFullBackend<Block>;
+pub type ParachainBackend = TFullBackend<Block>;
 
 type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
 
@@ -667,12 +667,19 @@ async fn start_node_impl(
             state: Default::default(),
             collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
+        let state = container_chain_spawner.state.clone();
 
         task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
             container_chain_spawner.rx_loop(cc_spawn_rx),
         );
+
+        task_manager.spawn_essential_handle().spawn(
+            "container-chain-spawner-debug-state",
+            None,
+            crate::container_chain_monitor::monitor_task(state),
+        )
     }
 
     Ok((task_manager, client))
@@ -702,6 +709,7 @@ pub async fn start_node_impl_container(
 ) -> sc_service::error::Result<(
     TaskManager,
     Arc<ParachainClient>,
+    Arc<ParachainBackend>,
     Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
 )> {
     let parachain_config = prepare_node_config(parachain_config);
@@ -800,7 +808,7 @@ pub async fn start_node_impl_container(
         task_manager: &mut task_manager,
         config: parachain_config,
         keystore: keystore.clone(),
-        backend,
+        backend: backend.clone(),
         network: network.clone(),
         system_rpc_tx,
         tx_handler_controller,
@@ -921,7 +929,7 @@ pub async fn start_node_impl_container(
 
     start_network.start_network();
 
-    Ok((task_manager, client, start_collation))
+    Ok((task_manager, client, backend, start_collation))
 }
 
 // Copy of `cumulus_client_service::start_collator`, that doesn't fully start the collator: it is
