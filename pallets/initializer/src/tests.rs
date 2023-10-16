@@ -47,4 +47,3 @@ fn session_change_before_initialize_is_still_buffered_after() {
         assert_eq!(session_change_validators(), Some((1, Vec::new())));
     });
 }
-
