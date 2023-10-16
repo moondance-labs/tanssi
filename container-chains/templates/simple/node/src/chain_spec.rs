@@ -184,6 +184,10 @@ fn testnet_genesis(
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
+        assets: container_chain_template_simple_runtime::AssetsConfig {
+            assets: vec![(9, get_account_id_from_seed::<sr25519::Public>("Alice"), true, 1)],
+			..Default::default()
+        },
         parachain_info: container_chain_template_simple_runtime::ParachainInfoConfig {
             parachain_id: id,
             ..Default::default()
