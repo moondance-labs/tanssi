@@ -41,7 +41,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
-        traits::{BadOrigin, BlakeTwo256, OpaqueKeys},
+        traits::{BadOrigin, BlakeTwo256, OpaqueKeys, Dispatchable},
         DigestItem,
     },
     sp_std::vec,
@@ -1746,7 +1746,6 @@ fn test_collator_assignment_rotation() {
                 use cumulus_primitives_core::PersistedValidationData;
                 use cumulus_primitives_parachain_inherent::ParachainInherentData;
                 use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
-                use frame_support::dispatch::Dispatchable;
 
                 let (relay_parent_storage_root, relay_chain_state) = {
                     let mut sproof = RelayStateSproofBuilder::default();
