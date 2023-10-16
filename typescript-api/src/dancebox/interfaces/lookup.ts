@@ -2419,19 +2419,12 @@ export default {
         orchestratorChain: "Vec<AccountId32>",
         containerChains: "BTreeMap<u32, Vec<AccountId32>>",
     },
-    /** Lookup294: pallet_initializer::pallet::BufferedSessionChange<T> */
-    PalletInitializerBufferedSessionChange: {
-        changed: "bool",
-        validators: "Vec<(AccountId32,NimbusPrimitivesNimbusCryptoPublic)>",
-        queued: "Vec<(AccountId32,NimbusPrimitivesNimbusCryptoPublic)>",
-        sessionIndex: "u32",
-    },
-    /** Lookup297: pallet_author_noting::pallet::ContainerChainBlockInfo<T> */
+    /** Lookup294: pallet_author_noting::pallet::ContainerChainBlockInfo<T> */
     PalletAuthorNotingContainerChainBlockInfo: {
         blockNumber: "u32",
         author: "AccountId32",
     },
-    /** Lookup298: pallet_author_noting::pallet::Error<T> */
+    /** Lookup295: pallet_author_noting::pallet::Error<T> */
     PalletAuthorNotingError: {
         _enum: [
             "FailedReading",
@@ -2443,31 +2436,31 @@ export default {
             "NonAuraDigest",
         ],
     },
-    /** Lookup299: tp_collator_assignment::AssignedCollators<nimbus_primitives::nimbus_crypto::Public> */
+    /** Lookup296: tp_collator_assignment::AssignedCollators<nimbus_primitives::nimbus_crypto::Public> */
     TpCollatorAssignmentAssignedCollatorsPublic: {
         orchestratorChain: "Vec<NimbusPrimitivesNimbusCryptoPublic>",
         containerChains: "BTreeMap<u32, Vec<NimbusPrimitivesNimbusCryptoPublic>>",
     },
-    /** Lookup305: pallet_invulnerables::pallet::Error<T> */
+    /** Lookup302: pallet_invulnerables::pallet::Error<T> */
     PalletInvulnerablesError: {
         _enum: ["TooManyInvulnerables", "AlreadyInvulnerable", "NotInvulnerable"],
     },
-    /** Lookup310: sp_core::crypto::KeyTypeId */
+    /** Lookup307: sp_core::crypto::KeyTypeId */
     SpCoreCryptoKeyTypeId: "[u8;4]",
-    /** Lookup311: pallet_session::pallet::Error<T> */
+    /** Lookup308: pallet_session::pallet::Error<T> */
     PalletSessionError: {
         _enum: ["InvalidProof", "NoAssociatedValidatorId", "DuplicatedKey", "NoKeys", "NoAccount"],
     },
-    /** Lookup315: pallet_author_inherent::pallet::Error<T> */
+    /** Lookup312: pallet_author_inherent::pallet::Error<T> */
     PalletAuthorInherentError: {
         _enum: ["AuthorAlreadySet", "NoAccountId", "CannotBeAuthor"],
     },
-    /** Lookup317: pallet_pooled_staking::candidate::EligibleCandidate<sp_core::crypto::AccountId32, S> */
+    /** Lookup314: pallet_pooled_staking::candidate::EligibleCandidate<sp_core::crypto::AccountId32, S> */
     PalletPooledStakingCandidateEligibleCandidate: {
         candidate: "AccountId32",
         stake: "u128",
     },
-    /** Lookup320: pallet_pooled_staking::pallet::PoolsKey<sp_core::crypto::AccountId32> */
+    /** Lookup317: pallet_pooled_staking::pallet::PoolsKey<sp_core::crypto::AccountId32> */
     PalletPooledStakingPoolsKey: {
         _enum: {
             CandidateTotalStake: "Null",
@@ -2509,7 +2502,7 @@ export default {
             },
         },
     },
-    /** Lookup322: pallet_pooled_staking::pallet::Error<T> */
+    /** Lookup319: pallet_pooled_staking::pallet::Error<T> */
     PalletPooledStakingError: {
         _enum: {
             InvalidPalletSetting: "Null",
@@ -2528,21 +2521,21 @@ export default {
             SwapResultsInZeroShares: "Null",
         },
     },
-    /** Lookup324: cumulus_pallet_xcmp_queue::InboundChannelDetails */
+    /** Lookup321: cumulus_pallet_xcmp_queue::InboundChannelDetails */
     CumulusPalletXcmpQueueInboundChannelDetails: {
         sender: "u32",
         state: "CumulusPalletXcmpQueueInboundState",
         messageMetadata: "Vec<(u32,PolkadotParachainPrimitivesPrimitivesXcmpMessageFormat)>",
     },
-    /** Lookup325: cumulus_pallet_xcmp_queue::InboundState */
+    /** Lookup322: cumulus_pallet_xcmp_queue::InboundState */
     CumulusPalletXcmpQueueInboundState: {
         _enum: ["Ok", "Suspended"],
     },
-    /** Lookup328: polkadot_parachain_primitives::primitives::XcmpMessageFormat */
+    /** Lookup325: polkadot_parachain_primitives::primitives::XcmpMessageFormat */
     PolkadotParachainPrimitivesPrimitivesXcmpMessageFormat: {
         _enum: ["ConcatenatedVersionedXcm", "ConcatenatedEncodedBlob", "Signals"],
     },
-    /** Lookup331: cumulus_pallet_xcmp_queue::OutboundChannelDetails */
+    /** Lookup328: cumulus_pallet_xcmp_queue::OutboundChannelDetails */
     CumulusPalletXcmpQueueOutboundChannelDetails: {
         recipient: "u32",
         state: "CumulusPalletXcmpQueueOutboundState",
@@ -2550,11 +2543,11 @@ export default {
         firstIndex: "u16",
         lastIndex: "u16",
     },
-    /** Lookup332: cumulus_pallet_xcmp_queue::OutboundState */
+    /** Lookup329: cumulus_pallet_xcmp_queue::OutboundState */
     CumulusPalletXcmpQueueOutboundState: {
         _enum: ["Ok", "Suspended"],
     },
-    /** Lookup334: cumulus_pallet_xcmp_queue::QueueConfigData */
+    /** Lookup331: cumulus_pallet_xcmp_queue::QueueConfigData */
     CumulusPalletXcmpQueueQueueConfigData: {
         suspendThreshold: "u32",
         dropThreshold: "u32",
@@ -2563,27 +2556,27 @@ export default {
         weightRestrictDecay: "SpWeightsWeightV2Weight",
         xcmpMaxIndividualWeight: "SpWeightsWeightV2Weight",
     },
-    /** Lookup336: cumulus_pallet_xcmp_queue::pallet::Error<T> */
+    /** Lookup333: cumulus_pallet_xcmp_queue::pallet::Error<T> */
     CumulusPalletXcmpQueueError: {
         _enum: ["FailedToSend", "BadXcmOrigin", "BadXcm", "BadOverweightIndex", "WeightOverLimit"],
     },
-    /** Lookup337: cumulus_pallet_xcm::pallet::Error<T> */
+    /** Lookup334: cumulus_pallet_xcm::pallet::Error<T> */
     CumulusPalletXcmError: "Null",
-    /** Lookup338: cumulus_pallet_dmp_queue::ConfigData */
+    /** Lookup335: cumulus_pallet_dmp_queue::ConfigData */
     CumulusPalletDmpQueueConfigData: {
         maxIndividual: "SpWeightsWeightV2Weight",
     },
-    /** Lookup339: cumulus_pallet_dmp_queue::PageIndexData */
+    /** Lookup336: cumulus_pallet_dmp_queue::PageIndexData */
     CumulusPalletDmpQueuePageIndexData: {
         beginUsed: "u32",
         endUsed: "u32",
         overweightCount: "u64",
     },
-    /** Lookup342: cumulus_pallet_dmp_queue::pallet::Error<T> */
+    /** Lookup339: cumulus_pallet_dmp_queue::pallet::Error<T> */
     CumulusPalletDmpQueueError: {
         _enum: ["Unknown", "OverLimit"],
     },
-    /** Lookup343: pallet_xcm::pallet::QueryStatus<BlockNumber> */
+    /** Lookup340: pallet_xcm::pallet::QueryStatus<BlockNumber> */
     PalletXcmQueryStatus: {
         _enum: {
             Pending: {
@@ -2602,7 +2595,7 @@ export default {
             },
         },
     },
-    /** Lookup347: staging_xcm::VersionedResponse */
+    /** Lookup344: staging_xcm::VersionedResponse */
     StagingXcmVersionedResponse: {
         _enum: {
             __Unused0: "Null",
@@ -2611,7 +2604,7 @@ export default {
             V3: "StagingXcmV3Response",
         },
     },
-    /** Lookup353: pallet_xcm::pallet::VersionMigrationStage */
+    /** Lookup350: pallet_xcm::pallet::VersionMigrationStage */
     PalletXcmVersionMigrationStage: {
         _enum: {
             MigrateSupportedVersion: "Null",
@@ -2620,7 +2613,7 @@ export default {
             MigrateAndNotifyOldTargets: "Null",
         },
     },
-    /** Lookup355: staging_xcm::VersionedAssetId */
+    /** Lookup352: staging_xcm::VersionedAssetId */
     StagingXcmVersionedAssetId: {
         _enum: {
             __Unused0: "Null",
@@ -2629,14 +2622,14 @@ export default {
             V3: "StagingXcmV3MultiassetAssetId",
         },
     },
-    /** Lookup356: pallet_xcm::pallet::RemoteLockedFungibleRecord<ConsumerIdentifier, MaxConsumers> */
+    /** Lookup353: pallet_xcm::pallet::RemoteLockedFungibleRecord<ConsumerIdentifier, MaxConsumers> */
     PalletXcmRemoteLockedFungibleRecord: {
         amount: "u128",
         owner: "StagingXcmVersionedMultiLocation",
         locker: "StagingXcmVersionedMultiLocation",
         consumers: "Vec<(Null,u128)>",
     },
-    /** Lookup363: pallet_xcm::pallet::Error<T> */
+    /** Lookup360: pallet_xcm::pallet::Error<T> */
     PalletXcmError: {
         _enum: [
             "Unreachable",
@@ -2661,7 +2654,7 @@ export default {
             "InUse",
         ],
     },
-    /** Lookup365: sp_runtime::MultiSignature */
+    /** Lookup362: sp_runtime::MultiSignature */
     SpRuntimeMultiSignature: {
         _enum: {
             Ed25519: "SpCoreEd25519Signature",
@@ -2669,26 +2662,26 @@ export default {
             Ecdsa: "SpCoreEcdsaSignature",
         },
     },
-    /** Lookup366: sp_core::ed25519::Signature */
+    /** Lookup363: sp_core::ed25519::Signature */
     SpCoreEd25519Signature: "[u8;64]",
-    /** Lookup368: sp_core::sr25519::Signature */
+    /** Lookup365: sp_core::sr25519::Signature */
     SpCoreSr25519Signature: "[u8;64]",
-    /** Lookup369: sp_core::ecdsa::Signature */
+    /** Lookup366: sp_core::ecdsa::Signature */
     SpCoreEcdsaSignature: "[u8;65]",
-    /** Lookup372: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
+    /** Lookup369: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
     FrameSystemExtensionsCheckNonZeroSender: "Null",
-    /** Lookup373: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
+    /** Lookup370: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
     FrameSystemExtensionsCheckSpecVersion: "Null",
-    /** Lookup374: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
+    /** Lookup371: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
     FrameSystemExtensionsCheckTxVersion: "Null",
-    /** Lookup375: frame_system::extensions::check_genesis::CheckGenesis<T> */
+    /** Lookup372: frame_system::extensions::check_genesis::CheckGenesis<T> */
     FrameSystemExtensionsCheckGenesis: "Null",
-    /** Lookup378: frame_system::extensions::check_nonce::CheckNonce<T> */
+    /** Lookup375: frame_system::extensions::check_nonce::CheckNonce<T> */
     FrameSystemExtensionsCheckNonce: "Compact<u32>",
-    /** Lookup379: frame_system::extensions::check_weight::CheckWeight<T> */
+    /** Lookup376: frame_system::extensions::check_weight::CheckWeight<T> */
     FrameSystemExtensionsCheckWeight: "Null",
-    /** Lookup380: pallet_transaction_payment::ChargeTransactionPayment<T> */
+    /** Lookup377: pallet_transaction_payment::ChargeTransactionPayment<T> */
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-    /** Lookup381: dancebox_runtime::Runtime */
+    /** Lookup378: dancebox_runtime::Runtime */
     DanceboxRuntimeRuntime: "Null",
 };
