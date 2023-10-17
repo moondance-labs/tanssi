@@ -20,7 +20,6 @@ describeSuite({
         let container2001Api: ApiPromise;
         let ethersSigner: Signer;
         let assignment3;
-        let assignment4;
         let assignment5;
         let allCollators: string[];
         let collatorName: Record<string, string>;
@@ -90,7 +89,7 @@ describeSuite({
 
         it({
             id: "T02",
-            title: "Set 1 collator per parachain, and full_rotation every session",
+            title: "Set 1 collator per parachain, and full_rotation every 5 sessions",
             timeout: 60000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
@@ -99,7 +98,7 @@ describeSuite({
                 const tx1 = await paraApi.tx.configuration.setCollatorsPerContainer(1);
                 const tx2 = await paraApi.tx.configuration.setMinOrchestratorCollators(1);
                 const tx3 = await paraApi.tx.configuration.setMaxOrchestratorCollators(1);
-                const tx4 = await paraApi.tx.configuration.setFullRotationPeriod(1);
+                const tx4 = await paraApi.tx.configuration.setFullRotationPeriod(5);
                 const tx1234 = paraApi.tx.utility.batchAll([tx1, tx2, tx3, tx4]);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx1234), alice);
             },
@@ -269,19 +268,24 @@ describeSuite({
         });
         it({
             id: "T13",
-            title: "On session 3 collators start syncing the new chains",
+            title: "On session 4 collators start syncing the new chains",
             timeout: 90000,
             test: async function () {
+                await waitToSession(context, paraApi, 4);
+
+                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
+                // So wait a few blocks more hoping that the current block will be finalized by then.
+                await context.waitBlock(3, "Tanssi");
                 const futureAssignment = await paraApi.query.collatorAssignment.pendingCollatorContainerChain();
                 // The assignment is random, so there is a small chance that it will be the same,
                 // and in that case this test shouldn't fail
                 if (futureAssignment.isNone) {
-                    assignment4 = assignment3;
+                    assignment5 = assignment3;
                 } else {
-                    assignment4 = futureAssignment.toJSON();
+                    assignment5 = futureAssignment.toJSON();
                 }
-                console.log("assignment session 4:");
-                logAssignment(collatorName, assignment4);
+                console.log("assignment session 5:");
+                logAssignment(collatorName, assignment5);
 
                 // First, check that nodes are still running in their previously assigned chain
                 const oldC2000 = collatorName[assignment3.containerChains[2000][0]];
@@ -296,8 +300,8 @@ describeSuite({
                 expect(await directoryExists(oldContainer2001DbPath)).to.be.true;
 
                 // Check that new assigned collators have started syncing
-                const c2000 = collatorName[assignment4.containerChains[2000][0]];
-                const c2001 = collatorName[assignment4.containerChains[2001][0]];
+                const c2000 = collatorName[assignment5.containerChains[2000][0]];
+                const c2001 = collatorName[assignment5.containerChains[2001][0]];
                 let unassignedCollators = getUnassignedCollators(allCollators, [c2000, c2001]);
                 // Remove old collators because they will still have some chains running
                 unassignedCollators = unassignedCollators.filter((x) => x !== oldC2000);
@@ -319,22 +323,12 @@ describeSuite({
         });
         it({
             id: "T14",
-            title: "On session 4 collators stop the previously assigned chains",
+            title: "On session 5 collators stop the previously assigned chains",
             timeout: 90000,
             test: async function () {
-                await waitToSession(context, paraApi, 4);
+                await waitToSession(context, paraApi, 5);
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
-                expect(assignment.toJSON()).to.deep.equal(assignment4);
-                const futureAssignment = await paraApi.query.collatorAssignment.pendingCollatorContainerChain();
-                // The assignment is random, so there is a small chance that it will be the same,
-                // and in that case this test shouldn't fail
-                if (futureAssignment.isNone) {
-                    assignment5 = assignment4;
-                } else {
-                    assignment5 = futureAssignment.toJSON();
-                }
-                console.log("assignment session 5:");
-                logAssignment(collatorName, assignment5);
+                expect(assignment.toJSON()).to.deep.equal(assignment5);
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
                 // So wait a few blocks more hoping that the current block will be finalized by then.
@@ -344,10 +338,8 @@ describeSuite({
                 // First, check that nodes have stopped in their previously assigned chain
                 const oldC2000 = collatorName[assignment3.containerChains[2000][0]];
                 const oldC2001 = collatorName[assignment3.containerChains[2001][0]];
-                const c2000 = collatorName[assignment4.containerChains[2000][0]];
-                const c2001 = collatorName[assignment4.containerChains[2001][0]];
-                const futc2000 = collatorName[assignment5.containerChains[2000][0]];
-                const futc2001 = collatorName[assignment5.containerChains[2001][0]];
+                const c2000 = collatorName[assignment5.containerChains[2000][0]];
+                const c2001 = collatorName[assignment5.containerChains[2001][0]];
                 const oldContainer2000DbPath =
                     getTmpZombiePath() +
                     `/${oldC2000}/data/containers/chains/simple_container_2000/db/full-container-2000`;
@@ -355,15 +347,15 @@ describeSuite({
                     getTmpZombiePath() +
                     `/${oldC2001}/data/containers/chains/frontier_container_2001/db/full-container-2001`;
                 // Edge case: collators may be assigned to the same chain, in that case the directory will still exist
-                if (oldC2000 != c2000 && oldC2000 != futc2000) {
+                if (oldC2000 != c2000) {
                     expect(await directoryExists(oldContainer2000DbPath)).to.be.false;
                 }
-                if (oldC2001 != c2001 && oldC2001 != futc2001) {
+                if (oldC2001 != c2001) {
                     expect(await directoryExists(oldContainer2001DbPath)).to.be.false;
                 }
 
                 // Check that new assigned collators are running
-                const unassignedCollators = getUnassignedCollators(allCollators, [c2000, c2001, futc2000, futc2001]);
+                const unassignedCollators = getUnassignedCollators(allCollators, [c2000, c2001]);
 
                 // Verify that collators have container chain running by looking at db path,
                 // and unassignedCollators should not have any db path
