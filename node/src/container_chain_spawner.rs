@@ -297,7 +297,7 @@ impl ContainerChainSpawner {
                 generate_genesis_block(&*container_preloaded_genesis, sp_runtime::StateVersion::V0)
                     .map_err(|e| format!("{:?}", e))?;
             let chain_spec_genesis_hash_v0 = block_v0.header().hash();
-            
+
             let block_v1: Block =
                 generate_genesis_block(&*container_preloaded_genesis, sp_runtime::StateVersion::V1)
                     .map_err(|e| format!("{:?}", e))?;
@@ -454,7 +454,9 @@ impl ContainerChainSpawner {
             }
         }
 
-        if state.assigned_para_id.unwrap() != container_chain_para_id && state.next_assigned_para_id.unwrap() != container_chain_para_id{
+        if state.assigned_para_id.unwrap() != container_chain_para_id
+            && state.next_assigned_para_id.unwrap() != container_chain_para_id
+        {
             delete_container_chain_db(&self.container_chain_cli.base_path);
         }
     }
