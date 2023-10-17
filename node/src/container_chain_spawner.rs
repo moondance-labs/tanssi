@@ -16,21 +16,21 @@
 
 use {
     crate::{
-        cli::{Cli, ContainerChainCli},
+        cli::ContainerChainCli,
         container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
         service::{start_node_impl_container, ParachainClient},
     },
     cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
-    dancebox_runtime::{AccountId, Block, BlockNumber},
+    dancebox_runtime::Block,
     futures::FutureExt,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
-    sc_cli::{SubstrateCli, SyncMode},
+    sc_cli::SyncMode,
     sc_service::SpawnTaskHandle,
-    sp_api::{ApiExt, ProvideRuntimeApi},
+    sp_api::ProvideRuntimeApi,
     sp_keystore::KeystorePtr,
     sp_runtime::traits::Block as BlockT,
     std::{
@@ -111,6 +111,7 @@ struct NeedsRestartAndDbRemoval {
     validator: bool,
     keep_db: bool,
     self2: ContainerChainSpawner,
+    warp_sync: bool,
 }
 impl std::fmt::Debug for NeedsRestartAndDbRemoval {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -135,6 +136,7 @@ impl ContainerChainSpawner {
         &self,
         container_chain_para_id: ParaId,
         start_collation: bool,
+        warp_sync: bool,
     ) -> Pin<Box<dyn Future<Output = ()> + Send>> {
         let ContainerChainSpawner {
             orchestrator_chain_interface,
@@ -212,27 +214,10 @@ impl ContainerChainSpawner {
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
 
-            // Force container chains to use warp sync, unless full sync is needed for some reason
-            let full_sync_needed = if !orchestrator_runtime_api
-                .has_api::<dyn AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>>(
-                    orchestrator_chain_info.best_hash,
-                )
-                .map_err(|e| format!("Failed to check if runtime has AuthorNotingApi: {}", e))?
-            {
-                // Before runtime API was implemented we don't know if the container chain has any blocks,
-                // so use full sync because that always works
-                true
-            } else {
-                // If the container chain is still at genesis block, use full sync because warp sync is broken
-                orchestrator_runtime_api
-                    .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
-                    .map_err(|e| format!("Failed to read latest author: {}", e))?
-                    .is_none()
-            };
+            // Use full sync by default
+            container_chain_cli.base.base.network_params.sync = SyncMode::Full;
 
-            if full_sync_needed {
-                container_chain_cli.base.base.network_params.sync = SyncMode::Full;
-            } else {
+            if warp_sync {
                 container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
             }
 
@@ -277,28 +262,62 @@ impl ContainerChainSpawner {
             )
             .await?;
 
-            // Generate genesis hash to compare against container client's genesis hash
-            let container_preloaded_genesis = container_chain_cli.preloaded_chain_spec.unwrap();
-            let state_version =
-                Cli::native_runtime_version(&container_preloaded_genesis.cloned_box())
-                    .state_version();
-            let block: Block = generate_genesis_block(&*container_preloaded_genesis, state_version)
-                .map_err(|e| format!("{:?}", e))?;
-            let chain_spec_genesis_hash = block.header().hash();
+            // Get latest block number from the container chain client
+            let last_container_block = container_chain_client.chain_info().best_number;
 
-            let container_client_genesis_hash = container_chain_client.chain_info().genesis_hash;
+            // Get the container chain's latest block from orchestrator chain and compare with client's one
+            let last_container_block_from_orchestrator = orchestrator_runtime_api
+                .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
+                .unwrap_or_default();
 
-            if container_client_genesis_hash != chain_spec_genesis_hash {
-                log::info!(
-                    "Container genesis {:?} different from chain spec genesis {:?} - Deleting container db", 
-                    container_client_genesis_hash, chain_spec_genesis_hash
-                );
+            let max_block_diff_allowed = 10u32;
+
+            if last_container_block_from_orchestrator
+                .unwrap_or(0u32)
+                .abs_diff(last_container_block)
+                > max_block_diff_allowed
+            {
+                // if the diff is big, delete db and restart using warp sync
                 return Err(sc_service::error::Error::Application(Box::new(
                     NeedsRestartAndDbRemoval {
                         db_path,
                         validator,
                         keep_db: container_chain_cli.base.keep_db,
                         self2,
+                        warp_sync: true,
+                    },
+                )));
+            }
+
+            // Generate genesis hash to compare against container client's genesis hash
+            let container_preloaded_genesis = container_chain_cli.preloaded_chain_spec.unwrap();
+
+            // Check with both state versions
+            let block_v0: Block =
+                generate_genesis_block(&*container_preloaded_genesis, sp_runtime::StateVersion::V0)
+                    .map_err(|e| format!("{:?}", e))?;
+            let chain_spec_genesis_hash_v0 = block_v0.header().hash();
+            
+            let block_v1: Block =
+                generate_genesis_block(&*container_preloaded_genesis, sp_runtime::StateVersion::V1)
+                    .map_err(|e| format!("{:?}", e))?;
+            let chain_spec_genesis_hash_v1 = block_v1.header().hash();
+
+            let container_client_genesis_hash = container_chain_client.chain_info().genesis_hash;
+
+            if container_client_genesis_hash != chain_spec_genesis_hash_v0
+                && container_client_genesis_hash != chain_spec_genesis_hash_v1
+            {
+                log::info!("Container genesis V0: {:?}", chain_spec_genesis_hash_v0);
+                log::info!("Container genesis V1: {:?}", chain_spec_genesis_hash_v1);
+                log::info!("Chain spec genesis {:?} did not match with any container genesis - Restarting...", container_client_genesis_hash);
+                return Err(sc_service::error::Error::Application(Box::new(
+                    NeedsRestartAndDbRemoval {
+                        db_path,
+                        validator,
+                        keep_db: container_chain_cli.base.keep_db,
+                        self2,
+                        warp_sync: true,
                     },
                 )));
             }
@@ -400,7 +419,7 @@ impl ContainerChainSpawner {
                     log::info!("Restarting container chain {}", container_chain_para_id);
                     // self.spawn must return a boxed future because of the recursion here
                     e.self2
-                        .spawn(container_chain_para_id, start_collation)
+                        .spawn(container_chain_para_id, start_collation, e.warp_sync)
                         .await;
                 }
                 Err(e) => {
@@ -433,6 +452,10 @@ impl ContainerChainSpawner {
                     container_chain_para_id
                 );
             }
+        }
+
+        if state.assigned_para_id.unwrap() != container_chain_para_id && state.next_assigned_para_id.unwrap() != container_chain_para_id{
+            delete_container_chain_db(&self.container_chain_cli.base_path);
         }
     }
 
@@ -481,7 +504,7 @@ impl ContainerChainSpawner {
             // Edge case: when starting the node it may be assigned to a container chain, so we need to
             // start a container chain already collating.
             let start_collation = Some(para_id) == current;
-            self.spawn(para_id, start_collation).await;
+            self.spawn(para_id, start_collation, false).await;
         }
     }
 }
