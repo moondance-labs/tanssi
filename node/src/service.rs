@@ -1149,7 +1149,7 @@ fn build_consensus_container(
                 let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
                     orchestrator_client_for_cidp.as_ref(),
                     &latest_header.hash(),
-                    keystore_for_cidp,
+                    para_id,
                 );
 
                 let aux_data = authorities.ok_or_else(|| {
@@ -1278,7 +1278,7 @@ fn build_consensus_orchestrator(
                     let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
                         client_set_aside_for_orch.as_ref(),
                         &block_hash,
-                        keystore_for_cidp,
+                        para_id,
                     );
 
                     let aux_data = authorities.ok_or_else(|| {
