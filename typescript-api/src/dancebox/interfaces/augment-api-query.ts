@@ -34,7 +34,6 @@ import type {
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
     PalletInflationRewardsChainsToRewardValue,
-    PalletInitializerBufferedSessionChange,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingPendingOperationKey,
     PalletPooledStakingPoolsKey,
@@ -269,24 +268,6 @@ declare module "@polkadot/api-base/types/storage" {
             chainsToReward: AugmentedQuery<
                 ApiType,
                 () => Observable<Option<PalletInflationRewardsChainsToRewardValue>>,
-                []
-            > &
-                QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        initializer: {
-            /**
-             * Buffered session changes along with the block number at which they should be applied.
-             *
-             * Typically this will be empty or one element long. Apart from that this item never hits the storage.
-             *
-             * However this is a `Vec` regardless to handle various edge cases that may occur at runtime upgrade boundaries or
-             * if governance intervenes.
-             */
-            bufferedSessionChanges: AugmentedQuery<
-                ApiType,
-                () => Observable<Option<PalletInitializerBufferedSessionChange>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;

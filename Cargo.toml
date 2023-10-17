@@ -255,3 +255,13 @@ lto = true
 [profile.release]
 opt-level = 3
 panic = "unwind"
+
+[patch.crates-io]
+jsonrpsee = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-client-transport = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-core = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-types = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-http-client = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-proc-macros = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-server = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+jsonrpsee-ws-client = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }

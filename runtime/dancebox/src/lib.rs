@@ -82,6 +82,7 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
+    tp_traits::GetSessionContainerChains,
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -1383,7 +1384,18 @@ impl_runtime_apis! {
     impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId, MaxLengthTokenSymbol> for Runtime {
         /// Return the registered para ids
         fn registered_paras() -> Vec<ParaId> {
-            Registrar::registered_para_ids().to_vec()
+            // We should return the container-chains for the session in which we are kicking in
+            let parent_number = System::block_number();
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+
+            let session_index = if should_end_session {
+                Session::current_index() +1
+            }
+            else {
+                Session::current_index()
+            };
+
+            Registrar::session_container_chains(session_index).to_vec()
         }
 
         /// Fetch genesis data for this para id
