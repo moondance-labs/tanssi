@@ -1129,7 +1129,6 @@ fn build_consensus_container(
         get_authorities_from_orchestrator: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
             let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
-            let keystore_for_cidp = keystore_for_cidp.clone();
 
             async move {
                 let latest_header =
@@ -1272,7 +1271,6 @@ fn build_consensus_orchestrator(
         get_authorities_from_orchestrator:
             move |block_hash: H256, (_relay_parent, _validation_data)| {
                 let client_set_aside_for_orch = client_set_aside_for_orch.clone();
-                let keystore_for_cidp = keystore_for_cidp.clone();
 
                 async move {
                     let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
