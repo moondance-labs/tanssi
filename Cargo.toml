@@ -26,9 +26,12 @@ pallet-author-noting-runtime-api = { path = "pallets/author-noting/rpc/runtime-a
 pallet-authority-assignment = { path = "pallets/authority-assignment", default-features = false }
 pallet-authority-mapping = { path = "pallets/authority-mapping", default-features = false }
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
+
+# Custom pallets
 pallet-community-loan-pool = { path = "pallets/community-loan-pool", default-features = false }
 pallet-xcavate-staking = { path = "pallets/xcavate-staking", default-features = false }
 pallet-nft-marketplace = { path = "pallets/nft-marketplace", default-features = false }
+
 pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/rpc/runtime-api", default-features = false }
 pallet-configuration = { path = "pallets/configuration", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }

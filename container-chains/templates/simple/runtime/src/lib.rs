@@ -41,7 +41,7 @@ use {
         parameter_types,
         traits::{
             ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
-            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, AsEnsureOriginWithArg
+            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, AsEnsureOriginWithArg, EitherOfDiverse,
         },
         weights::{
             constants::{
@@ -51,6 +51,7 @@ use {
             ConstantMultiplier, Weight, WeightToFeeCoefficient, WeightToFeeCoefficients,
             WeightToFeePolynomial,
         },
+        PalletId,
     },
     frame_system::{
         limits::{BlockLength, BlockWeights},
@@ -749,6 +750,147 @@ impl pallet_assets::Config for Runtime {
 	type BenchmarkHelper = ();
 }
 
+parameter_types! {
+	pub const CouncilMotionDuration: BlockNumber = 5 * DAYS;
+	pub const CouncilMaxProposals: u32 = 100;
+	pub const CouncilMaxMembers: u32 = 100;
+    pub MaxCollectivesProposalWeight: Weight = Perbill::from_percent(50) * RuntimeBlockWeights::get().max_block;
+}
+
+type CouncilCollective = pallet_collective::Instance1;
+impl pallet_collective::Config<CouncilCollective> for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type Proposal = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type MotionDuration = CouncilMotionDuration;
+	type MaxProposals = CouncilMaxProposals;
+	type MaxMembers = CouncilMaxMembers;
+	type DefaultVote = pallet_collective::PrimeDefaultVote;
+	type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+	type SetMembersOrigin = EnsureRoot<Self::AccountId>;
+	type MaxProposalWeight = MaxCollectivesProposalWeight;
+}
+
+parameter_types! {
+	pub const TechnicalMotionDuration: BlockNumber = 5 * DAYS;
+	pub const TechnicalMaxProposals: u32 = 100;
+	pub const TechnicalMaxMembers: u32 = 100;
+}
+
+type TechnicalCollective = pallet_collective::Instance2;
+impl pallet_collective::Config<TechnicalCollective> for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type Proposal = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type MotionDuration = TechnicalMotionDuration;
+	type MaxProposals = TechnicalMaxProposals;
+	type MaxMembers = TechnicalMaxMembers;
+	type DefaultVote = pallet_collective::PrimeDefaultVote;
+	type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+	type SetMembersOrigin = EnsureRoot<Self::AccountId>;
+	type MaxProposalWeight = MaxCollectivesProposalWeight;
+}
+
+const ALLIANCE_MOTION_DURATION_IN_BLOCKS: BlockNumber = 5 * DAYS;
+
+parameter_types! {
+	pub const AllianceMotionDuration: BlockNumber = ALLIANCE_MOTION_DURATION_IN_BLOCKS;
+	pub const AllianceMaxProposals: u32 = 100;
+	pub const AllianceMaxMembers: u32 = 100;
+}
+
+type AllianceCollective = pallet_collective::Instance3;
+impl pallet_collective::Config<AllianceCollective> for Runtime {
+	type RuntimeOrigin = RuntimeOrigin;
+	type Proposal = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type MotionDuration = AllianceMotionDuration;
+	type MaxProposals = AllianceMaxProposals;
+	type MaxMembers = AllianceMaxMembers;
+	type DefaultVote = pallet_collective::PrimeDefaultVote;
+	type WeightInfo = pallet_collective::weights::SubstrateWeight<Runtime>;
+	type SetMembersOrigin = EnsureRoot<Self::AccountId>;
+	type MaxProposalWeight = MaxCollectivesProposalWeight;
+}
+
+parameter_types! {
+	pub const CommunityLoanPalletId: PalletId = PalletId(*b"py/loana");
+	pub const MaxLoans: u32 = 10000;
+	pub const VotingTime: BlockNumber = 10;
+	pub const MaximumCommitteeMembers: u32 = 10;
+	pub const MaxMilestones: u32 = 8;
+    pub const ProposalBond: Permill = Permill::from_percent(5);
+    pub const ProposalBondMinimum: Balance = 100 * DANCE;
+}
+
+/// Configure the pallet-community-loan-pool in pallets/community-loan-pool.
+impl pallet_community_loan_pool::Config for Runtime {
+	type PalletId = CommunityLoanPalletId;
+	type Currency = Balances;
+	type ApproveOrigin = EitherOfDiverse<
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionAtLeast<AccountId, CouncilCollective, 3, 5>,
+	>;
+	type RejectOrigin = EitherOfDiverse<
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+	>;
+	type CommitteeOrigin = EitherOfDiverse<
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+	>;
+	type DeleteOrigin = EitherOfDiverse<
+		EnsureRoot<AccountId>,
+		pallet_collective::EnsureProportionMoreThan<AccountId, CouncilCollective, 1, 2>,
+	>;
+	type RuntimeEvent = RuntimeEvent;
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ProposalBondMinimum;
+	type ProposalBondMaximum = ();
+	type OnSlash = ();
+	type MaxOngoingLoans = MaxLoans;
+	type TimeProvider = Timestamp;
+	type WeightInfo = pallet_community_loan_pool::weights::SubstrateWeight<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_nft::NftHelper;
+	type VotingTime = VotingTime;
+	type MaxCommitteeMembers = MaximumCommitteeMembers;
+	type MaxMilestonesPerProject = MaxMilestones;
+}
+
+parameter_types! {
+	pub const MinimumRemainingAmount: Balance = 100 * DANCE;
+	pub const MaxStaker: u32 = 10000;
+}
+
+/// Configure the pallet-xcavate-staking in pallets/xcavate-staking.
+impl pallet_xcavate_staking::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type MinimumRemainingAmount = MinimumRemainingAmount;
+	type MaxStakers = MaxStaker;
+	type TimeProvider = Timestamp;
+}
+
+parameter_types! {
+	pub const NftMarketplacePalletId: PalletId = PalletId(*b"py/nftxc");
+	pub const MaxListedNft: u32 = 1000000;
+	pub const MaxNftsInCollection: u32 = 100;
+}
+
+/// Configure the pallet-xcavate-staking in pallets/xcavate-staking.
+impl pallet_nft_marketplace::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type PalletId = NftMarketplacePalletId;
+	#[cfg(feature = "runtime-benchmarks")]
+	type Helper = pallet_nft::NftHelper;
+	type MaxListedNfts = MaxListedNft;
+	type MaxNftInCollection = MaxNftsInCollection;
+}
+
+impl pallet_insecure_randomness_collective_flip::Config for Runtime {}
+
 
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -784,6 +926,17 @@ construct_runtime!(
         // NFTs
         Uniques: pallet_uniques,
 		Nfts: pallet_nfts,
+
+        // Custom Pallets
+        CommunityLoanPool: pallet_community_loan_pool = 36,
+		XcavateStaking: pallet_xcavate_staking = 37,
+		NftMarketplace: pallet_nft_marketplace = 38,
+
+        Council: pallet_collective::<Instance1>,
+		TechnicalCommittee: pallet_collective::<Instance2>,
+		AllianceMotion: pallet_collective::<Instance3>,
+        RandomnessCollectiveFlip: pallet_insecure_randomness_collective_flip,
+
 
     }
 );

@@ -208,6 +208,13 @@ fn testnet_genesis(
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
+        community_loan_pool: Default::default(),
+        alliance_motion: Default::default(),
+        council: container_chain_template_simple_runtime::CouncilConfig { members: vec![], phantom: Default::default() },
+        technical_committee: container_chain_template_simple_runtime::TechnicalCommitteeConfig {
+			members: vec![],
+			phantom: Default::default(),
+		},
     }
 }
 

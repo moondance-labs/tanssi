@@ -31,6 +31,7 @@ pallet-proxy = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 tp-core = { workspace = true }
+
 pallet-community-loan-pool = { workspace = true }
 pallet-xcavate-staking = { workspace = true }
 pallet-nft-marketplace = { workspace = true }

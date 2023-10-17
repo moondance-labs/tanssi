@@ -21,6 +21,11 @@ smallvec = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tp-consensus = { workspace = true }
 
+# Custom pallets
+pallet-community-loan-pool = { workspace = true }
+pallet-xcavate-staking = { workspace = true }
+pallet-nft-marketplace = { workspace = true }
+
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
@@ -45,6 +50,8 @@ pallet-assets = { workspace = true }
 pallet-nfts = { workspace = true }
 pallet-uniques = { workspace = true }
 node-primitives = { workspace = true }
+pallet-collective = { workspace = true }
+pallet-insecure-randomness-collective-flip = { workspace = true }
 
 pallet-proxy = { workspace = true }
 sp-api = { workspace = true }
@@ -119,6 +126,11 @@ std = [
 	"pallet-nfts/std",
 	"pallet-uniques/std",
 	"pallet-assets/std",
+	"pallet-community-loan-pool/std",
+	"pallet-xcavate-staking/std",
+	"pallet-nft-marketplace/std",
+	"pallet-collective/std",
+	"pallet-insecure-randomness-collective-flip/std",
 	"node-primitives/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
@@ -160,6 +172,8 @@ runtime-benchmarks = [
 	"pallet-nfts/runtime-benchmarks",
 	"pallet-uniques/runtime-benchmarks",
 	"pallet-assets/runtime-benchmarks",
+	"pallet-community-loan-pool/runtime-benchmarks",
+	"pallet-collective/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 ]
@@ -181,6 +195,11 @@ try-runtime = [
 	"pallet-uniques/try-runtime",
 	"pallet-assets/try-runtime",
 	"pallet-proxy/try-runtime",
+	"pallet-community-loan-pool/try-runtime",
+	"pallet-xcavate-staking/try-runtime",
+	"pallet-nft-marketplace/try-runtime",
+	"pallet-collective/try-runtime",
+	"pallet-insecure-randomness-collective-flip/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
