@@ -1071,7 +1071,6 @@ fn build_consensus_container(
 
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
     let orchestrator_client_for_cidp = orchestrator_client;
-    let keystore_for_cidp = keystore.clone();
 
     let params = tc_consensus::BuildOrchestratorAuraConsensusParams {
         proposer_factory,
@@ -1215,7 +1214,6 @@ fn build_consensus_orchestrator(
     );
 
     let client_set_aside_for_cidp = client.clone();
-    let keystore_for_cidp = keystore.clone();
     let client_set_aside_for_orch = client.clone();
 
     let params = BuildOrchestratorAuraConsensusParams {
