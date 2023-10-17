@@ -17,7 +17,9 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
-    dancebox_runtime::{AuthorInherent, AuthorityAssignment, MaxLengthTokenSymbol},
+    dancebox_runtime::{
+        AuthorInherent, AuthorityAssignment, CollatorAssignment, MaxLengthTokenSymbol,
+    },
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -78,16 +80,18 @@ pub fn run_to_block(n: u32) {
         );
 
         // Initialize the new block
-        Session::on_initialize(System::block_number());
+        CollatorAssignment::on_initialize(System::block_number());
         Initializer::on_initialize(System::block_number());
+        Session::on_initialize(System::block_number());
         AuthorInherent::on_initialize(System::block_number());
 
         pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
             .expect("author inherent to dispatch correctly");
 
         // Finalize the block
-        Session::on_finalize(System::block_number());
+        CollatorAssignment::on_finalize(System::block_number());
         Initializer::on_finalize(System::block_number());
+        Session::on_finalize(System::block_number());
         AuthorInherent::on_finalize(System::block_number());
     }
 }

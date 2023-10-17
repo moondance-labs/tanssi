@@ -14,8 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use frame_support::traits::Hooks;
+
 use {
-    crate::{self as pallet_collator_assignment, RotateCollatorsEveryNSessions},
+    crate::{
+        self as pallet_collator_assignment, GetRandomnessForNextBlock,
+        RotateCollatorsEveryNSessions,
+    },
     frame_support::{
         parameter_types,
         traits::{ConstU16, ConstU64},
@@ -161,6 +166,18 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
     }
 }
 
+pub struct MockGetRandomnessForNextBlock;
+
+impl GetRandomnessForNextBlock<u64> for MockGetRandomnessForNextBlock {
+    fn should_end_session(n: u64) -> bool {
+        n % 5 == 0
+    }
+
+    fn get_randomness() -> [u8; 32] {
+        MockData::mock().random_seed
+    }
+}
+
 parameter_types! {
     pub const CollatorRotationSessionPeriod: u32 = 5;
 }
@@ -171,6 +188,7 @@ impl pallet_collator_assignment::Config for Test {
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
     type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<CollatorRotationSessionPeriod>;
+    type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type WeightInfo = ();
 }
 
@@ -193,15 +211,16 @@ pub fn run_to_block(n: u64) {
     for x in (old_block_number + 1)..=n {
         System::reset_events();
         System::set_block_number(x);
-        let randomness = MockData::mock().random_seed;
+        CollatorAssignment::on_initialize(x);
 
         if x % session_len == 1 {
             let session_index = (x / session_len) as u32;
             CollatorAssignment::initializer_on_new_session(
                 &session_index,
-                randomness,
                 CollatorsGetter::collators(session_index),
             );
         }
+
+        CollatorAssignment::on_finalize(x);
     }
 }

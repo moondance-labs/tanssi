@@ -63,7 +63,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
-    pallet_collator_assignment::RotateCollatorsEveryNSessions,
+    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::{SessionManager, ShouldEndSession},
@@ -507,26 +507,6 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         all_validators: Vec<(AccountId, NimbusId)>,
         queued: Vec<(AccountId, NimbusId)>,
     ) {
-        let random_seed = if session_index != 0 {
-            if let Some(random_hash) =
-                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
-            {
-                // Return random_hash as a [u8; 32] instead of a Hash
-                let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
-                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
-
-                buf
-            } else {
-                // If there is no randomness (e.g when running in dev mode), return [0; 32]
-                // TODO: smoke test to ensure this never happens in a live network
-                [0; 32]
-            }
-        } else {
-            // In session 0 (genesis) there is randomness
-            [0; 32]
-        };
-
         // We first initialize Configuration
         Configuration::initializer_on_new_session(&session_index);
         // Next: Registrar
@@ -537,11 +517,8 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         let next_collators = queued.iter().map(|(k, _)| k.clone()).collect();
 
         // Next: CollatorAssignment
-        let assignments = CollatorAssignment::initializer_on_new_session(
-            &session_index,
-            random_seed,
-            next_collators,
-        );
+        let assignments =
+            CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
 
         let queued_id_to_nimbus_map = queued.iter().cloned().collect();
         AuthorityAssignment::initializer_on_new_session(
@@ -640,6 +617,39 @@ impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     }
 }
 
+pub struct BabeGetRandomnessForNextBlock;
+
+impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
+    fn should_end_session(n: u32) -> bool {
+        <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(n)
+    }
+
+    fn get_randomness() -> [u8; 32] {
+        let block_number = System::block_number();
+        let random_seed = if block_number != 0 {
+            if let Some(random_hash) =
+                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
+            {
+                // Return random_hash as a [u8; 32] instead of a Hash
+                let mut buf = [0u8; 32];
+                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
+
+                buf
+            } else {
+                // If there is no randomness (e.g when running in dev mode), return [0; 32]
+                // TODO: smoke test to ensure this never happens in a live network
+                [0; 32]
+            }
+        } else {
+            // In block 0 (genesis) there is randomness
+            [0; 32]
+        };
+
+        random_seed
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
@@ -647,6 +657,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type SessionIndex = u32;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
+    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 

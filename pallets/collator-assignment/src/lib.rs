@@ -45,6 +45,7 @@ pub use pallet::*;
 use {
     crate::weights::WeightInfo,
     frame_support::pallet_prelude::*,
+    frame_system::pallet_prelude::BlockNumberFor,
     rand::{seq::SliceRandom, SeedableRng},
     rand_chacha::ChaCha20Rng,
     sp_runtime::{
@@ -93,6 +94,7 @@ pub mod pallet {
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
         type ContainerChains: GetSessionContainerChains<Self::SessionIndex>;
         type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
+        type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -123,6 +125,13 @@ pub mod pallet {
     #[pallet::getter(fn pending_collator_container_chain)]
     pub(crate) type PendingCollatorContainerChain<T: Config> =
         StorageValue<_, Option<AssignedCollators<T::AccountId>>, ValueQuery>;
+
+    /// Randomness from previous block. Used to shuffle collators on session change.
+    /// Should only be set on the last block of each session and should be killed on the on_initialize of the next block.
+    /// The default value of [0; 32] disables randomness in the pallet.
+    #[pallet::storage]
+    #[pallet::getter(fn randomness)]
+    pub(crate) type Randomness<T: Config> = StorageValue<_, [u8; 32], ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {}
@@ -371,9 +380,9 @@ pub mod pallet {
 
         pub fn initializer_on_new_session(
             session_index: &T::SessionIndex,
-            random_seed: [u8; 32],
             collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
+            let random_seed = Randomness::<T>::take();
             let num_collators = collators.len();
             let assigned_collators = Self::assign_collators(session_index, random_seed, collators);
             let num_parachains = assigned_collators.next_assignment.container_chains.len();
@@ -406,6 +415,28 @@ pub mod pallet {
             CollatorContainerChain::<T>::put(assigned_collators);
         }
     }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(n: BlockNumberFor<T>) -> Weight {
+            let mut weight = Weight::zero();
+
+            // Account reads and writes for on_finalize
+            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
+                weight += T::DbWeight::get().reads_writes(1, 1);
+            }
+
+            weight
+        }
+
+        fn on_finalize(n: BlockNumberFor<T>) {
+            // If the next block is a session change, read randomness and store in pallet storage
+            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
+                let random_seed = T::GetRandomnessForNextBlock::get_randomness();
+                Randomness::<T>::put(random_seed);
+            }
+        }
+    }
 }
 
 pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
@@ -417,4 +448,9 @@ where
     fn should_rotate_all_collators(session_index: u32) -> bool {
         session_index % Period::get() == 0
     }
+}
+
+pub trait GetRandomnessForNextBlock<BlockNumber> {
+    fn should_end_session(block_number: BlockNumber) -> bool;
+    fn get_randomness() -> [u8; 32];
 }
