@@ -209,8 +209,8 @@ pub async fn monitor_task(state: Arc<Mutex<ContainerChainSpawnerState>>) {
     let max_running_container_chains = 4;
 
     loop {
-        log::info!("Monitor tick");
         sleep(monitor_period).await;
+        log::debug!("Monitor tick");
         let mut state = state.lock().unwrap();
         let monitor_state = &mut state.spawned_containers_monitor;
 
