@@ -85,10 +85,11 @@ mod benchmarks {
         <CollatorContainerChain<T>>::put(&old_assigned);
         // Do not use [0; 32] because that seed will not shuffle the list of collators
         let random_seed = [1; 32];
+        <Randomness<T>>::put(random_seed);
 
         #[block]
         {
-            <Pallet<T>>::initializer_on_new_session(&session_index, random_seed, collators);
+            <Pallet<T>>::initializer_on_new_session(&session_index, collators);
         }
 
         // Assignment changed

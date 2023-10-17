@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::traits::Hooks;
-
 use {
     crate::{
         self as pallet_collator_assignment, GetRandomnessForNextBlock,
@@ -23,7 +21,7 @@ use {
     },
     frame_support::{
         parameter_types,
-        traits::{ConstU16, ConstU64},
+        traits::{ConstU16, ConstU64, Hooks},
     },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
