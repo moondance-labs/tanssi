@@ -8,6 +8,7 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [dependencies]
+serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }

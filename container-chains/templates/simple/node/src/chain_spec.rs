@@ -16,7 +16,8 @@
 
 use {
     container_chain_template_simple_runtime::{
-        AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, Signature,
+        AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, Signature, Balance,
+        constants::currency::DOLLARS,
     },
     cumulus_primitives_core::ParaId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
@@ -78,7 +79,7 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
-    let mut default_funded_accounts = pre_funded_accounts();
+    let mut default_funded_accounts = get_endowed_accounts_with_balance();
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
     let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
@@ -123,7 +124,7 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     properties.insert("isEthereum".into(), false.into());
     let protocol_id = Some(format!("container-chain-{}", para_id));
 
-    let mut default_funded_accounts = pre_funded_accounts();
+    let mut default_funded_accounts = get_endowed_accounts_with_balance();
     default_funded_accounts.sort();
     default_funded_accounts.dedup();
     let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes
@@ -165,8 +166,43 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     )
 }
 
+pub fn get_endowed_accounts_with_balance() -> Vec<(AccountId, u128)> {
+	let accounts: Vec<AccountId> = vec![
+		get_account_id_from_seed::<sr25519::Public>("Alice"),
+		get_account_id_from_seed::<sr25519::Public>("Bob"),
+		get_account_id_from_seed::<sr25519::Public>("Charlie"),
+		get_account_id_from_seed::<sr25519::Public>("Dave"),
+		get_account_id_from_seed::<sr25519::Public>("Eve"),
+		get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+		get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+		get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
+		get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+		get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+	];
+
+	const ENDOWMENT: Balance = 10_000_000 * DOLLARS;
+	let accounts_with_balance: Vec<(AccountId, u128)> =
+		accounts.iter().cloned().map(|k| (k, ENDOWMENT)).collect();
+	let json_data = &include_bytes!("../../../../../seed/balances.json")[..];
+	let additional_accounts_with_balance: Vec<(AccountId, u128)> =
+		serde_json::from_slice(json_data).unwrap();
+
+	let mut accounts = additional_accounts_with_balance.clone();
+
+	accounts_with_balance.iter().for_each(|tup1| {
+		for tup2 in additional_accounts_with_balance.iter() {
+			if tup1.0 == tup2.0 {
+				return;
+			}
+		}
+		accounts.push(tup1.to_owned());
+	});
+
+	accounts
+}
+
 fn testnet_genesis(
-    endowed_accounts: Vec<AccountId>,
+    endowed_accounts: Vec<(AccountId, u128)>,
     id: ParaId,
     root_key: AccountId,
 ) -> container_chain_template_simple_runtime::RuntimeGenesisConfig {
@@ -178,11 +214,7 @@ fn testnet_genesis(
             ..Default::default()
         },
         balances: container_chain_template_simple_runtime::BalancesConfig {
-            balances: endowed_accounts
-                .iter()
-                .cloned()
-                .map(|k| (k, 1 << 60))
-                .collect(),
+            balances: endowed_accounts.iter().cloned().map(|x| (x.0.clone(), x.1)).collect(),
         },
         assets: container_chain_template_simple_runtime::AssetsConfig {
             assets: vec![(9, get_account_id_from_seed::<sr25519::Public>("Alice"), true, 1)],
@@ -218,20 +250,3 @@ fn testnet_genesis(
     }
 }
 
-/// Get pre-funded accounts
-pub fn pre_funded_accounts() -> Vec<AccountId> {
-    vec![
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        get_account_id_from_seed::<sr25519::Public>("Bob"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie"),
-        get_account_id_from_seed::<sr25519::Public>("Dave"),
-        get_account_id_from_seed::<sr25519::Public>("Eve"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-    ]
-}

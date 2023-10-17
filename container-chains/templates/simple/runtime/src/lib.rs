@@ -42,6 +42,7 @@ use {
         traits::{
             ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
             OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, AsEnsureOriginWithArg, EitherOfDiverse,
+            tokens::nonfungibles_v2::Inspect,
         },
         weights::{
             constants::{
