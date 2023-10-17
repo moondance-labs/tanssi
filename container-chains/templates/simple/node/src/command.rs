@@ -39,6 +39,8 @@ use {
 #[cfg(feature = "try-runtime")]
 use try_runtime_cli::block_building_info::substrate_info;
 #[cfg(feature = "try-runtime")]
+use crate::service::ParachainNativeExecutor;
+#[cfg(feature = "try-runtime")]
 const SLOT_DURATION: u64 = 12;
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {

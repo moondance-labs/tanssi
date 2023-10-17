@@ -55,12 +55,12 @@ tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
 # Moonkit (wasm)
-nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0" }
-nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+nimbus-consensus = { git = "https://github.com/fgamundi/moonkit", branch = "fg-tanssi" }
+nimbus-primitives = { git = "https://github.com/fgamundi/moonkit", branch = "fg-tanssi", default-features = false }
+pallet-author-inherent = { git = "https://github.com/fgamundi/moonkit", branch = "fg-tanssi", default-features = false }
+pallet-maintenance-mode = { git = "https://github.com/fgamundi/moonkit", branch = "fg-tanssi", default-features = false }
+pallet-migrations = { git = "https://github.com/fgamundi/moonkit", branch = "fg-tanssi", default-features = false }
+xcm-primitives = { git = "https://github.com/fgamundi/moonkit", branch = "fg-tanssi", default-features = false }
 
 # Substrate (wasm)
 sp-consensus-beefy = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
@@ -261,3 +261,6 @@ jsonrpsee-http-client = { git = "https://github.com/moondance-labs/jsonrpsee", b
 jsonrpsee-proc-macros = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
 jsonrpsee-server = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
 jsonrpsee-ws-client = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
+
+# [patch."https://github.com/fgamundi/moonkit"]
+# pallet-maintenance-mode = { path = "../moonkit/pallets/maintenance-mode" }
