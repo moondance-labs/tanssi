@@ -705,9 +705,6 @@ async fn authorities_runtime_api_tests() {
     let net = AuraTestNet::new(4);
     let net = Arc::new(Mutex::new(net));
 
-    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
-    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
-
     let mut net = net.lock();
     let peer = net.peer(3);
     let client = peer.client().as_client();
