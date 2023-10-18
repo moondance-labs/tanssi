@@ -20,7 +20,8 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use frame_support::{
-    migration::storage_key_iter, storage::types::StorageValue, weights::Weight, Blake2_128Concat,
+    migration::storage_key_iter, storage::types::StorageValue, traits::OnRuntimeUpgrade,
+    weights::Weight, Blake2_128Concat,
 };
 
 use {
@@ -209,19 +210,56 @@ where
     }
 }
 
+pub struct PolkadotXcmMigration<T>(pub PhantomData<T>);
+impl<T> Migration for PolkadotXcmMigration<T>
+where
+    T: pallet_xcm::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_PolkadotXcmMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        pallet_xcm::migration::v1::VersionUncheckedMigrateToV1::<T>::on_runtime_upgrade()
+    }
+}
+
+pub struct XcmpQueueMigration<T>(pub PhantomData<T>);
+impl<T> Migration for XcmpQueueMigration<T>
+where
+    T: cumulus_pallet_xcmp_queue::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_XcmpQueueMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        cumulus_pallet_xcmp_queue::migration::Migration::<T>::on_runtime_upgrade()
+    }
+}
+
 pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
 where
-    Runtime: pallet_invulnerables::Config,
-    Runtime: pallet_pooled_staking::Config,
-    Runtime: pallet_balances::Config,
+    Runtime: pallet_pooled_staking::Config
+        + pallet_xcm::Config
+        + pallet_balances::Config
+        + cumulus_pallet_xcmp_queue::Config
+        + pallet_invulnerables::Config,
     Runtime::RuntimeHoldReason: From<crate::HoldReason>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
         let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
+        let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
+        let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
 
-        vec![Box::new(migrate_invulnerables), Box::new(migrate_holds)]
+        vec![
+            Box::new(migrate_invulnerables),
+            Box::new(migrate_holds),
+            Box::new(migrate_xcm),
+            Box::new(migrate_xcmp_queue),
+        ]
     }
 }
