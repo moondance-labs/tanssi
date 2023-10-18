@@ -137,6 +137,21 @@ describeSuite({
                 // TODO: fix once we have types
                 const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
                 expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
+
+                // Restart the process in the current terminal with its original environment variables and cwd
+                const child = spawn(command, args, {
+                    stdio: 'inherit',
+                    cwd: cwd,
+                    env: Object.fromEntries(envVariables.map(e => e.split('=', 2)))
+                });
+
+                process.on('SIGINT', () => {
+                    child.kill('SIGINT');
+                });
+
+                process.on('exit', () => {
+                    // Kill process
+                });
             },
         });
 
