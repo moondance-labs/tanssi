@@ -1,5 +1,8 @@
 import { DevModeContext, expect } from "@moonwall/cli";
+import { filterAndApply } from "@moonwall/util";
+
 import { ApiPromise } from "@polkadot/api";
+import { AccountId20, AccountId32, DispatchError, DispatchInfo, EventRecord } from "@polkadot/types/interfaces";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -55,6 +58,29 @@ export async function waitToSession(context, paraApi: ApiPromise, session: numbe
 
         await context.waitBlock(1, "Tanssi");
     }
+}
+
+export function extractFeeAuthor(events: EventRecord[] = [], feePayer: String) {
+    let filtered = filterAndApply(
+      events,
+      "balances",
+      ["Withdraw"],
+      ({ event }: EventRecord) => event.data as unknown as { who: AccountId32; amount: u128 }
+    );
+    let extractFeeFromAuthor = filtered
+        .filter(({ who, amount }) => who.toString() === feePayer)
+    return extractFeeFromAuthor[0]
+}
+
+export function fetchRewardAuthorOrchestrator(events: EventRecord[] = []) {
+    let filtered = filterAndApply(
+      events,
+      "inflationRewards",
+      ["RewardedOrchestrator"],
+      ({ event }: EventRecord) =>  event.data as unknown as { account_id: AccountId32  ; balance: u128 }
+    );
+
+    return filtered[0]
 }
 
 /// Same as tx.signAndSend(account), except that it waits for the transaction to be included in a block:
