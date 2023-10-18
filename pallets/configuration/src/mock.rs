@@ -108,6 +108,7 @@ pub fn run_to_block(n: u64) {
     let session_len = 5;
 
     for x in (old_block_number + 1)..=n {
+        System::reset_events();
         System::set_block_number(x);
 
         if x % session_len == 1 {

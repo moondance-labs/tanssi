@@ -57,3 +57,8 @@ pub trait GetHostConfiguration<SessionIndex> {
 pub trait GetSessionIndex<SessionIndex> {
     fn session_index() -> SessionIndex;
 }
+
+/// Should pallet_collator_assignment trigger a full rotation on this session?
+pub trait ShouldRotateAllCollators<SessionIndex> {
+    fn should_rotate_all_collators(session_index: SessionIndex) -> bool;
+}
