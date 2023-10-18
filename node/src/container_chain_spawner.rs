@@ -42,7 +42,7 @@ use {
         time::Instant,
     },
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
-    tokio::sync::mpsc::UnboundedReceiver,
+    tokio::sync::{mpsc, oneshot},
 };
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
@@ -88,8 +88,7 @@ pub struct ContainerChainState {
 
 /// Stops a container chain when dropped
 pub struct StopContainerChain {
-    #[allow(dead_code)]
-    signal: exit_future::Signal,
+    signal: oneshot::Sender<()>,
     id: usize,
 }
 
@@ -323,7 +322,7 @@ impl ContainerChainSpawner {
             }
 
             // Signal that allows to gracefully stop a container chain
-            let (signal, on_exit) = exit_future::signal();
+            let (signal, on_exit) = oneshot::channel::<()>();
             let collate_on = collate_on.unwrap_or_else(|| {
                 assert!(
                     !validator,
@@ -385,10 +384,13 @@ impl ContainerChainSpawner {
                             Err(e) => panic!("{} failed: {}", name, e),
                         }
                     }
-                    _ = on_exit_future => {
-                        // Graceful shutdown
+                    stop_unassigned = on_exit_future => {
+                        // Graceful shutdown.
+                        // `stop_unassigned` will be `Ok` if `.stop()` has been called, which means that the
+                        // container chain has been unassigned, and will be `Err` if the handle has been dropped,
+                        // which means that the node is stopping.
                         // Delete existing database if running as collator
-                        if validator && !container_chain_cli.base.keep_db {
+                        if validator && stop_unassigned.is_ok() && !container_chain_cli.base.keep_db {
                             delete_container_chain_db(&db_path);
                         }
                     }
@@ -445,6 +447,9 @@ impl ContainerChainSpawner {
                 state
                     .spawned_containers_monitor
                     .set_stop_signal_time(id, Instant::now());
+
+                // Send signal to perform graceful shutdown, which will delete the db if needed
+                let _ = stop_handle.stop_handle.signal.send(());
             }
             None => {
                 log::warn!(
@@ -453,16 +458,10 @@ impl ContainerChainSpawner {
                 );
             }
         }
-
-        if state.assigned_para_id.unwrap() != container_chain_para_id
-            && state.next_assigned_para_id.unwrap() != container_chain_para_id
-        {
-            delete_container_chain_db(&self.container_chain_cli.base_path);
-        }
     }
 
     /// Receive and process `CcSpawnMsg`s indefinitely
-    pub async fn rx_loop(self, mut rx: UnboundedReceiver<CcSpawnMsg>) {
+    pub async fn rx_loop(self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>) {
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
@@ -649,7 +648,7 @@ mod tests {
         }
 
         async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
-            let (signal, _on_exit) = exit_future::signal();
+            let (signal, _on_exit) = oneshot::channel();
             let currently_collating_on2 = self.currently_collating_on.clone();
             let collate_closure = move || async move {
                 let mut cco = currently_collating_on2.lock().unwrap();
