@@ -6772,7 +6772,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/fgamundi/moonkit?branch=fg-tanssi#7a1ff639750a6b2dd0b948bf7a888b0498e4eafa"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -6802,7 +6802,7 @@ dependencies = [
 [[package]]
 name = "nimbus-primitives"
 version = "0.9.0"
-source = "git+https://github.com/fgamundi/moonkit?branch=fg-tanssi#7a1ff639750a6b2dd0b948bf7a888b0498e4eafa"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "async-trait",
  "frame-support",
@@ -7177,7 +7177,7 @@ dependencies = [
 [[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/fgamundi/moonkit?branch=fg-tanssi#7a1ff639750a6b2dd0b948bf7a888b0498e4eafa"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -7918,7 +7918,7 @@ dependencies = [
 [[package]]
 name = "pallet-maintenance-mode"
 version = "0.1.0"
-source = "git+https://github.com/fgamundi/moonkit?branch=fg-tanssi#7a1ff639750a6b2dd0b948bf7a888b0498e4eafa"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -7970,7 +7970,7 @@ dependencies = [
 [[package]]
 name = "pallet-migrations"
 version = "0.1.0"
-source = "git+https://github.com/fgamundi/moonkit?branch=fg-tanssi#7a1ff639750a6b2dd0b948bf7a888b0498e4eafa"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -16778,7 +16778,7 @@ dependencies = [
 [[package]]
 name = "xcm-primitives"
 version = "0.1.0"
-source = "git+https://github.com/fgamundi/moonkit?branch=fg-tanssi#7a1ff639750a6b2dd0b948bf7a888b0498e4eafa"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "sp-runtime",
 ]
