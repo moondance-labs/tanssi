@@ -3913,3 +3913,63 @@ fn test_reward_to_invulnerable() {
             );
         });
 }
+
+#[test]
+fn test_reward_to_invulnerable_with_key_change() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            
+            run_to_session(2u32);
+
+            // change key, this should be reflected 2 sessions afterward
+            let alice_new_key = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(ALICE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: alice_new_key,
+                },
+                vec![]
+            ));
+
+            run_to_session(4u32);
+
+            let account: AccountId = ALICE.into();
+            let balance_before = System::account(account.clone()).data.free;
+
+            let summary = run_block();
+            assert_eq!(summary.author_id, ALICE.into());
+
+            let balance_after = System::account(account).data.free;
+
+            let all_rewards = RewardsPortion::get() * summary.inflation;
+            // rewards are shared between orchestrator and registered paras
+            let orchestrator_rewards = all_rewards / 3;
+            assert_eq!(
+                orchestrator_rewards,
+                dbg!(balance_after - balance_before),
+                "alice should get the correct reward portion"
+            );
+        });
+}
