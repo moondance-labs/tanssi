@@ -1,8 +1,8 @@
 import "@polkadot/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair, extractFee } from "@moonwall/util";
+import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock, fetchRewardAuthorOrchestrator, extractFeeAuthor } from "../../../util/block";
+import { initializeCustomCreateBlock, extractFeeAuthor } from "../../../util/block";
 
 describeSuite({
     id: "C0103",
@@ -92,7 +92,7 @@ describeSuite({
                 expect(balanceAfter > balanceBefore - fee).to.be.true;
             },
         });
-        
+
         it({
             id: "E04",
             title: "Unauthorized account cannot call proxy.proxy",

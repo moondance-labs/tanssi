@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair, extractFee, filterAndApply } from "@moonwall/util";
+import { KeyringPair, filterAndApply } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { extractWeight } from "@moonwall/util";
 import { extractFeeAuthor, fetchIssuance, filterRewardFromOrchestrator } from "util/block";
@@ -194,7 +194,7 @@ describeSuite({
 
                 const totalSupplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
 
-                expect(totalSupplyAfter -totalSupplyBefore).to.equal(issuance - fee);
+                expect(totalSupplyAfter - totalSupplyBefore).to.equal(issuance - fee);
             },
         });
 
