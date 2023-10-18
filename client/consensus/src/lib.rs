@@ -81,7 +81,7 @@ pub(crate) fn slot_author<P: Pair>(
 pub fn authorities<B, C, P>(
     client: &C,
     parent_hash: &B::Hash,
-    keystore: KeystorePtr,
+    para_id: ParaId,
 ) -> Option<Vec<AuthorityId<P>>>
 where
     P: Pair + Send + Sync,
@@ -94,8 +94,6 @@ where
 {
     let runtime_api = client.runtime_api();
 
-    let (_first_eligibile_key, para_id) =
-        first_eligible_key::<B, C, P>(client, parent_hash, keystore.clone())?;
     let authorities = runtime_api
         .para_id_authorities(*parent_hash, para_id)
         .ok()?;
