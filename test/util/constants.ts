@@ -1,0 +1,1 @@
+export const PARACHAIN_BOND = "5EYCAe5cJkHcthonN7KrsVp11XYHMqtrFPimDd3Af755ET2D";
