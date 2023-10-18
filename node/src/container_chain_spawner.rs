@@ -23,14 +23,14 @@ use {
     cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
-    dancebox_runtime::Block,
+    dancebox_runtime::{AccountId, Block, BlockNumber},
     futures::FutureExt,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
     sc_cli::SyncMode,
     sc_service::SpawnTaskHandle,
-    sp_api::ProvideRuntimeApi,
+    sp_api::{ApiExt, ProvideRuntimeApi},
     sp_keystore::KeystorePtr,
     sp_runtime::traits::Block as BlockT,
     std::{
@@ -213,11 +213,32 @@ impl ContainerChainSpawner {
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
 
-            // Use full sync by default
-            container_chain_cli.base.base.network_params.sync = SyncMode::Full;
+            // Force container chains to use warp sync, unless full sync is needed for some reason
+            let full_sync_needed = if !orchestrator_runtime_api
+                .has_api::<dyn AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>>(
+                    orchestrator_chain_info.best_hash,
+                )
+                .map_err(|e| format!("Failed to check if runtime has AuthorNotingApi: {}", e))?
+            {
+                // Before runtime API was implemented we don't know if the container chain has any blocks,
+                // so use full sync because that always works
+                true
+            } else {
+                // If the container chain is still at genesis block, use full sync because warp sync is broken
+                orchestrator_runtime_api
+                    .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
+                    .map_err(|e| format!("Failed to read latest author: {}", e))?
+                    .is_none()
+            };
 
             if warp_sync {
                 container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
+            } else {
+                container_chain_cli.base.base.network_params.sync = SyncMode::Full;
+            }
+
+            if full_sync_needed {
+                container_chain_cli.base.base.network_params.sync = SyncMode::Full;
             }
 
             let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
@@ -238,7 +259,7 @@ impl ContainerChainSpawner {
             container_chain_cli_config.database.set_path(&db_path);
 
             // Delete existing database if running as collator
-            if validator && !container_chain_cli.base.keep_db {
+            if validator && !container_chain_cli.base.keep_db && warp_sync {
                 delete_container_chain_db(&db_path);
             }
 
@@ -390,7 +411,7 @@ impl ContainerChainSpawner {
                         // container chain has been unassigned, and will be `Err` if the handle has been dropped,
                         // which means that the node is stopping.
                         // Delete existing database if running as collator
-                        if validator && stop_unassigned.is_ok() && !container_chain_cli.base.keep_db {
+                        if validator && stop_unassigned.is_ok() && !container_chain_cli.base.keep_db && warp_sync {
                             delete_container_chain_db(&db_path);
                         }
                     }
@@ -412,11 +433,6 @@ impl ContainerChainSpawner {
                     if e.is::<NeedsRestartAndDbRemoval>() =>
                 {
                     let e = e.downcast::<NeedsRestartAndDbRemoval>().unwrap();
-                    // Delete container chain
-                    // TODO: shouldn't need to check this condition here because this error is only returned if this condition is true
-                    if e.validator && !e.keep_db {
-                        delete_container_chain_db(&e.db_path);
-                    }
 
                     log::info!("Restarting container chain {}", container_chain_para_id);
                     // self.spawn must return a boxed future because of the recursion here
