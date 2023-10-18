@@ -16,7 +16,7 @@
 
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
-    dancebox_runtime::{AuthorInherent, AuthorityAssignment},
+    dancebox_runtime::{AuthorInherent, AuthorityAssignment, InflationRewards},
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -29,6 +29,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::{Get, Pair},
     sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
@@ -49,46 +50,75 @@ pub fn session_to_block(n: u32) -> u32 {
     block_number + 1
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct RunSummary {
+    pub author_id: AccountId,
+    pub inflation: Balance,
+}
+
 pub fn run_to_session(n: u32) {
     run_to_block(session_to_block(n));
 }
 
 /// Utility function that advances the chain to the desired block number.
-pub fn run_to_block(n: u32) {
+pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
+    let mut summaries = BTreeMap::new();
+
     while System::block_number() < n {
-        let slot = current_slot() + 1;
+        let summary = run_block();
+        let block_number = System::block_number();
+        summaries.insert(block_number, summary);
+    }
 
-        let authorities =
-            Runtime::para_id_authorities(ParachainInfo::get()).expect("authorities should be set");
+    summaries
+}
 
-        let authority: NimbusId = authorities[slot as usize % authorities.len()].clone();
+pub fn run_block() -> RunSummary {
+    let slot = current_slot() + 1;
 
-        let pre_digest = Digest {
-            logs: vec![
-                DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
-                DigestItem::PreRuntime(NIMBUS_ENGINE_ID, authority.encode()),
-            ],
-        };
+    let authorities =
+        Runtime::para_id_authorities(ParachainInfo::get()).expect("authorities should be set");
 
-        System::reset_events();
-        System::initialize(
-            &(System::block_number() + 1),
-            &System::parent_hash(),
-            &pre_digest,
-        );
+    let authority: NimbusId = authorities[slot as usize % authorities.len()].clone();
 
-        // Initialize the new block
-        Session::on_initialize(System::block_number());
-        Initializer::on_initialize(System::block_number());
-        AuthorInherent::on_initialize(System::block_number());
+    let pre_digest = Digest {
+        logs: vec![
+            DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
+            DigestItem::PreRuntime(NIMBUS_ENGINE_ID, authority.encode()),
+        ],
+    };
 
-        pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
-            .expect("author inherent to dispatch correctly");
+    System::reset_events();
+    System::initialize(
+        &(System::block_number() + 1),
+        &System::parent_hash(),
+        &pre_digest,
+    );
 
-        // Finalize the block
-        Session::on_finalize(System::block_number());
-        Initializer::on_finalize(System::block_number());
-        AuthorInherent::on_finalize(System::block_number());
+    // Initialize the new block
+    Session::on_initialize(System::block_number());
+    Initializer::on_initialize(System::block_number());
+    AuthorInherent::on_initialize(System::block_number());
+
+    // `Initializer::on_finalize` needs to run at least one to have
+    // author mapping setup.
+    let author_id = current_author();
+
+    let current_issuance = Balances::total_issuance();
+    InflationRewards::on_initialize(System::block_number());
+    let new_issuance = Balances::total_issuance();
+
+    pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
+        .expect("author inherent to dispatch correctly");
+
+    // Finalize the block
+    Session::on_finalize(System::block_number());
+    Initializer::on_finalize(System::block_number());
+    AuthorInherent::on_finalize(System::block_number());
+
+    RunSummary {
+        author_id,
+        inflation: new_issuance - current_issuance,
     }
 }
 
@@ -339,3 +369,21 @@ pub const ALICE: [u8; 32] = [4u8; 32];
 pub const BOB: [u8; 32] = [5u8; 32];
 pub const CHARLIE: [u8; 32] = [6u8; 32];
 pub const DAVE: [u8; 32] = [7u8; 32];
+
+/// Calls `f_loop` with all values in `iter`, and returns the first `Some(value)`.
+/// If only `None` is returned, the value returned by `f_else`  is returned. It
+/// is like a for loop which could have an else block in case no iteration
+/// breaks with a value.
+pub fn for_else<I, F, E, R>(iter: I, mut f_loop: F, f_else: E) -> R
+where
+    I: Iterator,
+    F: FnMut(I::Item) -> Option<R>,
+    E: FnOnce() -> R,
+{
+    for x in iter {
+        if let Some(out) = f_loop(x) {
+            return out;
+        }
+    }
+    return f_else();
+}
