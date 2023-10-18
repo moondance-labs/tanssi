@@ -230,11 +230,13 @@ pub struct RemoveAccountIdsAbove100;
 impl RemoveInvulnerables<u64> for RemoveAccountIdsAbove100 {
     fn remove_invulnerables(collators: &mut Vec<u64>, num_invulnerables: usize) -> Vec<u64> {
         let mut invulnerables = vec![];
-        collators.retain(|x| if invulnerables.len() < num_invulnerables && x >= 100 {
-            invulnerables.push(*x);
-            false
-        } else {
-            true
+        collators.retain(|x| {
+            if invulnerables.len() < num_invulnerables && *x >= 100 {
+                invulnerables.push(*x);
+                false
+            } else {
+                true
+            }
         });
 
         invulnerables

@@ -55,7 +55,8 @@ use {
     sp_std::{fmt::Debug, prelude::*, vec},
     tp_collator_assignment::AssignedCollators,
     tp_traits::{
-        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId, Slot, RemoveInvulnerables, ShouldRotateAllCollators
+        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
+        RemoveInvulnerables, ShouldRotateAllCollators, Slot,
     },
 };
 
@@ -314,10 +315,16 @@ pub mod pallet {
 
             // Fill orchestrator chain collators up to min_num_orchestrator_chain
             // Give priority to invulnerables
-            let num_missing_orchestrator_collators = min_num_orchestrator_chain - new_assigned.orchestrator_chain.len();
-            let invulnerables_for_orchestrator = T::RemoveInvulnerables::remove_invulnerables(&mut new_collators, num_missing_orchestrator_collators);
-            new_assigned
-                .fill_orchestrator_chain_collators(min_num_orchestrator_chain, &mut invulnerables_for_orchestrator.into_iter());
+            let num_missing_orchestrator_collators =
+                min_num_orchestrator_chain - new_assigned.orchestrator_chain.len();
+            let invulnerables_for_orchestrator = T::RemoveInvulnerables::remove_invulnerables(
+                &mut new_collators,
+                num_missing_orchestrator_collators,
+            );
+            new_assigned.fill_orchestrator_chain_collators(
+                min_num_orchestrator_chain,
+                &mut invulnerables_for_orchestrator.into_iter(),
+            );
             // If there are no enough invulnerables, or if the invulnerables are currently assigned to other chains,
             // fill orchestrator chain with regular collators
             let mut new_collators = new_collators.into_iter();
