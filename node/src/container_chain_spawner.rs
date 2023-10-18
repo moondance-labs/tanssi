@@ -36,7 +36,7 @@ use {
     std::{
         collections::{HashMap, HashSet},
         future::Future,
-        path::{Path, PathBuf},
+        path::Path,
         pin::Pin,
         sync::{Arc, Mutex},
         time::Instant,
@@ -105,29 +105,24 @@ pub enum CcSpawnMsg {
 }
 
 /// Error thrown when a container chain needs to restart and remove the database.
-struct NeedsRestartAndDbRemoval {
-    db_path: PathBuf,
-    validator: bool,
-    keep_db: bool,
+struct NeedsRestart {
     self2: ContainerChainSpawner,
     warp_sync: bool,
 }
-impl std::fmt::Debug for NeedsRestartAndDbRemoval {
+impl std::fmt::Debug for NeedsRestart {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("NeedsRestartAndDbRemoval")
-            .field("db_path", &self.db_path)
-            .field("validator", &self.validator)
-            .field("keep_db", &self.keep_db)
             .field("self2", &"<ContainerChainSpawner>")
+            .field("warp_sync", &self.warp_sync)
             .finish()
     }
 }
-impl std::fmt::Display for NeedsRestartAndDbRemoval {
+impl std::fmt::Display for NeedsRestart {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
-impl std::error::Error for NeedsRestartAndDbRemoval {}
+impl std::error::Error for NeedsRestart {}
 
 impl ContainerChainSpawner {
     /// Try to start a new container chain. In case of error, this panics and stops the node.
@@ -299,10 +294,7 @@ impl ContainerChainSpawner {
             {
                 // if the diff is big, delete db and restart using warp sync
                 return Err(sc_service::error::Error::Application(Box::new(
-                    NeedsRestartAndDbRemoval {
-                        db_path,
-                        validator,
-                        keep_db: container_chain_cli.base.keep_db,
+                    NeedsRestart {
                         self2,
                         warp_sync: true,
                     },
@@ -332,10 +324,7 @@ impl ContainerChainSpawner {
                 log::info!("Container genesis V1: {:?}", chain_spec_genesis_hash_v1);
                 log::info!("Chain spec genesis {:?} did not match with any container genesis - Restarting...", container_client_genesis_hash);
                 return Err(sc_service::error::Error::Application(Box::new(
-                    NeedsRestartAndDbRemoval {
-                        db_path,
-                        validator,
-                        keep_db: container_chain_cli.base.keep_db,
+                    NeedsRestart {
                         self2,
                         warp_sync: true,
                     },
@@ -411,7 +400,7 @@ impl ContainerChainSpawner {
                         // container chain has been unassigned, and will be `Err` if the handle has been dropped,
                         // which means that the node is stopping.
                         // Delete existing database if running as collator
-                        if validator && stop_unassigned.is_ok() && !container_chain_cli.base.keep_db && warp_sync {
+                        if validator && stop_unassigned.is_ok() && !container_chain_cli.base.keep_db {
                             delete_container_chain_db(&db_path);
                         }
                     }
@@ -429,10 +418,8 @@ impl ContainerChainSpawner {
         async move {
             match try_closure().await {
                 Ok(()) => {}
-                Err(sc_service::error::Error::Application(e))
-                    if e.is::<NeedsRestartAndDbRemoval>() =>
-                {
-                    let e = e.downcast::<NeedsRestartAndDbRemoval>().unwrap();
+                Err(sc_service::error::Error::Application(e)) if e.is::<NeedsRestart>() => {
+                    let e = e.downcast::<NeedsRestart>().unwrap();
 
                     log::info!("Restarting container chain {}", container_chain_para_id);
                     // self.spawn must return a boxed future because of the recursion here
