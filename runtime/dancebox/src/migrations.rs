@@ -20,10 +20,10 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    crate::{Configuration, Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
     frame_support::{
-        migration::storage_key_iter, storage::types::StorageValue, weights::Weight,
-        Blake2_128Concat,
+        migration::storage_key_iter, storage::types::StorageValue, traits::OnRuntimeUpgrade,
+        weights::Weight, Blake2_128Concat,
     },
     pallet_balances::IdAmount,
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
@@ -287,14 +287,13 @@ where
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
         const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
             &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
-        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
 
         let old_config_bytes =
             frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
                 .expect("configuration.activeConfig should have value");
         assert_eq!(old_config_bytes.len(), 16);
 
+        use parity_scale_codec::Encode;
         Ok((old_config_bytes).encode())
     }
 
@@ -302,7 +301,7 @@ where
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(
         &self,
-        number_of_invulnerables: Vec<u8>,
+        _number_of_invulnerables: Vec<u8>,
     ) -> Result<(), sp_runtime::DispatchError> {
         let new_period = Configuration::config().full_rotation_period;
         assert_eq!(new_period, 24);
