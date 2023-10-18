@@ -316,7 +316,7 @@ pub mod pallet {
             // Fill orchestrator chain collators up to min_num_orchestrator_chain
             // Give priority to invulnerables
             let num_missing_orchestrator_collators =
-                min_num_orchestrator_chain - new_assigned.orchestrator_chain.len();
+                min_num_orchestrator_chain.saturating_sub(new_assigned.orchestrator_chain.len());
             let invulnerables_for_orchestrator = T::RemoveInvulnerables::remove_invulnerables(
                 &mut new_collators,
                 num_missing_orchestrator_collators,
