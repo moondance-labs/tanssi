@@ -586,6 +586,8 @@ impl pallet_invulnerables::Config for Runtime {
     type CollatorIdOf = pallet_invulnerables::IdentityCollator;
     type CollatorRegistration = Session;
     type WeightInfo = pallet_invulnerables::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Currency = Balances;
 }
 
 parameter_types! {
@@ -1004,6 +1006,7 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 }
 
 impl pallet_inflation_rewards::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = Registrar;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;

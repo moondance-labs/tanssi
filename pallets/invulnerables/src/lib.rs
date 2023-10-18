@@ -41,6 +41,8 @@ pub mod weights;
 #[frame_support::pallet]
 pub mod pallet {
     pub use crate::weights::WeightInfo;
+    #[cfg(feature = "runtime-benchmarks")]
+    use frame_support::traits::Currency;
     use {
         frame_support::{
             dispatch::DispatchResultWithPostInfo,
@@ -92,6 +94,10 @@ pub mod pallet {
 
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
+
+        #[cfg(feature = "runtime-benchmarks")]
+        type Currency: Currency<Self::AccountId>
+            + frame_support::traits::fungible::Balanced<Self::AccountId>;
     }
 
     #[pallet::pallet]
@@ -290,6 +296,9 @@ pub struct InvulnerableRewardDistribution<Runtime, Currency, Fallback>(
     PhantomData<(Runtime, Currency, Fallback)>,
 );
 
+use frame_support::pallet_prelude::Weight;
+use sp_runtime::traits::Get;
+
 type CreditOf<Runtime, Currency> =
     frame_support::traits::fungible::Credit<<Runtime as frame_system::Config>::AccountId, Currency>;
 pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
@@ -306,12 +315,18 @@ where
         rewarded: AccountIdOf<Runtime>,
         amount: CreditOf<Runtime, Currency>,
     ) -> frame_support::pallet_prelude::DispatchResultWithPostInfo {
+        let mut total_weight = Weight::zero();
+        // weight to read invulnerables
+        total_weight += Runtime::DbWeight::get().reads(1);
         if !Invulnerables::<Runtime>::get().contains(&rewarded) {
-            return Fallback::distribute_rewards(rewarded, amount);
+            let post_info = Fallback::distribute_rewards(rewarded, amount)?;
+            if let Some(weight) = post_info.actual_weight {
+                total_weight += weight;
+            }
+        } else {
+            Currency::resolve(&rewarded, amount).map_err(|_| TokenError::NotExpendable)?;
+            total_weight += Runtime::WeightInfo::reward_invulnerable()
         }
-
-        Currency::resolve(&rewarded, amount).map_err(|_| TokenError::NotExpendable)?;
-
-        Ok(().into())
+        Ok(Some(total_weight).into())
     }
 }

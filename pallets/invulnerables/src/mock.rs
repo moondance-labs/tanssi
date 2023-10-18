@@ -114,6 +114,8 @@ impl Config for Test {
     type CollatorIdOf = IdentityCollator;
     type CollatorRegistration = IsRegistered;
     type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type Currency = Balances;
 }
 
 sp_runtime::impl_opaque_keys! {

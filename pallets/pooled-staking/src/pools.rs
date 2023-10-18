@@ -16,8 +16,8 @@
 
 use {
     crate::{
-        candidate::Candidates, Candidate, Config, CreditOf, Delegator, Error, Event, Pallet, Pools,
-        PoolsKey, Shares, Stake,
+        candidate::Candidates, weights::WeightInfo, Candidate, Config, CreditOf, Delegator, Error,
+        Event, Pallet, Pools, PoolsKey, Shares, Stake,
     },
     core::marker::PhantomData,
     frame_support::{
@@ -472,7 +472,7 @@ pub fn distribute_rewards<T: Config>(
     T::Currency::resolve(&T::StakingAccount::get(), other_rewards)
         .map_err(|_| DispatchError::NoProviders)?;
 
-    Ok(().into())
+    Ok(Some(T::WeightInfo::distribute_rewards()).into())
 }
 
 fn distribute_rewards_inner<T: Config>(

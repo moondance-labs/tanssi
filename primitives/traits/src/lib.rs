@@ -53,6 +53,12 @@ pub trait DistributeRewards<AccountId, Imbalance> {
     fn distribute_rewards(rewarded: AccountId, amount: Imbalance) -> DispatchResultWithPostInfo;
 }
 
+impl<AccountId, Imbalance> DistributeRewards<AccountId, Imbalance> for () {
+    fn distribute_rewards(_rewarded: AccountId, _amount: Imbalance) -> DispatchResultWithPostInfo {
+        Ok(().into())
+    }
+}
+
 /// Get the current list of container chains parachain ids.
 pub trait GetCurrentContainerChains {
     type MaxContainerChains: Get<u32>;
