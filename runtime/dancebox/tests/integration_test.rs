@@ -20,7 +20,10 @@ use {
     common::*,
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
-        migrations::{CollatorSelectionInvulnerablesValue, MigrateInvulnerables},
+        migrations::{
+            CollatorSelectionInvulnerablesValue, MigrateConfigurationFullRotationPeriod,
+            MigrateInvulnerables,
+        },
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, Configuration,
         Invulnerables, MinimumSelfDelegation, PooledStaking, Proxy, ProxyType,
     },
@@ -3636,5 +3639,49 @@ fn test_migration_holds() {
             assert_eq!(new_holds.len() as u32, 1u32);
             assert_eq!(new_holds[0].id, dancebox_runtime::HoldReason::PooledStake);
             assert_eq!(new_holds[0].amount, 100u128);
+        });
+}
+
+#[test]
+fn test_migration_config_full_rotation_period() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
+                &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
+            const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
+                &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
+
+            // Modify active config
+            frame_support::storage::unhashed::put_raw(CONFIGURATION_ACTIVE_CONFIG_KEY, &hex_literal::hex!("63000000020000000500000002000000"));
+            // Modify pending configs
+            frame_support::storage::unhashed::put_raw(CONFIGURATION_PENDING_CONFIGS_KEY, &hex_literal::hex!("08b108000063000000020000000500000002000000b208000064000000020000000500000002000000"));
+
+            let migration = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
+            migration.migrate(Default::default());
+
+            let expected_active = pallet_configuration::HostConfiguration {
+                max_collators: 99,
+                min_orchestrator_collators: 2,
+                max_orchestrator_collators: 5,
+                collators_per_container: 2,
+                full_rotation_period: 24,
+            };
+            assert_eq!(Configuration::config(), expected_active);
+
+            let expected_pending = vec![
+                (2225, pallet_configuration::HostConfiguration { max_collators: 99, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 24 }), (2226, pallet_configuration::HostConfiguration { max_collators: 100, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 24 })
+            ];
+            assert_eq!(Configuration::pending_configs(), expected_pending);
         });
 }
