@@ -285,7 +285,7 @@ impl ContainerChainSpawner {
                 .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
                 .unwrap_or_default();
 
-            let max_block_diff_allowed = 10u32;
+            let max_block_diff_allowed = 100u32;
 
             if last_container_block_from_orchestrator
                 .unwrap_or(0u32)
@@ -323,6 +323,7 @@ impl ContainerChainSpawner {
                 log::info!("Container genesis V0: {:?}", chain_spec_genesis_hash_v0);
                 log::info!("Container genesis V1: {:?}", chain_spec_genesis_hash_v1);
                 log::info!("Chain spec genesis {:?} did not match with any container genesis - Restarting...", container_client_genesis_hash);
+                delete_container_chain_db(&db_path);
                 return Err(sc_service::error::Error::Application(Box::new(
                     NeedsRestart {
                         self2,
