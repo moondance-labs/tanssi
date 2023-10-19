@@ -43,6 +43,7 @@ use {
     },
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
     tokio::sync::{mpsc, oneshot},
+    tokio::time::{sleep, Duration},
 };
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
@@ -421,8 +422,10 @@ impl ContainerChainSpawner {
                 Ok(()) => {}
                 Err(sc_service::error::Error::Application(e)) if e.is::<NeedsRestart>() => {
                     let e = e.downcast::<NeedsRestart>().unwrap();
-
+                    // Main loop frequency, doesn't need to be fast
+                    let monitor_period = Duration::from_secs(10);
                     log::info!("Restarting container chain {}", container_chain_para_id);
+                    sleep(monitor_period).await;
                     // self.spawn must return a boxed future because of the recursion here
                     e.self2
                         .spawn(container_chain_para_id, start_collation, e.warp_sync)
