@@ -446,7 +446,14 @@ where
     Period: Get<u32>,
 {
     fn should_rotate_all_collators(session_index: u32) -> bool {
-        session_index % Period::get() == 0
+        let period = Period::get();
+
+        if period == 0 {
+            // A period of 0 disables rotation
+            false
+        } else {
+            session_index % Period::get() == 0
+        }
     }
 }
 
