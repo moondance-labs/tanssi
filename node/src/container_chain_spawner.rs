@@ -259,6 +259,61 @@ impl ContainerChainSpawner {
                 delete_container_chain_db(&db_path);
             }
 
+            let temp_cli = crate::service::new_partial(&container_chain_cli_config).unwrap();
+            // Get latest block number from the container chain client
+            let last_container_block_temp = temp_cli.client.chain_info().best_number;
+
+            // Get the container chain's latest block from orchestrator chain and compare with client's one
+            let last_container_block_from_orchestrator = orchestrator_runtime_api
+                .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
+                .unwrap_or_default();
+
+            let max_block_diff_allowed = 100u32;
+
+            if last_container_block_from_orchestrator
+                .unwrap_or(0u32)
+                .abs_diff(last_container_block_temp)
+                > max_block_diff_allowed
+            {
+                // if the diff is big, delete db and restart using warp sync
+                return Err(sc_service::error::Error::Application(Box::new(
+                    NeedsRestart {
+                        self2,
+                        warp_sync: true,
+                    },
+                )));
+            }
+            // Generate genesis hash to compare against container client's genesis hash
+            let container_preloaded_genesis = container_chain_cli.preloaded_chain_spec.unwrap();
+
+            // Check with both state versions
+            let block_v0: Block =
+                generate_genesis_block(&*container_preloaded_genesis, sp_runtime::StateVersion::V0)
+                    .map_err(|e| format!("{:?}", e))?;
+            let chain_spec_genesis_hash_v0 = block_v0.header().hash();
+
+            let block_v1: Block =
+                generate_genesis_block(&*container_preloaded_genesis, sp_runtime::StateVersion::V1)
+                    .map_err(|e| format!("{:?}", e))?;
+            let chain_spec_genesis_hash_v1 = block_v1.header().hash();
+
+            let container_client_genesis_hash = temp_cli.client.chain_info().genesis_hash;
+
+            if container_client_genesis_hash != chain_spec_genesis_hash_v0
+                && container_client_genesis_hash != chain_spec_genesis_hash_v1
+            {
+                log::info!("Container genesis V0: {:?}", chain_spec_genesis_hash_v0);
+                log::info!("Container genesis V1: {:?}", chain_spec_genesis_hash_v1);
+                log::info!("Chain spec genesis {:?} did not match with any container genesis - Restarting...", container_client_genesis_hash);
+                delete_container_chain_db(&db_path);
+                return Err(sc_service::error::Error::Application(Box::new(
+                    NeedsRestart {
+                        self2,
+                        warp_sync: true,
+                    },
+                )));
+            }
+
             // Start container chain node
             let (
                 mut container_chain_task_manager,
@@ -277,61 +332,8 @@ impl ContainerChainSpawner {
                 validator,
             )
             .await?;
-
-            // Get latest block number from the container chain client
-            let last_container_block = container_chain_client.chain_info().best_number;
-
-            // Get the container chain's latest block from orchestrator chain and compare with client's one
-            let last_container_block_from_orchestrator = orchestrator_runtime_api
-                .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
-                .unwrap_or_default();
-
-            let max_block_diff_allowed = 100u32;
-
-            if last_container_block_from_orchestrator
-                .unwrap_or(0u32)
-                .abs_diff(last_container_block)
-                > max_block_diff_allowed
-            {
-                // if the diff is big, delete db and restart using warp sync
-                return Err(sc_service::error::Error::Application(Box::new(
-                    NeedsRestart {
-                        self2,
-                        warp_sync: true,
-                    },
-                )));
-            }
-
-            // Generate genesis hash to compare against container client's genesis hash
-            let container_preloaded_genesis = container_chain_cli.preloaded_chain_spec.unwrap();
-
-            // Check with both state versions
-            let block_v0: Block =
-                generate_genesis_block(&*container_preloaded_genesis, sp_runtime::StateVersion::V0)
-                    .map_err(|e| format!("{:?}", e))?;
-            let chain_spec_genesis_hash_v0 = block_v0.header().hash();
-
-            let block_v1: Block =
-                generate_genesis_block(&*container_preloaded_genesis, sp_runtime::StateVersion::V1)
-                    .map_err(|e| format!("{:?}", e))?;
-            let chain_spec_genesis_hash_v1 = block_v1.header().hash();
-
-            let container_client_genesis_hash = container_chain_client.chain_info().genesis_hash;
-
-            if container_client_genesis_hash != chain_spec_genesis_hash_v0
-                && container_client_genesis_hash != chain_spec_genesis_hash_v1
-            {
-                log::info!("Container genesis V0: {:?}", chain_spec_genesis_hash_v0);
-                log::info!("Container genesis V1: {:?}", chain_spec_genesis_hash_v1);
-                log::info!("Chain spec genesis {:?} did not match with any container genesis - Restarting...", container_client_genesis_hash);
-                delete_container_chain_db(&db_path);
-                return Err(sc_service::error::Error::Application(Box::new(
-                    NeedsRestart {
-                        self2,
-                        warp_sync: true,
-                    },
-                )));
-            }
+            
+            
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = oneshot::channel::<()>();
