@@ -44,7 +44,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
-        traits::{BadOrigin, BlakeTwo256, Dispatchable, OpaqueKeys},
+        traits::{BadOrigin, BlakeTwo256, OpaqueKeys},
         DigestItem,
     },
     sp_std::vec,
@@ -1674,50 +1674,6 @@ fn test_collator_assignment_rotation() {
                 assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
             );
-
-            pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
-                use cumulus_primitives_core::relay_chain::well_known_keys;
-                use cumulus_primitives_core::PersistedValidationData;
-                use cumulus_primitives_parachain_inherent::ParachainInherentData;
-                use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
-
-                let (relay_parent_storage_root, relay_chain_state) = {
-                    let mut sproof = RelayStateSproofBuilder::default();
-                    sproof.additional_key_values.push((
-                        well_known_keys::CURRENT_BLOCK_RANDOMNESS.to_vec(),
-                        Some(random_seed).encode(),
-                    ));
-
-                    sproof.into_state_root_and_proof()
-                };
-                let vfp = PersistedValidationData {
-                    // TODO: this is previous relay_parent_number + 1, but not sure where can I get that value
-                    relay_parent_number: 2u32,
-                    relay_parent_storage_root,
-                    ..Default::default()
-                };
-                let parachain_inherent_data = ParachainInherentData {
-                    validation_data: vfp,
-                    relay_chain_state: relay_chain_state,
-                    downward_messages: Default::default(),
-                    horizontal_messages: Default::default(),
-                };
-                // Delete existing flag to avoid error
-                // 'ValidationData must be updated only once in a block'
-                // TODO: this is a hack
-                frame_support::storage::unhashed::kill(&frame_support::storage::storage_prefix(
-                    b"ParachainSystem",
-                    b"ValidationData",
-                ));
-                assert_ok!(
-                    RuntimeCall::ParachainSystem(
-                        cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
-                            data: parachain_inherent_data
-                        }
-                    )
-                    .dispatch(inherent_origin())
-                );
-            }
 
             let rotation_period = Configuration::config().full_rotation_period;
 
@@ -3683,5 +3639,120 @@ fn test_migration_config_full_rotation_period() {
                 (2225, pallet_configuration::HostConfiguration { max_collators: 99, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 24 }), (2226, pallet_configuration::HostConfiguration { max_collators: 100, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 24 })
             ];
             assert_eq!(Configuration::pending_configs(), expected_pending);
+        });
+}
+
+#[test]
+fn test_collator_assignment_gives_priority_to_invulnerables() {
+    // Set max_collators = 2, take 1 invulnerable and the rest from staking
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let stake = 10 * MinimumSelfDelegation::get();
+
+            // Register accounts in pallet_session (invulnerables are automatically registered)
+            let bob_account_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(BOB.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: bob_account_id,
+                },
+                vec![]
+            ));
+            let charlie_account_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(CHARLIE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: charlie_account_id,
+                },
+                vec![]
+            ));
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(BOB.into()),
+                BOB.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(CHARLIE.into()),
+                CHARLIE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            let eligible_candidates =
+                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
+            assert_eq!(
+                eligible_candidates,
+                vec![
+                    EligibleCandidate {
+                        candidate: BOB.into(),
+                        stake
+                    },
+                    EligibleCandidate {
+                        candidate: CHARLIE.into(),
+                        stake
+                    },
+                ]
+            );
+
+            assert_eq!(
+                pallet_invulnerables::Invulnerables::<Runtime>::get().to_vec(),
+                vec![AccountId::from(ALICE), AccountId::from(DAVE)]
+            );
+
+            set_parachain_inherent_data_random_seed([1; 32]);
+
+            // Need to trigger new session to update pallet_session
+            run_to_session(2);
+
+            assert_eq!(
+                Session::validators(),
+                vec![
+                    AccountId::from(ALICE),
+                    AccountId::from(DAVE),
+                    AccountId::from(BOB),
+                    AccountId::from(CHARLIE)
+                ]
+            );
+
+            // Need to trigger full rotation to ensure invulnerables are assigned
+            let rotation_period = Configuration::config().full_rotation_period;
+            run_to_session(rotation_period);
+
+            assert!(
+                CollatorAssignment::collator_container_chain()
+                    .orchestrator_chain
+                    .contains(&AccountId::from(ALICE)),
+                "CollatorAssignment did not give priority to invulnerable ALICE: {:?}",
+                CollatorAssignment::collator_container_chain()
+            );
+
+            assert!(
+                CollatorAssignment::collator_container_chain()
+                    .orchestrator_chain
+                    .contains(&AccountId::from(DAVE)),
+                "CollatorAssignment did not give priority to invulnerable DAVE: {:?}",
+                CollatorAssignment::collator_container_chain()
+            );
         });
 }
