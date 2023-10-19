@@ -20,7 +20,7 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{Configuration, Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
     frame_support::{
         migration::storage_key_iter, storage::types::StorageValue, traits::OnRuntimeUpgrade,
         weights::Weight, Blake2_128Concat,
@@ -303,7 +303,7 @@ where
         &self,
         _number_of_invulnerables: Vec<u8>,
     ) -> Result<(), sp_runtime::DispatchError> {
-        let new_period = Configuration::config().full_rotation_period;
+        let new_period = crate::Configuration::config().full_rotation_period;
         assert_eq!(new_period, 24);
 
         Ok(())
