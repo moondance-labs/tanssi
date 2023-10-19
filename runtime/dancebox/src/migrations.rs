@@ -19,20 +19,35 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
-use frame_support::{
-    migration::storage_key_iter, storage::types::StorageValue, weights::Weight, Blake2_128Concat,
-};
-
 use {
     crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    frame_support::{
+        migration::storage_key_iter, storage::types::StorageValue, weights::Weight,
+        Blake2_128Concat,
+    },
     pallet_balances::IdAmount,
-    pallet_configuration::weights::WeightInfo as _,
+    pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
     pallet_invulnerables::weights::WeightInfo as _,
     pallet_migrations::{GetMigrations, Migration},
     sp_core::Get,
     sp_runtime::BoundedVec,
     sp_std::{marker::PhantomData, prelude::*},
 };
+
+#[derive(
+    Clone,
+    parity_scale_codec::Encode,
+    parity_scale_codec::Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+)]
+struct HostConfigurationV0 {
+    pub max_collators: u32,
+    pub min_orchestrator_collators: u32,
+    pub max_orchestrator_collators: u32,
+    pub collators_per_container: u32,
+}
 
 pub struct CollatorSelectionStorageValuePrefix;
 impl frame_support::traits::StorageInstance for CollatorSelectionStorageValuePrefix {
@@ -228,38 +243,33 @@ where
             &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
 
         // Modify active config
-        let old_config_bytes =
-            frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
+        let old_config: HostConfigurationV0 =
+            frame_support::storage::unhashed::get(CONFIGURATION_ACTIVE_CONFIG_KEY)
                 .expect("configuration.activeConfig should have value");
-        assert_eq!(old_config_bytes.len(), 16);
-        let append_bytes = hex_literal::hex!("18000000");
-        let new_config_bytes: Vec<u8> = old_config_bytes
-            .iter()
-            .chain(append_bytes.iter())
-            .copied()
-            .collect();
-        frame_support::storage::unhashed::put_raw(
-            CONFIGURATION_ACTIVE_CONFIG_KEY,
-            &new_config_bytes,
-        );
+        let new_config = HostConfiguration {
+            max_collators: old_config.max_collators,
+            min_orchestrator_collators: old_config.min_orchestrator_collators,
+            max_orchestrator_collators: old_config.max_orchestrator_collators,
+            collators_per_container: old_config.collators_per_container,
+            full_rotation_period: 24,
+        };
+        frame_support::storage::unhashed::put(CONFIGURATION_ACTIVE_CONFIG_KEY, &new_config);
 
         // Modify pending configs, if any
-        // Pending configs is a `Vec<(u32, HostConfiguration)>`, so 20 bytes instead of 16
-        let old_pending_configs: Vec<[u8; 20]> =
+        let old_pending_configs: Vec<(u32, HostConfigurationV0)> =
             frame_support::storage::unhashed::get(CONFIGURATION_PENDING_CONFIGS_KEY)
                 .unwrap_or_default();
-        let mut new_pending_configs: Vec<[u8; 24]> = vec![];
+        let mut new_pending_configs: Vec<(u32, HostConfiguration)> = vec![];
 
-        for old_config_bytes in old_pending_configs {
-            let new_config_bytes: Vec<u8> = old_config_bytes
-                .iter()
-                .chain(append_bytes.iter())
-                .copied()
-                .collect();
-            let new_config_bytes: [u8; 24] = new_config_bytes
-                .try_into()
-                .expect("20 bytes + 4 bytes == 24 bytes");
-            new_pending_configs.push(new_config_bytes);
+        for (session_index, old_config) in old_pending_configs {
+            let new_config = HostConfiguration {
+                max_collators: old_config.max_collators,
+                min_orchestrator_collators: old_config.min_orchestrator_collators,
+                max_orchestrator_collators: old_config.max_orchestrator_collators,
+                collators_per_container: old_config.collators_per_container,
+                full_rotation_period: 24,
+            };
+            new_pending_configs.push((session_index, new_config));
         }
 
         if !new_pending_configs.is_empty() {
@@ -283,7 +293,7 @@ where
         let old_config_bytes =
             frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
                 .expect("configuration.activeConfig should have value");
-        assert_eq!(old_config_bytes.len(), 20);
+        assert_eq!(old_config_bytes.len(), 16);
 
         Ok((old_config_bytes).encode())
     }
