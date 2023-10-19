@@ -975,7 +975,10 @@ impl pallet_pooled_staking::Config for Runtime {
 parameter_types! {
     pub ParachainBondAccount: AccountId32 = PalletId(*b"ParaBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
-    // 5%/year with 2_629_800 blocks per year -> 0.05/2_629_800 = 19/1_000_000_000
+    // The equation to solve is:
+    // initial_supply * (1.05) = initial_supply * (1+x)^2_629_800
+    // we should solve for x = (1.05)^(1/2_629_800) -1 -> 0.000000019 per block or 19/1_000_000_000
+    // 1% in the case of dev moed
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));
 
     // 30% for parachain bond, so 70% for staking

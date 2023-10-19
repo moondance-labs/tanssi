@@ -6,7 +6,7 @@ import { getAuthorFromDigest } from "util/author";
 import { PARACHAIN_BOND } from "util/constants";
 
 describeSuite({
-    id: "DT0401",
+    id: "IR0401",
     title: "Invulnerable reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -14,7 +14,6 @@ describeSuite({
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
         });
-
         it({
             id: "E01",
             title: "Every block created should reward the appropriate amount to orchestrator",
