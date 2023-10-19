@@ -1,8 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
-import { fetchIssuance, filterRewardFromOrchestrator } from "util/block";
-import { getAuthorFromDigest } from "util/author";
+import { fetchIssuance } from "util/block";
 
 describeSuite({
     id: "IR0402",
@@ -27,7 +26,7 @@ describeSuite({
                 const supplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
 
                 // in dev mode is 1%
-                const expectedIssuanceIncrement = supplyBefore/100n;
+                const expectedIssuanceIncrement = supplyBefore / 100n;
                 expect(issuance).to.equal(expectedIssuanceIncrement);
                 expect(supplyAfter).to.equal(supplyBefore + expectedIssuanceIncrement);
             },
