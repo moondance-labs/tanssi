@@ -47,6 +47,14 @@ fn invulnerables<T: Config + frame_system::Config>(count: u32, seed: u32) -> Vec
     invulnerables
 }
 
+fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
+    let events = frame_system::Pallet::<T>::events();
+    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
+    // compare to the last event record
+    let EventRecord { event, .. } = &events[events.len() - 1];
+    assert_eq!(event, &system_event);
+}
+
 #[benchmarks]
 mod benchmarks {
     use super::*;
@@ -75,6 +83,9 @@ mod benchmarks {
             container_chains: BTreeMap::from_iter(old_container_chains),
         };
         <CollatorContainerChain<T>>::put(&old_assigned);
+        // Do not use [0; 32] because that seed will not shuffle the list of collators
+        let random_seed = [1; 32];
+        <Randomness<T>>::put(random_seed);
 
         #[block]
         {
@@ -87,6 +98,16 @@ mod benchmarks {
         assert_ne!(
             <CollatorContainerChain::<T>>::get().container_chains.len(),
             0
+        );
+
+        // Worst case is `full_rotation: false` because it needs to check the previous assignment
+        assert_last_event::<T>(
+            Event::NewPendingAssignment {
+                random_seed,
+                full_rotation: false,
+                target_session: T::SessionIndex::from(1u32),
+            }
+            .into(),
         );
 
         Ok(())

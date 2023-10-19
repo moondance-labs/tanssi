@@ -45,14 +45,18 @@ pub use pallet::*;
 use {
     crate::weights::WeightInfo,
     frame_support::pallet_prelude::*,
+    frame_system::pallet_prelude::BlockNumberFor,
+    rand::{seq::SliceRandom, SeedableRng},
+    rand_chacha::ChaCha20Rng,
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, One, Zero},
         Saturating,
     },
-    sp_std::{prelude::*, vec},
+    sp_std::{fmt::Debug, prelude::*, vec},
     tp_collator_assignment::AssignedCollators,
     tp_traits::{
-        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId, Slot,
+        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
+        ShouldRotateAllCollators, Slot,
     },
 };
 
@@ -77,14 +81,32 @@ pub mod pallet {
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
+        /// The overarching event type.
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type SessionIndex: parity_scale_codec::FullCodec
+            + TypeInfo
+            + Copy
+            + AtLeast32BitUnsigned
+            + Debug;
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
         type ContainerChains: GetSessionContainerChains<Self::SessionIndex>;
+        type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
+        type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
+    }
+
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        NewPendingAssignment {
+            random_seed: [u8; 32],
+            full_rotation: bool,
+            target_session: T::SessionIndex,
+        },
     }
 
     #[pallet::storage]
@@ -104,6 +126,13 @@ pub mod pallet {
     pub(crate) type PendingCollatorContainerChain<T: Config> =
         StorageValue<_, Option<AssignedCollators<T::AccountId>>, ValueQuery>;
 
+    /// Randomness from previous block. Used to shuffle collators on session change.
+    /// Should only be set on the last block of each session and should be killed on the on_initialize of the next block.
+    /// The default value of [0; 32] disables randomness in the pallet.
+    #[pallet::storage]
+    #[pallet::getter(fn randomness)]
+    pub(crate) type Randomness<T: Config> = StorageValue<_, [u8; 32], ValueQuery>;
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {}
 
@@ -121,26 +150,78 @@ pub mod pallet {
         /// collators should be queued collators
         pub fn assign_collators(
             current_session_index: &T::SessionIndex,
-            collators: Vec<T::AccountId>,
+            random_seed: [u8; 32],
+            mut collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
             // We work with one session delay to calculate assignments
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
             // We get the containerChains that we will have at the target session
-            let container_chain_ids =
+            let mut container_chain_ids =
                 T::ContainerChains::session_container_chains(target_session_index);
+
+            // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
+            // of container chains.
+            // This should only happen in tests, and in the genesis block.
+            if random_seed != [0; 32] {
+                let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
+                collators.shuffle(&mut rng);
+                container_chain_ids.shuffle(&mut rng);
+            }
+
             // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
             // We assign new collators
             // we use the config scheduled at the target_session_index
-            let new_assigned = Self::assign_collators_always_keep_old(
-                collators,
-                &container_chain_ids,
-                T::HostConfiguration::min_collators_for_orchestrator(target_session_index) as usize,
-                T::HostConfiguration::max_collators_for_orchestrator(target_session_index) as usize,
-                T::HostConfiguration::collators_per_container(target_session_index) as usize,
-                old_assigned.clone(),
-            );
+            let new_assigned =
+                if T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index) {
+                    log::info!(
+                        "Collator assignment: rotating collators. Session {:?}, Seed: {:?}",
+                        current_session_index.encode(),
+                        random_seed
+                    );
+
+                    Self::deposit_event(Event::NewPendingAssignment {
+                        random_seed,
+                        full_rotation: true,
+                        target_session: target_session_index,
+                    });
+
+                    Self::assign_collators_rotate_all(
+                        collators,
+                        &container_chain_ids,
+                        T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                            as usize,
+                        T::HostConfiguration::max_collators_for_orchestrator(target_session_index)
+                            as usize,
+                        T::HostConfiguration::collators_per_container(target_session_index)
+                            as usize,
+                    )
+                } else {
+                    log::info!(
+                        "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
+                        current_session_index.encode(),
+                        random_seed
+                    );
+
+                    Self::deposit_event(Event::NewPendingAssignment {
+                        random_seed,
+                        full_rotation: false,
+                        target_session: target_session_index,
+                    });
+
+                    Self::assign_collators_always_keep_old(
+                        collators,
+                        &container_chain_ids,
+                        T::HostConfiguration::min_collators_for_orchestrator(target_session_index)
+                            as usize,
+                        T::HostConfiguration::max_collators_for_orchestrator(target_session_index)
+                            as usize,
+                        T::HostConfiguration::collators_per_container(target_session_index)
+                            as usize,
+                        old_assigned.clone(),
+                    )
+                };
 
             let mut pending = PendingCollatorContainerChain::<T>::get();
             let old_assigned_changed = old_assigned != new_assigned;
@@ -174,9 +255,35 @@ pub mod pallet {
             }
         }
 
+        /// Recompute collator assignment from scratch. If the list of collators and the list of
+        /// container chains are shuffled, this returns a random assignment.
+        fn assign_collators_rotate_all(
+            collators: Vec<T::AccountId>,
+            container_chain_ids: &[ParaId],
+            min_num_orchestrator_chain: usize,
+            max_num_orchestrator_chain: usize,
+            num_each_container_chain: usize,
+        ) -> AssignedCollators<T::AccountId> {
+            // This is just the "always_keep_old" algorithm but with an empty "old"
+            let old_assigned = Default::default();
+
+            Self::assign_collators_always_keep_old(
+                collators,
+                container_chain_ids,
+                min_num_orchestrator_chain,
+                max_num_orchestrator_chain,
+                num_each_container_chain,
+                old_assigned,
+            )
+        }
+
         /// Assign new collators to missing container_chains.
         /// Old collators always have preference to remain on the same chain.
         /// If there are no missing collators, nothing is changed.
+        ///
+        /// `container_chain_ids` should be shuffled or at least rotated on every session to ensure
+        /// a fair distribution, because the order of that list affects container chain priority:
+        /// the first container chain on that list will be the first one to get new collators.
         fn assign_collators_always_keep_old(
             collators: Vec<T::AccountId>,
             container_chain_ids: &[ParaId],
@@ -196,10 +303,8 @@ pub mod pallet {
             new_assigned.remove_container_chain_excess_collators(num_each_container_chain);
 
             // Collators that are not present in old_assigned
-            // TODO: unless we save all the old_collators somewhere, it is still possible for a
-            // collator to change from container_chain 1001 to None to 1002
-            // And ideally that should not happen until the automatic chain rotation is implemented
-            // But the current implementation allows changes, even without passing through None
+            // This is used to keep track of which collators are old and which ones are new, to keep
+            // the old collators on the same chain if possible.
             let mut new_collators = vec![];
             for c in collators {
                 if !new_assigned.find_collator(&c) && !extra_orchestrator_collators.contains(&c) {
@@ -219,9 +324,10 @@ pub mod pallet {
             let mut new_plus_extra_collators = new_collators
                 .by_ref()
                 .chain(&mut extra_orchestrator_collators);
-            new_assigned.add_new_container_chains(container_chain_ids);
-            new_assigned.fill_container_chain_collators(
+
+            new_assigned.add_and_fill_new_container_chains_in_order(
                 num_each_container_chain,
+                container_chain_ids,
                 &mut new_plus_extra_collators,
             );
 
@@ -243,7 +349,10 @@ pub mod pallet {
             // [2, 2, 0, 0, 0]
             // and assign 1 extra collator to the orchestrator chain, if needed.
             let incomplete_container_chains_collators = new_assigned
-                .reorganize_incomplete_container_chains_collators(num_each_container_chain);
+                .reorganize_incomplete_container_chains_collators(
+                    container_chain_ids,
+                    num_each_container_chain,
+                );
 
             // Assign collators from container chains that do not reach
             // "num_each_container_chain" to orchestrator chain
@@ -273,8 +382,9 @@ pub mod pallet {
             session_index: &T::SessionIndex,
             collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
+            let random_seed = Randomness::<T>::take();
             let num_collators = collators.len();
-            let assigned_collators = Self::assign_collators(session_index, collators);
+            let assigned_collators = Self::assign_collators(session_index, random_seed, collators);
             let num_parachains = assigned_collators.next_assignment.container_chains.len();
 
             frame_system::Pallet::<T>::register_extra_weight_unchecked(
@@ -305,4 +415,49 @@ pub mod pallet {
             CollatorContainerChain::<T>::put(assigned_collators);
         }
     }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        fn on_initialize(n: BlockNumberFor<T>) -> Weight {
+            let mut weight = Weight::zero();
+
+            // Account reads and writes for on_finalize
+            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
+                weight += T::DbWeight::get().reads_writes(1, 1);
+            }
+
+            weight
+        }
+
+        fn on_finalize(n: BlockNumberFor<T>) {
+            // If the next block is a session change, read randomness and store in pallet storage
+            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
+                let random_seed = T::GetRandomnessForNextBlock::get_randomness();
+                Randomness::<T>::put(random_seed);
+            }
+        }
+    }
+}
+
+pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
+
+impl<Period> ShouldRotateAllCollators<u32> for RotateCollatorsEveryNSessions<Period>
+where
+    Period: Get<u32>,
+{
+    fn should_rotate_all_collators(session_index: u32) -> bool {
+        let period = Period::get();
+
+        if period == 0 {
+            // A period of 0 disables rotation
+            false
+        } else {
+            session_index % Period::get() == 0
+        }
+    }
+}
+
+pub trait GetRandomnessForNextBlock<BlockNumber> {
+    fn should_end_session(block_number: BlockNumber) -> bool;
+    fn get_randomness() -> [u8; 32];
 }
