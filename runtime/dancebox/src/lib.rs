@@ -973,7 +973,7 @@ impl pallet_pooled_staking::Config for Runtime {
 }
 
 parameter_types! {
-    pub ParachainBondAccount: AccountId32 = AccountId32::new([42; 32]); // TODO replace by a real account
+    pub ParachainBondAccount: AccountId32 = PalletId(*b"ParaBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
     // 5%/year with 2_629_800 blocks per year -> 0.05/2_629_800 = 19/1_000_000_000
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));
