@@ -1,5 +1,8 @@
 import { DevModeContext, expect } from "@moonwall/cli";
+import { filterAndApply } from "@moonwall/util";
+
 import { ApiPromise } from "@polkadot/api";
+import { AccountId32, EventRecord } from "@polkadot/types/interfaces";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -54,6 +57,48 @@ export async function waitToSession(context, paraApi: ApiPromise, session: numbe
         }
 
         await context.waitBlock(1, "Tanssi");
+    }
+}
+
+export function extractFeeAuthor(events: EventRecord[] = [], feePayer: string) {
+    const filtered = filterAndApply(
+        events,
+        "balances",
+        ["Withdraw"],
+        ({ event }: EventRecord) => event.data as unknown as { who: AccountId32; amount: u128 }
+    );
+    const extractFeeFromAuthor = filtered.filter(({ who }) => who.toString() === feePayer);
+    return extractFeeFromAuthor[0];
+}
+
+export function fetchRewardAuthorOrchestrator(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "inflationRewards",
+        ["RewardedOrchestrator"],
+        ({ event }: EventRecord) => event.data as unknown as { accountId: AccountId32; balance: u128 }
+    );
+
+    return filtered[0];
+}
+
+export function fetchIssuance(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "balances",
+        ["Issued"],
+        ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
+    );
+
+    return filtered[0];
+}
+
+export function filterRewardFromOrchestrator(events: EventRecord[] = [], feePayer: string) {
+    const reward = fetchRewardAuthorOrchestrator(events);
+    if (reward.accountId.toString() === feePayer) {
+        return reward.balance.toBigInt();
+    } else {
+        return 0n;
     }
 }
 

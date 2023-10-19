@@ -54,6 +54,7 @@ pub trait WeightInfo {
 	fn add_invulnerable(_b: u32) -> Weight;
 	fn remove_invulnerable(_b: u32) -> Weight;
 	fn new_session(_b: u32) -> Weight;
+	fn reward_invulnerable() -> Weight;
 }
 
 /// Weight functions for `pallet_invulnerables`.
@@ -120,6 +121,22 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(2))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
+
+	/// Storage: `Invulnerables::Invulnerables` (r:1 w:0)
+        /// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
+        /// Storage: `System::Account` (r:1 w:1)
+        /// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+        /// The range of component `b` is `[1, 100]`.
+        fn reward_invulnerable() -> Weight {
+			// Proof Size summary in bytes:
+			//  Measured:  `218 + b * (33 ±0)`
+			//  Estimated: `4687`
+			// Minimum execution time: 51_037_000 picoseconds.
+			Weight::from_parts(68_315_971, 4687)
+					.saturating_add(T::DbWeight::get().reads(2_u64))
+					.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+
 }
 
 // For backwards compatibility and tests
@@ -186,5 +203,21 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(2))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
+
+	/// Storage: `Invulnerables::Invulnerables` (r:1 w:0)
+        /// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
+        /// Storage: `System::Account` (r:1 w:1)
+        /// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+        /// The range of component `b` is `[1, 100]`.
+        fn reward_invulnerable() -> Weight {
+			// Proof Size summary in bytes:
+			//  Measured:  `218 + b * (33 ±0)`
+			//  Estimated: `4687`
+			// Minimum execution time: 51_037_000 picoseconds.
+			Weight::from_parts(68_315_971, 4687)
+					.saturating_add(RocksDbWeight::get().reads(2_u64))
+					.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+
 
 }

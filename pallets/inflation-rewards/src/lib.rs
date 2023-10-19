@@ -117,7 +117,6 @@ pub mod pallet {
             // Let the runtime handle the non-staking part
             T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
 
-            // Reward orchestrator chain author
             weight += Self::reward_orchestrator_author();
 
             weight
@@ -126,6 +125,9 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        /// Overarching event type.
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
         type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
 
         type ContainerChains: GetCurrentContainerChains;
@@ -152,6 +154,22 @@ pub mod pallet {
         type RewardsPortion: Get<Perbill>;
     }
 
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        /// Rewarding orchestrator author
+        RewardedOrchestrator {
+            account_id: T::AccountId,
+            balance: BalanceOf<T>,
+        },
+        /// Rewarding container author
+        RewardedContainer {
+            account_id: T::AccountId,
+            para_id: ParaId,
+            balance: BalanceOf<T>,
+        },
+    }
+
     /// Container chains to reward per block
     #[pallet::storage]
     #[pallet::getter(fn container_chains_to_reward)]
@@ -175,7 +193,7 @@ pub mod pallet {
             if let Some(chains_to_reward) = ChainsToReward::<T>::get() {
                 total_weight += T::DbWeight::get().reads(1);
                 match T::StakingRewardsDistributor::distribute_rewards(
-                    orchestrator_author,
+                    orchestrator_author.clone(),
                     T::Currency::withdraw(
                         &T::PendingRewardsAccount::get(),
                         chains_to_reward.rewards_per_chain,
@@ -185,14 +203,19 @@ pub mod pallet {
                     )
                     .unwrap_or(CreditOf::<T>::zero()),
                 ) {
-                    Ok(frame_support::dispatch::PostDispatchInfo {
-                        actual_weight: Some(weight),
-                        ..
-                    }) => total_weight += weight,
+                    Ok(frame_support::dispatch::PostDispatchInfo { actual_weight, .. }) => {
+                        Self::deposit_event(Event::RewardedOrchestrator {
+                            account_id: orchestrator_author,
+                            balance: chains_to_reward.rewards_per_chain,
+                        });
+
+                        if let Some(weight) = actual_weight {
+                            total_weight += weight
+                        }
+                    }
                     Err(e) => {
                         log::debug!("Fail to distribute rewards: {:?}", e)
                     }
-                    _ => {}
                 }
             } else {
                 panic!("ChainsToReward not filled");
@@ -207,6 +230,7 @@ pub mod pallet {
 // There will be no additional check other than checking if we have already
 // rewarded this author for **in this tanssi block**
 // Any additional check should be done in the calling function
+// TODO: consider passing a vector here
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     fn on_container_author_noted(
         author: &T::AccountId,
@@ -230,14 +254,19 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                     )
                     .unwrap_or(CreditOf::<T>::zero()),
                 ) {
-                    Ok(frame_support::dispatch::PostDispatchInfo {
-                        actual_weight: Some(weight),
-                        ..
-                    }) => total_weight += weight,
+                    Ok(frame_support::dispatch::PostDispatchInfo { actual_weight, .. }) => {
+                        Self::deposit_event(Event::RewardedContainer {
+                            account_id: author.clone(),
+                            balance: container_chains_to_reward.rewards_per_chain,
+                            para_id,
+                        });
+                        if let Some(weight) = actual_weight {
+                            total_weight += weight
+                        }
+                    }
                     Err(e) => {
                         log::debug!("Fail to distribute rewards: {:?}", e)
                     }
-                    _ => {}
                 }
                 // we remove the para id from container-chains to reward
                 // this makes sure we dont reward it twice in the same block
