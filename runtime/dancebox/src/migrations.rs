@@ -24,7 +24,7 @@ use frame_support::{
 };
 
 use {
-    crate::{Configuration, Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
     pallet_balances::IdAmount,
     pallet_configuration::weights::WeightInfo as _,
     pallet_invulnerables::weights::WeightInfo as _,
@@ -222,18 +222,69 @@ where
     fn migrate(&self, _available_weight: Weight) -> Weight {
         log::info!(target: LOG_TARGET, "migrate");
 
-        Configuration::set_full_rotation_period(RuntimeOrigin::root(), 24u32)
-            .expect("Failed to set full_rotation_period");
+        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
+        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
+
+        // Modify active config
+        let old_config_bytes =
+            frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
+                .expect("configuration.activeConfig should have value");
+        assert_eq!(old_config_bytes.len(), 20);
+        let append_bytes = hex_literal::hex!("18000000");
+        let new_config_bytes: Vec<u8> = old_config_bytes
+            .iter()
+            .chain(append_bytes.iter())
+            .copied()
+            .collect();
+        frame_support::storage::unhashed::put_raw(
+            CONFIGURATION_ACTIVE_CONFIG_KEY,
+            &new_config_bytes,
+        );
+
+        // Modify pending configs, if any
+        let old_pending_configs: Vec<[u8; 20]> =
+            frame_support::storage::unhashed::get(CONFIGURATION_PENDING_CONFIGS_KEY)
+                .unwrap_or_default();
+        let mut new_pending_configs: Vec<[u8; 24]> = vec![];
+
+        for old_config_bytes in old_pending_configs {
+            let new_config_bytes: Vec<u8> = old_config_bytes
+                .iter()
+                .chain(append_bytes.iter())
+                .copied()
+                .collect();
+            let new_config_bytes: [u8; 24] = new_config_bytes
+                .try_into()
+                .expect("20 bytes + 4 bytes == 24 bytes");
+            new_pending_configs.push(new_config_bytes);
+        }
+
+        if !new_pending_configs.is_empty() {
+            frame_support::storage::unhashed::put(
+                CONFIGURATION_PENDING_CONFIGS_KEY,
+                &new_pending_configs,
+            );
+        }
+
         <T as pallet_configuration::Config>::WeightInfo::set_config_with_u32()
     }
 
     /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        let zero_period = Configuration::config().full_rotation_period;
-        assert_eq!(zero_period, 0);
+        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
+        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
 
-        Ok((zero_period).encode())
+        let old_config_bytes =
+            frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
+                .expect("configuration.activeConfig should have value");
+        assert_eq!(old_config_bytes.len(), 20);
+
+        Ok((old_config_bytes).encode())
     }
 
     /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
@@ -243,7 +294,7 @@ where
         number_of_invulnerables: Vec<u8>,
     ) -> Result<(), sp_runtime::DispatchError> {
         let new_period = Configuration::config().full_rotation_period;
-        assert_ne!(new_period, 0);
+        assert_eq!(new_period, 24);
 
         Ok(())
     }

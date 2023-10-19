@@ -10,7 +10,7 @@ version = "0.1.0"
 targets = [ "x86_64-unknown-linux-gnu" ]
 
 [dependencies]
-hex-literal = { workspace = true, optional = true }
+hex-literal = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
@@ -102,7 +102,6 @@ container-chain-template-frontier-runtime  = { workspace = true, features = [ "s
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
-hex-literal = { workspace = true }
 pallet-im-online = { workspace = true, features = [ "std" ] }
 pallet-message-queue = { workspace = true }
 pallet-staking = { workspace = true, features = [ "std" ] }
@@ -194,7 +193,6 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
-	"hex-literal",
 	"pallet-author-noting/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
