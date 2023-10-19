@@ -22,8 +22,8 @@
 use {
     crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
     frame_support::{
-        migration::storage_key_iter, storage::types::StorageValue, weights::Weight,
-        Blake2_128Concat,
+        migration::storage_key_iter, storage::types::StorageValue, traits::OnRuntimeUpgrade,
+        weights::Weight, Blake2_128Concat,
     },
     pallet_balances::IdAmount,
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
@@ -287,14 +287,13 @@ where
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
         const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
             &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
-        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
-            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
 
         let old_config_bytes =
             frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
                 .expect("configuration.activeConfig should have value");
         assert_eq!(old_config_bytes.len(), 16);
 
+        use parity_scale_codec::Encode;
         Ok((old_config_bytes).encode())
     }
 
@@ -302,14 +301,43 @@ where
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(
         &self,
-        number_of_invulnerables: Vec<u8>,
+        _number_of_invulnerables: Vec<u8>,
     ) -> Result<(), sp_runtime::DispatchError> {
-        let new_period = Configuration::config().full_rotation_period;
+        let new_period = crate::Configuration::config().full_rotation_period;
         assert_eq!(new_period, 24);
 
         Ok(())
     }
 }
+
+pub struct PolkadotXcmMigration<T>(pub PhantomData<T>);
+impl<T> Migration for PolkadotXcmMigration<T>
+where
+    T: pallet_xcm::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_PolkadotXcmMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        pallet_xcm::migration::v1::VersionUncheckedMigrateToV1::<T>::on_runtime_upgrade()
+    }
+}
+
+pub struct XcmpQueueMigration<T>(pub PhantomData<T>);
+impl<T> Migration for XcmpQueueMigration<T>
+where
+    T: cumulus_pallet_xcmp_queue::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_XcmpQueueMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        cumulus_pallet_xcmp_queue::migration::Migration::<T>::on_runtime_upgrade()
+    }
+}
+
 pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
@@ -318,17 +346,23 @@ where
     Runtime: pallet_pooled_staking::Config,
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
+    Runtime: pallet_xcm::Config,
+    Runtime: cumulus_pallet_xcmp_queue::Config,
     Runtime::RuntimeHoldReason: From<crate::HoldReason>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
         let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
         let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
+        let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
+        let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
 
         vec![
             Box::new(migrate_invulnerables),
             Box::new(migrate_holds),
             Box::new(migrate_config),
+            Box::new(migrate_xcm),
+            Box::new(migrate_xcmp_queue),
         ]
     }
 }
