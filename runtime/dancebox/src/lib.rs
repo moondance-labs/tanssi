@@ -33,6 +33,9 @@ pub use sp_runtime::BuildStorage;
 pub mod migrations;
 pub mod weights;
 
+#[cfg(feature = "try-runtime")]
+use sp_runtime::TryRuntimeError;
+
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
@@ -957,6 +960,11 @@ impl OnRuntimeUpgrade for MaintenanceHooks {
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         AllPalletsWithSystem::post_upgrade(state)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn try_on_runtime_upgrade(checks: bool) -> Result<Weight, TryRuntimeError> {
+        AllPalletsWithSystem::try_on_runtime_upgrade(checks)
     }
 }
 
