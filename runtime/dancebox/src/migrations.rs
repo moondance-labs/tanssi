@@ -231,7 +231,7 @@ where
         let old_config_bytes =
             frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
                 .expect("configuration.activeConfig should have value");
-        assert_eq!(old_config_bytes.len(), 20);
+        assert_eq!(old_config_bytes.len(), 16);
         let append_bytes = hex_literal::hex!("18000000");
         let new_config_bytes: Vec<u8> = old_config_bytes
             .iter()
@@ -244,6 +244,7 @@ where
         );
 
         // Modify pending configs, if any
+        // Pending configs is a `Vec<(u32, HostConfiguration)>`, so 20 bytes instead of 16
         let old_pending_configs: Vec<[u8; 20]> =
             frame_support::storage::unhashed::get(CONFIGURATION_PENDING_CONFIGS_KEY)
                 .unwrap_or_default();
