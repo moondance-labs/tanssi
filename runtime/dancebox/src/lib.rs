@@ -658,8 +658,14 @@ impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
         collators: &mut Vec<AccountId>,
         num_invulnerables: usize,
     ) -> Vec<AccountId> {
+        if num_invulnerables == 0 {
+            return vec![];
+        }
         // TODO: check if this works on session changes
         let all_invulnerables = pallet_invulnerables::Invulnerables::<Runtime>::get();
+        if all_invulnerables.is_empty() {
+            return vec![];
+        }
         let mut invulnerables = vec![];
         // TODO: use binary_search when invulnerables are sorted
         collators.retain(|x| {
