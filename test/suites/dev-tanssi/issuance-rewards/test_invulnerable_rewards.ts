@@ -1,7 +1,8 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
-import { fetchIssuance, filterRewardFromOrchestrator } from "util/block";
+import { KeyringPair } from "@moonwall/util";
+import { fetchIssuance, filterRewardFromOrchestrator, filterRewardFromContainer } from "util/block";
 import { getAuthorFromDigest } from "util/author";
 import { PARACHAIN_BOND } from "util/constants";
 
@@ -11,8 +12,11 @@ describeSuite({
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
+        let charlie: KeyringPair;
+
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
+            charlie = context.keyring.charlie;
         });
         it({
             id: "E01",
@@ -40,8 +44,6 @@ describeSuite({
             id: "E02",
             title: "Parachain bond receives 30% of the inflation anb pending rewards plus division dust",
             test: async function () {
-                await context.createBlock();
-
                 let expectedAmountParachainBond = 0n;
 
                 const pendingChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
@@ -73,6 +75,36 @@ describeSuite({
                 // Not sure where this one comes from, looks like a rounding thing
                 expect(parachainBondBalanceAfter - parachainBondBalanceBefore).to.equal(
                     expectedAmountParachainBond + 1n
+                );
+            },
+        });
+
+        it({
+            id: "E03",
+            title: "Charlie receives the reward from container-chain block proposal",
+            test: async function () {
+                const balacharlieBalanceBeforenceBefore = (
+                    await polkadotJs.query.system.account(charlie.address)
+                ).data.free.toBigInt();
+
+                await context.createBlock();
+
+                const currentChainRewards = (await polkadotJs.query.inflationRewards.chainsToReward()).unwrap();
+                const events = await polkadotJs.query.system.events();
+                const receivedRewardCharlie = filterRewardFromContainer(events, charlie.address, 2000);
+
+                const balacharlieBalanceBeforenceAfter = (
+                    await polkadotJs.query.system.account(charlie.address)
+                ).data.free.toBigInt();
+
+                // Not sure where this one comes from, looks like a rounding thing
+                expect(balacharlieBalanceBeforenceAfter - balacharlieBalanceBeforenceBefore).to.equal(
+                    currentChainRewards.rewardsPerChain.toBigInt()
+                );
+
+                // Not sure where this one comes from, looks like a rounding thing
+                expect(balacharlieBalanceBeforenceAfter - balacharlieBalanceBeforenceBefore).to.equal(
+                    receivedRewardCharlie
                 );
             },
         });

@@ -82,6 +82,17 @@ export function fetchRewardAuthorOrchestrator(events: EventRecord[] = []) {
     return filtered[0];
 }
 
+export function fetchRewardAuthorContainers(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "inflationRewards",
+        ["RewardedContainer"],
+        ({ event }: EventRecord) => event.data as unknown as { accountId: AccountId32; paraId: ParaId; balance: u128 }
+    );
+
+    return filtered;
+}
+
 export function fetchIssuance(events: EventRecord[] = []) {
     const filtered = filterAndApply(
         events,
@@ -100,6 +111,19 @@ export function filterRewardFromOrchestrator(events: EventRecord[] = [], feePaye
     } else {
         return 0n;
     }
+}
+
+export function filterRewardFromContainer(events: EventRecord[] = [], feePayer: string, paraId: ParaId) {
+    const rewardEvents = fetchRewardAuthorContainers(events);
+    for (const index in rewardEvents) {
+        if (
+            rewardEvents[index].accountId.toString() === feePayer &&
+            rewardEvents[index].paraId.toString() === paraId.toString()
+        ) {
+            return rewardEvents[index].balance.toBigInt();
+        }
+    }
+    return 0n;
 }
 
 /// Same as tx.signAndSend(account), except that it waits for the transaction to be included in a block:

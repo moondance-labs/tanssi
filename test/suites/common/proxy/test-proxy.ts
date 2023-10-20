@@ -2,7 +2,7 @@ import "@polkadot/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock, extractFeeAuthor } from "../../../util/block";
+import { initializeCustomCreateBlock, extractFeeAuthor, filterRewardFromContainer } from "../../../util/block";
 
 describeSuite({
     id: "C0103",
@@ -112,12 +112,14 @@ describeSuite({
                 });
                 expect(ev1.length).to.be.equal(1);
 
+                // Charlie receives rewards for authoring container, we should take this into account
                 const fee = extractFeeAuthor(events, charlie.address).amount.toBigInt();
+                const receivedReward = filterRewardFromContainer(events, charlie.address, 2000);
 
                 const balanceAfter = (await polkadotJs.query.system.account(charlie.address)).data.free.toBigInt();
 
                 // Balance of Charlie account must be the same (minus fee)
-                expect(balanceBefore - fee).to.equal(balanceAfter);
+                expect(balanceBefore + receivedReward - fee).to.equal(balanceAfter);
             },
         });
 
