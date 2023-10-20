@@ -1070,7 +1070,6 @@ fn build_consensus_container(
 
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
     let orchestrator_client_for_cidp = orchestrator_client;
-    let keystore_for_cidp = keystore.clone();
 
     let params = tc_consensus::BuildOrchestratorAuraConsensusParams {
         proposer_factory,
@@ -1128,7 +1127,6 @@ fn build_consensus_container(
         get_authorities_from_orchestrator: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
             let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
-            let keystore_for_cidp = keystore_for_cidp.clone();
 
             async move {
                 let latest_header =
@@ -1148,7 +1146,7 @@ fn build_consensus_container(
                 let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
                     orchestrator_client_for_cidp.as_ref(),
                     &latest_header.hash(),
-                    keystore_for_cidp,
+                    para_id,
                 );
 
                 let aux_data = authorities.ok_or_else(|| {
@@ -1215,7 +1213,6 @@ fn build_consensus_orchestrator(
     );
 
     let client_set_aside_for_cidp = client.clone();
-    let keystore_for_cidp = keystore.clone();
     let client_set_aside_for_orch = client.clone();
 
     let params = BuildOrchestratorAuraConsensusParams {
@@ -1271,13 +1268,12 @@ fn build_consensus_orchestrator(
         get_authorities_from_orchestrator:
             move |block_hash: H256, (_relay_parent, _validation_data)| {
                 let client_set_aside_for_orch = client_set_aside_for_orch.clone();
-                let keystore_for_cidp = keystore_for_cidp.clone();
 
                 async move {
                     let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
                         client_set_aside_for_orch.as_ref(),
                         &block_hash,
-                        keystore_for_cidp,
+                        para_id,
                     );
 
                     let aux_data = authorities.ok_or_else(|| {

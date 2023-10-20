@@ -27,6 +27,7 @@ fn config_sets_values_from_genesis() {
         min_orchestrator_collators: 40,
         max_orchestrator_collators: 40,
         collators_per_container: 20,
+        full_rotation_period: 24,
     };
     new_test_ext_with_genesis(custom_config.clone()).execute_with(|| {
         run_to_block(1);
@@ -41,6 +42,7 @@ fn config_sets_default_values() {
         min_orchestrator_collators: 2,
         max_orchestrator_collators: 5,
         collators_per_container: 2,
+        full_rotation_period: 24,
     };
     new_test_ext().execute_with(|| {
         run_to_block(1);
@@ -55,6 +57,7 @@ fn config_set_value() {
         min_orchestrator_collators: 2,
         max_orchestrator_collators: 5,
         collators_per_container: 2,
+        full_rotation_period: 24,
     })
     .execute_with(|| {
         run_to_block(1);
@@ -73,6 +76,7 @@ fn config_set_value() {
                     min_orchestrator_collators: 2,
                     max_orchestrator_collators: 5,
                     collators_per_container: 2,
+                    full_rotation_period: 24,
                 }
             )]
         );
@@ -100,6 +104,7 @@ fn config_set_many_values_same_block() {
         min_orchestrator_collators: 2,
         max_orchestrator_collators: 5,
         collators_per_container: 2,
+        full_rotation_period: 24,
     })
     .execute_with(|| {
         run_to_block(1);
@@ -128,6 +133,7 @@ fn config_set_many_values_same_block() {
                     min_orchestrator_collators: 20,
                     max_orchestrator_collators: 20,
                     collators_per_container: 10,
+                    full_rotation_period: 24,
                 }
             )]
         );
@@ -153,6 +159,7 @@ fn config_set_many_values_different_blocks() {
         min_orchestrator_collators: 2,
         max_orchestrator_collators: 5,
         collators_per_container: 2,
+        full_rotation_period: 24,
     })
     .execute_with(|| {
         run_to_block(1);
@@ -183,6 +190,7 @@ fn config_set_many_values_different_blocks() {
                     min_orchestrator_collators: 20,
                     max_orchestrator_collators: 20,
                     collators_per_container: 10,
+                    full_rotation_period: 24,
                 }
             )]
         );
@@ -208,6 +216,7 @@ fn config_set_many_values_different_sessions() {
         min_orchestrator_collators: 2,
         max_orchestrator_collators: 5,
         collators_per_container: 2,
+        full_rotation_period: 24,
     })
     .execute_with(|| {
         run_to_block(1);
@@ -242,6 +251,7 @@ fn config_set_many_values_different_sessions() {
                         min_orchestrator_collators: 20,
                         max_orchestrator_collators: 20,
                         collators_per_container: 2,
+                        full_rotation_period: 24,
                     }
                 ),
                 (
@@ -251,6 +261,7 @@ fn config_set_many_values_different_sessions() {
                         min_orchestrator_collators: 20,
                         max_orchestrator_collators: 20,
                         collators_per_container: 10,
+                        full_rotation_period: 24,
                     }
                 )
             ]
@@ -277,6 +288,7 @@ fn config_cannot_set_invalid_values() {
         min_orchestrator_collators: 2,
         max_orchestrator_collators: 5,
         collators_per_container: 2,
+        full_rotation_period: 24,
     })
     .execute_with(|| {
         run_to_block(1);

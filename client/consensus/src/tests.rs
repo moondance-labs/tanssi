@@ -705,48 +705,18 @@ async fn authorities_runtime_api_tests() {
     let net = AuraTestNet::new(4);
     let net = Arc::new(Mutex::new(net));
 
-    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
-    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
-
-    let keystoreptr: sp_keystore::KeystorePtr = keystore.into();
     let mut net = net.lock();
     let peer = net.peer(3);
     let client = peer.client().as_client();
     let environ = DummyFactory(client.clone());
 
     let default_hash = Default::default();
+
     let authorities = crate::authorities::<_, _, nimbus_primitives::NimbusPair>(
         &environ,
         &default_hash,
-        keystoreptr.clone(),
-    );
-    assert!(authorities.is_none());
-
-    keystoreptr
-        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Bob.to_seed()))
-        .expect("Key should be created");
-
-    // Bob according top the runtime-api is not eligible
-    let authorities_after_bob = crate::authorities::<_, _, nimbus_primitives::NimbusPair>(
-        &environ,
-        &default_hash,
-        keystoreptr.clone(),
-    );
-    assert!(authorities_after_bob.is_none());
-
-    // Alice according top the runtime-api is eligible
-    keystoreptr
-        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
-        .expect("Key should be created");
-
-    let authorities_after_alice = crate::authorities::<_, _, nimbus_primitives::NimbusPair>(
-        &environ,
-        &default_hash,
-        keystoreptr.clone(),
+        1000u32.into(),
     );
 
-    assert_eq!(
-        authorities_after_alice,
-        Some(vec![Keyring::Alice.public().into()])
-    );
+    assert_eq!(authorities, Some(vec![Keyring::Alice.public().into()]));
 }

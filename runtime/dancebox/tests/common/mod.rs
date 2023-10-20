@@ -16,7 +16,10 @@
 
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
-    dancebox_runtime::{AuthorInherent, AuthorityAssignment, InflationRewards},
+    cumulus_primitives_parachain_inherent::ParachainInherentData,
+    dancebox_runtime::{
+        AuthorInherent, AuthorityAssignment, CollatorAssignment, MaxLengthTokenSymbol, InflationRewards
+    },
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -36,7 +39,6 @@ use {
 
 mod xcm;
 
-use dancebox_runtime::MaxLengthTokenSymbol;
 pub use dancebox_runtime::{
     AccountId, Balance, Balances, Initializer, ParachainInfo, Registrar, Runtime, RuntimeCall,
     RuntimeEvent, Session, System,
@@ -96,6 +98,7 @@ pub fn run_block() -> RunSummary {
     );
 
     // Initialize the new block
+    CollatorAssignment::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
     Initializer::on_initialize(System::block_number());
     AuthorInherent::on_initialize(System::block_number());
@@ -112,6 +115,7 @@ pub fn run_block() -> RunSummary {
         .expect("author inherent to dispatch correctly");
 
     // Finalize the block
+    CollatorAssignment::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Initializer::on_finalize(System::block_number());
     AuthorInherent::on_finalize(System::block_number());
@@ -120,6 +124,72 @@ pub fn run_block() -> RunSummary {
         author_id,
         inflation: new_issuance - current_issuance,
     }
+}
+
+/// Mock the inherent that sets validation data in ParachainSystem, which
+/// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
+/// source of randomness.
+pub fn set_parachain_inherent_data() {
+    use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
+    let (relay_parent_storage_root, relay_chain_state) =
+        RelayStateSproofBuilder::default().into_state_root_and_proof();
+    let vfp = PersistedValidationData {
+        relay_parent_number: 1u32,
+        relay_parent_storage_root,
+        ..Default::default()
+    };
+    let parachain_inherent_data = ParachainInherentData {
+        validation_data: vfp,
+        relay_chain_state: relay_chain_state,
+        downward_messages: Default::default(),
+        horizontal_messages: Default::default(),
+    };
+    assert_ok!(RuntimeCall::ParachainSystem(
+        cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
+            data: parachain_inherent_data
+        }
+    )
+    .dispatch(inherent_origin()));
+}
+
+pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
+    use cumulus_primitives_core::relay_chain::well_known_keys;
+    use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
+
+    let (relay_parent_storage_root, relay_chain_state) = {
+        let mut sproof = RelayStateSproofBuilder::default();
+        sproof.additional_key_values.push((
+            well_known_keys::CURRENT_BLOCK_RANDOMNESS.to_vec(),
+            Some(random_seed).encode(),
+        ));
+
+        sproof.into_state_root_and_proof()
+    };
+    let vfp = PersistedValidationData {
+        // TODO: this is previous relay_parent_number + 1, but not sure where can I get that value
+        relay_parent_number: 2u32,
+        relay_parent_storage_root,
+        ..Default::default()
+    };
+    let parachain_inherent_data = ParachainInherentData {
+        validation_data: vfp,
+        relay_chain_state: relay_chain_state,
+        downward_messages: Default::default(),
+        horizontal_messages: Default::default(),
+    };
+    // Delete existing flag to avoid error
+    // 'ValidationData must be updated only once in a block'
+    // TODO: this is a hack
+    frame_support::storage::unhashed::kill(&frame_support::storage::storage_prefix(
+        b"ParachainSystem",
+        b"ValidationData",
+    ));
+    assert_ok!(RuntimeCall::ParachainSystem(
+        cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
+            data: parachain_inherent_data
+        }
+    )
+    .dispatch(inherent_origin()));
 }
 
 #[derive(Default)]
@@ -268,6 +338,7 @@ impl ExtBuilder {
 
         ext.execute_with(|| {
             System::set_block_number(1);
+            set_parachain_inherent_data();
         });
         ext
     }

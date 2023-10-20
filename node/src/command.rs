@@ -36,6 +36,9 @@ use {
     std::{io::Write, net::SocketAddr},
 };
 
+#[cfg(feature = "try-runtime")]
+use crate::service::ParachainNativeExecutor;
+
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
         "dev" => Box::new(chain_spec::development_config(

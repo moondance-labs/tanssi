@@ -6,7 +6,7 @@
 import "@polkadot/api-base/types/events";
 
 import type { ApiTypes, AugmentedEvent } from "@polkadot/api-base/types";
-import type { Bytes, Null, Option, Result, U8aFixed, Vec, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
+import type { Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
     DanceboxRuntimeProxyType,
@@ -113,6 +113,15 @@ declare module "@polkadot/api-base/types/events" {
             Upgraded: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
             /** Some amount was withdrawn from the account (e.g. for transaction fees). */
             Withdraw: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        collatorAssignment: {
+            NewPendingAssignment: AugmentedEvent<
+                ApiType,
+                [randomSeed: U8aFixed, fullRotation: bool, targetSession: u32],
+                { randomSeed: U8aFixed; fullRotation: bool; targetSession: u32 }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };

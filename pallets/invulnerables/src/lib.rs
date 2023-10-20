@@ -41,8 +41,10 @@ pub mod weights;
 #[frame_support::pallet]
 pub mod pallet {
     pub use crate::weights::WeightInfo;
+
     #[cfg(feature = "runtime-benchmarks")]
     use frame_support::traits::Currency;
+
     use {
         frame_support::{
             dispatch::DispatchResultWithPostInfo,
