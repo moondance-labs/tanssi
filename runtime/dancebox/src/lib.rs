@@ -29,14 +29,18 @@ use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
+use tp_traits::RemoveInvulnerables;
 
 pub mod migrations;
 pub mod weights;
 
+#[cfg(feature = "try-runtime")]
+use sp_runtime::TryRuntimeError;
+
 use {
-    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
-        relay_chain::{BlockNumber as RelayBlockNumber, SessionIndex},
+        relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
         BodyId, DmpMessageHandler, ParaId,
     },
     frame_support::{
@@ -63,6 +67,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
+    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::{SessionManager, ShouldEndSession},
@@ -74,7 +79,9 @@ use {
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
-        traits::{AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT},
+        traits::{
+            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Hash as HashT,
+        },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
@@ -435,6 +442,67 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
+/// Only callable after `set_validation_data` is called which forms this proof the same way
+fn relay_chain_state_proof() -> RelayChainStateProof {
+    let relay_storage_root = ParachainSystem::validation_data()
+        .expect("set in `set_validation_data`")
+        .relay_parent_storage_root;
+    let relay_chain_state =
+        ParachainSystem::relay_state_proof().expect("set in `set_validation_data`");
+    RelayChainStateProof::new(ParachainInfo::get(), relay_storage_root, relay_chain_state)
+        .expect("Invalid relay chain state proof, already constructed in `set_validation_data`")
+}
+
+pub struct BabeCurrentBlockRandomnessGetter;
+impl BabeCurrentBlockRandomnessGetter {
+    fn get_block_randomness() -> Option<Hash> {
+        if cfg!(feature = "runtime-benchmarks") {
+            // storage reads as per actual reads
+            let _relay_storage_root = ParachainSystem::validation_data();
+            let _relay_chain_state = ParachainSystem::relay_state_proof();
+            let benchmarking_babe_output = Hash::default();
+            return Some(benchmarking_babe_output);
+        }
+
+        relay_chain_state_proof()
+            .read_optional_entry::<Option<Hash>>(
+                relay_chain::well_known_keys::CURRENT_BLOCK_RANDOMNESS,
+            )
+            .ok()
+            .flatten()
+            .flatten()
+    }
+
+    /// Return the block randomness from the relay mixed with the provided subject.
+    /// This ensures that the randomness will be different on different pallets, as long as the subject is different.
+    // TODO: audit usage of randomness API
+    // https://github.com/paritytech/polkadot/issues/2601
+    fn get_block_randomness_mixed(subject: &[u8]) -> Option<Hash> {
+        Self::get_block_randomness()
+            .map(|random_hash| mix_randomness::<Runtime>(random_hash, subject))
+    }
+}
+
+/// Combines the vrf output of the previous relay block with the provided subject.
+/// This ensures that the randomness will be different on different pallets, as long as the subject is different.
+fn mix_randomness<T: frame_system::Config>(vrf_output: Hash, subject: &[u8]) -> T::Hash {
+    let mut digest = Vec::new();
+    digest.extend_from_slice(vrf_output.as_ref());
+    digest.extend_from_slice(subject);
+
+    T::Hashing::hash(digest.as_slice())
+}
+
+// Randomness trait
+impl frame_support::traits::Randomness<Hash, BlockNumber> for BabeCurrentBlockRandomnessGetter {
+    fn random(subject: &[u8]) -> (Hash, BlockNumber) {
+        let block_number = frame_system::Pallet::<Runtime>::block_number();
+        let randomness = Self::get_block_randomness_mixed(subject).unwrap_or_default();
+
+        (randomness, block_number)
+    }
+}
+
 pub struct OwnApplySession;
 impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
@@ -544,10 +612,87 @@ impl pallet_session::Config for Runtime {
     type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
+/// Read full_rotation_period from pallet_configuration
+pub struct ConfigurationCollatorRotationSessionPeriod;
+
+impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
+    fn get() -> u32 {
+        Configuration::config().full_rotation_period
+    }
+}
+
+pub struct BabeGetRandomnessForNextBlock;
+
+impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
+    fn should_end_session(n: u32) -> bool {
+        <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(n)
+    }
+
+    fn get_randomness() -> [u8; 32] {
+        let block_number = System::block_number();
+        let random_seed = if block_number != 0 {
+            if let Some(random_hash) =
+                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
+            {
+                // Return random_hash as a [u8; 32] instead of a Hash
+                let mut buf = [0u8; 32];
+                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
+
+                buf
+            } else {
+                // If there is no randomness (e.g when running in dev mode), return [0; 32]
+                // TODO: smoke test to ensure this never happens in a live network
+                [0; 32]
+            }
+        } else {
+            // In block 0 (genesis) there is randomness
+            [0; 32]
+        };
+
+        random_seed
+    }
+}
+
+pub struct RemoveInvulnerablesImpl;
+
+impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
+    fn remove_invulnerables(
+        collators: &mut Vec<AccountId>,
+        num_invulnerables: usize,
+    ) -> Vec<AccountId> {
+        if num_invulnerables == 0 {
+            return vec![];
+        }
+        // TODO: check if this works on session changes
+        let all_invulnerables = pallet_invulnerables::Invulnerables::<Runtime>::get();
+        if all_invulnerables.is_empty() {
+            return vec![];
+        }
+        let mut invulnerables = vec![];
+        // TODO: use binary_search when invulnerables are sorted
+        collators.retain(|x| {
+            if invulnerables.len() < num_invulnerables && all_invulnerables.contains(x) {
+                invulnerables.push(x.clone());
+                false
+            } else {
+                true
+            }
+        });
+
+        invulnerables
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
+    type ShouldRotateAllCollators =
+        RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
+    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
+    type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
@@ -847,6 +992,11 @@ impl OnRuntimeUpgrade for MaintenanceHooks {
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         AllPalletsWithSystem::post_upgrade(state)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn try_on_runtime_upgrade(checks: bool) -> Result<Weight, TryRuntimeError> {
+        AllPalletsWithSystem::try_on_runtime_upgrade(checks)
     }
 }
 

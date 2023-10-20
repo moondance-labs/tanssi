@@ -97,6 +97,13 @@ where
         }
     }
 
+    /// Fill orchestrator chain with collators until it has `num_orchestrator_chain`.
+    ///
+    /// If the `next_collator` iterator does not have enough elements, this function will try to
+    /// fill the list as much as it can.
+    ///
+    /// Call `remove_orchestrator_chain_excess_collators` before calling this function to ensure
+    /// that the list has no more than `num_orchestrator_chain`.
     pub fn fill_orchestrator_chain_collators<I>(
         &mut self,
         num_orchestrator_chain: usize,
@@ -113,43 +120,48 @@ where
         }
     }
 
-    pub fn fill_container_chain_collators<I>(
+    /// For each container chain in `container_chains`, add it to the list if it didn't already
+    /// exist, and fill it with collators. The order determines priority.
+    pub fn add_and_fill_new_container_chains_in_order<I>(
         &mut self,
         num_each_container_chain: usize,
+        container_chains: &[ParaId],
         next_collator: &mut I,
     ) where
         I: Iterator<Item = AccountId>,
     {
-        for (_id, cs) in self.container_chains.iter_mut() {
+        for para_id in container_chains {
+            let cs = self.container_chains.entry(*para_id).or_default();
+
             while cs.len() < num_each_container_chain {
                 if let Some(nc) = next_collator.next() {
                     cs.push(nc);
                 } else {
-                    return;
+                    // No more collators but continue the outer for loop to add all the remaining
+                    // container chains
+                    break;
                 }
             }
         }
     }
 
-    pub fn add_new_container_chains(&mut self, container_chains: &[ParaId]) {
-        for para_id in container_chains {
-            self.container_chains.entry(*para_id).or_default();
-        }
-    }
-
     /// Check container chains and remove all collators from container chains
     /// that do not reach the target number of collators. Reassign those to other
-    /// container chains.
+    /// container chains, giving priority to the container chains with most collators
+    /// first, and in case of tie the container chains that appear first in the input
+    /// `container_chains` parameter.
     ///
     /// Returns the collators that could not be assigned to any container chain,
     /// those can be assigned to the orchestrator chain by the caller.
     pub fn reorganize_incomplete_container_chains_collators(
         &mut self,
+        container_chains: &[ParaId],
         num_each_container_chain: usize,
     ) -> Vec<AccountId> {
         let mut incomplete_container_chains: VecDeque<_> = VecDeque::new();
 
-        for (para_id, collators) in self.container_chains.iter_mut() {
+        for para_id in container_chains {
+            let collators = self.container_chains.entry(*para_id).or_default();
             if !collators.is_empty() && collators.len() < num_each_container_chain {
                 // Do not remove the para_id from the map, instead replace the list of
                 // collators with an empty vec using mem::take.
@@ -160,6 +172,7 @@ where
             }
         }
 
+        // Stable sort because we want to keep input order in case of tie
         incomplete_container_chains
             .make_contiguous()
             .sort_by_key(|(_para_id, collators)| collators.len());

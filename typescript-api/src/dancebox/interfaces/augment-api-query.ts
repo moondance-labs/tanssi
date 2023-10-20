@@ -205,6 +205,12 @@ declare module "@polkadot/api-base/types/storage" {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Randomness from previous block. Used to shuffle collators on session change. Should only be set on the last
+             * block of each session and should be killed on the on_initialize of the next block. The default value of [0; 32]
+             * disables randomness in the pallet.
+             */
+            randomness: AugmentedQuery<ApiType, () => Observable<U8aFixed>, []> & QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
