@@ -856,6 +856,73 @@ fn assign_collators_rotation_collators_are_shuffled() {
 }
 
 #[test]
+fn assign_collators_invulnerables_priority_orchestrator() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            // 11 collators but we only need 9, so 2 collator will not be assigned
+            // id 100 is an invulnerable so it will be assigned to the orchestrator
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100];
+            m.container_chains = vec![1001, 1002];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        let initial_assignment = BTreeMap::from_iter(vec![
+            (100, 999),
+            (1, 999),
+            (2, 1001),
+            (3, 1001),
+            (4, 1002),
+            (5, 1002),
+            (6, 999),
+            (7, 999),
+            (8, 999),
+        ]);
+
+        assert_eq!(assigned_collators(), initial_assignment,);
+    });
+}
+
+#[test]
+fn assign_collators_all_invulnerables() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            // All collators are invulnerables: this results in the same assignment as if there were not invulnerables
+            m.collators = vec![101, 102, 103, 104, 105, 106, 107, 108, 109, 110];
+            m.container_chains = vec![1001, 1002];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        let initial_assignment = BTreeMap::from_iter(vec![
+            (101, 999),
+            (102, 999),
+            (103, 1001),
+            (104, 1001),
+            (105, 1002),
+            (106, 1002),
+            (107, 999),
+            (108, 999),
+            (109, 999),
+        ]);
+
+        assert_eq!(assigned_collators(), initial_assignment,);
+    });
+}
+
+#[test]
 fn rotation_events() {
     // Ensure that the NewPendingAssignment is correct
     new_test_ext().execute_with(|| {

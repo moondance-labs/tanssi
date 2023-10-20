@@ -62,3 +62,12 @@ pub trait GetSessionIndex<SessionIndex> {
 pub trait ShouldRotateAllCollators<SessionIndex> {
     fn should_rotate_all_collators(session_index: SessionIndex) -> bool;
 }
+
+/// Helper trait for pallet_collator_assignment to be able to give priority to invulnerables
+pub trait RemoveInvulnerables<AccountId> {
+    /// Remove the first n invulnerables from the list of collators. The order should be respected.
+    fn remove_invulnerables(
+        collators: &mut Vec<AccountId>,
+        num_invulnerables: usize,
+    ) -> Vec<AccountId>;
+}
