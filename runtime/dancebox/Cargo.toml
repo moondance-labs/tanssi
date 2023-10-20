@@ -226,6 +226,7 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-collator-assignment/try-runtime",
 	"pallet-configuration/try-runtime",
+	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
