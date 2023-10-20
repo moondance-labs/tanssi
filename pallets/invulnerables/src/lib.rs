@@ -296,8 +296,7 @@ pub struct InvulnerableRewardDistribution<Runtime, Currency, Fallback>(
     PhantomData<(Runtime, Currency, Fallback)>,
 );
 
-use frame_support::pallet_prelude::Weight;
-use sp_runtime::traits::Get;
+use {frame_support::pallet_prelude::Weight, sp_runtime::traits::Get};
 
 type CreditOf<Runtime, Currency> =
     frame_support::traits::fungible::Credit<<Runtime as frame_system::Config>::AccountId, Currency>;

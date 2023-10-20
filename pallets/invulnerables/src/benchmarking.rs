@@ -22,7 +22,6 @@ use super::*;
 
 #[allow(unused)]
 use crate::Pallet as InvulnerablesPallet;
-use sp_runtime::traits::AtLeast32BitUnsigned;
 use {
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
@@ -31,6 +30,7 @@ use {
     },
     frame_system::{EventRecord, RawOrigin},
     pallet_session::{self as session, SessionManager},
+    sp_runtime::traits::AtLeast32BitUnsigned,
     sp_std::prelude::*,
     tp_traits::DistributeRewards,
 };

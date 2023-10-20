@@ -3784,18 +3784,16 @@ fn test_reward_to_staking_candidate() {
 
             let account: AccountId = DAVE.into();
             let balance_before = System::account(account.clone()).data.free;
-            let summary = for_else(
-                0..100,
-                |_| {
+            let summary = (0..100)
+                .find_map(|_| {
                     let summary = run_block();
                     if summary.author_id == DAVE.into() {
                         Some(summary)
                     } else {
                         None
                     }
-                },
-                || panic!("DAVE doesn't seem to author any blocks"),
-            );
+                })
+                .unwrap_or_else(|| panic!("DAVE doesn't seem to author any blocks"));
             let balance_after = System::account(account).data.free;
 
             let all_rewards = RewardsPortion::get() * summary.inflation;
@@ -3888,18 +3886,16 @@ fn test_reward_to_invulnerable() {
             let account: AccountId = ALICE.into();
             let balance_before = System::account(account.clone()).data.free;
 
-            let summary = for_else(
-                0..100,
-                |_| {
+            let summary = (0..100)
+                .find_map(|_| {
                     let summary = run_block();
                     if summary.author_id == ALICE.into() {
                         Some(summary)
                     } else {
                         None
                     }
-                },
-                || panic!("ALICE doesn't seem to author any blocks"),
-            );
+                })
+                .unwrap_or_else(|| panic!("ALICE doesn't seem to author any blocks"));
 
             let balance_after = System::account(account).data.free;
 
@@ -3924,9 +3920,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-        ])
+        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
             (1001, empty_genesis_data(), vec![]),
             (1002, empty_genesis_data(), vec![]),
@@ -3940,7 +3934,7 @@ fn test_reward_to_invulnerable_with_key_change() {
         .build()
         .execute_with(|| {
             run_to_block(2);
-            
+
             run_to_session(2u32);
 
             // change key, this should be reflected 2 sessions afterward

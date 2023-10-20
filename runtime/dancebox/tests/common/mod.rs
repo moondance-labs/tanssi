@@ -369,21 +369,3 @@ pub const ALICE: [u8; 32] = [4u8; 32];
 pub const BOB: [u8; 32] = [5u8; 32];
 pub const CHARLIE: [u8; 32] = [6u8; 32];
 pub const DAVE: [u8; 32] = [7u8; 32];
-
-/// Calls `f_loop` with all values in `iter`, and returns the first `Some(value)`.
-/// If only `None` is returned, the value returned by `f_else`  is returned. It
-/// is like a for loop which could have an else block in case no iteration
-/// breaks with a value.
-pub fn for_else<I, F, E, R>(iter: I, mut f_loop: F, f_else: E) -> R
-where
-    I: Iterator,
-    F: FnMut(I::Item) -> Option<R>,
-    E: FnOnce() -> R,
-{
-    for x in iter {
-        if let Some(out) = f_loop(x) {
-            return out;
-        }
-    }
-    return f_else();
-}
