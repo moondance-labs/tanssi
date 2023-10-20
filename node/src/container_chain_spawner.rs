@@ -223,6 +223,23 @@ impl ContainerChainSpawner {
                 sleep(monitor_period).await;
             }
 
+            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+                &container_chain_cli,
+                &container_chain_cli,
+                tokio_handle.clone(),
+            )
+            .map_err(|err| format!("Container chain argument error: {}", err))?;
+
+            // Change database path to make it depend on container chain para id
+            // So instead of the usual "db/full" we have "db/full-container-2000"
+            let mut db_path = container_chain_cli_config
+                .database
+                .path()
+                .unwrap()
+                .to_owned();
+            db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
+            container_chain_cli_config.database.set_path(&db_path);
+
             // Select appropiate sync mode. We want to use WarpSync unless the db still exists,
             // or the block number is 0 (because of a warp sync bug in that case).
             let db_still_exists = db_path.exists();
