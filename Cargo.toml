@@ -189,6 +189,7 @@ cumulus-client-pov-recovery = { git = "https://github.com/moondance-labs/polkado
 cumulus-client-service = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 cumulus-primitives-parachain-inherent = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 cumulus-relay-chain-interface = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+cumulus-test-relay-sproof-builder = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 xcm-emulator = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 
 # Frontier (wasm)
@@ -224,6 +225,7 @@ hex-literal = { version = "0.3.4" }
 log = { version = "0.4.17", default-features = false }
 serde = { version = "1.0.152", default-features = false }
 smallvec = "1.10.0"
+rand_chacha = { version = "0.3.1", default-features = false }
 
 # General (client)
 async-io = "1.3"

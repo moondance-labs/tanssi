@@ -240,6 +240,11 @@ declare module "@polkadot/api-base/types/submittable" {
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
+            /** See [`Pallet::set_full_rotation_period`]. */
+            setFullRotationPeriod: AugmentedSubmittable<
+                (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
             /** See [`Pallet::set_max_collators`]. */
             setMaxCollators: AugmentedSubmittable<
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,

@@ -220,7 +220,7 @@ describeSuite({
         it({
             id: "T12",
             title: "Test live registration of container chain 2002",
-            timeout: 300000,
+            timeout: 240000,
             test: async function () {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -257,22 +257,8 @@ describeSuite({
                 // TODO: fix once we have types
                 expect(registered3.toJSON().includes(2002)).to.be.false;
 
-                // The node should be syncing the container 2002, but not collating yet
-                // so it should still try to produce blocks in orchestrator chain.
-                // Use database path to check that the container chain started
-                // TODO: use collator rpc instead to check if the container chain is running,
-                // that's not possible now because we would need to guess the port number
-
-                const container2002DbPath =
-                    getTmpZombiePath() +
-                    "/Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002";
-                expect(await directoryExists(container2002DbPath)).to.be.false;
                 // The node starts one session before the container chain is in registered list
                 await waitSessions(context, paraApi, 1);
-                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
-                // So wait a few blocks more hoping that the current block will be finalized by then.
-                await context.waitBlock(3, "Tanssi");
-                expect(await directoryExists(container2002DbPath)).to.be.true;
                 // Not registered yet, still pending
                 const registered4 = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
@@ -422,26 +408,4 @@ async function countUniqueBlockAuthors(paraApi, blockStart, blockEnd, numAuthors
         );
         expect(false).to.be.true;
     }
-}
-
-async function directoryExists(directoryPath) {
-    try {
-        await fs.access(directoryPath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    const logFilePath = process.env.MOON_MONITORED_NODE;
-
-    if (logFilePath) {
-        const lastIndex = logFilePath.lastIndexOf("/");
-        return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
-    }
-
-    // Return null if the environment variable is not set
-    return null;
 }
