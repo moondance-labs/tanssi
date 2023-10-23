@@ -185,60 +185,48 @@ impl ContainerChainSpawner {
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
 
-            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
-                &container_chain_cli,
-                &container_chain_cli,
-                tokio_handle.clone(),
-            )
-            .map_err(|err| format!("Container chain argument error: {}", err))?;
+            let create_container_chain_cli_config = || {
+                let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+                    &container_chain_cli,
+                    &container_chain_cli,
+                    tokio_handle.clone(),
+                )
+                .map_err(|err| format!("Container chain argument error: {}", err))?;
 
-            // Change database path to make it depend on container chain para id
-            // So instead of the usual "db/full" we have "db/full-container-2000"
-            let mut db_path = container_chain_cli_config
-                .database
-                .path()
-                .unwrap()
-                .to_owned();
-            db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
-            container_chain_cli_config.database.set_path(&db_path);
+                // Change database path to make it depend on container chain para id
+                // So instead of the usual "db/full" we have "db/full-container-2000"
+                let mut db_path = container_chain_cli_config
+                    .database
+                    .path()
+                    .unwrap()
+                    .to_owned();
+                db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
+                container_chain_cli_config.database.set_path(&db_path);
 
+                sc_service::error::Result::Ok((container_chain_cli_config, db_path))
+            };
+
+            let (container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
             let db_exists = db_path.exists();
-            // Only validators delete the db, and the keep_db flag disables db removal
-            let db_exists_but_may_need_removal =
-                db_exists && validator && !container_chain_cli.base.keep_db;
+            let db_exists_but_may_need_removal = db_exists && validator;
             if db_exists_but_may_need_removal {
                 // If the database exists it may be invalid (genesis hash mismatch), so check if it is valid
                 // and if not, delete it.
+                // Create a new cli config because otherwise the tasks spawned in `open_and_maybe_delete_db` don't stop
+                let (container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
                 open_and_maybe_delete_db(
-                    &container_chain_cli_config,
+                    container_chain_cli_config,
                     &db_path,
                     &orchestrator_client,
                     container_chain_para_id,
                     &container_chain_cli,
+                    container_chain_cli.base.keep_db,
                 )?;
                 // Need to add a sleep here to ensure that the partial components created in
                 // `open_and_maybe_delete_db` have enough time to close.
                 log::info!("Restarting container chain {}", container_chain_para_id);
-                let monitor_period = Duration::from_secs(10);
-                sleep(monitor_period).await;
+                sleep(Duration::from_secs(10)).await;
             }
-
-            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
-                &container_chain_cli,
-                &container_chain_cli,
-                tokio_handle.clone(),
-            )
-            .map_err(|err| format!("Container chain argument error: {}", err))?;
-
-            // Change database path to make it depend on container chain para id
-            // So instead of the usual "db/full" we have "db/full-container-2000"
-            let mut db_path = container_chain_cli_config
-                .database
-                .path()
-                .unwrap()
-                .to_owned();
-            db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
-            container_chain_cli_config.database.set_path(&db_path);
 
             // Select appropiate sync mode. We want to use WarpSync unless the db still exists,
             // or the block number is 0 (because of a warp sync bug in that case).
@@ -567,33 +555,39 @@ fn select_sync_mode(
 // TODO: instead of waiting, we could also return Weak references to the components `temp_cli.backend`
 // and `temp_cli.client`, and then the caller would only need to check if the reference counts are 0.
 fn open_and_maybe_delete_db(
-    container_chain_cli_config: &sc_service::Configuration,
+    container_chain_cli_config: sc_service::Configuration,
     db_path: &Path,
     orchestrator_client: &Arc<ParachainClient>,
     container_chain_para_id: ParaId,
     container_chain_cli: &ContainerChainCli,
+    keep_db: bool,
 ) -> sc_service::error::Result<()> {
     let temp_cli = crate::service::new_partial(&container_chain_cli_config).unwrap();
-    // Get latest block number from the container chain client
-    let last_container_block_temp = temp_cli.client.chain_info().best_number;
 
-    let orchestrator_runtime_api = orchestrator_client.runtime_api();
-    let orchestrator_chain_info = orchestrator_client.chain_info();
-    // Get the container chain's latest block from orchestrator chain and compare with client's one
-    let last_container_block_from_orchestrator = orchestrator_runtime_api
-        .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
-        .unwrap_or_default();
+    // Check block diff, only needed if keep-db is false
+    if !keep_db {
+        // Get latest block number from the container chain client
+        let last_container_block_temp = temp_cli.client.chain_info().best_number;
 
-    let max_block_diff_allowed = 100u32;
-    if last_container_block_from_orchestrator
-        .unwrap_or(0u32)
-        .abs_diff(last_container_block_temp)
-        > max_block_diff_allowed
-    {
-        // if the diff is big, delete db and restart using warp sync
-        delete_container_chain_db(&db_path);
-        return Ok(());
+        let orchestrator_runtime_api = orchestrator_client.runtime_api();
+        let orchestrator_chain_info = orchestrator_client.chain_info();
+        // Get the container chain's latest block from orchestrator chain and compare with client's one
+        let last_container_block_from_orchestrator = orchestrator_runtime_api
+            .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
+            .unwrap_or_default();
+
+        let max_block_diff_allowed = 100u32;
+        if last_container_block_from_orchestrator
+            .unwrap_or(0u32)
+            .abs_diff(last_container_block_temp)
+            > max_block_diff_allowed
+        {
+            // if the diff is big, delete db and restart using warp sync
+            delete_container_chain_db(&db_path);
+            return Ok(());
+        }
     }
+
     // Generate genesis hash to compare against container client's genesis hash
     let container_preloaded_genesis = container_chain_cli.preloaded_chain_spec.as_ref().unwrap();
 
