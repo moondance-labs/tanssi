@@ -82,6 +82,64 @@ export function fetchRewardAuthorOrchestrator(events: EventRecord[] = []) {
     return filtered[0];
 }
 
+export function filterRewardStakingCollator(events: EventRecord[] = [], author: string) {
+    const stakignRewardEvents = fetchRewardStakingCollators(events);
+    for (const index in stakignRewardEvents) {
+        if (stakignRewardEvents[index].collator.toString() === author) {
+            return {
+                manualRewards: stakignRewardEvents[index].manualClaimRewards.toBigInt(),
+                autoCompoundingRewards: stakignRewardEvents[index].autoCompoundingRewards.toBigInt(),
+            };
+        }
+    }
+
+    return {
+        manualRewards: 0n,
+        autoCompoundingRewards: 0n,
+    };
+}
+
+export function filterRewardStakingDelegators(events: EventRecord[] = [], author: string) {
+    const stakignRewardEvents = fetchRewardStakingDelegators(events);
+    for (const index in stakignRewardEvents) {
+        if (stakignRewardEvents[index].collator.toString() === author) {
+            return {
+                manualRewards: stakignRewardEvents[index].manualClaimRewards.toBigInt(),
+                autoCompoundingRewards: stakignRewardEvents[index].autoCompoundingRewards.toBigInt(),
+            };
+        }
+    }
+
+    return {
+        manualRewards: 0n,
+        autoCompoundingRewards: 0n,
+    };
+}
+
+export function fetchRewardStakingDelegators(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "pooledStaking",
+        ["RewardedCollator"],
+        ({ event }: EventRecord) =>
+            event.data as unknown as { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
+    );
+
+    return filtered;
+}
+
+export function fetchRewardStakingCollators(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "pooledStaking",
+        ["RewardedDelegators"],
+        ({ event }: EventRecord) =>
+            event.data as unknown as { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
+    );
+
+    return filtered;
+}
+
 export function fetchRewardAuthorContainers(events: EventRecord[] = []) {
     const filtered = filterAndApply(
         events,
@@ -104,9 +162,9 @@ export function fetchIssuance(events: EventRecord[] = []) {
     return filtered[0];
 }
 
-export function filterRewardFromOrchestrator(events: EventRecord[] = [], feePayer: string) {
+export function filterRewardFromOrchestrator(events: EventRecord[] = [], author: string) {
     const reward = fetchRewardAuthorOrchestrator(events);
-    if (reward.accountId.toString() === feePayer) {
+    if (reward.accountId.toString() === author) {
         return reward.balance.toBigInt();
     } else {
         return 0n;
