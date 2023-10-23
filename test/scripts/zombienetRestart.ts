@@ -1,21 +1,53 @@
 import * as ps from 'ps-node';
 import { exec, spawn, execSync } from 'child_process';
-import { readFileSync, writeFileSync, readlinkSync } from 'fs';
+import { readFileSync, writeFileSync, readlinkSync, unlinkSync } from 'fs';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import os from 'os';
 import path from 'path';
 import inquirer from 'inquirer';
 
-// Helper function to get environment variables
 const getEnvVariables = (pid: number) => {
     const envData = readFileSync(`/proc/${pid}/environ`).toString();
     return envData.split('\0').filter(Boolean);
 };
 
-// Helper function to get the current working directory
 const getCwd = (pid: number) => {
     return readlinkSync(`/proc/${pid}/cwd`);
+};
+
+const targetProcessNames = [
+    "tanssi-node",
+    "container-chain-template-simple-node",
+    "container-chain-template-frontier-node",
+    "polkadot"
+];
+const pattern = targetProcessNames.join('|');
+
+const fetchProcesses = async () => {
+    const cmd = `ps aux | grep -E "${pattern}"`;
+    const { stdout } = await execPromisify(cmd);
+    return stdout.split('\n').filter(line => line && !line.includes("grep -E")).map(line => {
+        const parts = line.split(/\s+/);
+        const pid = parts[1];
+        const command = parts.slice(10).join(' ');
+        return {
+            name: `PID: ${pid}, Command: ${command}`,
+            value: pid
+        };
+    });
+};
+
+const execPromisify = (command: string) => {
+    return new Promise<{ stdout: string, stderr: string }>((resolve, reject) => {
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve({ stdout, stderr });
+            }
+        });
+    });
 };
 
 yargs(hideBin(process.argv))
@@ -36,7 +68,7 @@ yargs(hideBin(process.argv))
                     describe: "Edit the command before restarting the process",
                     type: "boolean",
                 })
-                .option("timeout", {
+                .option("wait-ms", {
                     describe: "Delay (in milliseconds) before restarting the process",
                     type: "number",
                     default: 0,
@@ -46,33 +78,12 @@ yargs(hideBin(process.argv))
             let pid = argv.pid as number;
     
             if (!pid) {
-                // If PID is not provided, show an interactive menu
-                const targetProcessNames = [
-                    "tanssi-node",
-                    "container-chain-template-simple-node",
-                    "container-chain-template-frontier-node",
-                    "polkadot"
-                ];
-                const pattern = targetProcessNames.join('|');
-                const cmd = `ps aux | grep -E "${pattern}"`;
-    
-                const { stdout } = await execPromisify(cmd);
-                const processes = stdout.split('\n').filter(line => line && !line.includes("grep -E")).map(line => {
-                    const parts = line.split(/\s+/);
-                    const pid = parts[1];
-                    const command = parts.slice(10).join(' ');
-                    return {
-                        name: `PID: ${pid}, Command: ${command}`,
-                        value: pid
-                    };
-                });
-    
-                // Check if the process list is empty
+                const processes = await fetchProcesses();
                 if (processes.length === 0) {
                     console.error("No matching processes found. Exiting...");
                     process.exit(1);
                 }
-    
+
                 const { selectedPid } = await inquirer.prompt([{
                     type: 'list',
                     name: 'selectedPid',
@@ -96,7 +107,7 @@ yargs(hideBin(process.argv))
                     let { command, arguments: args } = processInfo;
     
                     if (argv["edit-cmd"]) {
-                        const tempFilePath = path.join(os.tmpdir(), 'zombienet-restart-cmd.txt');
+                        const tempFilePath = path.join(os.tmpdir(), `zombienet-restart-cmd-${Date.now()}.txt`);
                         writeFileSync(tempFilePath, `${command} ${args.join(' ')}`);
     
                         const editor = process.env.EDITOR || 'vim'; // Default to 'vim' if EDITOR is not set
@@ -105,6 +116,9 @@ yargs(hideBin(process.argv))
                         const modifiedCommand = readFileSync(tempFilePath, 'utf-8').trim().split(' ');
                         command = modifiedCommand[0];
                         args = modifiedCommand.slice(1);
+
+                        // Delete the temporary file
+                        unlinkSync(tempFilePath);
                     }
     
                     console.log(`Command: ${command}`);
@@ -136,7 +150,7 @@ yargs(hideBin(process.argv))
                             process.on('SIGINT', () => {
                                 child.kill('SIGINT');
                             });
-                        }, argv.timeout);
+                        }, argv["wait-ms"]);
                     });
                 } else {
                     console.log(`Process not found with ID ${pid}.`);
@@ -149,46 +163,16 @@ yargs(hideBin(process.argv))
         "list",
         "List processes with specified names",
         (yargs) => {},
-        () => {
-            const targetProcessNames = [
-                "tanssi-node",
-                "container-chain-template-simple-node",
-                "container-chain-template-frontier-node",
-                "polkadot"
-            ];
-            
-            const pattern = targetProcessNames.join('|');
-            const cmd = `ps aux | grep -E "${pattern}"`;
-    
-            exec(cmd, (error, stdout, stderr) => {
-                if (error && error.code !== 1) {
-                    console.error(`exec error: ${error}`);
-                    return;
-                }
-    
-                const filteredOutput = stdout.split('\n').filter(line => !line.includes("grep -E")).join('\n');
-    
-                if (filteredOutput.trim()) {
-                    console.log("Matching Processes:");
-                    console.log(filteredOutput);
-                } else {
-                    console.log("No matching processes found.");
-                }
-            });
+        async () => {
+            const processes = await fetchProcesses();
+            if (processes.length) {
+                console.log("Matching Processes:");
+                processes.forEach(process => {
+                    console.log(process.name);
+                });
+            } else {
+                console.log("No matching processes found.");
+            }
         }
     )
-
     .parse();
-
-
-    function execPromisify(command: string) {
-        return new Promise<{ stdout: string, stderr: string }>((resolve, reject) => {
-            exec(command, (error, stdout, stderr) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve({ stdout, stderr });
-                }
-            });
-        });
-    }
