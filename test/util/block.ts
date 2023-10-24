@@ -120,7 +120,7 @@ export function fetchRewardStakingDelegators(events: EventRecord[] = []) {
     const filtered = filterAndApply(
         events,
         "pooledStaking",
-        ["RewardedCollator"],
+        ["RewardedDelegators"],
         ({ event }: EventRecord) =>
             event.data as unknown as { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
     );
@@ -132,7 +132,7 @@ export function fetchRewardStakingCollators(events: EventRecord[] = []) {
     const filtered = filterAndApply(
         events,
         "pooledStaking",
-        ["RewardedDelegators"],
+        ["RewardedCollator"],
         ({ event }: EventRecord) =>
             event.data as unknown as { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
     );

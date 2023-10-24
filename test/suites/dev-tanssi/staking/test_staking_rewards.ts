@@ -142,6 +142,7 @@ describeSuite({
 
                 // First, manual rewards
                 const delegatorManualRewards = (totalManual * delegatorRewards) / totalBacked;
+                // Check its
                 const delegatorManualRewardsPerShare = delegatorManualRewards / totalManualShareSupply;
                 const realDistributedManualDelegatorRewards = delegatorManualRewardsPerShare * totalManualShareSupply;
 
