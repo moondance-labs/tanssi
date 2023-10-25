@@ -69,6 +69,7 @@ pub struct HostConfiguration {
     pub min_orchestrator_collators: u32,
     pub max_orchestrator_collators: u32,
     pub collators_per_container: u32,
+    // If this value is 0 means that there is no rotation
     pub full_rotation_period: u32,
 }
 
@@ -94,8 +95,6 @@ pub enum InconsistentError {
     MinOrchestratorCollatorsTooLow,
     /// `max_collators` must be at least 1
     MaxCollatorsTooLow,
-    /// `full_rotation_period` must be at least 1
-    FullRotationPeriodTooLow,
 }
 
 impl HostConfiguration {
@@ -113,9 +112,6 @@ impl HostConfiguration {
         }
         if self.max_orchestrator_collators < self.min_orchestrator_collators {
             return Err(InconsistentError::MaxCollatorsLowerThanMinCollators);
-        }
-        if self.full_rotation_period < 1 {
-            return Err(InconsistentError::FullRotationPeriodTooLow);
         }
         Ok(())
     }
