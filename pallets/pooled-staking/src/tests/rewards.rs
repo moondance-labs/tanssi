@@ -21,9 +21,9 @@ use {
         pools::{AutoCompounding, ManualRewards},
         Pallet, TargetPool,
     },
-    tp_traits::DistributeRewards,
     frame_support::assert_err,
     sp_runtime::DispatchError,
+    tp_traits::DistributeRewards,
 };
 
 struct Delegation {
@@ -614,18 +614,24 @@ fn reward_distribution_is_transactional() {
             }]
         ));
 
-        let total_staked_before = pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1.into());
+        let total_staked_before =
+            pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1.into());
 
         // Increase ED to make reward destribution fail when resolving
         // credit to Staking account.
         MockExistentialDeposit::set(u128::MAX);
 
         let rewards = Balances::issue(1_000_000_000);
-        assert_err!(Staking::distribute_rewards(ACCOUNT_CANDIDATE_1.into(), rewards), DispatchError::NoProviders);
+        assert_err!(
+            Staking::distribute_rewards(ACCOUNT_CANDIDATE_1.into(), rewards),
+            DispatchError::NoProviders
+        );
 
-        let total_staked_after = pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1.into());
-        assert_eq!(total_staked_before, total_staked_after, "distribution should be reverted");
-
-     
+        let total_staked_after =
+            pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1.into());
+        assert_eq!(
+            total_staked_before, total_staked_after,
+            "distribution should be reverted"
+        );
     })
 }

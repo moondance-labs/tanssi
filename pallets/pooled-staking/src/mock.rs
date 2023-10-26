@@ -119,7 +119,7 @@ impl MockExistentialDeposit {
 
     pub fn set(amount: Balance) {
         frame_support::storage::unhashed::put(b":mock_ed", &amount);
-    } 
+    }
 }
 
 parameter_types! {
