@@ -98,6 +98,53 @@ fn config_set_value() {
 }
 
 #[test]
+fn config_set_full_rotation_period_to_zero_works() {
+    new_test_ext_with_genesis(HostConfiguration {
+        max_collators: 100,
+        min_orchestrator_collators: 2,
+        max_orchestrator_collators: 5,
+        collators_per_container: 2,
+        full_rotation_period: 24,
+    })
+    .execute_with(|| {
+        run_to_block(1);
+        assert_eq!(Configuration::config().full_rotation_period, 24);
+        assert_ok!(
+            Configuration::set_full_rotation_period(RuntimeOrigin::root(), 0),
+            ()
+        );
+
+        assert_eq!(
+            PendingConfigs::<Test>::get(),
+            vec![(
+                2,
+                HostConfiguration {
+                    max_collators: 100,
+                    min_orchestrator_collators: 2,
+                    max_orchestrator_collators: 5,
+                    collators_per_container: 2,
+                    full_rotation_period: 0,
+                }
+            )]
+        );
+
+        // The session delay is set to 2, and one session is 5 blocks,
+        // so the change should not happen until block 11
+        assert_eq!(Configuration::config().full_rotation_period, 24);
+        run_to_block(2);
+        assert_eq!(Configuration::config().full_rotation_period, 24);
+        // First block of session 1
+        run_to_block(6);
+        assert_eq!(Configuration::config().full_rotation_period, 24);
+        run_to_block(10);
+        assert_eq!(Configuration::config().full_rotation_period, 24);
+        // First block of session 2
+        run_to_block(11);
+        assert_eq!(Configuration::config().full_rotation_period, 0);
+    });
+}
+
+#[test]
 fn config_set_many_values_same_block() {
     new_test_ext_with_genesis(HostConfiguration {
         max_collators: 100,
