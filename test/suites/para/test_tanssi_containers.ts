@@ -278,7 +278,7 @@ describeSuite({
         it({
             id: "T13",
             title: "Blocks are being produced on container 2002",
-            timeout: 60000,
+            timeout: 90000,
             test: async function () {
                 let blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
 

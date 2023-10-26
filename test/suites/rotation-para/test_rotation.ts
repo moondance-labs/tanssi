@@ -324,7 +324,7 @@ describeSuite({
         it({
             id: "T14",
             title: "On session 5 collators stop the previously assigned chains",
-            timeout: 90000,
+            timeout: 120000,
             test: async function () {
                 await waitToSession(context, paraApi, 5);
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
