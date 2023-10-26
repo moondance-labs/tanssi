@@ -110,8 +110,20 @@ impl frame_system::Config for Runtime {
     type MaxConsumers = ConstU32<16>;
 }
 
+/// Allows to change ED mid-test.
+pub struct MockExistentialDeposit;
+impl MockExistentialDeposit {
+    pub fn get() -> Balance {
+        frame_support::storage::unhashed::get(b":mock_ed").unwrap_or(1)
+    }
+
+    pub fn set(amount: Balance) {
+        frame_support::storage::unhashed::put(b":mock_ed", &amount);
+    } 
+}
+
 parameter_types! {
-    pub const ExistentialDeposit: u128 = 1;
+    pub ExistentialDeposit: u128 = MockExistentialDeposit::get();
 }
 
 impl pallet_balances::Config for Runtime {

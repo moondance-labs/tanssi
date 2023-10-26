@@ -456,6 +456,7 @@ impl<T: Config> ManualRewards<T> {
 /// absorbed in the ManualRewards distribution, which simply consist of
 /// transfering the funds to the candidate account.
 #[allow(dead_code)]
+#[frame_support::transactional]
 pub fn distribute_rewards<T: Config>(
     candidate: &Candidate<T>,
     rewards: CreditOf<T>,
