@@ -6,6 +6,7 @@ import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { exec } from "child_process";
 import { ExecaChildProcess, execa } from "execa";
+import fs from "fs/promises";
 
 describeSuite({
     id: "ZK01",
@@ -42,8 +43,14 @@ describeSuite({
         }, 120000);
 
         afterAll(async () => {
+            // TODO: this doesn't seem to run after the tests fail?
+            // Or maybe, this is only able to kill the zombienetRestart.ts process, not the tanssi-node
+            // once it has been started?
             for (const h of restartedHandles) {
-                h.kill();
+                console.log('afterAll: killing ', h.pid, ' (exit code? ', h.exitCode, ')');
+                h.kill('SIGINT');
+                await sleep(1000);
+                console.log('afterAll: killed ', h.pid, ' (exit code? ', h.exitCode, ')');
             }
         });
 
@@ -171,7 +178,16 @@ describeSuite({
 
                 await sleep(5000);
 
-                // TODO: Check db has not been deleted
+                // Check db has not been deleted
+                const dbPath01 =
+                getTmpZombiePath() +
+                `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                const dbPath02 =
+                getTmpZombiePath() +
+                `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
+
+                expect(await directoryExists(dbPath01)).to.be.true;
+                expect(await directoryExists(dbPath02)).to.be.true;
 
                 // TODO: Check both collators are still producing blocks
             },
@@ -193,12 +209,26 @@ describeSuite({
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
                 await waitSessions(context, paraApi, 2);
 
+                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
+                // So wait a few blocks more hoping that the current block will be finalized by then.
+                await context.waitBlock(3, "Tanssi");
+
                 // Check that pending para ids removes 2000
                 const registered = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
                 expect(registered.toJSON().includes(2000)).to.be.false;
 
-                // TODO: check Collator2000-01 db path exists, and Collator2000-02 has deleted it
+                // Check Collator2000-01 db path exists, and Collator2000-02 has deleted it
+                const dbPath01 =
+                getTmpZombiePath() +
+                `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                const dbPath02 =
+                getTmpZombiePath() +
+                `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
+
+                expect(await directoryExists(dbPath01)).to.be.true;
+                expect(await directoryExists(dbPath02)).to.be.false;
+
             },
         });
     },
@@ -247,3 +277,25 @@ const execPromisify = (command: string) => {
         });
     });
 };
+
+async function directoryExists(directoryPath) {
+    try {
+        await fs.access(directoryPath, fs.constants.F_OK);
+        return true;
+    } catch (err) {
+        return false;
+    }
+}
+
+/// Returns the /tmp/zombie-52234... path
+function getTmpZombiePath() {
+    const logFilePath = process.env.MOON_MONITORED_NODE;
+
+    if (logFilePath) {
+        const lastIndex = logFilePath.lastIndexOf("/");
+        return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
+    }
+
+    // Return null if the environment variable is not set
+    return null;
+}

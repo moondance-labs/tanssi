@@ -153,6 +153,7 @@ yargs(hideBin(process.argv))
                             });
 
                             process.on("SIGINT", () => {
+                                console.log('zombienetRestart: got SIGINT');
                                 child.kill("SIGINT");
                             });
                         }, argv["wait-ms"]);
