@@ -140,16 +140,16 @@ describeSuite({
 
                 // Restart the process in the current terminal with its original environment variables and cwd
                 const child = spawn(command, args, {
-                    stdio: 'inherit',
+                    stdio: "inherit",
                     cwd: cwd,
-                    env: Object.fromEntries(envVariables.map(e => e.split('=', 2)))
+                    env: Object.fromEntries(envVariables.map((e) => e.split("=", 2))),
                 });
 
-                process.on('SIGINT', () => {
-                    child.kill('SIGINT');
+                process.on("SIGINT", () => {
+                    child.kill("SIGINT");
                 });
 
-                process.on('exit', () => {
+                process.on("exit", () => {
                     // Kill process
                 });
             },

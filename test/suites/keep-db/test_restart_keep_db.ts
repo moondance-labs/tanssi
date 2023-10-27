@@ -4,9 +4,8 @@ import { getAuthorFromDigest } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
-import net from "net";
-import { exec, execSync, spawn, ChildProcessWithoutNullStreams } from 'child_process';
-import { ExecaChildProcess, execa, execaCommand } from "execa";
+import { exec } from "child_process";
+import { ExecaChildProcess, execa } from "execa";
 
 describeSuite({
     id: "ZK01",
@@ -16,7 +15,7 @@ describeSuite({
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
-        let restartedHandles: Array<ExecaChildProcess<string>> = [];
+        const restartedHandles: Array<ExecaChildProcess<string>> = [];
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
@@ -43,20 +42,21 @@ describeSuite({
         }, 120000);
 
         afterAll(async () => {
-            for (let h of restartedHandles) {
-                console.log('Stopping process ', h.pid);
-                
+            for (const h of restartedHandles) {
                 h.kill();
-
-                console.log("process killed? ", h.killed);
             }
-        })
+        });
 
         const runZombienetRestart = async (pid: number): Promise<void> => {
             // Wait 10 seconds to have enough time to check if db exists
-            const handle = execa('pnpm', ['run', 'zombienet-restart', 'restart', '--wait-ms', '10000', '--pid', pid.toString()], {
-                stdio: 'inherit',
-            });
+            // Need to use `pnpm tsx` instead of `pnpm run` to ensure that the process gets killed properly
+            const handle = execa(
+                "pnpm",
+                ["tsx", "scripts/zombienetRestart.ts", "restart", "--wait-ms", "10000", "--pid", pid.toString()],
+                {
+                    stdio: "inherit",
+                }
+            );
 
             restartedHandles.push(handle);
         };
@@ -205,36 +205,39 @@ describeSuite({
 });
 
 const sleep = (ms: number): Promise<void> => {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 };
 
 const findCollatorProcessPid = async (collatorName: string) => {
     const pattern = `(tanssi-node.*${collatorName})`;
     const cmd = `ps aux | grep -E "${pattern}"`;
     const { stdout } = await execPromisify(cmd);
-    const processes = stdout.split('\n').filter(line => line && !line.includes("grep -E")).map(line => {
-        const parts = line.split(/\s+/);
-        const pid = parts[1];
-        const command = parts.slice(10).join(' ');
-        return {
-            name: `PID: ${pid}, Command: ${command}`,
-            value: pid
-        };
-    });
+    const processes = stdout
+        .split("\n")
+        .filter((line) => line && !line.includes("grep -E"))
+        .map((line) => {
+            const parts = line.split(/\s+/);
+            const pid = parts[1];
+            const command = parts.slice(10).join(" ");
+            return {
+                name: `PID: ${pid}, Command: ${command}`,
+                value: pid,
+            };
+        });
 
     if (processes.length === 1) {
         return processes[0].value; // return pid
     } else {
         const error = {
-            message: 'Multiple processes found.',
-            processes: processes.map(p => p.name)
+            message: "Multiple processes found.",
+            processes: processes.map((p) => p.name),
         };
         throw error;
     }
 };
 
 const execPromisify = (command: string) => {
-    return new Promise<{ stdout: string, stderr: string }>((resolve, reject) => {
+    return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
         exec(command, (error, stdout, stderr) => {
             if (error) {
                 reject(error);
