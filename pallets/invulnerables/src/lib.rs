@@ -39,8 +39,8 @@ pub mod weights;
 
 #[frame_support::pallet]
 pub mod pallet {
-    pub use crate::weights::WeightInfo;
     use {
+        crate::weights::WeightInfo,
         frame_support::{
             dispatch::DispatchResultWithPostInfo,
             pallet_prelude::*,

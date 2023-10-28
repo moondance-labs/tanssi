@@ -44,9 +44,9 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, Imbalance,
-            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
-            OnUnbalanced,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT, FindAuthor,
+            Imbalance, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
+            OnRuntimeUpgrade, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -766,6 +766,19 @@ const BLOCK_GAS_LIMIT: u64 = 15_000_000;
 
 impl pallet_evm_chain_id::Config for Runtime {}
 
+pub struct FindAuthorAdapter;
+impl FindAuthor<H160> for FindAuthorAdapter {
+    fn find_author<'a, I>(digests: I) -> Option<H160>
+    where
+        I: 'a + IntoIterator<Item = (sp_runtime::ConsensusEngineId, &'a [u8])>,
+    {
+        if let Some(author) = AuthorInherent::find_author(digests) {
+            return Some(H160::from_slice(&author.encode()[0..20]));
+        }
+        None
+    }
+}
+
 parameter_types! {
     pub BlockGasLimit: U256 = U256::from(BLOCK_GAS_LIMIT);
     pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
@@ -790,7 +803,7 @@ impl pallet_evm::Config for Runtime {
     type Runner = pallet_evm::runner::stack::Runner<Self>;
     type OnChargeTransaction = OnChargeEVMTransaction<()>;
     type OnCreate = ();
-    type FindAuthor = ();
+    type FindAuthor = FindAuthorAdapter;
     // TODO: update in the future
     type GasLimitPovSizeRatio = ();
     type Timestamp = Timestamp;

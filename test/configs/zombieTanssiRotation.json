@@ -6,7 +6,7 @@
     "relaychain": {
         "chain": "rococo-local",
         "default_command": "tmp/polkadot",
-        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb", "--no-beefy"],
+        "default_args": ["--no-hardware-benchmarks", "-lparachain=debug", "--database=paritydb"],
         "nodes": [
             {
                 "name": "alice",
@@ -91,19 +91,6 @@
                     "command": "../target/release/container-chain-template-frontier-node",
                     "ws_port": 9950,
                     "p2p_port": 33050
-                }
-            ]
-        },
-        {
-            "id": 2002,
-            "chain_spec_path": "specs/template-container-2002.json",
-            "collators": [
-                {
-                    "name": "FullNode-2002",
-                    "validator": false,
-                    "command": "../target/release/container-chain-template-simple-node",
-                    "ws_port": 9951,
-                    "p2p_port": 33051
                 }
             ]
         }

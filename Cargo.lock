@@ -2820,8 +2820,10 @@ dependencies = [
  "cumulus-pallet-xcm",
  "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
+ "cumulus-test-relay-sproof-builder",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -5388,8 +5390,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee"
 version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "367a292944c07385839818bb71c8d76611138e2dedb0677d035b8da21d29c78b"
+source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
 dependencies = [
  "jsonrpsee-core",
  "jsonrpsee-http-client",
@@ -5403,8 +5404,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-client-transport"
 version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8b3815d9f5d5de348e5f162b316dc9cdf4548305ebb15b4eb9328e66cf27d7a"
+source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
 dependencies = [
  "futures-util",
  "http",
@@ -5424,8 +5424,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-core"
 version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b5dde66c53d6dcdc8caea1874a45632ec0fcf5b437789f1e45766a1512ce803"
+source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
 dependencies = [
  "anyhow",
  "arrayvec 0.7.4",
@@ -5452,8 +5451,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-http-client"
 version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e5f9fabdd5d79344728521bb65e3106b49ec405a78b66fbff073b72b389fa43"
+source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
 dependencies = [
  "async-trait",
  "hyper",
@@ -5471,8 +5469,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-proc-macros"
 version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44e8ab85614a08792b9bff6c8feee23be78c98d0182d4c622c05256ab553892a"
+source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
 dependencies = [
  "heck",
  "proc-macro-crate",
@@ -5484,8 +5481,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-server"
 version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf4d945a6008c9b03db3354fb3c83ee02d2faa9f2e755ec1dfb69c3551b8f4ba"
+source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
 dependencies = [
  "futures-channel",
  "futures-util",
@@ -5506,8 +5502,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-types"
 version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "245ba8e5aa633dd1c1e4fae72bce06e71f42d34c14a2767c6b4d173b57bee5e5"
+source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
 dependencies = [
  "anyhow",
  "beef",
@@ -5520,8 +5515,7 @@ dependencies = [
 [[package]]
 name = "jsonrpsee-ws-client"
 version = "0.16.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e1b3975ed5d73f456478681a417128597acd6a2487855fdb7b4a3d4d195bf5e"
+source = "git+https://github.com/moondance-labs/jsonrpsee?branch=tanssi-polkadot-v1.1.0#d6435421dba9d33886251d07c27c40403c954fa3"
 dependencies = [
  "http",
  "jsonrpsee-client-transport",
@@ -6780,7 +6774,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#41c18807d249bef5cfa542521149175c18b30437"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -6810,7 +6804,7 @@ dependencies = [
 [[package]]
 name = "nimbus-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#41c18807d249bef5cfa542521149175c18b30437"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "async-trait",
  "frame-support",
@@ -7185,7 +7179,7 @@ dependencies = [
 [[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#41c18807d249bef5cfa542521149175c18b30437"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -7507,6 +7501,7 @@ dependencies = [
  "log",
  "parity-scale-codec",
  "rand 0.8.5",
+ "rand_chacha 0.3.1",
  "scale-info",
  "serde",
  "sp-core",
@@ -7926,7 +7921,7 @@ dependencies = [
 [[package]]
 name = "pallet-maintenance-mode"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#41c18807d249bef5cfa542521149175c18b30437"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -7978,7 +7973,7 @@ dependencies = [
 [[package]]
 name = "pallet-migrations"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#41c18807d249bef5cfa542521149175c18b30437"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -16786,7 +16781,7 @@ dependencies = [
 [[package]]
 name = "xcm-primitives"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#41c18807d249bef5cfa542521149175c18b30437"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
 dependencies = [
  "sp-runtime",
 ]

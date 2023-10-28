@@ -15,8 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{self as pallet_collator_assignment},
-    frame_support::traits::{ConstU16, ConstU64},
+    crate::{
+        self as pallet_collator_assignment, GetRandomnessForNextBlock,
+        RotateCollatorsEveryNSessions,
+    },
+    frame_support::{
+        parameter_types,
+        traits::{ConstU16, ConstU64, Hooks},
+    },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
     sp_core::H256,
@@ -24,7 +30,7 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
-    tp_traits::ParaId,
+    tp_traits::{ParaId, RemoveInvulnerables},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -107,6 +113,7 @@ pub struct Mocks {
     pub collators_per_container: u32,
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
+    pub random_seed: [u8; 32],
 }
 
 impl mock_data::Config for Test {}
@@ -157,10 +164,30 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
     }
 }
 
+pub struct MockGetRandomnessForNextBlock;
+
+impl GetRandomnessForNextBlock<u64> for MockGetRandomnessForNextBlock {
+    fn should_end_session(n: u64) -> bool {
+        n % 5 == 0
+    }
+
+    fn get_randomness() -> [u8; 32] {
+        MockData::mock().random_seed
+    }
+}
+
+parameter_types! {
+    pub const CollatorRotationSessionPeriod: u32 = 5;
+}
+
 impl pallet_collator_assignment::Config for Test {
+    type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
+    type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<CollatorRotationSessionPeriod>;
+    type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
+    type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type WeightInfo = ();
 }
 
@@ -181,7 +208,9 @@ pub fn run_to_block(n: u64) {
     let session_len = 5;
 
     for x in (old_block_number + 1)..=n {
+        System::reset_events();
         System::set_block_number(x);
+        CollatorAssignment::on_initialize(x);
 
         if x % session_len == 1 {
             let session_index = (x / session_len) as u32;
@@ -190,5 +219,26 @@ pub fn run_to_block(n: u64) {
                 CollatorsGetter::collators(session_index),
             );
         }
+
+        CollatorAssignment::on_finalize(x);
+    }
+}
+
+/// Any AccountId >= 100 will be considered an invulnerable
+pub struct RemoveAccountIdsAbove100;
+
+impl RemoveInvulnerables<u64> for RemoveAccountIdsAbove100 {
+    fn remove_invulnerables(collators: &mut Vec<u64>, num_invulnerables: usize) -> Vec<u64> {
+        let mut invulnerables = vec![];
+        collators.retain(|x| {
+            if invulnerables.len() < num_invulnerables && *x >= 100 {
+                invulnerables.push(*x);
+                false
+            } else {
+                true
+            }
+        });
+
+        invulnerables
     }
 }

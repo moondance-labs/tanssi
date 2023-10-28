@@ -69,6 +69,8 @@ pub struct HostConfiguration {
     pub min_orchestrator_collators: u32,
     pub max_orchestrator_collators: u32,
     pub collators_per_container: u32,
+    // If this value is 0 means that there is no rotation
+    pub full_rotation_period: u32,
 }
 
 impl Default for HostConfiguration {
@@ -79,6 +81,7 @@ impl Default for HostConfiguration {
             // TODO: for zombienet testing
             max_orchestrator_collators: 5u32,
             collators_per_container: 2u32,
+            full_rotation_period: 24u32,
         }
     }
 }
@@ -255,6 +258,18 @@ pub mod pallet {
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
                 config.collators_per_container = new;
+            })
+        }
+
+        #[pallet::call_index(4)]
+        #[pallet::weight((
+			T::WeightInfo::set_config_with_u32(),
+			DispatchClass::Operational,
+		))]
+        pub fn set_full_rotation_period(origin: OriginFor<T>, new: u32) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::schedule_config_update(|config| {
+                config.full_rotation_period = new;
             })
         }
 

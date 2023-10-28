@@ -37,6 +37,8 @@ use {
 };
 
 #[cfg(feature = "try-runtime")]
+use crate::service::ParachainNativeExecutor;
+#[cfg(feature = "try-runtime")]
 use try_runtime_cli::block_building_info::substrate_info;
 #[cfg(feature = "try-runtime")]
 const SLOT_DURATION: u64 = 12;

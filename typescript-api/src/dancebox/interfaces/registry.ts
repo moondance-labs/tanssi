@@ -79,10 +79,10 @@ import type {
     PalletBalancesReasons,
     PalletBalancesReserveData,
     PalletCollatorAssignmentCall,
+    PalletCollatorAssignmentEvent,
     PalletConfigurationCall,
     PalletConfigurationError,
     PalletConfigurationHostConfiguration,
-    PalletInitializerBufferedSessionChange,
     PalletInvulnerablesCall,
     PalletInvulnerablesError,
     PalletInvulnerablesEvent,
@@ -293,10 +293,10 @@ declare module "@polkadot/types/types/registry" {
         PalletBalancesReasons: PalletBalancesReasons;
         PalletBalancesReserveData: PalletBalancesReserveData;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
+        PalletCollatorAssignmentEvent: PalletCollatorAssignmentEvent;
         PalletConfigurationCall: PalletConfigurationCall;
         PalletConfigurationError: PalletConfigurationError;
         PalletConfigurationHostConfiguration: PalletConfigurationHostConfiguration;
-        PalletInitializerBufferedSessionChange: PalletInitializerBufferedSessionChange;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
         PalletInvulnerablesError: PalletInvulnerablesError;
         PalletInvulnerablesEvent: PalletInvulnerablesEvent;

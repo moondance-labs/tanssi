@@ -33,7 +33,6 @@ import type {
     PalletBalancesIdAmount,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
-    PalletInitializerBufferedSessionChange,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingPendingOperationKey,
     PalletPooledStakingPoolsKey,
@@ -206,6 +205,12 @@ declare module "@polkadot/api-base/types/storage" {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Randomness from previous block. Used to shuffle collators on session change. Should only be set on the last
+             * block of each session and should be killed on the on_initialize of the next block. The default value of [0; 32]
+             * disables randomness in the pallet.
+             */
+            randomness: AugmentedQuery<ApiType, () => Observable<U8aFixed>, []> & QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -260,24 +265,6 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
-            /** Generic query */
-            [key: string]: QueryableStorageEntry<ApiType>;
-        };
-        initializer: {
-            /**
-             * Buffered session changes along with the block number at which they should be applied.
-             *
-             * Typically this will be empty or one element long. Apart from that this item never hits the storage.
-             *
-             * However this is a `Vec` regardless to handle various edge cases that may occur at runtime upgrade boundaries or
-             * if governance intervenes.
-             */
-            bufferedSessionChanges: AugmentedQuery<
-                ApiType,
-                () => Observable<Option<PalletInitializerBufferedSessionChange>>,
-                []
-            > &
-                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
