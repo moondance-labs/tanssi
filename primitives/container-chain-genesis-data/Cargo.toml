@@ -7,13 +7,13 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = [ "x86_64-unknown-linux-gnu" ]
+targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
-hex = { workspace = true, optional = true, features = [ "alloc" ] }
+hex = { workspace = true, optional = true, features = ["alloc"] }
 hex-literal = { workspace = true }
 
 log = { workspace = true }
-serde = { workspace = true, features = [ "derive" ] }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, optional = true }
 tp-traits = { workspace = true }
 
@@ -34,6 +34,19 @@ cumulus-primitives-core = { workspace = true, optional = true }
 polkadot-primitives = { workspace = true, optional = true }
 
 [features]
-default = [ "std" ]
-std = [ "serde/std", "cumulus-primitives-core/std", "frame-support/std", "parity-scale-codec/std", "polkadot-primitives", "serde/std", "sp-core/std", "sp-runtime/std", "sp-state-machine/std", "sp-std/std", "sp-trie/std", "tp-traits/std" ]
-json = [ "hex", "serde_json" ]
+default = ["std"]
+std = [
+    "serde/std",
+    "cumulus-primitives-core/std",
+    "frame-support/std",
+    "parity-scale-codec/std",
+    "polkadot-primitives",
+    "serde/std",
+    "sp-core/std",
+    "sp-runtime/std",
+    "sp-state-machine/std",
+    "sp-std/std",
+    "sp-trie/std",
+    "tp-traits/std",
+]
+json = ["hex", "serde_json"]

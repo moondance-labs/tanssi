@@ -7,15 +7,12 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = [ "x86_64-unknown-linux-gnu" ]
+targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 sp-api = { workspace = true }
 
 [features]
-default = [ "std" ]
-std = [
-	"parity-scale-codec/std",
-	"sp-api/std",
-]
+default = ["std"]
+std = ["parity-scale-codec/std", "sp-api/std"]

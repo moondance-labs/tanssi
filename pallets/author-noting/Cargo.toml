@@ -7,16 +7,19 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = [ "x86_64-unknown-linux-gnu" ]
+targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
-hex = { workspace = true, optional = true, features = [ "alloc" ] }
+hex = { workspace = true, optional = true, features = ["alloc"] }
 log = { workspace = true }
-parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+parity-scale-codec = { workspace = true, features = [
+	"derive",
+	"max-encoded-len",
+] }
 scale-info = { workspace = true }
-serde = { workspace = true, optional = true, features = [ "derive" ] }
+serde = { workspace = true, optional = true, features = ["derive"] }
 sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
 sp-inherents = { workspace = true }
@@ -43,7 +46,7 @@ sp-version = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
@@ -69,4 +72,4 @@ runtime-benchmarks = [
 	"hex",
 	"tp-traits/runtime-benchmarks",
 ]
-try-runtime = [ "frame-support/try-runtime" ]
+try-runtime = ["frame-support/try-runtime"]

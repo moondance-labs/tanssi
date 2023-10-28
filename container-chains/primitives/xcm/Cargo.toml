@@ -8,7 +8,10 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 [dependencies]
 
-parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+parity-scale-codec = { workspace = true, features = [
+    "derive",
+    "max-encoded-len",
+] }
 
 
 # Substrate
@@ -26,5 +29,13 @@ staging-xcm = { workspace = true }
 staging-xcm-executor = { workspace = true }
 
 [features]
-default = [ "std" ]
-std = [ "frame-support/std", "frame-system/std", "sp-core/std", "sp-io/std", "sp-std/std", "staging-xcm-executor/std", "staging-xcm/std" ]
+default = ["std"]
+std = [
+    "frame-support/std",
+    "frame-system/std",
+    "sp-core/std",
+    "sp-io/std",
+    "sp-std/std",
+    "staging-xcm-executor/std",
+    "staging-xcm/std",
+]

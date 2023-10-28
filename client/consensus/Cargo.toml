@@ -14,7 +14,7 @@ sc-consensus-manual-seal = { workspace = true }
 sc-consensus-slots = { workspace = true }
 sc-telemetry = { workspace = true }
 sp-api = { workspace = true }
-sp-application-crypto = { workspace = true, features = [ "std", "full_crypto"] }
+sp-application-crypto = { workspace = true, features = ["std", "full_crypto"] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }
@@ -28,7 +28,7 @@ sp-timestamp = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 
 # Own
-tp-consensus = { workspace = true, features = [ "std" ] }
+tp-consensus = { workspace = true, features = ["std"] }
 
 # Cumulus dependencies
 cumulus-client-consensus-common = { workspace = true }
@@ -37,13 +37,13 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 
 # Nimbus Dependencies
 nimbus-consensus = { workspace = true }
-nimbus-primitives = { workspace = true, features = [ "std" ] }
+nimbus-primitives = { workspace = true, features = ["std"] }
 
 # Other deps
 async-trait = { workspace = true }
 futures = { workspace = true }
 log = { workspace = true }
-parity-scale-codec = { workspace = true, features = [ "derive" ] }
+parity-scale-codec = { workspace = true, features = ["derive"] }
 tracing = { workspace = true }
 
 [dev-dependencies]

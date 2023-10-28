@@ -4,7 +4,10 @@ authors = []
 edition = "2021"
 version = "0.1.0"
 [dependencies]
-parity-scale-codec = { workspace = true, optional = true, features = [ "derive", "max-encoded-len" ] }
+parity-scale-codec = { workspace = true, optional = true, features = [
+    "derive",
+    "max-encoded-len",
+] }
 tp-collator-assignment = { workspace = true, optional = true }
 tp-core = { workspace = true, optional = true }
 
@@ -18,5 +21,14 @@ sp-trie = { workspace = true }
 cumulus-primitives-core = { workspace = true, optional = true }
 
 [features]
-default = [ "std" ]
-std = [ "cumulus-primitives-core/std", "frame-support/std", "parity-scale-codec/std", "sp-runtime/std", "sp-state-machine/std", "sp-trie/std", "tp-collator-assignment/std", "tp-core/std" ]
+default = ["std"]
+std = [
+    "cumulus-primitives-core/std",
+    "frame-support/std",
+    "parity-scale-codec/std",
+    "sp-runtime/std",
+    "sp-state-machine/std",
+    "sp-trie/std",
+    "tp-collator-assignment/std",
+    "tp-core/std",
+]

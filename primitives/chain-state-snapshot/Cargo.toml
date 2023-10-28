@@ -7,7 +7,7 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = [ "x86_64-unknown-linux-gnu" ]
+targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 
 # Substrate
@@ -20,5 +20,11 @@ sp-trie = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 [features]
-default = [ "std" ]
-std = [ "cumulus-primitives-core/std", "parity-scale-codec/std", "sp-runtime/std", "sp-state-machine/std", "sp-trie/std" ]
+default = ["std"]
+std = [
+    "cumulus-primitives-core/std",
+    "parity-scale-codec/std",
+    "sp-runtime/std",
+    "sp-state-machine/std",
+    "sp-trie/std",
+]

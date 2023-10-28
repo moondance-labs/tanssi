@@ -7,14 +7,14 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = [ "x86_64-unknown-linux-gnu" ]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
 hex-literal = { workspace = true, optional = true }
 log = { workspace = true }
-parity-scale-codec = { workspace = true, features = [ "derive" ] }
-scale-info = { workspace = true, features = [ "derive" ] }
-serde = { workspace = true, optional = true, features = [ "derive" ] }
+parity-scale-codec = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = ["derive"] }
+serde = { workspace = true, optional = true, features = ["derive"] }
 smallvec = { workspace = true }
 
 # Own
@@ -35,7 +35,7 @@ tp-core = { workspace = true }
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
-pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
+pallet-maintenance-mode = { workspace = true, features = ["xcm-support"] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
 
@@ -99,20 +99,24 @@ frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
 
 [dev-dependencies]
-container-chain-template-frontier-runtime  = { workspace = true, features = [ "std" ] }
-container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
+container-chain-template-frontier-runtime = { workspace = true, features = [
+	"std",
+] }
+container-chain-template-simple-runtime = { workspace = true, features = [
+	"std",
+] }
 hex-literal = { workspace = true }
-pallet-im-online = { workspace = true, features = [ "std" ] }
+pallet-im-online = { workspace = true, features = ["std"] }
 pallet-message-queue = { workspace = true }
-pallet-staking = { workspace = true, features = [ "std" ] }
-polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
+pallet-staking = { workspace = true, features = ["std"] }
+polkadot-runtime-parachains = { workspace = true, features = ["std"] }
 polkadot-service = { workspace = true }
 sc-consensus-grandpa = { workspace = true }
-sp-consensus-babe = { workspace = true, features = [ "std" ] }
-sp-consensus-beefy = { workspace = true, features = [ "std" ] }
+sp-consensus-babe = { workspace = true, features = ["std"] }
+sp-consensus-beefy = { workspace = true, features = ["std"] }
 sp-io = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
-westend-runtime = { workspace = true, features = [ "std" ] }
+westend-runtime = { workspace = true, features = ["std"] }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
 
@@ -120,9 +124,7 @@ xcm-emulator = { workspace = true }
 substrate-wasm-builder = { workspace = true }
 
 [features]
-default = [
-	"std",
-]
+default = ["std"]
 std = [
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
@@ -181,11 +183,11 @@ std = [
 	"staging-xcm-builder/std",
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
-	"xcm-primitives/std"
+	"xcm-primitives/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
-force-debug = [ "sp-debug-derive/force-debug" ]
+force-debug = ["sp-debug-derive/force-debug"]
 
 runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
@@ -206,7 +208,7 @@ runtime-benchmarks = [
 	"pallet-xcm-benchmarks/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
- ]
+]
 
 try-runtime = [
 	"cumulus-pallet-dmp-queue/try-runtime",
