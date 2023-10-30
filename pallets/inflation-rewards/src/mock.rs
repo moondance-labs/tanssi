@@ -205,7 +205,6 @@ impl pallet_inflation_rewards::Config for Test {
     type ContainerChains = MockContainerChainGetter;
     type GetSelfChainBlockAuthor = MockGetSelfChainBlockAuthor;
     type InflationRate = InflationRate;
-    type MaxAuthors = ConstU32<80>;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = MockRewardsDistributor;

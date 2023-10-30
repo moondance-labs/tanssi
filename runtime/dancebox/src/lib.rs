@@ -1163,7 +1163,6 @@ impl pallet_inflation_rewards::Config for Runtime {
     type ContainerChains = Registrar;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type InflationRate = InflationRate;
-    type MaxAuthors = ConstU32<80>;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
