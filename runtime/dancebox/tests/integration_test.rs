@@ -3796,7 +3796,7 @@ fn test_reward_to_invulnerable() {
             let orchestrator_rewards = all_rewards / 3;
             assert_eq!(
                 orchestrator_rewards,
-                dbg!(balance_after - balance_before),
+                balance_after - balance_before,
                 "alice should get the correct reward portion"
             );
         });
@@ -3855,7 +3855,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             let orchestrator_rewards = all_rewards / 3;
             assert_eq!(
                 orchestrator_rewards,
-                dbg!(balance_after - balance_before),
+                balance_after - balance_before,
                 "alice should get the correct reward portion"
             );
         });
