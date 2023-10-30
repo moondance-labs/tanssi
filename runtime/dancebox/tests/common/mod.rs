@@ -18,7 +18,8 @@ use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     dancebox_runtime::{
-        AuthorInherent, AuthorityAssignment, CollatorAssignment, MaxLengthTokenSymbol, InflationRewards
+        AuthorInherent, AuthorityAssignment, CollatorAssignment, InflationRewards,
+        MaxLengthTokenSymbol,
     },
     frame_support::{
         assert_ok,
@@ -153,8 +154,10 @@ pub fn set_parachain_inherent_data() {
 }
 
 pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
-    use cumulus_primitives_core::relay_chain::well_known_keys;
-    use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
+    use {
+        cumulus_primitives_core::relay_chain::well_known_keys,
+        cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
+    };
 
     let (relay_parent_storage_root, relay_chain_state) = {
         let mut sproof = RelayStateSproofBuilder::default();
