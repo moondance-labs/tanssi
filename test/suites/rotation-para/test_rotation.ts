@@ -249,7 +249,7 @@ describeSuite({
         it({
             id: "T12",
             title: "On session 3 we have 1 collator per chain",
-            timeout: 90000,
+            timeout: 120000,
             test: async function () {
                 await waitToSession(context, paraApi, 3);
 
@@ -269,7 +269,7 @@ describeSuite({
         it({
             id: "T13",
             title: "On session 4 collators start syncing the new chains",
-            timeout: 90000,
+            timeout: 120000,
             test: async function () {
                 await waitToSession(context, paraApi, 4);
 

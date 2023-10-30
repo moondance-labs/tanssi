@@ -20,6 +20,7 @@ use {
         container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
         service::{start_node_impl_container, ParachainClient},
     },
+    cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{AccountId, Block, BlockNumber},
@@ -31,6 +32,7 @@ use {
     sc_service::SpawnTaskHandle,
     sp_api::{ApiExt, ProvideRuntimeApi},
     sp_keystore::KeystorePtr,
+    sp_runtime::traits::Block as BlockT,
     std::{
         collections::{HashMap, HashSet},
         future::Future,
@@ -40,7 +42,8 @@ use {
         time::Instant,
     },
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
-    tokio::sync::mpsc::UnboundedReceiver,
+    tokio::sync::{mpsc, oneshot},
+    tokio::time::{sleep, Duration},
 };
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
@@ -86,8 +89,7 @@ pub struct ContainerChainState {
 
 /// Stops a container chain when dropped
 pub struct StopContainerChain {
-    #[allow(dead_code)]
-    signal: exit_future::Signal,
+    signal: oneshot::Sender<()>,
     id: usize,
 }
 
@@ -109,7 +111,7 @@ impl ContainerChainSpawner {
         &self,
         container_chain_para_id: ParaId,
         start_collation: bool,
-    ) -> impl Future<Output = ()> {
+    ) -> Pin<Box<dyn Future<Output = ()> + Send>> {
         let ContainerChainSpawner {
             orchestrator_chain_interface,
             orchestrator_client,
@@ -126,7 +128,6 @@ impl ContainerChainSpawner {
             state,
             collate_on_tanssi: _,
         } = self.clone();
-
         // This closure is used to emulate a try block, it enables using the `?` operator inside
         let try_closure = move || async move {
             // Preload genesis data from orchestrator chain storage.
@@ -184,51 +185,57 @@ impl ContainerChainSpawner {
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
 
-            // Force container chains to use warp sync, unless full sync is needed for some reason
-            let full_sync_needed = if !orchestrator_runtime_api
-                .has_api::<dyn AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>>(
-                    orchestrator_chain_info.best_hash,
+            let create_container_chain_cli_config = || {
+                let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+                    &container_chain_cli,
+                    &container_chain_cli,
+                    tokio_handle.clone(),
                 )
-                .map_err(|e| format!("Failed to check if runtime has AuthorNotingApi: {}", e))?
-            {
-                // Before runtime API was implemented we don't know if the container chain has any blocks,
-                // so use full sync because that always works
-                true
-            } else {
-                // If the container chain is still at genesis block, use full sync because warp sync is broken
-                orchestrator_runtime_api
-                    .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
-                    .map_err(|e| format!("Failed to read latest author: {}", e))?
-                    .is_none()
+                .map_err(|err| format!("Container chain argument error: {}", err))?;
+
+                // Change database path to make it depend on container chain para id
+                // So instead of the usual "db/full" we have "db/full-container-2000"
+                let mut db_path = container_chain_cli_config
+                    .database
+                    .path()
+                    .unwrap()
+                    .to_owned();
+                db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
+                container_chain_cli_config.database.set_path(&db_path);
+
+                sc_service::error::Result::Ok((container_chain_cli_config, db_path))
             };
 
-            if full_sync_needed {
-                container_chain_cli.base.base.network_params.sync = SyncMode::Full;
-            } else {
-                container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
+            let (container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
+            let db_exists = db_path.exists();
+            let db_exists_but_may_need_removal = db_exists && validator;
+            if db_exists_but_may_need_removal {
+                // If the database exists it may be invalid (genesis hash mismatch), so check if it is valid
+                // and if not, delete it.
+                // Create a new cli config because otherwise the tasks spawned in `open_and_maybe_delete_db` don't stop
+                let (container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
+                open_and_maybe_delete_db(
+                    container_chain_cli_config,
+                    &db_path,
+                    &orchestrator_client,
+                    container_chain_para_id,
+                    &container_chain_cli,
+                    container_chain_cli.base.keep_db,
+                )?;
+                // Need to add a sleep here to ensure that the partial components created in
+                // `open_and_maybe_delete_db` have enough time to close.
+                log::info!("Restarting container chain {}", container_chain_para_id);
+                sleep(Duration::from_secs(10)).await;
             }
 
-            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
-                &container_chain_cli,
-                &container_chain_cli,
-                tokio_handle.clone(),
-            )
-            .map_err(|err| format!("Container chain argument error: {}", err))?;
-
-            // Change database path to make it depend on container chain para id
-            // So instead of the usual "db/full" we have "db/full-container-2000"
-            let mut db_path = container_chain_cli_config
-                .database
-                .path()
-                .unwrap()
-                .to_owned();
-            db_path.set_file_name(format!("full-container-{}", container_chain_para_id));
-            container_chain_cli_config.database.set_path(&db_path);
-
-            // Delete existing database if running as collator
-            if validator {
-                delete_container_chain_db(&db_path);
-            }
+            // Select appropiate sync mode. We want to use WarpSync unless the db still exists,
+            // or the block number is 0 (because of a warp sync bug in that case).
+            let db_still_exists = db_path.exists();
+            container_chain_cli.base.base.network_params.sync = select_sync_mode(
+                db_still_exists,
+                &orchestrator_client,
+                container_chain_para_id,
+            )?;
 
             // Start container chain node
             let (
@@ -250,7 +257,7 @@ impl ContainerChainSpawner {
             .await?;
 
             // Signal that allows to gracefully stop a container chain
-            let (signal, on_exit) = exit_future::signal();
+            let (signal, on_exit) = oneshot::channel::<()>();
             let collate_on = collate_on.unwrap_or_else(|| {
                 assert!(
                     !validator,
@@ -312,10 +319,13 @@ impl ContainerChainSpawner {
                             Err(e) => panic!("{} failed: {}", name, e),
                         }
                     }
-                    _ = on_exit_future => {
-                        // Graceful shutdown
+                    stop_unassigned = on_exit_future => {
+                        // Graceful shutdown.
+                        // `stop_unassigned` will be `Ok` if `.stop()` has been called, which means that the
+                        // container chain has been unassigned, and will be `Err` if the handle has been dropped,
+                        // which means that the node is stopping.
                         // Delete existing database if running as collator
-                        if validator {
+                        if validator && stop_unassigned.is_ok() && !container_chain_cli.base.keep_db {
                             delete_container_chain_db(&db_path);
                         }
                     }
@@ -330,7 +340,7 @@ impl ContainerChainSpawner {
             sc_service::error::Result::Ok(())
         };
 
-        async {
+        async move {
             match try_closure().await {
                 Ok(()) => {}
                 Err(e) => {
@@ -338,6 +348,7 @@ impl ContainerChainSpawner {
                 }
             }
         }
+        .boxed()
     }
 
     /// Stop a container chain. Prints a warning if the container chain was not running.
@@ -355,6 +366,9 @@ impl ContainerChainSpawner {
                 state
                     .spawned_containers_monitor
                     .set_stop_signal_time(id, Instant::now());
+
+                // Send signal to perform graceful shutdown, which will delete the db if needed
+                let _ = stop_handle.stop_handle.signal.send(());
             }
             None => {
                 log::warn!(
@@ -366,7 +380,7 @@ impl ContainerChainSpawner {
     }
 
     /// Receive and process `CcSpawnMsg`s indefinitely
-    pub async fn rx_loop(self, mut rx: UnboundedReceiver<CcSpawnMsg>) {
+    pub async fn rx_loop(self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>) {
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
@@ -491,6 +505,121 @@ fn handle_update_assignment_state_change(
     }
 }
 
+/// Select `SyncMode` to use for a container chain.
+/// We want to use warp sync unless the db still exists, or the block number is 0 (because of a warp sync bug in that case).
+/// The reason is that warp sync doesn't work if a database already exists, it falls back to full sync instead.
+fn select_sync_mode(
+    db_exists: bool,
+    orchestrator_client: &Arc<ParachainClient>,
+    container_chain_para_id: ParaId,
+) -> sc_service::error::Result<SyncMode> {
+    if db_exists {
+        // If the user wants to use warp sync, they should have already removed the database
+        return Ok(SyncMode::Full);
+    }
+
+    // The following check is only needed because of this bug:
+    // https://github.com/paritytech/polkadot-sdk/issues/1930
+
+    let orchestrator_runtime_api = orchestrator_client.runtime_api();
+    let orchestrator_chain_info = orchestrator_client.chain_info();
+
+    // Force container chains to use warp sync, unless full sync is needed for some reason
+    let full_sync_needed = if !orchestrator_runtime_api
+        .has_api::<dyn AuthorNotingApi<Block, AccountId, BlockNumber, ParaId>>(
+            orchestrator_chain_info.best_hash,
+        )
+        .map_err(|e| format!("Failed to check if runtime has AuthorNotingApi: {}", e))?
+    {
+        // Before runtime API was implemented we don't know if the container chain has any blocks,
+        // so use full sync because that always works
+        true
+    } else {
+        // If the container chain is still at genesis block, use full sync because warp sync is broken
+        orchestrator_runtime_api
+            .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
+            .map_err(|e| format!("Failed to read latest author: {}", e))?
+            .is_none()
+    };
+
+    if full_sync_needed {
+        Ok(SyncMode::Full)
+    } else {
+        Ok(SyncMode::Warp)
+    }
+}
+
+/// Start a container chain using `new_partial` and check if the database is valid. If not, delete the db.
+/// The caller may need to wait a few seconds before trying to start the same container chain again, to
+/// give the database enough time to close.
+// TODO: instead of waiting, we could also return Weak references to the components `temp_cli.backend`
+// and `temp_cli.client`, and then the caller would only need to check if the reference counts are 0.
+fn open_and_maybe_delete_db(
+    container_chain_cli_config: sc_service::Configuration,
+    db_path: &Path,
+    orchestrator_client: &Arc<ParachainClient>,
+    container_chain_para_id: ParaId,
+    container_chain_cli: &ContainerChainCli,
+    keep_db: bool,
+) -> sc_service::error::Result<()> {
+    let temp_cli = crate::service::new_partial(&container_chain_cli_config).unwrap();
+
+    // Check block diff, only needed if keep-db is false
+    if !keep_db {
+        // Get latest block number from the container chain client
+        let last_container_block_temp = temp_cli.client.chain_info().best_number;
+
+        let orchestrator_runtime_api = orchestrator_client.runtime_api();
+        let orchestrator_chain_info = orchestrator_client.chain_info();
+        // Get the container chain's latest block from orchestrator chain and compare with client's one
+        let last_container_block_from_orchestrator = orchestrator_runtime_api
+            .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
+            .unwrap_or_default();
+
+        let max_block_diff_allowed = 100u32;
+        if last_container_block_from_orchestrator
+            .unwrap_or(0u32)
+            .abs_diff(last_container_block_temp)
+            > max_block_diff_allowed
+        {
+            // if the diff is big, delete db and restart using warp sync
+            delete_container_chain_db(&db_path);
+            return Ok(());
+        }
+    }
+
+    // Generate genesis hash to compare against container client's genesis hash
+    let container_preloaded_genesis = container_chain_cli.preloaded_chain_spec.as_ref().unwrap();
+
+    // Check with both state versions
+    let block_v0: Block =
+        generate_genesis_block(&**container_preloaded_genesis, sp_runtime::StateVersion::V0)
+            .map_err(|e| format!("{:?}", e))?;
+    let chain_spec_genesis_hash_v0 = block_v0.header().hash();
+
+    let block_v1: Block =
+        generate_genesis_block(&**container_preloaded_genesis, sp_runtime::StateVersion::V1)
+            .map_err(|e| format!("{:?}", e))?;
+    let chain_spec_genesis_hash_v1 = block_v1.header().hash();
+
+    let container_client_genesis_hash = temp_cli.client.chain_info().genesis_hash;
+
+    if container_client_genesis_hash != chain_spec_genesis_hash_v0
+        && container_client_genesis_hash != chain_spec_genesis_hash_v1
+    {
+        log::info!("Container genesis V0: {:?}", chain_spec_genesis_hash_v0);
+        log::info!("Container genesis V1: {:?}", chain_spec_genesis_hash_v1);
+        log::info!(
+            "Chain spec genesis {:?} did not match with any container genesis - Restarting...",
+            container_client_genesis_hash
+        );
+        delete_container_chain_db(&db_path);
+        return Ok(());
+    }
+
+    Ok(())
+}
+
 // TODO: this leaves some empty folders behind, because it is called with db_path:
 //     Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002
 // but we want to delete everything under
@@ -553,7 +682,7 @@ mod tests {
         }
 
         async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
-            let (signal, _on_exit) = exit_future::signal();
+            let (signal, _on_exit) = oneshot::channel();
             let currently_collating_on2 = self.currently_collating_on.clone();
             let collate_closure = move || async move {
                 let mut cco = currently_collating_on2.lock().unwrap();

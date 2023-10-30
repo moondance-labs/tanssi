@@ -266,6 +266,10 @@ pub struct ContainerChainRunCmd {
     /// Optional container chain para id that should be used to build chain spec.
     #[arg(long)]
     pub para_id: Option<u32>,
+
+    /// Keep container-chain db after changing collator assignments
+    #[arg(long)]
+    pub keep_db: bool,
 }
 
 #[derive(Debug)]
