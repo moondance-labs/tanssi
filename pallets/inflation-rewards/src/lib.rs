@@ -16,7 +16,7 @@
 
 //! # Inflation Rewards Pallet
 //!
-//! This pallet handle native token inflation and rewards dsitribution.
+//! This pallet handle native token inflation and rewards distribution.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -38,7 +38,10 @@ use {
         },
     },
     frame_system::pallet_prelude::*,
-    sp_runtime::{traits::Get, Perbill},
+    sp_runtime::{
+        traits::{Get, Saturating},
+        Perbill,
+    },
     tp_core::{BlockNumber, ParaId},
     tp_traits::{AuthorNotingHook, DistributeRewards, GetCurrentContainerChains},
 };
@@ -66,8 +69,9 @@ pub mod pallet {
             let not_distributed_rewards =
                 if let Some(chains_to_reward) = ChainsToReward::<T>::take() {
                     // Collect and sum all undistributed rewards
-                    let rewards_not_distributed: BalanceOf<T> = chains_to_reward.rewards_per_chain
-                        * (chains_to_reward.para_ids.len() as u32).into();
+                    let rewards_not_distributed: BalanceOf<T> = chains_to_reward
+                        .rewards_per_chain
+                        .saturating_mul((chains_to_reward.para_ids.len() as u32).into());
                     T::Currency::withdraw(
                         &T::PendingRewardsAccount::get(),
                         rewards_not_distributed,
@@ -80,10 +84,9 @@ pub mod pallet {
                     CreditOf::<T>::zero()
                 };
 
-            // Get the number of chains at this block
+            // Get the number of chains at this block (tanssi + container chain blocks)
             weight += T::DbWeight::get().reads_writes(1, 1);
             let registered_para_ids = T::ContainerChains::current_container_chains();
-
             let number_of_chains: BalanceOf<T> =
                 ((registered_para_ids.len() as u32).saturating_add(1)).into();
 
@@ -137,9 +140,6 @@ pub mod pallet {
 
         /// Inflation rate per relay block (proportion of the total issuance)
         type InflationRate: Get<Perbill>;
-
-        /// The maximum number of block authors
-        type MaxAuthors: Get<u32>;
 
         /// What to do with the new supply not dedicated to staking
         type OnUnbalanced: OnUnbalanced<CreditOf<Self>>;

@@ -1135,8 +1135,7 @@ parameter_types! {
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
 
-use nimbus_primitives::SlotBeacon;
-use tp_traits::GetContainerChainAuthor;
+use {nimbus_primitives::SlotBeacon, tp_traits::GetContainerChainAuthor};
 
 pub struct GetSelfChainBlockAuthor;
 impl Get<AccountId32> for GetSelfChainBlockAuthor {

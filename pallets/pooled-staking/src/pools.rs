@@ -455,7 +455,6 @@ impl<T: Config> ManualRewards<T> {
 /// AutoCompounding shares. This can lead to some rounding, which will be
 /// absorbed in the ManualRewards distribution, which simply consist of
 /// transfering the funds to the candidate account.
-#[allow(dead_code)]
 #[frame_support::transactional]
 pub fn distribute_rewards<T: Config>(
     candidate: &Candidate<T>,
