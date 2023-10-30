@@ -204,10 +204,15 @@ describeSuite({
 
                 const pidCollator200001 = await findCollatorProcessPid("Collator2000-01");
                 const pidCollator200002 = await findCollatorProcessPid("Collator2000-02");
+                expect(isProcessRunning(pidCollator200001)).to.be.true;
+                expect(isProcessRunning(pidCollator200002)).to.be.true;
                 await runZombienetRestart(pidCollator200001, getTmpZombiePath() + `/Collator2000-01.log`);
                 await runZombienetRestart(pidCollator200002, getTmpZombiePath() + `/Collator2000-02.log`);
 
                 await sleep(5000);
+                // Check that both collators have been stopped
+                expect(isProcessRunning(pidCollator200001)).to.be.false;
+                expect(isProcessRunning(pidCollator200002)).to.be.false;
 
                 // Check db has not been deleted
                 const dbPath01 =
@@ -315,6 +320,21 @@ const findCollatorProcessPid = async (collatorName: string) => {
         throw error;
     }
 };
+
+function isProcessRunning(pid: number): boolean {
+    try {
+        // The `kill` function with signal 0 does not terminate the process
+        // but will throw an error if the process does not exist.
+        process.kill(pid, 0);
+        return true;
+    } catch (error) {
+        if (error.code === "EPERM") {
+            // The error code 'EPERM' means the process exists but we don't have permission to send the signal.
+            return true;
+        }
+        return false;
+    }
+}
 
 const execPromisify = (command: string) => {
     return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
