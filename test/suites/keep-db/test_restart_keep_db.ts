@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { getAuthorFromDigest } from "../../util/author";
+import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
-import { exec } from "child_process";
-import { ExecaChildProcess, execa } from "execa";
+import { exec, spawn } from "child_process";
 import fs from "fs/promises";
+import { createWriteStream } from "fs";
 
 describeSuite({
     id: "ZK01",
@@ -16,7 +16,9 @@ describeSuite({
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
-        const restartedHandles: Array<ExecaChildProcess<string>> = [];
+        let blockNumberOfRestart;
+        let authoritiesAtRestart;
+        const restartedHandles = [];
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
@@ -43,29 +45,50 @@ describeSuite({
         }, 120000);
 
         afterAll(async () => {
-            // TODO: this doesn't seem to run after the tests fail?
-            // Or maybe, this is only able to kill the zombienetRestart.ts process, not the tanssi-node
-            // once it has been started?
+            // Kill restared processes
             for (const h of restartedHandles) {
-                console.log('afterAll: killing ', h.pid, ' (exit code? ', h.exitCode, ')');
-                h.kill('SIGINT');
-                await sleep(1000);
-                console.log('afterAll: killed ', h.pid, ' (exit code? ', h.exitCode, ')');
+                h.kill();
             }
         });
 
-        const runZombienetRestart = async (pid: number): Promise<void> => {
+        const runZombienetRestart = async (pid: number, collatorLogFile: string): Promise<void> => {
             // Wait 10 seconds to have enough time to check if db exists
             // Need to use `pnpm tsx` instead of `pnpm run` to ensure that the process gets killed properly
-            const handle = execa(
-                "pnpm",
-                ["tsx", "scripts/zombienetRestart.ts", "restart", "--wait-ms", "10000", "--pid", pid.toString()],
-                {
-                    stdio: "inherit",
-                }
-            );
+            const command = "pnpm";
+            const args = [
+                "tsx",
+                "scripts/zombienetRestart.ts",
+                "restart",
+                "--wait-ms",
+                "10000",
+                "--pid",
+                pid.toString(),
+            ];
 
-            restartedHandles.push(handle);
+            const child = spawn(command, args, {
+                stdio: ["inherit", "pipe", "pipe"],
+            });
+
+            // Pipe both stdout and stderr to the log file
+            const log = createWriteStream(collatorLogFile, { flags: "a" });
+            child.stdout.pipe(log);
+            child.stderr.pipe(log);
+
+            // Handle errors and exit events if needed
+            child.on("error", (error) => {
+                console.error(`spawn error: ${error}`);
+            });
+
+            child.on("exit", (code, signal) => {
+                if (code) {
+                    console.error(`Child process exited with code ${code}`);
+                }
+                if (signal) {
+                    console.error(`Child process was killed with signal ${signal}`);
+                }
+            });
+
+            restartedHandles.push(child);
         };
 
         it({
@@ -171,25 +194,31 @@ describeSuite({
             id: "T11",
             title: "Test restarting both container chain collators",
             test: async function () {
+                // Fetch block number before restarting because the RPC may no longer work after the restart
+                blockNumberOfRestart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                // Fetch authorities for a later test
+                const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
+                authoritiesAtRestart = (
+                    await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
+                ).toJSON();
+
                 const pidCollator200001 = await findCollatorProcessPid("Collator2000-01");
                 const pidCollator200002 = await findCollatorProcessPid("Collator2000-02");
-                await runZombienetRestart(pidCollator200001);
-                await runZombienetRestart(pidCollator200002);
+                await runZombienetRestart(pidCollator200001, getTmpZombiePath() + `/Collator2000-01.log`);
+                await runZombienetRestart(pidCollator200002, getTmpZombiePath() + `/Collator2000-02.log`);
 
                 await sleep(5000);
 
                 // Check db has not been deleted
                 const dbPath01 =
-                getTmpZombiePath() +
-                `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    getTmpZombiePath() +
+                    `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
                 const dbPath02 =
-                getTmpZombiePath() +
-                `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    getTmpZombiePath() +
+                    `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.true;
-
-                // TODO: Check both collators are still producing blocks
             },
         });
 
@@ -218,17 +247,38 @@ describeSuite({
                 // TODO: fix once we have types
                 expect(registered.toJSON().includes(2000)).to.be.false;
 
-                // Check Collator2000-01 db path exists, and Collator2000-02 has deleted it
+                // Collator2000-01 db path exists because it was started with `--keep-db`, Collator2000-02 has deleted it
                 const dbPath01 =
-                getTmpZombiePath() +
-                `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    getTmpZombiePath() +
+                    `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
                 const dbPath02 =
-                getTmpZombiePath() +
-                `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    getTmpZombiePath() +
+                    `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.false;
+            },
+        });
 
+        it({
+            id: "T13",
+            title: "Both container chain collators keep producing blocks after restart",
+            test: async function () {
+                const currentBlock = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                console.log(
+                    `Checking block authors for container chain 2000 in range ${blockNumberOfRestart} - ${currentBlock}`
+                );
+                expect(
+                    currentBlock,
+                    "container chain 2000 should have produced more than 5 blocks already"
+                ).toBeGreaterThan(blockNumberOfRestart + 5);
+                await countUniqueBlockAuthorsExact(
+                    container2000Api,
+                    blockNumberOfRestart,
+                    currentBlock,
+                    2,
+                    authoritiesAtRestart
+                );
             },
         });
     },
@@ -298,4 +348,31 @@ function getTmpZombiePath() {
 
     // Return null if the environment variable is not set
     return null;
+}
+
+/// Verify that the next `numBlocks` have exactly `numAuthors` different authors
+async function countUniqueBlockAuthorsExact(paraApi, blockStart, blockEnd, numAuthors, authorities) {
+    const actualAuthors = [];
+    const blockNumbers = [];
+
+    const authors = await getAuthorFromDigestRange(paraApi, blockStart, blockEnd);
+    for (let i = 0; i < authors.length; i++) {
+        const [blockNum, author] = authors[i];
+        blockNumbers.push(blockNum);
+        actualAuthors.push(author);
+    }
+
+    const uniq = [...new Set(actualAuthors)];
+
+    if (uniq.length != numAuthors) {
+        console.error(
+            "Mismatch between authorities and actual block authors: authorities: ",
+            authorities,
+            ", actual authors: ",
+            actualAuthors,
+            ", block numbers: ",
+            blockNumbers
+        );
+        expect(false).to.be.true;
+    }
 }

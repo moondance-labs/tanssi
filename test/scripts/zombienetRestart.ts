@@ -3,8 +3,6 @@ import { exec, spawn, execSync } from "child_process";
 import { readFileSync, writeFileSync, readlinkSync, unlinkSync } from "fs";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import os from "os";
-import path from "path";
 import inquirer from "inquirer";
 
 const getEnvVariables = (pid: number) => {
@@ -112,7 +110,7 @@ yargs(hideBin(process.argv))
                     let { command, arguments: args } = processInfo;
 
                     if (argv["edit-cmd"]) {
-                        const tempFilePath = path.join(os.tmpdir(), `zombienet-restart-cmd-${Date.now()}.txt`);
+                        const tempFilePath = execSync("mktemp /tmp/zombienet-restart-cmd-XXXXXX").toString().trim();
                         writeFileSync(tempFilePath, `${command} ${args.join(" ")}`);
 
                         const editor = process.env.EDITOR || "vim"; // Default to 'vim' if EDITOR is not set
@@ -152,9 +150,14 @@ yargs(hideBin(process.argv))
                                 env: Object.fromEntries(envVariables.map((e) => e.split("=", 2))),
                             });
 
-                            process.on("SIGINT", () => {
-                                console.log('zombienetRestart: got SIGINT');
-                                child.kill("SIGINT");
+                            ["SIGINT", "SIGTERM"].forEach((signal) => {
+                                process.on(signal, () => {
+                                    console.log("zombienetRestart: got ", signal);
+                                    if (child) {
+                                        child.kill(signal);
+                                    }
+                                    process.exit();
+                                });
                             });
                         }, argv["wait-ms"]);
                     });

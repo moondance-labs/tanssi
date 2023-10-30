@@ -60,7 +60,6 @@
     },
     "dependencies": {
         "@zombienet/orchestrator": "^0.0.52",
-        "execa": "^8.0.1",
         "inquirer": "^9.2.11",
         "ps-node": "^0.1.6"
     }
