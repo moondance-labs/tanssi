@@ -181,6 +181,14 @@ pub mod pallet {
                                             let _ = core::mem::replace(old_block_info, block_info);
                                         }
                                     } else {
+                                        // If there is no previous block, we should reward the author of the first block
+                                        total_weight = total_weight.saturating_add(
+                                            T::AuthorNotingHook::on_container_author_noted(
+                                                &block_info.author,
+                                                block_info.block_number,
+                                                para_id,
+                                            ),
+                                        );
                                         let _ = core::mem::replace(
                                             maybe_old_block_info,
                                             Some(block_info),
