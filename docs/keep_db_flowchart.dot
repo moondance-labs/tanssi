@@ -1,0 +1,52 @@
+digraph G {
+    dpi=300;
+    rankdir=TB;
+
+    node [style=filled, fillcolor="#add8e6"];
+
+    A [label="Is a collator?", shape=diamond];
+    B1 [label="Start partial node to check contents of db", shape=box];
+    B2 [label="Has --keep-db flag?", shape=diamond];
+    C [label="Check difference between highest block\nin the db and the block according the\norchestrator author-noting pallet. Is it\ngreater than 100 blocks?", shape=diamond];
+    D [label="Compare the genesis hash from\norchestrator registrar pallet and the\ngenesis hash according to the local db.\nDoes it match?", shape=diamond];
+    E [label="Stop partial node and wait 10 seconds for all the services to stop", shape=box];
+    F [label="Full nodes never delete the db", shape=box, fillcolor="#98FB98"];
+    G [label="We want to use warp sync instead of downloading\nmore than 100 blocks, and warp sync only works\nif the db is empty, so delete db", shape=box, fillcolor="#FFB6C1"];
+    H [label="A genesis mismatch means that a\ncontainer chain which we have in the db\nwas deregistered, and a different\ncontainer chain was registered under the\nsame para id. In that case the node will\nnever be able to sync using the existing\ndb, so we delete it", shape=box, fillcolor="#FFB6C1"];
+    I [label="Keep db", shape=box, fillcolor="#98FB98"];
+    J [label="Start container chain node", shape=box];
+    J2 [label="Stop container chain node", shape=box];
+    K [label="Node crashed (panic)", shape=box];
+    L [label="Node manually stopped\n(ctrl-c or kill without -9)", shape=box];
+    L2 [label="Node killed using kill -9", shape=box];
+    M [label="Collator unassigned from container chain", shape=box];
+    N [label="Has --keep-db flag or is a full node?\n(only collators delete the db)", shape=diamond];
+    O [label="Keep db", shape=box, fillcolor="#98FB98"];
+    P [label="Delete db", shape=box, fillcolor="#FFB6C1"];
+
+    A -> B1 [label=Yes];
+    A -> F [label=No];
+    B1 -> B2;
+    B2 -> D [label=Yes];
+    B2 -> C [label=No];
+    C -> G [label=Yes];
+    C -> D [label=No];
+    D -> H [label=No];
+    D -> I [label=Yes];
+    I -> E;
+    G -> E;
+    H -> E;
+    E -> J;
+    F -> J;
+    J -> J2;
+    J2 -> K;
+    J2 -> L;
+    J2 -> L2;
+    J2 -> M;
+    M -> N;
+    N -> O [label=Yes];
+    N -> P [label=No];
+    K -> O;
+    L -> O;
+    L2 -> O;
+}
