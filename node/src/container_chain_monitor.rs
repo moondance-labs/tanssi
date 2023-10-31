@@ -38,7 +38,7 @@ pub struct SpawnedContainersMonitor {
     /// stopping time and reference count.
     list: VecDeque<SpawnedContainer>,
     /// Count the number of times a container chain has been started
-    count: usize,
+    pub count: usize,
 }
 
 pub struct SpawnedContainer {

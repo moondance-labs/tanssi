@@ -189,6 +189,48 @@ impl ContainerChainSpawner {
                 container_chain_para_id
             );
 
+            let odd_parachain = {
+                let state = state.lock().expect("poison error");
+                let monitor_id = state.spawned_containers_monitor.count;
+
+                monitor_id % 2 == 1
+            };
+
+            if odd_parachain {
+                log::info!("This is an odd parachain, incrementing all the ports by 1");
+                // Increment all the ports by 1 to avoid conflicts with the other running container chain
+                container_chain_cli
+                    .base
+                    .base
+                    .prometheus_params
+                    .prometheus_port = Some(
+                    container_chain_cli
+                        .base
+                        .base
+                        .prometheus_params
+                        .prometheus_port
+                        .unwrap_or(9617)
+                        .saturating_add(1),
+                );
+                container_chain_cli.base.base.network_params.port = Some(
+                    container_chain_cli
+                        .base
+                        .base
+                        .network_params
+                        .port
+                        .unwrap_or(30335)
+                        .saturating_add(1),
+                );
+                container_chain_cli.base.base.rpc_port = Some(
+                    container_chain_cli
+                        .base
+                        .base
+                        .rpc_port
+                        .unwrap_or(9946)
+                        .saturating_add(1),
+                );
+            }
+
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
 
