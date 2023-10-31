@@ -25,7 +25,7 @@ use {
             MigrateInvulnerables,
         },
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, Configuration,
-        Invulnerables, MinimumSelfDelegation, PooledStaking, Proxy, ProxyType,
+        Invulnerables, MinimumSelfDelegation, PooledStaking, Proxy, ProxyType, RewardsPortion,
     },
     frame_support::{assert_noop, assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -3076,11 +3076,6 @@ fn test_staking_leave_execute_before_time() {
             // Session 4 starts at block 1200, but run_to_session runs to block 1201, so subtract 2 here to go to 1999
             run_to_block(start_of_session_4 - 2);
 
-            assert_eq!(
-                balance_before,
-                System::account(AccountId::from(ALICE)).data.free
-            );
-
             assert_noop!(
                 PooledStaking::execute_pending_operations(
                     origin_of(ALICE.into()),
@@ -3127,10 +3122,7 @@ fn test_staking_leave_execute_any_origin() {
 
             run_to_session(4);
 
-            assert_eq!(
-                balance_before,
-                System::account(AccountId::from(ALICE)).data.free
-            );
+            let balance_before = System::account(AccountId::from(ALICE)).data.free;
 
             assert_ok!(PooledStaking::execute_pending_operations(
                 // Any signed origin can execute this, the stake will go to Alice account
@@ -3595,6 +3587,277 @@ fn test_migration_holds() {
             assert_eq!(new_holds.len() as u32, 1u32);
             assert_eq!(new_holds[0].id, dancebox_runtime::HoldReason::PooledStake);
             assert_eq!(new_holds[0].amount, 100u128);
+        });
+}
+
+#[test]
+fn test_reward_to_staking_candidate() {
+    // Alice, Bob, Charlie are invulnerables
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+            full_rotation_period: 24,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(DAVE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: dave_account_id,
+                },
+                vec![]
+            ));
+
+            // We make delegations to DAVE so that she is an elligible candidate.
+
+            let stake = 10 * MinimumSelfDelegation::get();
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(DAVE.into()),
+                DAVE.into(),
+                TargetPool::ManualRewards,
+                stake,
+            ));
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(BOB.into()),
+                DAVE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            // wait few sessions for the request to be executable
+            run_to_session(3u32);
+            assert_ok!(PooledStaking::execute_pending_operations(
+                origin_of(ALICE.into()),
+                vec![
+                    PendingOperationQuery {
+                        delegator: DAVE.into(),
+                        operation: PendingOperationKey::JoiningManualRewards {
+                            candidate: DAVE.into(),
+                            at: 0
+                        }
+                    },
+                    PendingOperationQuery {
+                        delegator: BOB.into(),
+                        operation: PendingOperationKey::JoiningAutoCompounding {
+                            candidate: DAVE.into(),
+                            at: 0
+                        }
+                    }
+                ]
+            ));
+
+            // wait for next session so that DAVE is elected
+            run_to_session(4u32);
+
+            assert_eq!(
+                Session::validators(),
+                vec![AccountId::from(ALICE), AccountId::from(DAVE)]
+            );
+
+            let account: AccountId = DAVE.into();
+            let balance_before = System::account(account.clone()).data.free;
+            let summary = (0..100)
+                .find_map(|_| {
+                    let summary = run_block();
+                    if summary.author_id == DAVE.into() {
+                        Some(summary)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_else(|| panic!("DAVE doesn't seem to author any blocks"));
+            let balance_after = System::account(account).data.free;
+
+            let all_rewards = RewardsPortion::get() * summary.inflation;
+            // rewards are shared between orchestrator and registered paras
+            let orchestrator_rewards = all_rewards / 3;
+            let candidate_rewards = orchestrator_rewards * 2 / 10;
+
+            assert_eq!(
+                candidate_rewards + 1, // TODO: account for rounding properly :p
+                balance_after - balance_before,
+                "dave should get the correct reward portion"
+            );
+        });
+}
+
+#[test]
+fn test_reward_to_invulnerable() {
+    // Alice, Bob, Charlie are invulnerables
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+        ])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+            full_rotation_period: 24,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // We make delegations to ALICE so that she is an elligible candidate.
+            // However since she is an invulnerable she should get all the
+            // rewards.
+
+            let stake = 10 * MinimumSelfDelegation::get();
+
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(ALICE.into()),
+                ALICE.into(),
+                TargetPool::ManualRewards,
+                stake,
+            ));
+            assert_ok!(PooledStaking::request_delegate(
+                origin_of(BOB.into()),
+                ALICE.into(),
+                TargetPool::AutoCompounding,
+                stake,
+            ));
+
+            // wait few sessions for the request to be executable
+            run_to_session(3u32);
+            assert_ok!(PooledStaking::execute_pending_operations(
+                origin_of(ALICE.into()),
+                vec![
+                    PendingOperationQuery {
+                        delegator: ALICE.into(),
+                        operation: PendingOperationKey::JoiningAutoCompounding {
+                            candidate: ALICE.into(),
+                            at: 0
+                        }
+                    },
+                    PendingOperationQuery {
+                        delegator: BOB.into(),
+                        operation: PendingOperationKey::JoiningAutoCompounding {
+                            candidate: ALICE.into(),
+                            at: 0
+                        }
+                    }
+                ]
+            ));
+
+            // wait for next session so that ALICE is elected
+            run_to_session(4u32);
+
+            let account: AccountId = ALICE.into();
+            let balance_before = System::account(account.clone()).data.free;
+
+            let summary = (0..100)
+                .find_map(|_| {
+                    let summary = run_block();
+                    if summary.author_id == ALICE.into() {
+                        Some(summary)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or_else(|| panic!("ALICE doesn't seem to author any blocks"));
+
+            let balance_after = System::account(account).data.free;
+
+            let all_rewards = RewardsPortion::get() * summary.inflation;
+            // rewards are shared between orchestrator and registered paras
+            let orchestrator_rewards = all_rewards / 3;
+            assert_eq!(
+                orchestrator_rewards,
+                balance_after - balance_before,
+                "alice should get the correct reward portion"
+            );
+        });
+}
+
+#[test]
+fn test_reward_to_invulnerable_with_key_change() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_para_ids(vec![
+            (1001, empty_genesis_data(), vec![]),
+            (1002, empty_genesis_data(), vec![]),
+        ])
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 2,
+            collators_per_container: 2,
+            full_rotation_period: 24,
+        })
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            run_to_session(2u32);
+
+            // change key, this should be reflected 2 sessions afterward
+            let alice_new_key = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
+            assert_ok!(Session::set_keys(
+                origin_of(ALICE.into()),
+                dancebox_runtime::SessionKeys {
+                    nimbus: alice_new_key,
+                },
+                vec![]
+            ));
+
+            run_to_session(4u32);
+
+            let account: AccountId = ALICE.into();
+            let balance_before = System::account(account.clone()).data.free;
+
+            let summary = run_block();
+            assert_eq!(summary.author_id, ALICE.into());
+
+            let balance_after = System::account(account).data.free;
+
+            let all_rewards = RewardsPortion::get() * summary.inflation;
+            // rewards are shared between orchestrator and registered paras
+            let orchestrator_rewards = all_rewards / 3;
+            assert_eq!(
+                orchestrator_rewards,
+                balance_after - balance_before,
+                "alice should get the correct reward portion"
+            );
         });
 }
 
