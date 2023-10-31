@@ -98,7 +98,7 @@ pub struct ContainerChainState {
 
 /// Stops a container chain when dropped
 pub struct StopContainerChain {
-    signal: oneshot::Sender<()>,
+    signal: oneshot::Sender<bool>,
     id: usize,
 }
 
@@ -279,7 +279,7 @@ impl ContainerChainSpawner {
             .await?;
 
             // Signal that allows to gracefully stop a container chain
-            let (signal, on_exit) = oneshot::channel::<()>();
+            let (signal, on_exit) = oneshot::channel::<bool>();
             let collate_on = collate_on.unwrap_or_else(|| {
                 assert!(
                     !validator,
@@ -343,11 +343,11 @@ impl ContainerChainSpawner {
                     }
                     stop_unassigned = on_exit_future => {
                         // Graceful shutdown.
-                        // `stop_unassigned` will be `Ok` if `.stop()` has been called, which means that the
+                        // `stop_unassigned` will be `Ok(keep_db)` if `.stop()` has been called, which means that the
                         // container chain has been unassigned, and will be `Err` if the handle has been dropped,
                         // which means that the node is stopping.
                         // Delete existing database if running as collator
-                        if validator && stop_unassigned.is_ok() && !container_chain_cli.base.keep_db {
+                        if validator && stop_unassigned == Ok(false) && !container_chain_cli.base.keep_db {
                             delete_container_chain_db(&db_path);
                         }
                     }
@@ -374,7 +374,7 @@ impl ContainerChainSpawner {
     }
 
     /// Stop a container chain. Prints a warning if the container chain was not running.
-    fn stop(&self, container_chain_para_id: ParaId) {
+    fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) {
         let mut state = self.state.lock().expect("poison error");
         let stop_handle = state
             .spawned_container_chains
@@ -390,7 +390,7 @@ impl ContainerChainSpawner {
                     .set_stop_signal_time(id, Instant::now());
 
                 // Send signal to perform graceful shutdown, which will delete the db if needed
-                let _ = stop_handle.stop_handle.signal.send(());
+                let _ = stop_handle.stop_handle.signal.send(keep_db);
             }
             None => {
                 log::warn!(
@@ -423,6 +423,7 @@ impl ContainerChainSpawner {
             call_collate_on,
             chains_to_stop,
             chains_to_start,
+            need_to_restart_current,
         } = handle_update_assignment_state_change(
             &mut self.state.lock().expect("poison error"),
             self.orchestrator_para_id,
@@ -438,7 +439,14 @@ impl ContainerChainSpawner {
 
         // Stop all container chains that are no longer needed
         for para_id in chains_to_stop {
-            self.stop(para_id);
+            // Keep db if we are currently assigned to this chain
+            let keep_db = Some(para_id) == current;
+            self.stop(para_id, keep_db);
+        }
+
+        if need_to_restart_current {
+            // Give it some time to stop properly
+            sleep(Duration::from_secs(10)).await;
         }
 
         // Start all new container chains (usually 1)
@@ -456,6 +464,7 @@ struct HandleUpdateAssignmentResult {
         Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
     chains_to_stop: Vec<ParaId>,
     chains_to_start: Vec<ParaId>,
+    need_to_restart_current: bool,
 }
 
 // This is a separate function to allow testing
@@ -472,6 +481,7 @@ fn handle_update_assignment_state_change(
             call_collate_on: None,
             chains_to_stop: Default::default(),
             chains_to_start: Default::default(),
+            need_to_restart_current: false,
         };
     }
 
@@ -522,11 +532,11 @@ fn handle_update_assignment_state_change(
         // Force restart of new assigned container chain: if it was running before it was in "syncing mode",
         // which doesn't use the correct ports, so start it in "collation mode".
         let id = current.unwrap();
+        if running_chains_before.contains(&id) && !chains_to_stop.contains(&id) {
+            chains_to_stop.push(id);
+        }
         if !chains_to_start.contains(&id) {
             chains_to_start.push(id);
-        }
-        if !chains_to_stop.contains(&id) {
-            chains_to_stop.push(id);
         }
     }
 
@@ -534,6 +544,7 @@ fn handle_update_assignment_state_change(
         call_collate_on,
         chains_to_stop,
         chains_to_start,
+        need_to_restart_current,
     }
 }
 
