@@ -19,12 +19,51 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use cumulus_primitives_core::{relay_chain::Slot, ParaId};
-use sp_std::vec::Vec;
+pub use cumulus_primitives_core::{
+    relay_chain::{BlockNumber, Slot},
+    ParaId,
+};
+use {
+    frame_support::{
+        pallet_prelude::{DispatchResultWithPostInfo, Get, Weight},
+        BoundedVec,
+    },
+    sp_std::vec::Vec,
+};
+
+/// The author-noting hook to react to container chains authoring.
+pub trait AuthorNotingHook<AccountId> {
+    /// This hook is called partway through the `set_latest_author_data` inherent in author-noting.
+    ///
+    /// The hook should never panic and is required to return the weight consumed.
+    fn on_container_author_noted(
+        author: &AccountId,
+        block_number: BlockNumber,
+        para_id: ParaId,
+    ) -> Weight;
+}
+
+impl<AccountId> AuthorNotingHook<AccountId> for () {
+    fn on_container_author_noted(_: &AccountId, _: BlockNumber, _: ParaId) -> Weight {
+        Weight::zero()
+    }
+}
+
+pub trait DistributeRewards<AccountId, Imbalance> {
+    fn distribute_rewards(rewarded: AccountId, amount: Imbalance) -> DispatchResultWithPostInfo;
+}
+
+impl<AccountId, Imbalance> DistributeRewards<AccountId, Imbalance> for () {
+    fn distribute_rewards(_rewarded: AccountId, _amount: Imbalance) -> DispatchResultWithPostInfo {
+        Ok(().into())
+    }
+}
 
 /// Get the current list of container chains parachain ids.
 pub trait GetCurrentContainerChains {
-    fn current_container_chains() -> Vec<ParaId>;
+    type MaxContainerChains: Get<u32>;
+
+    fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains>;
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_current_container_chains(container_chains: &[ParaId]);

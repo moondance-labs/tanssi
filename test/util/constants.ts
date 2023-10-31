@@ -1,0 +1,3 @@
+export const PARACHAIN_BOND = "5EYCAe5cJkHcthonN7KrsVp11XYHMqtrFPimDd3Af755ET2D";
+export const DANCE = 1_000_000_000_000n;
+export const STAKING_ACCOUNT = "5EYCAe5cHvXp3GAe94dYPGjLqQdn7cnYuENAn66SntQkNTAG";

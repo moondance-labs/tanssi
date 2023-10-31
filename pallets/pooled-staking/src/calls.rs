@@ -18,7 +18,7 @@ use {
     crate::{
         candidate::Candidates,
         pools::{self, Pool},
-        traits::{ErrAdd, ErrSub, Timer},
+        traits::Timer,
         AllTargetPool, Candidate, Config, Delegator, Error, Event, Pallet, PendingOperationKey,
         PendingOperationQuery, PendingOperationQueryOf, PendingOperations, Shares, SharesOrStake,
         Stake, TargetPool,
@@ -33,6 +33,7 @@ use {
     },
     sp_runtime::traits::{CheckedSub, Zero},
     sp_std::vec::Vec,
+    tp_maths::{ErrAdd, ErrSub},
 };
 
 pub struct Calls<T>(PhantomData<T>);

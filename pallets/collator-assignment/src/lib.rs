@@ -93,6 +93,7 @@ pub mod pallet {
         // which guarantees that at least one full session has passed before any changes are applied.
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
         type ContainerChains: GetSessionContainerChains<Self::SessionIndex>;
+        type SelfParaId: Get<ParaId>;
         type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
@@ -411,9 +412,15 @@ pub mod pallet {
     }
 
     impl<T: Config> GetContainerChainAuthor<T::AccountId> for Pallet<T> {
+        // TODO: pending collator container chain if the block is a session change!
         fn author_for_slot(slot: Slot, para_id: ParaId) -> Option<T::AccountId> {
             let assigned_collators = Pallet::<T>::collator_container_chain();
-            let collators = assigned_collators.container_chains.get(&para_id)?;
+            let collators = if para_id == T::SelfParaId::get() {
+                Some(&assigned_collators.orchestrator_chain)
+            } else {
+                assigned_collators.container_chains.get(&para_id)
+            }?;
+
             if collators.is_empty() {
                 // Avoid division by zero below
                 return None;

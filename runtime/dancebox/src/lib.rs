@@ -49,6 +49,7 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
+            fungible::{Balanced, Credit},
             ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
             OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
         },
@@ -68,6 +69,7 @@ use {
     },
     nimbus_primitives::NimbusId,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_session::{SessionManager, ShouldEndSession},
@@ -689,6 +691,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
+    type SelfParaId = ParachainInfo;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
@@ -707,6 +710,7 @@ impl pallet_author_noting::Config for Runtime {
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    type AuthorNotingHook = InflationRewards;
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }
 
@@ -727,6 +731,8 @@ impl pallet_invulnerables::Config for Runtime {
     type CollatorIdOf = pallet_invulnerables::IdentityCollator;
     type CollatorRegistration = Session;
     type WeightInfo = pallet_invulnerables::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Currency = Balances;
 }
 
 parameter_types! {
@@ -1116,6 +1122,55 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub ParachainBondAccount: AccountId32 = PalletId(*b"ParaBond").into_account_truncating();
+    pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
+    // The equation to solve is:
+    // initial_supply * (1.05) = initial_supply * (1+x)^2_629_800
+    // we should solve for x = (1.05)^(1/2_629_800) -1 -> 0.000000019 per block or 19/1_000_000_000
+    // 1% in the case of dev moed
+    // TODO: check if we can put the prod inflation for tests too
+    // TODO: better calculus for going from annual to block inflation (if it can be done)
+    pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));
+
+    // 30% for parachain bond, so 70% for staking
+    pub const RewardsPortion: Perbill = Perbill::from_percent(70);
+}
+
+use {nimbus_primitives::SlotBeacon, tp_traits::GetContainerChainAuthor};
+
+pub struct GetSelfChainBlockAuthor;
+impl Get<AccountId32> for GetSelfChainBlockAuthor {
+    fn get() -> AccountId32 {
+        // TODO: we should do a refactor here, and use either authority-mapping or collator-assignemnt
+        // we should also make sure we actually account for the weight of these
+        // although most of these should be cached as they are read every block
+        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        let self_para_id = ParachainInfo::get();
+        let author = CollatorAssignment::author_for_slot(slot.into(), self_para_id);
+        author.expect("author should be set")
+    }
+}
+
+pub struct OnUnbalancedInflation;
+impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
+    fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
+        let _ = <Balances as Balanced<_>>::resolve(&ParachainBondAccount::get(), credit);
+    }
+}
+
+impl pallet_inflation_rewards::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type ContainerChains = Registrar;
+    type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
+    type InflationRate = InflationRate;
+    type OnUnbalanced = OnUnbalancedInflation;
+    type PendingRewardsAccount = PendingRewardsAccount;
+    type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
+    type RewardsPortion = RewardsPortion;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1143,12 +1198,14 @@ construct_runtime!(
         AuthorNoting: pallet_author_noting = 24,
         AuthorityAssignment: pallet_authority_assignment = 25,
 
-        // Collator support. The order of these 4 are important and shall not change.
+        // Collator support. The order of these 6 are important and shall not change.
         Invulnerables: pallet_invulnerables = 30,
         Session: pallet_session = 31,
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
         PooledStaking: pallet_pooled_staking = 34,
+        // InflationRewards must be after Session and AuthorInherent
+        InflationRewards: pallet_inflation_rewards = 35,
 
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
@@ -1529,6 +1586,7 @@ impl_runtime_apis! {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
             let parent_number = System::block_number();
+
             let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
 
             let session_index = if should_end_session {
@@ -1539,6 +1597,7 @@ impl_runtime_apis! {
             };
 
             let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+
             let self_para_id = ParachainInfo::get();
 
             if para_id == self_para_id {

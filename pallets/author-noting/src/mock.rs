@@ -16,6 +16,7 @@
 
 use {
     crate::{self as author_noting_pallet, Config},
+    bounded_collections::bounded_vec,
     cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider},
     cumulus_primitives_core::ParaId,
     frame_support::{
@@ -25,14 +26,15 @@ use {
             ConstU32, ConstU64, Everything, OnFinalize, OnInitialize, UnfilteredDispatchable,
         },
     },
-    frame_system::pallet_prelude::BlockNumberFor,
-    frame_system::RawOrigin,
+    frame_system::{pallet_prelude::BlockNumberFor, RawOrigin},
     parity_scale_codec::{Decode, Encode},
     polkadot_parachain_primitives::primitives::RelayChainBlockNumber,
     polkadot_primitives::Slot,
     sp_core::H256,
-    sp_runtime::traits::{BlakeTwo256, IdentityLookup},
-    sp_runtime::BuildStorage,
+    sp_runtime::{
+        traits::{BlakeTwo256, IdentityLookup},
+        BoundedVec, BuildStorage,
+    },
     sp_state_machine::StorageProof,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
@@ -116,13 +118,13 @@ impl mock_data::Config for Test {}
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub container_chains: Vec<ParaId>,
+    pub container_chains: BoundedVec<ParaId, ConstU32<5>>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            container_chains: vec![1001.into()],
+            container_chains: bounded_vec![1001.into()],
         }
     }
 }
@@ -141,7 +143,9 @@ impl tp_traits::GetContainerChainAuthor<AccountId> for MockAuthorFetcher {
 pub struct MockContainerChainGetter;
 
 impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
-    fn current_container_chains() -> Vec<ParaId> {
+    type MaxContainerChains = ConstU32<5>;
+
+    fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains> {
         MockData::mock().container_chains
     }
 
@@ -181,6 +185,7 @@ impl Config for Test {
     type ContainerChainAuthor = MockAuthorFetcher;
     type SelfParaId = ParachainId;
     type ContainerChains = MockContainerChainGetter;
+    type AuthorNotingHook = ();
     type RelayChainStateProvider = MockRelayStateProvider;
 }
 

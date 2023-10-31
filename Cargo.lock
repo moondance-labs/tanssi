@@ -2844,6 +2844,7 @@ dependencies = [
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
  "pallet-im-online",
+ "pallet-inflation-rewards",
  "pallet-initializer",
  "pallet-invulnerables",
  "pallet-maintenance-mode",
@@ -7199,6 +7200,7 @@ dependencies = [
 name = "pallet-author-noting"
 version = "0.1.0"
 dependencies = [
+ "bounded-collections",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "frame-benchmarking",
@@ -7884,6 +7886,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-inflation-rewards"
+version = "0.1.0"
+dependencies = [
+ "bounded-collections",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "nimbus-primitives",
+ "num-traits",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "similar-asserts",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "tp-core",
+ "tp-traits",
+]
+
+[[package]]
 name = "pallet-initializer"
 version = "0.1.0"
 dependencies = [
@@ -7916,6 +7942,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -8149,6 +8176,8 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "tp-core",
+ "tp-maths",
+ "tp-traits",
 ]
 
 [[package]]
@@ -15171,10 +15200,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tp-maths"
+version = "0.1.0"
+dependencies = [
+ "sp-core",
+ "sp-runtime",
+]
+
+[[package]]
 name = "tp-traits"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
+ "frame-support",
  "sp-std",
 ]
 

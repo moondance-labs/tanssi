@@ -189,6 +189,22 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
+        inflationRewards: {
+            /** Rewarding container author */
+            RewardedContainer: AugmentedEvent<
+                ApiType,
+                [accountId: AccountId32, paraId: u32, balance: u128],
+                { accountId: AccountId32; paraId: u32; balance: u128 }
+            >;
+            /** Rewarding orchestrator author */
+            RewardedOrchestrator: AugmentedEvent<
+                ApiType,
+                [accountId: AccountId32, balance: u128],
+                { accountId: AccountId32; balance: u128 }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         invulnerables: {
             /**
              * An account was unable to be added to the Invulnerables because they did not have keys registered. Other

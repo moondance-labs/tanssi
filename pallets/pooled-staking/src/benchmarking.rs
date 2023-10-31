@@ -29,7 +29,7 @@ use {
         dispatch::RawOrigin,
         traits::{
             fungible::{InspectHold, Mutate, MutateHold},
-            tokens::Precision,
+            tokens::{fungible::Balanced, Precision},
             Get,
         },
     },
@@ -64,6 +64,12 @@ fn create_funded_user<T: Config>(
     let total = min_candidate_stk + extra;
     T::Currency::set_balance(&user, total);
     (user, total)
+}
+
+pub(crate) fn currency_issue<T: Config + frame_system::Config>(
+    amount: T::Balance,
+) -> crate::CreditOf<T> {
+    <<T as crate::Config>::Currency as Balanced<T::AccountId>>::issue(amount)
 }
 
 #[benchmarks]
@@ -577,7 +583,7 @@ mod benchmarks {
 
         #[block]
         {
-            crate::pools::distribute_rewards::<T>(&caller, source_stake)?;
+            crate::pools::distribute_rewards::<T>(&caller, currency_issue::<T>(source_stake))?;
         }
 
         Ok(())

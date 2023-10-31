@@ -16,18 +16,18 @@
 
 use {
     crate::{
-        candidate::Candidates,
-        traits::{ErrAdd, ErrMul, ErrSub, MulDiv},
-        Candidate, Config, Delegator, Error, Event, Pallet, Pools, PoolsKey, Shares, Stake,
+        candidate::Candidates, weights::WeightInfo, Candidate, Config, CreditOf, Delegator, Error,
+        Event, Pallet, Pools, PoolsKey, Shares, Stake,
     },
     core::marker::PhantomData,
     frame_support::{
         ensure,
-        pallet_prelude::DispatchResultWithPostInfo,
-        traits::{fungible::Mutate, tokens::Preservation},
+        pallet_prelude::*,
+        traits::{fungible::Balanced, Imbalance},
     },
     sp_core::Get,
     sp_runtime::traits::{CheckedAdd, CheckedDiv, Zero},
+    tp_maths::{ErrAdd, ErrMul, ErrSub, MulDiv},
 };
 
 pub trait Pool<T: Config> {
@@ -455,22 +455,24 @@ impl<T: Config> ManualRewards<T> {
 /// AutoCompounding shares. This can lead to some rounding, which will be
 /// absorbed in the ManualRewards distribution, which simply consist of
 /// transfering the funds to the candidate account.
+#[frame_support::transactional]
 pub fn distribute_rewards<T: Config>(
     candidate: &Candidate<T>,
-    rewards: T::Balance,
+    rewards: CreditOf<T>,
 ) -> DispatchResultWithPostInfo {
-    let candidate_manual_rewards = distribute_rewards_inner::<T>(candidate, rewards)?;
+    let candidate_manual_rewards = distribute_rewards_inner::<T>(candidate, rewards.peek())?;
 
-    if !candidate_manual_rewards.is_zero() {
-        T::Currency::transfer(
-            &T::StakingAccount::get(),
-            &candidate,
-            candidate_manual_rewards,
-            Preservation::Preserve,
-        )?;
+    let (candidate_manual_rewards, other_rewards) = rewards.split(candidate_manual_rewards);
+
+    if !candidate_manual_rewards.peek().is_zero() {
+        T::Currency::resolve(&candidate, candidate_manual_rewards)
+            .map_err(|_| DispatchError::NoProviders)?;
     }
 
-    Ok(().into())
+    T::Currency::resolve(&T::StakingAccount::get(), other_rewards)
+        .map_err(|_| DispatchError::NoProviders)?;
+
+    Ok(Some(T::WeightInfo::distribute_rewards()).into())
 }
 
 fn distribute_rewards_inner<T: Config>(

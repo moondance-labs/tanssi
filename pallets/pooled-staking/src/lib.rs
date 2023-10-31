@@ -75,6 +75,7 @@ pub mod pallet {
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
+        tp_maths::MulDiv,
     };
 
     #[cfg(feature = "std")]
@@ -82,6 +83,8 @@ pub mod pallet {
 
     // Type aliases for better readability.
     pub type Candidate<T> = <T as frame_system::Config>::AccountId;
+    pub type CreditOf<T> =
+        fungible::Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
     pub type Delegator<T> = <T as frame_system::Config>::AccountId;
 
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
@@ -237,7 +240,7 @@ pub mod pallet {
         /// Same as Currency::Balance. Must impl `MulDiv` which perform
         /// multiplication followed by division using a bigger type to avoid
         /// overflows.
-        type Balance: Balance + traits::MulDiv;
+        type Balance: Balance + MulDiv;
 
         /// Identifier reserved for this pallet holding account funds.
         type CurrencyHoldReason: Get<
@@ -453,6 +456,18 @@ pub mod pallet {
         SwapResultsInZeroShares,
     }
 
+    impl<T: Config> From<tp_maths::OverflowError> for Error<T> {
+        fn from(_: tp_maths::OverflowError) -> Self {
+            Error::MathOverflow
+        }
+    }
+
+    impl<T: Config> From<tp_maths::UnderflowError> for Error<T> {
+        fn from(_: tp_maths::UnderflowError) -> Self {
+            Error::MathUnderflow
+        }
+    }
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -568,10 +583,10 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config> tp_core::DistributeRewards<Candidate<T>, T::Balance> for Pallet<T> {
+    impl<T: Config> tp_traits::DistributeRewards<Candidate<T>, CreditOf<T>> for Pallet<T> {
         fn distribute_rewards(
             candidate: Candidate<T>,
-            rewards: T::Balance,
+            rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
             pools::distribute_rewards::<T>(&candidate, rewards)
         }

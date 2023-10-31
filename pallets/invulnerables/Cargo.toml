@@ -20,6 +20,7 @@ frame-system = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
 sp-std = { workspace = true }
+tp-traits = { workspace = true }
 
 frame-benchmarking = { workspace = true }
 
@@ -43,6 +44,7 @@ std = [
 	"scale-info/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"tp-traits/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",

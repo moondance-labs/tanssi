@@ -570,8 +570,10 @@ pub mod pallet {
     }
 
     impl<T: Config> GetCurrentContainerChains for Pallet<T> {
-        fn current_container_chains() -> Vec<ParaId> {
-            Self::registered_para_ids().into_iter().collect()
+        type MaxContainerChains = T::MaxLengthParaIds;
+
+        fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains> {
+            Self::registered_para_ids()
         }
 
         #[cfg(feature = "runtime-benchmarks")]
