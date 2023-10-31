@@ -158,6 +158,10 @@ describeSuite({
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
                 await waitSessions(context, paraApi, 2);
 
+                // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
+                // So wait a few blocks more hoping that the current block will be finalized by then.
+                await context.waitBlock(3, "Tanssi");
+
                 // Check that pending para ids removes 2000
                 const registered = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types

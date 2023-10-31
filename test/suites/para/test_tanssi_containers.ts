@@ -280,19 +280,9 @@ describeSuite({
             title: "Blocks are being produced on container 2002",
             timeout: 90000,
             test: async function () {
-                let blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
-
                 // Wait 3 blocks because the next test needs to get a non empty value from
                 // container2002Api.query.authoritiesNoting()
-                while (blockNum < 3) {
-                    // Wait a bit
-                    // Cannot use context.waitBlock because the container2002Api is not part of moonwall
-                    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-                    await sleep(1_000);
-
-                    blockNum = (await container2002Api.rpc.chain.getBlock()).block.header.number.toNumber();
-                }
-                expect(blockNum).to.be.greaterThan(0);
+                await context.waitBlock(3, "Container2002");
             },
         });
 

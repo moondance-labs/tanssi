@@ -16,7 +16,8 @@
         "download-chain-spec": "tsx scripts/downloadChainSpec.ts",
         "register-para": "tsx scripts/registerPara.ts",
         "generate-test-ids": "tsx scripts/deriveTestIds.ts process suites",
-        "sudo-register-para": "tsx scripts/sudoRegisterPara.ts"
+        "sudo-register-para": "tsx scripts/sudoRegisterPara.ts",
+        "zombienet-restart": "tsx scripts/zombienetRestart.ts"
     },
     "keywords": [],
     "author": "",
@@ -58,6 +59,8 @@
         "yargs": "^17.7.2"
     },
     "dependencies": {
-        "@zombienet/orchestrator": "^0.0.52"
+        "@zombienet/orchestrator": "^0.0.52",
+        "inquirer": "^9.2.11",
+        "ps-node": "^0.1.6"
     }
 }

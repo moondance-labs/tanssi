@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+//! Container Chain Spawner
+//!
+//! Controls the starting and stopping of container chains.
+//!
+//! For more information about when the database is deleted, check the
+//! [Keep db flowchart](https://raw.githubusercontent.com/moondance-labs/tanssi/master/docs/keep_db_flowchart.png)
+
 use {
     crate::{
         cli::ContainerChainCli,
