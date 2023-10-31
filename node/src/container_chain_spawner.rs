@@ -800,6 +800,7 @@ mod tests {
                 call_collate_on,
                 chains_to_stop,
                 chains_to_start,
+                need_to_restart_current,
             } = handle_update_assignment_state_change(
                 &mut *self.state.lock().unwrap(),
                 self.orchestrator_para_id,
@@ -810,11 +811,22 @@ mod tests {
 
             // Assert we never start and stop the same container chain
             for para_id in &chains_to_start {
-                assert!(
-                    !chains_to_stop.contains(para_id),
-                    "Tried to start and stop same container chain: {}",
-                    para_id
-                );
+                if !need_to_restart_current {
+                    assert!(
+                        !chains_to_stop.contains(para_id),
+                        "Tried to start and stop same container chain: {}",
+                        para_id
+                    );
+                } else {
+                    // Will try to start and stop container chain with id "current", so ignore that
+                    if Some(*para_id) != current {
+                        assert!(
+                            !chains_to_stop.contains(para_id),
+                            "Tried to start and stop same container chain: {}",
+                            para_id
+                        );
+                    }
+                }
             }
             // Assert we never start or stop the orchestrator chain
             assert!(!chains_to_start.contains(&self.orchestrator_para_id));
