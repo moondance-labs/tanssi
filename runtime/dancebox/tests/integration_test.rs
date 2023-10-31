@@ -3631,12 +3631,12 @@ fn test_migration_config_full_rotation_period() {
                 min_orchestrator_collators: 2,
                 max_orchestrator_collators: 5,
                 collators_per_container: 2,
-                full_rotation_period: 24,
+                full_rotation_period: 0,
             };
             assert_eq!(Configuration::config(), expected_active);
 
             let expected_pending = vec![
-                (2225, pallet_configuration::HostConfiguration { max_collators: 99, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 24 }), (2226, pallet_configuration::HostConfiguration { max_collators: 100, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 24 })
+                (2225, pallet_configuration::HostConfiguration { max_collators: 99, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 0 }), (2226, pallet_configuration::HostConfiguration { max_collators: 100, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 0 })
             ];
             assert_eq!(Configuration::pending_configs(), expected_pending);
         });
