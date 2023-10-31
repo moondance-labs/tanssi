@@ -89,6 +89,8 @@ pub struct ContainerChainSpawnerState {
 
 pub struct ContainerChainState {
     /// Async callback that enables collation on this container chain
+    // We don't use it since we are always restarting container chains
+    #[allow(unused)]
     collate_on: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     /// Handle that stops the container chain when dropped
     stop_handle: StopContainerChain,
@@ -189,46 +191,17 @@ impl ContainerChainSpawner {
                 container_chain_para_id
             );
 
-            let odd_parachain = {
-                let state = state.lock().expect("poison error");
-                let monitor_id = state.spawned_containers_monitor.count;
-
-                monitor_id % 2 == 1
-            };
-
-            if odd_parachain {
-                log::info!("This is an odd parachain, incrementing all the ports by 1");
-                // Increment all the ports by 1 to avoid conflicts with the other running container chain
+            if !start_collation {
+                log::info!("This is a syncing container chain, using random ports");
+                // Use random ports to avoid conflicts with the other running container chain
+                let random_ports = [23456, 23457, 23458];
                 container_chain_cli
                     .base
                     .base
                     .prometheus_params
-                    .prometheus_port = Some(
-                    container_chain_cli
-                        .base
-                        .base
-                        .prometheus_params
-                        .prometheus_port
-                        .unwrap_or(9617)
-                        .saturating_add(1),
-                );
-                container_chain_cli.base.base.network_params.port = Some(
-                    container_chain_cli
-                        .base
-                        .base
-                        .network_params
-                        .port
-                        .unwrap_or(30335)
-                        .saturating_add(1),
-                );
-                container_chain_cli.base.base.rpc_port = Some(
-                    container_chain_cli
-                        .base
-                        .base
-                        .rpc_port
-                        .unwrap_or(9946)
-                        .saturating_add(1),
-                );
+                    .prometheus_port = Some(random_ports[0]);
+                container_chain_cli.base.base.network_params.port = Some(random_ports[1]);
+                container_chain_cli.base.base.rpc_port = Some(random_ports[2]);
             }
 
             // Update CLI params
@@ -517,6 +490,7 @@ fn handle_update_assignment_state_change(
     running_chains_after.extend(current);
     running_chains_after.extend(next);
     running_chains_after.remove(&orchestrator_para_id);
+    let mut need_to_restart_current = false;
 
     if state.assigned_para_id != current {
         // If the assigned container chain was already running but not collating, we need to call collate_on
@@ -525,12 +499,9 @@ fn handle_update_assignment_state_change(
             if para_id == orchestrator_para_id {
                 call_collate_on = Some(collate_on_tanssi);
             } else {
-                // When we get assigned to a different container chain, only need to call collate_on if it was already
-                // running before
-                if running_chains_before.contains(&para_id) {
-                    let c = state.spawned_container_chains.get(&para_id).expect("container chain was running before so it should exist in spawned_container_chains");
-                    call_collate_on = Some(c.collate_on.clone());
-                }
+                // When we get assigned to a different container chain, we don't need to call collate_on because
+                // we will restart that container chain in collation mode.
+                need_to_restart_current = true;
             }
         }
     }
@@ -538,14 +509,26 @@ fn handle_update_assignment_state_change(
     state.assigned_para_id = current;
     state.next_assigned_para_id = next;
 
-    let chains_to_stop = running_chains_before
+    let mut chains_to_stop: Vec<_> = running_chains_before
         .difference(&running_chains_after)
         .copied()
         .collect();
-    let chains_to_start = running_chains_after
+    let mut chains_to_start: Vec<_> = running_chains_after
         .difference(&running_chains_before)
         .copied()
         .collect();
+
+    if need_to_restart_current {
+        // Force restart of new assigned container chain: if it was running before it was in "syncing mode",
+        // which doesn't use the correct ports, so start it in "collation mode".
+        let id = current.unwrap();
+        if !chains_to_start.contains(&id) {
+            chains_to_start.push(id);
+        }
+        if !chains_to_stop.contains(&id) {
+            chains_to_stop.push(id);
+        }
+    }
 
     HandleUpdateAssignmentResult {
         call_collate_on,
