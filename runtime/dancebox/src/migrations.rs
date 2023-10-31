@@ -251,7 +251,7 @@ where
             min_orchestrator_collators: old_config.min_orchestrator_collators,
             max_orchestrator_collators: old_config.max_orchestrator_collators,
             collators_per_container: old_config.collators_per_container,
-            full_rotation_period: 24,
+            full_rotation_period: 0,
         };
         frame_support::storage::unhashed::put(CONFIGURATION_ACTIVE_CONFIG_KEY, &new_config);
 
@@ -267,7 +267,7 @@ where
                 min_orchestrator_collators: old_config.min_orchestrator_collators,
                 max_orchestrator_collators: old_config.max_orchestrator_collators,
                 collators_per_container: old_config.collators_per_container,
-                full_rotation_period: 24,
+                full_rotation_period: 0,
             };
             new_pending_configs.push((session_index, new_config));
         }
