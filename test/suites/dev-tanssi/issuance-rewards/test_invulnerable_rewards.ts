@@ -42,7 +42,7 @@ describeSuite({
 
         it({
             id: "E02",
-            title: "Parachain bond receives 30% of the inflation anb pending rewards plus division dust",
+            title: "Parachain bond receives 30% of the inflation and pending rewards plus division dust",
             test: async function () {
                 let expectedAmountParachainBond = 0n;
 

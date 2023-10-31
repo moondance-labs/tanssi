@@ -162,6 +162,8 @@ pub mod pallet {
                     GenericStateProof::new(relay_storage_root, relay_storage_proof)
                         .expect("Invalid relay chain state proof");
 
+                // TODO: we should probably fetch all authors-containers first
+                // then pass the vector to the hook, this would allow for a better estimation
                 for para_id in registered_para_ids {
                     match Self::fetch_block_info_from_proof(&relay_storage_rooted_proof, para_id) {
                         Ok(block_info) => {

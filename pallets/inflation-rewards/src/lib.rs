@@ -138,7 +138,7 @@ pub mod pallet {
         /// Get block author for self chain
         type GetSelfChainBlockAuthor: Get<Self::AccountId>;
 
-        /// Inflation rate per relay block (proportion of the total issuance)
+        /// Inflation rate per orchestrator block (proportion of the total issuance)
         type InflationRate: Get<Perbill>;
 
         /// What to do with the new supply not dedicated to staking
