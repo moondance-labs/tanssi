@@ -109,7 +109,7 @@ jobs:
             password: ${{ secrets.DOCKERHUB_TOKEN }}
         - name: Tag it with moondance-labs for 6 month
           run: |
-            MOONDANCELABS_TAG=`echo "${{ steps.prep.outputs.tags }}"
+            MOONDANCELABS_TAG=`echo "${{ steps.prep.outputs.tags }}"`
             docker pull ${{ steps.prep.outputs.tags }}
             docker tag ${{ steps.prep.outputs.tags }} $MOONDANCELABS_TAG
             docker push $MOONDANCELABS_TAG
