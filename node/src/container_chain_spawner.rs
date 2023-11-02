@@ -423,7 +423,7 @@ impl ContainerChainSpawner {
             call_collate_on,
             chains_to_stop,
             chains_to_start,
-            need_to_restart_current,
+            need_to_restart,
         } = handle_update_assignment_state_change(
             &mut self.state.lock().expect("poison error"),
             self.orchestrator_para_id,
@@ -444,7 +444,7 @@ impl ContainerChainSpawner {
             self.stop(para_id, keep_db);
         }
 
-        if need_to_restart_current {
+        if need_to_restart {
             // Give it some time to stop properly
             sleep(Duration::from_secs(10)).await;
         }
@@ -464,7 +464,7 @@ struct HandleUpdateAssignmentResult {
         Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
     chains_to_stop: Vec<ParaId>,
     chains_to_start: Vec<ParaId>,
-    need_to_restart_current: bool,
+    need_to_restart: bool,
 }
 
 // This is a separate function to allow testing
@@ -481,7 +481,7 @@ fn handle_update_assignment_state_change(
             call_collate_on: None,
             chains_to_stop: Default::default(),
             chains_to_start: Default::default(),
-            need_to_restart_current: false,
+            need_to_restart: false,
         };
     }
 
@@ -501,6 +501,7 @@ fn handle_update_assignment_state_change(
     running_chains_after.extend(next);
     running_chains_after.remove(&orchestrator_para_id);
     let mut need_to_restart_current = false;
+    let mut need_to_restart_next = false;
 
     if state.assigned_para_id != current {
         // If the assigned container chain was already running but not collating, we need to call collate_on
@@ -512,6 +513,12 @@ fn handle_update_assignment_state_change(
                 // When we get assigned to a different container chain, we don't need to call collate_on because
                 // we will restart that container chain in collation mode.
                 need_to_restart_current = true;
+            }
+        }
+
+        if let Some(para_id) = state.assigned_para_id {
+            if para_id != orchestrator_para_id && Some(para_id) == next {
+                need_to_restart_next = true;
             }
         }
     }
@@ -540,11 +547,23 @@ fn handle_update_assignment_state_change(
         }
     }
 
+    if need_to_restart_next {
+        // Handle edge case of going from (2000, 2001) to (2001, 2000). In that case we must restart both chains,
+        // because previously 2000 was collating and now 2000 will only be syncing.
+        let id = next.unwrap();
+        if running_chains_before.contains(&id) && !chains_to_stop.contains(&id) {
+            chains_to_stop.push(id);
+        }
+        if !chains_to_start.contains(&id) {
+            chains_to_start.push(id);
+        }
+    }
+
     HandleUpdateAssignmentResult {
         call_collate_on,
         chains_to_stop,
         chains_to_start,
-        need_to_restart_current,
+        need_to_restart: need_to_restart_current || need_to_restart_next,
     }
 }
 
@@ -800,7 +819,7 @@ mod tests {
                 call_collate_on,
                 chains_to_stop,
                 chains_to_start,
-                need_to_restart_current,
+                need_to_restart,
             } = handle_update_assignment_state_change(
                 &mut *self.state.lock().unwrap(),
                 self.orchestrator_para_id,
@@ -811,15 +830,15 @@ mod tests {
 
             // Assert we never start and stop the same container chain
             for para_id in &chains_to_start {
-                if !need_to_restart_current {
+                if !need_to_restart {
                     assert!(
                         !chains_to_stop.contains(para_id),
                         "Tried to start and stop same container chain: {}",
                         para_id
                     );
                 } else {
-                    // Will try to start and stop container chain with id "current", so ignore that
-                    if Some(*para_id) != current {
+                    // Will try to start and stop container chain with id "current" or "next", so ignore that
+                    if Some(*para_id) != current && Some(*para_id) != next {
                         assert!(
                             !chains_to_stop.contains(para_id),
                             "Tried to start and stop same container chain: {}",
@@ -1079,12 +1098,9 @@ mod tests {
         m.assert_running_chains(&[2000.into()]);
 
         m.handle_update_assignment(None, Some(2000.into()));
-        m.assert_collating_on(Some(2000.into()));
+        m.assert_collating_on(None);
         m.assert_running_chains(&[2000.into()]);
 
-        // TODO: this will send an unneeded CollateOn message, because the ContainerChainSpawner
-        // doesn't remember that the last message has been sent to this chain,
-        // which is still running, so it is still collating.
         m.handle_update_assignment(Some(2000.into()), Some(2000.into()));
         m.assert_collating_on(Some(2000.into()));
         m.assert_running_chains(&[2000.into()]);
