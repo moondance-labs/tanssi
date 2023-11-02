@@ -68,7 +68,7 @@ jobs:
       matrix:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
         srtool_image:
-          - purestake/srtool
+          - moonbeamfoundation/srtool
         srtool_image_tag:
           - 1.70.0
     steps:
