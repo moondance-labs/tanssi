@@ -53,53 +53,63 @@ jobs:
     needs: ["build-binary"]
     strategy:
         matrix:
-          image: [
-            { name: "tanssi", file_name: "tanssi-node" },
-            { name: "container-chain-simple-template", file_name: "container-chain-template-simple-node" },
-            {  name: "container-chain-evm-template", file_name: "container-chain-template-frontier-node" },
-          ]
+            image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.inputs.sha }}
-      - uses: actions/download-artifact@v3.0.2
-        with:
-          name: binaries
-          path: binaries
-      - name: Prepare
-        id: prep
-        run: |
-          DOCKER_IMAGE=moondancelabs/${{matrix.image.name}}
-          SHA8="$(git log -1 --format="%H" | cut -c1-8)"
-          TAGS="${DOCKER_IMAGE}:sha-${SHA8}-opt"
-          echo "docker_image=${DOCKER_IMAGE}" >> $GITHUB_OUTPUT
-          echo "sha8=${SHA8}" >> $GITHUB_OUTPUT
-          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
-          echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2.5.0
-        with:
-          version: latest
-          driver-opts: |
-            image=moby/buildkit:master
-      - name: Login to DockerHub
-        uses: docker/login-action@v2.2.0
-        with:
+        - name: Checkout
+          uses: actions/checkout@v3
+          with:
+            ref: ${{ needs.set-tags.outputs.git_ref }}
+        - uses: actions/download-artifact@v3.0.2
+          with:
+            name: binaries
+            path: build
+        - name: Prepare
+          id: prep
+          run: |
+            DOCKER_IMAGE=moondancelabs/${{matrix.image}}
+            SHA8="$(git log -1 --format="%H" | cut -c1-8)"
+            TAGS="${DOCKER_IMAGE}:sha-${SHA8}-opt"
+            echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+            echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+        - name: Set up QEMU
+          uses: docker/setup-qemu-action@v2.1.0
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v2.5.0
+          with:
+            version: latest
+            driver-opts: |
+                image=moby/buildkit:master
+        - name: Login to DockerHub
+          uses: docker/login-action@v2.2.0
+          with:
             username: ${{ secrets.DOCKERHUB_USERNAME }}
             password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push binaries
-        run: |
-          echo building "${{ steps.prep.outputs.tags }}"
-          docker build \
-            --build-arg DOCKER_IMAGE="${{ steps.prep.outputs.docker_image }}" \
-            --build-arg SHA="${{ steps.prep.outputs.sha8 }}" \
-            -f docker/${{matrix.image.name}}.Dockerfile \
-            -t "${{ steps.prep.outputs.tags }}" \
-      - name: Tag it with purestake for 6 month
-        run: |
-          docker pull ${{ steps.prep.outputs.tags }}
-          docker tag ${{ steps.prep.outputs.tags }} ${{ steps.prep.outputs.tags }}
-          docker push ${{ steps.prep.outputs.tags }}
+        - name: Build and push
+          id: docker_build
+          uses: docker/build-push-action@v4
+          with:
+            context: .
+            file: ./docker/${{matrix.image}}.Dockerfile
+            platforms: linux/amd64
+            push: true
+            tags: ${{ steps.prep.outputs.tags }}
+            labels: |
+                org.opencontainers.image.title=${{ github.event.repository.name }}
+                org.opencontainers.image.description=${{ github.event.repository.description }}
+                org.opencontainers.image.url=${{ github.event.repository.html_url }}
+                org.opencontainers.image.source=${{ github.event.repository.clone_url }}
+                org.opencontainers.image.created=${{ steps.prep.outputs.created }}
+                org.opencontainers.image.revision=${{ github.sha }}
+                org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
+
+        - name: Login to DockerHub
+          uses: docker/login-action@v2.2.0
+          with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_TOKEN }}
+        - name: Tag it with moondance-labs for 6 month
+          run: |
+            MOONDANCELABS_TAG=`echo "${{ steps.prep.outputs.tags }}" | sed 's/moondancelabs/'`
+            docker pull ${{ steps.prep.outputs.tags }}
+            docker tag ${{ steps.prep.outputs.tags }} $MOONDANCELABS_TAG
+            docker push $MOONDANCELABS_TAG
