@@ -6,7 +6,6 @@ type Await<T> = T extends PromiseLike<infer U> ? U : T;
 type Commits = Await<ReturnType<Octokit["rest"]["repos"]["compareCommits"]>>["data"]["commits"];
 
 export function getCompareLink(packageName: string, previousTag: string, newTag: string) {
-  
   const previousPackage = execSync(
     `git show ${previousTag}:../Cargo.lock | grep ${packageName}? | head -1 | grep -o '".*"'`
   ).toString();
