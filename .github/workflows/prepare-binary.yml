@@ -2,11 +2,7 @@ name: Prepare Optimized Binary Draft (internal only)
 
 # The code (like generate-release-body) will be taken from the tag version, not master
 on:
-  workflow_dispatch:
-    inputs:
-      sha:
-        description: full sha to build the binary from
-        required: true
+  push
 
 jobs:
   ####### Building binaries #######
