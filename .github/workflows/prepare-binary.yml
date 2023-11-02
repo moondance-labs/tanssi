@@ -58,7 +58,7 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v3
           with:
-            ref: ${{ needs.set-tags.outputs.git_ref }}
+            ref: ${{ github.event.inputs.sha }}
         - uses: actions/download-artifact@v3.0.2
           with:
             name: binaries
