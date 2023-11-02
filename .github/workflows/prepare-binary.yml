@@ -1,0 +1,105 @@
+name: Prepare Optimized Binary Draft (internal only)
+
+# The code (like generate-release-body) will be taken from the tag version, not master
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: full sha to build the binary from
+        required: true
+
+jobs:
+  ####### Building binaries #######
+
+  build-binary:
+    runs-on: bare-metal
+    strategy:
+      matrix:
+        cpu: ["", "skylake"]
+    env:
+      RUSTFLAGS: "-C target-cpu=${{ matrix.cpu }}"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.sha }}
+      - name: Setup Rust toolchain
+        run: rustup show
+      - name: Build Node
+        run: cargo build --profile=production --all
+      - name: Save parachain binary
+        if: ${{ matrix.cpu == '' }}
+        run: |
+          mkdir -p binaries
+          cp target/production/tanssi-node binaries/tanssi-node
+          cp target/production/container-chain-template-frontier-node binaries/container-chain-template-frontier-node
+          cp target/production/container-chain-template-simple-node binaries/container-chain-template-simple-node
+      - name: Save parachain custom binary
+        if: ${{ matrix.cpu != '' }}
+        run: |
+          mkdir -p binaries
+          cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
+          cp target/production/container-chain-template-frontier-node binaries/container-chain-template-frontier-node-${{matrix.cpu}}
+          cp target/production/container-chain-template-simple-node binaries/container-chain-template-simple-node-${{matrix.cpu}}
+      - name: Upload binary
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: binaries
+          path: binaries
+
+  ####### Prepare the release draft #######
+  docker-tanssi:
+    runs-on: ubuntu-latest
+    needs: ["build-binary"]
+    strategy:
+        matrix:
+          image: [
+            { name: "tanssi", file_name: "tanssi-node" },
+            { name: "container-chain-simple-template", file_name: "container-chain-template-simple-node" },
+            {  name: "container-chain-evm-template", file_name: "container-chain-template-frontier-node" },
+          ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.inputs.sha }}
+      - uses: actions/download-artifact@v3.0.2
+        with:
+          name: binaries
+          path: binaries
+      - name: Prepare
+        id: prep
+        run: |
+          DOCKER_IMAGE=moondancelabs/${{matrix.image.name}}
+          SHA8="$(git log -1 --format="%H" | cut -c1-8)"
+          TAGS="${DOCKER_IMAGE}:sha-${SHA8}-opt"
+          echo "docker_image=${DOCKER_IMAGE}" >> $GITHUB_OUTPUT
+          echo "sha8=${SHA8}" >> $GITHUB_OUTPUT
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2.5.0
+        with:
+          version: latest
+          driver-opts: |
+            image=moby/buildkit:master
+      - name: Login to DockerHub
+        uses: docker/login-action@v2.2.0
+        with:
+            username: ${{ secrets.DOCKERHUB_USERNAME }}
+            password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push binaries
+        run: |
+          echo building "${{ steps.prep.outputs.tags }}"
+          docker build \
+            --build-arg DOCKER_IMAGE="${{ steps.prep.outputs.docker_image }}" \
+            --build-arg SHA="${{ steps.prep.outputs.sha8 }}" \
+            -f docker/${{matrix.image.name}}.Dockerfile \
+            -t "${{ steps.prep.outputs.tags }}" \
+      - name: Tag it with purestake for 6 month
+        run: |
+          docker pull ${{ steps.prep.outputs.tags }}
+          docker tag ${{ steps.prep.outputs.tags }} ${{ steps.prep.outputs.tags }}
+          docker push ${{ steps.prep.outputs.tags }}
