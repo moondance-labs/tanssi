@@ -75,25 +75,7 @@ where
 
 pub fn new_partial<Block, RuntimeApi, ParachainNativeExecutor>(
     config: &Configuration,
-) -> Result<
-    // PartialComponents<
-    //     ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>,
-    //     ParachainBackend<Block>,
-    //     SelectChain,
-    //     sc_consensus::DefaultImportQueue<Block>,
-    //     sc_transaction_pool::FullPool<
-    //         Block,
-    //         ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>,
-    //     >,
-    //     (
-    //         ParachainBlockImport<Block, RuntimeApi, ParachainNativeExecutor>,
-    //         Option<Telemetry>,
-    //         Option<TelemetryWorkerHandle>,
-    //     ),
-    // >,
-    NewPartial<Block, RuntimeApi, ParachainNativeExecutor>,
-    sc_service::Error,
->
+) -> Result<NewPartial<Block, RuntimeApi, ParachainNativeExecutor>, sc_service::Error>
 where
     Block: cumulus_primitives_core::BlockT,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
@@ -136,8 +118,7 @@ where
         .with_runtime_cache_size(config.runtime_cache_size)
         .build();
 
-    let executor: ParachainExecutor<ParachainNativeExecutor> =
-        ParachainExecutor::new_with_wasm_executor(wasm);
+    let executor = ParachainExecutor::new_with_wasm_executor(wasm);
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
@@ -164,31 +145,6 @@ where
         client.clone(),
     );
 
-    // let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
-
-    // let import_queue = nimbus_consensus::import_queue(
-    //     client.clone(),
-    //     block_import.clone(),
-    //     move |_, _| async move {
-    //         let time = sp_timestamp::InherentDataProvider::from_system_time();
-
-    //         Ok((time,))
-    //     },
-    //     &task_manager.spawn_essential_handle(),
-    //     config.prometheus_registry(),
-    //     false,
-    // )?;
-
-    // Ok(PartialComponents {
-    //     backend,
-    //     client,
-    //     import_queue,
-    //     keystore_container,
-    //     task_manager,
-    //     transaction_pool,
-    //     select_chain,
-    //     other: (block_import, telemetry, telemetry_worker_handle),
-    // })
     Ok(NewPartial {
         client,
         backend,
