@@ -1600,6 +1600,7 @@ dependencies = [
  "manual-xcm-rpc",
  "nimbus-consensus",
  "nimbus-primitives",
+ "node-common",
  "pallet-ethereum",
  "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",

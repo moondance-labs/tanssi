@@ -16,6 +16,8 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use node_common::service::NewPartial;
+
 #[allow(deprecated)]
 use {
     crate::{
@@ -137,7 +139,41 @@ pub fn new_partial(
     >,
     sc_service::Error,
 > {
-    node_common::service::new_partial(config, None)
+    let NewPartial {
+        client,
+        backend,
+        transaction_pool,
+        telemetry,
+        telemetry_worker_handle,
+        task_manager,
+        keystore_container,
+    } = node_common::service::new_partial(config)?;
+
+    let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
+
+    let import_queue = nimbus_consensus::import_queue(
+        client.clone(),
+        block_import.clone(),
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
+
+            Ok((time,))
+        },
+        &task_manager.spawn_essential_handle(),
+        config.prometheus_registry(),
+        false,
+    )?;
+
+    Ok(PartialComponents {
+        backend,
+        client,
+        import_queue,
+        keystore_container,
+        task_manager,
+        transaction_pool,
+        select_chain: None,
+        other: (block_import, telemetry, telemetry_worker_handle),
+    })
 }
 
 /// Background task used to detect changes to container chain assignment,

@@ -21,6 +21,7 @@ serde = { workspace = true, features = [ "derive" ] }
 url = { workspace = true }
 
 # Local
+node-common = { workspace = true }
 ccp-authorities-noting-inherent = { workspace = true }
 container-chain-template-frontier-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }

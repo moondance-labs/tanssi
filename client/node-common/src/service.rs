@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sp_block_builder::BlockBuilder;
+use {
+    sc_service::{KeystoreContainer, TaskManager},
+    sp_block_builder::BlockBuilder,
+};
 
 use {
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
@@ -22,7 +25,7 @@ use {
         HeapAllocStrategy, NativeElseWasmExecutor, NativeExecutionDispatch, WasmExecutor,
         DEFAULT_HEAP_ALLOC_STRATEGY,
     },
-    sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient},
+    sc_service::{Configuration, TFullBackend, TFullClient},
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
     sp_api::ConstructRuntimeApi,
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
@@ -42,25 +45,53 @@ pub type ParachainBlockImport<Block, RuntimeApi, ParachainNativeExecutor> = TPar
 pub type ConstructedRuntimeApi<Block, Client, RuntimeApi> =
     <RuntimeApi as ConstructRuntimeApi<Block, Client>>::RuntimeApi;
 
-pub fn new_partial<Block, RuntimeApi, ParachainNativeExecutor, SelectChain>(
-    config: &Configuration,
-    select_chain: SelectChain,
-) -> Result<
-    PartialComponents<
+pub struct NewPartial<Block, RuntimeApi, ParachainNativeExecutor>
+where
+    Block: cumulus_primitives_core::BlockT,
+    ParachainNativeExecutor: NativeExecutionDispatch + 'static,
+    RuntimeApi: ConstructRuntimeApi<Block, ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>>
+        + Sync
+        + Send
+        + 'static,
+    ConstructedRuntimeApi<
+        Block,
         ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>,
-        ParachainBackend<Block>,
-        SelectChain,
-        sc_consensus::DefaultImportQueue<Block>,
+        RuntimeApi,
+    >: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
+{
+    pub client: Arc<ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>>,
+    pub backend: Arc<ParachainBackend<Block>>,
+    pub task_manager: TaskManager,
+    pub keystore_container: KeystoreContainer,
+    pub transaction_pool: Arc<
         sc_transaction_pool::FullPool<
             Block,
             ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>,
         >,
-        (
-            ParachainBlockImport<Block, RuntimeApi, ParachainNativeExecutor>,
-            Option<Telemetry>,
-            Option<TelemetryWorkerHandle>,
-        ),
     >,
+    pub telemetry: Option<Telemetry>,
+    pub telemetry_worker_handle: Option<TelemetryWorkerHandle>,
+}
+
+pub fn new_partial<Block, RuntimeApi, ParachainNativeExecutor>(
+    config: &Configuration,
+) -> Result<
+    // PartialComponents<
+    //     ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>,
+    //     ParachainBackend<Block>,
+    //     SelectChain,
+    //     sc_consensus::DefaultImportQueue<Block>,
+    //     sc_transaction_pool::FullPool<
+    //         Block,
+    //         ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>,
+    //     >,
+    //     (
+    //         ParachainBlockImport<Block, RuntimeApi, ParachainNativeExecutor>,
+    //         Option<Telemetry>,
+    //         Option<TelemetryWorkerHandle>,
+    //     ),
+    // >,
+    NewPartial<Block, RuntimeApi, ParachainNativeExecutor>,
     sc_service::Error,
 >
 where
@@ -133,29 +164,38 @@ where
         client.clone(),
     );
 
-    let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
+    // let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
 
-    let import_queue = nimbus_consensus::import_queue(
-        client.clone(),
-        block_import.clone(),
-        move |_, _| async move {
-            let time = sp_timestamp::InherentDataProvider::from_system_time();
+    // let import_queue = nimbus_consensus::import_queue(
+    //     client.clone(),
+    //     block_import.clone(),
+    //     move |_, _| async move {
+    //         let time = sp_timestamp::InherentDataProvider::from_system_time();
 
-            Ok((time,))
-        },
-        &task_manager.spawn_essential_handle(),
-        config.prometheus_registry(),
-        false,
-    )?;
+    //         Ok((time,))
+    //     },
+    //     &task_manager.spawn_essential_handle(),
+    //     config.prometheus_registry(),
+    //     false,
+    // )?;
 
-    Ok(PartialComponents {
-        backend,
+    // Ok(PartialComponents {
+    //     backend,
+    //     client,
+    //     import_queue,
+    //     keystore_container,
+    //     task_manager,
+    //     transaction_pool,
+    //     select_chain,
+    //     other: (block_import, telemetry, telemetry_worker_handle),
+    // })
+    Ok(NewPartial {
         client,
-        import_queue,
-        keystore_container,
-        task_manager,
+        backend,
         transaction_pool,
-        select_chain,
-        other: (block_import, telemetry, telemetry_worker_handle),
+        telemetry,
+        telemetry_worker_handle,
+        task_manager,
+        keystore_container,
     })
 }
