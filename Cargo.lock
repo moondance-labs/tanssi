@@ -2855,6 +2855,7 @@ dependencies = [
  "pallet-registrar",
  "pallet-registrar-runtime-api",
  "pallet-root-testing",
+ "pallet-services-payment",
  "pallet-session",
  "pallet-staking",
  "pallet-sudo",

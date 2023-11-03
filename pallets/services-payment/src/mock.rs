@@ -28,15 +28,15 @@
 //! Using those two requirements we can select who the author was based on the collators assigned
 //! to that containerChain, by simply assigning the slot position.
 
-use frame_support::traits::{Currency, WithdrawReasons};
-
 use {
-    crate::{self as payment_services_pallet, OnChargeForBlockCredit, ProvideBlockProductionCost},
+    crate::{self as pallet_services_payment, OnChargeForBlockCredit, ProvideBlockProductionCost},
     cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         parameter_types,
-        traits::{tokens::ExistenceRequirement, ConstU32, ConstU64, Everything},
+        traits::{
+            tokens::ExistenceRequirement, ConstU32, ConstU64, Currency, Everything, WithdrawReasons,
+        },
     },
     sp_core::H256,
     sp_runtime::{
@@ -54,7 +54,7 @@ frame_support::construct_runtime!(
     {
         System: frame_system::{Pallet, Call, Config<T>, Storage, Event<T>},
         Balances: pallet_balances::{Pallet, Call, Storage, Config<T>, Event<T>},
-        PaymentServices: payment_services_pallet::{Pallet, Call, Config<T>, Storage, Event<T>}
+        PaymentServices: pallet_services_payment::{Pallet, Call, Config<T>, Storage, Event<T>}
     }
 );
 
@@ -108,7 +108,7 @@ parameter_types! {
     pub const MaxCreditsStored: u64 = 5;
 }
 
-impl payment_services_pallet::Config for Test {
+impl pallet_services_payment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type OnChargeForBlockCredit = ChargeForBlockCredit<Test>;
     type Currency = Balances;
@@ -123,7 +123,7 @@ impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
         _para_id: &ParaId,
         _credits: u64,
         fee: u128,
-    ) -> Result<(), payment_services_pallet::Error<Test>> {
+    ) -> Result<(), pallet_services_payment::Error<Test>> {
         use frame_support::traits::tokens::imbalance::Imbalance;
 
         let result = Balances::withdraw(
@@ -133,7 +133,7 @@ impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
             ExistenceRequirement::AllowDeath,
         );
         let imbalance = result
-            .map_err(|_| payment_services_pallet::Error::InsufficientFundsToPurchaseCredits)?;
+            .map_err(|_| pallet_services_payment::Error::InsufficientFundsToPurchaseCredits)?;
 
         if imbalance.peek() != fee {
             panic!("withdrawn balance incorrect");
@@ -178,7 +178,7 @@ impl ExtBuilder {
     }
 }
 
-pub(crate) fn events() -> Vec<payment_services_pallet::Event<Test>> {
+pub(crate) fn events() -> Vec<pallet_services_payment::Event<Test>> {
     System::events()
         .into_iter()
         .map(|r| r.event)

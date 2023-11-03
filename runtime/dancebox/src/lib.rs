@@ -29,7 +29,6 @@ use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-use tp_traits::RemoveInvulnerables;
 
 pub mod migrations;
 pub mod weights;
@@ -50,8 +49,10 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
-            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
+            tokens::ExistenceRequirement,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency, InstanceFilter,
+            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ValidatorRegistration, WithdrawReasons,
         },
         weights::{
             constants::{
@@ -72,6 +73,7 @@ use {
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
+    pallet_services_payment::{OnChargeForBlockCredit, ProvideBlockProductionCost},
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     polkadot_runtime_common::BlockHashCount,
@@ -89,7 +91,7 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
-    tp_traits::GetSessionContainerChains,
+    tp_traits::{GetSessionContainerChains, RemoveInvulnerables},
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -704,6 +706,58 @@ impl pallet_authority_assignment::Config for Runtime {
     type AuthorityId = NimbusId;
 }
 
+pub struct ChargeForBlockCredit<Runtime>(PhantomData<Runtime>);
+impl OnChargeForBlockCredit<Runtime> for ChargeForBlockCredit<Runtime> {
+    fn charge_credits(
+        payer: &AccountId,
+        _para_id: &ParaId,
+        _credits: u32,
+        fee: u128,
+    ) -> Result<(), pallet_services_payment::Error<Runtime>> {
+        use frame_support::traits::tokens::imbalance::Imbalance;
+
+        let result = <Balances as Currency<AccountId>>::withdraw(
+            payer,
+            fee,
+            WithdrawReasons::FEE,
+            ExistenceRequirement::AllowDeath,
+        );
+        let imbalance = result
+            .map_err(|_| pallet_services_payment::Error::InsufficientFundsToPurchaseCredits)?;
+
+        if imbalance.peek() != fee {
+            panic!("withdrawn balance incorrect");
+        }
+
+        Ok(())
+    }
+}
+
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 100;
+
+pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
+impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
+    fn block_cost(_para_id: &ParaId) -> (u128, Weight) {
+        (FIXED_BLOCK_PRODUCTION_COST, Weight::zero())
+    }
+}
+
+parameter_types! {
+    pub const MaxCreditsStored: BlockNumber = 100;
+}
+
+impl pallet_services_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    /// Handler for fees
+    type OnChargeForBlockCredit = ChargeForBlockCredit<Runtime>;
+    /// Currency type for fee payment
+    type Currency = Balances;
+    /// Provider of a block cost which can adjust from block to block
+    type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
+    /// The maximum number of credits that can be accumulated
+    type MaxCreditsStored = MaxCreditsStored;
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
@@ -1197,6 +1251,7 @@ construct_runtime!(
         Initializer: pallet_initializer = 23,
         AuthorNoting: pallet_author_noting = 24,
         AuthorityAssignment: pallet_authority_assignment = 25,
+        ServicesPayment: pallet_services_payment = 26,
 
         // Collator support. The order of these 6 are important and shall not change.
         Invulnerables: pallet_invulnerables = 30,

@@ -29,7 +29,7 @@
 //! to that containerChain, by simply assigning the slot position.
 
 use {
-    crate::{mock::*, pallet as payment_services_pallet, BlockProductionCredits},
+    crate::{mock::*, pallet as pallet_services_payment, BlockProductionCredits},
     frame_support::{assert_err, assert_ok},
 };
 
@@ -52,7 +52,7 @@ fn purchase_credits_works() {
 
             assert_eq!(
                 events(),
-                vec![payment_services_pallet::Event::CreditsPurchased {
+                vec![pallet_services_payment::Event::CreditsPurchased {
                     para_id: 1.into(),
                     payer: ALICE,
                     fee: 500,
@@ -98,14 +98,14 @@ fn purchase_credits_purchases_zero_when_max_already_stored() {
             assert_eq!(
                 events(),
                 vec![
-                    payment_services_pallet::Event::CreditsPurchased {
+                    pallet_services_payment::Event::CreditsPurchased {
                         para_id,
                         payer: ALICE,
                         fee: 500,
                         credits_purchased: MaxCreditsStored::get(),
                         credits_remaining: MaxCreditsStored::get(),
                     },
-                    payment_services_pallet::Event::CreditsPurchased {
+                    pallet_services_payment::Event::CreditsPurchased {
                         para_id,
                         payer: ALICE,
                         fee: 0,
@@ -156,14 +156,14 @@ fn purchase_credits_purchases_max_possible_when_cant_purchase_all_requested() {
             assert_eq!(
                 events(),
                 vec![
-                    payment_services_pallet::Event::CreditsPurchased {
+                    pallet_services_payment::Event::CreditsPurchased {
                         para_id,
                         payer: ALICE,
                         fee: 100,
                         credits_purchased: amount_purchased,
                         credits_remaining: amount_purchased,
                     },
-                    payment_services_pallet::Event::CreditsPurchased {
+                    pallet_services_payment::Event::CreditsPurchased {
                         para_id,
                         payer: ALICE,
                         fee: 400,
@@ -181,7 +181,7 @@ fn purchase_credits_fails_with_insufficient_balance() {
         // really what we're testing is that purchase_credits fails when OnChargeForBlockCredits does
         assert_err!(
             PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1, None),
-            payment_services_pallet::Error::<Test>::InsufficientFundsToPurchaseCredits,
+            pallet_services_payment::Error::<Test>::InsufficientFundsToPurchaseCredits,
         );
     });
 }
@@ -191,7 +191,7 @@ fn burn_credit_fails_with_no_credits() {
     ExtBuilder::default().build().execute_with(|| {
         assert_err!(
             PaymentServices::burn_credit_for_para(&1u32.into()),
-            payment_services_pallet::Error::<Test>::InsufficientCredits,
+            pallet_services_payment::Error::<Test>::InsufficientCredits,
         );
     });
 }
@@ -218,7 +218,7 @@ fn burn_credit_works() {
             // now should fail
             assert_err!(
                 PaymentServices::burn_credit_for_para(&para_id),
-                payment_services_pallet::Error::<Test>::InsufficientCredits,
+                pallet_services_payment::Error::<Test>::InsufficientCredits,
             );
         });
 }
@@ -241,7 +241,7 @@ fn burn_credit_fails_for_wrong_para() {
             let wrong_para_id = 2.into();
             assert_err!(
                 PaymentServices::burn_credit_for_para(&wrong_para_id),
-                payment_services_pallet::Error::<Test>::InsufficientCredits,
+                pallet_services_payment::Error::<Test>::InsufficientCredits,
             );
         });
 }
@@ -274,7 +274,7 @@ fn buy_credits_too_expensive_fails() {
                     1u64,
                     Some(FIXED_BLOCK_PRODUCTION_COST - 1),
                 ),
-                payment_services_pallet::Error::<Test>::CreditPriceTooExpensive,
+                pallet_services_payment::Error::<Test>::CreditPriceTooExpensive,
             );
         });
 }

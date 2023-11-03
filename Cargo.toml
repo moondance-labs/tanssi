@@ -35,6 +35,7 @@ pallet-invulnerables = { path = "pallets/invulnerables", default-features = fals
 pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
+pallet-services-payment = { path = "pallets/services-payment", default-features = false }
 
 ccp-authorities-noting-inherent = { path = "container-chains/primitives/authorities-noting-inherent", default-features = false }
 ccp-xcm = { path = "container-chains/primitives/xcm", default-features = false }
