@@ -55,16 +55,14 @@ use {
         UsageProvider,
     },
     sc_consensus::{BlockImport, ImportQueue},
-    sc_executor::{
-        HeapAllocStrategy, NativeElseWasmExecutor, WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
-    },
+    sc_executor::NativeElseWasmExecutor,
     sc_network::{config::FullNetworkConfiguration, NetworkBlock},
     sc_network_sync::SyncingService,
     sc_service::{
         Configuration, Error as ServiceError, PartialComponents, TFullBackend, TFullClient,
         TaskManager,
     },
-    sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorker, TelemetryWorkerHandle},
+    sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorkerHandle},
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_core::{
@@ -271,57 +269,15 @@ pub fn new_partial_dev(
     >,
     sc_service::Error,
 > {
-    let telemetry = config
-        .telemetry_endpoints
-        .clone()
-        .filter(|x| !x.is_empty())
-        .map(|endpoints| -> Result<_, sc_telemetry::Error> {
-            let worker = TelemetryWorker::new(16)?;
-            let telemetry = worker.handle().new_telemetry(endpoints);
-            Ok((worker, telemetry))
-        })
-        .transpose()?;
-
-    let heap_pages = config
-        .default_heap_pages
-        .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
-            extra_pages: h as _,
-        });
-
-    let wasm = WasmExecutor::builder()
-        .with_execution_method(config.wasm_method)
-        .with_onchain_heap_alloc_strategy(heap_pages)
-        .with_offchain_heap_alloc_strategy(heap_pages)
-        .with_max_runtime_instances(config.max_runtime_instances)
-        .with_runtime_cache_size(config.runtime_cache_size)
-        .build();
-
-    let executor = ParachainExecutor::new_with_wasm_executor(wasm);
-
-    let (client, backend, keystore_container, task_manager) =
-        sc_service::new_full_parts::<Block, RuntimeApi, _>(
-            config,
-            telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-            executor,
-        )?;
-    let client = Arc::new(client);
-
-    let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
-
-    let telemetry = telemetry.map(|(worker, telemetry)| {
-        task_manager
-            .spawn_handle()
-            .spawn("telemetry", None, worker.run());
-        telemetry
-    });
-
-    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-        config.transaction_pool.clone(),
-        config.role.is_authority().into(),
-        config.prometheus_registry(),
-        task_manager.spawn_essential_handle(),
-        client.clone(),
-    );
+    let NewPartial {
+        client,
+        backend,
+        transaction_pool,
+        telemetry,
+        telemetry_worker_handle,
+        task_manager,
+        keystore_container,
+    } = node_common::service::new_partial(config)?;
 
     let block_import = DevParachainBlockImport::new(client.clone());
     let import_queue = build_manual_seal_import_queue(
