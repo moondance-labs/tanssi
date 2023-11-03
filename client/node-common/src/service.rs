@@ -32,43 +32,31 @@ use {
     std::sync::Arc,
 };
 
-pub type ParachainExecutor<ParachainNativeExecutor> =
-    NativeElseWasmExecutor<ParachainNativeExecutor>;
-pub type ParachainClient<Block, RuntimeApi, ParachainNativeExecutor> =
-    TFullClient<Block, RuntimeApi, ParachainExecutor<ParachainNativeExecutor>>;
-pub type ParachainBackend<Block> = TFullBackend<Block>;
-pub type ParachainBlockImport<Block, RuntimeApi, ParachainNativeExecutor> = TParachainBlockImport<
-    Block,
-    Arc<ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>>,
-    ParachainBackend<Block>,
->;
-pub type ConstructedRuntimeApi<Block, Client, RuntimeApi> =
-    <RuntimeApi as ConstructRuntimeApi<Block, Client>>::RuntimeApi;
+/// Functions in this module are generic over `Block`, `RuntimeApi`, and
+/// `ParachainNativeExecutor`. Using type aliases requires them to be
+/// generic too, which makes them still verbose to use. For that reason we use
+/// a macro that expect the above types to already be in scope.
+macro_rules! T {
+    [Executor] => { NativeElseWasmExecutor<ParachainNativeExecutor> };
+    [Client] => { TFullClient<Block, RuntimeApi, T![Executor]> };
+    [Backend] => { TFullBackend<Block> };
+    [ConstructedRuntimeApi] => {
+        <RuntimeApi as ConstructRuntimeApi<Block, T![Client]>>::RuntimeApi
+    };
+}
 
 pub struct NewPartial<Block, RuntimeApi, ParachainNativeExecutor>
 where
     Block: cumulus_primitives_core::BlockT,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
-    RuntimeApi: ConstructRuntimeApi<Block, ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>>
-        + Sync
-        + Send
-        + 'static,
-    ConstructedRuntimeApi<
-        Block,
-        ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>,
-        RuntimeApi,
-    >: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
+    RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
+    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
 {
-    pub client: Arc<ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>>,
-    pub backend: Arc<ParachainBackend<Block>>,
+    pub client: Arc<T![Client]>,
+    pub backend: Arc<T![Backend]>,
     pub task_manager: TaskManager,
     pub keystore_container: KeystoreContainer,
-    pub transaction_pool: Arc<
-        sc_transaction_pool::FullPool<
-            Block,
-            ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>,
-        >,
-    >,
+    pub transaction_pool: Arc<sc_transaction_pool::FullPool<Block, T![Client]>>,
     pub telemetry: Option<Telemetry>,
     pub telemetry_worker_handle: Option<TelemetryWorkerHandle>,
 }
@@ -79,15 +67,8 @@ pub fn new_partial<Block, RuntimeApi, ParachainNativeExecutor>(
 where
     Block: cumulus_primitives_core::BlockT,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
-    RuntimeApi: ConstructRuntimeApi<Block, ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>>
-        + Sync
-        + Send
-        + 'static,
-    ConstructedRuntimeApi<
-        Block,
-        ParachainClient<Block, RuntimeApi, ParachainNativeExecutor>,
-        RuntimeApi,
-    >: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
+    RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
+    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
 {
     let telemetry = config
         .telemetry_endpoints
@@ -118,7 +99,7 @@ where
         .with_runtime_cache_size(config.runtime_cache_size)
         .build();
 
-    let executor = ParachainExecutor::new_with_wasm_executor(wasm);
+    let executor = <T![Executor]>::new_with_wasm_executor(wasm);
 
     let (client, backend, keystore_container, task_manager) =
         sc_service::new_full_parts::<Block, RuntimeApi, _>(
