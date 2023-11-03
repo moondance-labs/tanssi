@@ -47,6 +47,7 @@ dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface = { path = "client/orchestrator-chain-interface" }
+node-common = { path = "client/node-common" }
 test-relay-sproof-builder = { path = "test-sproof-builder", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-features = false }
