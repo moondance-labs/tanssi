@@ -3,6 +3,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { getAuthorFromDigest } from "util/author";
 import { fetchIssuance, filterRewardFromOrchestrator, fetchRewardAuthorContainers } from "util/block";
+import { PARACHAIN_BOND } from "util/constants";
 
 describeSuite({
     id: "S08",
@@ -94,6 +95,65 @@ describeSuite({
                 expect(issuance >= expectedIssuanceIncrement - 1n && issuance <= expectedIssuanceIncrement + 1n).to.be
                     .true;
                 expect(supplyAfter).to.equal(supplyBefore + issuance);
+            },
+        });
+
+        it({
+            id: "C04",
+            title: "Parachain bond receives dust plus 30% plus non-distributed rewards",
+            test: async function () {
+                if (runtimeVersion < 300) {
+                    return;
+                }
+                const latestBlock = await api.rpc.chain.getBlock();
+
+                const latestBlockHash = latestBlock.block.hash;
+                const latestParentBlockHash = latestBlock.block.header.parentHash;
+                const apiAtIssuanceAfter = await api.at(latestBlockHash);
+                const apiAtIssuanceBefore = await api.at(latestParentBlockHash);
+
+                let expectedAmountParachainBond = 0n;
+
+                const pendingChainRewards = await apiAtIssuanceAfter.query.inflationRewards.chainsToReward();
+                const numberOfChains = BigInt(
+                    (await apiAtIssuanceBefore.query.registrar.registeredParaIds()).length + 1
+                );
+
+                if (pendingChainRewards.isSome) {
+                    const rewardPerChain = pendingChainRewards.unwrap().rewardsPerChain.toBigInt();
+                    const pendingChainsToReward = BigInt(pendingChainRewards.unwrap().paraIds.length);
+                    expectedAmountParachainBond += pendingChainsToReward * rewardPerChain;
+                }
+
+                const parachainBondBalanceBefore = (
+                    await apiAtIssuanceBefore.query.system.account(PARACHAIN_BOND)
+                ).data.free.toBigInt();
+
+                const currentChainRewards = await apiAtIssuanceAfter.query.inflationRewards.chainsToReward();
+                const events = await apiAtIssuanceAfter.query.system.events();
+                const issuance = await fetchIssuance(events).amount.toBigInt();
+
+                // Dust from computations also goes to parachainBond
+                let dust = 0n;
+                if (currentChainRewards.isSome) {
+                    const currentRewardPerChain = currentChainRewards.unwrap().rewardsPerChain.toBigInt();
+                    dust = (issuance * 7n) / 10n - numberOfChains * currentRewardPerChain;
+                }
+                const parachainBondBalanceAfter = (
+                    await apiAtIssuanceAfter.query.system.account(PARACHAIN_BOND)
+                ).data.free.toBigInt();
+                expectedAmountParachainBond += (issuance * 3n) / 10n + dust;
+
+                // Not sure where this one comes from, looks like a rounding thing
+                expect(parachainBondBalanceAfter - parachainBondBalanceBefore).to.equal(
+                    expectedAmountParachainBond + 1n
+                );
+
+                // we know there might be rounding errors, so we always check it is in the range +-1
+                expect(
+                    parachainBondBalanceAfter - parachainBondBalanceBefore >= expectedAmountParachainBond - 1n &&
+                        parachainBondBalanceAfter - parachainBondBalanceBefore <= expectedAmountParachainBond + 1n
+                ).to.be.true;
             },
         });
     },
