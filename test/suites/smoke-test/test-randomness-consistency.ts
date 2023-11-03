@@ -8,15 +8,20 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
+        let runtimeVersion;
 
         beforeAll(() => {
             api = context.polkadotJs();
+            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
         });
 
         it({
             id: "C01",
             title: "Randomness storage is empty because on-finalize cleans it, unless on session change boundaries",
             test: async function () {
+                if (runtimeVersion < 300) {
+                    return;
+                }
                 const sessionLength = 300;
                 const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
                 const randomness = await api.query.collatorAssignment.randomness();
@@ -34,6 +39,9 @@ describeSuite({
             id: "C02",
             title: "Rotation happened at previous session boundary",
             test: async function () {
+                if (runtimeVersion < 300) {
+                    return;
+                }
                 const sessionLength = 300;
                 const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
 
