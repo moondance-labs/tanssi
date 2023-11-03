@@ -49,8 +49,10 @@ use {
         time::Instant,
     },
     tc_orchestrator_chain_interface::OrchestratorChainInterface,
-    tokio::sync::{mpsc, oneshot},
-    tokio::time::{sleep, Duration},
+    tokio::{
+        sync::{mpsc, oneshot},
+        time::{sleep, Duration},
+    },
 };
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
