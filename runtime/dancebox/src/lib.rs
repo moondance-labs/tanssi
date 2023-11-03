@@ -91,7 +91,7 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
-    tp_traits::{GetSessionContainerChains, RemoveInvulnerables},
+    tp_traits::{AuthorNotingHook, GetSessionContainerChains, RemoveInvulnerables},
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -758,13 +758,38 @@ impl pallet_services_payment::Config for Runtime {
     type MaxCreditsStored = MaxCreditsStored;
 }
 
+pub struct InflationRewardsAndServicesPayment;
+
+impl AuthorNotingHook<AccountId> for InflationRewardsAndServicesPayment {
+    fn on_container_author_noted(
+        author: &AccountId,
+        block_number: BlockNumber,
+        para_id: ParaId,
+    ) -> Weight {
+        let mut weight = Weight::zero();
+
+        weight = weight.saturating_add(InflationRewards::on_container_author_noted(
+            author,
+            block_number,
+            para_id,
+        ));
+        weight = weight.saturating_add(ServicesPayment::on_container_author_noted(
+            author,
+            block_number,
+            para_id,
+        ));
+
+        weight
+    }
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type AuthorNotingHook = InflationRewards;
+    type AuthorNotingHook = InflationRewardsAndServicesPayment;
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }
 

@@ -15,10 +15,9 @@ log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }
 serde = { workspace = true, optional = true, features = [ "derive" ] }
-
 sp-runtime = { workspace = true }
-
 cumulus-primitives-core = { workspace = true }
+tp-traits = { workspace = true }
 
 [dev-dependencies]
 pallet-balances = { workspace = true }

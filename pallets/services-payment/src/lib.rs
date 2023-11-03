@@ -43,6 +43,7 @@ use {
         traits::Currency,
     },
     frame_system::pallet_prelude::*,
+    tp_traits::{AuthorNotingHook, BlockNumber},
 };
 
 #[cfg(test)]
@@ -217,4 +218,29 @@ pub trait OnChargeForBlockCredit<T: Config> {
 /// so it also returns the weight it consumes. (TODO: or just rely on benchmarking)
 pub trait ProvideBlockProductionCost<T: Config> {
     fn block_cost(para_id: &ParaId) -> (BalanceOf<T>, Weight);
+}
+
+// This function should only be used to **reward** a container author.
+// There will be no additional check other than checking if we have already
+// rewarded this author for **in this tanssi block**
+// Any additional check should be done in the calling function
+// TODO: consider passing a vector here
+impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
+    fn on_container_author_noted(
+        _author: &T::AccountId,
+        _block_number: BlockNumber,
+        para_id: ParaId,
+    ) -> Weight {
+        let total_weight = T::DbWeight::get().reads_writes(1, 1);
+
+        if let Err(e) = Pallet::<T>::burn_credit_for_para(&para_id) {
+            log::warn!(
+                "Failed to burn credits for container chain {}: {:?}",
+                u32::from(para_id),
+                e
+            );
+        }
+
+        total_weight
+    }
 }

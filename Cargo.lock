@@ -8346,6 +8346,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "tp-traits",
 ]
 
 [[package]]
