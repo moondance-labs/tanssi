@@ -23,7 +23,7 @@ use {cumulus_client_cli::CollatorOptions, sc_network::config::FullNetworkConfigu
 // Local Runtime Types
 use {
     container_chain_template_simple_runtime::{opaque::Block, RuntimeApi},
-    node_common::service::NewPartial,
+    node_common::service::NodeBuilder,
 };
 
 // Cumulus Imports
@@ -94,41 +94,42 @@ pub fn new_partial(
     >,
     sc_service::Error,
 > {
-    let NewPartial {
-        client,
-        backend,
-        transaction_pool,
-        telemetry,
-        telemetry_worker_handle,
-        task_manager,
-        keystore_container,
-    } = node_common::service::new_partial(config)?;
+    todo!()
+    // let NodeBuilder {
+    //     client,
+    //     backend,
+    //     transaction_pool,
+    //     telemetry,
+    //     telemetry_worker_handle,
+    //     task_manager,
+    //     keystore_container,
+    // } = node_common::service::NodeBuilder::new(config)?;
 
-    let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
+    // let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
 
-    let import_queue = nimbus_consensus::import_queue(
-        client.clone(),
-        block_import.clone(),
-        move |_, _| async move {
-            let time = sp_timestamp::InherentDataProvider::from_system_time();
+    // let import_queue = nimbus_consensus::import_queue(
+    //     client.clone(),
+    //     block_import.clone(),
+    //     move |_, _| async move {
+    //         let time = sp_timestamp::InherentDataProvider::from_system_time();
 
-            Ok((time,))
-        },
-        &task_manager.spawn_essential_handle(),
-        config.prometheus_registry(),
-        false,
-    )?;
+    //         Ok((time,))
+    //     },
+    //     &task_manager.spawn_essential_handle(),
+    //     config.prometheus_registry(),
+    //     false,
+    // )?;
 
-    Ok(PartialComponents {
-        backend,
-        client,
-        import_queue,
-        keystore_container,
-        task_manager,
-        transaction_pool,
-        select_chain: (),
-        other: (block_import, telemetry, telemetry_worker_handle),
-    })
+    // Ok(PartialComponents {
+    //     backend,
+    //     client,
+    //     import_queue,
+    //     keystore_container,
+    //     task_manager,
+    //     transaction_pool,
+    //     select_chain: (),
+    //     other: (block_import, telemetry, telemetry_worker_handle),
+    // })
 }
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.

@@ -67,7 +67,7 @@ use {
     sc_telemetry::{Telemetry, TelemetryWorkerHandle},
 };
 
-use node_common::service::NewPartial;
+use node_common::service::NodeBuilder;
 
 /// Native executor type.
 use crate::client::TemplateRuntimeExecutor;
@@ -161,64 +161,66 @@ pub fn new_partial(
     // Use ethereum style for subscription ids
     config.rpc_id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
 
-    let NewPartial {
-        client,
-        backend,
-        transaction_pool,
-        telemetry,
-        telemetry_worker_handle,
-        task_manager,
-        keystore_container,
-    } = node_common::service::new_partial(config)?;
+    todo!()
 
-    let maybe_select_chain = if dev_service {
-        Some(sc_consensus::LongestChain::new(backend.clone()))
-    } else {
-        None
-    };
+    // let NodeBuilder {
+    //     client,
+    //     backend,
+    //     transaction_pool,
+    //     telemetry,
+    //     telemetry_worker_handle,
+    //     task_manager,
+    //     keystore_container,
+    // } = node_common::service::new_partial(config)?;
 
-    let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
-    let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
+    // let maybe_select_chain = if dev_service {
+    //     Some(sc_consensus::LongestChain::new(backend.clone()))
+    // } else {
+    //     None
+    // };
 
-    let frontier_backend = fc_db::Backend::KeyValue(open_frontier_backend(client.clone(), config)?);
+    // let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
+    // let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
 
-    let frontier_block_import = FrontierBlockImport::new(client.clone(), client.clone());
+    // let frontier_backend = fc_db::Backend::KeyValue(open_frontier_backend(client.clone(), config)?);
 
-    let parachain_block_import = cumulus_client_consensus_common::ParachainBlockImport::new(
-        frontier_block_import,
-        backend.clone(),
-    );
+    // let frontier_block_import = FrontierBlockImport::new(client.clone(), client.clone());
 
-    let import_queue = nimbus_consensus::import_queue(
-        client.clone(),
-        parachain_block_import.clone(),
-        move |_, _| async move {
-            let time = sp_timestamp::InherentDataProvider::from_system_time();
+    // let parachain_block_import = cumulus_client_consensus_common::ParachainBlockImport::new(
+    //     frontier_block_import,
+    //     backend.clone(),
+    // );
 
-            Ok((time,))
-        },
-        &task_manager.spawn_essential_handle(),
-        config.prometheus_registry(),
-        !dev_service,
-    )?;
+    // let import_queue = nimbus_consensus::import_queue(
+    //     client.clone(),
+    //     parachain_block_import.clone(),
+    //     move |_, _| async move {
+    //         let time = sp_timestamp::InherentDataProvider::from_system_time();
 
-    Ok(PartialComponents {
-        backend,
-        client,
-        import_queue,
-        keystore_container,
-        task_manager,
-        transaction_pool,
-        select_chain: maybe_select_chain,
-        other: (
-            parachain_block_import,
-            filter_pool,
-            telemetry,
-            telemetry_worker_handle,
-            frontier_backend,
-            fee_history_cache,
-        ),
-    })
+    //         Ok((time,))
+    //     },
+    //     &task_manager.spawn_essential_handle(),
+    //     config.prometheus_registry(),
+    //     !dev_service,
+    // )?;
+
+    // Ok(PartialComponents {
+    //     backend,
+    //     client,
+    //     import_queue,
+    //     keystore_container,
+    //     task_manager,
+    //     transaction_pool,
+    //     select_chain: maybe_select_chain,
+    //     other: (
+    //         parachain_block_import,
+    //         filter_pool,
+    //         telemetry,
+    //         telemetry_worker_handle,
+    //         frontier_backend,
+    //         fee_history_cache,
+    //     ),
+    // })
 }
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.

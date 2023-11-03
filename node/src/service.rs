@@ -16,7 +16,7 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use node_common::service::NewPartial;
+use node_common::service::NodeBuilder;
 
 #[allow(deprecated)]
 use {
@@ -137,44 +137,45 @@ pub fn new_partial(
     >,
     sc_service::Error,
 > {
-    let NewPartial {
-        client,
-        backend,
-        transaction_pool,
-        telemetry,
-        telemetry_worker_handle,
-        task_manager,
-        keystore_container,
-    } = node_common::service::new_partial(config)?;
+    todo!()
+    // let NodeBuilder {
+    //     client,
+    //     backend,
+    //     transaction_pool,
+    //     telemetry,
+    //     telemetry_worker_handle,
+    //     task_manager,
+    //     keystore_container,
+    // } = node_common::service::NodeBuilder::new(config)?;
 
-    let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
+    // let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
 
-    // The nimbus import queue ONLY checks the signature correctness
-    // Any other checks corresponding to the author-correctness should be done
-    // in the runtime
-    let import_queue = nimbus_consensus::import_queue(
-        client.clone(),
-        block_import.clone(),
-        move |_, _| async move {
-            let time = sp_timestamp::InherentDataProvider::from_system_time();
+    // // The nimbus import queue ONLY checks the signature correctness
+    // // Any other checks corresponding to the author-correctness should be done
+    // // in the runtime
+    // let import_queue = nimbus_consensus::import_queue(
+    //     client.clone(),
+    //     block_import.clone(),
+    //     move |_, _| async move {
+    //         let time = sp_timestamp::InherentDataProvider::from_system_time();
 
-            Ok((time,))
-        },
-        &task_manager.spawn_essential_handle(),
-        config.prometheus_registry(),
-        false,
-    )?;
+    //         Ok((time,))
+    //     },
+    //     &task_manager.spawn_essential_handle(),
+    //     config.prometheus_registry(),
+    //     false,
+    // )?;
 
-    Ok(PartialComponents {
-        backend,
-        client,
-        import_queue,
-        keystore_container,
-        task_manager,
-        transaction_pool,
-        select_chain: None,
-        other: (block_import, telemetry, telemetry_worker_handle),
-    })
+    // Ok(PartialComponents {
+    //     backend,
+    //     client,
+    //     import_queue,
+    //     keystore_container,
+    //     task_manager,
+    //     transaction_pool,
+    //     select_chain: None,
+    //     other: (block_import, telemetry, telemetry_worker_handle),
+    // })
 }
 
 /// Background task used to detect changes to container chain assignment,
@@ -269,37 +270,88 @@ pub fn new_partial_dev(
     >,
     sc_service::Error,
 > {
-    let NewPartial {
-        client,
-        backend,
-        transaction_pool,
-        telemetry,
-        telemetry_worker_handle,
-        task_manager,
-        keystore_container,
-    } = node_common::service::new_partial(config)?;
+    todo!()
+    // let NodeBuilder {
+    //     client,
+    //     backend,
+    //     transaction_pool,
+    //     telemetry,
+    //     telemetry_worker_handle,
+    //     task_manager,
+    //     keystore_container,
+    // } = node_common::service::NodeBuilder::new(config)?;
 
-    let block_import = DevParachainBlockImport::new(client.clone());
+    // let block_import = DevParachainBlockImport::new(client.clone());
+    // let import_queue = build_manual_seal_import_queue(
+    //     client.clone(),
+    //     block_import.clone(),
+    //     config,
+    //     telemetry.as_ref().map(|telemetry| telemetry.handle()),
+    //     &task_manager,
+    // )?;
+
+    // let maybe_select_chain = Some(sc_consensus::LongestChain::new(backend.clone()));
+
+    // Ok(PartialComponents {
+    //     backend,
+    //     client,
+    //     import_queue,
+    //     keystore_container,
+    //     task_manager,
+    //     transaction_pool,
+    //     select_chain: maybe_select_chain,
+    //     other: (block_import, telemetry, telemetry_worker_handle),
+    // })
+}
+
+/// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
+///
+/// This is the actual implementation that is abstract over the executor and the runtime api.
+#[sc_tracing::logging::prefix_logs_with("Orchestrator")]
+async fn start_node_impl2(
+    orchestrator_config: Configuration,
+    polkadot_config: Configuration,
+    container_chain_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
+    collator_options: CollatorOptions,
+    para_id: ParaId,
+    hwbench: Option<sc_sysinfo::HwBench>,
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+    let parachain_config = prepare_node_config(orchestrator_config);
+
+    // Create a `NodeBuilder` which helps setup parachain nodes common systems.
+    let node_builder = node_common::service::NodeBuilder::new(
+        &parachain_config,
+        polkadot_config,
+        collator_options.clone(),
+        hwbench.clone(),
+    )
+    .await?;
+
+    // This node block import.
+    let block_import = DevParachainBlockImport::new(node_builder.client.clone());
     let import_queue = build_manual_seal_import_queue(
-        client.clone(),
+        node_builder.client.clone(),
         block_import.clone(),
-        config,
-        telemetry.as_ref().map(|telemetry| telemetry.handle()),
-        &task_manager,
+        &parachain_config,
+        node_builder
+            .telemetry
+            .as_ref()
+            .map(|telemetry| telemetry.handle()),
+        &node_builder.task_manager,
     )?;
 
-    let maybe_select_chain = Some(sc_consensus::LongestChain::new(backend.clone()));
+    // Upgrade the NodeBuilder with cumulus capabilities using our block import.
+    let mut node_builder = node_builder
+        .build_cumulus_network(&parachain_config, para_id, import_queue)
+        .await?;
 
-    Ok(PartialComponents {
-        backend,
-        client,
-        import_queue,
-        keystore_container,
-        task_manager,
-        transaction_pool,
-        select_chain: maybe_select_chain,
-        other: (block_import, telemetry, telemetry_worker_handle),
-    })
+    node_builder.spawn_common_tasks(&parachain_config)?;
+
+    // let maybe_select_chain = Some(sc_consensus::LongestChain::new(
+    //     node_builder.backend.clone(),
+    // ));
+
+    todo!()
 }
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.

@@ -16,7 +16,7 @@ cumulus-primitives-core = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
-	"frame-support/std",
 	"cumulus-primitives-core/std",
+	"frame-support/std",
 ]
 runtime-benchmarks = []

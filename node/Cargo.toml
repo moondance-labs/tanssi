@@ -22,10 +22,10 @@ serde_json = { workspace = true }
 tokio = { workspace = true }
 
 # Local
-node-common = { workspace = true }
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }
+node-common = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-configuration = { workspace = true, features = [ "std" ] }
@@ -103,11 +103,7 @@ substrate-build-script-utils = { workspace = true }
 
 [features]
 default = []
-runtime-benchmarks = [
-	"dancebox-runtime/runtime-benchmarks",
-	"polkadot-cli/runtime-benchmarks",
-	"polkadot-service/runtime-benchmarks"
-]
+runtime-benchmarks = [ "dancebox-runtime/runtime-benchmarks", "polkadot-cli/runtime-benchmarks", "polkadot-service/runtime-benchmarks" ]
 try-runtime = [ "dancebox-runtime/try-runtime", "nimbus-primitives/try-runtime", "pallet-configuration/try-runtime", "polkadot-cli/try-runtime", "polkadot-service/try-runtime", "sp-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime" ]

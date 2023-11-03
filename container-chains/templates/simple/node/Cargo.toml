@@ -18,8 +18,8 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
-node-common = { workspace = true }
 container-chain-template-simple-runtime = { workspace = true, features = [ "std" ] }
+node-common = { workspace = true }
 tc-consensus = { workspace = true }
 
 # Nimbus
@@ -85,10 +85,7 @@ substrate-build-script-utils = { workspace = true }
 
 [features]
 default = []
-runtime-benchmarks = [
-	"container-chain-template-simple-runtime/runtime-benchmarks",
-	"polkadot-cli/runtime-benchmarks"
-]
+runtime-benchmarks = [ "container-chain-template-simple-runtime/runtime-benchmarks", "polkadot-cli/runtime-benchmarks" ]
 try-runtime = [
 	"container-chain-template-simple-runtime/try-runtime",
 	"try-runtime-cli/try-runtime",

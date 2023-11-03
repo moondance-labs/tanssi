@@ -14,20 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use {
-    sc_service::{KeystoreContainer, TaskManager},
-    sp_block_builder::BlockBuilder,
-};
+use {futures::FutureExt, sp_offchain::OffchainWorkerApi};
 
 use {
-    cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
+    cumulus_client_cli::CollatorOptions,
+    cumulus_client_service::{
+        build_relay_chain_interface, prepare_node_config, CollatorSybilResistance,
+    },
+    cumulus_primitives_core::ParaId,
+    cumulus_relay_chain_interface::RelayChainInterface,
+    polkadot_primitives::CollatorPair,
+    sc_client_api::Backend,
+    sc_consensus::ImportQueue,
     sc_executor::{
         HeapAllocStrategy, NativeElseWasmExecutor, NativeExecutionDispatch, WasmExecutor,
         DEFAULT_HEAP_ALLOC_STRATEGY,
     },
-    sc_service::{Configuration, TFullBackend, TFullClient},
+    sc_network::{config::FullNetworkConfiguration, NetworkService},
+    sc_network_sync::SyncingService,
+    sc_network_transactions::TransactionsHandlerController,
+    sc_service::{
+        Configuration, KeystoreContainer, NetworkStarter, TFullBackend, TFullClient, TaskManager,
+    },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
+    sc_transaction_pool_api::OffchainTransactionPoolFactory,
+    sc_utils::mpsc::TracingUnboundedSender,
     sp_api::ConstructRuntimeApi,
+    sp_block_builder::BlockBuilder,
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
     std::sync::Arc,
 };
@@ -43,10 +56,33 @@ macro_rules! T {
     [ConstructedRuntimeApi] => {
         <RuntimeApi as ConstructRuntimeApi<Block, T![Client]>>::RuntimeApi
     };
+    [Where] => {
+        Block: cumulus_primitives_core::BlockT,
+        ParachainNativeExecutor: NativeExecutionDispatch + 'static,
+        RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
+        T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
+    }
 }
 
-pub struct NewPartial<Block, RuntimeApi, ParachainNativeExecutor>
-where
+pub struct CumulusNetwork<Block: cumulus_primitives_core::BlockT> {
+    pub network: Arc<NetworkService<Block, Block::Hash>>,
+    pub system_rpc_tx: TracingUnboundedSender<sc_rpc::system::Request<Block>>,
+    pub tx_handler_controller: TransactionsHandlerController<Block::Hash>,
+    pub start_network: NetworkStarter,
+    pub sync_service: Arc<SyncingService<Block>>,
+}
+
+pub struct NodeBuilder<
+    Block,
+    RuntimeApi,
+    ParachainNativeExecutor,
+    // `cumulus_client_service::build_network` returns many important systems,
+    // but can only be called with an `import_queue` which can be different in
+    // each node. For that reason it is a `()` when calling `new`, then the
+    // caller create the `import_queue` using systems contained in `NodeBuilder`,
+    // then call `build_cumulus_network` with it to generate the cumulus systems.
+    Cumulus = (),
+> where
     Block: cumulus_primitives_core::BlockT,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
     RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
@@ -59,80 +95,203 @@ where
     pub transaction_pool: Arc<sc_transaction_pool::FullPool<Block, T![Client]>>,
     pub telemetry: Option<Telemetry>,
     pub telemetry_worker_handle: Option<TelemetryWorkerHandle>,
+
+    pub relay_chain_interface: Arc<dyn RelayChainInterface>,
+    pub collator_key: Option<CollatorPair>,
+
+    pub cumulus: Cumulus,
 }
 
-pub fn new_partial<Block, RuntimeApi, ParachainNativeExecutor>(
-    config: &Configuration,
-) -> Result<NewPartial<Block, RuntimeApi, ParachainNativeExecutor>, sc_service::Error>
+impl<Block, RuntimeApi, ParachainNativeExecutor>
+    NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, ()>
 where
     Block: cumulus_primitives_core::BlockT,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
     RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
-    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
+    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block>
+        + BlockBuilder<Block>
+        + cumulus_primitives_core::CollectCollationInfo<Block>,
 {
-    let telemetry = config
-        .telemetry_endpoints
-        .clone()
-        .filter(|x| !x.is_empty())
-        .map(|endpoints| -> Result<_, sc_telemetry::Error> {
-            let worker = TelemetryWorker::new(16)?;
-            let telemetry = worker.handle().new_telemetry(endpoints);
-            Ok((worker, telemetry))
-        })
-        .transpose()?;
+    pub async fn new(
+        parachain_config: &Configuration,
+        polkadot_config: Configuration,
+        collator_options: CollatorOptions,
+        hwbench: Option<sc_sysinfo::HwBench>,
+    ) -> Result<Self, sc_service::Error> {
+        let telemetry = parachain_config
+            .telemetry_endpoints
+            .clone()
+            .filter(|x| !x.is_empty())
+            .map(|endpoints| -> Result<_, sc_telemetry::Error> {
+                let worker = TelemetryWorker::new(16)?;
+                let telemetry = worker.handle().new_telemetry(endpoints);
+                Ok((worker, telemetry))
+            })
+            .transpose()?;
 
-    let heap_pages = config
-        .default_heap_pages
-        .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
-            extra_pages: h as _,
+        let heap_pages =
+            parachain_config
+                .default_heap_pages
+                .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
+                    extra_pages: h as _,
+                });
+
+        // Default runtime_cache_size is 2
+        // For now we can work with this, but it will likely need
+        // to change once we start having runtime_cache_sizes, or
+        // run nodes with the maximum for this value
+        let wasm = WasmExecutor::builder()
+            .with_execution_method(parachain_config.wasm_method)
+            .with_onchain_heap_alloc_strategy(heap_pages)
+            .with_offchain_heap_alloc_strategy(heap_pages)
+            .with_max_runtime_instances(parachain_config.max_runtime_instances)
+            .with_runtime_cache_size(parachain_config.runtime_cache_size)
+            .build();
+
+        let executor = <T![Executor]>::new_with_wasm_executor(wasm);
+
+        let (client, backend, keystore_container, mut task_manager) =
+            sc_service::new_full_parts::<Block, RuntimeApi, _>(
+                parachain_config,
+                telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
+                executor,
+            )?;
+        let client = Arc::new(client);
+
+        let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
+
+        let telemetry = telemetry.map(|(worker, telemetry)| {
+            task_manager
+                .spawn_handle()
+                .spawn("telemetry", None, worker.run());
+            telemetry
         });
 
-    // Default runtime_cache_size is 2
-    // For now we can work with this, but it will likely need
-    // to change once we start having runtime_cache_sizes, or
-    // run nodes with the maximum for this value
-    let wasm = WasmExecutor::builder()
-        .with_execution_method(config.wasm_method)
-        .with_onchain_heap_alloc_strategy(heap_pages)
-        .with_offchain_heap_alloc_strategy(heap_pages)
-        .with_max_runtime_instances(config.max_runtime_instances)
-        .with_runtime_cache_size(config.runtime_cache_size)
-        .build();
+        let transaction_pool = sc_transaction_pool::BasicPool::new_full(
+            parachain_config.transaction_pool.clone(),
+            parachain_config.role.is_authority().into(),
+            parachain_config.prometheus_registry(),
+            task_manager.spawn_essential_handle(),
+            client.clone(),
+        );
 
-    let executor = <T![Executor]>::new_with_wasm_executor(wasm);
+        let (relay_chain_interface, collator_key) = build_relay_chain_interface(
+            polkadot_config,
+            &parachain_config,
+            telemetry_worker_handle.clone(),
+            &mut task_manager,
+            collator_options.clone(),
+            hwbench.clone(),
+        )
+        .await
+        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
-    let (client, backend, keystore_container, task_manager) =
-        sc_service::new_full_parts::<Block, RuntimeApi, _>(
-            config,
-            telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
-            executor,
-        )?;
-    let client = Arc::new(client);
+        Ok(Self {
+            client,
+            backend,
+            transaction_pool,
+            telemetry,
+            telemetry_worker_handle,
+            task_manager,
+            keystore_container,
+            relay_chain_interface,
+            collator_key,
+            cumulus: (),
+        })
+    }
 
-    let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
+    pub async fn build_cumulus_network(
+        self,
+        parachain_config: &Configuration,
+        para_id: ParaId,
+        import_queue: impl ImportQueue<Block> + 'static,
+    ) -> sc_service::error::Result<
+        NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, CumulusNetwork<Block>>,
+    > {
+        let Self {
+            client,
+            backend,
+            transaction_pool,
+            telemetry,
+            telemetry_worker_handle,
+            task_manager,
+            keystore_container,
+            relay_chain_interface,
+            collator_key,
+            cumulus: (),
+        } = self;
 
-    let telemetry = telemetry.map(|(worker, telemetry)| {
-        task_manager
-            .spawn_handle()
-            .spawn("telemetry", None, worker.run());
-        telemetry
-    });
+        let net_config = FullNetworkConfiguration::new(&parachain_config.network);
 
-    let transaction_pool = sc_transaction_pool::BasicPool::new_full(
-        config.transaction_pool.clone(),
-        config.role.is_authority().into(),
-        config.prometheus_registry(),
-        task_manager.spawn_essential_handle(),
-        client.clone(),
-    );
+        let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
+            cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
+                parachain_config: &parachain_config,
+                client: client.clone(),
+                transaction_pool: transaction_pool.clone(),
+                spawn_handle: task_manager.spawn_handle(),
+                import_queue: import_queue,
+                para_id,
+                relay_chain_interface: relay_chain_interface.clone(),
+                net_config,
+                sybil_resistance_level: CollatorSybilResistance::Resistant,
+            })
+            .await?;
 
-    Ok(NewPartial {
-        client,
-        backend,
-        transaction_pool,
-        telemetry,
-        telemetry_worker_handle,
-        task_manager,
-        keystore_container,
-    })
+        Ok(NodeBuilder {
+            client,
+            backend,
+            transaction_pool,
+            telemetry,
+            telemetry_worker_handle,
+            task_manager,
+            keystore_container,
+            relay_chain_interface,
+            collator_key,
+            cumulus: CumulusNetwork {
+                network,
+                system_rpc_tx,
+                tx_handler_controller,
+                start_network,
+                sync_service,
+            },
+        })
+    }
+}
+
+impl<Block, RuntimeApi, ParachainNativeExecutor>
+    NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, CumulusNetwork<Block>>
+where
+    Block: cumulus_primitives_core::BlockT,
+    ParachainNativeExecutor: NativeExecutionDispatch + 'static,
+    RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
+    T![ConstructedRuntimeApi]:
+        TaggedTransactionQueue<Block> + BlockBuilder<Block> + OffchainWorkerApi<Block>,
+{
+    pub fn spawn_common_tasks(
+        &mut self,
+        parachain_config: &Configuration,
+    ) -> sc_service::error::Result<()> {
+        if parachain_config.offchain_worker.enabled {
+            self.task_manager.spawn_handle().spawn(
+                "offchain-workers-runner",
+                "offchain-work",
+                sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+                    runtime_api_provider: self.client.clone(),
+                    keystore: Some(self.keystore_container.keystore()),
+                    offchain_db: self.backend.offchain_storage(),
+                    transaction_pool: Some(OffchainTransactionPoolFactory::new(
+                        self.transaction_pool.clone(),
+                    )),
+                    network_provider: self.cumulus.network.clone(),
+                    is_validator: parachain_config.role.is_authority(),
+                    enable_http_requests: false,
+                    custom_extensions: move |_| vec![],
+                })
+                .run(self.client.clone(), self.task_manager.spawn_handle())
+                .boxed(),
+            );
+        }
+
+        Ok(())
+    }
 }
