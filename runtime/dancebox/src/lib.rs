@@ -762,7 +762,7 @@ impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
 }
 
 parameter_types! {
-    pub const MaxCreditsStored: BlockNumber = 100;
+    pub const MaxCreditsStored: BlockNumber = 1000;
 }
 
 impl pallet_services_payment::Config for Runtime {
