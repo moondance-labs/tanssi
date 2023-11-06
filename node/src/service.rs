@@ -345,7 +345,24 @@ async fn start_node_impl2(
         .build_cumulus_network(&parachain_config, para_id, import_queue)
         .await?;
 
-    node_builder.spawn_common_tasks(&parachain_config)?;
+    let rpc_builder = {
+        let client = node_builder.client.clone();
+        let transaction_pool = node_builder.transaction_pool.clone();
+
+        Box::new(move |deny_unsafe, _| {
+            let deps = crate::rpc::FullDeps {
+                client: client.clone(),
+                pool: transaction_pool.clone(),
+                deny_unsafe,
+                command_sink: None,
+                xcm_senders: None,
+            };
+
+            crate::rpc::create_full(deps).map_err(Into::into)
+        })
+    };
+
+    node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
     // let maybe_select_chain = Some(sc_consensus::LongestChain::new(
     //     node_builder.backend.clone(),

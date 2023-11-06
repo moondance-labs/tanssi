@@ -13,16 +13,13 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
-
-use {futures::FutureExt, sp_offchain::OffchainWorkerApi};
-
 use {
     cumulus_client_cli::CollatorOptions,
-    cumulus_client_service::{
-        build_relay_chain_interface, prepare_node_config, CollatorSybilResistance,
-    },
+    cumulus_client_service::{build_relay_chain_interface, CollatorSybilResistance},
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
+    futures::FutureExt,
+    jsonrpsee::RpcModule,
     polkadot_primitives::CollatorPair,
     sc_client_api::Backend,
     sc_consensus::ImportQueue,
@@ -33,6 +30,7 @@ use {
     sc_network::{config::FullNetworkConfiguration, NetworkService},
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
+    sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor},
     sc_service::{
         Configuration, KeystoreContainer, NetworkStarter, TFullBackend, TFullClient, TaskManager,
     },
@@ -41,6 +39,7 @@ use {
     sc_utils::mpsc::TracingUnboundedSender,
     sp_api::ConstructRuntimeApi,
     sp_block_builder::BlockBuilder,
+    sp_offchain::OffchainWorkerApi,
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
     std::sync::Arc,
 };
@@ -67,7 +66,6 @@ macro_rules! T {
 pub struct CumulusNetwork<Block: cumulus_primitives_core::BlockT> {
     pub network: Arc<NetworkService<Block, Block::Hash>>,
     pub system_rpc_tx: TracingUnboundedSender<sc_rpc::system::Request<Block>>,
-    pub tx_handler_controller: TransactionsHandlerController<Block::Hash>,
     pub start_network: NetworkStarter,
     pub sync_service: Arc<SyncingService<Block>>,
 }
@@ -82,6 +80,9 @@ pub struct NodeBuilder<
     // caller create the `import_queue` using systems contained in `NodeBuilder`,
     // then call `build_cumulus_network` with it to generate the cumulus systems.
     Cumulus = (),
+    // The `TxHandler` is constructed in `build_cumulus_network`
+    // and is then consumed when calling `spawn_common_tasks`.
+    TxHandler = (),
 > where
     Block: cumulus_primitives_core::BlockT,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
@@ -100,10 +101,11 @@ pub struct NodeBuilder<
     pub collator_key: Option<CollatorPair>,
 
     pub cumulus: Cumulus,
+    pub tx_handler_controller: TxHandler,
 }
 
 impl<Block, RuntimeApi, ParachainNativeExecutor>
-    NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, ()>
+    NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, (), ()>
 where
     Block: cumulus_primitives_core::BlockT,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
@@ -112,6 +114,7 @@ where
         + BlockBuilder<Block>
         + cumulus_primitives_core::CollectCollationInfo<Block>,
 {
+    // Refactor: old new_partial + build_relay_chain_interface
     pub async fn new(
         parachain_config: &Configuration,
         polkadot_config: Configuration,
@@ -197,16 +200,25 @@ where
             relay_chain_interface,
             collator_key,
             cumulus: (),
+            tx_handler_controller: (),
         })
     }
 
+    /// Given an import queue, calls `cumulus_client_service::build_network` and
+    /// stores the returned objects in `self.cumulus` and `self.tx_handler_controller`.
     pub async fn build_cumulus_network(
         self,
         parachain_config: &Configuration,
         para_id: ParaId,
         import_queue: impl ImportQueue<Block> + 'static,
     ) -> sc_service::error::Result<
-        NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, CumulusNetwork<Block>>,
+        NodeBuilder<
+            Block,
+            RuntimeApi,
+            ParachainNativeExecutor,
+            CumulusNetwork<Block>,
+            TransactionsHandlerController<Block::Hash>,
+        >,
     > {
         let Self {
             client,
@@ -219,6 +231,7 @@ where
             relay_chain_interface,
             collator_key,
             cumulus: (),
+            tx_handler_controller: (),
         } = self;
 
         let net_config = FullNetworkConfiguration::new(&parachain_config.network);
@@ -250,48 +263,121 @@ where
             cumulus: CumulusNetwork {
                 network,
                 system_rpc_tx,
-                tx_handler_controller,
                 start_network,
                 sync_service,
             },
+            tx_handler_controller,
         })
     }
 }
 
 impl<Block, RuntimeApi, ParachainNativeExecutor>
-    NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, CumulusNetwork<Block>>
+    NodeBuilder<
+        Block,
+        RuntimeApi,
+        ParachainNativeExecutor,
+        CumulusNetwork<Block>,
+        TransactionsHandlerController<Block::Hash>,
+    >
 where
     Block: cumulus_primitives_core::BlockT,
+    Block::Hash: Unpin,
+    Block::Header: Unpin,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
     RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
-    T![ConstructedRuntimeApi]:
-        TaggedTransactionQueue<Block> + BlockBuilder<Block> + OffchainWorkerApi<Block>,
+    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block>
+        + BlockBuilder<Block>
+        + OffchainWorkerApi<Block>
+        + sp_api::Metadata<Block>
+        + sp_session::SessionKeys<Block>,
 {
-    pub fn spawn_common_tasks(
-        &mut self,
-        parachain_config: &Configuration,
-    ) -> sc_service::error::Result<()> {
+    /// Given an `rpc_builder`, spawns the common tasks of a Substrate + Cumulus
+    /// node. It consumes `self.tx_handler_controller` in the process.
+    pub fn spawn_common_tasks<TRpc>(
+        self,
+        parachain_config: Configuration,
+        rpc_builder: Box<
+            dyn Fn(
+                DenyUnsafe,
+                SubscriptionTaskExecutor,
+            ) -> Result<RpcModule<TRpc>, sc_service::Error>,
+        >,
+    ) -> sc_service::error::Result<
+        NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, CumulusNetwork<Block>, ()>,
+    > {
+        let NodeBuilder {
+            client,
+            backend,
+            transaction_pool,
+            mut telemetry,
+            telemetry_worker_handle,
+            mut task_manager,
+            keystore_container,
+            relay_chain_interface,
+            collator_key,
+            cumulus:
+                CumulusNetwork {
+                    network,
+                    system_rpc_tx,
+                    start_network,
+                    sync_service,
+                },
+            tx_handler_controller,
+        } = self;
+
         if parachain_config.offchain_worker.enabled {
-            self.task_manager.spawn_handle().spawn(
+            task_manager.spawn_handle().spawn(
                 "offchain-workers-runner",
                 "offchain-work",
                 sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
-                    runtime_api_provider: self.client.clone(),
-                    keystore: Some(self.keystore_container.keystore()),
-                    offchain_db: self.backend.offchain_storage(),
+                    runtime_api_provider: client.clone(),
+                    keystore: Some(keystore_container.keystore()),
+                    offchain_db: backend.offchain_storage(),
                     transaction_pool: Some(OffchainTransactionPoolFactory::new(
-                        self.transaction_pool.clone(),
+                        transaction_pool.clone(),
                     )),
-                    network_provider: self.cumulus.network.clone(),
+                    network_provider: network.clone(),
                     is_validator: parachain_config.role.is_authority(),
                     enable_http_requests: false,
                     custom_extensions: move |_| vec![],
                 })
-                .run(self.client.clone(), self.task_manager.spawn_handle())
+                .run(client.clone(), task_manager.spawn_handle())
                 .boxed(),
             );
         }
 
-        Ok(())
+        sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+            rpc_builder,
+            client: client.clone(),
+            transaction_pool: transaction_pool.clone(),
+            task_manager: &mut task_manager,
+            config: parachain_config,
+            keystore: keystore_container.keystore(),
+            backend: backend.clone(),
+            network: network.clone(),
+            system_rpc_tx: system_rpc_tx.clone(),
+            tx_handler_controller,
+            telemetry: telemetry.as_mut(),
+            sync_service: sync_service.clone(),
+        })?;
+
+        Ok(NodeBuilder {
+            client,
+            backend,
+            transaction_pool,
+            telemetry,
+            telemetry_worker_handle,
+            task_manager,
+            keystore_container,
+            relay_chain_interface,
+            collator_key,
+            cumulus: CumulusNetwork {
+                network,
+                system_rpc_tx,
+                start_network,
+                sync_service,
+            },
+            tx_handler_controller: (),
+        })
     }
 }
