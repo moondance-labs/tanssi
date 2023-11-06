@@ -805,6 +805,19 @@ declare module "@polkadot/api-base/types/submittable" {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        servicesPayment: {
+            /** See `Pallet::purchase_credits`. */
+            purchaseCredits: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    credits: u32 | AnyNumber | Uint8Array,
+                    maxPricePerCredit: Option<u128> | null | Uint8Array | u128 | AnyNumber
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, u32, Option<u128>]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         session: {
             /** See [`Pallet::purge_keys`]. */
             purgeKeys: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;

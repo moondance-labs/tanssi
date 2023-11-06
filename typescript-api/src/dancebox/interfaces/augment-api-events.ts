@@ -719,6 +719,20 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
+        servicesPayment: {
+            CreditBurned: AugmentedEvent<
+                ApiType,
+                [paraId: u32, creditsRemaining: u32],
+                { paraId: u32; creditsRemaining: u32 }
+            >;
+            CreditsPurchased: AugmentedEvent<
+                ApiType,
+                [paraId: u32, payer: AccountId32, fee: u128, creditsPurchased: u32, creditsRemaining: u32],
+                { paraId: u32; payer: AccountId32; fee: u128; creditsPurchased: u32; creditsRemaining: u32 }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         session: {
             /** New session has happened. Note that the argument is the session index, not the block number as the type might suggest. */
             NewSession: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
