@@ -56,7 +56,7 @@ use {
     tp_collator_assignment::AssignedCollators,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
-        RemoveInvulnerables, ShouldRotateAllCollators, Slot,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
     },
 };
 
@@ -97,6 +97,7 @@ pub mod pallet {
         type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
+        type RemoveParaIdsWithNoCredits: RemoveParaIdsWithNoCredits;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -161,6 +162,10 @@ pub mod pallet {
             // We get the containerChains that we will have at the target session
             let mut container_chain_ids =
                 T::ContainerChains::session_container_chains(target_session_index);
+            // Remove the containerChains that do not have enough credits for block production
+            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
+                &mut container_chain_ids,
+            );
 
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
             // of container chains.

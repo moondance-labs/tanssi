@@ -110,3 +110,11 @@ pub trait RemoveInvulnerables<AccountId> {
         num_invulnerables: usize,
     ) -> Vec<AccountId>;
 }
+
+/// Helper trait for pallet_collator_assignment to be able to not assign collators to container chains with no credits
+/// in pallet_services_payment
+pub trait RemoveParaIdsWithNoCredits {
+    /// Remove para ids with not enough credits. The resulting order will affect priority: the first para id in the list
+    /// will be the first one to get collators.
+    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>);
+}

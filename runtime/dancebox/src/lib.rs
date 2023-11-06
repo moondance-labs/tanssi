@@ -91,7 +91,10 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
-    tp_traits::{AuthorNotingHook, GetSessionContainerChains, RemoveInvulnerables},
+    tp_traits::{
+        AuthorNotingHook, GetSessionContainerChains, RemoveInvulnerables,
+        RemoveParaIdsWithNoCredits,
+    },
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -688,6 +691,21 @@ impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
     }
 }
 
+pub struct RemoveParaIdsWithNoCreditsImpl;
+
+impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
+    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
+        let credits_for_2_sessions = 100; // TODO
+        para_ids.retain(|para_id| {
+            // Check if it has enough credits for producing blocks for 2 sessions
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+                .unwrap_or_default();
+
+            credits >= credits_for_2_sessions
+        });
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
@@ -698,6 +716,7 @@ impl pallet_collator_assignment::Config for Runtime {
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
+    type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 

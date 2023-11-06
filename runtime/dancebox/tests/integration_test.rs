@@ -19,13 +19,9 @@
 use {
     common::*,
     cumulus_primitives_core::ParaId,
-    dancebox_runtime::{
-        migrations::{
-            CollatorSelectionInvulnerablesValue, MigrateConfigurationFullRotationPeriod,
-            MigrateInvulnerables,
-        },
-        AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, Configuration,
-        Invulnerables, MinimumSelfDelegation, PooledStaking, Proxy, ProxyType, RewardsPortion,
+    dancebox_runtime::migrations::{
+        CollatorSelectionInvulnerablesValue, MigrateConfigurationFullRotationPeriod,
+        MigrateInvulnerables,
     },
     frame_support::{assert_noop, assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -87,8 +83,8 @@ fn genesis_para_registrar() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -118,8 +114,8 @@ fn genesis_para_registrar_deregister() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -167,8 +163,8 @@ fn genesis_para_registrar_runtime_api() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -218,8 +214,8 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, genesis_data_1001.clone(), vec![]),
-            (1002, genesis_data_1002.clone(), vec![]),
+            (1001, genesis_data_1001.clone(), vec![], u32::MAX),
+            (1002, genesis_data_1002.clone(), vec![], u32::MAX),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -294,8 +290,8 @@ fn test_author_collation_aura() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -329,8 +325,8 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -401,8 +397,8 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -543,6 +539,12 @@ fn test_authors_paras_inserted_a_posteriori() {
                 Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
                 ()
             );
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                100_000,
+                None,
+            ));
             assert_ok!(
                 Registrar::register(origin_of(ALICE.into()), 1002.into(), empty_genesis_data()),
                 ()
@@ -551,6 +553,12 @@ fn test_authors_paras_inserted_a_posteriori() {
                 Registrar::mark_valid_for_collating(root_origin(), 1002.into()),
                 ()
             );
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1002.into(),
+                100_000,
+                None,
+            ));
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
@@ -558,7 +566,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert!(assignment.container_chains.is_empty());
             run_to_session(2u32);
 
-            // Charlie and Dave should be assigne dot para 1001
+            // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
@@ -613,6 +621,12 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
                 Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
                 ()
             );
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                100_000,
+                None,
+            ));
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
@@ -650,8 +664,8 @@ fn test_parachains_deregister_collators_re_assigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -713,8 +727,8 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -780,8 +794,8 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -867,8 +881,8 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1031,8 +1045,8 @@ fn test_consensus_runtime_api() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1126,8 +1140,8 @@ fn test_consensus_runtime_api_session_changes() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1242,8 +1256,8 @@ fn test_consensus_runtime_api_next_session() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1454,8 +1468,8 @@ fn test_author_noting_not_self_para() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -1512,8 +1526,8 @@ fn test_author_noting_set_author_and_kill_author_data() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -1557,8 +1571,8 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -1598,8 +1612,8 @@ fn test_author_noting_runtime_api() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -1662,8 +1676,8 @@ fn test_collator_assignment_rotation() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -1722,8 +1736,8 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1807,8 +1821,8 @@ fn test_session_keys_with_authority_assignment() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2098,8 +2112,8 @@ fn test_staking_no_candidates_in_genesis() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2130,8 +2144,8 @@ fn test_staking_join() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2183,8 +2197,8 @@ fn test_staking_join_no_keys_registered() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2239,8 +2253,8 @@ fn test_staking_register_keys_after_joining() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2328,8 +2342,8 @@ fn test_staking_join_bad_origin() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2366,8 +2380,8 @@ fn test_staking_join_below_self_delegation_min() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2439,8 +2453,8 @@ fn test_staking_join_no_self_delegation() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2479,8 +2493,8 @@ fn test_staking_join_before_self_delegation() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2550,8 +2564,8 @@ fn test_staking_join_twice_in_same_block() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2620,8 +2634,8 @@ fn test_staking_join_execute_before_time() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2696,8 +2710,8 @@ fn test_staking_join_execute_any_origin() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2756,8 +2770,8 @@ fn test_staking_join_execute_bad_origin() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2825,8 +2839,8 @@ fn setup_staking_join_and_execute<R>(ops: Vec<A>, f: impl FnOnce() -> R) {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -3262,8 +3276,8 @@ fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -3353,8 +3367,8 @@ fn test_pallet_session_limits_num_validators() {
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 2,
@@ -3441,8 +3455,8 @@ fn test_pallet_session_limits_num_validators_from_staking() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 2,
@@ -3603,8 +3617,8 @@ fn test_reward_to_staking_candidate() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -3717,8 +3731,8 @@ fn test_reward_to_invulnerable() {
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -3814,8 +3828,8 @@ fn test_reward_to_invulnerable_with_key_change() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -3921,8 +3935,8 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![]),
-            (1002, empty_genesis_data(), vec![]),
+            (1001, empty_genesis_data(), vec![], u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX),
         ])
         .with_config(default_config())
         .build()

@@ -43,6 +43,7 @@ use {
         traits::Currency,
     },
     frame_system::pallet_prelude::*,
+    scale_info::prelude::vec::Vec,
     tp_traits::{AuthorNotingHook, BlockNumber},
 };
 
@@ -182,20 +183,24 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        _phantom: PhantomData<T>,
+        pub para_id_credits: Vec<(ParaId, BlockNumberFor<T>)>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {
         fn default() -> Self {
             Self {
-                _phantom: Default::default(),
+                para_id_credits: Default::default(),
             }
         }
     }
 
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
-        fn build(&self) {}
+        fn build(&self) {
+            for (para_id, credits) in &self.para_id_credits {
+                BlockProductionCredits::<T>::insert(para_id, credits);
+            }
+        }
     }
 }
 
