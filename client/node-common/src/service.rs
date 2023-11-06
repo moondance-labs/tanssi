@@ -13,11 +13,13 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_service::{build_relay_chain_interface, CollatorSybilResistance},
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
+    frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::FutureExt,
     jsonrpsee::RpcModule,
     polkadot_primitives::CollatorPair,
@@ -99,6 +101,7 @@ pub struct NodeBuilder<
 
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
     pub collator_key: Option<CollatorPair>,
+    pub hwbench: Option<sc_sysinfo::HwBench>,
 
     pub cumulus: Cumulus,
     pub tx_handler_controller: TxHandler,
@@ -199,6 +202,7 @@ where
             keystore_container,
             relay_chain_interface,
             collator_key,
+            hwbench,
             cumulus: (),
             tx_handler_controller: (),
         })
@@ -230,6 +234,7 @@ where
             keystore_container,
             relay_chain_interface,
             collator_key,
+            hwbench,
             cumulus: (),
             tx_handler_controller: (),
         } = self;
@@ -260,6 +265,7 @@ where
             keystore_container,
             relay_chain_interface,
             collator_key,
+            hwbench,
             cumulus: CumulusNetwork {
                 network,
                 system_rpc_tx,
@@ -315,6 +321,7 @@ where
             keystore_container,
             relay_chain_interface,
             collator_key,
+            hwbench,
             cumulus:
                 CumulusNetwork {
                     network,
@@ -324,6 +331,8 @@ where
                 },
             tx_handler_controller,
         } = self;
+
+        let collator = parachain_config.role.is_authority();
 
         if parachain_config.offchain_worker.enabled {
             task_manager.spawn_handle().spawn(
@@ -361,6 +370,27 @@ where
             sync_service: sync_service.clone(),
         })?;
 
+        if let Some(hwbench) = &hwbench {
+            sc_sysinfo::print_hwbench(&hwbench);
+            // Here you can check whether the hardware meets your chains' requirements. Putting a link
+            // in there and swapping out the requirements for your own are probably a good idea. The
+            // requirements for a para-chain are dictated by its relay-chain.
+            if collator && !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
+                log::warn!(
+                    "⚠️  The hardware does not meet the minimal requirements for role 'Authority'."
+                );
+            }
+
+            if let Some(ref mut telemetry) = telemetry {
+                let telemetry_handle = telemetry.handle();
+                task_manager.spawn_handle().spawn(
+                    "telemetry_hwbench",
+                    None,
+                    sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench.clone()),
+                );
+            }
+        }
+
         Ok(NodeBuilder {
             client,
             backend,
@@ -371,6 +401,7 @@ where
             keystore_container,
             relay_chain_interface,
             collator_key,
+            hwbench,
             cumulus: CumulusNetwork {
                 network,
                 system_rpc_tx,
