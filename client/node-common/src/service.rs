@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    core_extensions::TypeIdentity,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_service::{build_relay_chain_interface, CollatorSybilResistance},
     cumulus_primitives_core::ParaId,
@@ -72,6 +73,19 @@ pub struct CumulusNetwork<Block: cumulus_primitives_core::BlockT> {
     pub sync_service: Arc<SyncingService<Block>>,
 }
 
+// `Cumulus` and `TxHandler` are types that will change during the life of
+// a `NodeBuilder` because they are generated and consumed when calling
+// certain functions, with absence of data represented with `()`. Some
+// function are implemented only for a given concrete type, which ensure it
+// can only be called if the required data is available (generated and not yet
+// consumed).
+//
+// While this could be implemented with multiple impl blocks with concrete types,
+// we use here `core_extensions::TypeIdentity` which allow to express type
+// identity/equality as a trait bound on each function as it removes the
+// boilerplate of many impl block with duplicated trait bounds. 2 impl blocks
+// are still required since Rust can't infer the types in the `new` function
+// that doesn't take `self`.
 pub struct NodeBuilder<
     Block,
     RuntimeApi,
@@ -107,6 +121,9 @@ pub struct NodeBuilder<
     pub tx_handler_controller: TxHandler,
 }
 
+// `new` function doesn't take self, and the Rust compiler cannot infer that
+// only one type T implements `TypeIdentity`. With thus need a separate impl
+// block with concrete types `()`.
 impl<Block, RuntimeApi, ParachainNativeExecutor>
     NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, (), ()>
 where
@@ -115,15 +132,19 @@ where
     RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
     T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block>
         + BlockBuilder<Block>
-        + cumulus_primitives_core::CollectCollationInfo<Block>,
 {
-    // Refactor: old new_partial + build_relay_chain_interface
+    /// Create a new `NodeBuilder` which prepare objects required to launch a
+    /// node. However it doesn't start anything, and doesn't provide any
+    /// cumulus-dependent objects (as it requires an import queue, which usually
+    /// is different for each node).
     pub async fn new(
         parachain_config: &Configuration,
         polkadot_config: Configuration,
         collator_options: CollatorOptions,
         hwbench: Option<sc_sysinfo::HwBench>,
     ) -> Result<Self, sc_service::Error> {
+        // Refactor: old new_partial + build_relay_chain_interface
+
         let telemetry = parachain_config
             .telemetry_endpoints
             .clone()
@@ -203,13 +224,27 @@ where
             relay_chain_interface,
             collator_key,
             hwbench,
-            cumulus: (),
-            tx_handler_controller: (),
+            cumulus: TypeIdentity::from_type(()),
+            tx_handler_controller: TypeIdentity::from_type(()),
         })
     }
+}
 
+impl<Block, RuntimeApi, ParachainNativeExecutor, Cumulus, TxHandler>
+    NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, Cumulus, TxHandler>
+where
+    Block: cumulus_primitives_core::BlockT,
+    ParachainNativeExecutor: NativeExecutionDispatch + 'static,
+    RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
+    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block>
+        + BlockBuilder<Block>
+        + cumulus_primitives_core::CollectCollationInfo<Block>,
+{
     /// Given an import queue, calls `cumulus_client_service::build_network` and
     /// stores the returned objects in `self.cumulus` and `self.tx_handler_controller`.
+    ///
+    /// Can only be called once on a `NodeBuilder` that doesn't have yet cumulus
+    /// data.
     pub async fn build_cumulus_network(
         self,
         parachain_config: &Configuration,
@@ -223,7 +258,11 @@ where
             CumulusNetwork<Block>,
             TransactionsHandlerController<Block::Hash>,
         >,
-    > {
+    >
+    where
+        Cumulus: TypeIdentity<Type = ()>,
+        TxHandler: TypeIdentity<Type = ()>,
+    {
         let Self {
             client,
             backend,
@@ -235,8 +274,8 @@ where
             relay_chain_interface,
             collator_key,
             hwbench,
-            cumulus: (),
-            tx_handler_controller: (),
+            cumulus: _,
+            tx_handler_controller: _,
         } = self;
 
         let net_config = FullNetworkConfiguration::new(&parachain_config.network);
@@ -275,30 +314,11 @@ where
             tx_handler_controller,
         })
     }
-}
 
-impl<Block, RuntimeApi, ParachainNativeExecutor>
-    NodeBuilder<
-        Block,
-        RuntimeApi,
-        ParachainNativeExecutor,
-        CumulusNetwork<Block>,
-        TransactionsHandlerController<Block::Hash>,
-    >
-where
-    Block: cumulus_primitives_core::BlockT,
-    Block::Hash: Unpin,
-    Block::Header: Unpin,
-    ParachainNativeExecutor: NativeExecutionDispatch + 'static,
-    RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
-    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block>
-        + BlockBuilder<Block>
-        + OffchainWorkerApi<Block>
-        + sp_api::Metadata<Block>
-        + sp_session::SessionKeys<Block>,
-{
     /// Given an `rpc_builder`, spawns the common tasks of a Substrate + Cumulus
-    /// node. It consumes `self.tx_handler_controller` in the process.
+    /// node. It consumes `self.tx_handler_controller` in the process, which means
+    /// it can only be called once, and any other code that would need this
+    /// controller should interact with it before calling this function.
     pub fn spawn_common_tasks<TRpc>(
         self,
         parachain_config: Configuration,
@@ -310,7 +330,18 @@ where
         >,
     ) -> sc_service::error::Result<
         NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, CumulusNetwork<Block>, ()>,
-    > {
+    >
+    where
+        Cumulus: TypeIdentity<Type = CumulusNetwork<Block>>,
+        TxHandler: TypeIdentity<Type = TransactionsHandlerController<Block::Hash>>,
+        Block::Hash: Unpin,
+        Block::Header: Unpin,
+        T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block>
+            + BlockBuilder<Block>
+            + OffchainWorkerApi<Block>
+            + sp_api::Metadata<Block>
+            + sp_session::SessionKeys<Block>,
+    {
         let NodeBuilder {
             client,
             backend,
@@ -322,15 +353,12 @@ where
             relay_chain_interface,
             collator_key,
             hwbench,
-            cumulus:
-                CumulusNetwork {
-                    network,
-                    system_rpc_tx,
-                    start_network,
-                    sync_service,
-                },
+            cumulus,
             tx_handler_controller,
         } = self;
+
+        let cumulus = TypeIdentity::into_type(cumulus);
+        let tx_handler_controller = TypeIdentity::into_type(tx_handler_controller);
 
         let collator = parachain_config.role.is_authority();
 
@@ -345,7 +373,7 @@ where
                     transaction_pool: Some(OffchainTransactionPoolFactory::new(
                         transaction_pool.clone(),
                     )),
-                    network_provider: network.clone(),
+                    network_provider: cumulus.network.clone(),
                     is_validator: parachain_config.role.is_authority(),
                     enable_http_requests: false,
                     custom_extensions: move |_| vec![],
@@ -363,11 +391,11 @@ where
             config: parachain_config,
             keystore: keystore_container.keystore(),
             backend: backend.clone(),
-            network: network.clone(),
-            system_rpc_tx: system_rpc_tx.clone(),
+            network: cumulus.network.clone(),
+            system_rpc_tx: cumulus.system_rpc_tx.clone(),
             tx_handler_controller,
             telemetry: telemetry.as_mut(),
-            sync_service: sync_service.clone(),
+            sync_service: cumulus.sync_service.clone(),
         })?;
 
         if let Some(hwbench) = &hwbench {
@@ -402,13 +430,8 @@ where
             relay_chain_interface,
             collator_key,
             hwbench,
-            cumulus: CumulusNetwork {
-                network,
-                system_rpc_tx,
-                start_network,
-                sync_service,
-            },
-            tx_handler_controller: (),
+            cumulus: TypeIdentity::from_type(cumulus),
+            tx_handler_controller: TypeIdentity::from_type(()),
         })
     }
 }

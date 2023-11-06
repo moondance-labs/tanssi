@@ -1888,6 +1888,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "core_extensions"
+version = "1.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92c71dc07c9721607e7a16108336048ee978c3a8b129294534272e8bac96c0ee"
+
+[[package]]
 name = "cpp_demangle"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6846,6 +6852,7 @@ dependencies = [
  "async-io",
  "async-trait",
  "clap",
+ "core_extensions",
  "cumulus-client-cli",
  "cumulus-client-consensus-aura",
  "cumulus-client-consensus-common",
