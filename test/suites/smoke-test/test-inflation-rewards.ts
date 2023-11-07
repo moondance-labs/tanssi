@@ -114,7 +114,8 @@ describeSuite({
 
                 let expectedAmountParachainBond = 0n;
 
-                const pendingChainRewards = await apiAtIssuanceAfter.query.inflationRewards.chainsToReward();
+                // Pending chains to reward should be read with previous api
+                const pendingChainRewards = await apiAtIssuanceBefore.query.inflationRewards.chainsToReward();
                 const numberOfChains = BigInt(
                     (await apiAtIssuanceBefore.query.registrar.registeredParaIds()).length + 1
                 );
