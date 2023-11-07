@@ -6861,6 +6861,7 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
+ "flume",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.28",

@@ -10,12 +10,13 @@ version = "0.1.0"
 async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
+core_extensions = { workspace = true, features = [ "type_identity" ] }
+flume = { workspace = true }
 futures = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
-core_extensions = { workspace = true, features = [ "type_identity" ]}
 
 # Local
 tc-consensus = { workspace = true }

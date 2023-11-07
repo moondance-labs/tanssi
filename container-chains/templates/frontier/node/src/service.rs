@@ -134,8 +134,8 @@ struct MockTimestampInherentDataProvider;
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
 pub fn new_partial(
-    config: &mut Configuration,
-    dev_service: bool,
+    _config: &mut Configuration,
+    _dev_service: bool,
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -158,10 +158,10 @@ pub fn new_partial(
     >,
     sc_service::Error,
 > {
-    // Use ethereum style for subscription ids
-    config.rpc_id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
-
     todo!()
+
+    // Use ethereum style for subscription ids
+    // config.rpc_id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
 
     // let NodeBuilder {
     //     client,

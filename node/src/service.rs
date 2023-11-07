@@ -16,8 +16,6 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use node_common::service::NodeBuilder;
-
 #[allow(deprecated)]
 use {
     crate::{
@@ -45,8 +43,9 @@ use {
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{opaque::Block, RuntimeApi},
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
-    futures::{channel::mpsc, StreamExt},
+    futures::{channel::mpsc, FutureExt, StreamExt},
     nimbus_primitives::NimbusPair,
+    node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
@@ -63,6 +62,7 @@ use {
         TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorkerHandle},
+    sc_transaction_pool_api::OffchainTransactionPoolFactory,
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_core::{
@@ -80,7 +80,6 @@ use {
     },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
-use {futures::FutureExt, sc_transaction_pool_api::OffchainTransactionPoolFactory};
 
 type FullBackend = TFullBackend<Block>;
 type MaybeSelectChain = Option<sc_consensus::LongestChain<FullBackend, Block>>;
@@ -308,24 +307,17 @@ pub fn new_partial_dev(
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
 #[sc_tracing::logging::prefix_logs_with("Orchestrator")]
-async fn start_node_impl2(
+async fn start_dev_node_impl2(
     orchestrator_config: Configuration,
-    polkadot_config: Configuration,
-    container_chain_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
-    collator_options: CollatorOptions,
-    para_id: ParaId,
+    sealing: Sealing,
     hwbench: Option<sc_sysinfo::HwBench>,
+    para_id: ParaId,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(orchestrator_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder = node_common::service::NodeBuilder::new(
-        &parachain_config,
-        polkadot_config,
-        collator_options.clone(),
-        hwbench.clone(),
-    )
-    .await?;
+    let node_builder =
+        node_common::service::NodeBuilder::new(&parachain_config, hwbench.clone()).await?;
 
     // This node block import.
     let block_import = DevParachainBlockImport::new(node_builder.client.clone());
@@ -340,10 +332,9 @@ async fn start_node_impl2(
         &node_builder.task_manager,
     )?;
 
-    // Upgrade the NodeBuilder with cumulus capabilities using our block import.
-    let mut node_builder = node_builder
-        .build_cumulus_network(&parachain_config, para_id, import_queue)
-        .await?;
+    // Build a Substrate Network. (not cumulus since it is a dev node, it mocks
+    // the relaychain)
+    let mut node_builder = node_builder.build_substrate_network(&parachain_config, import_queue)?;
 
     let rpc_builder = {
         let client = node_builder.client.clone();
@@ -362,11 +353,80 @@ async fn start_node_impl2(
         })
     };
 
-    node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
+    let is_authority = parachain_config.role.is_authority();
+    let mut node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
-    // let maybe_select_chain = Some(sc_consensus::LongestChain::new(
-    //     node_builder.backend.clone(),
-    // ));
+    let mut command_sink = None;
+    let mut xcm_senders = None;
+    if is_authority {
+        let client = node_builder.client.clone();
+        let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
+        let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
+        xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
+
+        command_sink = node_builder.install_manual_seal(ManualSealConfiguration {
+            block_import,
+            sealing,
+            soft_deadline: Some(SOFT_DEADLINE_PERCENT),
+            select_chain: sc_consensus::LongestChain::new(node_builder.backend.clone()),
+            consensus_data_provider: Some(Box::new(
+                tc_consensus::OrchestratorManualSealAuraConsensusDataProvider::new(
+                    node_builder.client.clone(),
+                    node_builder.keystore_container.keystore(),
+                    para_id,
+                ),
+            )),
+            create_inherent_data_providers: move |block: H256, ()| {
+                let current_para_block = client
+                    .number(block)
+                    .expect("Header lookup should succeed")
+                    .expect("Header passed in as parent should be present in backend.");
+
+                let para_ids = client
+                    .runtime_api()
+                    .registered_paras(block)
+                    .expect("registered_paras runtime API should exist")
+                    .into_iter()
+                    .collect();
+
+                let downward_xcm_receiver = downward_xcm_receiver.clone();
+                let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
+
+                let client_for_xcm = client.clone();
+                async move {
+                    let mocked_author_noting =
+                        tp_author_noting_inherent::MockAuthorNotingInherentDataProvider {
+                            current_para_block,
+                            relay_offset: 1000,
+                            relay_blocks_per_para_block: 2,
+                            para_ids,
+                            slots_per_para_block: 1,
+                        };
+
+                    let time = MockTimestampInherentDataProvider;
+                    let mocked_parachain = MockValidationDataInherentDataProvider {
+                        current_para_block,
+                        relay_offset: 1000,
+                        relay_blocks_per_para_block: 2,
+                        // TODO: Recheck
+                        para_blocks_per_relay_epoch: 10,
+                        relay_randomness_config: (),
+                        xcm_config: MockXcmConfig::new(
+                            &*client_for_xcm,
+                            block,
+                            para_id,
+                            Default::default(),
+                        ),
+                        raw_downward_messages: downward_xcm_receiver.drain().collect(),
+                        raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
+                        additional_key_values: Some(mocked_author_noting.get_key_values().clone()),
+                    };
+
+                    Ok((time, mocked_parachain, mocked_author_noting))
+                }
+            },
+        })?;
+    }
 
     todo!()
 }
@@ -1599,34 +1659,6 @@ pub trait IdentifyVariant {
 impl IdentifyVariant for Box<dyn sc_service::ChainSpec> {
     fn is_dev(&self) -> bool {
         self.chain_type() == sc_chain_spec::ChainType::Development
-    }
-}
-
-/// Block authoring scheme to be used by the dev service.
-#[derive(Debug, Copy, Clone)]
-pub enum Sealing {
-    /// Author a block immediately upon receiving a transaction into the transaction pool
-    Instant,
-    /// Author a block upon receiving an RPC command
-    Manual,
-    /// Author blocks at a regular interval specified in milliseconds
-    Interval(u64),
-}
-
-impl FromStr for Sealing {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "instant" => Self::Instant,
-            "manual" => Self::Manual,
-            s => {
-                let millis = s
-                    .parse::<u64>()
-                    .map_err(|_| "couldn't decode sealing param")?;
-                Self::Interval(millis)
-            }
-        })
     }
 }
 

@@ -15,17 +15,22 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    async_io::Timer,
+    core::time::Duration,
     core_extensions::TypeIdentity,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_service::{build_relay_chain_interface, CollatorSybilResistance},
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
-    futures::FutureExt,
+    futures::{channel::mpsc, FutureExt, Stream, StreamExt},
     jsonrpsee::RpcModule,
     polkadot_primitives::CollatorPair,
     sc_client_api::Backend,
-    sc_consensus::ImportQueue,
+    sc_consensus::{block_import, BlockImport, ImportQueue},
+    sc_consensus_manual_seal::{
+        run_manual_seal, ConsensusDataProvider, EngineCommand, ManualSealParams,
+    },
     sc_executor::{
         HeapAllocStrategy, NativeElseWasmExecutor, NativeExecutionDispatch, WasmExecutor,
         DEFAULT_HEAP_ALLOC_STRATEGY,
@@ -42,9 +47,13 @@ use {
     sc_utils::mpsc::TracingUnboundedSender,
     sp_api::ConstructRuntimeApi,
     sp_block_builder::BlockBuilder,
+    sp_consensus::{EnableProofRecording, SelectChain},
+    sp_core::H256,
+    sp_inherents::CreateInherentDataProviders,
     sp_offchain::OffchainWorkerApi,
+    sp_runtime::Percent,
     sp_transaction_pool::runtime_api::TaggedTransactionQueue,
-    std::sync::Arc,
+    std::{str::FromStr, sync::Arc},
 };
 
 /// Functions in this module are generic over `Block`, `RuntimeApi`, and
@@ -66,7 +75,7 @@ macro_rules! T {
     }
 }
 
-pub struct CumulusNetwork<Block: cumulus_primitives_core::BlockT> {
+pub struct Network<Block: cumulus_primitives_core::BlockT> {
     pub network: Arc<NetworkService<Block, Block::Hash>>,
     pub system_rpc_tx: TracingUnboundedSender<sc_rpc::system::Request<Block>>,
     pub start_network: NetworkStarter,
@@ -90,13 +99,13 @@ pub struct NodeBuilder<
     Block,
     RuntimeApi,
     ParachainNativeExecutor,
-    // `cumulus_client_service::build_network` returns many important systems,
+    // `(cumulus_client_service/sc_service)::build_network` returns many important systems,
     // but can only be called with an `import_queue` which can be different in
     // each node. For that reason it is a `()` when calling `new`, then the
     // caller create the `import_queue` using systems contained in `NodeBuilder`,
     // then call `build_cumulus_network` with it to generate the cumulus systems.
-    Cumulus = (),
-    // The `TxHandler` is constructed in `build_cumulus_network`
+    Network = (),
+    // The `TxHandler` is constructed in `build_X_network`
     // and is then consumed when calling `spawn_common_tasks`.
     TxHandler = (),
 > where
@@ -113,11 +122,10 @@ pub struct NodeBuilder<
     pub telemetry: Option<Telemetry>,
     pub telemetry_worker_handle: Option<TelemetryWorkerHandle>,
 
-    pub relay_chain_interface: Arc<dyn RelayChainInterface>,
-    pub collator_key: Option<CollatorPair>,
     pub hwbench: Option<sc_sysinfo::HwBench>,
+    pub prometheus_registry: Option<substrate_prometheus_endpoint::Registry>,
 
-    pub cumulus: Cumulus,
+    pub network: Network,
     pub tx_handler_controller: TxHandler,
 }
 
@@ -130,8 +138,7 @@ where
     Block: cumulus_primitives_core::BlockT,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
     RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
-    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block>
-        + BlockBuilder<Block>
+    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
 {
     /// Create a new `NodeBuilder` which prepare objects required to launch a
     /// node. However it doesn't start anything, and doesn't provide any
@@ -139,8 +146,6 @@ where
     /// is different for each node).
     pub async fn new(
         parachain_config: &Configuration,
-        polkadot_config: Configuration,
-        collator_options: CollatorOptions,
         hwbench: Option<sc_sysinfo::HwBench>,
     ) -> Result<Self, sc_service::Error> {
         // Refactor: old new_partial + build_relay_chain_interface
@@ -177,7 +182,7 @@ where
 
         let executor = <T![Executor]>::new_with_wasm_executor(wasm);
 
-        let (client, backend, keystore_container, mut task_manager) =
+        let (client, backend, keystore_container, task_manager) =
             sc_service::new_full_parts::<Block, RuntimeApi, _>(
                 parachain_config,
                 telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
@@ -202,17 +207,6 @@ where
             client.clone(),
         );
 
-        let (relay_chain_interface, collator_key) = build_relay_chain_interface(
-            polkadot_config,
-            &parachain_config,
-            telemetry_worker_handle.clone(),
-            &mut task_manager,
-            collator_options.clone(),
-            hwbench.clone(),
-        )
-        .await
-        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
-
         Ok(Self {
             client,
             backend,
@@ -221,17 +215,16 @@ where
             telemetry_worker_handle,
             task_manager,
             keystore_container,
-            relay_chain_interface,
-            collator_key,
             hwbench,
-            cumulus: TypeIdentity::from_type(()),
+            prometheus_registry: parachain_config.prometheus_registry().cloned(),
+            network: TypeIdentity::from_type(()),
             tx_handler_controller: TypeIdentity::from_type(()),
         })
     }
 }
 
-impl<Block, RuntimeApi, ParachainNativeExecutor, Cumulus, TxHandler>
-    NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, Cumulus, TxHandler>
+impl<Block, RuntimeApi, ParachainNativeExecutor, NetworkT, TxHandler>
+    NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, NetworkT, TxHandler>
 where
     Block: cumulus_primitives_core::BlockT,
     ParachainNativeExecutor: NativeExecutionDispatch + 'static,
@@ -240,28 +233,51 @@ where
         + BlockBuilder<Block>
         + cumulus_primitives_core::CollectCollationInfo<Block>,
 {
+    pub async fn build_relay_chain_interface(
+        &mut self,
+        parachain_config: &Configuration,
+        polkadot_config: Configuration,
+        collator_options: CollatorOptions,
+    ) -> sc_service::error::Result<(
+        Arc<(dyn RelayChainInterface + 'static)>,
+        Option<CollatorPair>,
+    )> {
+        build_relay_chain_interface(
+            polkadot_config,
+            &parachain_config,
+            self.telemetry_worker_handle.clone(),
+            &mut self.task_manager,
+            collator_options.clone(),
+            self.hwbench.clone(),
+        )
+        .await
+        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))
+    }
+
     /// Given an import queue, calls `cumulus_client_service::build_network` and
-    /// stores the returned objects in `self.cumulus` and `self.tx_handler_controller`.
+    /// stores the returned objects in `self.network` and `self.tx_handler_controller`.
     ///
-    /// Can only be called once on a `NodeBuilder` that doesn't have yet cumulus
+    /// Can only be called once on a `NodeBuilder` that doesn't have yet network
     /// data.
-    pub async fn build_cumulus_network(
+    pub async fn build_cumulus_network<RCInterface>(
         self,
         parachain_config: &Configuration,
         para_id: ParaId,
         import_queue: impl ImportQueue<Block> + 'static,
+        relay_chain_interface: RCInterface,
     ) -> sc_service::error::Result<
         NodeBuilder<
             Block,
             RuntimeApi,
             ParachainNativeExecutor,
-            CumulusNetwork<Block>,
+            Network<Block>,
             TransactionsHandlerController<Block::Hash>,
         >,
     >
     where
-        Cumulus: TypeIdentity<Type = ()>,
+        NetworkT: TypeIdentity<Type = ()>,
         TxHandler: TypeIdentity<Type = ()>,
+        RCInterface: RelayChainInterface + Clone + 'static,
     {
         let Self {
             client,
@@ -271,10 +287,9 @@ where
             telemetry_worker_handle,
             task_manager,
             keystore_container,
-            relay_chain_interface,
-            collator_key,
             hwbench,
-            cumulus: _,
+            prometheus_registry,
+            network: _,
             tx_handler_controller: _,
         } = self;
 
@@ -288,7 +303,7 @@ where
                 spawn_handle: task_manager.spawn_handle(),
                 import_queue: import_queue,
                 para_id,
-                relay_chain_interface: relay_chain_interface.clone(),
+                relay_chain_interface: relay_chain_interface,
                 net_config,
                 sybil_resistance_level: CollatorSybilResistance::Resistant,
             })
@@ -302,10 +317,79 @@ where
             telemetry_worker_handle,
             task_manager,
             keystore_container,
-            relay_chain_interface,
-            collator_key,
             hwbench,
-            cumulus: CumulusNetwork {
+            prometheus_registry,
+            network: Network {
+                network,
+                system_rpc_tx,
+                start_network,
+                sync_service,
+            },
+            tx_handler_controller,
+        })
+    }
+
+    /// Given an import queue, calls `cumulus_client_service::build_network` and
+    /// stores the returned objects in `self.network` and `self.tx_handler_controller`.
+    ///
+    /// Can only be called once on a `NodeBuilder` that doesn't have yet network
+    /// data.
+    pub fn build_substrate_network(
+        self,
+        parachain_config: &Configuration,
+        import_queue: impl ImportQueue<Block> + 'static,
+    ) -> sc_service::error::Result<
+        NodeBuilder<
+            Block,
+            RuntimeApi,
+            ParachainNativeExecutor,
+            Network<Block>,
+            TransactionsHandlerController<Block::Hash>,
+        >,
+    >
+    where
+        NetworkT: TypeIdentity<Type = ()>,
+        TxHandler: TypeIdentity<Type = ()>,
+    {
+        let Self {
+            client,
+            backend,
+            transaction_pool,
+            telemetry,
+            telemetry_worker_handle,
+            task_manager,
+            keystore_container,
+            hwbench,
+            prometheus_registry,
+            network: _,
+            tx_handler_controller: _,
+        } = self;
+
+        let net_config = FullNetworkConfiguration::new(&parachain_config.network);
+
+        let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
+            sc_service::build_network(sc_service::BuildNetworkParams {
+                config: parachain_config,
+                client: client.clone(),
+                transaction_pool: transaction_pool.clone(),
+                spawn_handle: task_manager.spawn_handle(),
+                import_queue: import_queue,
+                warp_sync_params: None,
+                block_announce_validator_builder: None,
+                net_config,
+            })?;
+
+        Ok(NodeBuilder {
+            client,
+            backend,
+            transaction_pool,
+            telemetry,
+            telemetry_worker_handle,
+            task_manager,
+            keystore_container,
+            hwbench,
+            prometheus_registry,
+            network: Network {
                 network,
                 system_rpc_tx,
                 start_network,
@@ -319,6 +403,7 @@ where
     /// node. It consumes `self.tx_handler_controller` in the process, which means
     /// it can only be called once, and any other code that would need this
     /// controller should interact with it before calling this function.
+    #[must_use]
     pub fn spawn_common_tasks<TRpc>(
         self,
         parachain_config: Configuration,
@@ -329,10 +414,10 @@ where
             ) -> Result<RpcModule<TRpc>, sc_service::Error>,
         >,
     ) -> sc_service::error::Result<
-        NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, CumulusNetwork<Block>, ()>,
+        NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, Network<Block>, ()>,
     >
     where
-        Cumulus: TypeIdentity<Type = CumulusNetwork<Block>>,
+        NetworkT: TypeIdentity<Type = Network<Block>>,
         TxHandler: TypeIdentity<Type = TransactionsHandlerController<Block::Hash>>,
         Block::Hash: Unpin,
         Block::Header: Unpin,
@@ -350,10 +435,9 @@ where
             telemetry_worker_handle,
             mut task_manager,
             keystore_container,
-            relay_chain_interface,
-            collator_key,
             hwbench,
-            cumulus,
+            prometheus_registry,
+            network: cumulus,
             tx_handler_controller,
         } = self;
 
@@ -383,7 +467,7 @@ where
             );
         }
 
-        sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+        let _rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
             rpc_builder,
             client: client.clone(),
             transaction_pool: transaction_pool.clone(),
@@ -427,11 +511,138 @@ where
             telemetry_worker_handle,
             task_manager,
             keystore_container,
-            relay_chain_interface,
-            collator_key,
             hwbench,
-            cumulus: TypeIdentity::from_type(cumulus),
+            prometheus_registry,
+            network: TypeIdentity::from_type(cumulus),
             tx_handler_controller: TypeIdentity::from_type(()),
         })
     }
+
+    pub fn install_manual_seal<BI, SC, CIDP>(
+        &mut self,
+        manual_seal_config: ManualSealConfiguration<Block, BI, SC, CIDP>,
+    ) -> sc_service::error::Result<Option<mpsc::Sender<EngineCommand<Block::Hash>>>>
+    where
+        BI: BlockImport<Block, Error = sp_consensus::Error> + Send + Sync + 'static,
+        SC: SelectChain<Block> + 'static,
+        CIDP: CreateInherentDataProviders<Block, ()> + 'static,
+    {
+        let ManualSealConfiguration {
+            sealing,
+            soft_deadline,
+            block_import,
+            select_chain,
+            consensus_data_provider,
+            create_inherent_data_providers,
+        } = manual_seal_config;
+
+        let prometheus_registry = self.prometheus_registry.clone();
+
+        let mut env = sc_basic_authorship::ProposerFactory::new(
+            self.task_manager.spawn_handle(),
+            self.client.clone(),
+            self.transaction_pool.clone(),
+            prometheus_registry.as_ref(),
+            self.telemetry.as_ref().map(|x| x.handle()),
+        );
+
+        // // Create channels for mocked XCM messages.
+        // let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
+        // let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
+        // let xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
+        let mut command_sink = None;
+
+        if let Some(deadline) = soft_deadline {
+            env.set_soft_deadline(deadline);
+        }
+
+        let commands_stream: Box<
+            dyn Stream<Item = EngineCommand<Block::Hash>> + Send + Sync + Unpin,
+        > = match sealing {
+            Sealing::Instant => {
+                Box::new(
+                    // This bit cribbed from the implementation of instant seal.
+                    self.transaction_pool
+                        .pool()
+                        .validated_pool()
+                        .import_notification_stream()
+                        .map(|_| EngineCommand::SealNewBlock {
+                            create_empty: false,
+                            finalize: false,
+                            parent_hash: None,
+                            sender: None,
+                        }),
+                )
+            }
+            Sealing::Manual => {
+                let (sink, stream) = futures::channel::mpsc::channel(1000);
+                // Keep a reference to the other end of the channel. It goes to the RPC.
+                command_sink = Some(sink);
+                Box::new(stream)
+            }
+            Sealing::Interval(millis) => Box::new(futures::StreamExt::map(
+                Timer::interval(Duration::from_millis(millis)),
+                |_| EngineCommand::SealNewBlock {
+                    create_empty: true,
+                    finalize: false,
+                    parent_hash: None,
+                    sender: None,
+                },
+            )),
+        };
+
+        self.task_manager.spawn_essential_handle().spawn_blocking(
+            "authorship_task",
+            Some("block-authoring"),
+            run_manual_seal(ManualSealParams {
+                block_import,
+                env,
+                client: self.client.clone(),
+                pool: self.transaction_pool.clone(),
+                commands_stream,
+                select_chain,
+                consensus_data_provider,
+                create_inherent_data_providers,
+            }),
+        );
+
+        Ok(command_sink)
+    }
+}
+
+/// Block authoring scheme to be used by the dev service.
+#[derive(Debug, Copy, Clone)]
+pub enum Sealing {
+    /// Author a block immediately upon receiving a transaction into the transaction pool
+    Instant,
+    /// Author a block upon receiving an RPC command
+    Manual,
+    /// Author blocks at a regular interval specified in milliseconds
+    Interval(u64),
+}
+
+impl FromStr for Sealing {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "instant" => Self::Instant,
+            "manual" => Self::Manual,
+            s => {
+                let millis = s
+                    .parse::<u64>()
+                    .map_err(|_| "couldn't decode sealing param")?;
+                Self::Interval(millis)
+            }
+        })
+    }
+}
+
+pub struct ManualSealConfiguration<B, BI, SC, CIDP> {
+    pub sealing: Sealing,
+    pub block_import: BI,
+    pub soft_deadline: Option<Percent>,
+    pub select_chain: SC,
+    pub consensus_data_provider: Option<Box<dyn ConsensusDataProvider<B, Proof = ()>>>,
+    pub create_inherent_data_providers: CIDP,
 }
