@@ -38,8 +38,10 @@ describeSuite({
                 const expectedOrchestratorReward = chainRewards / BigInt(numberOfChains.length + 1);
                 const reward = await filterRewardFromOrchestrator(events, account);
                 // we know there might be rounding errors, so we always check it is in the range +-1
-                expect(reward >= expectedOrchestratorReward - 1n && reward <= expectedOrchestratorReward + 1n).to.be
-                    .true;
+                expect(
+                    reward >= expectedOrchestratorReward - 1n && reward <= expectedOrchestratorReward + 1n,
+                    `orchestrator rewards not in the range, Actual: ${reward}, Expected:  ${expectedOrchestratorReward}`
+                ).to.be.true;
             },
         });
 
@@ -60,7 +62,10 @@ describeSuite({
                 for (const index in rewardEvents) {
                     expect(
                         rewardEvents[index].balance.toBigInt() >= expectedChainReward - 1n &&
-                            rewardEvents[index].balance.toBigInt() <= expectedChainReward + 1n
+                            rewardEvents[index].balance.toBigInt() <= expectedChainReward + 1n,
+                        `rewardEvents not in the range, Index: ${index} Actual: ${rewardEvents[
+                            index
+                        ].balance.toBigInt()}, Expected:  ${expectedChainReward}`
                     ).to.be.true;
                 }
             },
@@ -92,8 +97,10 @@ describeSuite({
                 const expectedIssuanceIncrement = (supplyBefore * 19n) / 1_000_000_000n;
 
                 // we know there might be rounding errors, so we always check it is in the range +-1
-                expect(issuance >= expectedIssuanceIncrement - 1n && issuance <= expectedIssuanceIncrement + 1n).to.be
-                    .true;
+                expect(
+                    issuance >= expectedIssuanceIncrement - 1n && issuance <= expectedIssuanceIncrement + 1n,
+                    `Issuance not in the range, Actual: ${issuance}, Expected:  ${expectedIssuanceIncrement}`
+                ).to.be.true;
                 expect(supplyAfter).to.equal(supplyBefore + issuance);
             },
         });
@@ -148,7 +155,10 @@ describeSuite({
                 // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(
                     parachainBondBalanceAfter - parachainBondBalanceBefore >= expectedAmountParachainBond - 1n &&
-                        parachainBondBalanceAfter - parachainBondBalanceBefore <= expectedAmountParachainBond + 1n
+                        parachainBondBalanceAfter - parachainBondBalanceBefore <= expectedAmountParachainBond + 1n,
+                    `Parachain Bond rewards not in the range, Actual: ${
+                        parachainBondBalanceAfter - parachainBondBalanceBefore
+                    }, Expected:  ${expectedAmountParachainBond}`
                 ).to.be.true;
             },
         });
