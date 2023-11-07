@@ -114,6 +114,27 @@ thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::ne
 /// Provide a mock duration starting at 0 in millisecond for timestamp inherent.
 /// Each call will increment timestamp by slot_duration making Aura think time has passed.
 struct MockTimestampInherentDataProvider;
+#[async_trait::async_trait]
+impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
+    async fn provide_inherent_data(
+        &self,
+        inherent_data: &mut sp_inherents::InherentData,
+    ) -> Result<(), sp_inherents::Error> {
+        TIMESTAMP.with(|x| {
+            *x.borrow_mut() += dancebox_runtime::SLOT_DURATION;
+            inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
+        })
+    }
+
+    async fn try_handle_error(
+        &self,
+        _identifier: &sp_inherents::InherentIdentifier,
+        _error: &[u8],
+    ) -> Option<Result<(), sp_inherents::Error>> {
+        // The pallet never reports error.
+        None
+    }
+}
 
 /// Starts a `ServiceBuilder` for a full service.
 ///
@@ -336,29 +357,11 @@ async fn start_dev_node_impl2(
     // the relaychain)
     let mut node_builder = node_builder.build_substrate_network(&parachain_config, import_queue)?;
 
-    let rpc_builder = {
-        let client = node_builder.client.clone();
-        let transaction_pool = node_builder.transaction_pool.clone();
-
-        Box::new(move |deny_unsafe, _| {
-            let deps = crate::rpc::FullDeps {
-                client: client.clone(),
-                pool: transaction_pool.clone(),
-                deny_unsafe,
-                command_sink: None,
-                xcm_senders: None,
-            };
-
-            crate::rpc::create_full(deps).map_err(Into::into)
-        })
-    };
-
-    let is_authority = parachain_config.role.is_authority();
-    let mut node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
-
+    // If we're running a collator dev node we must install manual seal block
+    // production.
     let mut command_sink = None;
     let mut xcm_senders = None;
-    if is_authority {
+    if parachain_config.role.is_authority() {
         let client = node_builder.client.clone();
         let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
         let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
@@ -428,7 +431,31 @@ async fn start_dev_node_impl2(
         })?;
     }
 
-    todo!()
+    // This node RPC builder.
+    let rpc_builder = {
+        let client = node_builder.client.clone();
+        let transaction_pool = node_builder.transaction_pool.clone();
+
+        Box::new(move |deny_unsafe, _| {
+            let deps = crate::rpc::FullDeps {
+                client: client.clone(),
+                pool: transaction_pool.clone(),
+                deny_unsafe,
+                command_sink: command_sink.clone(),
+                xcm_senders: xcm_senders.clone(),
+            };
+
+            crate::rpc::create_full(deps).map_err(Into::into)
+        })
+    };
+
+    // We spawn all the common substrate tasks to properly run a node.
+    let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
+
+    // We start the networking part.
+    node_builder.network.start_network.start_network();
+
+    Ok((node_builder.task_manager, node_builder.client))
 }
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
@@ -1502,28 +1529,6 @@ pub fn new_dev(
         );
 
         let client_set_aside_for_cidp = client.clone();
-
-        #[async_trait::async_trait]
-        impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
-            async fn provide_inherent_data(
-                &self,
-                inherent_data: &mut sp_inherents::InherentData,
-            ) -> Result<(), sp_inherents::Error> {
-                TIMESTAMP.with(|x| {
-                    *x.borrow_mut() += dancebox_runtime::SLOT_DURATION;
-                    inherent_data.put_data(sp_timestamp::INHERENT_IDENTIFIER, &*x.borrow())
-                })
-            }
-
-            async fn try_handle_error(
-                &self,
-                _identifier: &sp_inherents::InherentIdentifier,
-                _error: &[u8],
-            ) -> Option<Result<(), sp_inherents::Error>> {
-                // The pallet never reports error.
-                None
-            }
-        }
 
         task_manager.spawn_essential_handle().spawn_blocking(
             "authorship_task",
