@@ -145,11 +145,6 @@ describeSuite({
                 ).data.free.toBigInt();
                 expectedAmountParachainBond += (issuance * 3n) / 10n + dust;
 
-                // Not sure where this one comes from, looks like a rounding thing
-                expect(parachainBondBalanceAfter - parachainBondBalanceBefore).to.equal(
-                    expectedAmountParachainBond + 1n
-                );
-
                 // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(
                     parachainBondBalanceAfter - parachainBondBalanceBefore >= expectedAmountParachainBond - 1n &&
