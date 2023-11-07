@@ -293,69 +293,73 @@ async fn start_node_impl(
 
     // Channel to send messages to start/stop container chains
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
-    let params = new_partial(&parachain_config)?;
-    let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
 
-    let client = params.client.clone();
-    let backend = params.backend.clone();
-    let mut task_manager = params.task_manager;
+    // Create a `NodeBuilder` which helps setup parachain nodes common systems.
+    let mut node_builder =
+        node_common::service::NodeBuilder::new(&parachain_config, hwbench.clone())?;
 
-    let (relay_chain_interface, collator_key) = build_relay_chain_interface(
-        polkadot_config,
-        &parachain_config,
-        telemetry_worker_handle,
-        &mut task_manager,
-        collator_options.clone(),
-        hwbench.clone(),
-    )
-    .await
-    .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+    // The nimbus import queue ONLY checks the signature correctness
+    // Any other checks corresponding to the author-correctness should be done
+    // in the runtime
+    let block_import =
+        ParachainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
+    let import_queue = nimbus_consensus::import_queue(
+        node_builder.client.clone(),
+        block_import.clone(),
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
 
-    let force_authoring = parachain_config.force_authoring;
-    let validator = parachain_config.role.is_authority();
-    let prometheus_registry = parachain_config.prometheus_registry().cloned();
-    let transaction_pool = params.transaction_pool.clone();
-    let import_queue_service = params.import_queue.service();
-    let net_config = FullNetworkConfiguration::new(&parachain_config.network);
+            Ok((time,))
+        },
+        &node_builder.task_manager.spawn_essential_handle(),
+        parachain_config.prometheus_registry(),
+        false,
+    )?;
 
-    let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
-        cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
-            parachain_config: &parachain_config,
-            client: client.clone(),
-            transaction_pool: transaction_pool.clone(),
-            spawn_handle: task_manager.spawn_handle(),
-            import_queue: params.import_queue,
-            para_id,
-            relay_chain_interface: relay_chain_interface.clone(),
-            net_config,
-            sybil_resistance_level: CollatorSybilResistance::Resistant,
-        })
+    // let params = new_partial(&parachain_config)?;
+    // let (block_import, mut telemetry, telemetry_worker_handle) = params.other;
+
+    // let client = params.client.clone();
+    // let backend = params.backend.clone();
+    // let mut task_manager = params.task_manager;
+
+    let (relay_chain_interface, collator_key) = node_builder
+        .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
         .await?;
 
-    if parachain_config.offchain_worker.enabled {
-        task_manager.spawn_handle().spawn(
-            "offchain-workers-runner",
-            "offchain-work",
-            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
-                runtime_api_provider: client.clone(),
-                keystore: Some(params.keystore_container.keystore()),
-                offchain_db: backend.offchain_storage(),
-                transaction_pool: Some(OffchainTransactionPoolFactory::new(
-                    transaction_pool.clone(),
-                )),
-                network_provider: network.clone(),
-                is_validator: parachain_config.role.is_authority(),
-                enable_http_requests: false,
-                custom_extensions: move |_| vec![],
-            })
-            .run(client.clone(), task_manager.spawn_handle())
-            .boxed(),
-        );
-    }
+    // let force_authoring = parachain_config.force_authoring;
+    let validator = parachain_config.role.is_authority();
+    // let prometheus_registry = parachain_config.prometheus_registry().cloned();
+    // let transaction_pool = params.transaction_pool.clone();
+    // let import_queue_service = params.import_queue.service();
+    // let net_config = FullNetworkConfiguration::new(&parachain_config.network);
+
+    // let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
+    //     cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
+    //         parachain_config: &parachain_config,
+    //         client: client.clone(),
+    //         transaction_pool: transaction_pool.clone(),
+    //         spawn_handle: task_manager.spawn_handle(),
+    //         import_queue: params.import_queue,
+    //         para_id,
+    //         relay_chain_interface: relay_chain_interface.clone(),
+    //         net_config,
+    //         sybil_resistance_level: CollatorSybilResistance::Resistant,
+    //     })
+    //     .await?;
+
+    let node_builder = node_builder
+        .build_cumulus_network(
+            &parachain_config,
+            para_id,
+            import_queue,
+            relay_chain_interface.clone(),
+        )
+        .await?;
 
     let rpc_builder = {
-        let client = client.clone();
-        let transaction_pool = transaction_pool.clone();
+        let client = node_builder.client.clone();
+        let transaction_pool = node_builder.transaction_pool.clone();
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
@@ -370,46 +374,69 @@ async fn start_node_impl(
         })
     };
 
-    sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-        rpc_builder,
-        client: client.clone(),
-        transaction_pool: transaction_pool.clone(),
-        task_manager: &mut task_manager,
-        config: parachain_config,
-        keystore: params.keystore_container.keystore(),
-        backend: backend.clone(),
-        network: network.clone(),
-        system_rpc_tx,
-        tx_handler_controller,
-        telemetry: telemetry.as_mut(),
-        sync_service: sync_service.clone(),
-    })?;
+    let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
-    if let Some(hwbench) = hwbench {
-        sc_sysinfo::print_hwbench(&hwbench);
-        // Here you can check whether the hardware meets your chains' requirements. Putting a link
-        // in there and swapping out the requirements for your own are probably a good idea. The
-        // requirements for a para-chain are dictated by its relay-chain.
-        if !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) && validator {
-            log::warn!(
-                "⚠️  The hardware does not meet the minimal requirements for role 'Authority'."
-            );
-        }
+    // if parachain_config.offchain_worker.enabled {
+    //     node_builder.task_manager.spawn_handle().spawn(
+    //         "offchain-workers-runner",
+    //         "offchain-work",
+    //         sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+    //             runtime_api_provider: node_builder.client.clone(),
+    //             keystore: Some(node_builder.keystore_container.keystore()),
+    //             offchain_db: node_builder.backend.offchain_storage(),
+    //             transaction_pool: Some(OffchainTransactionPoolFactory::new(
+    //                 node_builder.transaction_pool.clone(),
+    //             )),
+    //             network_provider: node_builder.network.network.clone(),
+    //             is_validator: parachain_config.role.is_authority(),
+    //             enable_http_requests: false,
+    //             custom_extensions: move |_| vec![],
+    //         })
+    //         .run(node_builder.client.clone(), node_builder.task_manager.spawn_handle())
+    //         .boxed(),
+    //     );
+    // }
 
-        if let Some(ref mut telemetry) = telemetry {
-            let telemetry_handle = telemetry.handle();
-            task_manager.spawn_handle().spawn(
-                "telemetry_hwbench",
-                None,
-                sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
-            );
-        }
-    }
+    // sc_service::spawn_tasks(sc_service::SpawnTasksParams {
+    //     rpc_builder,
+    //     client: client.clone(),
+    //     transaction_pool: transaction_pool.clone(),
+    //     task_manager: &mut task_manager,
+    //     config: parachain_config,
+    //     keystore: params.keystore_container.keystore(),
+    //     backend: backend.clone(),
+    //     network: network.clone(),
+    //     system_rpc_tx,
+    //     tx_handler_controller,
+    //     telemetry: telemetry.as_mut(),
+    //     sync_service: sync_service.clone(),
+    // })?;
 
-    let announce_block = {
-        let sync_service = sync_service.clone();
-        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
-    };
+    // if let Some(hwbench) = hwbench {
+    //     sc_sysinfo::print_hwbench(&hwbench);
+    //     // Here you can check whether the hardware meets your chains' requirements. Putting a link
+    //     // in there and swapping out the requirements for your own are probably a good idea. The
+    //     // requirements for a para-chain are dictated by its relay-chain.
+    //     if !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) && validator {
+    //         log::warn!(
+    //             "⚠️  The hardware does not meet the minimal requirements for role 'Authority'."
+    //         );
+    //     }
+
+    //     if let Some(ref mut telemetry) = telemetry {
+    //         let telemetry_handle = telemetry.handle();
+    //         task_manager.spawn_handle().spawn(
+    //             "telemetry_hwbench",
+    //             None,
+    //             sc_sysinfo::initialize_hwbench_telemetry(telemetry_handle, hwbench),
+    //         );
+    //     }
+    // }
+
+    // let announce_block = {
+    //     let sync_service = sync_service.clone();
+    //     Arc::new(move |hash, data| sync_service.announce_block(hash, data))
+    // };
 
     let relay_chain_slot_duration = Duration::from_secs(6);
 
@@ -417,104 +444,112 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
 
-    let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
-        client: client.clone(),
-        backend: backend.clone(),
-        sync_oracle: sync_service.clone(),
-        overseer_handle: overseer_handle.clone(),
+    // let sync_keystore = node_builder.keystore_container.keystore();
+    // let mut collate_on_tanssi = None;
+
+    let mut node_builder = if validator {
+        todo!("node_builder.start_collator");
+
+        // let parachain_consensus = build_consensus_orchestrator(
+        //     node_builder.client.clone(),
+        //     block_import,
+        //     node_builder.prometheus_registry.as_ref(),
+        //     node_builder.telemetry.as_ref().map(|t| t.handle()),
+        //     &node_builder.task_manager,
+        //     relay_chain_interface.clone(),
+        //     node_builder.transaction_pool,
+        //     node_builder.network.sync_service.clone(),
+        //     node_builder.keystore_container.keystore(),
+        //     force_authoring,
+        //     para_id,
+        // )?;
+
+        // // Start task which detects para id assignment, and starts/stops container chains.
+        // // Note that if this node was started without a `container_chain_config`, we don't
+        // // support collation on container chains, so there is no need to detect changes to assignment
+        // if container_chain_config.is_some() {
+        //     build_check_assigned_para_id(
+        //         node_builder.client.clone(),
+        //         sync_keystore.clone(),
+        //         cc_spawn_tx.clone(),
+        //         node_builder.ask_manager.spawn_essential_handle(),
+        //     );
+        // }
+
+        // let spawner = task_manager.spawn_handle();
+        // let params = StartCollatorParams {
+        //     para_id,
+        //     block_status: node_builder.client.clone(),
+        //     announce_block: announce_block.clone(),
+        //     client: node_builder.client.clone(),
+        //     task_manager: &mut node_builder.task_manager,
+        //     relay_chain_interface: relay_chain_interface.clone(),
+        //     spawner: spawner.clone(),
+        //     parachain_consensus: parachain_consensus.clone(),
+        //     import_queue: import_queue_service,
+        //     collator_key: collator_key
+        //         .clone()
+        //         .expect("Command line arguments do not allow this. qed"),
+        //     relay_chain_slot_duration,
+        //     recovery_handle: Box::new(overseer_handle.clone()),
+        //     sync_service,
+        // };
+
+        // let client = client.clone();
+        // let collator_key = collator_key.clone();
+        // // TODO: change for async backing
+        // collate_on_tanssi = Some(move || async move {
+        //     #[allow(deprecated)]
+        //     cumulus_client_collator::start_collator(cumulus_client_collator::StartCollatorParams {
+        //         runtime_api: client.clone(),
+        //         block_status: client.clone(),
+        //         announce_block,
+        //         overseer_handle,
+        //         spawner,
+        //         para_id,
+        //         key: collator_key
+        //             .clone()
+        //             .expect("Command line arguments do not allow this. qed"),
+        //         parachain_consensus,
+        //     })
+        //     .await;
+        // });
+
+        // // TODO: change for async backing
+        // #[allow(deprecated)]
+        // start_collator(params).await?;
+    } else {
+        node_builder.start_full_node(
+            para_id,
+            relay_chain_interface.clone(),
+            relay_chain_slot_duration,
+        )?
+        // let params = StartFullNodeParams {
+        //     client: client.clone(),
+        //     announce_block,
+        //     task_manager: &mut task_manager,
+        //     para_id,
+        //     relay_chain_interface: relay_chain_interface.clone(),
+        //     relay_chain_slot_duration,
+        //     import_queue: import_queue_service,
+        //     recovery_handle: Box::new(overseer_handle),
+        //     sync_service,
+        // };
+
+        // // TODO: change for async backing
+        // #[allow(deprecated)]
+        // start_full_node(params)?;
     };
 
-    let sync_keystore = params.keystore_container.keystore();
-    let mut collate_on_tanssi = None;
+    node_builder.network.start_network.start_network();
 
-    if validator {
-        let parachain_consensus = build_consensus_orchestrator(
-            client.clone(),
-            block_import,
-            prometheus_registry.as_ref(),
-            telemetry.as_ref().map(|t| t.handle()),
-            &task_manager,
-            relay_chain_interface.clone(),
-            transaction_pool,
-            sync_service.clone(),
-            params.keystore_container.keystore(),
-            force_authoring,
-            para_id,
-        )?;
-
-        // Start task which detects para id assignment, and starts/stops container chains.
-        // Note that if this node was started without a `container_chain_config`, we don't
-        // support collation on container chains, so there is no need to detect changes to assignment
-        if container_chain_config.is_some() {
-            build_check_assigned_para_id(
-                client.clone(),
-                sync_keystore.clone(),
-                cc_spawn_tx.clone(),
-                task_manager.spawn_essential_handle(),
-            );
-        }
-
-        let spawner = task_manager.spawn_handle();
-        let params = StartCollatorParams {
-            para_id,
-            block_status: client.clone(),
-            announce_block: announce_block.clone(),
-            client: client.clone(),
-            task_manager: &mut task_manager,
-            relay_chain_interface: relay_chain_interface.clone(),
-            spawner: spawner.clone(),
-            parachain_consensus: parachain_consensus.clone(),
-            import_queue: import_queue_service,
-            collator_key: collator_key
-                .clone()
-                .expect("Command line arguments do not allow this. qed"),
-            relay_chain_slot_duration,
-            recovery_handle: Box::new(overseer_handle.clone()),
-            sync_service,
-        };
-
-        let client = client.clone();
-        let collator_key = collator_key.clone();
-        // TODO: change for async backing
-        collate_on_tanssi = Some(move || async move {
-            #[allow(deprecated)]
-            cumulus_client_collator::start_collator(cumulus_client_collator::StartCollatorParams {
-                runtime_api: client.clone(),
-                block_status: client.clone(),
-                announce_block,
-                overseer_handle,
-                spawner,
-                para_id,
-                key: collator_key
-                    .clone()
-                    .expect("Command line arguments do not allow this. qed"),
-                parachain_consensus,
-            })
-            .await;
-        });
-
-        // TODO: change for async backing
-        #[allow(deprecated)]
-        start_collator(params).await?;
-    } else {
-        let params = StartFullNodeParams {
-            client: client.clone(),
-            announce_block,
-            task_manager: &mut task_manager,
-            para_id,
-            relay_chain_interface: relay_chain_interface.clone(),
-            relay_chain_slot_duration,
-            import_queue: import_queue_service,
-            recovery_handle: Box::new(overseer_handle),
-            sync_service,
-        };
-
-        // TODO: change for async backing
-        #[allow(deprecated)]
-        start_full_node(params)?;
-    }
-
-    start_network.start_network();
+    let sync_keystore = node_builder.keystore_container.keystore();
+    let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
+        client: node_builder.client.clone(),
+        backend: node_builder.backend.clone(),
+        sync_oracle: node_builder.network.sync_service.clone(),
+        overseer_handle: overseer_handle.clone(),
+    };
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
         // If the orchestrator chain is running as a full-node, we start a full node for the
@@ -533,8 +568,8 @@ async fn start_node_impl(
         }
 
         // Start container chain spawner task. This will start and stop container chains on demand.
-        let orchestrator_client = client.clone();
-        let spawn_handle = task_manager.spawn_handle();
+        let orchestrator_client = node_builder.client.clone();
+        let spawn_handle = node_builder.task_manager.spawn_handle();
         let container_chain_spawner = ContainerChainSpawner {
             orchestrator_chain_interface: orchestrator_chain_interface_builder.build(),
             orchestrator_client,
@@ -549,24 +584,25 @@ async fn start_node_impl(
             validator,
             spawn_handle,
             state: Default::default(),
-            collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
+            collate_on_tanssi: todo!(),
+            // collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
         };
         let state = container_chain_spawner.state.clone();
 
-        task_manager.spawn_essential_handle().spawn(
+        node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-rx-loop",
             None,
             container_chain_spawner.rx_loop(cc_spawn_rx),
         );
 
-        task_manager.spawn_essential_handle().spawn(
+        node_builder.task_manager.spawn_essential_handle().spawn(
             "container-chain-spawner-debug-state",
             None,
             crate::container_chain_monitor::monitor_task(state),
         )
     }
 
-    Ok((task_manager, client))
+    Ok((node_builder.task_manager, node_builder.client))
 }
 
 // Log string that will be shown for the container chain: `[Container-2000]`.
