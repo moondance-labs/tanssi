@@ -695,9 +695,10 @@ pub struct RemoveParaIdsWithNoCreditsImpl;
 
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
-        let credits_for_2_sessions = 100; // TODO
+        let blocks_per_session = Period::get();
+        let credits_for_2_sessions = 2 * blocks_per_session;
         para_ids.retain(|para_id| {
-            // Check if it has enough credits for producing blocks for 2 sessions
+            // Check if the container chain has enough credits for producing blocks for 2 sessions
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 

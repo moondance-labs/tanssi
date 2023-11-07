@@ -19,9 +19,12 @@
 use {
     common::*,
     cumulus_primitives_core::ParaId,
-    dancebox_runtime::migrations::{
-        CollatorSelectionInvulnerablesValue, MigrateConfigurationFullRotationPeriod,
-        MigrateInvulnerables,
+    dancebox_runtime::{
+        migrations::{
+            CollatorSelectionInvulnerablesValue, MigrateConfigurationFullRotationPeriod,
+            MigrateInvulnerables,
+        },
+        BlockProductionCost,
     },
     frame_support::{assert_noop, assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -36,6 +39,7 @@ use {
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
+    pallet_services_payment::ProvideBlockProductionCost,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
@@ -644,6 +648,240 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
                 assignment.orchestrator_chain,
                 vec![ALICE.into(), BOB.into()]
             );
+        });
+}
+
+#[test]
+fn test_paras_registered_but_zero_credits() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // Assert current slot gets updated
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
+
+            // Alice and Bob collate in our chain
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
+
+            assert_ok!(
+                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ()
+            );
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+            run_to_session(2u32);
+
+            // Nobody should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+        });
+}
+
+#[test]
+fn test_paras_registered_but_not_enough_credits() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // Assert current slot gets updated
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
+
+            // Alice and Bob collate in our chain
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
+
+            assert_ok!(
+                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ()
+            );
+            // Purchase 1 credit less that what is needed
+            let credits_1001 = dancebox_runtime::Period::get() * 2 - 1;
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                credits_1001,
+                None,
+            ));
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+            run_to_session(2u32);
+            // Nobody should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+
+            // Now purchase the missing block credit
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                1,
+                None,
+            ));
+
+            run_to_session(4u32);
+            // Charlie and Dave should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+        });
+}
+
+#[test]
+fn test_paras_registered_but_only_credits_for_1_session() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // Assert current slot gets updated
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
+
+            // Alice and Bob collate in our chain
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
+
+            assert_ok!(
+                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ()
+            );
+            // Purchase only enough credits for 1 session
+            let credits_1001 = dancebox_runtime::Period::get() * 2;
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                credits_1001,
+                None,
+            ));
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+            run_to_session(2u32);
+            // Charlie and Dave should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            // No credits are consumed if the container chain is not producing blocks
+            run_block();
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits, credits_1001);
+
+            // Simulate block inclusion from container chain 1001
+            let mut sproof = ParaHeaderSproofBuilder::default();
+            let slot: u64 = 5;
+            let mut s = ParaHeaderSproofBuilderItem::default();
+            s.para_id = 1001.into();
+            s.author_id = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: 1,
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode())],
+                },
+            });
+            sproof.items.push(s);
+            // TODO: this seems to break because of the function `relay_chain_state_proof`, which is used to
+            // read randomness from the relay. Panic msg:
+            // 'Invalid relay chain state proof, already constructed in `set_validation_data`: RootMismatch'
+            set_author_noting_inherent_data(sproof);
+
+            run_block();
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits, credits_1001 - 1);
+
+            run_to_session(4u32);
+            // Nobody should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+
+            // The container chain only produced one block, so it only consumed one block credit.
+            // (it could have produced more blocks, but at most it would have consumed `Period::get()` credits)
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits, credits_1001 - 1);
         });
 }
 
@@ -4031,5 +4269,49 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
                 "CollatorAssignment did not give priority to invulnerable DAVE: {:?}",
                 CollatorAssignment::collator_container_chain()
             );
+        });
+}
+
+#[test]
+fn test_can_buy_credits_before_registering_para() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // Try to buy the maximum amount of credits
+            let balance_before = System::account(AccountId::from(ALICE)).data.free;
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                u32::MAX,
+                None,
+            ));
+            let balance_after = System::account(AccountId::from(ALICE)).data.free;
+
+            // But only up to MaxCreditsStored have actually been purchased
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get());
+
+            let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
+                * u128::from(dancebox_runtime::MaxCreditsStored::get());
+            assert_eq!(balance_before - balance_after, expected_cost);
         });
 }
