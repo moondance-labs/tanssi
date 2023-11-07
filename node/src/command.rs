@@ -466,7 +466,7 @@ pub fn run() -> Result<()> {
 					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string()) || cli.run.dev_service;
 
 				if dev_service {
-					return crate::service::new_dev(config, cli.run.sealing, hwbench, id).map_err(Into::into)
+					return crate::service::start_dev_node(config, cli.run.sealing, hwbench, id).map_err(Into::into)
 				}
 
 				let parachain_account =

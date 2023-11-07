@@ -142,13 +142,14 @@ where
 {
     /// Create a new `NodeBuilder` which prepare objects required to launch a
     /// node. However it doesn't start anything, and doesn't provide any
-    /// cumulus-dependent objects (as it requires an import queue, which usually
+    /// network-dependent objects (as it requires an import queue, which usually
     /// is different for each node).
-    pub async fn new(
+    #[must_use]
+    pub fn new(
         parachain_config: &Configuration,
         hwbench: Option<sc_sysinfo::HwBench>,
     ) -> Result<Self, sc_service::Error> {
-        // Refactor: old new_partial + build_relay_chain_interface
+        // Refactor: old new_partial
 
         let telemetry = parachain_config
             .telemetry_endpoints
@@ -233,6 +234,7 @@ where
         + BlockBuilder<Block>
         + cumulus_primitives_core::CollectCollationInfo<Block>,
 {
+    #[must_use]
     pub async fn build_relay_chain_interface(
         &mut self,
         parachain_config: &Configuration,
@@ -259,6 +261,7 @@ where
     ///
     /// Can only be called once on a `NodeBuilder` that doesn't have yet network
     /// data.
+    #[must_use]
     pub async fn build_cumulus_network<RCInterface>(
         self,
         parachain_config: &Configuration,
@@ -329,11 +332,12 @@ where
         })
     }
 
-    /// Given an import queue, calls `cumulus_client_service::build_network` and
+    /// Given an import queue, calls `sc_service::build_network` and
     /// stores the returned objects in `self.network` and `self.tx_handler_controller`.
     ///
     /// Can only be called once on a `NodeBuilder` that doesn't have yet network
     /// data.
+    #[must_use]
     pub fn build_substrate_network(
         self,
         parachain_config: &Configuration,
@@ -399,7 +403,7 @@ where
         })
     }
 
-    /// Given an `rpc_builder`, spawns the common tasks of a Substrate + Cumulus
+    /// Given an `rpc_builder`, spawns the common tasks of a Substrate
     /// node. It consumes `self.tx_handler_controller` in the process, which means
     /// it can only be called once, and any other code that would need this
     /// controller should interact with it before calling this function.
