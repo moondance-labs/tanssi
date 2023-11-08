@@ -293,6 +293,11 @@ fn testnet_genesis(
     mock_container_chains: &[ParaId],
     configuration: pallet_configuration::GenesisConfig<dancebox_runtime::Runtime>,
 ) -> dancebox_runtime::RuntimeGenesisConfig {
+    let accounts_with_ed = vec![
+        dancebox_runtime::StakingAccount::get(),
+        dancebox_runtime::ParachainBondAccount::get(),
+        dancebox_runtime::PendingRewardsAccount::get(),
+    ];
     dancebox_runtime::RuntimeGenesisConfig {
         system: dancebox_runtime::SystemConfig {
             code: dancebox_runtime::WASM_BINARY
@@ -305,6 +310,12 @@ fn testnet_genesis(
                 .iter()
                 .cloned()
                 .map(|k| (k, 1 << 60))
+                .chain(
+                    accounts_with_ed
+                        .iter()
+                        .cloned()
+                        .map(|k| (k, dancebox_runtime::EXISTENTIAL_DEPOSIT)),
+                )
                 .collect(),
         },
         parachain_info: dancebox_runtime::ParachainInfoConfig {
