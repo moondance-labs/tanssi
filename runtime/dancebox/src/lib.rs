@@ -735,7 +735,7 @@ impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
 
 parameter_types! {
     // 60 days worth of blocks
-    pub const MaxCreditsStored: BlockNumber = 1000;
+    pub const MaxCreditsStored: BlockNumber = 60 * 7200;
 }
 
 impl pallet_services_payment::Config for Runtime {
