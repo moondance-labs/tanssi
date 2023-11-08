@@ -3,7 +3,7 @@ import { filterAndApply } from "@moonwall/util";
 
 import { ApiPromise } from "@polkadot/api";
 import { AccountId32, EventRecord } from "@polkadot/types/interfaces";
-
+import { Vec, u8, u32, bool } from "@polkadot/types-codec";
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
 
@@ -149,6 +149,18 @@ export function fetchRewardAuthorContainers(events: EventRecord[] = []) {
     );
 
     return filtered;
+}
+
+export function fetchRandomnessEvent(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "collatorAssignment",
+        ["NewPendingAssignment"],
+        ({ event }: EventRecord) =>
+            event.data as unknown as { randomSeed: Vec<u8>; fullRotation: bool; targetSession: u32 }
+    );
+
+    return filtered[0];
 }
 
 export function fetchIssuance(events: EventRecord[] = []) {
