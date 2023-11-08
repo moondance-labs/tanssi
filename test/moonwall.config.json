@@ -178,7 +178,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombieTanssi.json",
+                    "configPath": "./configs/zombieTanssiRotation.json",
                     "skipBlockCheck": ["Container2002"]
                 }
             },
