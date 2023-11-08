@@ -22,7 +22,7 @@ use {
     dancebox_runtime::{
         migrations::{
             CollatorSelectionInvulnerablesValue, MigrateConfigurationFullRotationPeriod,
-            MigrateInvulnerables,
+            MigrateInvulnerables, MigrateServicesPaymentAddCredits,
         },
         BlockProductionCost,
     },
@@ -4151,6 +4151,65 @@ fn test_migration_config_full_rotation_period() {
                 (2225, pallet_configuration::HostConfiguration { max_collators: 99, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 0 }), (2226, pallet_configuration::HostConfiguration { max_collators: 100, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 0 })
             ];
             assert_eq!(Configuration::pending_configs(), expected_pending);
+        });
+}
+
+#[test]
+fn test_migration_services_payment() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // Register a new parachain with no credits
+            assert_ok!(
+                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ()
+            );
+            // Register another parachain with no credits, do not mark this as valid for collation
+            assert_ok!(
+                Registrar::register(origin_of(ALICE.into()), 1002.into(), empty_genesis_data()),
+                ()
+            );
+
+            let credits_1001 = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits_1001, 0);
+            let credits_1002 = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1002),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits_1002, 0);
+
+            // Apply migration
+            let migration = MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+            migration.migrate(Default::default());
+
+            // Both parachains have been given credits
+            let credits_1001 = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_ne!(credits_1001, 0);
+            let credits_1002 = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1002),
+            )
+            .unwrap_or_default();
+            assert_ne!(credits_1002, 0);
         });
 }
 
