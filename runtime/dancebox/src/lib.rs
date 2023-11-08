@@ -49,10 +49,8 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            tokens::ExistenceRequirement,
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency, InstanceFilter,
-            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
-            ValidatorRegistration, WithdrawReasons,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
+            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -73,7 +71,7 @@ use {
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::{OnChargeForBlockCredit, ProvideBlockProductionCost},
+    pallet_services_payment::{ChargeForBlockCredit, ProvideBlockProductionCost},
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     polkadot_runtime_common::BlockHashCount,
@@ -726,34 +724,7 @@ impl pallet_authority_assignment::Config for Runtime {
     type AuthorityId = NimbusId;
 }
 
-pub struct ChargeForBlockCredit<Runtime>(PhantomData<Runtime>);
-impl OnChargeForBlockCredit<Runtime> for ChargeForBlockCredit<Runtime> {
-    fn charge_credits(
-        payer: &AccountId,
-        _para_id: &ParaId,
-        _credits: u32,
-        fee: u128,
-    ) -> Result<(), pallet_services_payment::Error<Runtime>> {
-        use frame_support::traits::tokens::imbalance::Imbalance;
-
-        let result = <Balances as Currency<AccountId>>::withdraw(
-            payer,
-            fee,
-            WithdrawReasons::FEE,
-            ExistenceRequirement::AllowDeath,
-        );
-        let imbalance = result
-            .map_err(|_| pallet_services_payment::Error::InsufficientFundsToPurchaseCredits)?;
-
-        if imbalance.peek() != fee {
-            panic!("withdrawn balance incorrect");
-        }
-
-        Ok(())
-    }
-}
-
-pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 100;
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * currency::MICRODANCE;
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
@@ -763,6 +734,7 @@ impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
 }
 
 parameter_types! {
+    // 60 days worth of blocks
     pub const MaxCreditsStored: BlockNumber = 1000;
 }
 

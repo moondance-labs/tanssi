@@ -40,7 +40,7 @@ use {
     frame_support::{
         pallet_prelude::*,
         sp_runtime::{traits::Zero, Saturating},
-        traits::Currency,
+        traits::{tokens::ExistenceRequirement, Currency, WithdrawReasons},
     },
     frame_system::pallet_prelude::*,
     scale_info::prelude::vec::Vec,
@@ -219,18 +219,42 @@ pub trait OnChargeForBlockCredit<T: Config> {
     ) -> Result<(), Error<T>>;
 }
 
+pub struct ChargeForBlockCredit<Runtime>(PhantomData<Runtime>);
+impl<T: Config> OnChargeForBlockCredit<T> for ChargeForBlockCredit<T> {
+    fn charge_credits(
+        payer: &T::AccountId,
+        _para_id: &ParaId,
+        _credits: BlockNumberFor<T>,
+        fee: BalanceOf<T>,
+    ) -> Result<(), crate::Error<T>> {
+        use frame_support::traits::tokens::imbalance::Imbalance;
+
+        let result = T::Currency::withdraw(
+            payer,
+            fee,
+            WithdrawReasons::FEE,
+            ExistenceRequirement::AllowDeath,
+        );
+        let imbalance = result.map_err(|_| crate::Error::InsufficientFundsToPurchaseCredits)?;
+
+        if imbalance.peek() != fee {
+            panic!("withdrawn balance incorrect");
+        }
+
+        Ok(())
+    }
+}
+
 /// Returns the cost for a given block credit at the current time. This can be a complex operation,
 /// so it also returns the weight it consumes. (TODO: or just rely on benchmarking)
 pub trait ProvideBlockProductionCost<T: Config> {
     fn block_cost(para_id: &ParaId) -> (BalanceOf<T>, Weight);
 }
 
-// This function should only be used to **reward** a container author.
-// There will be no additional check other than checking if we have already
-// rewarded this author for **in this tanssi block**
-// Any additional check should be done in the calling function
-// TODO: consider passing a vector here
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
+    // This hook is called when pallet_author_noting sees that the block number of a container chain has increased.
+    // Currently we always charge 1 credit, even if a container chain produced more that 1 block in between tanssi
+    // blocks.
     fn on_container_author_noted(
         _author: &T::AccountId,
         _block_number: BlockNumber,

@@ -29,14 +29,12 @@
 //! to that containerChain, by simply assigning the slot position.
 
 use {
-    crate::{self as pallet_services_payment, OnChargeForBlockCredit, ProvideBlockProductionCost},
+    crate::{self as pallet_services_payment, ChargeForBlockCredit, ProvideBlockProductionCost},
     cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         parameter_types,
-        traits::{
-            tokens::ExistenceRequirement, ConstU32, ConstU64, Currency, Everything, WithdrawReasons,
-        },
+        traits::{ConstU32, ConstU64, Everything},
     },
     sp_core::H256,
     sp_runtime::{
@@ -114,33 +112,6 @@ impl pallet_services_payment::Config for Test {
     type Currency = Balances;
     type ProvideBlockProductionCost = BlockProductionCost<Test>;
     type MaxCreditsStored = MaxCreditsStored;
-}
-
-pub struct ChargeForBlockCredit<Test>(PhantomData<Test>);
-impl OnChargeForBlockCredit<Test> for ChargeForBlockCredit<Test> {
-    fn charge_credits(
-        payer: &u64,
-        _para_id: &ParaId,
-        _credits: u64,
-        fee: u128,
-    ) -> Result<(), pallet_services_payment::Error<Test>> {
-        use frame_support::traits::tokens::imbalance::Imbalance;
-
-        let result = Balances::withdraw(
-            payer,
-            fee,
-            WithdrawReasons::FEE,
-            ExistenceRequirement::AllowDeath,
-        );
-        let imbalance = result
-            .map_err(|_| pallet_services_payment::Error::InsufficientFundsToPurchaseCredits)?;
-
-        if imbalance.peek() != fee {
-            panic!("withdrawn balance incorrect");
-        }
-
-        Ok(())
-    }
 }
 
 pub(crate) const FIXED_BLOCK_PRODUCTION_COST: u128 = 100;

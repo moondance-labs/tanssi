@@ -309,10 +309,10 @@ fn testnet_genesis(
                 .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
         )
         .collect();
-    // Assign max block credits to all container chains registered in genesis
+    // Assign 1000 block credits to all container chains registered in genesis
     let para_id_credits: Vec<_> = para_ids
         .iter()
-        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, u32::MAX))
+        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000))
         .collect();
     dancebox_runtime::RuntimeGenesisConfig {
         system: dancebox_runtime::SystemConfig {

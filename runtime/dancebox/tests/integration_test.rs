@@ -858,9 +858,6 @@ fn test_paras_registered_but_only_credits_for_1_session() {
                 },
             });
             sproof.items.push(s);
-            // TODO: this seems to break because of the function `relay_chain_state_proof`, which is used to
-            // read randomness from the relay. Panic msg:
-            // 'Invalid relay chain state proof, already constructed in `set_validation_data`: RootMismatch'
             set_author_noting_inherent_data(sproof);
 
             run_block();
