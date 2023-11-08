@@ -405,6 +405,12 @@ pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
         },
     );
 
+    // But we also need to store the new proof submitted
+    frame_support::storage::unhashed::put(
+        &frame_support::storage::storage_prefix(b"ParachainSystem", b"RelayStateProof"),
+        &relay_storage_proof,
+    );
+
     assert_ok!(RuntimeCall::AuthorNoting(
         pallet_author_noting::Call::<Runtime>::set_latest_author_data {
             data: tp_author_noting_inherent::OwnParachainInherentData {
