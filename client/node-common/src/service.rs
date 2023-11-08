@@ -49,8 +49,7 @@ use {
     sc_utils::mpsc::TracingUnboundedSender,
     sp_api::ConstructRuntimeApi,
     sp_block_builder::BlockBuilder,
-    sp_consensus::{EnableProofRecording, SelectChain},
-    sp_core::H256,
+    sp_consensus::SelectChain,
     sp_inherents::CreateInherentDataProviders,
     sp_offchain::OffchainWorkerApi,
     sp_runtime::Percent,
@@ -58,19 +57,23 @@ use {
     std::{str::FromStr, sync::Arc},
 };
 
-/// Functions in this module are generic over `Block`, `RuntimeApi`, and
-/// `ParachainNativeExecutor`. Using type aliases requires them to be
-/// generic too, which makes them still verbose to use. For that reason we use
-/// a macro that expect the above types to already be in scope.
-macro_rules! T {
-    [Executor] => { NativeElseWasmExecutor<ParachainNativeExecutor> };
-    [Client] => { TFullClient<Block, RuntimeApi, T![Executor]> };
-    [Backend] => { TFullBackend<Block> };
-    [ConstructedRuntimeApi] => {
-        <RuntimeApi as ConstructRuntimeApi<Block, T![Client]>>::RuntimeApi
-    };
-    [ImportQueueService] => { Box<dyn ImportQueueService<Block>> }
+pub trait Config {
+    type Block;
+    type RuntimeApi;
+    type ParachainNativeExecutor;
 }
+
+pub type BlockOf<T> = <T as Config>::Block;
+pub type BlockHashOf<T> = <BlockOf<T> as cumulus_primitives_core::BlockT>::Hash;
+pub type BlockHeaderOf<T> = <BlockOf<T> as cumulus_primitives_core::BlockT>::Header;
+pub type RuntimeApiOf<T> = <T as Config>::RuntimeApi;
+pub type ParachainNativeExecutorOf<T> = <T as Config>::ParachainNativeExecutor;
+pub type ExecutorOf<T> = NativeElseWasmExecutor<ParachainNativeExecutorOf<T>>;
+pub type ClientOf<T> = TFullClient<BlockOf<T>, RuntimeApiOf<T>, ExecutorOf<T>>;
+pub type BackendOf<T> = TFullBackend<BlockOf<T>>;
+pub type ConstructedRuntimeApiOf<T> =
+    <RuntimeApiOf<T> as ConstructRuntimeApi<BlockOf<T>, ClientOf<T>>>::RuntimeApi;
+pub type ImportQueueServiceOf<T> = Box<dyn ImportQueueService<BlockOf<T>>>;
 
 // `Cumulus` and `TxHandler` are types that will change during the life of
 // a `NodeBuilder` because they are generated and consumed when calling
@@ -86,9 +89,7 @@ macro_rules! T {
 // are still required since Rust can't infer the types in the `new` function
 // that doesn't take `self`.
 pub struct NodeBuilder<
-    Block,
-    RuntimeApi,
-    ParachainNativeExecutor,
+    T: Config,
     // `(cumulus_client_service/sc_service)::build_network` returns many important systems,
     // but can only be called with an `import_queue` which can be different in
     // each node. For that reason it is a `()` when calling `new`, then the
@@ -105,16 +106,16 @@ pub struct NodeBuilder<
     // `start_full_node`.
     SImportQueueService = (),
 > where
-    Block: cumulus_primitives_core::BlockT,
-    ParachainNativeExecutor: NativeExecutionDispatch + 'static,
-    RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
-    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
+    BlockOf<T>: cumulus_primitives_core::BlockT,
+    ParachainNativeExecutorOf<T>: NativeExecutionDispatch + 'static,
+    RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
+    ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
 {
-    pub client: Arc<T![Client]>,
-    pub backend: Arc<T![Backend]>,
+    pub client: Arc<ClientOf<T>>,
+    pub backend: Arc<BackendOf<T>>,
     pub task_manager: TaskManager,
     pub keystore_container: KeystoreContainer,
-    pub transaction_pool: Arc<sc_transaction_pool::FullPool<Block, T![Client]>>,
+    pub transaction_pool: Arc<sc_transaction_pool::FullPool<BlockOf<T>, ClientOf<T>>>,
     pub telemetry: Option<Telemetry>,
     pub telemetry_worker_handle: Option<TelemetryWorkerHandle>,
 
@@ -136,13 +137,12 @@ pub struct Network<Block: cumulus_primitives_core::BlockT> {
 // `new` function doesn't take self, and the Rust compiler cannot infer that
 // only one type T implements `TypeIdentity`. With thus need a separate impl
 // block with concrete types `()`.
-impl<Block, RuntimeApi, ParachainNativeExecutor>
-    NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, (), (), ()>
+impl<T: Config> NodeBuilder<T>
 where
-    Block: cumulus_primitives_core::BlockT,
-    ParachainNativeExecutor: NativeExecutionDispatch + 'static,
-    RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
-    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block> + BlockBuilder<Block>,
+    BlockOf<T>: cumulus_primitives_core::BlockT,
+    ParachainNativeExecutorOf<T>: NativeExecutionDispatch + 'static,
+    RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
+    ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
 {
     /// Create a new `NodeBuilder` which prepare objects required to launch a
     /// node. However it doesn't start anything, and doesn't provide any
@@ -185,10 +185,10 @@ where
             .with_runtime_cache_size(parachain_config.runtime_cache_size)
             .build();
 
-        let executor = <T![Executor]>::new_with_wasm_executor(wasm);
+        let executor = ExecutorOf::<T>::new_with_wasm_executor(wasm);
 
         let (client, backend, keystore_container, task_manager) =
-            sc_service::new_full_parts::<Block, RuntimeApi, _>(
+            sc_service::new_full_parts::<BlockOf<T>, RuntimeApiOf<T>, _>(
                 parachain_config,
                 telemetry.as_ref().map(|(_, telemetry)| telemetry.handle()),
                 executor,
@@ -229,22 +229,15 @@ where
     }
 }
 
-impl<Block, RuntimeApi, ParachainNativeExecutor, SNetwork, STxHandler, SImportQueueService>
-    NodeBuilder<
-        Block,
-        RuntimeApi,
-        ParachainNativeExecutor,
-        SNetwork,
-        STxHandler,
-        SImportQueueService,
-    >
+impl<T: Config, SNetwork, STxHandler, SImportQueueService>
+    NodeBuilder<T, SNetwork, STxHandler, SImportQueueService>
 where
-    Block: cumulus_primitives_core::BlockT,
-    ParachainNativeExecutor: NativeExecutionDispatch + 'static,
-    RuntimeApi: ConstructRuntimeApi<Block, T![Client]> + Sync + Send + 'static,
-    T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block>
-        + BlockBuilder<Block>
-        + cumulus_primitives_core::CollectCollationInfo<Block>,
+    BlockOf<T>: cumulus_primitives_core::BlockT,
+    ParachainNativeExecutorOf<T>: NativeExecutionDispatch + 'static,
+    RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
+    ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>>
+        + BlockBuilder<BlockOf<T>>
+        + cumulus_primitives_core::CollectCollationInfo<BlockOf<T>>,
 {
     #[must_use]
     pub async fn build_relay_chain_interface(
@@ -278,16 +271,14 @@ where
         self,
         parachain_config: &Configuration,
         para_id: ParaId,
-        import_queue: impl ImportQueue<Block> + 'static,
+        import_queue: impl ImportQueue<BlockOf<T>> + 'static,
         relay_chain_interface: RCInterface,
     ) -> sc_service::error::Result<
         NodeBuilder<
-            Block,
-            RuntimeApi,
-            ParachainNativeExecutor,
-            Network<Block>,
-            TransactionsHandlerController<Block::Hash>,
-            T![ImportQueueService],
+            T,
+            Network<BlockOf<T>>,
+            TransactionsHandlerController<BlockHashOf<T>>,
+            ImportQueueServiceOf<T>,
         >,
     >
     where
@@ -358,15 +349,13 @@ where
     pub fn build_substrate_network(
         self,
         parachain_config: &Configuration,
-        import_queue: impl ImportQueue<Block> + 'static,
+        import_queue: impl ImportQueue<BlockOf<T>> + 'static,
     ) -> sc_service::error::Result<
         NodeBuilder<
-            Block,
-            RuntimeApi,
-            ParachainNativeExecutor,
-            Network<Block>,
-            TransactionsHandlerController<Block::Hash>,
-            T![ImportQueueService],
+            T,
+            Network<BlockOf<T>>,
+            TransactionsHandlerController<BlockHashOf<T>>,
+            ImportQueueServiceOf<T>,
         >,
     >
     where
@@ -439,26 +428,17 @@ where
                 SubscriptionTaskExecutor,
             ) -> Result<RpcModule<TRpc>, sc_service::Error>,
         >,
-    ) -> sc_service::error::Result<
-        NodeBuilder<
-            Block,
-            RuntimeApi,
-            ParachainNativeExecutor,
-            Network<Block>,
-            (),
-            SImportQueueService,
-        >,
-    >
+    ) -> sc_service::error::Result<NodeBuilder<T, Network<BlockOf<T>>, (), SImportQueueService>>
     where
-        SNetwork: TypeIdentity<Type = Network<Block>>,
-        STxHandler: TypeIdentity<Type = TransactionsHandlerController<Block::Hash>>,
-        Block::Hash: Unpin,
-        Block::Header: Unpin,
-        T![ConstructedRuntimeApi]: TaggedTransactionQueue<Block>
-            + BlockBuilder<Block>
-            + OffchainWorkerApi<Block>
-            + sp_api::Metadata<Block>
-            + sp_session::SessionKeys<Block>,
+        SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
+        STxHandler: TypeIdentity<Type = TransactionsHandlerController<BlockHashOf<T>>>,
+        BlockHashOf<T>: Unpin,
+        BlockHeaderOf<T>: Unpin,
+        ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>>
+            + BlockBuilder<BlockOf<T>>
+            + OffchainWorkerApi<BlockOf<T>>
+            + sp_api::Metadata<BlockOf<T>>
+            + sp_session::SessionKeys<BlockOf<T>>,
     {
         let NodeBuilder {
             client,
@@ -555,12 +535,12 @@ where
 
     pub fn install_manual_seal<BI, SC, CIDP>(
         &mut self,
-        manual_seal_config: ManualSealConfiguration<Block, BI, SC, CIDP>,
-    ) -> sc_service::error::Result<Option<mpsc::Sender<EngineCommand<Block::Hash>>>>
+        manual_seal_config: ManualSealConfiguration<BlockOf<T>, BI, SC, CIDP>,
+    ) -> sc_service::error::Result<Option<mpsc::Sender<EngineCommand<BlockHashOf<T>>>>>
     where
-        BI: BlockImport<Block, Error = sp_consensus::Error> + Send + Sync + 'static,
-        SC: SelectChain<Block> + 'static,
-        CIDP: CreateInherentDataProviders<Block, ()> + 'static,
+        BI: BlockImport<BlockOf<T>, Error = sp_consensus::Error> + Send + Sync + 'static,
+        SC: SelectChain<BlockOf<T>> + 'static,
+        CIDP: CreateInherentDataProviders<BlockOf<T>, ()> + 'static,
     {
         let ManualSealConfiguration {
             sealing,
@@ -592,7 +572,7 @@ where
         }
 
         let commands_stream: Box<
-            dyn Stream<Item = EngineCommand<Block::Hash>> + Send + Sync + Unpin,
+            dyn Stream<Item = EngineCommand<BlockHashOf<T>>> + Send + Sync + Unpin,
         > = match sealing {
             Sealing::Instant => {
                 Box::new(
@@ -649,12 +629,10 @@ where
         para_id: ParaId,
         relay_chain_interface: RCInterface,
         relay_chain_slot_duration: Duration,
-    ) -> sc_service::error::Result<
-        NodeBuilder<Block, RuntimeApi, ParachainNativeExecutor, SNetwork, STxHandler, ()>,
-    >
+    ) -> sc_service::error::Result<NodeBuilder<T, SNetwork, STxHandler, ()>>
     where
-        SNetwork: TypeIdentity<Type = Network<Block>>,
-        SImportQueueService: TypeIdentity<Type = T![ImportQueueService]>,
+        SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
+        SImportQueueService: TypeIdentity<Type = ImportQueueServiceOf<T>>,
         RCInterface: RelayChainInterface + Clone + 'static,
     {
         let NodeBuilder {

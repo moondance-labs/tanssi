@@ -99,6 +99,13 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     }
 }
 
+struct ClientConfig;
+impl node_common::service::Config for ClientConfig {
+    type Block = Block;
+    type RuntimeApi = RuntimeApi;
+    type ParachainNativeExecutor = ParachainNativeExecutor;
+}
+
 type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
 
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
@@ -296,7 +303,7 @@ async fn start_node_impl(
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
     let mut node_builder =
-        node_common::service::NodeBuilder::new(&parachain_config, hwbench.clone())?;
+        node_common::service::NodeBuilder::<ClientConfig>::new(&parachain_config, hwbench.clone())?;
 
     // The nimbus import queue ONLY checks the signature correctness
     // Any other checks corresponding to the author-correctness should be done
@@ -1272,7 +1279,8 @@ pub fn start_dev_node(
     let parachain_config = prepare_node_config(orchestrator_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder = node_common::service::NodeBuilder::new(&parachain_config, hwbench.clone())?;
+    let node_builder =
+        node_common::service::NodeBuilder::<ClientConfig>::new(&parachain_config, hwbench.clone())?;
 
     // This node block import.
     let block_import = DevParachainBlockImport::new(node_builder.client.clone());
