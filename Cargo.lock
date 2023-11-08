@@ -6854,6 +6854,7 @@ dependencies = [
  "clap",
  "core_extensions",
  "cumulus-client-cli",
+ "cumulus-client-collator",
  "cumulus-client-consensus-aura",
  "cumulus-client-consensus-common",
  "cumulus-client-network",
