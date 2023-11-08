@@ -806,7 +806,7 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         servicesPayment: {
-            /** See `Pallet::purchase_credits`. */
+            /** See [`Pallet::purchase_credits`]. */
             purchaseCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
