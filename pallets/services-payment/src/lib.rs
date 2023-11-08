@@ -36,6 +36,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
+    crate::weights::WeightInfo,
     cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::*,
@@ -47,15 +48,18 @@ use {
     tp_traits::{AuthorNotingHook, BlockNumber},
 };
 
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+mod benchmarks;
 #[cfg(test)]
 mod mock;
 
 #[cfg(test)]
 mod tests;
+pub mod weights;
 
 pub use pallet::*;
 
-#[frame_support::pallet(dev_mode)]
+#[frame_support::pallet]
 pub mod pallet {
     use super::*;
 
@@ -71,6 +75,8 @@ pub mod pallet {
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
         /// The maximum number of credits that can be accumulated
         type MaxCreditsStored: Get<BlockNumberFor<Self>>;
+
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::error]
@@ -110,7 +116,7 @@ pub mod pallet {
         BalanceOf<T>: From<BlockNumberFor<T>>,
     {
         #[pallet::call_index(0)]
-        #[pallet::weight(0)] // TODO
+        #[pallet::weight(T::WeightInfo::purchase_credits())]
         pub fn purchase_credits(
             origin: OriginFor<T>,
             para_id: ParaId,

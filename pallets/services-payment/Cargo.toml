@@ -9,6 +9,7 @@ version = "0.1.0"
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
 [dependencies]
+frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 log = { workspace = true }
@@ -18,6 +19,7 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-runtime = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 tp-traits = { workspace = true }
+sp-std = { workspace = true }
 
 [dev-dependencies]
 pallet-balances = { workspace = true }
@@ -28,11 +30,13 @@ sp-io = { workspace = true }
 default = [ "std" ]
 std = [
 	"cumulus-primitives-core/std",
+	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
 	"pallet-balances/std",
 	"scale-info/std",
 	"sp-runtime/std",
+	"sp-std/std",
 ]
 try-runtime = [ "frame-support/try-runtime" ]
-runtime-benchmarks = []
+runtime-benchmarks = [ "frame-benchmarking", "tp-traits/runtime-benchmarks" ]

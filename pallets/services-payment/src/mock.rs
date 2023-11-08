@@ -112,6 +112,7 @@ impl pallet_services_payment::Config for Test {
     type Currency = Balances;
     type ProvideBlockProductionCost = BlockProductionCost<Test>;
     type MaxCreditsStored = MaxCreditsStored;
+    type WeightInfo = ();
 }
 
 pub(crate) const FIXED_BLOCK_PRODUCTION_COST: u128 = 100;

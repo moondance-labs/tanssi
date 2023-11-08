@@ -748,6 +748,7 @@ impl pallet_services_payment::Config for Runtime {
     type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
     /// The maximum number of credits that can be accumulated
     type MaxCreditsStored = MaxCreditsStored;
+    type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
 
 pub struct InflationRewardsAndServicesPayment;
@@ -1299,6 +1300,7 @@ mod benches {
         [pallet_registrar, Registrar]
         [pallet_invulnerables, Invulnerables]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_services_payment, ServicesPayment]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }
