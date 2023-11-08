@@ -45,6 +45,7 @@ use {
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::{channel::mpsc, FutureExt, StreamExt},
     nimbus_primitives::NimbusPair,
+    node_common::service::Config as NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
@@ -99,8 +100,8 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     }
 }
 
-struct ClientConfig;
-impl node_common::service::Config for ClientConfig {
+struct NodeConfig;
+impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
     type ParachainNativeExecutor = ParachainNativeExecutor;
@@ -302,8 +303,7 @@ async fn start_node_impl(
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let mut node_builder =
-        node_common::service::NodeBuilder::<ClientConfig>::new(&parachain_config, hwbench.clone())?;
+    let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
 
     // The nimbus import queue ONLY checks the signature correctness
     // Any other checks corresponding to the author-correctness should be done
@@ -1279,8 +1279,7 @@ pub fn start_dev_node(
     let parachain_config = prepare_node_config(orchestrator_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder =
-        node_common::service::NodeBuilder::<ClientConfig>::new(&parachain_config, hwbench.clone())?;
+    let node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
 
     // This node block import.
     let block_import = DevParachainBlockImport::new(node_builder.client.clone());

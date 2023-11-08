@@ -61,6 +61,23 @@ pub trait Config {
     type Block;
     type RuntimeApi;
     type ParachainNativeExecutor;
+
+    #[must_use]
+    fn new_builder(
+        parachain_config: &Configuration,
+        hwbench: Option<sc_sysinfo::HwBench>,
+    ) -> Result<NodeBuilder<Self>, sc_service::Error>
+    where
+        Self: Sized,
+        BlockOf<Self>: cumulus_primitives_core::BlockT,
+        ParachainNativeExecutorOf<Self>: NativeExecutionDispatch + 'static,
+        RuntimeApiOf<Self>:
+            ConstructRuntimeApi<BlockOf<Self>, ClientOf<Self>> + Sync + Send + 'static,
+        ConstructedRuntimeApiOf<Self>:
+            TaggedTransactionQueue<BlockOf<Self>> + BlockBuilder<BlockOf<Self>>,
+    {
+        NodeBuilder::<Self>::new(parachain_config, hwbench)
+    }
 }
 
 pub type BlockOf<T> = <T as Config>::Block;
@@ -149,7 +166,7 @@ where
     /// network-dependent objects (as it requires an import queue, which usually
     /// is different for each node).
     #[must_use]
-    pub fn new(
+    fn new(
         parachain_config: &Configuration,
         hwbench: Option<sc_sysinfo::HwBench>,
     ) -> Result<Self, sc_service::Error> {
