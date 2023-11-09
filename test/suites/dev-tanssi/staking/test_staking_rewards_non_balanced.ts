@@ -134,8 +134,8 @@ describeSuite({
                 const events = await polkadotJs.query.system.events();
                 const reward = await fetchRewardAuthorOrchestrator(events);
 
-                // 20% plus 1 from rounding
-                const collatorPercentage = (20n * reward.balance.toBigInt()) / 100n + 1n;
+                // 20% collator percentage
+                const collatorPercentage = (20n * reward.balance.toBigInt()) / 100n;
 
                 // Rounding
                 const delegatorRewards = reward.balance.toBigInt() - collatorPercentage;
