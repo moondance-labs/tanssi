@@ -27,7 +27,6 @@
             "name": "dev_dancebox_specs",
             "testFileDir": ["suites/dancebox-specs"],
             "multiThreads": true,
-            "html": false,
             "foundation": {
                 "type": "dev",
                 "launchSpec": [
@@ -49,7 +48,7 @@
         },
         {
             "name": "dev_frontier_template",
-            "testFileDir": ["suites/dev-frontier-template", "suites/common"],
+            "testFileDir": ["suites/dev-frontier-template/test-precompiles", "suites/common"],
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": true,
             "reporters": ["basic"],
@@ -293,7 +292,7 @@
         },
         {
             "name": "chopsticks_stagenet_dancebox_upgrade",
-            "testFileDir": ["suites/rt-ugprade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -315,7 +314,7 @@
         },
         {
             "name": "chopsticks_dancebox_upgrade",
-            "testFileDir": ["suites/rt-ugprade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
