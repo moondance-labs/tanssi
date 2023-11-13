@@ -30,7 +30,9 @@
 
 use {
     crate::{mock::*, pallet as pallet_services_payment, BlockProductionCredits},
+    cumulus_primitives_core::ParaId,
     frame_support::{assert_err, assert_ok},
+    sp_runtime::DispatchError,
 };
 
 const ALICE: u64 = 1;
@@ -306,5 +308,56 @@ fn buy_credits_limit_exceeds_price_works() {
                 1u64,
                 Some(FIXED_BLOCK_PRODUCTION_COST + 1),
             ),);
+        });
+}
+
+#[test]
+fn set_credits_bad_origin() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            assert_err!(
+                PaymentServices::set_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1u64,),
+                DispatchError::BadOrigin
+            )
+        });
+}
+
+#[test]
+fn set_credits_above_max_works() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            assert_ok!(PaymentServices::set_credits(
+                RuntimeOrigin::root(),
+                1.into(),
+                MaxCreditsStored::get() * 2,
+            ));
+
+            assert_eq!(
+                <BlockProductionCredits<Test>>::get(ParaId::from(1)),
+                Some(MaxCreditsStored::get() * 2)
+            );
+        });
+}
+
+#[test]
+fn set_credits_to_zero_works() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            assert_ok!(PaymentServices::set_credits(
+                RuntimeOrigin::root(),
+                1.into(),
+                0u64,
+            ));
+
+            assert_eq!(
+                <BlockProductionCredits<Test>>::get(ParaId::from(1)).unwrap_or_default(),
+                0
+            );
         });
 }

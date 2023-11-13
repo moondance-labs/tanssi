@@ -20,7 +20,7 @@
 use {
     crate::{BalanceOf, BlockNumberFor, Call, Config, Pallet},
     frame_benchmarking::{account, v2::*},
-    frame_support::traits::Currency,
+    frame_support::{assert_ok, traits::Currency},
     frame_system::RawOrigin,
     sp_std::prelude::*,
 };
@@ -66,6 +66,35 @@ mod benchmarks {
         assert_eq!(
             crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
             credits
+        );
+    }
+
+    #[benchmark]
+    fn set_credits() {
+        let caller = create_funded_user::<T>("caller", 1, 100);
+        let para_id = 1001u32.into();
+        let credits = 1000u32.into();
+
+        assert_ok!(Pallet::<T>::purchase_credits(
+            RawOrigin::Signed(caller).into(),
+            para_id,
+            credits,
+            Some(u32::MAX.into()),
+        ));
+
+        // Before call: 1000 credits
+        assert_eq!(
+            crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
+            1000u32.into()
+        );
+
+        #[extrinsic_call]
+        Pallet::<T>::set_credits(RawOrigin::Root, para_id, 1u32.into());
+
+        // After call: 1 credit
+        assert_eq!(
+            crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
+            1u32.into()
         );
     }
 

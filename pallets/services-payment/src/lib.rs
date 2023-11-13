@@ -103,6 +103,10 @@ pub mod pallet {
             para_id: ParaId,
             credits_remaining: BlockNumberFor<T>,
         },
+        CreditsSet {
+            para_id: ParaId,
+            credits: BlockNumberFor<T>,
+        },
     }
 
     #[pallet::storage]
@@ -159,6 +163,24 @@ pub mod pallet {
                 credits_purchased: actual_credits_purchased,
                 credits_remaining: updated_credits,
             });
+
+            Ok(().into())
+        }
+
+        /// Set the number of block production credits for this para_id without paying for them.
+        /// Can only be called by root.
+        #[pallet::call_index(1)]
+        #[pallet::weight(T::WeightInfo::set_credits())]
+        pub fn set_credits(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            credits: BlockNumberFor<T>,
+        ) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+
+            BlockProductionCredits::<T>::insert(para_id, credits);
+
+            Self::deposit_event(Event::<T>::CreditsSet { para_id, credits });
 
             Ok(().into())
         }
