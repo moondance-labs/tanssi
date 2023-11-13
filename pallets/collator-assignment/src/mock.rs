@@ -256,4 +256,11 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsAbove5000 {
     fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
         para_ids.retain(|para_id| *para_id <= ParaId::from(5000));
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(para_ids: &[ParaId]) {
+        for para_id in para_ids {
+            assert!(para_id > 5000.into(), "{}", para_id);
+        }
+    }
 }

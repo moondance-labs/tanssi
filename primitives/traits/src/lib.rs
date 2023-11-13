@@ -117,4 +117,8 @@ pub trait RemoveParaIdsWithNoCredits {
     /// Remove para ids with not enough credits. The resulting order will affect priority: the first para id in the list
     /// will be the first one to get collators.
     fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>);
+
+    /// Make those para ids valid by giving them enough credits, for benchmarking.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(para_ids: &[ParaId]);
 }

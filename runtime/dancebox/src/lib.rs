@@ -703,6 +703,24 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
             credits >= credits_for_2_sessions
         });
     }
+
+    /// Make those para ids valid by giving them enough credits, for benchmarking.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(para_ids: &[ParaId]) {
+        use frame_support::assert_ok;
+
+        let blocks_per_session = Period::get();
+        // Enough credits to run any benchmark
+        let credits = 20 * blocks_per_session;
+
+        for para_id in para_ids {
+            assert_ok!(ServicesPayment::set_credits(
+                RuntimeOrigin::root(),
+                *para_id,
+                credits,
+            ));
+        }
+    }
 }
 
 impl pallet_collator_assignment::Config for Runtime {
