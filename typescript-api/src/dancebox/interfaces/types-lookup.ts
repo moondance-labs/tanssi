@@ -623,7 +623,12 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly creditsRemaining: u32;
         } & Struct;
-        readonly type: "CreditsPurchased" | "CreditBurned";
+        readonly isCreditsSet: boolean;
+        readonly asCreditsSet: {
+            readonly paraId: u32;
+            readonly credits: u32;
+        } & Struct;
+        readonly type: "CreditsPurchased" | "CreditBurned" | "CreditsSet";
     }
 
     /** @name PalletInvulnerablesEvent (51) */
@@ -2657,7 +2662,12 @@ declare module "@polkadot/types/lookup" {
             readonly credits: u32;
             readonly maxPricePerCredit: Option<u128>;
         } & Struct;
-        readonly type: "PurchaseCredits";
+        readonly isSetCredits: boolean;
+        readonly asSetCredits: {
+            readonly paraId: u32;
+            readonly credits: u32;
+        } & Struct;
+        readonly type: "PurchaseCredits" | "SetCredits";
     }
 
     /** @name PalletInvulnerablesCall (215) */

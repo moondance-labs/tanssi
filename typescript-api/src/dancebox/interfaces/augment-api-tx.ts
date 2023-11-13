@@ -815,6 +815,14 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u32, Option<u128>]
             >;
+            /** See [`Pallet::set_credits`]. */
+            setCredits: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    credits: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, u32]
+            >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };

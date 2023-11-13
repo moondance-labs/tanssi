@@ -426,6 +426,10 @@ export default {
                 paraId: "u32",
                 creditsRemaining: "u32",
             },
+            CreditsSet: {
+                paraId: "u32",
+                credits: "u32",
+            },
         },
     },
     /** Lookup51: pallet_invulnerables::pallet::Event<T> */
@@ -1951,6 +1955,10 @@ export default {
                 paraId: "u32",
                 credits: "u32",
                 maxPricePerCredit: "Option<u128>",
+            },
+            set_credits: {
+                paraId: "u32",
+                credits: "u32",
             },
         },
     },
