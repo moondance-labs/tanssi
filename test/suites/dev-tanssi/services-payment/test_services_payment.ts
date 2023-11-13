@@ -166,7 +166,7 @@ describeSuite({
                 const paraId = 2000n;
 
                 // Create blocks until no collators are assigned to any container chain
-                for(;;) {
+                for (;;) {
                     await context.createBlock();
                     const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
                     if (Object.keys(collators.toJSON().containerChains).length == 0) {
