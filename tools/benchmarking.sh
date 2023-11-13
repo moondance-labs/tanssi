@@ -13,7 +13,7 @@ REPEAT=20
 
 if [[ ! -f "${BINARY}" ]]; then
     echo "binary '${BINARY}' does not exist."
-    echo "ensure that the tanssi binary is compiled with '--features=runtime-benchmarks' and in release mode."
+    echo "ensure that the tanssi binary is compiled with '--features=runtime-benchmarks' and in production mode."
     exit 1
 fi
 
