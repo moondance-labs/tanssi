@@ -15217,6 +15217,7 @@ version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
+ "impl-trait-for-tuples",
  "sp-std",
 ]
 

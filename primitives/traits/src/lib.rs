@@ -43,9 +43,12 @@ pub trait AuthorNotingHook<AccountId> {
     ) -> Weight;
 }
 
-impl<AccountId> AuthorNotingHook<AccountId> for () {
-    fn on_container_author_noted(_: &AccountId, _: BlockNumber, _: ParaId) -> Weight {
-        Weight::zero()
+#[impl_trait_for_tuples::impl_for_tuples(5)]
+impl<AccountId> AuthorNotingHook<AccountId> for Tuple {
+    fn on_container_author_noted(a: &AccountId, b: BlockNumber, p: ParaId) -> Weight {
+        let mut weight: Weight = Default::default();
+        for_tuples!( #( weight.saturating_accrue(Tuple::on_container_author_noted(a, b, p)); )* );
+        weight
     }
 }
 
