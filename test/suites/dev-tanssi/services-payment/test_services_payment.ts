@@ -33,9 +33,13 @@ describeSuite({
                     ).toBeGreaterThanOrEqual(2n * blocksPerSession);
 
                     // Should have assigned collators
-                    // TODO: container chain 2001 does not have any collators... add more invulnerables to genesis? have 4 but need 6 I guess?
-                    //const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
-                    //expect(collators.toJSON().containerChains[paraId].length, `Container chain ${paraId} has 0 collators`).toBeGreaterThan(0);
+                    const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                    // Container chain 2001 does not have any collators, this will result in only 1 container chain
+                    // producing blocks at a time. So if both container chains have 1000 credits, container 2000
+                    // will produce blocks 0-999, and container 2001 will produce blocks 1000-1999.
+                    if (paraId == 2000) {
+                        expect(collators.toJSON().containerChains[paraId].length, `Container chain ${paraId} has 0 collators`).toBeGreaterThan(0);
+                    }
                 }
             },
         });

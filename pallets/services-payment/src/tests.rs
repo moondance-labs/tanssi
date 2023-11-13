@@ -344,7 +344,7 @@ fn set_credits_above_max_works() {
 }
 
 #[test]
-fn set_credits_to_zero_works() {
+fn set_credits_to_zero_kills_storage() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
@@ -355,9 +355,6 @@ fn set_credits_to_zero_works() {
                 0u64,
             ));
 
-            assert_eq!(
-                <BlockProductionCredits<Test>>::get(ParaId::from(1)).unwrap_or_default(),
-                0
-            );
+            assert_eq!(<BlockProductionCredits<Test>>::get(ParaId::from(1)), None,);
         });
 }

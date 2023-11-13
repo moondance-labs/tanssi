@@ -178,7 +178,11 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
-            BlockProductionCredits::<T>::insert(para_id, credits);
+            if credits.is_zero() {
+                BlockProductionCredits::<T>::remove(para_id);
+            } else {
+                BlockProductionCredits::<T>::insert(para_id, credits);
+            }
 
             Self::deposit_event(Event::<T>::CreditsSet { para_id, credits });
 
