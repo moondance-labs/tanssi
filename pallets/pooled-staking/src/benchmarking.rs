@@ -339,7 +339,7 @@ mod benchmarks {
         );
 
         let (candidate, delegator) = &candidate_delegator[candidate_delegator.len() - 1];
-        let shares = min_candidate_stk::<T>() / T::InitialManualClaimShareValue::get().into();
+        let shares = min_candidate_stk::<T>() / T::InitialManualClaimShareValue::get();
         // We should have the last pairs event as the last event
         assert_last_event::<T>(
             Event::ClaimedManualRewards {
