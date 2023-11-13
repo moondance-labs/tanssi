@@ -38,7 +38,10 @@ describeSuite({
                     // producing blocks at a time. So if both container chains have 1000 credits, container 2000
                     // will produce blocks 0-999, and container 2001 will produce blocks 1000-1999.
                     if (paraId == 2000) {
-                        expect(collators.toJSON().containerChains[paraId].length, `Container chain ${paraId} has 0 collators`).toBeGreaterThan(0);
+                        expect(
+                            collators.toJSON().containerChains[paraId].length,
+                            `Container chain ${paraId} has 0 collators`
+                        ).toBeGreaterThan(0);
                     }
                 }
             },
@@ -144,13 +147,13 @@ describeSuite({
                 const tx = polkadotJs.tx.servicesPayment.setCredits(paraId, 0n);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
-                const credits3 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
+                const credits3 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON() || 0;
                 expect(credits3).toBe(0);
                 // Can still create blocks
                 const containerBlockNum3 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
                     .blockNumber;
                 await context.createBlock();
-                const credits4 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
+                const credits4 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON() || 0;
                 const containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
                     .blockNumber;
                 expect(
