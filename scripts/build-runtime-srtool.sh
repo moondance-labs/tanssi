@@ -22,6 +22,7 @@ CMD="docker run \
   -e CARGO_NET_GIT_FETCH_WITH_CLI=true \
   -e PACKAGE=${PACKAGE} \
   -e RUNTIME_DIR=${RUNTIME_DIR} \
+  -e PROFILE=production \
   -v ${PWD}:/build \
   -v /home/${USER}/srtool/.ssh:/home/builder/.ssh \
   -v /home/${USER}/srtool/entrypoint.sh:/srtool/entrypoint.sh \
