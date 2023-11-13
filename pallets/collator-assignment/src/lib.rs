@@ -146,6 +146,8 @@ pub mod pallet {
         pub active_assignment: AssignedCollators<T::AccountId>,
         /// Next session active assignment.
         pub next_assignment: AssignedCollators<T::AccountId>,
+        /// Total number of registered parachains before filtering them out, used as a weight hint
+        pub num_total_registered_paras: u32,
     }
 
     impl<T: Config> Pallet<T> {
@@ -162,6 +164,7 @@ pub mod pallet {
             // We get the containerChains that we will have at the target session
             let mut container_chain_ids =
                 T::ContainerChains::session_container_chains(target_session_index);
+            let num_total_registered_paras = container_chain_ids.len() as u32;
             // Remove the containerChains that do not have enough credits for block production
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
                 &mut container_chain_ids,
@@ -253,12 +256,14 @@ pub mod pallet {
                 return SessionChangeOutcome {
                     active_assignment: new_assigned.clone(),
                     next_assignment: new_assigned,
+                    num_total_registered_paras,
                 };
             }
 
             SessionChangeOutcome {
                 active_assignment: old_assigned,
                 next_assignment: new_assigned,
+                num_total_registered_paras,
             }
         }
 
@@ -405,10 +410,10 @@ pub mod pallet {
             let random_seed = Randomness::<T>::take();
             let num_collators = collators.len();
             let assigned_collators = Self::assign_collators(session_index, random_seed, collators);
-            let num_parachains = assigned_collators.next_assignment.container_chains.len();
+            let num_total_registered_paras = assigned_collators.num_total_registered_paras;
 
             frame_system::Pallet::<T>::register_extra_weight_unchecked(
-                T::WeightInfo::new_session(num_collators as u32, num_parachains as u32),
+                T::WeightInfo::new_session(num_collators as u32, num_total_registered_paras),
                 DispatchClass::Mandatory,
             );
 
