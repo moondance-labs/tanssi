@@ -70,6 +70,7 @@ use {
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
+    pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ChargeForBlockCredit, ProvideBlockProductionCost},
     pallet_session::{SessionManager, ShouldEndSession},
@@ -821,6 +822,36 @@ impl pallet_configuration::Config for Runtime {
     type WeightInfo = pallet_configuration::weights::SubstrateWeight<Runtime>;
 }
 
+pub struct RegistrarHooksImpl;
+
+impl RegistrarHooks for RegistrarHooksImpl {
+    fn para_registered(_para_id: ParaId) -> Weight {
+        // TODO: pallet_services_payment should give free credits but only once per para id
+        // A migration should mark any existing para ids as already received credits to avoid giving
+        // them more credits if they are deregistered and registered again
+        Weight::default()
+    }
+
+    fn para_deregistered(para_id: ParaId) -> Weight {
+        // Clear pallet_author_noting storage
+        if let Err(e) = AuthorNoting::kill_author_data(RuntimeOrigin::root(), para_id) {
+            log::warn!(
+                "Failed to kill_author_data after para id deregister: {:?}",
+                e
+            );
+        }
+        // Remove all credits from pallet_services_payment
+        if let Err(e) = ServicesPayment::set_credits(RuntimeOrigin::root(), para_id, 0) {
+            log::warn!(
+                "Failed to set_credits to 0 after para id deregister: {:?}",
+                e
+            );
+        }
+
+        Weight::default()
+    }
+}
+
 parameter_types! {
     pub const DepositAmount: Balance = 100 * UNIT;
     pub const MaxLengthTokenSymbol: u32 = 255;
@@ -838,6 +869,7 @@ impl pallet_registrar::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
+    type RegistrarHooks = RegistrarHooksImpl;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 

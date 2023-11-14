@@ -113,6 +113,7 @@ impl pallet_registrar::Config for Test {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
+    type RegistrarHooks = ();
     type WeightInfo = ();
 }
 

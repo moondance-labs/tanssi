@@ -39,27 +39,27 @@ pub mod weights;
 
 pub use pallet::*;
 
+use {
+    crate::weights::WeightInfo,
+    frame_support::{
+        pallet_prelude::*,
+        traits::{Currency, EitherOfDiverse, ReservableCurrency},
+        DefaultNoBound, LOG_TARGET,
+    },
+    frame_system::{pallet_prelude::*, EnsureSigned},
+    sp_runtime::{
+        traits::{AtLeast32BitUnsigned, BadOrigin},
+        Either, Saturating,
+    },
+    sp_std::collections::btree_set::BTreeSet,
+    sp_std::prelude::*,
+    tp_container_chain_genesis_data::ContainerChainGenesisData,
+    tp_traits::{GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId},
+};
+
 #[frame_support::pallet]
 pub mod pallet {
-
-    use {
-        crate::weights::WeightInfo,
-        frame_support::{
-            pallet_prelude::*,
-            traits::{Currency, EitherOfDiverse, ReservableCurrency},
-            DefaultNoBound, LOG_TARGET,
-        },
-        frame_system::{pallet_prelude::*, EnsureSigned},
-        sp_runtime::{
-            traits::{AtLeast32BitUnsigned, BadOrigin},
-            Either, Saturating,
-        },
-        sp_std::prelude::*,
-        tp_container_chain_genesis_data::ContainerChainGenesisData,
-        tp_traits::{
-            GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
-        },
-    };
+    use super::*;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -153,6 +153,8 @@ pub mod pallet {
         #[pallet::constant]
         type DepositAmount: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
 
+        type RegistrarHooks: RegistrarHooks;
+
         type WeightInfo: WeightInfo;
     }
 
@@ -183,6 +185,27 @@ pub mod pallet {
     #[pallet::getter(fn pending_verification)]
     pub type PendingVerification<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn paused)]
+    pub type Paused<T: Config> =
+        StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn pending_paused)]
+    pub type PendingPaused<T: Config> = StorageValue<
+        _,
+        Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
+        ValueQuery,
+    >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn pending_to_remove)]
+    pub type PendingToRemove<T: Config> = StorageValue<
+        _,
+        Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
+        ValueQuery,
+    >;
 
     #[pallet::storage]
     #[pallet::getter(fn boot_nodes)]
@@ -222,6 +245,8 @@ pub mod pallet {
         ParaIdValidForCollating { para_id: ParaId },
         /// A para id has been paused from collating.
         ParaIdPaused { para_id: ParaId },
+        /// A para id has been unpaused.
+        ParaIdUnpaused { para_id: ParaId },
         /// The list of boot_nodes
         BootNodesChanged { para_id: ParaId },
     }
@@ -230,10 +255,14 @@ pub mod pallet {
     pub enum Error<T> {
         /// Attempted to register a ParaId that was already registered
         ParaIdAlreadyRegistered,
-        /// Attempted to pause a ParaId that was already in PendingVerification
-        ParaIdAlreadyPaused,
         /// Attempted to deregister a ParaId that is not registered
         ParaIdNotRegistered,
+        /// Attempted to deregister a ParaId that is already being deregistered
+        ParaIdAlreadyDeregistered,
+        /// Attempted to pause a ParaId that was already paused
+        ParaIdAlreadyPaused,
+        /// Attempted to unpause a ParaId that was not paused
+        ParaIdNotPaused,
         /// The bounded list of ParaIds has reached its limit
         ParaIdListFull,
         /// Attempted to register a ParaId with a genesis data size greater than the limit
@@ -242,6 +271,100 @@ pub mod pallet {
         ParaIdNotInPendingVerification,
         /// Tried to register a ParaId with an account that did not have enough balance for the deposit
         NotSufficientDeposit,
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        #[cfg(feature = "std")]
+        fn integrity_test() {
+            // A para id can only be in 1 of [`RegisteredParaIds`, `PendingVerification`, `Paused`]
+            // Get all those para ids and check for duplicates
+            let mut para_ids: Vec<ParaId> = vec![];
+            para_ids.extend(RegisteredParaIds::<T>::get());
+            para_ids.extend(PendingVerification::<T>::get());
+            para_ids.extend(Paused::<T>::get());
+            para_ids.sort();
+            para_ids.dedup_by(|a, b| {
+                if a == b {
+                    panic!("Duplicate para id: {}", a);
+                } else {
+                    false
+                }
+            });
+
+            // All para ids have an entry in `ParaGenesisData`
+            for para_id in &para_ids {
+                assert!(
+                    ParaGenesisData::<T>::contains_key(&para_id),
+                    "Para id {} missing genesis data",
+                    para_id
+                );
+            }
+
+            // All entries in `RegistrarDeposit` and `ParaGenesisData` are in one of the other lists
+            let para_id_set = BTreeSet::from_iter(para_ids.iter().cloned());
+            let entries: Vec<_> = RegistrarDeposit::<T>::iter().map(|(k, _v)| k).collect();
+            for para_id in entries {
+                assert!(
+                    para_id_set.contains(&para_id),
+                    "Found RegistrarDeposit for unknown para id: {}",
+                    para_id
+                );
+            }
+            let entries: Vec<_> = ParaGenesisData::<T>::iter().map(|(k, _v)| k).collect();
+            for para_id in entries {
+                assert!(
+                    para_id_set.contains(&para_id),
+                    "Found ParaGenesisData for unknown para id: {}",
+                    para_id
+                );
+            }
+
+            // Sorted storage items are sorted
+            fn assert_is_sorted<T: Ord>(x: &[T], name: &str) {
+                assert!(
+                    x.windows(2).all(|w| w[0] <= w[1]),
+                    "sorted list not sorted: {}",
+                    name
+                );
+            }
+            assert_is_sorted(&RegisteredParaIds::<T>::get(), "RegisteredParaIds");
+            assert_is_sorted(&PendingVerification::<T>::get(), "RegisteredParaIds");
+            assert_is_sorted(&Paused::<T>::get(), "RegisteredParaIds");
+            for (i, (_session_index, x)) in PendingParaIds::<T>::get().into_iter().enumerate() {
+                assert_is_sorted(&x, &format!("PendingParaIds[{}]", i));
+            }
+            for (i, (_session_index, x)) in PendingPaused::<T>::get().into_iter().enumerate() {
+                assert_is_sorted(&x, &format!("PendingPaused[{}]", i));
+            }
+            for (i, (_session_index, x)) in PendingToRemove::<T>::get().into_iter().enumerate() {
+                assert_is_sorted(&x, &format!("PendingToRemove[{}]", i));
+            }
+
+            // Pending storage items are sorted and session index is unique
+            fn assert_is_sorted_and_unique<T: Ord>(x: &[T], name: &str) {
+                assert!(
+                    x.windows(2).all(|w| w[0] < w[1]),
+                    "sorted list not sorted or not unique: {}",
+                    name
+                );
+            }
+            let pending: Vec<_> = PendingParaIds::<T>::get()
+                .into_iter()
+                .map(|(session_index, _x)| session_index)
+                .collect();
+            assert_is_sorted_and_unique(&pending, "PendingParaIds");
+            let pending: Vec<_> = PendingPaused::<T>::get()
+                .into_iter()
+                .map(|(session_index, _x)| session_index)
+                .collect();
+            assert_is_sorted_and_unique(&pending, "PendingPaused");
+            let pending: Vec<_> = PendingToRemove::<T>::get()
+                .into_iter()
+                .map(|(session_index, _x)| session_index)
+                .collect();
+            assert_is_sorted_and_unique(&pending, "PendingToRemove");
+        }
     }
 
     #[pallet::call]
@@ -262,19 +385,15 @@ pub mod pallet {
                 .then_some(true)
                 .ok_or(Error::<T>::NotSufficientDeposit)?;
 
-            // Check if the para id is already registered
-            let pending_paras = <PendingParaIds<T>>::get();
-            let base_paras = pending_paras
-                .last()
-                .map(|(_, paras)| paras.clone())
-                .unwrap_or_else(Self::registered_para_ids);
-            if base_paras.binary_search(&para_id).is_ok() {
+            // Check if the para id is already registered by looking at the genesis data
+            if ParaGenesisData::<T>::contains_key(para_id) {
                 return Err(Error::<T>::ParaIdAlreadyRegistered.into());
             }
 
-            // Insert para id into PendingVerification, if it does not exist there
+            // Insert para id into PendingVerification
             let mut pending_verification = PendingVerification::<T>::get();
             match pending_verification.binary_search(&para_id) {
+                // This Ok is unreachable
                 Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
                 Err(index) => {
                     pending_verification
@@ -328,29 +447,39 @@ pub mod pallet {
         pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
-            Self::schedule_parachain_change(|para_ids| {
+            // Check if the para id is in "PendingVerification".
+            // This is a special case because then we can remove it immediately, instead of waiting 2 sessions.
+            let mut para_ids = PendingVerification::<T>::get();
+            if let Ok(index) = para_ids.binary_search(&para_id) {
+                para_ids.remove(index);
+                PendingVerification::<T>::put(para_ids);
+
+                Self::cleanup_deregistered_para_id(para_id);
+
+                return Ok(());
+            }
+
+            Self::schedule_paused_parachain_change(|para_ids, paused| {
                 // We have to find out where, in the sorted vec the para id is, if anywhere.
 
                 match para_ids.binary_search(&para_id) {
                     Ok(index) => {
                         para_ids.remove(index);
-                        Ok(())
                     }
                     Err(_) => {
-                        // If the para id is not registered yet, it may be in "PendingVerification"
-                        // In that case, remove it from there
-                        let mut para_ids = PendingVerification::<T>::get();
-
-                        match para_ids.binary_search(&para_id) {
+                        // If the para id is not registered, it may be paused. In that case, remove it from there
+                        match paused.binary_search(&para_id) {
                             Ok(index) => {
-                                para_ids.remove(index);
-                                PendingVerification::<T>::put(para_ids);
-                                Ok(())
+                                paused.remove(index);
                             }
-                            Err(_) => Err(Error::<T>::ParaIdNotRegistered.into()),
+                            Err(_) => {
+                                return Err(Error::<T>::ParaIdNotRegistered.into());
+                            }
                         }
                     }
                 }
+
+                Ok(())
             })?;
 
             // Get asset creator and deposit amount
@@ -363,13 +492,10 @@ pub mod pallet {
                 RegistrarDeposit::<T>::remove(para_id);
             }
 
-            Self::deposit_event(Event::ParaIdDeregistered { para_id });
+            // Mark this para id for cleanup later
+            Self::schedule_parachain_cleanup(para_id)?;
 
-            // TODO: while the deregistration takes place on the next session, the genesis data
-            // is deleted immediately. This will cause problems since any new collators that want
-            // to join now will not be able to sync this parachain
-            ParaGenesisData::<T>::remove(para_id);
-            BootNodes::<T>::remove(para_id);
+            Self::deposit_event(Event::ParaIdDeregistered { para_id });
 
             Ok(())
         }
@@ -389,26 +515,35 @@ pub mod pallet {
                 Err(_) => return Err(Error::<T>::ParaIdNotInPendingVerification.into()),
             };
 
-            Self::schedule_parachain_change(|para_ids| {
+            Self::schedule_paused_parachain_change(|para_ids, paused| {
                 // We don't want to add duplicate para ids, so we check whether the potential new
                 // para id is already present in the list. Because the list is always ordered, we can
                 // leverage the binary search which makes this check O(log n).
 
                 match para_ids.binary_search(&para_id) {
-                    Ok(_) => Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                    // This Ok should be unreachable
+                    Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
                     Err(index) => {
                         para_ids
                             .try_insert(index, para_id)
                             .map_err(|_e| Error::<T>::ParaIdListFull)?;
-
-                        Ok(())
                     }
                 }
+
+                if paused.binary_search(&para_id).is_ok() {
+                    // This should also be unreachable because we only allow to pause parachains that have been marked
+                    // as valid for collating.
+                    return Err(Error::<T>::ParaIdAlreadyRegistered.into());
+                }
+
+                Ok(())
             })?;
 
             PendingVerification::<T>::put(pending_verification);
 
             Self::deposit_event(Event::ParaIdValidForCollating { para_id });
+
+            T::RegistrarHooks::para_registered(para_id);
 
             Ok(())
         }
@@ -443,33 +578,58 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Pause container-chain from collating without removing its boot nodes nor its genesis config
+        /// Pause or unpause container-chain from collating. Does not remove its boot nodes nor its genesis config.
+        /// Only container-chains that have been marked as valid_for_collating can be paused.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::pause_container_chain(T::MaxLengthParaIds::get()))]
-        pub fn pause_container_chain(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+        pub fn pause_container_chain(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            pause: bool,
+        ) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
-            let mut pending_verification = PendingVerification::<T>::get();
-            match pending_verification.binary_search(&para_id) {
-                Ok(_) => return Err(Error::<T>::ParaIdAlreadyPaused.into()),
-                Err(index) => {
-                    pending_verification
-                        .try_insert(index, para_id)
-                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
+            Self::schedule_paused_parachain_change(|para_ids, paused| {
+                if pause {
+                    match paused.binary_search(&para_id) {
+                        Ok(_) => return Err(Error::<T>::ParaIdAlreadyPaused.into()),
+                        Err(index) => {
+                            paused
+                                .try_insert(index, para_id)
+                                .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                        }
+                    }
+                    match para_ids.binary_search(&para_id) {
+                        Ok(index) => {
+                            para_ids.remove(index);
+                        }
+                        // We can only pause para ids that are marked as valid,
+                        // otherwise unpausing them later would cause problems
+                        Err(_) => return Err(Error::<T>::ParaIdNotRegistered.into()),
+                    }
+                    Self::deposit_event(Event::ParaIdPaused { para_id });
+                } else {
+                    // Unpause
+                    match paused.binary_search(&para_id) {
+                        Ok(index) => {
+                            paused.remove(index);
+                        }
+                        Err(_) => return Err(Error::<T>::ParaIdNotPaused.into()),
+                    }
+                    match para_ids.binary_search(&para_id) {
+                        // This Ok should be unreachable, a para id cannot be in "RegisteredParaIds" and "Paused" at the same time
+                        Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                        Err(index) => {
+                            para_ids
+                                .try_insert(index, para_id)
+                                .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                        }
+                    }
+                    Self::deposit_event(Event::ParaIdUnpaused { para_id });
                 }
-            };
 
-            Self::schedule_parachain_change(|para_ids| match para_ids.binary_search(&para_id) {
-                Ok(index) => {
-                    para_ids.remove(index);
-                    Ok(())
-                }
-                Err(_) => return Err(Error::<T>::ParaIdNotRegistered.into()),
+                Ok(())
             })?;
-
-            PendingVerification::<T>::put(pending_verification);
-
-            Self::deposit_event(Event::ParaIdPaused { para_id });
 
             Ok(())
         }
@@ -484,32 +644,63 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         #[inline(never)]
-        fn schedule_parachain_change(
-            updater: impl FnOnce(&mut BoundedVec<ParaId, T::MaxLengthParaIds>) -> DispatchResult,
+        fn schedule_paused_parachain_change(
+            updater: impl FnOnce(
+                &mut BoundedVec<ParaId, T::MaxLengthParaIds>,
+                &mut BoundedVec<ParaId, T::MaxLengthParaIds>,
+            ) -> DispatchResult,
         ) -> DispatchResult {
             let mut pending_paras = PendingParaIds::<T>::get();
+            let mut pending_paused = PendingPaused::<T>::get();
             // First, we need to decide what we should use as the base paras.
             let mut base_paras = pending_paras
                 .last()
                 .map(|(_, paras)| paras.clone())
                 .unwrap_or_else(Self::registered_para_ids);
+            let mut base_paused = pending_paused
+                .last()
+                .map(|(_, paras)| paras.clone())
+                .unwrap_or_else(Self::paused);
+            let old_base_paras = base_paras.clone();
+            let old_base_paused = base_paused.clone();
 
-            updater(&mut base_paras)?;
-            let new_paras = base_paras;
+            updater(&mut base_paras, &mut base_paused)?;
 
-            let scheduled_session = Self::scheduled_session();
+            if base_paras != old_base_paras {
+                let new_paras = base_paras;
 
-            if let Some(&mut (_, ref mut paras)) = pending_paras
-                .iter_mut()
-                .find(|&&mut (apply_at_session, _)| apply_at_session >= scheduled_session)
-            {
-                *paras = new_paras;
-            } else {
-                // We are scheduling a new parachains change for the scheduled session.
-                pending_paras.push((scheduled_session, new_paras));
+                let scheduled_session = Self::scheduled_session();
+
+                if let Some(&mut (_, ref mut paras)) = pending_paras
+                    .iter_mut()
+                    .find(|&&mut (apply_at_session, _)| apply_at_session >= scheduled_session)
+                {
+                    *paras = new_paras;
+                } else {
+                    // We are scheduling a new parachains change for the scheduled session.
+                    pending_paras.push((scheduled_session, new_paras));
+                }
+
+                <PendingParaIds<T>>::put(pending_paras);
             }
 
-            <PendingParaIds<T>>::put(pending_paras);
+            if base_paused != old_base_paused {
+                let new_paused = base_paused;
+
+                let scheduled_session = Self::scheduled_session();
+
+                if let Some(&mut (_, ref mut paras)) = pending_paused
+                    .iter_mut()
+                    .find(|&&mut (apply_at_session, _)| apply_at_session >= scheduled_session)
+                {
+                    *paras = new_paused;
+                } else {
+                    // We are scheduling a new parachains change for the scheduled session.
+                    pending_paused.push((scheduled_session, new_paused));
+                }
+
+                <PendingPaused<T>>::put(pending_paused);
+            }
 
             Ok(())
         }
@@ -529,14 +720,6 @@ pub mod pallet {
         ) -> SessionChangeOutcome<T> {
             let pending_paras = <PendingParaIds<T>>::get();
             let prev_paras = RegisteredParaIds::<T>::get();
-
-            // No pending parachain changes, so we're done.
-            if pending_paras.is_empty() {
-                return SessionChangeOutcome {
-                    prev_paras,
-                    new_paras: None,
-                };
-            }
 
             let (mut past_and_present, future) =
                 pending_paras
@@ -562,10 +745,107 @@ pub mod pallet {
 
             <PendingParaIds<T>>::put(future);
 
+            let pending_paused = <PendingPaused<T>>::get();
+
+            let (mut past_and_present, future) =
+                pending_paused
+                    .into_iter()
+                    .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
+                        apply_at_session <= *session_index
+                    });
+
+            if past_and_present.len() > 1 {
+                // This should never happen since we schedule parachain changes only into the future
+                // sessions and this handler called for each session change.
+                log::error!(
+                    target: LOG_TARGET,
+                    "Skipping applying paused parachain changes scheduled sessions in the past",
+                );
+            }
+
+            let new_paused = past_and_present.pop().map(|(_, paras)| paras);
+            if let Some(ref new_paused) = new_paused {
+                // Apply the new parachain list.
+                Paused::<T>::put(new_paused);
+            }
+
+            <PendingPaused<T>>::put(future);
+
+            let pending_paras = <PendingToRemove<T>>::get();
+
+            let (mut past_and_present, future) =
+                pending_paras
+                    .into_iter()
+                    .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
+                        apply_at_session <= *session_index
+                    });
+
+            if past_and_present.len() > 1 {
+                // This should never happen since we schedule parachain changes only into the future
+                // sessions and this handler called for each session change.
+                log::error!(
+                    target: LOG_TARGET,
+                    "Skipping applying to_remove parachain changes scheduled sessions in the past",
+                );
+            }
+
+            let new_paras = past_and_present.pop().map(|(_, paras)| paras);
+            if let Some(ref new_paras) = new_paras {
+                for para_id in new_paras {
+                    Self::cleanup_deregistered_para_id(*para_id);
+                }
+            }
+
+            <PendingToRemove<T>>::put(future);
+
             SessionChangeOutcome {
                 prev_paras,
                 new_paras,
             }
+        }
+
+        /// Remove all para id storage in this pallet,
+        /// and execute para_deregistered hook to clean up other pallets as well
+        fn cleanup_deregistered_para_id(para_id: ParaId) {
+            ParaGenesisData::<T>::remove(para_id);
+            BootNodes::<T>::remove(para_id);
+            T::RegistrarHooks::para_deregistered(para_id);
+        }
+
+        fn schedule_parachain_cleanup(para_id: ParaId) -> DispatchResult {
+            let mut pending_paras = PendingToRemove::<T>::get();
+            // First, we need to decide what we should use as the base paras.
+            let mut base_paras = pending_paras
+                .last()
+                .map(|(_, paras)| paras.clone())
+                .unwrap_or_default();
+
+            match base_paras.binary_search(&para_id) {
+                Ok(_) => return Err(Error::<T>::ParaIdAlreadyDeregistered.into()),
+                Err(index) => {
+                    base_paras
+                        .try_insert(index, para_id)
+                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                }
+            }
+
+            let new_paras = base_paras;
+
+            let scheduled_session = Self::scheduled_session();
+
+            if let Some(&mut (_, ref mut paras)) = pending_paras
+                .iter_mut()
+                .find(|&&mut (apply_at_session, _)| apply_at_session >= scheduled_session)
+            {
+                *paras = new_paras;
+            } else {
+                // We are scheduling a new parachains change for the scheduled session.
+                pending_paras.push((scheduled_session, new_paras));
+            }
+
+            <PendingToRemove<T>>::put(pending_paras);
+
+            Ok(())
         }
     }
 
@@ -611,3 +891,14 @@ pub mod pallet {
         }
     }
 }
+
+pub trait RegistrarHooks {
+    fn para_registered(_para_id: ParaId) -> Weight {
+        Weight::default()
+    }
+    fn para_deregistered(_para_id: ParaId) -> Weight {
+        Weight::default()
+    }
+}
+
+impl RegistrarHooks for () {}

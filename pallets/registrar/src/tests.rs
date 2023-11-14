@@ -225,8 +225,8 @@ fn deregister_para_id_removes_genesis_data() {
             vec![(2u32, BoundedVec::try_from(vec![42u32.into()]).unwrap())]
         );
         assert_eq!(
-            ParaRegistrar::para_genesis_data(ParaId::from(42)),
-            Some(genesis_data),
+            ParaRegistrar::para_genesis_data(ParaId::from(42)).as_ref(),
+            Some(&genesis_data),
         );
 
         // Assert after two sessions it goes to the non-pending
@@ -241,10 +241,13 @@ fn deregister_para_id_removes_genesis_data() {
         // Assert that the correct event was deposited
         System::assert_last_event(Event::ParaIdDeregistered { para_id: 42.into() }.into());
 
-        // Genesis data has been deleted
-        // TODO: it should probably not be deleted until the next session change when the
-        // para id is actually deregistered
-        assert_eq!(ParaRegistrar::para_genesis_data(ParaId::from(42)), None,);
+        // Genesis data has not been deleted yet, it will be deleted after 2 sessions
+        assert_eq!(
+            ParaRegistrar::para_genesis_data(ParaId::from(42)),
+            Some(genesis_data),
+        );
+        ParaRegistrar::initializer_on_new_session(&4);
+        assert_eq!(ParaRegistrar::para_genesis_data(ParaId::from(42)), None);
     });
 }
 
@@ -318,13 +321,8 @@ fn pause_para_id_42_works() {
         assert_ok!(ParaRegistrar::pause_container_chain(
             RuntimeOrigin::root(),
             42.into(),
+            true,
         ));
-
-        // Check the container-chain is not in PendingParaIds
-        assert_eq!(
-            ParaRegistrar::pending_registered_para_ids(),
-            vec![(2u32, BoundedVec::try_from(vec![]).unwrap())]
-        );
 
         // Assert that the ParaIdPaused event was emitted
         System::assert_last_event(Event::ParaIdPaused { para_id: 42.into() }.into());
@@ -366,11 +364,12 @@ fn pause_para_id_42_twice_fails() {
         assert_ok!(ParaRegistrar::pause_container_chain(
             RuntimeOrigin::root(),
             42.into(),
+            true,
         ));
 
         // Try to pause again
         assert_noop!(
-            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into()),
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), true),
             Error::<Test>::ParaIdAlreadyPaused
         );
     });
@@ -382,7 +381,7 @@ fn pause_para_id_42_fails_not_registered() {
         System::set_block_number(1);
         // Try to pause
         assert_noop!(
-            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into()),
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), true),
             Error::<Test>::ParaIdNotRegistered
         );
     });
@@ -393,8 +392,96 @@ fn pause_container_chain_bad_origin() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_noop!(
-            ParaRegistrar::pause_container_chain(RuntimeOrigin::signed(1), 42.into()),
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::signed(1), 42.into(), true),
             DispatchError::BadOrigin
+        );
+    });
+}
+
+#[test]
+fn unpause_para_id_that_is_not_paused_fails() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+
+        // Enable the container-chain for collating
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_eq!(
+            ParaRegistrar::pending_registered_para_ids(),
+            vec![(2u32, BoundedVec::try_from(vec![42u32.into()]).unwrap())]
+        );
+
+        ParaRegistrar::initializer_on_new_session(&2);
+        assert_eq!(ParaRegistrar::registered_para_ids(), vec![42.into()]);
+
+        // Try to unpause
+        assert_noop!(
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), false),
+            Error::<Test>::ParaIdNotPaused
+        );
+    });
+}
+
+#[test]
+fn unpause_para_id_42_twice_fails() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+
+        // Enable the container-chain for collating
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_eq!(
+            ParaRegistrar::pending_registered_para_ids(),
+            vec![(2u32, BoundedVec::try_from(vec![42u32.into()]).unwrap())]
+        );
+
+        ParaRegistrar::initializer_on_new_session(&2);
+        assert_eq!(ParaRegistrar::registered_para_ids(), vec![42.into()]);
+
+        // Pause the container-chain
+        assert_ok!(ParaRegistrar::pause_container_chain(
+            RuntimeOrigin::root(),
+            42.into(),
+            true,
+        ));
+
+        // Unpause
+        assert_ok!(ParaRegistrar::pause_container_chain(
+            RuntimeOrigin::root(),
+            42.into(),
+            false
+        ),);
+
+        // Unpause again fails
+        assert_noop!(
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), false),
+            Error::<Test>::ParaIdNotPaused
+        );
+    });
+}
+
+#[test]
+fn unpause_para_id_42_fails_not_registered() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        // Try to pause
+        assert_noop!(
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), false),
+            Error::<Test>::ParaIdNotPaused
         );
     });
 }
@@ -657,7 +744,7 @@ fn set_boot_nodes_bad_para_id() {
 }
 
 #[test]
-fn boot_nodes_removed_on_deregister() {
+fn boot_nodes_removed_on_deregister_if_not_marked_as_valid() {
     new_test_ext().execute_with(|| {
         System::set_block_number(1);
         assert_ok!(ParaRegistrar::register(
@@ -680,7 +767,48 @@ fn boot_nodes_removed_on_deregister() {
         ));
         assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)), boot_nodes);
 
+        // Deregister a para id that was not marked as valid_for_collating, we can remove
+        // bootnodes and genesis data immediately because no collators are assigned to this chain.
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into()));
+        assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)), vec![]);
+    });
+}
+
+#[test]
+fn boot_nodes_removed_after_2_sessions_if_marked_as_valid() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+        let boot_nodes: BoundedVec<BoundedVec<_, _>, _> = vec![
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+        ]
+        .try_into()
+        .unwrap();
+        assert_ok!(ParaRegistrar::set_boot_nodes(
+            RuntimeOrigin::root(),
+            42.into(),
+            boot_nodes.clone(),
+        ));
+        assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)), boot_nodes);
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+
+        // Deregister a para id that has been marked as valid_for_collating, bootnodes and genesis data
+        // will be available until all collators are unassigned, after 2 sessions.
+        assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into()));
+        assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)), boot_nodes);
+
+        // Bootnodes removed after 2 sessions
+        ParaRegistrar::initializer_on_new_session(&2);
         assert_eq!(ParaRegistrar::boot_nodes(ParaId::from(42)), vec![]);
     });
 }
@@ -735,9 +863,12 @@ fn weights_assigned_to_extrinsics_are_correct() {
         );
 
         assert_eq!(
-            crate::Call::<Test>::pause_container_chain { para_id: 42.into() }
-                .get_dispatch_info()
-                .weight,
+            crate::Call::<Test>::pause_container_chain {
+                para_id: 42.into(),
+                pause: true
+            }
+            .get_dispatch_info()
+            .weight,
             <() as crate::weights::WeightInfo>::pause_container_chain(
                 <Test as crate::Config>::MaxLengthParaIds::get()
             )
