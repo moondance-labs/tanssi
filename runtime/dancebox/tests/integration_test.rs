@@ -25,7 +25,8 @@ use {
             MigrateInvulnerables,
         },
         AuthorNoting, AuthorityAssignment, AuthorityMapping, CollatorAssignment, Configuration,
-        Invulnerables, MinimumSelfDelegation, PooledStaking, Proxy, ProxyType, RewardsPortion,
+        Invulnerables, MinimumSelfDelegation, PooledStaking, Proxy, ProxyType,
+        RewardsCollatorCommission, RewardsPortion,
     },
     frame_support::{assert_noop, assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -3690,10 +3691,10 @@ fn test_reward_to_staking_candidate() {
             let all_rewards = RewardsPortion::get() * summary.inflation;
             // rewards are shared between orchestrator and registered paras
             let orchestrator_rewards = all_rewards / 3;
-            let candidate_rewards = orchestrator_rewards * 2 / 10;
+            let candidate_rewards = RewardsCollatorCommission::get() * orchestrator_rewards;
 
             assert_eq!(
-                candidate_rewards + 1, // TODO: account for rounding properly :p
+                candidate_rewards,
                 balance_after - balance_before,
                 "dave should get the correct reward portion"
             );
