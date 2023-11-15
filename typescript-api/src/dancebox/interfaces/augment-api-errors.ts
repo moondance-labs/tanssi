@@ -228,6 +228,13 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        servicesPayment: {
+            CreditPriceTooExpensive: AugmentedError<ApiType>;
+            InsufficientCredits: AugmentedError<ApiType>;
+            InsufficientFundsToPurchaseCredits: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         session: {
             /** Registered duplicate key. */
             DuplicatedKey: AugmentedError<ApiType>;

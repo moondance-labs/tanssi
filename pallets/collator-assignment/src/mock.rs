@@ -30,7 +30,7 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
-    tp_traits::{ParaId, RemoveInvulnerables},
+    tp_traits::{ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -193,6 +193,7 @@ impl pallet_collator_assignment::Config for Test {
     type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<CollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
+    type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
     type WeightInfo = ();
 }
 
@@ -245,5 +246,21 @@ impl RemoveInvulnerables<u64> for RemoveAccountIdsAbove100 {
         });
 
         invulnerables
+    }
+}
+
+/// Any ParaId >= 5000 will be considered to not have enough credits
+pub struct RemoveParaIdsAbove5000;
+
+impl RemoveParaIdsWithNoCredits for RemoveParaIdsAbove5000 {
+    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
+        para_ids.retain(|para_id| *para_id <= ParaId::from(5000));
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(para_ids: &[ParaId]) {
+        for para_id in para_ids {
+            assert!(para_id > 5000.into(), "{}", para_id);
+        }
     }
 }

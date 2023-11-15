@@ -238,15 +238,17 @@ describeSuite({
 
                 const chainSpec2002 = JSON.parse(spec2002);
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
-                const tx = paraApi.tx.registrar.register(2002, containerChainGenesisData);
-                await signAndSendAndInclude(tx, alice);
+                const tx1 = paraApi.tx.registrar.register(2002, containerChainGenesisData);
+                const tx2 = paraApi.tx.servicesPayment.purchaseCredits(2002, 100000, null);
+                const tx12 = paraApi.tx.utility.batchAll([tx1, tx2]);
+                await signAndSendAndInclude(tx12, alice);
                 const bootNodes = [
                     "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                 ];
-                const tx2 = paraApi.tx.registrar.setBootNodes(2002, bootNodes);
-                const tx3 = paraApi.tx.registrar.markValidForCollating(2002);
-                const tx2tx3 = paraApi.tx.utility.batchAll([tx2, tx3]);
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx2tx3), alice);
+                const tx3 = paraApi.tx.registrar.setBootNodes(2002, bootNodes);
+                const tx4 = paraApi.tx.registrar.markValidForCollating(2002);
+                const tx34 = paraApi.tx.utility.batchAll([tx3, tx4]);
+                await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx34), alice);
                 // Check that pending para ids contains 2002
                 const registered2 = await paraApi.query.registrar.pendingParaIds();
                 const registered3 = await paraApi.query.registrar.registeredParaIds();

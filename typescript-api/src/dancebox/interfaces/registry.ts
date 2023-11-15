@@ -113,6 +113,9 @@ import type {
     PalletRegistrarError,
     PalletRegistrarEvent,
     PalletRootTestingCall,
+    PalletServicesPaymentCall,
+    PalletServicesPaymentError,
+    PalletServicesPaymentEvent,
     PalletSessionCall,
     PalletSessionError,
     PalletSessionEvent,
@@ -329,6 +332,9 @@ declare module "@polkadot/types/types/registry" {
         PalletRegistrarError: PalletRegistrarError;
         PalletRegistrarEvent: PalletRegistrarEvent;
         PalletRootTestingCall: PalletRootTestingCall;
+        PalletServicesPaymentCall: PalletServicesPaymentCall;
+        PalletServicesPaymentError: PalletServicesPaymentError;
+        PalletServicesPaymentEvent: PalletServicesPaymentEvent;
         PalletSessionCall: PalletSessionCall;
         PalletSessionError: PalletSessionError;
         PalletSessionEvent: PalletSessionEvent;

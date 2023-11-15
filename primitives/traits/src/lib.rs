@@ -43,9 +43,12 @@ pub trait AuthorNotingHook<AccountId> {
     ) -> Weight;
 }
 
-impl<AccountId> AuthorNotingHook<AccountId> for () {
-    fn on_container_author_noted(_: &AccountId, _: BlockNumber, _: ParaId) -> Weight {
-        Weight::zero()
+#[impl_trait_for_tuples::impl_for_tuples(5)]
+impl<AccountId> AuthorNotingHook<AccountId> for Tuple {
+    fn on_container_author_noted(a: &AccountId, b: BlockNumber, p: ParaId) -> Weight {
+        let mut weight: Weight = Default::default();
+        for_tuples!( #( weight.saturating_accrue(Tuple::on_container_author_noted(a, b, p)); )* );
+        weight
     }
 }
 
@@ -109,4 +112,16 @@ pub trait RemoveInvulnerables<AccountId> {
         collators: &mut Vec<AccountId>,
         num_invulnerables: usize,
     ) -> Vec<AccountId>;
+}
+
+/// Helper trait for pallet_collator_assignment to be able to not assign collators to container chains with no credits
+/// in pallet_services_payment
+pub trait RemoveParaIdsWithNoCredits {
+    /// Remove para ids with not enough credits. The resulting order will affect priority: the first para id in the list
+    /// will be the first one to get collators.
+    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>);
+
+    /// Make those para ids valid by giving them enough credits, for benchmarking.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(para_ids: &[ParaId]);
 }
