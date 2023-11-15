@@ -312,6 +312,8 @@ mod benchmarks {
 
         T::JoiningRequestTimer::skip_to_elapsed();
 
+        // Set counter to simulate rewards.
+        let counter = 100u32;
         // Execute as many pending operations as posible
         for i in 0..b {
             let candidate: T::AccountId = account("candidate", USER_SEED - i - 1, 0);
@@ -327,8 +329,6 @@ mod benchmarks {
                 }],
             )?;
 
-            // Set counter to simulate rewards.
-            let counter = 100u32;
             crate::Pools::<T>::set(candidate, &PoolsKey::ManualRewardsCounter, counter.into());
         }
 
@@ -339,15 +339,17 @@ mod benchmarks {
         );
 
         let (candidate, delegator) = &candidate_delegator[candidate_delegator.len() - 1];
+        let shares = min_candidate_stk::<T>() / T::InitialManualClaimShareValue::get();
         // We should have the last pairs event as the last event
         assert_last_event::<T>(
             Event::ClaimedManualRewards {
                 candidate: candidate.clone(),
                 delegator: delegator.clone(),
-                rewards: 1000u32.into(),
+                rewards: shares * counter.into(),
             }
             .into(),
         );
+
         Ok(())
     }
 
