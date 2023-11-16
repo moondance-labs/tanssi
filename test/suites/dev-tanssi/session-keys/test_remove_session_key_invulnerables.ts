@@ -3,7 +3,6 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
-import { u8aToHex } from "@polkadot/util";
 
 describeSuite({
     id: "DT0303",
@@ -13,12 +12,10 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
-        let charlie: KeyringPair;
 
         beforeAll(() => {
             alice = context.keyring.alice;
             bob = context.keyring.bob;
-            charlie = context.keyring.charlie;
 
             polkadotJs = context.polkadotJs();
         });
@@ -30,6 +27,11 @@ describeSuite({
                 // Bob is an invulnerable, but the keys will be removed and we will see what happens
                 const bobKey = (await polkadotJs.query.session.nextKeys(bob.address)).toJSON().nimbus;
                 const aliceKey = (await polkadotJs.query.session.nextKeys(alice.address)).toJSON().nimbus;
+                // Bob's key should be an authority
+                const authoritiesGenesis = await polkadotJs.query.authorityAssignment.collatorContainerChain(0);
+                expect(authoritiesGenesis.toJSON()["containerChains"]["2000"]).toContainEqual(bobKey);
+
+                // now purge keys
                 await polkadotJs.tx.session.purgeKeys().signAndSend(bob);
 
                 // Let's jump two sessions
@@ -43,6 +45,14 @@ describeSuite({
                 expect(authorities.toJSON().orchestratorChain).toContainEqual(aliceKey);
                 expect(authorities.toJSON()["containerChains"]["2000"]).not.toContainEqual(bobKey);
                 expect(authorities.toJSON()["containerChains"]["2001"]).not.toContainEqual(bobKey);
+
+                // But not only authority assignment, collator assignment should also not have bob
+                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                // Bob is no longer an assigned collator, but alice is
+                expect(collators.toJSON().orchestratorChain).not.toContainEqual(bob.address);
+                expect(collators.toJSON().orchestratorChain).toContainEqual(alice.address);
+                expect(collators.toJSON()["containerChains"]["2000"]).not.toContainEqual(bob.address);
+                expect(collators.toJSON()["containerChains"]["2001"]).not.toContainEqual(bob.address);
             },
         });
     },
