@@ -35,6 +35,7 @@ pallet-invulnerables = { path = "pallets/invulnerables", default-features = fals
 pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
+pallet-services-payment = { path = "pallets/services-payment", default-features = false }
 
 ccp-authorities-noting-inherent = { path = "container-chains/primitives/authorities-noting-inherent", default-features = false }
 ccp-xcm = { path = "container-chains/primitives/xcm", default-features = false }
@@ -229,6 +230,7 @@ log = { version = "0.4.17", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 serde = { version = "1.0.152", default-features = false }
 smallvec = "1.10.0"
+impl-trait-for-tuples = "0.2.2"
 
 # General (client)
 async-io = "1.3"

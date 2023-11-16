@@ -29,7 +29,6 @@ use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-use tp_traits::RemoveInvulnerables;
 
 pub mod migrations;
 pub mod weights;
@@ -72,6 +71,7 @@ use {
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
+    pallet_services_payment::{ChargeForBlockCredit, ProvideBlockProductionCost},
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     polkadot_runtime_common::BlockHashCount,
@@ -89,7 +89,7 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
-    tp_traits::GetSessionContainerChains,
+    tp_traits::{GetSessionContainerChains, RemoveInvulnerables, RemoveParaIdsWithNoCredits},
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -686,6 +686,40 @@ impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
     }
 }
 
+pub struct RemoveParaIdsWithNoCreditsImpl;
+
+impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
+    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
+        let blocks_per_session = Period::get();
+        let credits_for_2_sessions = 2 * blocks_per_session;
+        para_ids.retain(|para_id| {
+            // Check if the container chain has enough credits for producing blocks for 2 sessions
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+                .unwrap_or_default();
+
+            credits >= credits_for_2_sessions
+        });
+    }
+
+    /// Make those para ids valid by giving them enough credits, for benchmarking.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(para_ids: &[ParaId]) {
+        use frame_support::assert_ok;
+
+        let blocks_per_session = Period::get();
+        // Enough credits to run any benchmark
+        let credits = 20 * blocks_per_session;
+
+        for para_id in para_ids {
+            assert_ok!(ServicesPayment::set_credits(
+                RuntimeOrigin::root(),
+                *para_id,
+                credits,
+            ));
+        }
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
@@ -696,6 +730,7 @@ impl pallet_collator_assignment::Config for Runtime {
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
+    type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
@@ -704,13 +739,40 @@ impl pallet_authority_assignment::Config for Runtime {
     type AuthorityId = NimbusId;
 }
 
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * currency::MICRODANCE;
+
+pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
+impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
+    fn block_cost(_para_id: &ParaId) -> (u128, Weight) {
+        (FIXED_BLOCK_PRODUCTION_COST, Weight::zero())
+    }
+}
+
+parameter_types! {
+    // 60 days worth of blocks
+    pub const MaxCreditsStored: BlockNumber = 60 * DAYS;
+}
+
+impl pallet_services_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    /// Handler for fees
+    type OnChargeForBlockCredit = ChargeForBlockCredit<Runtime>;
+    /// Currency type for fee payment
+    type Currency = Balances;
+    /// Provider of a block cost which can adjust from block to block
+    type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
+    /// The maximum number of credits that can be accumulated
+    type MaxCreditsStored = MaxCreditsStored;
+    type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type AuthorNotingHook = InflationRewards;
+    type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1197,6 +1259,7 @@ construct_runtime!(
         Initializer: pallet_initializer = 23,
         AuthorNoting: pallet_author_noting = 24,
         AuthorityAssignment: pallet_authority_assignment = 25,
+        ServicesPayment: pallet_services_payment = 26,
 
         // Collator support. The order of these 6 are important and shall not change.
         Invulnerables: pallet_invulnerables = 30,
@@ -1227,6 +1290,7 @@ mod benches {
         [pallet_registrar, Registrar]
         [pallet_invulnerables, Invulnerables]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_services_payment, ServicesPayment]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }

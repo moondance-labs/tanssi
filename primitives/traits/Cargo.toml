@@ -7,6 +7,7 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [dependencies]
+impl-trait-for-tuples = { workspace = true }
 frame-support = { workspace = true }
 sp-std = { workspace = true }
 

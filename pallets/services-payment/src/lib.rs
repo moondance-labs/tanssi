@@ -36,24 +36,30 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
+    crate::weights::WeightInfo,
     cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         sp_runtime::{traits::Zero, Saturating},
-        traits::Currency,
+        traits::{tokens::ExistenceRequirement, Currency, WithdrawReasons},
     },
     frame_system::pallet_prelude::*,
+    scale_info::prelude::vec::Vec,
+    tp_traits::{AuthorNotingHook, BlockNumber},
 };
 
+#[cfg(any(test, feature = "runtime-benchmarks"))]
+mod benchmarks;
 #[cfg(test)]
 mod mock;
 
 #[cfg(test)]
 mod tests;
+pub mod weights;
 
 pub use pallet::*;
 
-#[frame_support::pallet(dev_mode)]
+#[frame_support::pallet]
 pub mod pallet {
     use super::*;
 
@@ -69,6 +75,8 @@ pub mod pallet {
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
         /// The maximum number of credits that can be accumulated
         type MaxCreditsStored: Get<BlockNumberFor<Self>>;
+
+        type WeightInfo: WeightInfo;
     }
 
     #[pallet::error]
@@ -95,6 +103,10 @@ pub mod pallet {
             para_id: ParaId,
             credits_remaining: BlockNumberFor<T>,
         },
+        CreditsSet {
+            para_id: ParaId,
+            credits: BlockNumberFor<T>,
+        },
     }
 
     #[pallet::storage]
@@ -108,7 +120,7 @@ pub mod pallet {
         BalanceOf<T>: From<BlockNumberFor<T>>,
     {
         #[pallet::call_index(0)]
-        #[pallet::weight(0)] // TODO
+        #[pallet::weight(T::WeightInfo::purchase_credits())]
         pub fn purchase_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -154,6 +166,28 @@ pub mod pallet {
 
             Ok(().into())
         }
+
+        /// Set the number of block production credits for this para_id without paying for them.
+        /// Can only be called by root.
+        #[pallet::call_index(1)]
+        #[pallet::weight(T::WeightInfo::set_credits())]
+        pub fn set_credits(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            credits: BlockNumberFor<T>,
+        ) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+
+            if credits.is_zero() {
+                BlockProductionCredits::<T>::remove(para_id);
+            } else {
+                BlockProductionCredits::<T>::insert(para_id, credits);
+            }
+
+            Self::deposit_event(Event::<T>::CreditsSet { para_id, credits });
+
+            Ok(().into())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -181,21 +215,24 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        _phantom: PhantomData<T>,
+        pub para_id_credits: Vec<(ParaId, BlockNumberFor<T>)>,
     }
 
-    #[cfg(feature = "std")]
     impl<T: Config> Default for GenesisConfig<T> {
         fn default() -> Self {
             Self {
-                _phantom: Default::default(),
+                para_id_credits: Default::default(),
             }
         }
     }
 
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
-        fn build(&self) {}
+        fn build(&self) {
+            for (para_id, credits) in &self.para_id_credits {
+                BlockProductionCredits::<T>::insert(para_id, credits);
+            }
+        }
     }
 }
 
@@ -214,8 +251,57 @@ pub trait OnChargeForBlockCredit<T: Config> {
     ) -> Result<(), Error<T>>;
 }
 
+pub struct ChargeForBlockCredit<Runtime>(PhantomData<Runtime>);
+impl<T: Config> OnChargeForBlockCredit<T> for ChargeForBlockCredit<T> {
+    fn charge_credits(
+        payer: &T::AccountId,
+        _para_id: &ParaId,
+        _credits: BlockNumberFor<T>,
+        fee: BalanceOf<T>,
+    ) -> Result<(), crate::Error<T>> {
+        use frame_support::traits::tokens::imbalance::Imbalance;
+
+        let result = T::Currency::withdraw(
+            payer,
+            fee,
+            WithdrawReasons::FEE,
+            ExistenceRequirement::AllowDeath,
+        );
+        let imbalance = result.map_err(|_| crate::Error::InsufficientFundsToPurchaseCredits)?;
+
+        if imbalance.peek() != fee {
+            panic!("withdrawn balance incorrect");
+        }
+
+        Ok(())
+    }
+}
+
 /// Returns the cost for a given block credit at the current time. This can be a complex operation,
 /// so it also returns the weight it consumes. (TODO: or just rely on benchmarking)
 pub trait ProvideBlockProductionCost<T: Config> {
     fn block_cost(para_id: &ParaId) -> (BalanceOf<T>, Weight);
+}
+
+impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
+    // This hook is called when pallet_author_noting sees that the block number of a container chain has increased.
+    // Currently we always charge 1 credit, even if a container chain produced more that 1 block in between tanssi
+    // blocks.
+    fn on_container_author_noted(
+        _author: &T::AccountId,
+        _block_number: BlockNumber,
+        para_id: ParaId,
+    ) -> Weight {
+        let total_weight = T::DbWeight::get().reads_writes(1, 1);
+
+        if let Err(e) = Pallet::<T>::burn_credit_for_para(&para_id) {
+            log::warn!(
+                "Failed to burn credits for container chain {}: {:?}",
+                u32::from(para_id),
+                e
+            );
+        }
+
+        total_weight
+    }
 }

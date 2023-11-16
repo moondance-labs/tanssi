@@ -2863,6 +2863,7 @@ dependencies = [
  "pallet-registrar",
  "pallet-registrar-runtime-api",
  "pallet-root-testing",
+ "pallet-services-payment",
  "pallet-session",
  "pallet-staking",
  "pallet-sudo",
@@ -8413,6 +8414,7 @@ name = "pallet-services-payment"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
@@ -8423,6 +8425,8 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
@@ -15292,6 +15296,7 @@ version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
+ "impl-trait-for-tuples",
  "sp-std",
 ]
 
