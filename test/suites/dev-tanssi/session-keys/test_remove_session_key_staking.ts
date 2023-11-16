@@ -26,6 +26,7 @@ describeSuite({
             // for that we need to remove Alice and Bob from invulnerables first
 
             // Additionally, we need to pass to the staking account the minimum balance
+            // We delegate with manual rewards to make sure the candidate does not update position
             const existentialDeposit = polkadotJs.consts.balances.existentialDeposit;
 
             await context.createBlock([
@@ -36,16 +37,10 @@ describeSuite({
                     .sudo(polkadotJs.tx.invulnerables.removeInvulnerable(bob.address))
                     .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 await polkadotJs.tx.pooledStaking
-                    .requestDelegate(alice.address, "AutoCompounding", 10000n * DANCE)
+                    .requestDelegate(alice.address, "ManualRewards", 10000n * DANCE)
                     .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 await polkadotJs.tx.pooledStaking
-                    .requestDelegate(alice.address, "AutoCompounding", 10000n * DANCE)
-                    .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(bob.address, "AutoCompounding", 10000n * DANCE)
-                    .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
-                await polkadotJs.tx.pooledStaking
-                    .requestDelegate(bob.address, "AutoCompounding", 10000n * DANCE)
+                    .requestDelegate(bob.address, "ManualRewards", 10000n * DANCE)
                     .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
                 await polkadotJs.tx.balances
                     .transfer(STAKING_ACCOUNT, existentialDeposit)
