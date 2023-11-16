@@ -18,13 +18,14 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, ContainerChainCli, RelayChainCli, Subcommand},
-        service::{new_partial, IdentifyVariant},
+        service::{self, IdentifyVariant, NodeConfig},
     },
     cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
     cumulus_primitives_core::ParaId,
     dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    node_common::service::Config as _,
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
@@ -231,9 +232,11 @@ macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		runner.async_run(|$config| {
-			let $components = new_partial(&$config)?;
+			let $components = NodeConfig::new_builder(&$config, None)?;
+            let inner = { $( $code )* };
+
 			let task_manager = $components.task_manager;
-			{ $( $code )* }.map(|v| (v, task_manager))
+			inner.map(|v| (v, task_manager))
 		})
 	}}
 }
@@ -284,7 +287,8 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
-                Ok(cmd.run(components.client, components.import_queue))
+                let (_, import_queue) = service::import_queue(&config, &components);
+                Ok(cmd.run(components.client, import_queue))
             })
         }
         Some(Subcommand::ExportBlocks(cmd)) => {
@@ -299,7 +303,8 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::ImportBlocks(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
-                Ok(cmd.run(components.client, components.import_queue))
+                let (_, import_queue) = service::import_queue(&config, &components);
+                Ok(cmd.run(components.client, import_queue))
             })
         }
         Some(Subcommand::Revert(cmd)) => {
@@ -331,8 +336,8 @@ pub fn run() -> Result<()> {
         Some(Subcommand::ExportGenesisState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
-                let partials = new_partial(&config)?;
-                cmd.run(&*config.chain_spec, &*partials.client)
+                let client = NodeConfig::new_builder(&config, None)?.client;
+                cmd.run(&*config.chain_spec, &*client)
             })
         }
         Some(Subcommand::ExportGenesisWasm(params)) => {
@@ -370,8 +375,8 @@ pub fn run() -> Result<()> {
                     }
                 }
                 BenchmarkCmd::Block(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config)?;
-                    cmd.run(partials.client)
+                    let client = NodeConfig::new_builder(&config, None)?.client;
+                    cmd.run(client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
                 BenchmarkCmd::Storage(_) => Err(sc_cli::Error::Input(
@@ -381,10 +386,10 @@ pub fn run() -> Result<()> {
                 )),
                 #[cfg(feature = "runtime-benchmarks")]
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
-                    let partials = new_partial(&config)?;
-                    let db = partials.backend.expose_db();
-                    let storage = partials.backend.expose_storage();
-                    cmd.run(config, partials.client.clone(), db, storage)
+                    let builder = NodeConfig::new_builder(&config, None)?;
+                    let db = builder.backend.expose_db();
+                    let storage = builder.backend.expose_storage();
+                    cmd.run(config, builder.client, db, storage)
                 }),
                 BenchmarkCmd::Machine(cmd) => {
                     runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))

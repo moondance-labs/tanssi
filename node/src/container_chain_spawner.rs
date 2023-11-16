@@ -25,13 +25,14 @@ use {
     crate::{
         cli::ContainerChainCli,
         container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
-        service::{start_node_impl_container, ParachainClient},
+        service::{start_node_impl_container, NodeConfig, ParachainClient},
     },
     cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{AccountId, Block, BlockNumber},
     futures::FutureExt,
+    node_common::service::Config,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
@@ -626,7 +627,7 @@ fn open_and_maybe_delete_db(
     container_chain_cli: &ContainerChainCli,
     keep_db: bool,
 ) -> sc_service::error::Result<()> {
-    let temp_cli = crate::service::new_partial(&container_chain_cli_config).unwrap();
+    let temp_cli = NodeConfig::new_builder(&container_chain_cli_config, None).unwrap();
 
     // Check block diff, only needed if keep-db is false
     if !keep_db {

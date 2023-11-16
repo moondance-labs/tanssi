@@ -325,13 +325,14 @@ where
 
         let net_config = FullNetworkConfiguration::new(&parachain_config.network);
         let import_queue_service = import_queue.service();
+        let spawn_handle = task_manager.spawn_handle();
 
         let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
             cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
                 parachain_config: &parachain_config,
                 client: client.clone(),
                 transaction_pool: transaction_pool.clone(),
-                spawn_handle: task_manager.spawn_handle(),
+                spawn_handle,
                 import_queue: import_queue,
                 para_id,
                 relay_chain_interface: relay_chain_interface,
@@ -791,9 +792,12 @@ where
         })
     }
 
-    pub fn dont_start_node_yet(
+    pub fn extract_import_queue_service(
         self,
-    ) -> NodeBuilder<T, SNetwork, STxHandler, ()>
+    ) -> (
+        NodeBuilder<T, SNetwork, STxHandler, ()>,
+        SImportQueueService,
+    )
     where
         SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
     {
@@ -809,23 +813,26 @@ where
             prometheus_registry,
             network,
             tx_handler_controller,
-            import_queue_service: _,
+            import_queue_service,
         } = self;
 
-        NodeBuilder {
-            client,
-            backend,
-            transaction_pool,
-            telemetry,
-            telemetry_worker_handle,
-            task_manager,
-            keystore_container,
-            hwbench,
-            prometheus_registry,
-            network,
-            tx_handler_controller,
-            import_queue_service: (),
-        }
+        (
+            NodeBuilder {
+                client,
+                backend,
+                transaction_pool,
+                telemetry,
+                telemetry_worker_handle,
+                task_manager,
+                keystore_container,
+                hwbench,
+                prometheus_registry,
+                network,
+                tx_handler_controller,
+                import_queue_service: (),
+            },
+            import_queue_service,
+        )
     }
 
     pub fn cumulus_client_collator_params_generator(

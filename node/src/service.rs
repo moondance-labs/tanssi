@@ -29,21 +29,17 @@ use {
         ParachainConsensus,
     },
     cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
-    cumulus_client_service::{
-        build_relay_chain_interface, prepare_node_config, start_collator, start_full_node,
-        CollatorSybilResistance, StartCollatorParams, StartFullNodeParams,
-    },
+    cumulus_client_service::prepare_node_config,
     cumulus_primitives_core::{
         relay_chain::{CollatorPair, Hash as PHash},
-        CollectCollationInfo, ParaId,
+        ParaId,
     },
     cumulus_primitives_parachain_inherent::{
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{opaque::Block, RuntimeApi},
-    frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
-    futures::{channel::mpsc, FutureExt, StreamExt},
+    futures::{channel::mpsc, StreamExt},
     nimbus_primitives::NimbusPair,
     node_common::service::Config as NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
@@ -51,29 +47,21 @@ use {
     polkadot_cli::ProvideRuntimeApi,
     polkadot_service::Handle,
     sc_client_api::{
-        AuxStore, Backend as BackendT, BlockBackend, BlockchainEvents, Finalizer, HeaderBackend,
-        UsageProvider,
+        AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
-    sc_consensus::{BlockImport, ImportQueue},
+    sc_consensus::BasicQueue,
+    sc_consensus::BlockImport,
     sc_executor::NativeElseWasmExecutor,
-    sc_network::{config::FullNetworkConfiguration, NetworkBlock},
+    sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
-    sc_service::{
-        Configuration, Error as ServiceError, PartialComponents, TFullBackend, TFullClient,
-        TaskManager,
-    },
-    sc_telemetry::{Telemetry, TelemetryHandle, TelemetryWorkerHandle},
-    sc_transaction_pool_api::OffchainTransactionPoolFactory,
+    sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
+    sc_telemetry::TelemetryHandle,
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
-    sp_core::{
-        traits::{SpawnEssentialNamed, SpawnNamed},
-        H256,
-    },
+    sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
-    sp_runtime::traits::Block as BlockT,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{future::Future, pin::Pin, str::FromStr, sync::Arc, time::Duration},
+    std::{future::Future, pin::Pin, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
     tc_orchestrator_chain_interface::{
@@ -83,7 +71,6 @@ use {
 };
 
 type FullBackend = TFullBackend<Block>;
-type MaybeSelectChain = Option<sc_consensus::LongestChain<FullBackend, Block>>;
 
 /// Native executor type.
 pub struct ParachainNativeExecutor;
@@ -100,7 +87,7 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     }
 }
 
-struct NodeConfig;
+pub struct NodeConfig;
 impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
@@ -142,68 +129,6 @@ impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
         // The pallet never reports error.
         None
     }
-}
-
-/// Starts a `ServiceBuilder` for a full service.
-///
-/// Use this macro if you don't actually need the full service, but just the builder in order to
-/// be able to perform chain operations.
-pub fn new_partial(
-    config: &Configuration,
-) -> Result<
-    PartialComponents<
-        ParachainClient,
-        ParachainBackend,
-        MaybeSelectChain,
-        sc_consensus::DefaultImportQueue<Block>,
-        sc_transaction_pool::FullPool<Block, ParachainClient>,
-        (
-            ParachainBlockImport,
-            Option<Telemetry>,
-            Option<TelemetryWorkerHandle>,
-        ),
-    >,
-    sc_service::Error,
-> {
-    todo!()
-    // let NodeBuilder {
-    //     client,
-    //     backend,
-    //     transaction_pool,
-    //     telemetry,
-    //     telemetry_worker_handle,
-    //     task_manager,
-    //     keystore_container,
-    // } = node_common::service::NodeBuilder::new(config)?;
-
-    // let block_import = ParachainBlockImport::new(client.clone(), backend.clone());
-
-    // // The nimbus import queue ONLY checks the signature correctness
-    // // Any other checks corresponding to the author-correctness should be done
-    // // in the runtime
-    // let import_queue = nimbus_consensus::import_queue(
-    //     client.clone(),
-    //     block_import.clone(),
-    //     move |_, _| async move {
-    //         let time = sp_timestamp::InherentDataProvider::from_system_time();
-
-    //         Ok((time,))
-    //     },
-    //     &task_manager.spawn_essential_handle(),
-    //     config.prometheus_registry(),
-    //     false,
-    // )?;
-
-    // Ok(PartialComponents {
-    //     backend,
-    //     client,
-    //     import_queue,
-    //     keystore_container,
-    //     task_manager,
-    //     transaction_pool,
-    //     select_chain: None,
-    //     other: (block_import, telemetry, telemetry_worker_handle),
-    // })
 }
 
 /// Background task used to detect changes to container chain assignment,
@@ -280,6 +205,33 @@ fn check_assigned_para_id(
     Ok(())
 }
 
+pub fn import_queue(
+    parachain_config: &Configuration,
+    node_builder: &NodeBuilder<NodeConfig>,
+) -> (ParachainBlockImport, BasicQueue<Block>) {
+    // The nimbus import queue ONLY checks the signature correctness
+    // Any other checks corresponding to the author-correctness should be done
+    // in the runtime
+    let block_import =
+        ParachainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
+
+    let import_queue = nimbus_consensus::import_queue(
+        node_builder.client.clone(),
+        block_import.clone(),
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
+
+            Ok((time,))
+        },
+        &node_builder.task_manager.spawn_essential_handle(),
+        parachain_config.prometheus_registry(),
+        false,
+    )
+    .expect("function never fails");
+
+    (block_import, import_queue)
+}
+
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
@@ -305,23 +257,7 @@ async fn start_node_impl(
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
     let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
 
-    // The nimbus import queue ONLY checks the signature correctness
-    // Any other checks corresponding to the author-correctness should be done
-    // in the runtime
-    let block_import =
-        ParachainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
-    let import_queue = nimbus_consensus::import_queue(
-        node_builder.client.clone(),
-        block_import.clone(),
-        move |_, _| async move {
-            let time = sp_timestamp::InherentDataProvider::from_system_time();
-
-            Ok((time,))
-        },
-        &node_builder.task_manager.spawn_essential_handle(),
-        parachain_config.prometheus_registry(),
-        false,
-    )?;
+    let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
 
     let (relay_chain_interface, collator_key) = node_builder
         .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
@@ -365,7 +301,7 @@ async fn start_node_impl(
     let sync_keystore = node_builder.keystore_container.keystore();
     let mut collate_on_tanssi = None;
 
-    let mut node_builder = if validator {
+    let node_builder = if validator {
         let collator_key = collator_key
             .clone()
             .expect("Command line arguments do not allow this. qed");
@@ -521,80 +457,28 @@ pub async fn start_node_impl_container(
     Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
 )> {
     let parachain_config = prepare_node_config(parachain_config);
-    let block_import;
-    let mut telemetry;
-    let client;
-    let backend;
-    let mut task_manager;
-    let transaction_pool;
-    let import_queue_service;
-    let params_import_queue;
-    let keystore_container;
-    {
-        // Some fields of params are not `Send`, and that causes problems with async/await.
-        // We take all the needed fields here inside a block to ensure that params
-        // gets dropped before the first instance of `.await`.
-        // Change this to use the syntax `PartialComponents { client, backend, .. } = params;`
-        // when this issue is fixed:
-        // https://github.com/rust-lang/rust/issues/104883
-        let params = new_partial(&parachain_config)?;
-        let (l_block_import, l_telemetry, _telemetry_worker_handle) = params.other;
-        block_import = l_block_import;
-        telemetry = l_telemetry;
-        client = params.client.clone();
-        backend = params.backend.clone();
-        task_manager = params.task_manager;
-        transaction_pool = params.transaction_pool.clone();
-        import_queue_service = params.import_queue.service();
-        params_import_queue = params.import_queue;
-        keystore_container = params.keystore_container;
-    }
 
-    let spawn_handle = task_manager.spawn_handle();
+    // Create a `NodeBuilder` which helps setup parachain nodes common systems.
+    let node_builder = NodeConfig::new_builder(&parachain_config, None)?;
+
+    let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
+
+    log::info!("are we collators? {:?}", collator);
+    let node_builder = node_builder
+        .build_cumulus_network(
+            &parachain_config,
+            para_id,
+            import_queue,
+            relay_chain_interface.clone(),
+        )
+        .await?;
 
     let force_authoring = parachain_config.force_authoring;
     let prometheus_registry = parachain_config.prometheus_registry().cloned();
-    let net_config = FullNetworkConfiguration::new(&parachain_config.network);
-
-    log::info!("are we collators? {:?}", collator);
-    let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
-        cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
-            parachain_config: &parachain_config,
-            client: client.clone(),
-            transaction_pool: transaction_pool.clone(),
-            spawn_handle,
-            import_queue: params_import_queue,
-            para_id,
-            relay_chain_interface: relay_chain_interface.clone(),
-            net_config,
-            sybil_resistance_level: CollatorSybilResistance::Resistant,
-        })
-        .await?;
-
-    if parachain_config.offchain_worker.enabled {
-        task_manager.spawn_handle().spawn(
-            "offchain-workers-runner",
-            "offchain-work",
-            sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
-                runtime_api_provider: client.clone(),
-                keystore: Some(keystore_container.keystore()),
-                offchain_db: backend.offchain_storage(),
-                transaction_pool: Some(OffchainTransactionPoolFactory::new(
-                    transaction_pool.clone(),
-                )),
-                network_provider: network.clone(),
-                is_validator: parachain_config.role.is_authority(),
-                enable_http_requests: false,
-                custom_extensions: move |_| vec![],
-            })
-            .run(client.clone(), task_manager.spawn_handle())
-            .boxed(),
-        );
-    }
 
     let rpc_builder = {
-        let client = client.clone();
-        let transaction_pool = transaction_pool.clone();
+        let client = node_builder.client.clone();
+        let transaction_pool = node_builder.transaction_pool.clone();
 
         Box::new(move |deny_unsafe, _| {
             let deps = crate::rpc::FullDeps {
@@ -609,231 +493,133 @@ pub async fn start_node_impl_container(
         })
     };
 
-    sc_service::spawn_tasks(sc_service::SpawnTasksParams {
-        rpc_builder,
-        client: client.clone(),
-        transaction_pool: transaction_pool.clone(),
-        task_manager: &mut task_manager,
-        config: parachain_config,
-        keystore: keystore.clone(),
-        backend: backend.clone(),
-        network: network.clone(),
-        system_rpc_tx,
-        tx_handler_controller,
-        telemetry: telemetry.as_mut(),
-        sync_service: sync_service.clone(),
-    })?;
+    let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
     let announce_block = {
-        let sync_service = sync_service.clone();
+        let sync_service = node_builder.network.sync_service.clone();
         Arc::new(move |hash, data| sync_service.announce_block(hash, data))
     };
 
     let relay_chain_slot_duration = Duration::from_secs(6);
 
-    let overseer_handle = relay_chain_interface
-        .overseer_handle()
-        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
     let mut start_collation: Option<
         Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     > = None;
 
-    if collator {
+    let node_builder = if collator {
+        let (node_builder, import_queue) = node_builder.extract_import_queue_service();
+
+        let collator_key = collator_key
+            .clone()
+            .expect("Command line arguments do not allow this. qed");
+
+        let overseer_handle = relay_chain_interface
+            .overseer_handle()
+            .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+
         let parachain_consensus = build_consensus_container(
-            client.clone(),
+            node_builder.client.clone(),
             orchestrator_client.clone(),
             block_import,
             prometheus_registry.as_ref(),
-            telemetry.as_ref().map(|t| t.handle()),
-            &task_manager,
+            node_builder.telemetry.as_ref().map(|t| t.handle()),
+            &node_builder.task_manager,
             relay_chain_interface.clone(),
             orchestrator_chain_interface.clone(),
-            transaction_pool,
-            sync_service.clone(),
+            node_builder.transaction_pool.clone(),
+            node_builder.network.sync_service.clone(),
             keystore,
             force_authoring,
             para_id,
             orchestrator_para_id,
         )?;
 
-        let spawner = task_manager.spawn_handle();
-        let params = StartCollatorParams {
-            para_id,
-            block_status: client.clone(),
-            announce_block,
-            client: client.clone(),
-            task_manager: &mut task_manager,
-            relay_chain_interface,
-            spawner,
-            parachain_consensus,
-            import_queue: import_queue_service,
-            collator_key: collator_key.expect("Command line arguments do not allow this. qed"),
-            relay_chain_slot_duration,
-            recovery_handle: Box::new(overseer_handle),
-            sync_service,
-        };
+        // Given the sporadic nature of the explicit recovery operation and the
+        // possibility to retry infinite times this value is more than enough.
+        // In practice here we expect no more than one queued messages.
+        const RECOVERY_CHAN_SIZE: usize = 8;
 
-        // Need to deconstruct it because `StartCollatorParams` does not implement Clone
-        let cumulus_client_collator::StartCollatorParams {
+        let (recovery_chan_tx, recovery_chan_rx) = mpsc::channel(RECOVERY_CHAN_SIZE);
+
+        let consensus = cumulus_client_consensus_common::run_parachain_consensus(
             para_id,
-            runtime_api,
-            block_status,
-            announce_block,
+            node_builder.client.clone(),
+            relay_chain_interface.clone(),
+            announce_block.clone(),
+            Some(recovery_chan_tx),
+        );
+
+        node_builder
+            .task_manager
+            .spawn_essential_handle()
+            .spawn_blocking("cumulus-consensus", None, consensus);
+
+        let pov_recovery = PoVRecovery::new(
+            Box::new(overseer_handle.clone()),
+            // We want that collators wait at maximum the relay chain slot duration before starting
+            // to recover blocks. Additionally, we wait at least half the slot time to give the
+            // relay chain the chance to increase availability.
+            RecoveryDelayRange {
+                min: relay_chain_slot_duration / 2,
+                max: relay_chain_slot_duration,
+            },
+            node_builder.client.clone(),
+            import_queue,
+            relay_chain_interface.clone(),
+            para_id,
+            recovery_chan_rx,
+            node_builder.network.sync_service.clone(),
+        );
+
+        node_builder.task_manager.spawn_essential_handle().spawn(
+            "cumulus-pov-recovery",
+            None,
+            pov_recovery.run(),
+        );
+
+        let params_generator = node_builder.cumulus_client_collator_params_generator(
+            para_id,
             overseer_handle,
-            spawner,
-            key,
+            collator_key,
             parachain_consensus,
-        } = partial_start_collator(params)?;
+        );
 
-        let collate_closure = move || async move {
-            // Hack to fix logs, if this future is awaited by the ContainerChainSpawner thread,
-            // the logs will say "Orchestrator" instead of "Container-2000".
-            // Wrapping the future in this function fixes that.
-            #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
-            async fn wrap<F, O>(para_id: ParaId, f: F) -> O
-            where
-                F: Future<Output = O>,
-            {
-                f.await
-            }
+        // Hack to fix logs, if this future is awaited by the ContainerChainSpawner thread,
+        // the logs will say "Orchestrator" instead of "Container-2000".
+        // Wrapping the future in this function fixes that.
+        #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
+        async fn wrap<F, O>(para_id: ParaId, f: F) -> O
+        where
+            F: Future<Output = O>,
+        {
+            f.await
+        }
 
-            // TODO: change for async backing
-            #[allow(deprecated)]
-            wrap(
+        start_collation = Some(Arc::new(move || {
+            Box::pin(wrap(
                 para_id,
-                cumulus_client_collator::start_collator(
-                    cumulus_client_collator::StartCollatorParams {
-                        para_id,
-                        runtime_api,
-                        block_status,
-                        announce_block,
-                        overseer_handle,
-                        spawner,
-                        key,
-                        parachain_consensus,
-                    },
-                ),
-            )
-            .await;
-        };
-        start_collation = Some(Arc::new(move || Box::pin((collate_closure.clone())())));
+                #[allow(deprecated)]
+                cumulus_client_collator::start_collator(params_generator()),
+            ))
+        }));
+
+        node_builder
     } else {
-        let params = StartFullNodeParams {
-            client: client.clone(),
-            announce_block,
-            task_manager: &mut task_manager,
+        node_builder.start_full_node(
             para_id,
-            relay_chain_interface,
+            relay_chain_interface.clone(),
             relay_chain_slot_duration,
-            import_queue: import_queue_service,
-            recovery_handle: Box::new(overseer_handle),
-            sync_service,
-        };
+        )?
+    };
 
-        // TODO: change for async backing
-        #[allow(deprecated)]
-        start_full_node(params)?;
-    }
+    node_builder.network.start_network.start_network();
 
-    start_network.start_network();
-
-    Ok((task_manager, client, backend, start_collation))
-}
-
-// Copy of `cumulus_client_service::start_collator`, that doesn't fully start the collator: it is
-// missing the final call to `cumulus_client_collator::start_collator`.
-// Returns the params of the call to `cumulus_client_collator::start_collator`.
-pub fn partial_start_collator<'a, Block, BS, Client, Backend, RCInterface, Spawner>(
-    StartCollatorParams {
-        block_status,
-        client,
-        announce_block,
-        spawner,
-        para_id,
-        task_manager,
-        relay_chain_interface,
-        parachain_consensus,
-        import_queue,
-        collator_key,
-        relay_chain_slot_duration,
-        recovery_handle,
-        sync_service,
-    }: StartCollatorParams<'a, Block, BS, Client, RCInterface, Spawner>,
-) -> sc_service::error::Result<
-    cumulus_client_collator::StartCollatorParams<Block, Client, BS, Spawner>,
->
-where
-    Block: BlockT,
-    BS: BlockBackend<Block> + Send + Sync + 'static,
-    Client: Finalizer<Block, Backend>
-        + UsageProvider<Block>
-        + HeaderBackend<Block>
-        + Send
-        + Sync
-        + BlockBackend<Block>
-        + BlockchainEvents<Block>
-        + ProvideRuntimeApi<Block>
-        + 'static,
-    Client::Api: CollectCollationInfo<Block>,
-    for<'b> &'b Client: BlockImport<Block>,
-    Spawner: SpawnNamed + Clone + Send + Sync + 'static,
-    RCInterface: RelayChainInterface + Clone + 'static,
-    Backend: BackendT<Block> + 'static,
-{
-    // Given the sporadic nature of the explicit recovery operation and the
-    // possibility to retry infinite times this value is more than enough.
-    // In practice here we expect no more than one queued messages.
-    const RECOVERY_CHAN_SIZE: usize = 8;
-
-    let (recovery_chan_tx, recovery_chan_rx) = mpsc::channel(RECOVERY_CHAN_SIZE);
-
-    let consensus = cumulus_client_consensus_common::run_parachain_consensus(
-        para_id,
-        client.clone(),
-        relay_chain_interface.clone(),
-        announce_block.clone(),
-        Some(recovery_chan_tx),
-    );
-
-    task_manager
-        .spawn_essential_handle()
-        .spawn_blocking("cumulus-consensus", None, consensus);
-
-    let pov_recovery = PoVRecovery::new(
-        recovery_handle,
-        // We want that collators wait at maximum the relay chain slot duration before starting
-        // to recover blocks. Additionally, we wait at least half the slot time to give the
-        // relay chain the chance to increase availability.
-        RecoveryDelayRange {
-            min: relay_chain_slot_duration / 2,
-            max: relay_chain_slot_duration,
-        },
-        client.clone(),
-        import_queue,
-        relay_chain_interface.clone(),
-        para_id,
-        recovery_chan_rx,
-        sync_service,
-    );
-
-    task_manager
-        .spawn_essential_handle()
-        .spawn("cumulus-pov-recovery", None, pov_recovery.run());
-
-    let overseer_handle = relay_chain_interface
-        .overseer_handle()
-        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-
-    Ok(cumulus_client_collator::StartCollatorParams {
-        runtime_api: client,
-        block_status,
-        announce_block,
-        overseer_handle,
-        spawner,
-        para_id,
-        key: collator_key,
-        parachain_consensus,
-    })
+    Ok((
+        node_builder.task_manager,
+        node_builder.client,
+        node_builder.backend,
+        start_collation,
+    ))
 }
 
 /// Build the import queue for the parachain runtime (manual seal).
