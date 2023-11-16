@@ -53,7 +53,6 @@ use {
     sp_api::ConstructRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_consensus::SelectChain,
-    sp_core::traits::SpawnEssentialNamed,
     sp_inherents::CreateInherentDataProviders,
     sp_offchain::OffchainWorkerApi,
     sp_runtime::Percent,
@@ -167,7 +166,7 @@ where
     ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
 {
     /// Create a new `NodeBuilder` which prepare objects required to launch a
-    /// node. However it doesn't start anything, and doesn't provide any
+    /// node. However it only starts telemetry, and doesn't provide any
     /// network-dependent objects (as it requires an import queue, which usually
     /// is different for each node).
     #[must_use]
@@ -790,6 +789,43 @@ where
             tx_handler_controller,
             import_queue_service: (),
         })
+    }
+
+    pub fn dont_start_node_yet(
+        self,
+    ) -> NodeBuilder<T, SNetwork, STxHandler, ()>
+    where
+        SNetwork: TypeIdentity<Type = Network<BlockOf<T>>>,
+    {
+        let NodeBuilder {
+            client,
+            backend,
+            transaction_pool,
+            telemetry,
+            telemetry_worker_handle,
+            task_manager,
+            keystore_container,
+            hwbench,
+            prometheus_registry,
+            network,
+            tx_handler_controller,
+            import_queue_service: _,
+        } = self;
+
+        NodeBuilder {
+            client,
+            backend,
+            transaction_pool,
+            telemetry,
+            telemetry_worker_handle,
+            task_manager,
+            keystore_container,
+            hwbench,
+            prometheus_registry,
+            network,
+            tx_handler_controller,
+            import_queue_service: (),
+        }
     }
 
     pub fn cumulus_client_collator_params_generator(
