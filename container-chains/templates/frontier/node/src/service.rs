@@ -35,6 +35,7 @@ use {
     sc_executor::NativeElseWasmExecutor,
     sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager},
     sc_telemetry::{Telemetry, TelemetryWorkerHandle},
+    sp_blockchain::HeaderBackend,
     sp_consensus_aura::SlotDuration,
     sp_core::{Pair, H256},
     std::{
@@ -401,11 +402,10 @@ fn get_aura_id_from_seed(seed: &str) -> NimbusId {
         .into()
 }
 
-use {sp_blockchain::HeaderBackend, std::str::FromStr};
 /// Builds a new development service. This service uses manual seal, and mocks
 /// the parachain inherent.
 pub async fn start_dev_node(
-    mut parachain_config: Configuration,
+    parachain_config: Configuration,
     sealing: Sealing,
     rpc_config: crate::cli::RpcConfig,
     para_id: ParaId,
@@ -451,9 +451,6 @@ pub async fn start_dev_node(
         parachain_config.prometheus_registry(),
         false,
     )?;
-
-    let validator = parachain_config.role.is_authority();
-    let force_authoring = parachain_config.force_authoring;
 
     // Build a Substrate Network. (not cumulus since it is a dev node, it mocks
     // the relaychain)

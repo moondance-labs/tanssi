@@ -16,19 +16,10 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-// std
-use std::{sync::Arc, time::Duration};
-
-use {cumulus_client_cli::CollatorOptions, sc_network::config::FullNetworkConfiguration};
-// Local Runtime Types
-use {
-    container_chain_template_simple_runtime::{opaque::Block, RuntimeApi},
-    node_common::service::NodeBuilder,
-};
-
-// Cumulus Imports
 #[allow(deprecated)]
 use {
+    container_chain_template_simple_runtime::{opaque::Block, RuntimeApi},
+    cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_service::{
         build_relay_chain_interface, prepare_node_config, start_full_node, CollatorSybilResistance,
@@ -36,18 +27,16 @@ use {
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
-};
-
-// Substrate Imports
-use {
     futures::FutureExt,
     sc_client_api::Backend,
     sc_consensus::ImportQueue,
     sc_executor::NativeElseWasmExecutor,
+    sc_network::config::FullNetworkConfiguration,
     sc_network::NetworkBlock,
     sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager},
     sc_telemetry::{Telemetry, TelemetryWorkerHandle},
     sc_transaction_pool_api::OffchainTransactionPoolFactory,
+    std::{sync::Arc, time::Duration},
 };
 
 /// Native executor type.
@@ -78,7 +67,7 @@ type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, P
 /// Use this macro if you don't actually need the full service, but just the builder in order to
 /// be able to perform chain operations.
 pub fn new_partial(
-    config: &Configuration,
+    _config: &Configuration,
 ) -> Result<
     PartialComponents<
         ParachainClient,
