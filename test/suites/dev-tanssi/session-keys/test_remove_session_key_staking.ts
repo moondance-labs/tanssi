@@ -6,7 +6,7 @@ import { jumpSessions } from "../../../util/block";
 import { DANCE, STAKING_ACCOUNT } from "util/constants";
 
 describeSuite({
-    id: "DT0303",
+    id: "DT0304",
     title: "Removing session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -54,7 +54,7 @@ describeSuite({
             id: "E01",
             title: "Checking that removing a session key makes the key dissappear from eligibility",
             test: async function () {
-                // Bob is an invulnerable, but the keys will be removed and we will see what happens
+                // Bob is a staking candidate, but the keys will be removed and we will see what happens
                 const bobKey = (await polkadotJs.query.session.nextKeys(bob.address)).toJSON().nimbus;
                 const aliceKey = (await polkadotJs.query.session.nextKeys(alice.address)).toJSON().nimbus;
                 const currentSessionBeforePurge = await polkadotJs.query.session.currentIndex();
