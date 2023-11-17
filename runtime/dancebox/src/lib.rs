@@ -836,15 +836,17 @@ impl RegistrarHooks for RegistrarHooksImpl {
         // Clear pallet_author_noting storage
         if let Err(e) = AuthorNoting::kill_author_data(RuntimeOrigin::root(), para_id) {
             log::warn!(
-                "Failed to kill_author_data after para id deregister: {:?}",
-                e
+                "Failed to kill_author_data after para id {} deregistered: {:?}",
+                u32::from(para_id),
+                e,
             );
         }
         // Remove all credits from pallet_services_payment
         if let Err(e) = ServicesPayment::set_credits(RuntimeOrigin::root(), para_id, 0) {
             log::warn!(
-                "Failed to set_credits to 0 after para id deregister: {:?}",
-                e
+                "Failed to set_credits to 0 after para id {} deregistered: {:?}",
+                u32::from(para_id),
+                e,
             );
         }
 

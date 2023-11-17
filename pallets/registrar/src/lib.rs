@@ -505,7 +505,7 @@ pub mod pallet {
                 Err(_) => return Err(Error::<T>::ParaIdNotInPendingVerification.into()),
             };
 
-            Self::schedule_paused_parachain_change(|para_ids, paused| {
+            Self::schedule_parachain_change(|para_ids| {
                 // We don't want to add duplicate para ids, so we check whether the potential new
                 // para id is already present in the list. Because the list is always ordered, we can
                 // leverage the binary search which makes this check O(log n).
@@ -518,12 +518,6 @@ pub mod pallet {
                             .try_insert(index, para_id)
                             .map_err(|_e| Error::<T>::ParaIdListFull)?;
                     }
-                }
-
-                if paused.binary_search(&para_id).is_ok() {
-                    // This is also unreachable because we only allow to pause parachains that have been marked
-                    // as valid for collating.
-                    return Err(Error::<T>::ParaIdAlreadyRegistered.into());
                 }
 
                 Ok(())
@@ -633,7 +627,36 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        #[inline(never)]
+        fn schedule_parachain_change(
+            updater: impl FnOnce(&mut BoundedVec<ParaId, T::MaxLengthParaIds>) -> DispatchResult,
+        ) -> DispatchResult {
+            let mut pending_paras = PendingParaIds::<T>::get();
+            // First, we need to decide what we should use as the base paras.
+            let mut base_paras = pending_paras
+                .last()
+                .map(|(_, paras)| paras.clone())
+                .unwrap_or_else(Self::registered_para_ids);
+
+            updater(&mut base_paras)?;
+            let new_paras = base_paras;
+
+            let scheduled_session = Self::scheduled_session();
+
+            if let Some(&mut (_, ref mut paras)) = pending_paras
+                .iter_mut()
+                .find(|&&mut (apply_at_session, _)| apply_at_session >= scheduled_session)
+            {
+                *paras = new_paras;
+            } else {
+                // We are scheduling a new parachains change for the scheduled session.
+                pending_paras.push((scheduled_session, new_paras));
+            }
+
+            <PendingParaIds<T>>::put(pending_paras);
+
+            Ok(())
+        }
+
         fn schedule_paused_parachain_change(
             updater: impl FnOnce(
                 &mut BoundedVec<ParaId, T::MaxLengthParaIds>,
