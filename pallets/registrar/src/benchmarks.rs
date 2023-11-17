@@ -148,9 +148,11 @@ mod benchmarks {
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
         // We should have registered y
         assert_eq!(
-            Pallet::<T>::pending_registered_para_ids()[0].1.len(),
+            Pallet::<T>::registered_para_ids().len(),
             genesis_para_id_len + y as usize
         );
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
@@ -158,7 +160,7 @@ mod benchmarks {
         #[extrinsic_call]
         Pallet::<T>::deregister(RawOrigin::Root, (y - 1).into());
 
-        // We still have y - 1 but the deposit has not been removed yet
+        // We now have y - 1 but the deposit has not been removed yet
         assert_eq!(
             Pallet::<T>::pending_registered_para_ids()[0].1.len(),
             genesis_para_id_len + (y - 1) as usize

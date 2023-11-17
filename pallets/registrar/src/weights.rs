@@ -76,14 +76,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `z` is `[1, 10]`.
 	fn register(x: u32, y: u32, z: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `462 + y * (12 ±0)`
-		//  Estimated: `3907 + y * (12 ±0) + z * (2 ±0)`
-		// Minimum execution time: 40_514_000 picoseconds.
-		Weight::from_parts(42_013_000, 3907)
-			// Standard Error: 8
-			.saturating_add(Weight::from_parts(633, 0).saturating_mul(x.into()))
-			// Standard Error: 2_526_167
-			.saturating_add(Weight::from_parts(93_178_305, 0).saturating_mul(z.into()))
+		//  Measured:  `422 + y * (12 ±0)`
+		//  Estimated: `3867 + y * (12 ±0) + z * (2 ±0)`
+		// Minimum execution time: 39_722_000 picoseconds.
+		Weight::from_parts(41_289_000, 3867)
+			// Standard Error: 7
+			.saturating_add(Weight::from_parts(648, 0).saturating_mul(x.into()))
+			// Standard Error: 2_375_220
+			.saturating_add(Weight::from_parts(122_328_606, 0).saturating_mul(z.into()))
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 			.saturating_add(Weight::from_parts(0, 12).saturating_mul(y.into()))
@@ -107,47 +107,19 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `y` is `[1, 50]`.
 	fn deregister_immediate(x: u32, y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `310 + y * (17 ±0)`
-		//  Estimated: `3868 + y * (15 ±0)`
-		// Minimum execution time: 47_354_000 picoseconds.
-		Weight::from_parts(62_306_931, 3868)
+		//  Measured:  `270 + y * (17 ±0)`
+		//  Estimated: `3828 + y * (15 ±0)`
+		// Minimum execution time: 45_899_000 picoseconds.
+		Weight::from_parts(49_527_081, 3828)
 			// Standard Error: 0
 			.saturating_add(Weight::from_parts(2, 0).saturating_mul(x.into()))
-			// Standard Error: 11_297
-			.saturating_add(Weight::from_parts(275_215, 0).saturating_mul(y.into()))
+			// Standard Error: 10_393
+			.saturating_add(Weight::from_parts(374_759, 0).saturating_mul(y.into()))
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 			.saturating_add(Weight::from_parts(0, 15).saturating_mul(y.into()))
 	}
 	/// Storage: `Registrar::PendingVerification` (r:1 w:0)
-	/// Proof: `Registrar::PendingVerification` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Registrar::PendingParaIds` (r:1 w:1)
-	/// Proof: `Registrar::PendingParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Registrar::PendingPaused` (r:1 w:0)
-	/// Proof: `Registrar::PendingPaused` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Registrar::Paused` (r:1 w:0)
-	/// Proof: `Registrar::Paused` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Session::CurrentIndex` (r:1 w:0)
-	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Registrar::PendingToRemove` (r:1 w:1)
-	/// Proof: `Registrar::PendingToRemove` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// The range of component `x` is `[5, 3000000]`.
-	/// The range of component `y` is `[1, 50]`.
-	fn deregister_scheduled(x: u32, y: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `454 + y * (4 ±0)`
-		//  Estimated: `1937 + y * (4 ±0)`
-		// Minimum execution time: 25_398_000 picoseconds.
-		Weight::from_parts(32_217_636, 1937)
-			// Standard Error: 0
-			.saturating_add(Weight::from_parts(2, 0).saturating_mul(x.into()))
-			// Standard Error: 8_573
-			.saturating_add(Weight::from_parts(242_112, 0).saturating_mul(y.into()))
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
-			.saturating_add(Weight::from_parts(0, 4).saturating_mul(y.into()))
-	}
-	/// Storage: `Registrar::PendingVerification` (r:1 w:1)
 	/// Proof: `Registrar::PendingVerification` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `Registrar::PendingParaIds` (r:1 w:1)
 	/// Proof: `Registrar::PendingParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -159,16 +131,42 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: `Registrar::Paused` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `Session::CurrentIndex` (r:1 w:0)
 	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::PendingToRemove` (r:1 w:1)
+	/// Proof: `Registrar::PendingToRemove` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// The range of component `x` is `[5, 3000000]`.
+	/// The range of component `y` is `[1, 50]`.
+	fn deregister_scheduled(x: u32, y: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `433 + y * (4 ±0)`
+		//  Estimated: `1916 + y * (4 ±0)`
+		// Minimum execution time: 25_580_000 picoseconds.
+		Weight::from_parts(26_208_612, 1916)
+			// Standard Error: 0
+			.saturating_add(Weight::from_parts(1, 0).saturating_mul(x.into()))
+			// Standard Error: 7_689
+			.saturating_add(Weight::from_parts(257_539, 0).saturating_mul(y.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(Weight::from_parts(0, 4).saturating_mul(y.into()))
+	}
+	/// Storage: `Registrar::PendingVerification` (r:1 w:1)
+	/// Proof: `Registrar::PendingVerification` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::PendingParaIds` (r:1 w:1)
+	/// Proof: `Registrar::PendingParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::RegisteredParaIds` (r:1 w:0)
+	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Session::CurrentIndex` (r:1 w:0)
+	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `y` is `[1, 50]`.
 	fn mark_valid_for_collating(y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `477 + y * (8 ±0)`
-		//  Estimated: `1958 + y * (8 ±0)`
-		// Minimum execution time: 27_650_000 picoseconds.
-		Weight::from_parts(42_754_882, 1958)
-			// Standard Error: 9_207
-			.saturating_add(Weight::from_parts(276_708, 0).saturating_mul(y.into()))
-			.saturating_add(T::DbWeight::get().reads(6_u64))
+		//  Measured:  `437 + y * (8 ±0)`
+		//  Estimated: `1918 + y * (8 ±0)`
+		// Minimum execution time: 22_480_000 picoseconds.
+		Weight::from_parts(30_017_006, 1918)
+			// Standard Error: 7_648
+			.saturating_add(Weight::from_parts(346_663, 0).saturating_mul(y.into()))
+			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
 	}
@@ -180,14 +178,14 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// The range of component `y` is `[1, 10]`.
 	fn set_boot_nodes(x: u32, y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `268`
-		//  Estimated: `3733`
-		// Minimum execution time: 13_676_000 picoseconds.
-		Weight::from_parts(12_346_432, 3733)
-			// Standard Error: 187
-			.saturating_add(Weight::from_parts(10_544, 0).saturating_mul(x.into()))
-			// Standard Error: 3_903
-			.saturating_add(Weight::from_parts(310_487, 0).saturating_mul(y.into()))
+		//  Measured:  `228`
+		//  Estimated: `3693`
+		// Minimum execution time: 13_120_000 picoseconds.
+		Weight::from_parts(11_674_865, 3693)
+			// Standard Error: 163
+			.saturating_add(Weight::from_parts(10_402, 0).saturating_mul(x.into()))
+			// Standard Error: 3_404
+			.saturating_add(Weight::from_parts(293_322, 0).saturating_mul(y.into()))
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
@@ -202,10 +200,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `468 + y * (8 ±0)`
 		//  Estimated: `1949 + y * (8 ±0)`
-		// Minimum execution time: 23_804_000 picoseconds.
-		Weight::from_parts(37_160_176, 1949)
-			// Standard Error: 7_922
-			.saturating_add(Weight::from_parts(302_077, 0).saturating_mul(y.into()))
+		// Minimum execution time: 20_891_000 picoseconds.
+		Weight::from_parts(31_382_004, 1949)
+			// Standard Error: 8_305
+			.saturating_add(Weight::from_parts(322_895, 0).saturating_mul(y.into()))
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
@@ -227,14 +225,14 @@ impl WeightInfo for () {
 	/// The range of component `z` is `[1, 10]`.
 	fn register(x: u32, y: u32, z: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `462 + y * (12 ±0)`
-		//  Estimated: `3907 + y * (12 ±0) + z * (2 ±0)`
-		// Minimum execution time: 40_514_000 picoseconds.
-		Weight::from_parts(42_013_000, 3907)
-			// Standard Error: 8
-			.saturating_add(Weight::from_parts(633, 0).saturating_mul(x.into()))
-			// Standard Error: 2_526_167
-			.saturating_add(Weight::from_parts(93_178_305, 0).saturating_mul(z.into()))
+		//  Measured:  `422 + y * (12 ±0)`
+		//  Estimated: `3867 + y * (12 ±0) + z * (2 ±0)`
+		// Minimum execution time: 39_722_000 picoseconds.
+		Weight::from_parts(41_289_000, 3867)
+			// Standard Error: 7
+			.saturating_add(Weight::from_parts(648, 0).saturating_mul(x.into()))
+			// Standard Error: 2_375_220
+			.saturating_add(Weight::from_parts(122_328_606, 0).saturating_mul(z.into()))
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(4_u64))
 			.saturating_add(Weight::from_parts(0, 12).saturating_mul(y.into()))
@@ -258,47 +256,19 @@ impl WeightInfo for () {
 	/// The range of component `y` is `[1, 50]`.
 	fn deregister_immediate(x: u32, y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `310 + y * (17 ±0)`
-		//  Estimated: `3868 + y * (15 ±0)`
-		// Minimum execution time: 47_354_000 picoseconds.
-		Weight::from_parts(62_306_931, 3868)
+		//  Measured:  `270 + y * (17 ±0)`
+		//  Estimated: `3828 + y * (15 ±0)`
+		// Minimum execution time: 45_899_000 picoseconds.
+		Weight::from_parts(49_527_081, 3828)
 			// Standard Error: 0
 			.saturating_add(Weight::from_parts(2, 0).saturating_mul(x.into()))
-			// Standard Error: 11_297
-			.saturating_add(Weight::from_parts(275_215, 0).saturating_mul(y.into()))
+			// Standard Error: 10_393
+			.saturating_add(Weight::from_parts(374_759, 0).saturating_mul(y.into()))
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(7_u64))
 			.saturating_add(Weight::from_parts(0, 15).saturating_mul(y.into()))
 	}
 	/// Storage: `Registrar::PendingVerification` (r:1 w:0)
-	/// Proof: `Registrar::PendingVerification` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Registrar::PendingParaIds` (r:1 w:1)
-	/// Proof: `Registrar::PendingParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Registrar::PendingPaused` (r:1 w:0)
-	/// Proof: `Registrar::PendingPaused` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Registrar::Paused` (r:1 w:0)
-	/// Proof: `Registrar::Paused` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Session::CurrentIndex` (r:1 w:0)
-	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Registrar::PendingToRemove` (r:1 w:1)
-	/// Proof: `Registrar::PendingToRemove` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// The range of component `x` is `[5, 3000000]`.
-	/// The range of component `y` is `[1, 50]`.
-	fn deregister_scheduled(x: u32, y: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `454 + y * (4 ±0)`
-		//  Estimated: `1937 + y * (4 ±0)`
-		// Minimum execution time: 25_398_000 picoseconds.
-		Weight::from_parts(32_217_636, 1937)
-			// Standard Error: 0
-			.saturating_add(Weight::from_parts(2, 0).saturating_mul(x.into()))
-			// Standard Error: 8_573
-			.saturating_add(Weight::from_parts(242_112, 0).saturating_mul(y.into()))
-			.saturating_add(RocksDbWeight::get().reads(6_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
-			.saturating_add(Weight::from_parts(0, 4).saturating_mul(y.into()))
-	}
-	/// Storage: `Registrar::PendingVerification` (r:1 w:1)
 	/// Proof: `Registrar::PendingVerification` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `Registrar::PendingParaIds` (r:1 w:1)
 	/// Proof: `Registrar::PendingParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -310,16 +280,42 @@ impl WeightInfo for () {
 	/// Proof: `Registrar::Paused` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `Session::CurrentIndex` (r:1 w:0)
 	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::PendingToRemove` (r:1 w:1)
+	/// Proof: `Registrar::PendingToRemove` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// The range of component `x` is `[5, 3000000]`.
+	/// The range of component `y` is `[1, 50]`.
+	fn deregister_scheduled(x: u32, y: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `433 + y * (4 ±0)`
+		//  Estimated: `1916 + y * (4 ±0)`
+		// Minimum execution time: 25_580_000 picoseconds.
+		Weight::from_parts(26_208_612, 1916)
+			// Standard Error: 0
+			.saturating_add(Weight::from_parts(1, 0).saturating_mul(x.into()))
+			// Standard Error: 7_689
+			.saturating_add(Weight::from_parts(257_539, 0).saturating_mul(y.into()))
+			.saturating_add(RocksDbWeight::get().reads(7_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+			.saturating_add(Weight::from_parts(0, 4).saturating_mul(y.into()))
+	}
+	/// Storage: `Registrar::PendingVerification` (r:1 w:1)
+	/// Proof: `Registrar::PendingVerification` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::PendingParaIds` (r:1 w:1)
+	/// Proof: `Registrar::PendingParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::RegisteredParaIds` (r:1 w:0)
+	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Session::CurrentIndex` (r:1 w:0)
+	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `y` is `[1, 50]`.
 	fn mark_valid_for_collating(y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `477 + y * (8 ±0)`
-		//  Estimated: `1958 + y * (8 ±0)`
-		// Minimum execution time: 27_650_000 picoseconds.
-		Weight::from_parts(42_754_882, 1958)
-			// Standard Error: 9_207
-			.saturating_add(Weight::from_parts(276_708, 0).saturating_mul(y.into()))
-			.saturating_add(RocksDbWeight::get().reads(6_u64))
+		//  Measured:  `437 + y * (8 ±0)`
+		//  Estimated: `1918 + y * (8 ±0)`
+		// Minimum execution time: 22_480_000 picoseconds.
+		Weight::from_parts(30_017_006, 1918)
+			// Standard Error: 7_648
+			.saturating_add(Weight::from_parts(346_663, 0).saturating_mul(y.into()))
+			.saturating_add(RocksDbWeight::get().reads(4_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
 	}
@@ -331,14 +327,14 @@ impl WeightInfo for () {
 	/// The range of component `y` is `[1, 10]`.
 	fn set_boot_nodes(x: u32, y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `268`
-		//  Estimated: `3733`
-		// Minimum execution time: 13_676_000 picoseconds.
-		Weight::from_parts(12_346_432, 3733)
-			// Standard Error: 187
-			.saturating_add(Weight::from_parts(10_544, 0).saturating_mul(x.into()))
-			// Standard Error: 3_903
-			.saturating_add(Weight::from_parts(310_487, 0).saturating_mul(y.into()))
+		//  Measured:  `228`
+		//  Estimated: `3693`
+		// Minimum execution time: 13_120_000 picoseconds.
+		Weight::from_parts(11_674_865, 3693)
+			// Standard Error: 163
+			.saturating_add(Weight::from_parts(10_402, 0).saturating_mul(x.into()))
+			// Standard Error: 3_404
+			.saturating_add(Weight::from_parts(293_322, 0).saturating_mul(y.into()))
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
@@ -353,10 +349,10 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `468 + y * (8 ±0)`
 		//  Estimated: `1949 + y * (8 ±0)`
-		// Minimum execution time: 23_804_000 picoseconds.
-		Weight::from_parts(37_160_176, 1949)
-			// Standard Error: 7_922
-			.saturating_add(Weight::from_parts(302_077, 0).saturating_mul(y.into()))
+		// Minimum execution time: 20_891_000 picoseconds.
+		Weight::from_parts(31_382_004, 1949)
+			// Standard Error: 8_305
+			.saturating_add(Weight::from_parts(322_895, 0).saturating_mul(y.into()))
 			.saturating_add(RocksDbWeight::get().reads(3_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
