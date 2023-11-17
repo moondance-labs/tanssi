@@ -453,49 +453,36 @@ pub mod pallet {
             if let Ok(index) = para_ids.binary_search(&para_id) {
                 para_ids.remove(index);
                 PendingVerification::<T>::put(para_ids);
-
+                Self::deposit_event(Event::ParaIdDeregistered { para_id });
+                // Cleanup immediately
                 Self::cleanup_deregistered_para_id(para_id);
+            } else {
+                Self::schedule_paused_parachain_change(|para_ids, paused| {
+                    // We have to find out where, in the sorted vec the para id is, if anywhere.
 
-                return Ok(());
-            }
-
-            Self::schedule_paused_parachain_change(|para_ids, paused| {
-                // We have to find out where, in the sorted vec the para id is, if anywhere.
-
-                match para_ids.binary_search(&para_id) {
-                    Ok(index) => {
-                        para_ids.remove(index);
-                    }
-                    Err(_) => {
-                        // If the para id is not registered, it may be paused. In that case, remove it from there
-                        match paused.binary_search(&para_id) {
-                            Ok(index) => {
-                                paused.remove(index);
-                            }
-                            Err(_) => {
-                                return Err(Error::<T>::ParaIdNotRegistered.into());
+                    match para_ids.binary_search(&para_id) {
+                        Ok(index) => {
+                            para_ids.remove(index);
+                        }
+                        Err(_) => {
+                            // If the para id is not registered, it may be paused. In that case, remove it from there
+                            match paused.binary_search(&para_id) {
+                                Ok(index) => {
+                                    paused.remove(index);
+                                }
+                                Err(_) => {
+                                    return Err(Error::<T>::ParaIdNotRegistered.into());
+                                }
                             }
                         }
                     }
-                }
 
-                Ok(())
-            })?;
-
-            // Get asset creator and deposit amount
-            // Deposit may not exist, for example if the para id was registered on genesis
-            if let Some(asset_info) = RegistrarDeposit::<T>::get(para_id) {
-                // Unreserve deposit
-                T::Currency::unreserve(&asset_info.creator, asset_info.deposit);
-
-                // Remove asset info
-                RegistrarDeposit::<T>::remove(para_id);
+                    Ok(())
+                })?;
+                // Mark this para id for cleanup later
+                Self::schedule_parachain_cleanup(para_id)?;
+                Self::deposit_event(Event::ParaIdDeregistered { para_id });
             }
-
-            // Mark this para id for cleanup later
-            Self::schedule_parachain_cleanup(para_id)?;
-
-            Self::deposit_event(Event::ParaIdDeregistered { para_id });
 
             Ok(())
         }
@@ -521,7 +508,7 @@ pub mod pallet {
                 // leverage the binary search which makes this check O(log n).
 
                 match para_ids.binary_search(&para_id) {
-                    // This Ok should be unreachable
+                    // This Ok is unreachable
                     Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
                     Err(index) => {
                         para_ids
@@ -531,7 +518,7 @@ pub mod pallet {
                 }
 
                 if paused.binary_search(&para_id).is_ok() {
-                    // This should also be unreachable because we only allow to pause parachains that have been marked
+                    // This is also unreachable because we only allow to pause parachains that have been marked
                     // as valid for collating.
                     return Err(Error::<T>::ParaIdAlreadyRegistered.into());
                 }
@@ -617,7 +604,7 @@ pub mod pallet {
                         Err(_) => return Err(Error::<T>::ParaIdNotPaused.into()),
                     }
                     match para_ids.binary_search(&para_id) {
-                        // This Ok should be unreachable, a para id cannot be in "RegisteredParaIds" and "Paused" at the same time
+                        // This Ok is unreachable, a para id cannot be in "RegisteredParaIds" and "Paused" at the same time
                         Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
                         Err(index) => {
                             para_ids
@@ -809,18 +796,34 @@ pub mod pallet {
         fn cleanup_deregistered_para_id(para_id: ParaId) {
             ParaGenesisData::<T>::remove(para_id);
             BootNodes::<T>::remove(para_id);
+            // Get asset creator and deposit amount
+            // Deposit may not exist, for example if the para id was registered on genesis
+            if let Some(asset_info) = RegistrarDeposit::<T>::take(para_id) {
+                // Unreserve deposit
+                T::Currency::unreserve(&asset_info.creator, asset_info.deposit);
+            }
+
             T::RegistrarHooks::para_deregistered(para_id);
         }
 
         fn schedule_parachain_cleanup(para_id: ParaId) -> DispatchResult {
+            let scheduled_session = Self::scheduled_session();
             let mut pending_paras = PendingToRemove::<T>::get();
             // First, we need to decide what we should use as the base paras.
-            let mut base_paras = pending_paras
-                .last()
-                .map(|(_, paras)| paras.clone())
-                .unwrap_or_default();
+            let base_paras = match pending_paras
+                .binary_search_by_key(&scheduled_session, |(session, _paras)| *session)
+            {
+                Ok(i) => &mut pending_paras[i].1,
+                Err(i) => {
+                    pending_paras.insert(i, (scheduled_session, Default::default()));
 
+                    &mut pending_paras[i].1
+                }
+            };
+
+            // Add the para_id to the entry for the scheduled session.
             match base_paras.binary_search(&para_id) {
+                // This Ok is unreachable
                 Ok(_) => return Err(Error::<T>::ParaIdAlreadyDeregistered.into()),
                 Err(index) => {
                     base_paras
@@ -829,20 +832,7 @@ pub mod pallet {
                 }
             }
 
-            let new_paras = base_paras;
-
-            let scheduled_session = Self::scheduled_session();
-
-            if let Some(&mut (_, ref mut paras)) = pending_paras
-                .iter_mut()
-                .find(|&&mut (apply_at_session, _)| apply_at_session >= scheduled_session)
-            {
-                *paras = new_paras;
-            } else {
-                // We are scheduling a new parachains change for the scheduled session.
-                pending_paras.push((scheduled_session, new_paras));
-            }
-
+            // Save the updated list of pending parachains for removal.
             <PendingToRemove<T>>::put(pending_paras);
 
             Ok(())
