@@ -570,6 +570,10 @@ declare module "@polkadot/types/lookup" {
         readonly asParaIdPaused: {
             readonly paraId: u32;
         } & Struct;
+        readonly isParaIdUnpaused: boolean;
+        readonly asParaIdUnpaused: {
+            readonly paraId: u32;
+        } & Struct;
         readonly isBootNodesChanged: boolean;
         readonly asBootNodesChanged: {
             readonly paraId: u32;
@@ -579,6 +583,7 @@ declare module "@polkadot/types/lookup" {
             | "ParaIdDeregistered"
             | "ParaIdValidForCollating"
             | "ParaIdPaused"
+            | "ParaIdUnpaused"
             | "BootNodesChanged";
     }
 
@@ -2556,6 +2561,7 @@ declare module "@polkadot/types/lookup" {
         readonly isPauseContainerChain: boolean;
         readonly asPauseContainerChain: {
             readonly paraId: u32;
+            readonly pause: bool;
         } & Struct;
         readonly type: "Register" | "Deregister" | "MarkValidForCollating" | "SetBootNodes" | "PauseContainerChain";
     }
@@ -3351,16 +3357,20 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletRegistrarError (289) */
     interface PalletRegistrarError extends Enum {
         readonly isParaIdAlreadyRegistered: boolean;
-        readonly isParaIdAlreadyPaused: boolean;
         readonly isParaIdNotRegistered: boolean;
+        readonly isParaIdAlreadyDeregistered: boolean;
+        readonly isParaIdAlreadyPaused: boolean;
+        readonly isParaIdNotPaused: boolean;
         readonly isParaIdListFull: boolean;
         readonly isGenesisDataTooBig: boolean;
         readonly isParaIdNotInPendingVerification: boolean;
         readonly isNotSufficientDeposit: boolean;
         readonly type:
             | "ParaIdAlreadyRegistered"
-            | "ParaIdAlreadyPaused"
             | "ParaIdNotRegistered"
+            | "ParaIdAlreadyDeregistered"
+            | "ParaIdAlreadyPaused"
+            | "ParaIdNotPaused"
             | "ParaIdListFull"
             | "GenesisDataTooBig"
             | "ParaIdNotInPendingVerification"

@@ -384,6 +384,9 @@ export default {
             ParaIdPaused: {
                 paraId: "u32",
             },
+            ParaIdUnpaused: {
+                paraId: "u32",
+            },
             BootNodesChanged: {
                 paraId: "u32",
             },
@@ -1816,6 +1819,7 @@ export default {
             },
             pause_container_chain: {
                 paraId: "u32",
+                pause: "bool",
             },
         },
     },
@@ -2458,8 +2462,10 @@ export default {
     PalletRegistrarError: {
         _enum: [
             "ParaIdAlreadyRegistered",
-            "ParaIdAlreadyPaused",
             "ParaIdNotRegistered",
+            "ParaIdAlreadyDeregistered",
+            "ParaIdAlreadyPaused",
+            "ParaIdNotPaused",
             "ParaIdListFull",
             "GenesisDataTooBig",
             "ParaIdNotInPendingVerification",

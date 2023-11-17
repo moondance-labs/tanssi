@@ -770,8 +770,11 @@ declare module "@polkadot/api-base/types/submittable" {
             >;
             /** See [`Pallet::pause_container_chain`]. */
             pauseContainerChain: AugmentedSubmittable<
-                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [u32]
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    pause: bool | boolean | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, bool]
             >;
             /** See [`Pallet::register`]. */
             register: AugmentedSubmittable<
