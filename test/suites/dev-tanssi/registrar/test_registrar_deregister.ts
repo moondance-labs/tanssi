@@ -73,8 +73,8 @@ describeSuite({
 
                 // Check the number of keys in storage
                 const palletKeysWithOnePara = await polkadotJs.rpc.state.getKeys("0x3fba98689ebed1138735e0e7a5a790ab");
-                // 3 fixed keys + genesis data + bootnode
-                expect(palletKeysWithOnePara.length).to.be.eq(5);
+                // 4 fixed keys + genesis data + bootnodes
+                expect(palletKeysWithOnePara.length).to.be.eq(6);
 
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
                 const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
@@ -107,8 +107,8 @@ describeSuite({
 
                 // Check the number of keys in storage
                 const palletKeys = await polkadotJs.rpc.state.getKeys("0x3fba98689ebed1138735e0e7a5a790ab");
-                // 3 keys: version, registeredParas, pendingParas
-                expect(palletKeys.length).to.be.eq(3);
+                // 4 keys: version, registeredParas, pendingParas, pendingToRemove
+                expect(palletKeys.length).to.be.eq(4);
             },
         });
     },
