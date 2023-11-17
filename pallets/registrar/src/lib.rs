@@ -681,7 +681,6 @@ pub mod pallet {
 
             if base_paras != old_base_paras {
                 let new_paras = base_paras;
-
                 let scheduled_session = Self::scheduled_session();
 
                 if let Some(&mut (_, ref mut paras)) = pending_paras
@@ -699,7 +698,6 @@ pub mod pallet {
 
             if base_paused != old_base_paused {
                 let new_paused = base_paused;
-
                 let scheduled_session = Self::scheduled_session();
 
                 if let Some(&mut (_, ref mut paras)) = pending_paused
@@ -734,82 +732,80 @@ pub mod pallet {
             let pending_paras = <PendingParaIds<T>>::get();
             let prev_paras = RegisteredParaIds::<T>::get();
 
-            let (mut past_and_present, future) =
-                pending_paras
+            let new_paras = if !pending_paras.is_empty() {
+                let (mut past_and_present, future) = pending_paras
                     .into_iter()
                     .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
                         apply_at_session <= *session_index
                     });
 
-            if past_and_present.len() > 1 {
-                // This should never happen since we schedule parachain changes only into the future
-                // sessions and this handler called for each session change.
-                log::error!(
-                    target: LOG_TARGET,
-                    "Skipping applying parachain changes scheduled sessions in the past",
-                );
-            }
+                if past_and_present.len() > 1 {
+                    // This should never happen since we schedule parachain changes only into the future
+                    // sessions and this handler called for each session change.
+                    log::error!(
+                        target: LOG_TARGET,
+                        "Skipping applying parachain changes scheduled sessions in the past",
+                    );
+                }
 
-            let new_paras = past_and_present.pop().map(|(_, paras)| paras);
-            if let Some(ref new_paras) = new_paras {
-                // Apply the new parachain list.
-                RegisteredParaIds::<T>::put(new_paras);
-            }
+                let new_paras = past_and_present.pop().map(|(_, paras)| paras);
+                if let Some(ref new_paras) = new_paras {
+                    // Apply the new parachain list.
+                    RegisteredParaIds::<T>::put(new_paras);
+                    <PendingParaIds<T>>::put(future);
+                }
 
-            <PendingParaIds<T>>::put(future);
+                new_paras
+            } else {
+                // pending_paras.is_empty, so parachain list did not change
+                None
+            };
 
             let pending_paused = <PendingPaused<T>>::get();
-
-            let (mut past_and_present, future) =
-                pending_paused
+            if !pending_paused.is_empty() {
+                let (mut past_and_present, future) = pending_paused
                     .into_iter()
                     .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
                         apply_at_session <= *session_index
                     });
 
-            if past_and_present.len() > 1 {
-                // This should never happen since we schedule parachain changes only into the future
-                // sessions and this handler called for each session change.
-                log::error!(
-                    target: LOG_TARGET,
-                    "Skipping applying paused parachain changes scheduled sessions in the past",
-                );
-            }
+                if past_and_present.len() > 1 {
+                    // This should never happen since we schedule parachain changes only into the future
+                    // sessions and this handler called for each session change.
+                    log::error!(
+                        target: LOG_TARGET,
+                        "Skipping applying paused parachain changes scheduled sessions in the past",
+                    );
+                }
 
-            let new_paused = past_and_present.pop().map(|(_, paras)| paras);
-            if let Some(ref new_paused) = new_paused {
-                // Apply the new parachain list.
-                Paused::<T>::put(new_paused);
-            }
-
-            <PendingPaused<T>>::put(future);
-
-            let pending_paras = <PendingToRemove<T>>::get();
-
-            let (mut past_and_present, future) =
-                pending_paras
-                    .into_iter()
-                    .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
-                        apply_at_session <= *session_index
-                    });
-
-            if past_and_present.len() > 1 {
-                // This should never happen since we schedule parachain changes only into the future
-                // sessions and this handler called for each session change.
-                log::error!(
-                    target: LOG_TARGET,
-                    "Skipping applying to_remove parachain changes scheduled sessions in the past",
-                );
-            }
-
-            let new_paras = past_and_present.pop().map(|(_, paras)| paras);
-            if let Some(ref new_paras) = new_paras {
-                for para_id in new_paras {
-                    Self::cleanup_deregistered_para_id(*para_id);
+                let new_paused = past_and_present.pop().map(|(_, paras)| paras);
+                if let Some(ref new_paused) = new_paused {
+                    // Apply the new parachain list.
+                    Paused::<T>::put(new_paused);
+                    <PendingPaused<T>>::put(future);
                 }
             }
 
-            <PendingToRemove<T>>::put(future);
+            let pending_to_remove = <PendingToRemove<T>>::get();
+            if !pending_to_remove.is_empty() {
+                let (past_and_present, future) =
+                    pending_to_remove.into_iter().partition::<Vec<_>, _>(
+                        |&(apply_at_session, _)| apply_at_session <= *session_index,
+                    );
+
+                // Unlike `PendingParaIds`, this cannot skip items because we must cleanup all parachains.
+                // But this will only happen if `initializer_on_new_session` is not called for a big range of
+                // sessions, and many parachains are deregistered in the meantime.
+                for (_, new_paras) in &past_and_present {
+                    for para_id in new_paras {
+                        Self::cleanup_deregistered_para_id(*para_id);
+                    }
+                }
+
+                if !past_and_present.is_empty() {
+                    <PendingToRemove<T>>::put(future);
+                }
+            }
 
             SessionChangeOutcome {
                 prev_paras,
