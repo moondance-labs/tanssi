@@ -440,10 +440,13 @@ pub mod pallet {
         /// If a container-chain is registered but not marked as valid_for_collating, this will remove it
         /// from `PendingVerification` as well.
         #[pallet::call_index(1)]
-        #[pallet::weight(T::WeightInfo::deregister(
+        #[pallet::weight(T::WeightInfo::deregister_immediate(
             T::MaxGenesisDataSize::get(),
             T::MaxLengthParaIds::get()
-        ))]
+        ).max(T::WeightInfo::deregister_scheduled(
+            T::MaxGenesisDataSize::get(),
+            T::MaxLengthParaIds::get()
+        )))]
         pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
