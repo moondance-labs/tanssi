@@ -157,7 +157,7 @@ jobs:
         if: ${{(github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         run: |
           echo "${{steps.S3.outputs.object_key}}"
-          echo "${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/index.html"
+          echo "${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html"
       - name: Find Comment
         if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
         uses: peter-evans/find-comment@v2
@@ -175,6 +175,6 @@ jobs:
           body: |
             Master coverage: ${{ steps.coverage.outputs.master_percent }}
             Coverage generated ${{ steps.coverage.outputs.coverage_date }}:
-              ${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/index.html
+              ${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html
             Pull coverage: ${{ steps.coverage.outputs.total_percent }}
           edit-mode: replace
