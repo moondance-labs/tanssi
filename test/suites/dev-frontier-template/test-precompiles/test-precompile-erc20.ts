@@ -17,7 +17,7 @@ describeSuite({
     id: "DF0903",
     title: "Precompiles - ERC20 Native",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         let randomAccount: PrivateKeyAccount;
 
         beforeEach(async () => {

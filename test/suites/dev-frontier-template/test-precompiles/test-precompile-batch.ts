@@ -12,7 +12,7 @@ describeSuite({
     id: "DF0901",
     title: "Batch - All functions should consume the same gas",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should consume the same gas",
