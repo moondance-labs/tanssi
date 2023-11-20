@@ -37,6 +37,7 @@ use {
         relay_chain::{BlakeTwo256, BlockNumber, HeadData},
         ParaId,
     },
+    dp_core::well_known_keys::PARAS_HEADS_INDEX,
     frame_support::{dispatch::PostDispatchInfo, pallet_prelude::*, Hashable},
     frame_system::pallet_prelude::*,
     parity_scale_codec::{Decode, Encode},
@@ -44,7 +45,6 @@ use {
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Header, DispatchResult, RuntimeString},
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
-    dp_core::well_known_keys::PARAS_HEADS_INDEX,
     tp_traits::{AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChains},
 };
 

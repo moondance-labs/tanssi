@@ -44,6 +44,7 @@
 pub use pallet::*;
 use {
     crate::weights::WeightInfo,
+    dp_collator_assignment::AssignedCollators,
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::BlockNumberFor,
     rand::{seq::SliceRandom, SeedableRng},
@@ -53,7 +54,6 @@ use {
         Saturating,
     },
     sp_std::{fmt::Debug, prelude::*, vec},
-    dp_collator_assignment::AssignedCollators,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
         RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,

@@ -16,8 +16,8 @@
 
 use {
     crate::{mock::*, CollatorContainerChain},
-    std::collections::BTreeMap,
     dp_collator_assignment::AssignedCollators,
+    std::collections::BTreeMap,
 };
 
 fn assigned_collators_at_session(session_index: u32) -> Option<BTreeMap<String, u32>> {

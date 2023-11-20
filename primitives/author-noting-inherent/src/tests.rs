@@ -18,6 +18,7 @@ use {
     crate::{tests::mock_relay_chain_impl::MyMockRelayInterface, OwnParachainInherentData},
     cumulus_pallet_parachain_system::RelayChainStateProof,
     cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber},
+    dp_core::well_known_keys::para_id_head,
     futures::executor::block_on,
     hex_literal::hex,
     parity_scale_codec::{Decode, Encode},
@@ -26,7 +27,6 @@ use {
     sp_runtime::DigestItem,
     std::sync::atomic::{AtomicU8, Ordering},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    dp_core::well_known_keys::para_id_head,
 };
 
 #[test]
