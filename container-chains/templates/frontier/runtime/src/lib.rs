@@ -28,6 +28,7 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+pub mod migrations;
 mod precompiles;
 pub mod xcm_config;
 
@@ -95,6 +96,8 @@ pub use {
 
 // Polkadot imports
 use polkadot_runtime_common::BlockHashCount;
+
+const LOG_TARGET: &str = "runtime::evm_template";
 
 pub type Precompiles = TemplatePrecompiles<Runtime>;
 
@@ -625,7 +628,7 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = ();
+    type MigrationsList = (migrations::TemplateMigrations<Runtime>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
 

@@ -203,6 +203,7 @@ try-runtime = [
 	"pallet-evm/try-runtime",
 	"pallet-hotfix-sufficients/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
+	"pallet-migrations/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
