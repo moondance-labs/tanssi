@@ -83,6 +83,8 @@ import type {
     PalletConfigurationCall,
     PalletConfigurationError,
     PalletConfigurationHostConfiguration,
+    PalletInflationRewardsChainsToRewardValue,
+    PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
     PalletInvulnerablesError,
     PalletInvulnerablesEvent,
@@ -111,6 +113,9 @@ import type {
     PalletRegistrarError,
     PalletRegistrarEvent,
     PalletRootTestingCall,
+    PalletServicesPaymentCall,
+    PalletServicesPaymentError,
+    PalletServicesPaymentEvent,
     PalletSessionCall,
     PalletSessionError,
     PalletSessionEvent,
@@ -297,6 +302,8 @@ declare module "@polkadot/types/types/registry" {
         PalletConfigurationCall: PalletConfigurationCall;
         PalletConfigurationError: PalletConfigurationError;
         PalletConfigurationHostConfiguration: PalletConfigurationHostConfiguration;
+        PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
+        PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
         PalletInvulnerablesError: PalletInvulnerablesError;
         PalletInvulnerablesEvent: PalletInvulnerablesEvent;
@@ -325,6 +332,9 @@ declare module "@polkadot/types/types/registry" {
         PalletRegistrarError: PalletRegistrarError;
         PalletRegistrarEvent: PalletRegistrarEvent;
         PalletRootTestingCall: PalletRootTestingCall;
+        PalletServicesPaymentCall: PalletServicesPaymentCall;
+        PalletServicesPaymentError: PalletServicesPaymentError;
+        PalletServicesPaymentEvent: PalletServicesPaymentEvent;
         PalletSessionCall: PalletSessionCall;
         PalletSessionError: PalletSessionError;
         PalletSessionEvent: PalletSessionEvent;

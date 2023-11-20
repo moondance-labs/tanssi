@@ -1,6 +1,9 @@
 import { DevModeContext, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import { filterAndApply } from "@moonwall/util";
 
+import { ApiPromise } from "@polkadot/api";
+import { AccountId32, EventRecord } from "@polkadot/types/interfaces";
+import { Vec, u8, u32, bool } from "@polkadot/types-codec";
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
 
@@ -55,6 +58,142 @@ export async function waitToSession(context, paraApi: ApiPromise, session: numbe
 
         await context.waitBlock(1, "Tanssi");
     }
+}
+
+export function extractFeeAuthor(events: EventRecord[] = [], feePayer: string) {
+    const filtered = filterAndApply(
+        events,
+        "balances",
+        ["Withdraw"],
+        ({ event }: EventRecord) => event.data as unknown as { who: AccountId32; amount: u128 }
+    );
+    const extractFeeFromAuthor = filtered.filter(({ who }) => who.toString() === feePayer);
+    return extractFeeFromAuthor[0];
+}
+
+export function fetchRewardAuthorOrchestrator(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "inflationRewards",
+        ["RewardedOrchestrator"],
+        ({ event }: EventRecord) => event.data as unknown as { accountId: AccountId32; balance: u128 }
+    );
+
+    return filtered[0];
+}
+
+export function filterRewardStakingCollator(events: EventRecord[] = [], author: string) {
+    const stakignRewardEvents = fetchRewardStakingCollators(events);
+    for (const index in stakignRewardEvents) {
+        if (stakignRewardEvents[index].collator.toString() === author) {
+            return {
+                manualRewards: stakignRewardEvents[index].manualClaimRewards.toBigInt(),
+                autoCompoundingRewards: stakignRewardEvents[index].autoCompoundingRewards.toBigInt(),
+            };
+        }
+    }
+
+    return {
+        manualRewards: 0n,
+        autoCompoundingRewards: 0n,
+    };
+}
+
+export function filterRewardStakingDelegators(events: EventRecord[] = [], author: string) {
+    const stakignRewardEvents = fetchRewardStakingDelegators(events);
+    for (const index in stakignRewardEvents) {
+        if (stakignRewardEvents[index].collator.toString() === author) {
+            return {
+                manualRewards: stakignRewardEvents[index].manualClaimRewards.toBigInt(),
+                autoCompoundingRewards: stakignRewardEvents[index].autoCompoundingRewards.toBigInt(),
+            };
+        }
+    }
+
+    return {
+        manualRewards: 0n,
+        autoCompoundingRewards: 0n,
+    };
+}
+
+export function fetchRewardStakingDelegators(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "pooledStaking",
+        ["RewardedDelegators"],
+        ({ event }: EventRecord) =>
+            event.data as unknown as { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
+    );
+
+    return filtered;
+}
+
+export function fetchRewardStakingCollators(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "pooledStaking",
+        ["RewardedCollator"],
+        ({ event }: EventRecord) =>
+            event.data as unknown as { collator: AccountId32; autoCompoundingRewards: u128; manualClaimRewards: u128 }
+    );
+
+    return filtered;
+}
+
+export function fetchRewardAuthorContainers(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "inflationRewards",
+        ["RewardedContainer"],
+        ({ event }: EventRecord) => event.data as unknown as { accountId: AccountId32; paraId: ParaId; balance: u128 }
+    );
+
+    return filtered;
+}
+
+export function fetchRandomnessEvent(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "collatorAssignment",
+        ["NewPendingAssignment"],
+        ({ event }: EventRecord) =>
+            event.data as unknown as { randomSeed: Vec<u8>; fullRotation: bool; targetSession: u32 }
+    );
+
+    return filtered[0];
+}
+
+export function fetchIssuance(events: EventRecord[] = []) {
+    const filtered = filterAndApply(
+        events,
+        "balances",
+        ["Issued"],
+        ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
+    );
+
+    return filtered[0];
+}
+
+export function filterRewardFromOrchestrator(events: EventRecord[] = [], author: string) {
+    const reward = fetchRewardAuthorOrchestrator(events);
+    if (reward.accountId.toString() === author) {
+        return reward.balance.toBigInt();
+    } else {
+        return 0n;
+    }
+}
+
+export function filterRewardFromContainer(events: EventRecord[] = [], feePayer: string, paraId: ParaId) {
+    const rewardEvents = fetchRewardAuthorContainers(events);
+    for (const index in rewardEvents) {
+        if (
+            rewardEvents[index].accountId.toString() === feePayer &&
+            rewardEvents[index].paraId.toString() === paraId.toString()
+        ) {
+            return rewardEvents[index].balance.toBigInt();
+        }
+    }
+    return 0n;
 }
 
 /// Same as tx.signAndSend(account), except that it waits for the transaction to be included in a block:

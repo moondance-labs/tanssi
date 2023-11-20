@@ -18,7 +18,7 @@ use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
         prod_or_fast, AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig,
-        RegistrarConfig, Signature, SudoConfig,
+        RegistrarConfig, ServicesPaymentConfig, Signature, SudoConfig,
     },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
@@ -293,6 +293,32 @@ fn testnet_genesis(
     mock_container_chains: &[ParaId],
     configuration: pallet_configuration::GenesisConfig<dancebox_runtime::Runtime>,
 ) -> dancebox_runtime::RuntimeGenesisConfig {
+    let para_ids: Vec<_> = container_chains
+        .iter()
+        .map(|x| {
+            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+                panic!(
+                    "Failed to build genesis data for container chain {:?}: {}",
+                    x, e
+                )
+            })
+        })
+        .chain(
+            mock_container_chains
+                .iter()
+                .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
+        )
+        .collect();
+    // Assign 1000 block credits to all container chains registered in genesis
+    let para_id_credits: Vec<_> = para_ids
+        .iter()
+        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000))
+        .collect();
+    let accounts_with_ed = vec![
+        dancebox_runtime::StakingAccount::get(),
+        dancebox_runtime::ParachainBondAccount::get(),
+        dancebox_runtime::PendingRewardsAccount::get(),
+    ];
     dancebox_runtime::RuntimeGenesisConfig {
         system: dancebox_runtime::SystemConfig {
             code: dancebox_runtime::WASM_BINARY
@@ -305,6 +331,12 @@ fn testnet_genesis(
                 .iter()
                 .cloned()
                 .map(|k| (k, 1 << 60))
+                .chain(
+                    accounts_with_ed
+                        .iter()
+                        .cloned()
+                        .map(|k| (k, dancebox_runtime::EXISTENTIAL_DEPOSIT)),
+                )
                 .collect(),
         },
         parachain_info: dancebox_runtime::ParachainInfoConfig {
@@ -328,24 +360,8 @@ fn testnet_genesis(
         },
         parachain_system: Default::default(),
         configuration,
-        registrar: RegistrarConfig {
-            para_ids: container_chains
-                .iter()
-                .map(|x| {
-                    container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
-                        panic!(
-                            "Failed to build genesis data for container chain {:?}: {}",
-                            x, e
-                        )
-                    })
-                })
-                .chain(
-                    mock_container_chains
-                        .iter()
-                        .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
-                )
-                .collect(),
-        },
+        registrar: RegistrarConfig { para_ids },
+        services_payment: ServicesPaymentConfig { para_id_credits },
         sudo: SudoConfig {
             key: Some(root_key),
         },

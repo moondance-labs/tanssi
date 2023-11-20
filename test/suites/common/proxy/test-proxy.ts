@@ -1,8 +1,8 @@
 import "@polkadot/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair, extractFee } from "@moonwall/util";
+import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock } from "../../../util/block";
+import { initializeCustomCreateBlock, extractFeeAuthor, filterRewardFromContainer } from "../../../util/block";
 
 describeSuite({
     id: "C0103",
@@ -84,7 +84,7 @@ describeSuite({
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
 
-                const fee = extractFee(events).amount.toBigInt();
+                const fee = extractFeeAuthor(events, bob.address).amount.toBigInt();
                 const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free.toBigInt();
 
                 // Balance of Bob account increased
@@ -106,18 +106,20 @@ describeSuite({
                     polkadotJs.tx.balances.transfer(charlie.address, 200_000)
                 );
                 await context.createBlock([await tx.signAsync(charlie)]);
-
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
                     return a.event.method == "ExtrinsicFailed";
                 });
                 expect(ev1.length).to.be.equal(1);
 
-                const fee = extractFee(events).amount.toBigInt();
+                // Charlie receives rewards for authoring container, we should take this into account
+                const fee = extractFeeAuthor(events, charlie.address).amount.toBigInt();
+                const receivedReward = filterRewardFromContainer(events, charlie.address, 2000);
+
                 const balanceAfter = (await polkadotJs.query.system.account(charlie.address)).data.free.toBigInt();
 
                 // Balance of Charlie account must be the same (minus fee)
-                expect(balanceBefore - fee).to.equal(balanceAfter);
+                expect(balanceBefore + receivedReward - fee).to.equal(balanceAfter);
             },
         });
 
@@ -176,7 +178,7 @@ describeSuite({
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.not.be.eq("Ok");
 
-                const fee = extractFee(events).amount.toBigInt();
+                const fee = extractFeeAuthor(events, dave.address).amount.toBigInt();
                 const balanceAfter = (await polkadotJs.query.system.account(dave.address)).data.free.toBigInt();
 
                 // Balance of Dave account must be the same (minus fee)

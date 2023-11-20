@@ -56,7 +56,7 @@ use {
     tp_collator_assignment::AssignedCollators,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
-        RemoveInvulnerables, ShouldRotateAllCollators, Slot,
+        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
     },
 };
 
@@ -93,9 +93,11 @@ pub mod pallet {
         // which guarantees that at least one full session has passed before any changes are applied.
         type HostConfiguration: GetHostConfiguration<Self::SessionIndex>;
         type ContainerChains: GetSessionContainerChains<Self::SessionIndex>;
+        type SelfParaId: Get<ParaId>;
         type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
+        type RemoveParaIdsWithNoCredits: RemoveParaIdsWithNoCredits;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -144,6 +146,8 @@ pub mod pallet {
         pub active_assignment: AssignedCollators<T::AccountId>,
         /// Next session active assignment.
         pub next_assignment: AssignedCollators<T::AccountId>,
+        /// Total number of registered parachains before filtering them out, used as a weight hint
+        pub num_total_registered_paras: u32,
     }
 
     impl<T: Config> Pallet<T> {
@@ -160,6 +164,11 @@ pub mod pallet {
             // We get the containerChains that we will have at the target session
             let mut container_chain_ids =
                 T::ContainerChains::session_container_chains(target_session_index);
+            let num_total_registered_paras = container_chain_ids.len() as u32;
+            // Remove the containerChains that do not have enough credits for block production
+            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
+                &mut container_chain_ids,
+            );
 
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
             // of container chains.
@@ -247,12 +256,14 @@ pub mod pallet {
                 return SessionChangeOutcome {
                     active_assignment: new_assigned.clone(),
                     next_assignment: new_assigned,
+                    num_total_registered_paras,
                 };
             }
 
             SessionChangeOutcome {
                 active_assignment: old_assigned,
                 next_assignment: new_assigned,
+                num_total_registered_paras,
             }
         }
 
@@ -399,10 +410,10 @@ pub mod pallet {
             let random_seed = Randomness::<T>::take();
             let num_collators = collators.len();
             let assigned_collators = Self::assign_collators(session_index, random_seed, collators);
-            let num_parachains = assigned_collators.next_assignment.container_chains.len();
+            let num_total_registered_paras = assigned_collators.num_total_registered_paras;
 
             frame_system::Pallet::<T>::register_extra_weight_unchecked(
-                T::WeightInfo::new_session(num_collators as u32, num_parachains as u32),
+                T::WeightInfo::new_session(num_collators as u32, num_total_registered_paras),
                 DispatchClass::Mandatory,
             );
 
@@ -411,9 +422,15 @@ pub mod pallet {
     }
 
     impl<T: Config> GetContainerChainAuthor<T::AccountId> for Pallet<T> {
+        // TODO: pending collator container chain if the block is a session change!
         fn author_for_slot(slot: Slot, para_id: ParaId) -> Option<T::AccountId> {
             let assigned_collators = Pallet::<T>::collator_container_chain();
-            let collators = assigned_collators.container_chains.get(&para_id)?;
+            let collators = if para_id == T::SelfParaId::get() {
+                Some(&assigned_collators.orchestrator_chain)
+            } else {
+                assigned_collators.container_chains.get(&para_id)
+            }?;
+
             if collators.is_empty() {
                 // Avoid division by zero below
                 return None;

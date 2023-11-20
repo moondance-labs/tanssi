@@ -22,23 +22,23 @@ use {
     sc_network::config::FullNetworkConfiguration,
 };
 // std
-use futures::FutureExt;
-use sc_client_api::Backend;
-use sc_transaction_pool_api::OffchainTransactionPoolFactory;
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex},
-    time::Duration,
-};
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_primitives_parachain_inherent::{
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
     fc_consensus::FrontierBlockImport,
+    futures::FutureExt,
     nimbus_primitives::NimbusId,
+    sc_client_api::Backend,
+    sc_transaction_pool_api::OffchainTransactionPoolFactory,
     sp_consensus_aura::SlotDuration,
     sp_core::Pair,
+    std::{
+        collections::BTreeMap,
+        sync::{Arc, Mutex},
+        time::Duration,
+    },
 };
 // Local Runtime Types
 use {

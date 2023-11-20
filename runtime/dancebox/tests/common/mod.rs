@@ -17,9 +17,7 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
-    dancebox_runtime::{
-        AuthorInherent, AuthorityAssignment, CollatorAssignment, MaxLengthTokenSymbol,
-    },
+    dancebox_runtime::{AuthorInherent, MaxLengthTokenSymbol},
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -32,6 +30,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::{Get, Pair},
     sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
@@ -39,8 +38,10 @@ use {
 mod xcm;
 
 pub use dancebox_runtime::{
-    AccountId, Balance, Balances, Initializer, ParachainInfo, Registrar, Runtime, RuntimeCall,
-    RuntimeEvent, Session, System,
+    AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
+    CollatorAssignment, Configuration, InflationRewards, Initializer, Invulnerables,
+    MinimumSelfDelegation, ParachainInfo, PooledStaking, Proxy, ProxyType, Registrar,
+    RewardsPortion, Runtime, RuntimeCall, RuntimeEvent, ServicesPayment, Session, System,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -51,48 +52,77 @@ pub fn session_to_block(n: u32) -> u32 {
     block_number + 1
 }
 
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct RunSummary {
+    pub author_id: AccountId,
+    pub inflation: Balance,
+}
+
 pub fn run_to_session(n: u32) {
     run_to_block(session_to_block(n));
 }
 
 /// Utility function that advances the chain to the desired block number.
-pub fn run_to_block(n: u32) {
+pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
+    let mut summaries = BTreeMap::new();
+
     while System::block_number() < n {
-        let slot = current_slot() + 1;
+        let summary = run_block();
+        let block_number = System::block_number();
+        summaries.insert(block_number, summary);
+    }
 
-        let authorities =
-            Runtime::para_id_authorities(ParachainInfo::get()).expect("authorities should be set");
+    summaries
+}
 
-        let authority: NimbusId = authorities[slot as usize % authorities.len()].clone();
+pub fn run_block() -> RunSummary {
+    let slot = current_slot() + 1;
 
-        let pre_digest = Digest {
-            logs: vec![
-                DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
-                DigestItem::PreRuntime(NIMBUS_ENGINE_ID, authority.encode()),
-            ],
-        };
+    let authorities =
+        Runtime::para_id_authorities(ParachainInfo::get()).expect("authorities should be set");
 
-        System::reset_events();
-        System::initialize(
-            &(System::block_number() + 1),
-            &System::parent_hash(),
-            &pre_digest,
-        );
+    let authority: NimbusId = authorities[slot as usize % authorities.len()].clone();
 
-        // Initialize the new block
-        CollatorAssignment::on_initialize(System::block_number());
-        Initializer::on_initialize(System::block_number());
-        Session::on_initialize(System::block_number());
-        AuthorInherent::on_initialize(System::block_number());
+    let pre_digest = Digest {
+        logs: vec![
+            DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
+            DigestItem::PreRuntime(NIMBUS_ENGINE_ID, authority.encode()),
+        ],
+    };
 
-        pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
-            .expect("author inherent to dispatch correctly");
+    System::reset_events();
+    System::initialize(
+        &(System::block_number() + 1),
+        &System::parent_hash(),
+        &pre_digest,
+    );
 
-        // Finalize the block
-        CollatorAssignment::on_finalize(System::block_number());
-        Initializer::on_finalize(System::block_number());
-        Session::on_finalize(System::block_number());
-        AuthorInherent::on_finalize(System::block_number());
+    // Initialize the new block
+    CollatorAssignment::on_initialize(System::block_number());
+    Session::on_initialize(System::block_number());
+    Initializer::on_initialize(System::block_number());
+    AuthorInherent::on_initialize(System::block_number());
+
+    // `Initializer::on_finalize` needs to run at least one to have
+    // author mapping setup.
+    let author_id = current_author();
+
+    let current_issuance = Balances::total_issuance();
+    InflationRewards::on_initialize(System::block_number());
+    let new_issuance = Balances::total_issuance();
+
+    pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
+        .expect("author inherent to dispatch correctly");
+
+    // Finalize the block
+    CollatorAssignment::on_finalize(System::block_number());
+    Session::on_finalize(System::block_number());
+    Initializer::on_finalize(System::block_number());
+    AuthorInherent::on_finalize(System::block_number());
+
+    RunSummary {
+        author_id,
+        inflation: new_issuance - current_issuance,
     }
 }
 
@@ -123,8 +153,10 @@ pub fn set_parachain_inherent_data() {
 }
 
 pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
-    use cumulus_primitives_core::relay_chain::well_known_keys;
-    use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
+    use {
+        cumulus_primitives_core::relay_chain::well_known_keys,
+        cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
+    };
 
     let (relay_parent_storage_root, relay_chain_state) = {
         let mut sproof = RelayStateSproofBuilder::default();
@@ -168,11 +200,12 @@ pub struct ExtBuilder {
     balances: Vec<(AccountId, Balance)>,
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
-    // list of registered para ids
+    // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits
     para_ids: Vec<(
         u32,
         ContainerChainGenesisData<MaxLengthTokenSymbol>,
         Vec<Vec<u8>>,
+        u32,
     )>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
@@ -197,6 +230,7 @@ impl ExtBuilder {
             u32,
             ContainerChainGenesisData<MaxLengthTokenSymbol>,
             Vec<Vec<u8>>,
+            u32,
         )>,
     ) -> Self {
         self.para_ids = para_ids;
@@ -235,9 +269,22 @@ impl ExtBuilder {
         pallet_registrar::GenesisConfig::<Runtime> {
             para_ids: self
                 .para_ids
-                .into_iter()
-                .map(|(para_id, genesis_data, boot_nodes)| {
+                .iter()
+                .cloned()
+                .map(|(para_id, genesis_data, boot_nodes, _block_credits)| {
                     (para_id.into(), genesis_data, boot_nodes)
+                })
+                .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
+        pallet_services_payment::GenesisConfig::<Runtime> {
+            para_id_credits: self
+                .para_ids
+                .into_iter()
+                .map(|(para_id, _genesis_data, _boot_nodes, block_credits)| {
+                    (para_id.into(), block_credits)
                 })
                 .collect(),
         }
@@ -356,6 +403,12 @@ pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
             relay_parent_storage_root: relay_storage_root,
             max_pov_size: 0u32,
         },
+    );
+
+    // But we also need to store the new proof submitted
+    frame_support::storage::unhashed::put(
+        &frame_support::storage::storage_prefix(b"ParachainSystem", b"RelayStateProof"),
+        &relay_storage_proof,
     );
 
     assert_ok!(RuntimeCall::AuthorNoting(

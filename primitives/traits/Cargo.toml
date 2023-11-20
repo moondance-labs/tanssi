@@ -5,7 +5,10 @@ description = "Tanssi primitive traits"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
+
 [dependencies]
+impl-trait-for-tuples = { workspace = true }
+frame-support = { workspace = true }
 sp-std = { workspace = true }
 
 # Cumulus
@@ -14,6 +17,7 @@ cumulus-primitives-core = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
+	"frame-support/std",
 	"cumulus-primitives-core/std",
 ]
 runtime-benchmarks = []

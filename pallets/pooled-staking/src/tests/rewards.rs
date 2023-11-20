@@ -21,7 +21,9 @@ use {
         pools::{AutoCompounding, ManualRewards},
         Pallet, TargetPool,
     },
-    tp_core::DistributeRewards,
+    frame_support::assert_err,
+    sp_runtime::DispatchError,
+    tp_traits::DistributeRewards,
 };
 
 struct Delegation {
@@ -64,6 +66,11 @@ fn test_distribution(
     use crate::traits::Timer;
     let block_number = <Runtime as crate::Config>::JoiningRequestTimer::now();
 
+    // Create new supply for rewards
+    let new_supply = currency_issue(reward.rewards);
+    use frame_support::traits::Imbalance;
+    let new_supply_amount = new_supply.peek();
+
     // Request all delegations
     for d in delegations {
         assert_ok!(Staking::request_delegate(
@@ -103,7 +110,7 @@ fn test_distribution(
     let candidate_balance_before = total_balance(&ACCOUNT_CANDIDATE_1);
     assert_ok!(Pallet::<Runtime>::distribute_rewards(
         reward.collator,
-        reward.rewards
+        new_supply
     ));
     let candidate_balance_after = total_balance(&ACCOUNT_CANDIDATE_1);
 
@@ -165,7 +172,7 @@ fn test_distribution(
             + distribution.collator_manual
             + distribution.delegators_auto
             + distribution.delegators_manual,
-        reward.rewards,
+        new_supply_amount,
         "Distribution total doesn't match requested reward"
     );
 
@@ -576,4 +583,55 @@ fn delegator_only_candidate_no_stake_auto_compounding() {
             },
         )
     });
+}
+
+#[test]
+fn reward_distribution_is_transactional() {
+    ExtBuilder::default().build().execute_with(|| {
+        use crate::traits::Timer;
+        let request_time = <Runtime as crate::Config>::JoiningRequestTimer::now();
+
+        assert_ok!(Staking::request_delegate(
+            RuntimeOrigin::signed(ACCOUNT_CANDIDATE_1.into()),
+            ACCOUNT_CANDIDATE_1.into(),
+            TargetPool::AutoCompounding,
+            1_000_000_000,
+        ));
+
+        // Wait for delegation to be executable
+        for _ in 0..BLOCKS_TO_WAIT {
+            roll_one_block();
+        }
+
+        assert_ok!(Staking::execute_pending_operations(
+            RuntimeOrigin::signed(ACCOUNT_CANDIDATE_1.into()),
+            vec![PendingOperationQuery {
+                delegator: ACCOUNT_CANDIDATE_1.into(),
+                operation: PendingOperationKey::JoiningAutoCompounding {
+                    candidate: ACCOUNT_CANDIDATE_1.into(),
+                    at: request_time
+                },
+            }]
+        ));
+
+        let total_staked_before =
+            pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1.into());
+
+        // Increase ED to make reward destribution fail when resolving
+        // credit to Staking account.
+        MockExistentialDeposit::set(u128::MAX);
+
+        let rewards = Balances::issue(1_000_000_000);
+        assert_err!(
+            Staking::distribute_rewards(ACCOUNT_CANDIDATE_1.into(), rewards),
+            DispatchError::NoProviders
+        );
+
+        let total_staked_after =
+            pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1.into());
+        assert_eq!(
+            total_staked_before, total_staked_after,
+            "distribution should be reverted"
+        );
+    })
 }

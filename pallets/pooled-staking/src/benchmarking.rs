@@ -29,7 +29,7 @@ use {
         dispatch::RawOrigin,
         traits::{
             fungible::{InspectHold, Mutate, MutateHold},
-            tokens::Precision,
+            tokens::{fungible::Balanced, Precision},
             Get,
         },
     },
@@ -64,6 +64,12 @@ fn create_funded_user<T: Config>(
     let total = min_candidate_stk + extra;
     T::Currency::set_balance(&user, total);
     (user, total)
+}
+
+pub(crate) fn currency_issue<T: Config + frame_system::Config>(
+    amount: T::Balance,
+) -> crate::CreditOf<T> {
+    <<T as crate::Config>::Currency as Balanced<T::AccountId>>::issue(amount)
 }
 
 #[benchmarks]
@@ -306,6 +312,8 @@ mod benchmarks {
 
         T::JoiningRequestTimer::skip_to_elapsed();
 
+        // Set counter to simulate rewards.
+        let counter = 100u32;
         // Execute as many pending operations as posible
         for i in 0..b {
             let candidate: T::AccountId = account("candidate", USER_SEED - i - 1, 0);
@@ -321,8 +329,6 @@ mod benchmarks {
                 }],
             )?;
 
-            // Set counter to simulate rewards.
-            let counter = 100u32;
             crate::Pools::<T>::set(candidate, &PoolsKey::ManualRewardsCounter, counter.into());
         }
 
@@ -333,15 +339,17 @@ mod benchmarks {
         );
 
         let (candidate, delegator) = &candidate_delegator[candidate_delegator.len() - 1];
+        let shares = min_candidate_stk::<T>() / T::InitialManualClaimShareValue::get();
         // We should have the last pairs event as the last event
         assert_last_event::<T>(
             Event::ClaimedManualRewards {
                 candidate: candidate.clone(),
                 delegator: delegator.clone(),
-                rewards: 1000u32.into(),
+                rewards: shares * counter.into(),
             }
             .into(),
         );
+
         Ok(())
     }
 
@@ -577,7 +585,7 @@ mod benchmarks {
 
         #[block]
         {
-            crate::pools::distribute_rewards::<T>(&caller, source_stake)?;
+            crate::pools::distribute_rewards::<T>(&caller, currency_issue::<T>(source_stake))?;
         }
 
         Ok(())

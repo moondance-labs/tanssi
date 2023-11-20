@@ -189,6 +189,22 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
+        inflationRewards: {
+            /** Rewarding container author */
+            RewardedContainer: AugmentedEvent<
+                ApiType,
+                [accountId: AccountId32, paraId: u32, balance: u128],
+                { accountId: AccountId32; paraId: u32; balance: u128 }
+            >;
+            /** Rewarding orchestrator author */
+            RewardedOrchestrator: AugmentedEvent<
+                ApiType,
+                [accountId: AccountId32, balance: u128],
+                { accountId: AccountId32; balance: u128 }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         invulnerables: {
             /**
              * An account was unable to be added to the Invulnerables because they did not have keys registered. Other
@@ -700,6 +716,21 @@ declare module "@polkadot/api-base/types/events" {
             ParaIdRegistered: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /** A new para id is now valid for collating. [para_id] */
             ParaIdValidForCollating: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        servicesPayment: {
+            CreditBurned: AugmentedEvent<
+                ApiType,
+                [paraId: u32, creditsRemaining: u32],
+                { paraId: u32; creditsRemaining: u32 }
+            >;
+            CreditsPurchased: AugmentedEvent<
+                ApiType,
+                [paraId: u32, payer: AccountId32, fee: u128, creditsPurchased: u32, creditsRemaining: u32],
+                { paraId: u32; payer: AccountId32; fee: u128; creditsPurchased: u32; creditsRemaining: u32 }
+            >;
+            CreditsSet: AugmentedEvent<ApiType, [paraId: u32, credits: u32], { paraId: u32; credits: u32 }>;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };

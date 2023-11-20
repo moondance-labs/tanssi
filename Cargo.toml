@@ -20,6 +20,7 @@ authors = [ "Moondance Labs" ]
 repository = "https://github.com/moondance-labs/tanssi"
 
 [workspace.dependencies]
+
 # Members
 pallet-author-noting = { path = "pallets/author-noting", default-features = false }
 pallet-author-noting-runtime-api = { path = "pallets/author-noting/rpc/runtime-api", default-features = false }
@@ -28,11 +29,13 @@ pallet-authority-mapping = { path = "pallets/authority-mapping", default-feature
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
 pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/rpc/runtime-api", default-features = false }
 pallet-configuration = { path = "pallets/configuration", default-features = false }
+pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }
 pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = false }
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
+pallet-services-payment = { path = "pallets/services-payment", default-features = false }
 
 ccp-authorities-noting-inherent = { path = "container-chains/primitives/authorities-noting-inherent", default-features = false }
 ccp-xcm = { path = "container-chains/primitives/xcm", default-features = false }
@@ -52,6 +55,7 @@ tp-collator-assignment = { path = "primitives/collator-assignment", default-feat
 tp-consensus = { path = "primitives/consensus", default-features = false }
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-core = { path = "primitives/core", default-features = false }
+tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
 # Moonkit (wasm)
@@ -222,12 +226,14 @@ fc-rpc-core = { git = "https://github.com/moondance-labs/frontier", branch = "ta
 fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
 
 # General (wasm)
+bounded-collections = { version = "0.1.8", default-features = false }
 hex-literal = { version = "0.3.4" }
 log = { version = "0.4.17", default-features = false }
 serde = { version = "1.0.152", default-features = false }
 smallvec = "1.10.0"
 rand_chacha = { version = "0.3.1", default-features = false }
 num_enum = { version = "0.7.1", default-features = false }
+impl-trait-for-tuples = "0.2.2"
 
 # General (client)
 async-io = "1.3"

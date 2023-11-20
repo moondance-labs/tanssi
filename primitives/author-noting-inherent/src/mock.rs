@@ -76,7 +76,7 @@ impl InherentDataProvider for MockAuthorNotingInherentDataProvider {
 
             let header = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                 parent_hash: Default::default(),
-                number: Default::default(),
+                number: self.current_para_block,
                 state_root: Default::default(),
                 extrinsics_root: Default::default(),
                 digest: sp_runtime::generic::Digest {
@@ -158,7 +158,7 @@ impl MockAuthorNotingInherentDataProvider {
 
             let header = HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
                 parent_hash: Default::default(),
-                number: Default::default(),
+                number: self.current_para_block,
                 state_root: Default::default(),
                 extrinsics_root: Default::default(),
                 digest: sp_runtime::generic::Digest {

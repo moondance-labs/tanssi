@@ -33,6 +33,7 @@ import type {
     PalletBalancesIdAmount,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
+    PalletInflationRewardsChainsToRewardValue,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingPendingOperationKey,
     PalletPooledStakingPoolsKey,
@@ -265,6 +266,17 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        inflationRewards: {
+            /** Container chains to reward per block */
+            chainsToReward: AugmentedQuery<
+                ApiType,
+                () => Observable<Option<PalletInflationRewardsChainsToRewardValue>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -702,6 +714,16 @@ declare module "@polkadot/api-base/types/storage" {
             registrarDeposit: AugmentedQuery<
                 ApiType,
                 (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletRegistrarDepositInfo>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        servicesPayment: {
+            blockProductionCredits: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<u32>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;

@@ -29,7 +29,6 @@ use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-use tp_traits::RemoveInvulnerables;
 
 pub mod migrations;
 pub mod weights;
@@ -49,6 +48,7 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
+            fungible::{Balanced, Credit},
             ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
             OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
         },
@@ -68,8 +68,10 @@ use {
     },
     nimbus_primitives::NimbusId,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar_runtime_api::ContainerChainGenesisData,
+    pallet_services_payment::{ChargeForBlockCredit, ProvideBlockProductionCost},
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     polkadot_runtime_common::BlockHashCount,
@@ -87,7 +89,7 @@ use {
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
-    tp_traits::GetSessionContainerChains,
+    tp_traits::{GetSessionContainerChains, RemoveInvulnerables, RemoveParaIdsWithNoCredits},
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
@@ -207,7 +209,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 300,
+    spec_version: 400,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -684,15 +686,51 @@ impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
     }
 }
 
+pub struct RemoveParaIdsWithNoCreditsImpl;
+
+impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
+    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
+        let blocks_per_session = Period::get();
+        let credits_for_2_sessions = 2 * blocks_per_session;
+        para_ids.retain(|para_id| {
+            // Check if the container chain has enough credits for producing blocks for 2 sessions
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+                .unwrap_or_default();
+
+            credits >= credits_for_2_sessions
+        });
+    }
+
+    /// Make those para ids valid by giving them enough credits, for benchmarking.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(para_ids: &[ParaId]) {
+        use frame_support::assert_ok;
+
+        let blocks_per_session = Period::get();
+        // Enough credits to run any benchmark
+        let credits = 20 * blocks_per_session;
+
+        for para_id in para_ids {
+            assert_ok!(ServicesPayment::set_credits(
+                RuntimeOrigin::root(),
+                *para_id,
+                credits,
+            ));
+        }
+    }
+}
+
 impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
     type SessionIndex = u32;
+    type SelfParaId = ParachainInfo;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
+    type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
@@ -701,12 +739,40 @@ impl pallet_authority_assignment::Config for Runtime {
     type AuthorityId = NimbusId;
 }
 
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * currency::MICRODANCE;
+
+pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
+impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
+    fn block_cost(_para_id: &ParaId) -> (u128, Weight) {
+        (FIXED_BLOCK_PRODUCTION_COST, Weight::zero())
+    }
+}
+
+parameter_types! {
+    // 60 days worth of blocks
+    pub const MaxCreditsStored: BlockNumber = 60 * DAYS;
+}
+
+impl pallet_services_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    /// Handler for fees
+    type OnChargeForBlockCredit = ChargeForBlockCredit<Runtime>;
+    /// Currency type for fee payment
+    type Currency = Balances;
+    /// Provider of a block cost which can adjust from block to block
+    type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
+    /// The maximum number of credits that can be accumulated
+    type MaxCreditsStored = MaxCreditsStored;
+    type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type WeightInfo = pallet_author_noting::weights::SubstrateWeight<Runtime>;
 }
 
@@ -727,6 +793,8 @@ impl pallet_invulnerables::Config for Runtime {
     type CollatorIdOf = pallet_invulnerables::IdentityCollator;
     type CollatorRegistration = Session;
     type WeightInfo = pallet_invulnerables::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Currency = Balances;
 }
 
 parameter_types! {
@@ -1116,6 +1184,55 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub ParachainBondAccount: AccountId32 = PalletId(*b"ParaBond").into_account_truncating();
+    pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
+    // The equation to solve is:
+    // initial_supply * (1.05) = initial_supply * (1+x)^2_629_800
+    // we should solve for x = (1.05)^(1/2_629_800) -1 -> 0.000000019 per block or 19/1_000_000_000
+    // 1% in the case of dev moed
+    // TODO: check if we can put the prod inflation for tests too
+    // TODO: better calculus for going from annual to block inflation (if it can be done)
+    pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));
+
+    // 30% for parachain bond, so 70% for staking
+    pub const RewardsPortion: Perbill = Perbill::from_percent(70);
+}
+
+use {nimbus_primitives::SlotBeacon, tp_traits::GetContainerChainAuthor};
+
+pub struct GetSelfChainBlockAuthor;
+impl Get<AccountId32> for GetSelfChainBlockAuthor {
+    fn get() -> AccountId32 {
+        // TODO: we should do a refactor here, and use either authority-mapping or collator-assignemnt
+        // we should also make sure we actually account for the weight of these
+        // although most of these should be cached as they are read every block
+        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        let self_para_id = ParachainInfo::get();
+        let author = CollatorAssignment::author_for_slot(slot.into(), self_para_id);
+        author.expect("author should be set")
+    }
+}
+
+pub struct OnUnbalancedInflation;
+impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
+    fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
+        let _ = <Balances as Balanced<_>>::resolve(&ParachainBondAccount::get(), credit);
+    }
+}
+
+impl pallet_inflation_rewards::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type ContainerChains = Registrar;
+    type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
+    type InflationRate = InflationRate;
+    type OnUnbalanced = OnUnbalancedInflation;
+    type PendingRewardsAccount = PendingRewardsAccount;
+    type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
+    type RewardsPortion = RewardsPortion;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1142,13 +1259,16 @@ construct_runtime!(
         Initializer: pallet_initializer = 23,
         AuthorNoting: pallet_author_noting = 24,
         AuthorityAssignment: pallet_authority_assignment = 25,
+        ServicesPayment: pallet_services_payment = 26,
 
-        // Collator support. The order of these 4 are important and shall not change.
+        // Collator support. The order of these 6 are important and shall not change.
         Invulnerables: pallet_invulnerables = 30,
         Session: pallet_session = 31,
         AuthorityMapping: pallet_authority_mapping = 32,
         AuthorInherent: pallet_author_inherent = 33,
         PooledStaking: pallet_pooled_staking = 34,
+        // InflationRewards must be after Session and AuthorInherent
+        InflationRewards: pallet_inflation_rewards = 35,
 
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
@@ -1170,6 +1290,7 @@ mod benches {
         [pallet_registrar, Registrar]
         [pallet_invulnerables, Invulnerables]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_services_payment, ServicesPayment]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }
@@ -1529,6 +1650,7 @@ impl_runtime_apis! {
         /// Return the current authorities assigned to a given paraId
         fn para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
             let parent_number = System::block_number();
+
             let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
 
             let session_index = if should_end_session {
@@ -1539,6 +1661,7 @@ impl_runtime_apis! {
             };
 
             let assigned_authorities = AuthorityAssignment::collator_container_chain(session_index)?;
+
             let self_para_id = ParachainInfo::get();
 
             if para_id == self_para_id {

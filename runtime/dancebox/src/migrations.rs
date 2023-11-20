@@ -31,7 +31,7 @@ use {
     pallet_migrations::{GetMigrations, Migration},
     sp_core::Get,
     sp_runtime::BoundedVec,
-    sp_std::{marker::PhantomData, prelude::*},
+    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
 
 #[derive(
@@ -251,7 +251,7 @@ where
             min_orchestrator_collators: old_config.min_orchestrator_collators,
             max_orchestrator_collators: old_config.max_orchestrator_collators,
             collators_per_container: old_config.collators_per_container,
-            full_rotation_period: 24,
+            full_rotation_period: 0,
         };
         frame_support::storage::unhashed::put(CONFIGURATION_ACTIVE_CONFIG_KEY, &new_config);
 
@@ -267,7 +267,7 @@ where
                 min_orchestrator_collators: old_config.min_orchestrator_collators,
                 max_orchestrator_collators: old_config.max_orchestrator_collators,
                 collators_per_container: old_config.collators_per_container,
-                full_rotation_period: 24,
+                full_rotation_period: 0,
             };
             new_pending_configs.push((session_index, new_config));
         }
@@ -338,6 +338,43 @@ where
     }
 }
 
+pub struct MigrateServicesPaymentAddCredits<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateServicesPaymentAddCredits<T>
+where
+    T: cumulus_pallet_xcmp_queue::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateServicesPaymentAddCredits"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        // For each parachain in pallet_registrar (active, pending or pending_verification),
+        // insert `MaxCreditsStored` to pallet_services_payment
+        let mut para_ids = BTreeSet::new();
+        let active = pallet_registrar::RegisteredParaIds::<Runtime>::get();
+        let pending = pallet_registrar::PendingParaIds::<Runtime>::get();
+        let pending_verification = pallet_registrar::PendingVerification::<Runtime>::get();
+
+        para_ids.extend(active);
+        para_ids.extend(pending.into_iter().flat_map(|(_session, active)| active));
+        para_ids.extend(pending_verification);
+
+        let max_credits = crate::MaxCreditsStored::get();
+        let reads = 3;
+        let writes = para_ids.len() as u64;
+
+        for para_id in para_ids {
+            pallet_services_payment::BlockProductionCredits::<Runtime>::insert(
+                para_id,
+                max_credits,
+            );
+        }
+
+        let db_weights = T::DbWeight::get();
+        db_weights.reads_writes(reads, writes)
+    }
+}
+
 pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
@@ -356,6 +393,8 @@ where
         let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
         let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
         let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
+        let migrate_services_payment =
+            MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
 
         vec![
             Box::new(migrate_invulnerables),
@@ -363,6 +402,7 @@ where
             Box::new(migrate_config),
             Box::new(migrate_xcm),
             Box::new(migrate_xcmp_queue),
+            Box::new(migrate_services_payment),
         ]
     }
 }

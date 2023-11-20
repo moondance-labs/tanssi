@@ -1,8 +1,9 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair, extractFee, filterAndApply } from "@moonwall/util";
+import { KeyringPair, filterAndApply } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { extractWeight } from "@moonwall/util";
+import { extractFeeAuthor, fetchIssuance, filterRewardFromOrchestrator } from "util/block";
 
 describeSuite({
     id: "DT0401",
@@ -37,7 +38,8 @@ describeSuite({
                 await context.createBlock([signedTx]);
 
                 const events = await polkadotJs.query.system.events();
-                const fee = extractFee(events).amount.toBigInt();
+                const fee = extractFeeAuthor(events, alice.address).amount.toBigInt();
+                const reward = filterRewardFromOrchestrator(events, alice.address);
                 // Get actual weight
                 const info2 = extractInfoForFee(events);
 
@@ -73,7 +75,7 @@ describeSuite({
 
                 const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 // Balance must be old balance minus fee minus transfered value
-                expect(balanceBefore - fee - 200_000n).to.equal(balanceAfter);
+                expect(balanceBefore + reward - fee - 200_000n).to.equal(balanceAfter);
             },
         });
 
@@ -92,8 +94,9 @@ describeSuite({
                 await context.createBlock([signedTx]);
 
                 const events = await polkadotJs.query.system.events();
-                const fee = extractFee(events).amount.toBigInt();
-                // This
+                const fee = extractFeeAuthor(events, alice.address).amount.toBigInt();
+                const reward = filterRewardFromOrchestrator(events, alice.address);
+
                 const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
@@ -109,7 +112,7 @@ describeSuite({
                 const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
 
                 // Balance must be old balance minus fee minus transfered value
-                expect(balanceBefore - fee - 200_000n).to.equal(balanceAfter);
+                expect(balanceBefore + reward - fee - 200_000n).to.equal(balanceAfter);
             },
         });
 
@@ -146,7 +149,8 @@ describeSuite({
                 await context.createBlock([signedTx]);
 
                 const events = await polkadotJs.query.system.events();
-                const fee = extractFee(events).amount.toBigInt();
+                const fee = extractFeeAuthor(events, alice.address).amount.toBigInt();
+                const reward = filterRewardFromOrchestrator(events, alice.address);
                 const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
@@ -161,7 +165,7 @@ describeSuite({
 
                 const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 // Balance must be old balance minus fee minus transfered value
-                expect(balanceBefore - fee - 200_000n).to.equal(balanceAfter);
+                expect(balanceBefore + reward - fee - 200_000n).to.equal(balanceAfter);
             },
         });
 
@@ -177,18 +181,20 @@ describeSuite({
                 await context.createBlock([signedTx]);
 
                 const events = await polkadotJs.query.system.events();
-                const fee = extractFee(events).amount.toBigInt();
+                const fee = extractFeeAuthor(events, alice.address).amount.toBigInt();
+                const issuance = fetchIssuance(events).amount.toBigInt();
+                const reward = filterRewardFromOrchestrator(events, alice.address);
                 const expectedFee = adjustedExpectedBasePlusWeightFee + BigInt(signedTx.encodedLength);
                 expect(fee).to.equal(expectedFee);
 
                 const balanceAfter = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
 
                 // Balance must be old balance minus fee minus transfered value
-                expect(balanceBefore - fee - 200_000n).to.equal(balanceAfter);
+                expect(balanceBefore + reward - fee - 200_000n).to.equal(balanceAfter);
 
                 const totalSupplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
 
-                expect(totalSupplyBefore - totalSupplyAfter).to.equal(fee);
+                expect(totalSupplyAfter - totalSupplyBefore).to.equal(issuance - fee);
             },
         });
 

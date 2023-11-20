@@ -19,12 +19,54 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use cumulus_primitives_core::{relay_chain::Slot, ParaId};
-use sp_std::vec::Vec;
+pub use cumulus_primitives_core::{
+    relay_chain::{BlockNumber, Slot},
+    ParaId,
+};
+use {
+    frame_support::{
+        pallet_prelude::{DispatchResultWithPostInfo, Get, Weight},
+        BoundedVec,
+    },
+    sp_std::vec::Vec,
+};
+
+/// The author-noting hook to react to container chains authoring.
+pub trait AuthorNotingHook<AccountId> {
+    /// This hook is called partway through the `set_latest_author_data` inherent in author-noting.
+    ///
+    /// The hook should never panic and is required to return the weight consumed.
+    fn on_container_author_noted(
+        author: &AccountId,
+        block_number: BlockNumber,
+        para_id: ParaId,
+    ) -> Weight;
+}
+
+#[impl_trait_for_tuples::impl_for_tuples(5)]
+impl<AccountId> AuthorNotingHook<AccountId> for Tuple {
+    fn on_container_author_noted(a: &AccountId, b: BlockNumber, p: ParaId) -> Weight {
+        let mut weight: Weight = Default::default();
+        for_tuples!( #( weight.saturating_accrue(Tuple::on_container_author_noted(a, b, p)); )* );
+        weight
+    }
+}
+
+pub trait DistributeRewards<AccountId, Imbalance> {
+    fn distribute_rewards(rewarded: AccountId, amount: Imbalance) -> DispatchResultWithPostInfo;
+}
+
+impl<AccountId, Imbalance> DistributeRewards<AccountId, Imbalance> for () {
+    fn distribute_rewards(_rewarded: AccountId, _amount: Imbalance) -> DispatchResultWithPostInfo {
+        Ok(().into())
+    }
+}
 
 /// Get the current list of container chains parachain ids.
 pub trait GetCurrentContainerChains {
-    fn current_container_chains() -> Vec<ParaId>;
+    type MaxContainerChains: Get<u32>;
+
+    fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains>;
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_current_container_chains(container_chains: &[ParaId]);
@@ -70,4 +112,16 @@ pub trait RemoveInvulnerables<AccountId> {
         collators: &mut Vec<AccountId>,
         num_invulnerables: usize,
     ) -> Vec<AccountId>;
+}
+
+/// Helper trait for pallet_collator_assignment to be able to not assign collators to container chains with no credits
+/// in pallet_services_payment
+pub trait RemoveParaIdsWithNoCredits {
+    /// Remove para ids with not enough credits. The resulting order will affect priority: the first para id in the list
+    /// will be the first one to get collators.
+    fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>);
+
+    /// Make those para ids valid by giving them enough credits, for benchmarking.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_valid_para_ids(para_ids: &[ParaId]);
 }

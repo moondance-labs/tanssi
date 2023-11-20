@@ -26,13 +26,14 @@ use {
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
         pallet_prelude::*,
-        traits::{Currency, EnsureOrigin, Get},
+        traits::{tokens::fungible::Balanced, Currency, EnsureOrigin, Get},
     },
     frame_system::{EventRecord, RawOrigin},
     pallet_session::{self as session, SessionManager},
+    sp_runtime::traits::AtLeast32BitUnsigned,
     sp_std::prelude::*,
+    tp_traits::DistributeRewards,
 };
-
 const SEED: u32 = 0;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
@@ -94,7 +95,18 @@ fn invulnerables<
     invulnerables.into_iter().map(|(who, _)| who).collect()
 }
 
-#[benchmarks(where T: session::Config + pallet_balances::Config)]
+pub type BalanceOf<T> =
+    <<T as crate::Config>::Currency as frame_support::traits::fungible::Inspect<
+        <T as frame_system::Config>::AccountId,
+    >>::Balance;
+
+pub(crate) fn currency_issue<T: Config + frame_system::Config>(
+    amount: BalanceOf<T>,
+) -> crate::CreditOf<T, T::Currency> {
+    <<T as crate::Config>::Currency as Balanced<T::AccountId>>::issue(amount)
+}
+
+#[benchmarks(where T: session::Config + pallet_balances::Config, BalanceOf<T>: AtLeast32BitUnsigned)]
 mod benchmarks {
     use super::*;
 
@@ -106,16 +118,14 @@ mod benchmarks {
             T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
 
         let new_invulnerables = invulnerables::<T>(b);
-        let mut sorted_new_invulnerables = new_invulnerables.clone();
-        sorted_new_invulnerables.sort();
 
         #[extrinsic_call]
-        _(origin as T::RuntimeOrigin, new_invulnerables);
+        _(origin as T::RuntimeOrigin, new_invulnerables.clone());
 
         // assert that it comes out sorted
         assert_last_event::<T>(
             Event::NewInvulnerables {
-                invulnerables: sorted_new_invulnerables,
+                invulnerables: new_invulnerables,
             }
             .into(),
         );
@@ -196,6 +206,27 @@ mod benchmarks {
         Ok(())
     }
 
+    #[benchmark]
+    fn reward_invulnerable(
+        b: Linear<{ 1 }, { T::MaxInvulnerables::get() }>,
+    ) -> Result<(), BenchmarkError> where {
+        let mut invulnerables = invulnerables::<T>(b);
+        invulnerables.sort();
+        let invulnerables: frame_support::BoundedVec<_, T::MaxInvulnerables> =
+            frame_support::BoundedVec::try_from(invulnerables).unwrap();
+        <Invulnerables<T>>::put(invulnerables);
+        let to_reward = <Invulnerables<T>>::get().first().unwrap().clone();
+        // Create new supply for rewards
+        let new_supply = currency_issue::<T>(1000u32.into());
+        #[block]
+        {
+            let _ = InvulnerableRewardDistribution::<T, T::Currency, ()>::distribute_rewards(
+                to_reward, new_supply,
+            );
+        }
+
+        Ok(())
+    }
     impl_benchmark_test_suite!(
         InvulnerablesPallet,
         crate::mock::new_test_ext(),

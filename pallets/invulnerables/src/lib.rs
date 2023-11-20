@@ -26,6 +26,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub use pallet::*;
+use {core::marker::PhantomData, sp_runtime::TokenError};
 
 #[cfg(test)]
 mod mock;
@@ -39,8 +40,12 @@ pub mod weights;
 
 #[frame_support::pallet]
 pub mod pallet {
+    pub use crate::weights::WeightInfo;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    use frame_support::traits::Currency;
+
     use {
-        crate::weights::WeightInfo,
         frame_support::{
             dispatch::DispatchResultWithPostInfo,
             pallet_prelude::*,
@@ -91,6 +96,10 @@ pub mod pallet {
 
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
+
+        #[cfg(feature = "runtime-benchmarks")]
+        type Currency: Currency<Self::AccountId>
+            + frame_support::traits::fungible::Balanced<Self::AccountId>;
     }
 
     #[pallet::pallet]
@@ -280,5 +289,45 @@ pub mod pallet {
         fn end_session(_: SessionIndex) {
             // we don't care.
         }
+    }
+}
+
+/// If the rewarded account is an Invulnerable, distribute the entire reward
+/// amount to them. Otherwise use the `Fallback` distribution.
+pub struct InvulnerableRewardDistribution<Runtime, Currency, Fallback>(
+    PhantomData<(Runtime, Currency, Fallback)>,
+);
+
+use {frame_support::pallet_prelude::Weight, sp_runtime::traits::Get};
+
+type CreditOf<Runtime, Currency> =
+    frame_support::traits::fungible::Credit<<Runtime as frame_system::Config>::AccountId, Currency>;
+pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+
+impl<Runtime, Currency, Fallback>
+    tp_traits::DistributeRewards<AccountIdOf<Runtime>, CreditOf<Runtime, Currency>>
+    for InvulnerableRewardDistribution<Runtime, Currency, Fallback>
+where
+    Runtime: frame_system::Config + Config,
+    Fallback: tp_traits::DistributeRewards<AccountIdOf<Runtime>, CreditOf<Runtime, Currency>>,
+    Currency: frame_support::traits::fungible::Balanced<AccountIdOf<Runtime>>,
+{
+    fn distribute_rewards(
+        rewarded: AccountIdOf<Runtime>,
+        amount: CreditOf<Runtime, Currency>,
+    ) -> frame_support::pallet_prelude::DispatchResultWithPostInfo {
+        let mut total_weight = Weight::zero();
+        // weight to read invulnerables
+        total_weight += Runtime::DbWeight::get().reads(1);
+        if !Invulnerables::<Runtime>::get().contains(&rewarded) {
+            let post_info = Fallback::distribute_rewards(rewarded, amount)?;
+            if let Some(weight) = post_info.actual_weight {
+                total_weight += weight;
+            }
+        } else {
+            Currency::resolve(&rewarded, amount).map_err(|_| TokenError::NotExpendable)?;
+            total_weight += Runtime::WeightInfo::reward_invulnerable()
+        }
+        Ok(Some(total_weight).into())
     }
 }

@@ -45,7 +45,7 @@ use {
     sp_runtime::{traits::Header, DispatchResult, RuntimeString},
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_core::well_known_keys::PARAS_HEADS_INDEX,
-    tp_traits::{GetContainerChainAuthor, GetCurrentContainerChains},
+    tp_traits::{AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChains},
 };
 
 #[cfg(test)]
@@ -80,6 +80,11 @@ pub mod pallet {
         type ContainerChainAuthor: GetContainerChainAuthor<Self::AccountId>;
 
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
+
+        /// An entry-point for higher-level logic to react to containers chains authoring.
+        ///
+        /// Typically, this can be a hook to reward block authors.
+        type AuthorNotingHook: AuthorNotingHook<Self::AccountId>;
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -140,7 +145,7 @@ pub mod pallet {
             );
 
             let registered_para_ids = T::ContainerChains::current_container_chains();
-            let total_weight =
+            let mut total_weight =
                 T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
 
             // We do this first to make sure we dont do 2 reads (parachains and relay state)
@@ -151,15 +156,49 @@ pub mod pallet {
                     relay_storage_proof,
                 } = data;
 
-                let relay_storage_root =
-                    T::RelayChainStateProvider::current_relay_chain_state().state_root;
+                let relay_chain_state = T::RelayChainStateProvider::current_relay_chain_state();
+                let relay_storage_root = relay_chain_state.state_root;
                 let relay_storage_rooted_proof =
                     GenericStateProof::new(relay_storage_root, relay_storage_proof)
                         .expect("Invalid relay chain state proof");
 
+                // TODO: we should probably fetch all authors-containers first
+                // then pass the vector to the hook, this would allow for a better estimation
                 for para_id in registered_para_ids {
                     match Self::fetch_block_info_from_proof(&relay_storage_rooted_proof, para_id) {
-                        Ok(block_info) => LatestAuthor::<T>::insert(para_id, block_info),
+                        Ok(block_info) => {
+                            LatestAuthor::<T>::mutate(
+                                para_id,
+                                |maybe_old_block_info: &mut Option<ContainerChainBlockInfo<T>>| {
+                                    if let Some(ref mut old_block_info) = maybe_old_block_info {
+                                        if block_info.block_number > old_block_info.block_number {
+                                            // We only reward author if the block increases
+                                            total_weight = total_weight.saturating_add(
+                                                T::AuthorNotingHook::on_container_author_noted(
+                                                    &block_info.author,
+                                                    block_info.block_number,
+                                                    para_id,
+                                                ),
+                                            );
+                                            let _ = core::mem::replace(old_block_info, block_info);
+                                        }
+                                    } else {
+                                        // If there is no previous block, we should reward the author of the first block
+                                        total_weight = total_weight.saturating_add(
+                                            T::AuthorNotingHook::on_container_author_noted(
+                                                &block_info.author,
+                                                block_info.block_number,
+                                                para_id,
+                                            ),
+                                        );
+                                        let _ = core::mem::replace(
+                                            maybe_old_block_info,
+                                            Some(block_info),
+                                        );
+                                    }
+                                },
+                            );
+                        }
                         Err(e) => log::warn!(
                             "Author-noting error {:?} found in para {:?}",
                             e,
