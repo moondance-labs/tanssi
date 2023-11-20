@@ -48,7 +48,7 @@
         },
         {
             "name": "dev_frontier_template",
-            "testFileDir": ["suites/dev-frontier-template/test-precompiles", "suites/common"],
+            "testFileDir": ["suites/dev-frontier-template", "suites/common"],
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": true,
             "reporters": ["basic"],
