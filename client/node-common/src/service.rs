@@ -65,7 +65,6 @@ pub trait Config {
     type RuntimeApi;
     type ParachainNativeExecutor;
 
-    #[must_use]
     fn new_builder(
         parachain_config: &Configuration,
         hwbench: Option<sc_sysinfo::HwBench>,
@@ -169,7 +168,6 @@ where
     /// node. However it only starts telemetry, and doesn't provide any
     /// network-dependent objects (as it requires an import queue, which usually
     /// is different for each node).
-    #[must_use]
     fn new(
         parachain_config: &Configuration,
         hwbench: Option<sc_sysinfo::HwBench>,
@@ -260,7 +258,6 @@ where
         + BlockBuilder<BlockOf<T>>
         + cumulus_primitives_core::CollectCollationInfo<BlockOf<T>>,
 {
-    #[must_use]
     pub async fn build_relay_chain_interface(
         &mut self,
         parachain_config: &Configuration,
@@ -272,7 +269,7 @@ where
     )> {
         build_relay_chain_interface(
             polkadot_config,
-            &parachain_config,
+            parachain_config,
             self.telemetry_worker_handle.clone(),
             &mut self.task_manager,
             collator_options.clone(),
@@ -287,7 +284,6 @@ where
     ///
     /// Can only be called once on a `NodeBuilder` that doesn't have yet network
     /// data.
-    #[must_use]
     pub async fn build_cumulus_network<RCInterface>(
         self,
         parachain_config: &Configuration,
@@ -329,13 +325,13 @@ where
 
         let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
             cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
-                parachain_config: &parachain_config,
+                parachain_config,
                 client: client.clone(),
                 transaction_pool: transaction_pool.clone(),
                 spawn_handle,
-                import_queue: import_queue,
+                import_queue,
                 para_id,
-                relay_chain_interface: relay_chain_interface,
+                relay_chain_interface,
                 net_config,
                 sybil_resistance_level: CollatorSybilResistance::Resistant,
             })
@@ -367,7 +363,6 @@ where
     ///
     /// Can only be called once on a `NodeBuilder` that doesn't have yet network
     /// data.
-    #[must_use]
     pub fn build_substrate_network(
         self,
         parachain_config: &Configuration,
@@ -409,7 +404,7 @@ where
                 client: client.clone(),
                 transaction_pool: transaction_pool.clone(),
                 spawn_handle: task_manager.spawn_handle(),
-                import_queue: import_queue,
+                import_queue,
                 warp_sync_params: None,
                 block_announce_validator_builder: None,
                 net_config,
@@ -440,7 +435,6 @@ where
     /// node. It consumes `self.tx_handler_controller` in the process, which means
     /// it can only be called once, and any other code that would need this
     /// controller should interact with it before calling this function.
-    #[must_use]
     pub fn spawn_common_tasks<TRpc>(
         self,
         parachain_config: Configuration,
@@ -519,11 +513,11 @@ where
         })?;
 
         if let Some(hwbench) = &hwbench {
-            sc_sysinfo::print_hwbench(&hwbench);
+            sc_sysinfo::print_hwbench(hwbench);
             // Here you can check whether the hardware meets your chains' requirements. Putting a link
             // in there and swapping out the requirements for your own are probably a good idea. The
             // requirements for a para-chain are dictated by its relay-chain.
-            if collator && !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
+            if collator && !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(hwbench) {
                 log::warn!(
                     "⚠️  The hardware does not meet the minimal requirements for role 'Authority'."
                 );
@@ -689,7 +683,7 @@ where
             announce_block,
             task_manager: &mut task_manager,
             para_id,
-            relay_chain_interface: relay_chain_interface.clone(),
+            relay_chain_interface,
             relay_chain_slot_duration,
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
@@ -867,7 +861,7 @@ where
             announce_block: announce_block.clone(),
             overseer_handle: overseer_handle.clone(),
             spawner: spawner.clone(),
-            para_id: para_id.clone(),
+            para_id: para_id,
             key: collator_key.clone(),
             parachain_consensus: parachain_consensus.clone(),
         }

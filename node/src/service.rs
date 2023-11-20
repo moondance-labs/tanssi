@@ -306,10 +306,6 @@ async fn start_node_impl(
             .clone()
             .expect("Command line arguments do not allow this. qed");
 
-        let overseer_handle = relay_chain_interface
-            .overseer_handle()
-            .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-
         // Start task which detects para id assignment, and starts/stops container chains.
         // Note that if this node was started without a `container_chain_config`, we don't
         // support collation on container chains, so there is no need to detect changes to assignment
@@ -338,7 +334,7 @@ async fn start_node_impl(
 
         let params_generator = node_builder.cumulus_client_collator_params_generator(
             para_id,
-            overseer_handle,
+            overseer_handle.clone(),
             collator_key.clone(),
             parachain_consensus.clone(),
         );
@@ -545,7 +541,7 @@ pub async fn start_node_impl_container(
             para_id,
             node_builder.client.clone(),
             relay_chain_interface.clone(),
-            announce_block.clone(),
+            announce_block,
             Some(recovery_chan_tx),
         );
 
@@ -946,7 +942,7 @@ pub fn start_dev_node(
     let parachain_config = prepare_node_config(orchestrator_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
+    let node_builder = NodeConfig::new_builder(&parachain_config, hwbench)?;
 
     // This node block import.
     let block_import = DevParachainBlockImport::new(node_builder.client.clone());
@@ -1030,7 +1026,7 @@ pub fn start_dev_node(
                         ),
                         raw_downward_messages: downward_xcm_receiver.drain().collect(),
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
-                        additional_key_values: Some(mocked_author_noting.get_key_values().clone()),
+                        additional_key_values: Some(mocked_author_noting.get_key_values()),
                     };
 
                     Ok((time, mocked_parachain, mocked_author_noting))

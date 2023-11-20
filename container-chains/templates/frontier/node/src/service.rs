@@ -415,7 +415,7 @@ pub async fn start_dev_node(
     // let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
+    let node_builder = NodeConfig::new_builder(&parachain_config, hwbench)?;
 
     // Frontier specific stuff
     let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));

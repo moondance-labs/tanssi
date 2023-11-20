@@ -648,7 +648,7 @@ fn open_and_maybe_delete_db(
             > max_block_diff_allowed
         {
             // if the diff is big, delete db and restart using warp sync
-            delete_container_chain_db(&db_path);
+            delete_container_chain_db(db_path);
             return Ok(());
         }
     }
@@ -678,7 +678,7 @@ fn open_and_maybe_delete_db(
             "Chain spec genesis {:?} did not match with any container genesis - Restarting...",
             container_client_genesis_hash
         );
-        delete_container_chain_db(&db_path);
+        delete_container_chain_db(db_path);
         return Ok(());
     }
 
@@ -691,7 +691,7 @@ fn open_and_maybe_delete_db(
 //     Collator2002-01/data/containers/chains/simple_container_2002
 fn delete_container_chain_db(db_path: &Path) {
     if db_path.exists() {
-        std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");
+        std::fs::remove_dir_all(db_path).expect("failed to remove old container chain db");
     }
 }
 

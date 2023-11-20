@@ -206,7 +206,7 @@ where
             EthFilter::new(
                 client.clone(),
                 frontier_backend,
-                graph.clone(),
+                graph,
                 filter_pool,
                 500_usize, // max stored filters
                 max_past_logs,
