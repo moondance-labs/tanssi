@@ -53,7 +53,7 @@ use {
         Saturating,
     },
     sp_std::{fmt::Debug, prelude::*, vec},
-    tp_collator_assignment::AssignedCollators,
+    dp_collator_assignment::AssignedCollators,
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
         RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,

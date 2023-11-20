@@ -42,7 +42,7 @@ use {
         traits::{Get, Saturating},
         Perbill,
     },
-    tp_core::{BlockNumber, ParaId},
+    dp_core::{BlockNumber, ParaId},
     tp_traits::{AuthorNotingHook, DistributeRewards, GetCurrentContainerChains},
 };
 

@@ -30,7 +30,7 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
     },
-    tp_core::ParaId,
+    dp_core::ParaId,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;

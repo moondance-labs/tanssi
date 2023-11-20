@@ -30,7 +30,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use tp_chain_state_snapshot::*;
+pub use dp_chain_state_snapshot::*;
 use {
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     cumulus_primitives_core::{
@@ -44,7 +44,7 @@ use {
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Header, DispatchResult, RuntimeString},
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
-    tp_core::well_known_keys::PARAS_HEADS_INDEX,
+    dp_core::well_known_keys::PARAS_HEADS_INDEX,
     tp_traits::{AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChains},
 };
 

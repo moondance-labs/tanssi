@@ -50,7 +50,7 @@ use {
     sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
-    tp_core::well_known_keys,
+    dp_core::well_known_keys,
 };
 
 mod common;

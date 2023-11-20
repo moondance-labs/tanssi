@@ -48,7 +48,7 @@ use {
         sync::{Arc, Mutex},
         time::Instant,
     },
-    tc_orchestrator_chain_interface::OrchestratorChainInterface,
+    dc_orchestrator_chain_interface::OrchestratorChainInterface,
     tokio::sync::{mpsc, oneshot},
     tokio::time::{sleep, Duration},
 };

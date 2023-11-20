@@ -93,7 +93,7 @@ use {
 };
 pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
-    tp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
+    dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
 };
 
 const LOG_TARGET: &str = "runtime::moonbeam";

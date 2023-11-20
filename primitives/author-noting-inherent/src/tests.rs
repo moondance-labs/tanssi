@@ -26,7 +26,7 @@ use {
     sp_runtime::DigestItem,
     std::sync::atomic::{AtomicU8, Ordering},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    tp_core::well_known_keys::para_id_head,
+    dp_core::well_known_keys::para_id_head,
 };
 
 #[test]

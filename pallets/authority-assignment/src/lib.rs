@@ -26,7 +26,7 @@ use {
         Saturating,
     },
     sp_std::{collections::btree_map::BTreeMap, prelude::*, vec},
-    tp_collator_assignment::AssignedCollators,
+    dp_collator_assignment::AssignedCollators,
 };
 
 #[cfg(test)]
