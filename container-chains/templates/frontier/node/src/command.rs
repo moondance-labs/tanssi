@@ -18,13 +18,14 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, RelayChainCli, Subcommand},
-        service::{frontier_database_dir, new_partial},
+        service::{self, frontier_database_dir, NodeBuilderConfig},
     },
     container_chain_template_frontier_runtime::Block,
     cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    node_common::service::Config as _,
     parity_scale_codec::Encode,
     polkadot_cli::IdentifyVariant,
     sc_cli::{
@@ -41,9 +42,10 @@ use {
 };
 
 #[cfg(feature = "try-runtime")]
-use crate::client::TemplateRuntimeExecutor;
-#[cfg(feature = "try-runtime")]
-use try_runtime_cli::block_building_info::substrate_info;
+use {
+    crate::client::TemplateRuntimeExecutor, try_runtime_cli::block_building_info::substrate_info,
+};
+
 #[cfg(feature = "try-runtime")]
 const SLOT_DURATION: u64 = 12;
 
@@ -134,9 +136,11 @@ macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		runner.async_run(|mut $config| {
-			let $components = new_partial(&mut $config, false)?;
-			let task_manager = $components.task_manager;
-			{ $( $code )* }.map(|v| (v, task_manager))
+			let $components = NodeBuilderConfig::new_builder(&mut $config, None)?;
+			let inner = { $( $code )* };
+
+            let task_manager = $components.task_manager;
+			inner.map(|v| (v, task_manager))
 		})
 	}}
 }
@@ -169,7 +173,8 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
-                Ok(cmd.run(components.client, components.import_queue))
+                let (_, import_queue) = service::import_queue(&config, &components);
+                Ok(cmd.run(components.client, import_queue))
             })
         }
         Some(Subcommand::ExportBlocks(cmd)) => {
@@ -184,7 +189,8 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::ImportBlocks(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
-                Ok(cmd.run(components.client, components.import_queue))
+                let (_, import_queue) = service::import_queue(&config, &components);
+                Ok(cmd.run(components.client, import_queue))
             })
         }
         Some(Subcommand::Revert(cmd)) => {
@@ -232,7 +238,7 @@ pub fn run() -> Result<()> {
         Some(Subcommand::ExportGenesisState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|mut config| {
-                let partials = new_partial(&mut config, false)?;
+                let partials = NodeBuilderConfig::new_builder(&mut config, None)?;
                 cmd.run(&*config.chain_spec, &*partials.client)
             })
         }
@@ -257,7 +263,7 @@ pub fn run() -> Result<()> {
                     }
                 }
                 BenchmarkCmd::Block(cmd) => runner.sync_run(|mut config| {
-                    let partials = new_partial(&mut config, false)?;
+                    let partials = NodeBuilderConfig::new_builder(&mut config, None)?;
                     cmd.run(partials.client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -268,7 +274,7 @@ pub fn run() -> Result<()> {
                 )),
                 #[cfg(feature = "runtime-benchmarks")]
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|mut config| {
-                    let partials = new_partial(&mut config, false)?;
+                    let partials = NodeBuilderConfig::new_builder(&mut config, None)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
                     cmd.run(config, partials.client.clone(), db, storage)

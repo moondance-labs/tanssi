@@ -21,7 +21,7 @@ use {
     crate::client::TemplateRuntimeExecutor,
     container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
-    cumulus_client_consensus_common::ParachainBlockImport,
+    cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_service::prepare_node_config,
     cumulus_primitives_core::ParaId,
     cumulus_primitives_parachain_inherent::{
@@ -31,10 +31,10 @@ use {
     fc_db::DatabaseSource,
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
     nimbus_primitives::NimbusId,
-    node_common::service::{Config as NodeBuilderConfig, ManualSealConfiguration, Sealing},
+    node_common::service::{Config as _, ManualSealConfiguration, NodeBuilder, Sealing},
+    sc_consensus::BasicQueue,
     sc_executor::NativeElseWasmExecutor,
-    sc_service::{Configuration, PartialComponents, TFullBackend, TFullClient, TaskManager},
-    sc_telemetry::{Telemetry, TelemetryWorkerHandle},
+    sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
     sp_blockchain::HeaderBackend,
     sp_consensus_aura::SlotDuration,
     sp_core::{Pair, H256},
@@ -45,22 +45,21 @@ use {
     },
 };
 
-struct NodeConfig;
-impl NodeBuilderConfig for NodeConfig {
+pub type ParachainExecutor = NativeElseWasmExecutor<TemplateRuntimeExecutor>;
+type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
+type ParachainBackend = TFullBackend<Block>;
+type ParachainBlockImport = TParachainBlockImport<
+    Block,
+    FrontierBlockImport<Block, Arc<ParachainClient>, ParachainClient>,
+    ParachainBackend,
+>;
+
+pub struct NodeBuilderConfig;
+impl node_common::service::Config for NodeBuilderConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
     type ParachainNativeExecutor = TemplateRuntimeExecutor;
 }
-
-/// Native executor type.
-
-pub type ParachainExecutor = NativeElseWasmExecutor<TemplateRuntimeExecutor>;
-
-type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
-
-type ParachainBackend = TFullBackend<Block>;
-
-type MaybeSelectChain = Option<sc_consensus::LongestChain<ParachainBackend, Block>>;
 
 pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
     let config_dir = config
@@ -132,98 +131,33 @@ impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
     }
 }
 
-/// Starts a `ServiceBuilder` for a full service.
-///
-/// Use this macro if you don't actually need the full service, but just the builder in order to
-/// be able to perform chain operations.
-pub fn new_partial(
-    _config: &mut Configuration,
-    _dev_service: bool,
-) -> Result<
-    PartialComponents<
-        ParachainClient,
-        ParachainBackend,
-        MaybeSelectChain,
-        sc_consensus::DefaultImportQueue<Block>,
-        sc_transaction_pool::FullPool<Block, ParachainClient>,
-        (
-            ParachainBlockImport<
-                Block,
-                FrontierBlockImport<Block, Arc<ParachainClient>, ParachainClient>,
-                ParachainBackend,
-            >,
-            Option<FilterPool>,
-            Option<Telemetry>,
-            Option<TelemetryWorkerHandle>,
-            fc_db::Backend<Block>,
-            FeeHistoryCache,
-        ),
-    >,
-    sc_service::Error,
-> {
-    todo!()
+pub fn import_queue(
+    parachain_config: &Configuration,
+    node_builder: &NodeBuilder<NodeBuilderConfig>,
+) -> (ParachainBlockImport, BasicQueue<Block>) {
+    let frontier_block_import =
+        FrontierBlockImport::new(node_builder.client.clone(), node_builder.client.clone());
 
-    // Use ethereum style for subscription ids
-    // config.rpc_id_provider = Some(Box::new(fc_rpc::EthereumSubIdProvider));
+    // The parachain block import and import queue
+    let block_import = cumulus_client_consensus_common::ParachainBlockImport::new(
+        frontier_block_import,
+        node_builder.backend.clone(),
+    );
+    let import_queue = nimbus_consensus::import_queue(
+        node_builder.client.clone(),
+        block_import.clone(),
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
 
-    // let NodeBuilder {
-    //     client,
-    //     backend,
-    //     transaction_pool,
-    //     telemetry,
-    //     telemetry_worker_handle,
-    //     task_manager,
-    //     keystore_container,
-    // } = node_common::service::new_partial(config)?;
+            Ok((time,))
+        },
+        &node_builder.task_manager.spawn_essential_handle(),
+        parachain_config.prometheus_registry(),
+        false,
+    )
+    .expect("function never fails");
 
-    // let maybe_select_chain = if dev_service {
-    //     Some(sc_consensus::LongestChain::new(backend.clone()))
-    // } else {
-    //     None
-    // };
-
-    // let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
-    // let fee_history_cache: FeeHistoryCache = Arc::new(Mutex::new(BTreeMap::new()));
-
-    // let frontier_backend = fc_db::Backend::KeyValue(open_frontier_backend(client.clone(), config)?);
-
-    // let frontier_block_import = FrontierBlockImport::new(client.clone(), client.clone());
-
-    // let parachain_block_import = cumulus_client_consensus_common::ParachainBlockImport::new(
-    //     frontier_block_import,
-    //     backend.clone(),
-    // );
-
-    // let import_queue = nimbus_consensus::import_queue(
-    //     client.clone(),
-    //     parachain_block_import.clone(),
-    //     move |_, _| async move {
-    //         let time = sp_timestamp::InherentDataProvider::from_system_time();
-
-    //         Ok((time,))
-    //     },
-    //     &task_manager.spawn_essential_handle(),
-    //     config.prometheus_registry(),
-    //     !dev_service,
-    // )?;
-
-    // Ok(PartialComponents {
-    //     backend,
-    //     client,
-    //     import_queue,
-    //     keystore_container,
-    //     task_manager,
-    //     transaction_pool,
-    //     select_chain: maybe_select_chain,
-    //     other: (
-    //         parachain_block_import,
-    //         filter_pool,
-    //         telemetry,
-    //         telemetry_worker_handle,
-    //         frontier_backend,
-    //         fee_history_cache,
-    //     ),
-    // })
+    (block_import, import_queue)
 }
 
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
@@ -241,7 +175,7 @@ async fn start_node_impl(
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
+    let mut node_builder = NodeBuilderConfig::new_builder(&parachain_config, hwbench.clone())?;
 
     // Frontier specific stuff
     let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
@@ -250,8 +184,6 @@ async fn start_node_impl(
         node_builder.client.clone(),
         &parachain_config,
     )?);
-    let frontier_block_import =
-        FrontierBlockImport::new(node_builder.client.clone(), node_builder.client.clone());
     let overrides = crate::rpc::overrides_handle(node_builder.client.clone());
     let fee_history_limit = rpc_config.fee_history_limit;
 
@@ -260,23 +192,7 @@ async fn start_node_impl(
     > = Default::default();
     let pubsub_notification_sinks = Arc::new(pubsub_notification_sinks);
 
-    // The parachain block import and import queue
-    let parachain_block_import = cumulus_client_consensus_common::ParachainBlockImport::new(
-        frontier_block_import,
-        node_builder.backend.clone(),
-    );
-    let import_queue = nimbus_consensus::import_queue(
-        node_builder.client.clone(),
-        parachain_block_import.clone(),
-        move |_, _| async move {
-            let time = sp_timestamp::InherentDataProvider::from_system_time();
-
-            Ok((time,))
-        },
-        &node_builder.task_manager.spawn_essential_handle(),
-        parachain_config.prometheus_registry(),
-        false,
-    )?;
+    let (_, import_queue) = import_queue(&parachain_config, &node_builder);
 
     // Relay chain interface
     let (relay_chain_interface, _collator_key) = node_builder
@@ -415,7 +331,7 @@ pub async fn start_dev_node(
     // let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder = NodeConfig::new_builder(&parachain_config, hwbench)?;
+    let node_builder = NodeBuilderConfig::new_builder(&parachain_config, hwbench)?;
 
     // Frontier specific stuff
     let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
@@ -424,8 +340,6 @@ pub async fn start_dev_node(
         node_builder.client.clone(),
         &parachain_config,
     )?);
-    let frontier_block_import =
-        FrontierBlockImport::new(node_builder.client.clone(), node_builder.client.clone());
     let overrides = crate::rpc::overrides_handle(node_builder.client.clone());
     let fee_history_limit = rpc_config.fee_history_limit;
 
@@ -434,23 +348,7 @@ pub async fn start_dev_node(
     > = Default::default();
     let pubsub_notification_sinks = Arc::new(pubsub_notification_sinks);
 
-    // The parachain block import and import queue
-    let parachain_block_import = cumulus_client_consensus_common::ParachainBlockImport::new(
-        frontier_block_import,
-        node_builder.backend.clone(),
-    );
-    let import_queue = nimbus_consensus::import_queue(
-        node_builder.client.clone(),
-        parachain_block_import.clone(),
-        move |_, _| async move {
-            let time = sp_timestamp::InherentDataProvider::from_system_time();
-
-            Ok((time,))
-        },
-        &node_builder.task_manager.spawn_essential_handle(),
-        parachain_config.prometheus_registry(),
-        false,
-    )?;
+    let (parachain_block_import, import_queue) = import_queue(&parachain_config, &node_builder);
 
     // Build a Substrate Network. (not cumulus since it is a dev node, it mocks
     // the relaychain)
