@@ -40,7 +40,7 @@ describeSuite({
                 const expectedScheduledOnboarding =
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
-                const tx = polkadotJs.tx.registrar.pauseContainerChain(2001, true);
+                const tx = polkadotJs.tx.registrar.pauseContainerChain(2001);
                 await polkadotJs.tx.sudo.sudo(tx).signAndSend(alice);
 
                 await context.createBlock();
@@ -77,7 +77,7 @@ describeSuite({
                 const expectedScheduledOnboarding =
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
-                const tx = polkadotJs.tx.registrar.pauseContainerChain(2001, false);
+                const tx = polkadotJs.tx.registrar.unpauseContainerChain(2001);
                 await polkadotJs.tx.sudo.sudo(tx).signAndSend(alice);
 
                 await context.createBlock();

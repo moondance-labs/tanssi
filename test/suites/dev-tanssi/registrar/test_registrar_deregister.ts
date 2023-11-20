@@ -25,6 +25,17 @@ describeSuite({
                 // These are registered in genesis
                 expect(parasRegistered).to.contain(2000);
                 expect(parasRegistered).to.contain(2001);
+
+                // Set storage of pallet_author_noting and pallet_services_payment to test that it gets deleted later
+                const tx1 = polkadotJs.tx.authorNoting.setAuthor(2000, 1, alice.address);
+                const tx2 = polkadotJs.tx.authorNoting.setAuthor(2001, 1, alice.address);
+                await polkadotJs.tx.sudo.sudo(polkadotJs.tx.utility.batchAll([tx1, tx2])).signAndSend(alice);
+
+                // Credits already exist
+                const credits2000 = (await polkadotJs.query.servicesPayment.blockProductionCredits(2000)).toJSON();
+                expect(credits2000).toBeGreaterThan(0);
+                const credits2001 = (await polkadotJs.query.servicesPayment.blockProductionCredits(2001)).toJSON();
+                expect(credits2001).toBeGreaterThan(0);
             },
         });
 
@@ -109,6 +120,17 @@ describeSuite({
                 const palletKeys = await polkadotJs.rpc.state.getKeys("0x3fba98689ebed1138735e0e7a5a790ab");
                 // 4 keys: version, registeredParas, pendingParas, pendingToRemove
                 expect(palletKeys.length).to.be.eq(4);
+
+                // Check that deregistered hook cleared storage of pallet_author_noting and pallet_services_payment
+                const authorData2000 = (await polkadotJs.query.authorNoting.latestAuthor(2000)).toJSON();
+                expect(authorData2000).to.be.null;
+                const authorData2001 = (await polkadotJs.query.authorNoting.latestAuthor(2001)).toJSON();
+                expect(authorData2001).to.be.null;
+
+                const credits2000 = (await polkadotJs.query.servicesPayment.blockProductionCredits(2000)).toJSON();
+                expect(credits2000).to.be.null;
+                const credits2001 = (await polkadotJs.query.servicesPayment.blockProductionCredits(2001)).toJSON();
+                expect(credits2001).to.be.null;
             },
         });
     },

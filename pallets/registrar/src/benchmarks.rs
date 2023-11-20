@@ -261,7 +261,7 @@ mod benchmarks {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
         }
 
-        // Worst case: when RegisteredParaIds and PendingVerification are both full
+        // Worst case: when RegisteredParaIds and Paused are both full
         // First loop to fill RegisteredParaIds to its maximum
         for i in 0..y {
             // Twice the deposit just in case
@@ -287,7 +287,7 @@ mod benchmarks {
             )
             .unwrap();
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
-            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into(), true).unwrap();
+            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
         // Check PendingPaused has a length of y
@@ -302,7 +302,7 @@ mod benchmarks {
             .contains(&ParaId::from(y - 1)));
 
         #[extrinsic_call]
-        Pallet::<T>::pause_container_chain(RawOrigin::Root, (y - 1).into(), true);
+        Pallet::<T>::pause_container_chain(RawOrigin::Root, (y - 1).into());
 
         // Start a new session
         Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
@@ -311,6 +311,68 @@ mod benchmarks {
         assert!(Pallet::<T>::paused().contains(&ParaId::from(y - 1)));
         // Check y-1 is not in registered_para_ids
         assert!(!Pallet::<T>::registered_para_ids().contains(&ParaId::from(y - 1)));
+    }
+
+    #[benchmark]
+    fn unpause_container_chain(y: Linear<1, 50>) {
+        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
+        let storage = new_genesis_data(storage);
+
+        // Deregister all the existing chains to avoid conflicts with the new ones
+        for para_id in Pallet::<T>::registered_para_ids() {
+            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
+        }
+
+        // Worst case: when RegisteredParaIds and Paused are both full
+        // First loop to fill RegisteredParaIds to its maximum
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
+        }
+
+        // Second loop to fill Paused to its maximum
+        for k in 1000..(1000 + y) {
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            Pallet::<T>::register(
+                RawOrigin::Signed(caller.clone()).into(),
+                k.into(),
+                storage.clone(),
+            )
+            .unwrap();
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
+            Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
+        }
+
+        // Check PendingPaused has a length of y
+        assert_eq!(Pallet::<T>::pending_paused()[0].1.len(), y as usize);
+        // Check 1000 is in PendingPaused
+        assert!(Pallet::<T>::pending_paused()[0]
+            .1
+            .contains(&ParaId::from(1000)));
+        // Check 1000 is not in pending_registered_para_ids
+        assert!(!Pallet::<T>::pending_registered_para_ids()[0]
+            .1
+            .contains(&ParaId::from(1000)));
+
+        #[extrinsic_call]
+        Pallet::<T>::unpause_container_chain(RawOrigin::Root, 1000u32.into());
+
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+
+        // Check 1000 is not in Paused
+        assert!(!Pallet::<T>::paused().contains(&ParaId::from(1000)));
+        // Check 1000 is in registered_para_ids
+        assert!(Pallet::<T>::registered_para_ids().contains(&ParaId::from(1000)));
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);

@@ -562,55 +562,62 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Pause or unpause container-chain from collating. Does not remove its boot nodes nor its genesis config.
+        /// Pause container-chain from collating. Does not remove its boot nodes nor its genesis config.
         /// Only container-chains that have been marked as valid_for_collating can be paused.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::pause_container_chain(T::MaxLengthParaIds::get()))]
-        pub fn pause_container_chain(
-            origin: OriginFor<T>,
-            para_id: ParaId,
-            pause: bool,
-        ) -> DispatchResult {
+        pub fn pause_container_chain(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
             Self::schedule_paused_parachain_change(|para_ids, paused| {
-                if pause {
-                    match paused.binary_search(&para_id) {
-                        Ok(_) => return Err(Error::<T>::ParaIdAlreadyPaused.into()),
-                        Err(index) => {
-                            paused
-                                .try_insert(index, para_id)
-                                .map_err(|_e| Error::<T>::ParaIdListFull)?;
-                        }
+                match paused.binary_search(&para_id) {
+                    Ok(_) => return Err(Error::<T>::ParaIdAlreadyPaused.into()),
+                    Err(index) => {
+                        paused
+                            .try_insert(index, para_id)
+                            .map_err(|_e| Error::<T>::ParaIdListFull)?;
                     }
-                    match para_ids.binary_search(&para_id) {
-                        Ok(index) => {
-                            para_ids.remove(index);
-                        }
-                        // We can only pause para ids that are marked as valid,
-                        // otherwise unpausing them later would cause problems
-                        Err(_) => return Err(Error::<T>::ParaIdNotRegistered.into()),
-                    }
-                    Self::deposit_event(Event::ParaIdPaused { para_id });
-                } else {
-                    // Unpause
-                    match paused.binary_search(&para_id) {
-                        Ok(index) => {
-                            paused.remove(index);
-                        }
-                        Err(_) => return Err(Error::<T>::ParaIdNotPaused.into()),
-                    }
-                    match para_ids.binary_search(&para_id) {
-                        // This Ok is unreachable, a para id cannot be in "RegisteredParaIds" and "Paused" at the same time
-                        Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                        Err(index) => {
-                            para_ids
-                                .try_insert(index, para_id)
-                                .map_err(|_e| Error::<T>::ParaIdListFull)?;
-                        }
-                    }
-                    Self::deposit_event(Event::ParaIdUnpaused { para_id });
                 }
+                match para_ids.binary_search(&para_id) {
+                    Ok(index) => {
+                        para_ids.remove(index);
+                    }
+                    // We can only pause para ids that are marked as valid,
+                    // otherwise unpausing them later would cause problems
+                    Err(_) => return Err(Error::<T>::ParaIdNotRegistered.into()),
+                }
+                Self::deposit_event(Event::ParaIdPaused { para_id });
+
+                Ok(())
+            })?;
+
+            Ok(())
+        }
+
+        /// Unpause container-chain.
+        /// Only container-chains that have been paused can be unpaused.
+        #[pallet::call_index(5)]
+        #[pallet::weight(T::WeightInfo::unpause_container_chain(T::MaxLengthParaIds::get()))]
+        pub fn unpause_container_chain(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            T::RegistrarOrigin::ensure_origin(origin)?;
+
+            Self::schedule_paused_parachain_change(|para_ids, paused| {
+                match paused.binary_search(&para_id) {
+                    Ok(index) => {
+                        paused.remove(index);
+                    }
+                    Err(_) => return Err(Error::<T>::ParaIdNotPaused.into()),
+                }
+                match para_ids.binary_search(&para_id) {
+                    // This Ok is unreachable, a para id cannot be in "RegisteredParaIds" and "Paused" at the same time
+                    Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                    Err(index) => {
+                        para_ids
+                            .try_insert(index, para_id)
+                            .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                    }
+                }
+                Self::deposit_event(Event::ParaIdUnpaused { para_id });
 
                 Ok(())
             })?;

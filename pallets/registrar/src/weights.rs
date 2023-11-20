@@ -58,6 +58,7 @@ pub trait WeightInfo {
 	fn mark_valid_for_collating(y: u32, ) -> Weight;
 	fn set_boot_nodes(x: u32, y: u32, ) -> Weight;
 	fn pause_container_chain(y: u32, ) -> Weight;
+	fn unpause_container_chain(y: u32, ) -> Weight;
 }
 
 /// Weights for pallet_registrar using the Substrate node and recommended hardware.
@@ -208,6 +209,25 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
 	}
+	/// Storage: `Registrar::PendingParaIds` (r:1 w:1)
+	/// Proof: `Registrar::PendingParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::PendingPaused` (r:1 w:1)
+	/// Proof: `Registrar::PendingPaused` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Session::CurrentIndex` (r:1 w:0)
+	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// The range of component `y` is `[1, 50]`.
+	fn unpause_container_chain(y: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `468 + y * (8 ±0)`
+		//  Estimated: `1949 + y * (8 ±0)`
+		// Minimum execution time: 20_891_000 picoseconds.
+		Weight::from_parts(31_382_004, 1949)
+			// Standard Error: 8_305
+			.saturating_add(Weight::from_parts(322_895, 0).saturating_mul(y.into()))
+			.saturating_add(T::DbWeight::get().reads(3_u64))
+			.saturating_add(T::DbWeight::get().writes(2_u64))
+			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
+	}
 }
 
 // For backwards compatibility and tests
@@ -346,6 +366,25 @@ impl WeightInfo for () {
 	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `y` is `[1, 50]`.
 	fn pause_container_chain(y: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `468 + y * (8 ±0)`
+		//  Estimated: `1949 + y * (8 ±0)`
+		// Minimum execution time: 20_891_000 picoseconds.
+		Weight::from_parts(31_382_004, 1949)
+			// Standard Error: 8_305
+			.saturating_add(Weight::from_parts(322_895, 0).saturating_mul(y.into()))
+			.saturating_add(RocksDbWeight::get().reads(3_u64))
+			.saturating_add(RocksDbWeight::get().writes(2_u64))
+			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
+	}
+	/// Storage: `Registrar::PendingParaIds` (r:1 w:1)
+	/// Proof: `Registrar::PendingParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Registrar::PendingPaused` (r:1 w:1)
+	/// Proof: `Registrar::PendingPaused` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `Session::CurrentIndex` (r:1 w:0)
+	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// The range of component `y` is `[1, 50]`.
+	fn unpause_container_chain(y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `468 + y * (8 ±0)`
 		//  Estimated: `1949 + y * (8 ±0)`

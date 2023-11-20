@@ -2561,9 +2561,18 @@ declare module "@polkadot/types/lookup" {
         readonly isPauseContainerChain: boolean;
         readonly asPauseContainerChain: {
             readonly paraId: u32;
-            readonly pause: bool;
         } & Struct;
-        readonly type: "Register" | "Deregister" | "MarkValidForCollating" | "SetBootNodes" | "PauseContainerChain";
+        readonly isUnpauseContainerChain: boolean;
+        readonly asUnpauseContainerChain: {
+            readonly paraId: u32;
+        } & Struct;
+        readonly type:
+            | "Register"
+            | "Deregister"
+            | "MarkValidForCollating"
+            | "SetBootNodes"
+            | "PauseContainerChain"
+            | "UnpauseContainerChain";
     }
 
     /** @name TpContainerChainGenesisDataContainerChainGenesisData (198) */

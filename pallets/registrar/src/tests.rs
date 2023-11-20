@@ -321,7 +321,6 @@ fn pause_para_id_42_works() {
         assert_ok!(ParaRegistrar::pause_container_chain(
             RuntimeOrigin::root(),
             42.into(),
-            true,
         ));
 
         // Assert that the ParaIdPaused event was emitted
@@ -364,12 +363,11 @@ fn pause_para_id_42_twice_fails() {
         assert_ok!(ParaRegistrar::pause_container_chain(
             RuntimeOrigin::root(),
             42.into(),
-            true,
         ));
 
         // Try to pause again
         assert_noop!(
-            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), true),
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into()),
             Error::<Test>::ParaIdAlreadyPaused
         );
     });
@@ -381,7 +379,7 @@ fn pause_para_id_42_fails_not_registered() {
         run_to_block(1);
         // Try to pause
         assert_noop!(
-            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), true),
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into()),
             Error::<Test>::ParaIdNotRegistered
         );
     });
@@ -392,7 +390,7 @@ fn pause_container_chain_bad_origin() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_noop!(
-            ParaRegistrar::pause_container_chain(RuntimeOrigin::signed(1), 42.into(), true),
+            ParaRegistrar::pause_container_chain(RuntimeOrigin::signed(1), 42.into()),
             DispatchError::BadOrigin
         );
     });
@@ -423,7 +421,7 @@ fn unpause_para_id_that_is_not_paused_fails() {
 
         // Try to unpause
         assert_noop!(
-            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), false),
+            ParaRegistrar::unpause_container_chain(RuntimeOrigin::root(), 42.into()),
             Error::<Test>::ParaIdNotPaused
         );
     });
@@ -456,19 +454,17 @@ fn unpause_para_id_42_twice_fails() {
         assert_ok!(ParaRegistrar::pause_container_chain(
             RuntimeOrigin::root(),
             42.into(),
-            true,
         ));
 
         // Unpause
-        assert_ok!(ParaRegistrar::pause_container_chain(
+        assert_ok!(ParaRegistrar::unpause_container_chain(
             RuntimeOrigin::root(),
             42.into(),
-            false
         ),);
 
         // Unpause again fails
         assert_noop!(
-            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), false),
+            ParaRegistrar::unpause_container_chain(RuntimeOrigin::root(), 42.into()),
             Error::<Test>::ParaIdNotPaused
         );
     });
@@ -480,7 +476,7 @@ fn unpause_para_id_42_fails_not_registered() {
         run_to_block(1);
         // Try to pause
         assert_noop!(
-            ParaRegistrar::pause_container_chain(RuntimeOrigin::root(), 42.into(), false),
+            ParaRegistrar::unpause_container_chain(RuntimeOrigin::root(), 42.into()),
             Error::<Test>::ParaIdNotPaused
         );
     });
@@ -628,6 +624,27 @@ fn mark_valid_for_collating_already_valid_para_id() {
 }
 
 #[test]
+fn mark_valid_for_collating_calls_registered_hook() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+        assert_eq!(Mock::get().called_hooks, vec![]);
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_eq!(
+            Mock::get().called_hooks,
+            vec![HookCall::Registered(42.into())]
+        );
+    });
+}
+
+#[test]
 fn deregister_returns_bond_immediately_if_not_marked_as_valid() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
@@ -704,7 +721,6 @@ fn can_deregister_paused_para_id_immediately() {
         assert_ok!(ParaRegistrar::pause_container_chain(
             RuntimeOrigin::root(),
             42.into(),
-            true,
         ));
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
@@ -731,7 +747,6 @@ fn can_deregister_paused_para_id_after_2_sessions() {
         assert_ok!(ParaRegistrar::pause_container_chain(
             RuntimeOrigin::root(),
             42.into(),
-            true,
         ));
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
 
@@ -1203,13 +1218,19 @@ fn weights_assigned_to_extrinsics_are_correct() {
         );
 
         assert_eq!(
-            crate::Call::<Test>::pause_container_chain {
-                para_id: 42.into(),
-                pause: true
-            }
-            .get_dispatch_info()
-            .weight,
+            crate::Call::<Test>::pause_container_chain { para_id: 42.into() }
+                .get_dispatch_info()
+                .weight,
             <() as crate::weights::WeightInfo>::pause_container_chain(
+                <Test as crate::Config>::MaxLengthParaIds::get()
+            )
+        );
+
+        assert_eq!(
+            crate::Call::<Test>::unpause_container_chain { para_id: 42.into() }
+                .get_dispatch_info()
+                .weight,
+            <() as crate::weights::WeightInfo>::unpause_container_chain(
                 <Test as crate::Config>::MaxLengthParaIds::get()
             )
         );

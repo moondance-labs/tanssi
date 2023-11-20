@@ -770,11 +770,8 @@ declare module "@polkadot/api-base/types/submittable" {
             >;
             /** See [`Pallet::pause_container_chain`]. */
             pauseContainerChain: AugmentedSubmittable<
-                (
-                    paraId: u32 | AnyNumber | Uint8Array,
-                    pause: bool | boolean | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [u32, bool]
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
             >;
             /** See [`Pallet::register`]. */
             register: AugmentedSubmittable<
@@ -795,6 +792,11 @@ declare module "@polkadot/api-base/types/submittable" {
                     bootNodes: Vec<Bytes> | (Bytes | string | Uint8Array)[]
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, Vec<Bytes>]
+            >;
+            /** See [`Pallet::unpause_container_chain`]. */
+            unpauseContainerChain: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

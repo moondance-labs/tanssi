@@ -822,9 +822,9 @@ impl pallet_configuration::Config for Runtime {
     type WeightInfo = pallet_configuration::weights::SubstrateWeight<Runtime>;
 }
 
-pub struct RegistrarHooksImpl;
+pub struct DanceboxRegistrarHooks;
 
-impl RegistrarHooks for RegistrarHooksImpl {
+impl RegistrarHooks for DanceboxRegistrarHooks {
     fn para_registered(_para_id: ParaId) -> Weight {
         // TODO: pallet_services_payment should give free credits but only once per para id
         // A migration should mark any existing para ids as already received credits to avoid giving
@@ -871,7 +871,7 @@ impl pallet_registrar::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
     type DepositAmount = DepositAmount;
-    type RegistrarHooks = RegistrarHooksImpl;
+    type RegistrarHooks = DanceboxRegistrarHooks;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 

@@ -1819,7 +1819,9 @@ export default {
             },
             pause_container_chain: {
                 paraId: "u32",
-                pause: "bool",
+            },
+            unpause_container_chain: {
+                paraId: "u32",
             },
         },
     },
