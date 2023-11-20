@@ -55,16 +55,16 @@ tp-core = { path = "primitives/core", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
 # Moonkit (wasm)
-nimbus-consensus = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0" }
-nimbus-primitives = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-author-inherent = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-maintenance-mode = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-migrations = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-xcm-primitives = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-evm-precompile-balances-erc20 = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-evm-precompile-batch = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-evm-precompile-call-permit = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-evm-precompile-xcm-utils = { git = "https://github.com/fgamundi/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles" }
+nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles", default-features = false }
+pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles", default-features = false }
+pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles", default-features = false }
+pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles", default-features = false }
+xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles", default-features = false }
+pallet-evm-precompile-balances-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles", default-features = false }
+pallet-evm-precompile-batch = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles", default-features = false }
+pallet-evm-precompile-call-permit = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles", default-features = false }
+pallet-evm-precompile-xcm-utils = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0-precompiles", default-features = false }
 
 # Substrate (wasm)
 sp-consensus-beefy = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
@@ -194,32 +194,32 @@ cumulus-test-relay-sproof-builder = { git = "https://github.com/moondance-labs/p
 xcm-emulator = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 
 # Frontier (wasm)
-fp-account = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-fp-evm = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-fp-rpc = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-fp-self-contained = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-pallet-base-fee = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-pallet-dynamic-fee = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-pallet-ethereum = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-pallet-evm = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-pallet-evm-chain-id = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-pallet-evm-precompile-modexp = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-pallet-evm-precompile-sha3fips = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-pallet-evm-precompile-simple = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-pallet-hotfix-sufficients = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-precompile-utils = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
+fp-account = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+fp-evm = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+fp-rpc = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+fp-self-contained = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+pallet-base-fee = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+pallet-dynamic-fee = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+pallet-ethereum = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+pallet-evm = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+pallet-evm-chain-id = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+pallet-evm-precompile-modexp = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+pallet-evm-precompile-sha3fips = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+pallet-evm-precompile-simple = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+pallet-hotfix-sufficients = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+precompile-utils = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
 
 # Frontier (client)
-fc-api = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-fc-cli = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-fc-consensus = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-fc-db = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-fc-mapping-sync = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-fc-rpc = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", features = [
+fc-api = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+fc-cli = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+fc-consensus = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+fc-db = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+fc-mapping-sync = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+fc-rpc = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", features = [
 	"rpc-binary-search-estimate",
 ] }
-fc-rpc-core = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
-fc-storage = { git = "https://github.com/fgamundi/frontier", branch = "precompile-xcm-util", default-features = false }
+fc-rpc-core = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
+fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0-xcm-util", default-features = false }
 
 # General (wasm)
 hex-literal = { version = "0.3.4" }
