@@ -45,7 +45,7 @@ use {
     },
 };
 
-pub type ParachainExecutor = NativeElseWasmExecutor<TemplateRuntimeExecutor>;
+type ParachainExecutor = NativeElseWasmExecutor<TemplateRuntimeExecutor>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport = TParachainBlockImport<
