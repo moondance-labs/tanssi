@@ -38,6 +38,8 @@ import type {
     DanceboxRuntimeProxyType,
     DanceboxRuntimeRuntime,
     DanceboxRuntimeSessionKeys,
+    DpCollatorAssignmentAssignedCollatorsAccountId32,
+    DpCollatorAssignmentAssignedCollatorsPublic,
     FrameSupportDispatchDispatchClass,
     FrameSupportDispatchDispatchInfo,
     FrameSupportDispatchPays,
@@ -215,8 +217,6 @@ import type {
     StagingXcmVersionedResponse,
     StagingXcmVersionedXcm,
     TpAuthorNotingInherentOwnParachainInherentData,
-    TpCollatorAssignmentAssignedCollatorsAccountId32,
-    TpCollatorAssignmentAssignedCollatorsPublic,
     TpContainerChainGenesisDataContainerChainGenesisData,
     TpContainerChainGenesisDataContainerChainGenesisDataItem,
     TpContainerChainGenesisDataProperties,
@@ -257,6 +257,8 @@ declare module "@polkadot/types/types/registry" {
         DanceboxRuntimeProxyType: DanceboxRuntimeProxyType;
         DanceboxRuntimeRuntime: DanceboxRuntimeRuntime;
         DanceboxRuntimeSessionKeys: DanceboxRuntimeSessionKeys;
+        DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
+        DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
         FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
@@ -434,8 +436,6 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmVersionedResponse: StagingXcmVersionedResponse;
         StagingXcmVersionedXcm: StagingXcmVersionedXcm;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
-        TpCollatorAssignmentAssignedCollatorsAccountId32: TpCollatorAssignmentAssignedCollatorsAccountId32;
-        TpCollatorAssignmentAssignedCollatorsPublic: TpCollatorAssignmentAssignedCollatorsPublic;
         TpContainerChainGenesisDataContainerChainGenesisData: TpContainerChainGenesisDataContainerChainGenesisData;
         TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
         TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
