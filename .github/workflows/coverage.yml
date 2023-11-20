@@ -106,6 +106,7 @@ jobs:
           du -sh proffiles
 
           echo "Executing grcov"
+          mkdir -p coverage
           ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html,covdir --branch --ignore-not-existing --ignore "target/release/build/*" \
             --ignore "*mock.rs" --ignore "*tests.rs" \
