@@ -115,7 +115,7 @@ jobs:
           mkdir -p coverage
           ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html,covdir --branch --ignore-not-existing --ignore "target/release/build/*" \
-            --ignore "*mock.rs" --ignore "*tests.rs" \
+            --ignore "*mock.rs" --ignore "*tests.rs" --ignore "$HOME/.cargo/**" \
             -o coverage/ --llvm 2>&1 \
             | tee grcov.log
 
@@ -133,7 +133,7 @@ jobs:
             cd ..
             ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html,covdir --branch --ignore-not-existing --ignore "target/release/build/*" \
-            --ignore "*mock.rs" --ignore "*tests.rs" \
+            --ignore "*mock.rs" --ignore "*tests.rs" --ignore "$HOME/.cargo/**" \
             -o coverage/ --llvm
           fi
 
