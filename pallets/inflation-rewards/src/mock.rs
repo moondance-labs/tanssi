@@ -42,6 +42,7 @@ frame_support::construct_runtime!(
     pub enum Test
     {
         System: frame_system,
+        ParachainSystem: cumulus_pallet_parachain_system,
         Balances: pallet_balances,
         InflationRewards: pallet_inflation_rewards,
         MockData: mock_data,
@@ -70,8 +71,20 @@ impl frame_system::Config for Test {
     type OnKilledAccount = ();
     type SystemWeightInfo = ();
     type SS58Prefix = ();
-    type OnSetCode = ();
+    type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Test>;
     type MaxConsumers = ConstU32<16>;
+}
+
+impl cumulus_pallet_parachain_system::Config for Test {
+	type RuntimeEvent = RuntimeEvent;
+	type OnSystemEvent = ();
+	type SelfParaId = ();
+	type OutboundXcmpMessageSource = ();
+	type DmpMessageHandler = ();
+	type ReservedDmpWeight = ();
+	type XcmpMessageHandler = ();
+	type ReservedXcmpWeight = ();
+	type CheckAssociatedRelayNumber = cumulus_pallet_parachain_system::AnyRelayNumber;
 }
 
 parameter_types! {

@@ -1193,6 +1193,9 @@ parameter_types! {
     // 1% in the case of dev moed
     // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
+    // TODO: if we want to rely on relay-block clocktime for inflation calculus, consider using
+    // the anual amount of relay chain blocks -> aprox 5_256_000.
+    // TODO: check why the inflation is 5.1% instead of 5%.
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));
 
     // 30% for parachain bond, so 70% for staking

@@ -29,6 +29,7 @@ mod mock;
 mod tests;
 
 use {
+    cumulus_primitives_core::relay_chain::BlockNumber as RelayBlockNumber,
     frame_support::{
         pallet_prelude::*,
         traits::{
@@ -90,9 +91,19 @@ pub mod pallet {
             let number_of_chains: BalanceOf<T> =
                 ((registered_para_ids.len() as u32).saturating_add(1)).into();
 
-            // Issue new supply
-            let new_supply =
-                T::Currency::issue(T::InflationRate::get() * T::Currency::total_issuance());
+            let last_relay_block = cumulus_pallet_parachain_system::Pallet::<T>::last_relay_block_number();
+            let highest_relay_block = HighestRelayBlockSeen::<T>::get();
+            let mut new_supply = CreditOf::<T>::zero();
+
+            if last_relay_block != highest_relay_block {
+                let relay_block_diff = last_relay_block.saturating_sub(highest_relay_block);
+            
+                HighestRelayBlockSeen::<T>::put(last_relay_block);
+    
+                // Issue new supply
+                new_supply =
+                    T::Currency::issue(T::InflationRate::get() * T::Currency::total_issuance() * relay_block_diff.into());
+            }
 
             // Split staking reward portion
             let total_rewards = T::RewardsPortion::get() * new_supply.peek();
@@ -127,7 +138,7 @@ pub mod pallet {
     }
 
     #[pallet::config]
-    pub trait Config: frame_system::Config {
+    pub trait Config: frame_system::Config + cumulus_pallet_parachain_system::Config{
         /// Overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
@@ -175,6 +186,7 @@ pub mod pallet {
     #[pallet::getter(fn container_chains_to_reward)]
     pub(super) type ChainsToReward<T: Config> =
         StorageValue<_, ChainsToRewardValue<T>, OptionQuery>;
+
     #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
     #[scale_info(skip_type_params(T))]
     pub struct ChainsToRewardValue<T: Config> {
@@ -184,6 +196,12 @@ pub mod pallet {
         >,
         pub rewards_per_chain: BalanceOf<T>,
     }
+
+    /// Highest relay chain block number seen so far.
+    #[pallet::storage]
+    #[pallet::getter(fn highest_relay_block_seen)]
+    pub(super) type HighestRelayBlockSeen<T: Config> =
+        StorageValue<_, RelayBlockNumber, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
         fn reward_orchestrator_author() -> Weight {
