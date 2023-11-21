@@ -243,7 +243,7 @@
         },
         {
             "name": "zombie_dancebox_upgrade",
-            "testFileDir": ["suites/rt-upgrade"],
+            "testFileDir": ["suites/rt-upgrade-zombienet"],
             "runScripts": ["download-polkadot.sh"],
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
