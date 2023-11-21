@@ -200,9 +200,5 @@ jobs:
         with:
           comment-id: ${{ steps.fc.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            Master coverage: ${{ steps.coverage.outputs.master_percent }}
-            Coverage generated ${{ steps.coverage.outputs.coverage_date }}:
-              ${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html
-            Pull coverage: ${{ steps.coverage.outputs.total_percent }}
+          body-path: coverage_report.md
           edit-mode: replace
