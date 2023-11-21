@@ -49,7 +49,7 @@ where
             pallet_evm::Pallet::<T>::create_account(address.into(), revert_bytecode.clone());
             count += 1;
         }
-        db_weights.reads_writes(0, count)
+        db_weights.reads_writes(count, count * 2)
     }
 
     /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
