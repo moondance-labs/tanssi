@@ -365,13 +365,16 @@ impl ContainerChainSpawner {
         async move {
             match try_closure().await {
                 Ok(()) => {}
-                Err(sc_service::error::Error::Other(s)) if s.starts_with("No genesis data registered for container chain id") => {
+                Err(sc_service::error::Error::Other(s))
+                    if s.starts_with("No genesis data registered for container chain id") =>
+                {
                     // Ignore this panic because it is a known issue, we don't start the container chain in this case.
                     // This is triggered when:
                     // 1. Collator is assigned to parachain 2000
                     // 2. Parachain 2000 is deregistered. This deletes the genesis data immediately.
                     // 3. Collator restarts parachain 2000. Panics because that container chain does not have any genesis data.
                     // Fixed by not deleting genesis data immediately in https://github.com/moondance-labs/tanssi/pull/325
+                    log::warn!("{}", s);
                 }
                 Err(e) => {
                     panic!("Failed to start container chain node: {}", e);
