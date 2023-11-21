@@ -181,7 +181,7 @@ jobs:
         run: |
           mv coverage_report.md temp_coverage_report.md
           echo "## [Coverage Report](${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html)" > coverage_report.md
-          echo "[(master)](${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/html/index.html)" > coverage_report.md
+          echo "[(master)](${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/html/index.html)" >> coverage_report.md
           cat temp_coverage_report.md >> coverage_report.md
           rm temp_coverage_report.md
           echo "> Coverage generated ${{ steps.coverage.outputs.coverage_date }}" >> coverage_report.md
