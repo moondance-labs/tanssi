@@ -86,6 +86,7 @@
             "name": "zombie_tanssi",
             "testFileDir": ["suites/para"],
             "runScripts": ["build-spec.sh", "download-polkadot.sh"],
+            "timeout": 300000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
