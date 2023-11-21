@@ -25,7 +25,7 @@ use {
     dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
-    node_common::service::Config as _,
+    node_common::service::NodeBuilderConfig as _,
     parity_scale_codec::Encode,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,

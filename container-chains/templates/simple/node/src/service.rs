@@ -17,7 +17,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
-    node_common::service::{Config as _, NodeBuilder},
+    node_common::service::{NodeBuilderConfig as _, NodeBuilder},
     sc_consensus::BasicQueue,
 };
 
@@ -54,7 +54,7 @@ type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
 
 pub struct NodeBuilderConfig;
-impl node_common::service::Config for NodeBuilderConfig {
+impl node_common::service::NodeBuilderConfig for NodeBuilderConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
     type ParachainNativeExecutor = ParachainNativeExecutor;

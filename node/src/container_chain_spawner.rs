@@ -32,7 +32,7 @@ use {
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{AccountId, Block, BlockNumber},
     futures::FutureExt,
-    node_common::service::Config,
+    node_common::service::NodeBuilderConfig,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,

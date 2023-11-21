@@ -31,7 +31,7 @@ use {
     fc_db::DatabaseSource,
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
     nimbus_primitives::NimbusId,
-    node_common::service::{Config as _, ManualSealConfiguration, NodeBuilder, Sealing},
+    node_common::service::{NodeBuilderConfig as _, ManualSealConfiguration, NodeBuilder, Sealing},
     sc_consensus::BasicQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
@@ -55,7 +55,7 @@ type ParachainBlockImport = TParachainBlockImport<
 >;
 
 pub struct NodeBuilderConfig;
-impl node_common::service::Config for NodeBuilderConfig {
+impl node_common::service::NodeBuilderConfig for NodeBuilderConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
     type ParachainNativeExecutor = TemplateRuntimeExecutor;

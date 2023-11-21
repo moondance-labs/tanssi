@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sc_service::SpawnTaskHandle;
-
 use {
     async_io::Timer,
     core::time::Duration,
@@ -45,7 +43,8 @@ use {
     sc_network_transactions::TransactionsHandlerController,
     sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor},
     sc_service::{
-        Configuration, KeystoreContainer, NetworkStarter, TFullBackend, TFullClient, TaskManager,
+        Configuration, KeystoreContainer, NetworkStarter, SpawnTaskHandle, TFullBackend,
+        TFullClient, TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
     sc_transaction_pool_api::OffchainTransactionPoolFactory,
@@ -60,11 +59,15 @@ use {
     std::{str::FromStr, sync::Arc},
 };
 
-pub trait Config {
+/// Trait to configure the main types the builder rely on, bundled in a single
+/// type to reduce verbosity and the amount of type parameters.
+pub trait NodeBuilderConfig {
     type Block;
     type RuntimeApi;
     type ParachainNativeExecutor;
 
+    /// Create a new `NodeBuilder` using the types of this `Config`, along
+    /// with the parachain `Configuration` and an optional `HwBench`.
     fn new_builder(
         parachain_config: &Configuration,
         hwbench: Option<sc_sysinfo::HwBench>,
@@ -82,11 +85,11 @@ pub trait Config {
     }
 }
 
-pub type BlockOf<T> = <T as Config>::Block;
+pub type BlockOf<T> = <T as NodeBuilderConfig>::Block;
 pub type BlockHashOf<T> = <BlockOf<T> as cumulus_primitives_core::BlockT>::Hash;
 pub type BlockHeaderOf<T> = <BlockOf<T> as cumulus_primitives_core::BlockT>::Header;
-pub type RuntimeApiOf<T> = <T as Config>::RuntimeApi;
-pub type ParachainNativeExecutorOf<T> = <T as Config>::ParachainNativeExecutor;
+pub type RuntimeApiOf<T> = <T as NodeBuilderConfig>::RuntimeApi;
+pub type ParachainNativeExecutorOf<T> = <T as NodeBuilderConfig>::ParachainNativeExecutor;
 pub type ExecutorOf<T> = NativeElseWasmExecutor<ParachainNativeExecutorOf<T>>;
 pub type ClientOf<T> = TFullClient<BlockOf<T>, RuntimeApiOf<T>, ExecutorOf<T>>;
 pub type BackendOf<T> = TFullBackend<BlockOf<T>>;
@@ -109,7 +112,7 @@ pub type ParachainConsensusOf<T> = Box<dyn ParachainConsensus<BlockOf<T>>>;
 // are still required since Rust can't infer the types in the `new` function
 // that doesn't take `self`.
 pub struct NodeBuilder<
-    T: Config,
+    T: NodeBuilderConfig,
     // `(cumulus_client_service/sc_service)::build_network` returns many important systems,
     // but can only be called with an `import_queue` which can be different in
     // each node. For that reason it is a `()` when calling `new`, then the
@@ -157,7 +160,7 @@ pub struct Network<Block: cumulus_primitives_core::BlockT> {
 // `new` function doesn't take self, and the Rust compiler cannot infer that
 // only one type T implements `TypeIdentity`. With thus need a separate impl
 // block with concrete types `()`.
-impl<T: Config> NodeBuilder<T>
+impl<T: NodeBuilderConfig> NodeBuilder<T>
 where
     BlockOf<T>: cumulus_primitives_core::BlockT,
     ParachainNativeExecutorOf<T>: NativeExecutionDispatch + 'static,
@@ -248,7 +251,7 @@ where
     }
 }
 
-impl<T: Config, SNetwork, STxHandler, SImportQueueService>
+impl<T: NodeBuilderConfig, SNetwork, STxHandler, SImportQueueService>
     NodeBuilder<T, SNetwork, STxHandler, SImportQueueService>
 where
     BlockOf<T>: cumulus_primitives_core::BlockT,
