@@ -30,47 +30,55 @@
     "parachains": [
         {
             "id": 1000,
-            "chain_spec_path": "specs/tanssi-1000.json",
+            "chain_spec_command": "../target/release/tanssi-node build-spec --chain dancebox-local --parachain-id 1000 --add-container-chain specs/template-container-2000.json --add-container-chain specs/template-container-2001.json --invulnerable 'Collator1000-01' --invulnerable 'Collator1000-02' --invulnerable 'Collator2000-01' --invulnerable 'Collator2000-02' --invulnerable 'Collator2001-01' --invulnerable 'Collator2001-02' --invulnerable 'Collator2002-01' --invulnerable 'Collator2002-02' > specs/tanssi-1000.json",
             "COMMENT": "Important: these collators will not be injected to pallet-invulnerables because zombienet does not support that. When changing the collators list, make sure to update `scripts/build-spec.sh`",
             "collators": [
                 {
                     "name": "Collator1000-01",
                     "ws_port": "9948",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-lparachain=debug"]
                 },
                 {
                     "name": "Collator1000-02",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-lparachain=debug"]
                 },
                 {
                     "name": "Collator2000-01",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-lparachain=debug"]
                 },
                 {
                     "name": "Collator2000-02",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-lparachain=debug"]
                 },
                 {
                     "name": "Collator2001-01",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-lparachain=debug"]
                 },
                 {
                     "name": "Collator2001-02",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-lparachain=debug"]
                 },
                 {
                     "name": "Collator2002-01",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-lparachain=debug"]
                 },
                 {
                     "name": "Collator2002-02",
-                    "command": "../target/release/tanssi-node"
+                    "command": "../target/release/tanssi-node",
+                    "args": ["-lparachain=debug"]
                 }
             ]
         },
         {
             "id": 2000,
-            "chain_spec_path": "specs/template-container-2000.json",
+            "chain_spec_command": "../target/release/container-chain-template-simple-node build-spec --disable-default-bootnode --add-bootnode '/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9' --parachain-id 2000 --raw > specs/template-container-2000.json",
             "collators": [
                 {
                     "name": "FullNode-2000",
@@ -83,7 +91,7 @@
         },
         {
             "id": 2001,
-            "chain_spec_path": "specs/template-container-2001.json",
+            "chain_spec_command": "../target/release/container-chain-template-frontier-node build-spec --disable-default-bootnode --add-bootnode '/ip4/127.0.0.1/tcp/33050/ws/p2p/12D3KooWFGaw1rxB6MSuN3ucuBm7hMq5pBFJbEoqTyth4cG483Cc' --parachain-id 2001 --raw > specs/template-container-2001.json",
             "collators": [
                 {
                     "name": "FullNode-2001",
@@ -96,7 +104,7 @@
         },
         {
             "id": 2002,
-            "chain_spec_path": "specs/template-container-2002.json",
+            "chain_spec_command": "../target/release/container-chain-template-simple-node build-spec --disable-default-bootnode --parachain-id 2002 --raw > specs/template-container-2002.json",
             "collators": [
                 {
                     "name": "FullNode-2002",
