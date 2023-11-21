@@ -8,7 +8,15 @@
             "name": "dev_tanssi",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/dev-tanssi", "suites/common"],
-            "multiThreads": true,
+            "multiThreads": {
+                "threads": {
+                  "isolate": true,
+                  "minThreads": 1,
+                  "maxThreads": 4,
+                  "singleThread": false,
+                  "useAtomics": false
+                }
+            },
             "reporters": ["basic"],
             "foundation": {
                 "type": "dev",
@@ -51,7 +59,15 @@
             "name": "dev_frontier_template",
             "testFileDir": ["suites/dev-frontier-template", "suites/common"],
             "runScripts": ["pre-build-contracts.ts"],
-            "multiThreads": true,
+            "multiThreads": {
+                "threads": {
+                  "isolate": true,
+                  "minThreads": 1,
+                  "maxThreads": 4,
+                  "singleThread": false,
+                  "useAtomics": false
+                }
+            },
             "reporters": ["basic"],
             "contracts": "helpers/",
             "foundation": {
