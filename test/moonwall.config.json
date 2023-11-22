@@ -59,6 +59,7 @@
         {
             "name": "dev_frontier_template",
             "testFileDir": ["suites/dev-frontier-template", "suites/common"],
+            "timeout": 60000,
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": {
                 "threads": {
