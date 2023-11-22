@@ -58,6 +58,10 @@ jobs:
         shell: bash
         run: |
           echo "RUSTFLAGS=-C opt-level=3 -D warnings -C instrument-coverage -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
+          # Disable coverage when building
+          echo "LLVM_PROFILE_FILE=/dev/null" >> $GITHUB_ENV
+          # TODO: For testing, clean up .cargo, remove this line before merging:
+          find $HOME/.cargo -type f -name \*.profraw -delete
       - name: Setup grcov
         run: |
           wget https://github.com/mozilla/grcov/releases/download/v${{ env.GRCOV_VERSION }}/grcov-x86_64-unknown-linux-gnu.tar.bz2
@@ -69,7 +73,12 @@ jobs:
           features: "fast-runtime"
       - name: Clean-up possible coverage generated during builds
         run: |
+          echo "This should be empty:"
+          find . -type f -name \*.profraw -exec ls -l {}  \;
+          echo "nice"
           rm default_*.profraw
+          # Enable coverage when running tests
+          echo "LLVM_PROFILE_FILE=/tmp/proffiles/default_%m_%p.profraw" >> $GITHUB_ENV
       - name: Upload runtimes
         uses: actions/upload-artifact@v3.1.2
         with:
@@ -103,13 +112,9 @@ jobs:
         run: |
           echo "Check junk in .cargo folder"
           find $HOME/.cargo -type f -name \*.profraw -exec ls -l {} \;
-          mkdir -p /tmp/proffiles
-
-          echo "Those are the important files:"
+          echo "^ should be empty"
           find . -type f -name \*.profraw -exec ls -l {}  \;
-
-          echo "Copying profraw files to /tmp/proffiles"
-          find . -name \*.profraw -exec mv {} /tmp/proffiles/ \;
+          echo "^ should also be empty"
 
           mv /tmp/proffiles proffiles
           du -sh proffiles
