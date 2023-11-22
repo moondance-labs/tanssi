@@ -101,8 +101,11 @@ jobs:
       - name: Retrieve coverage
         id: coverage
         run: |
+          echo "Check junk in .cargo folder"
+          find $HOME/.cargo -type f -name \*.profraw -exec ls -l {} \;
           mkdir -p /tmp/proffiles
 
+          echo "Those are the important files:"
           find . -type f -name \*.profraw -exec ls -l {}  \;
 
           echo "Copying profraw files to /tmp/proffiles"
