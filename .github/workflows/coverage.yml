@@ -177,7 +177,7 @@ jobs:
           echo "${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html"
 
       - name: Create coverage report comment
-        if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
+        if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         run: |
           mv coverage_report.md temp_coverage_report.md
           echo "## [Coverage Report](${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html)" > coverage_report.md
@@ -188,7 +188,7 @@ jobs:
           echo "Generated coverage report comment"
           cat coverage_report.md
       - name: Find Comment
-        if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
+        if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         uses: peter-evans/find-comment@v2
         id: fc
         with:
