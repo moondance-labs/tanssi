@@ -137,7 +137,7 @@ jobs:
             -o coverage/ --llvm
           fi
 
-          if [ "${{ needs.set-tags.outputs.coverage_report }}" == "true" ]; then
+          if [ "${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}" == "true" ]; then
             echo "Generating coverage report"
             wget ${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/covdir \
               -O base_covdir || true
