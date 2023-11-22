@@ -61,7 +61,10 @@ jobs:
           # Disable coverage when building
           echo "LLVM_PROFILE_FILE=/dev/null" >> $GITHUB_ENV
           # TODO: For testing, clean up .cargo, remove this line before merging:
-          find $HOME/.cargo -type f -name \*.profraw -delete
+          #find $HOME/.cargo -type f -name \*.profraw -delete
+          find $HOME/.cargo -type f -name \*.profraw -print0 | \
+            tee >(xargs -0 du -ch | grep total$) | \
+            xargs -0 rm
       - name: Setup grcov
         run: |
           wget https://github.com/mozilla/grcov/releases/download/v${{ env.GRCOV_VERSION }}/grcov-x86_64-unknown-linux-gnu.tar.bz2
