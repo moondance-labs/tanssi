@@ -7,7 +7,7 @@
 
 set -e
 
-BINARY="./target/profile/tanssi-node"
+BINARY="./target/production/tanssi-node"
 STEPS=50
 REPEAT=20
 
