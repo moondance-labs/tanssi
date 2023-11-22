@@ -31,7 +31,7 @@ use {
     fc_db::DatabaseSource,
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
     nimbus_primitives::NimbusId,
-    node_common::service::{NodeBuilderConfig as _, ManualSealConfiguration, NodeBuilder, Sealing},
+    node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig as _, Sealing},
     sc_consensus::BasicQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},

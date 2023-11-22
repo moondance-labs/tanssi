@@ -17,7 +17,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
-    node_common::service::{NodeBuilderConfig as _, NodeBuilder},
+    node_common::service::{NodeBuilder, NodeBuilderConfig as _},
     sc_consensus::BasicQueue,
 };
 

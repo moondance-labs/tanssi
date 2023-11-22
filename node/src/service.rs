@@ -41,7 +41,7 @@ use {
     dancebox_runtime::{opaque::Block, RuntimeApi},
     futures::{channel::mpsc, StreamExt},
     nimbus_primitives::NimbusPair,
-    node_common::service::NodeBuilderConfig as NodeBuilderConfig,
+    node_common::service::NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
