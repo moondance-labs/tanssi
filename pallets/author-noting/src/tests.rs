@@ -552,7 +552,7 @@ fn test_header_non_decodable_does_not_insert() {
 }
 
 #[test]
-fn test_non_aura_digest_doest_not_insert_key() {
+fn test_non_aura_digest_does_not_insert_key() {
     BlockTests::new()
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
@@ -583,7 +583,7 @@ fn test_non_aura_digest_doest_not_insert_key() {
 }
 
 #[test]
-fn test_non_decodable_slot_doest_not_insert_key() {
+fn test_non_decodable_slot_does_not_insert_key() {
     BlockTests::new()
         .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
             1 => {
@@ -692,6 +692,43 @@ fn test_kill_author_data() {
                     para_id: 1001.into(),
                 }
                 .into(),
+            );
+        });
+}
+
+#[test]
+fn test_author_id_insertion_not_first_log() {
+    BlockTests::new()
+        .with_relay_sproof_builder(|_, relay_block_num, sproof| match relay_block_num {
+            1 => {
+                let slot: InherentType = 13u64.into();
+                let mut s = ParaHeaderSproofBuilderItem::default();
+                s.para_id = 1001.into();
+                s.author_id =
+                    HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                        parent_hash: Default::default(),
+                        number: 1,
+                        state_root: Default::default(),
+                        extrinsics_root: Default::default(),
+                        digest: sp_runtime::generic::Digest {
+                            logs: vec![
+                                // Dummy item before aura log
+                                DigestItem::PreRuntime([0; 4], vec![]),
+                                DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
+                            ],
+                        },
+                    });
+                sproof.items.push(s);
+            }
+            _ => unreachable!(),
+        })
+        .add(1, || {
+            assert_eq!(
+                AuthorNoting::latest_author(ParaId::from(1001)),
+                Some(ContainerChainBlockInfo {
+                    block_number: 1,
+                    author: 13u64
+                })
             );
         });
 }
