@@ -80,7 +80,6 @@ jobs:
           echo "This should be empty:"
           find . -type f -name \*.profraw -exec ls -l {}  \;
           echo "nice"
-          rm default_*.profraw
           # Enable coverage when running tests
           echo "LLVM_PROFILE_FILE=/tmp/proffiles/default_%m_%p.profraw" >> $GITHUB_ENV
       - name: Upload runtimes
