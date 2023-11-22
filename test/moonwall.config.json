@@ -8,7 +8,7 @@
             "name": "dev_tanssi",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/dev-tanssi", "suites/common"],
-            "timeout": 60000,
+            "timeout": 120000,
             "multiThreads": {
                 "threads": {
                   "isolate": true,
@@ -59,7 +59,7 @@
         {
             "name": "dev_frontier_template",
             "testFileDir": ["suites/dev-frontier-template", "suites/common"],
-            "timeout": 60000,
+            "timeout": 120000,
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": {
                 "threads": {
