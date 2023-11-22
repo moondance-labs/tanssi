@@ -81,7 +81,7 @@ type TemplatePrecompilesAt<R> = (
         (
             SubcallWithMaxNesting<2>,
             // Batch is the only precompile allowed to call Batch.
-            CallableByPrecompile<OnlyFrom<AddressU64<2050>>>,
+            CallableByPrecompile<OnlyFrom<AddressU64<2049>>>,
         ),
     >,
     PrecompileAt<

@@ -5,7 +5,7 @@ import { expectEVMResult } from "../../../helpers";
 
 const PRECOMPILE_CALL_PERMIT_ADDRESS = "0x0000000000000000000000000000000000000802";
 
-function getSignatureParameters(signature: string) {
+export function getSignatureParameters(signature: string) {
     const r = signature.slice(0, 66); // 32 bytes
     const s = `0x${signature.slice(66, 130)}`; // 32 bytes
     let v = fromHex(`0x${signature.slice(130, 132)}`, "number"); // 1 byte
