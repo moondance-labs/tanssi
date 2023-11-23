@@ -24,8 +24,8 @@ use {
     pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256},
     pallet_evm_precompile_xcm_utils::{AllExceptXcmExecute, XcmUtilsPrecompile},
     precompile_utils::precompile_set::{
-        AcceptDelegateCall, AddressU64, CallableByContract, CallableByPrecompile, OnlyFrom,
-        PrecompileAt, PrecompileSetBuilder, PrecompilesInRangeInclusive, SubcallWithMaxNesting,
+        AcceptDelegateCall, AddressU64, CallableByContract, CallableByPrecompile, PrecompileAt,
+        PrecompileSetBuilder, PrecompilesInRangeInclusive, SubcallWithMaxNesting,
     },
 };
 
