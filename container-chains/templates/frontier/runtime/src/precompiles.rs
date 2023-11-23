@@ -75,15 +75,7 @@ type TemplatePrecompilesAt<R> = (
         Erc20BalancesPrecompile<R, NativeErc20Metadata>,
         (CallableByContract, CallableByPrecompile),
     >,
-    PrecompileAt<
-        AddressU64<2049>,
-        BatchPrecompile<R>,
-        (
-            SubcallWithMaxNesting<2>,
-            // Batch is the only precompile allowed to call Batch.
-            CallableByPrecompile<OnlyFrom<AddressU64<2049>>>,
-        ),
-    >,
+    PrecompileAt<AddressU64<2049>, BatchPrecompile<R>, SubcallWithMaxNesting<2>>,
     PrecompileAt<
         AddressU64<2050>,
         CallPermitPrecompile<R>,
