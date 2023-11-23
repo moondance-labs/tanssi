@@ -7,7 +7,7 @@ describeSuite({
     id: "DF0904",
     title: "Smart Contract Precompile Call",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         let testContractAddress: `0x${string}`;
         let multiplyContractAddress: `0x${string}`;
 
