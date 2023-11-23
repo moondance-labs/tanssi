@@ -1,8 +1,6 @@
 [workspace]
 members = [
 	"client/*",
-	"container-chains/pallets/*",
-	"container-chains/primitives/*",
 	"container-chains/templates/frontier/*",
 	"container-chains/templates/simple/*",
 	"node",
@@ -11,7 +9,6 @@ members = [
 	"pallets/registrar/rpc/runtime-api",
 	"primitives/*",
 	"runtime/dancebox",
-	"test-sproof-builder",
 ]
 resolver = "2"
 
@@ -37,26 +34,29 @@ pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 pallet-services-payment = { path = "pallets/services-payment", default-features = false }
 
-ccp-authorities-noting-inherent = { path = "container-chains/primitives/authorities-noting-inherent", default-features = false }
-ccp-xcm = { path = "container-chains/primitives/xcm", default-features = false }
-
 container-chain-template-frontier-runtime = { path = "container-chains/templates/frontier/runtime", default-features = false }
 container-chain-template-simple-runtime = { path = "container-chains/templates/simple/runtime", default-features = false }
-pallet-cc-authorities-noting = { path = "container-chains/pallets/authorities-noting", default-features = false }
 
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 tc-consensus = { path = "client/consensus" }
-tc-orchestrator-chain-interface = { path = "client/orchestrator-chain-interface" }
-test-relay-sproof-builder = { path = "test-sproof-builder", default-features = false }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
-tp-chain-state-snapshot = { path = "primitives/chain-state-snapshot", default-features = false }
-tp-collator-assignment = { path = "primitives/collator-assignment", default-features = false }
 tp-consensus = { path = "primitives/consensus", default-features = false }
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
-tp-core = { path = "primitives/core", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
+
+# Dancekit (wasm)
+ccp-authorities-noting-inherent = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.1.0", default-features = false  }
+ccp-xcm = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.1.0", default-features = false  }
+dp-core = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.1.0", default-features = false  }
+dp-collator-assignment = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.1.0", default-features = false  }
+dp-chain-state-snapshot = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.1.0", default-features = false  }
+pallet-cc-authorities-noting = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.1.0", default-features = false  }
+test-relay-sproof-builder = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.1.0", default-features = false  }
+
+# Dancekit (client)
+dc-orchestrator-chain-interface = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-v1.1.0" }
 
 # Moonkit (wasm)
 nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0" }

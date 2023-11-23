@@ -31,6 +31,7 @@ use {
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{AccountId, Block, BlockNumber},
+    dc_orchestrator_chain_interface::OrchestratorChainInterface,
     futures::FutureExt,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
@@ -48,7 +49,6 @@ use {
         sync::{Arc, Mutex},
         time::Instant,
     },
-    tc_orchestrator_chain_interface::OrchestratorChainInterface,
     tokio::sync::{mpsc, oneshot},
     tokio::time::{sleep, Duration},
 };

@@ -33,7 +33,7 @@ tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 tp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
 
 tc-consensus = { workspace = true }
-tc-orchestrator-chain-interface = { workspace = true }
+dc-orchestrator-chain-interface = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }

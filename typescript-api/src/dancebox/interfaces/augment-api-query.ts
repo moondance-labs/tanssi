@@ -21,6 +21,8 @@ import type {
     CumulusPalletXcmpQueueQueueConfigData,
     DanceboxRuntimeHoldReason,
     DanceboxRuntimeSessionKeys,
+    DpCollatorAssignmentAssignedCollatorsAccountId32,
+    DpCollatorAssignmentAssignedCollatorsPublic,
     FrameSupportDispatchPerDispatchClassWeight,
     FrameSystemAccountInfo,
     FrameSystemEventRecord,
@@ -55,8 +57,6 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmVersionedAssetId,
     StagingXcmVersionedMultiLocation,
-    TpCollatorAssignmentAssignedCollatorsAccountId32,
-    TpCollatorAssignmentAssignedCollatorsPublic,
     TpContainerChainGenesisDataContainerChainGenesisData,
 } from "@polkadot/types/lookup";
 import type { Observable } from "@polkadot/types/types";
@@ -78,7 +78,7 @@ declare module "@polkadot/api-base/types/storage" {
         authorityAssignment: {
             collatorContainerChain: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<TpCollatorAssignmentAssignedCollatorsPublic>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<DpCollatorAssignmentAssignedCollatorsPublic>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
@@ -188,7 +188,7 @@ declare module "@polkadot/api-base/types/storage" {
         collatorAssignment: {
             collatorContainerChain: AugmentedQuery<
                 ApiType,
-                () => Observable<TpCollatorAssignmentAssignedCollatorsAccountId32>,
+                () => Observable<DpCollatorAssignmentAssignedCollatorsAccountId32>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -202,7 +202,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             pendingCollatorContainerChain: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<TpCollatorAssignmentAssignedCollatorsAccountId32>>,
+                () => Observable<Option<DpCollatorAssignmentAssignedCollatorsAccountId32>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
