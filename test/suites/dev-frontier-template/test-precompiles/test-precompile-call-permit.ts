@@ -2,22 +2,9 @@ import { expect, beforeAll, describeSuite, fetchCompiledContract, deployCreateCo
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, BALTATHAR_PRIVATE_KEY, createViemTransaction } from "@moonwall/util";
 import { Abi, encodeFunctionData, fromHex } from "viem";
 import { expectEVMResult } from "../../../helpers";
+import { getSignatureParameters } from "util/ethereum";
 
 const PRECOMPILE_CALL_PERMIT_ADDRESS = "0x0000000000000000000000000000000000000802";
-
-export function getSignatureParameters(signature: string) {
-    const r = signature.slice(0, 66); // 32 bytes
-    const s = `0x${signature.slice(66, 130)}`; // 32 bytes
-    let v = fromHex(`0x${signature.slice(130, 132)}`, "number"); // 1 byte
-
-    if (![27, 28].includes(v)) v += 27; // not sure why we coerce 27
-
-    return {
-        r,
-        s,
-        v,
-    };
-}
 
 describeSuite({
     id: "DF0902",

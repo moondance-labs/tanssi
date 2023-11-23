@@ -8,8 +8,8 @@ import {
     sendRawTransaction,
 } from "@moonwall/util";
 import { expectEVMResult } from "helpers";
+import { getSignatureParameters } from "util/ethereum";
 import { encodeFunctionData, fromHex } from "viem";
-import { getSignatureParameters } from "./test-precompile-call-permit";
 
 const PRECOMPILE_BATCH_ADDRESS = "0x0000000000000000000000000000000000000801";
 const PRECOMPILE_CALL_PERMIT_ADDRESS = "0x0000000000000000000000000000000000000802";
@@ -25,10 +25,13 @@ describeSuite({
             test: async function () {
                 const { abi: batchInterface } = fetchCompiledContract("Batch");
 
+                let aliceNonce = (await context.polkadotJs().query.system.account(ALITH_ADDRESS)).nonce.toNumber();
+
                 // each tx have a different gas limit to ensure it doesn't impact gas used
                 const batchAllTx = await createViemTransaction(context, {
                     to: PRECOMPILE_BATCH_ADDRESS,
                     gas: 1114112n,
+                    nonce: aliceNonce++,
                     data: encodeFunctionData({
                         abi: batchInterface,
                         functionName: "batchAll",
@@ -44,7 +47,7 @@ describeSuite({
                 const batchSomeTx = await createViemTransaction(context, {
                     to: PRECOMPILE_BATCH_ADDRESS,
                     gas: 1179648n,
-                    nonce: 1,
+                    nonce: aliceNonce++,
                     data: encodeFunctionData({
                         abi: batchInterface,
                         functionName: "batchSome",
@@ -60,7 +63,7 @@ describeSuite({
                 const batchSomeUntilFailureTx = await createViemTransaction(context, {
                     to: PRECOMPILE_BATCH_ADDRESS,
                     gas: 1245184n,
-                    nonce: 2,
+                    nonce: aliceNonce++,
                     data: encodeFunctionData({
                         abi: batchInterface,
                         functionName: "batchSomeUntilFailure",
@@ -89,9 +92,9 @@ describeSuite({
                     .viem("public")
                     .getTransactionReceipt({ hash: batchSomeUntilFailureResult as `0x${string}` });
 
-                expect(batchAllReceipt["gasUsed"]).to.equal(23320n);
-                expect(batchSomeReceipt["gasUsed"]).to.equal(23320n);
-                expect(batchSomeUntilFailureReceipt["gasUsed"]).to.equal(23320n);
+                expect(batchAllReceipt["gasUsed"]).to.equal(44_932n);
+                expect(batchSomeReceipt["gasUsed"]).to.equal(44_932n);
+                expect(batchSomeUntilFailureReceipt["gasUsed"]).to.equal(44_932n);
             },
         });
 
@@ -132,7 +135,7 @@ describeSuite({
 
         it({
             id: "T03",
-            title: "shouldn't be able to call from another precompile",
+            title: "shouldn't be able to be called from another precompile",
             test: async function () {
                 const { abi: batchInterface } = fetchCompiledContract("Batch");
                 const { abi: callPermitAbi } = fetchCompiledContract("CallPermit");
@@ -230,24 +233,14 @@ describeSuite({
                 const { v, r, s } = getSignatureParameters(signature);
 
                 const { result: baltatharForAlithResult } = await context.createBlock(
-                    await context.writeContract({
+                    await createViemTransaction(context, {
                         privateKey: BALTATHAR_PRIVATE_KEY,
-                        contractName: "CallPermit",
-                        contractAddress: PRECOMPILE_CALL_PERMIT_ADDRESS,
-                        functionName: "dispatch",
-                        args: [
-                            ALITH_ADDRESS,
-                            PRECOMPILE_BATCH_ADDRESS,
-                            0,
-                            batchData,
-                            200_000,
-                            9999999999,
-                            v,
-                            r,
-                            s,
-                        ],
-                        rawTxOnly: true,
-                        gas: 200_000n,
+                        to: PRECOMPILE_CALL_PERMIT_ADDRESS,
+                        data: encodeFunctionData({
+                            abi: callPermitAbi,
+                            functionName: "dispatch",
+                            args: [ALITH_ADDRESS, PRECOMPILE_BATCH_ADDRESS, 0, batchData, 200_000, 9999999999, v, r, s],
+                        }),
                     })
                 );
                 expectEVMResult(baltatharForAlithResult!.events, "Revert");
