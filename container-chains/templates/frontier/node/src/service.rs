@@ -31,7 +31,7 @@ use {
     fc_db::DatabaseSource,
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
     nimbus_primitives::NimbusId,
-    node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig as _, Sealing},
+    node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
     sc_consensus::BasicQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
@@ -54,8 +54,8 @@ type ParachainBlockImport = TParachainBlockImport<
     ParachainBackend,
 >;
 
-pub struct NodeBuilderConfig;
-impl node_common::service::NodeBuilderConfig for NodeBuilderConfig {
+pub struct NodeConfig;
+impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
     type ParachainNativeExecutor = TemplateRuntimeExecutor;
@@ -133,7 +133,7 @@ impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
 
 pub fn import_queue(
     parachain_config: &Configuration,
-    node_builder: &NodeBuilder<NodeBuilderConfig>,
+    node_builder: &NodeBuilder<NodeConfig>,
 ) -> (ParachainBlockImport, BasicQueue<Block>) {
     let frontier_block_import =
         FrontierBlockImport::new(node_builder.client.clone(), node_builder.client.clone());
@@ -175,7 +175,7 @@ async fn start_node_impl(
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let mut node_builder = NodeBuilderConfig::new_builder(&parachain_config, hwbench.clone())?;
+    let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
 
     // Frontier specific stuff
     let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
@@ -331,7 +331,7 @@ pub async fn start_dev_node(
     // let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder = NodeBuilderConfig::new_builder(&parachain_config, hwbench)?;
+    let node_builder = NodeConfig::new_builder(&parachain_config, hwbench)?;
 
     // Frontier specific stuff
     let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));

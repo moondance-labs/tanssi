@@ -16,11 +16,6 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use {
-    node_common::service::{NodeBuilder, NodeBuilderConfig as _},
-    sc_consensus::BasicQueue,
-};
-
 #[allow(deprecated)]
 use {
     container_chain_template_simple_runtime::{opaque::Block, RuntimeApi},
@@ -28,6 +23,8 @@ use {
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_service::prepare_node_config,
     cumulus_primitives_core::ParaId,
+    node_common::service::{NodeBuilder, NodeBuilderConfig},
+    sc_consensus::BasicQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
     std::{sync::Arc, time::Duration},
@@ -53,8 +50,8 @@ type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 type ParachainBackend = TFullBackend<Block>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
 
-pub struct NodeBuilderConfig;
-impl node_common::service::NodeBuilderConfig for NodeBuilderConfig {
+pub struct NodeConfig;
+impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
     type ParachainNativeExecutor = ParachainNativeExecutor;
@@ -62,7 +59,7 @@ impl node_common::service::NodeBuilderConfig for NodeBuilderConfig {
 
 pub fn import_queue(
     parachain_config: &Configuration,
-    node_builder: &NodeBuilder<NodeBuilderConfig>,
+    node_builder: &NodeBuilder<NodeConfig>,
 ) -> (ParachainBlockImport, BasicQueue<Block>) {
     // The nimbus import queue ONLY checks the signature correctness
     // Any other checks corresponding to the author-correctness should be done
@@ -101,7 +98,7 @@ pub async fn start_parachain_node(
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let mut node_builder = NodeBuilderConfig::new_builder(&parachain_config, hwbench.clone())?;
+    let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
 
     let (_, import_queue) = import_queue(&parachain_config, &node_builder);
 

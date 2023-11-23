@@ -18,7 +18,7 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, RelayChainCli, Subcommand},
-        service::{self, NodeBuilderConfig},
+        service::{self, NodeConfig},
     },
     container_chain_template_simple_runtime::Block,
     cumulus_client_cli::generate_genesis_block,
@@ -131,7 +131,7 @@ macro_rules! construct_async_run {
 	(|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
 		let runner = $cli.create_runner($cmd)?;
 		runner.async_run(|$config| {
-			let $components = NodeBuilderConfig::new_builder(&$config, None)?;
+			let $components = NodeConfig::new_builder(&$config, None)?;
             let inner = { $( $code )* };
 
 			let task_manager = $components.task_manager;
@@ -217,7 +217,7 @@ pub fn run() -> Result<()> {
         Some(Subcommand::ExportGenesisState(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
-                let partials = NodeBuilderConfig::new_builder(&config, None)?;
+                let partials = NodeConfig::new_builder(&config, None)?;
                 cmd.run(&*config.chain_spec, &*partials.client)
             })
         }
@@ -242,7 +242,7 @@ pub fn run() -> Result<()> {
                     }
                 }
                 BenchmarkCmd::Block(cmd) => runner.sync_run(|config| {
-                    let partials = NodeBuilderConfig::new_builder(&config, None)?;
+                    let partials = NodeConfig::new_builder(&config, None)?;
                     cmd.run(partials.client)
                 }),
                 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -253,7 +253,7 @@ pub fn run() -> Result<()> {
                 )),
                 #[cfg(feature = "runtime-benchmarks")]
                 BenchmarkCmd::Storage(cmd) => runner.sync_run(|config| {
-                    let partials = NodeBuilderConfig::new_builder(&config, None)?;
+                    let partials = NodeConfig::new_builder(&config, None)?;
                     let db = partials.backend.expose_db();
                     let storage = partials.backend.expose_storage();
                     cmd.run(config, partials.client.clone(), db, storage)
