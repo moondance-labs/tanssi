@@ -135,7 +135,7 @@ describeSuite({
 
         it({
             id: "T03",
-            title: "shouldn't be able to be called from another precompile",
+            title: "should be able to be called from call permit",
             test: async function () {
                 const { abi: batchInterface } = fetchCompiledContract("Batch");
                 const { abi: callPermitAbi } = fetchCompiledContract("CallPermit");
@@ -243,7 +243,7 @@ describeSuite({
                         }),
                     })
                 );
-                expectEVMResult(baltatharForAlithResult!.events, "Revert");
+                expectEVMResult(baltatharForAlithResult!.events, "Succeed");
             },
         });
     },
