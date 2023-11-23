@@ -825,10 +825,11 @@ impl pallet_configuration::Config for Runtime {
 pub struct DanceboxRegistrarHooks;
 
 impl RegistrarHooks for DanceboxRegistrarHooks {
-    fn para_registered(_para_id: ParaId) -> Weight {
+    fn para_registered(para_id: ParaId) -> Weight {
         // TODO: pallet_services_payment should give free credits but only once per para id
         // A migration should mark any existing para ids as already received credits to avoid giving
         // them more credits if they are deregistered and registered again
+        ServicesPayment::give_free_credits(&para_id);
         Weight::default()
     }
 

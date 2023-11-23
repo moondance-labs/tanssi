@@ -20,7 +20,7 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    crate::{Invulnerables, Runtime, RuntimeOrigin, ServicesPayment, LOG_TARGET},
     frame_support::{
         migration::storage_key_iter, storage::types::StorageValue, traits::OnRuntimeUpgrade,
         weights::Weight, Blake2_128Concat,
@@ -349,25 +349,24 @@ where
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
         // For each parachain in pallet_registrar (active, pending or pending_verification),
-        // insert `MaxCreditsStored` to pallet_services_payment
+        // insert `MaxCreditsStored` to pallet_services_payment,
+        // and mark that parachain as "given_free_credits".
         let mut para_ids = BTreeSet::new();
         let active = pallet_registrar::RegisteredParaIds::<Runtime>::get();
         let pending = pallet_registrar::PendingParaIds::<Runtime>::get();
         let pending_verification = pallet_registrar::PendingVerification::<Runtime>::get();
+        // This migration ignores Paused and PendingPaused because they do not exist yet in dancebox
 
         para_ids.extend(active);
         para_ids.extend(pending.into_iter().flat_map(|(_session, active)| active));
         para_ids.extend(pending_verification);
 
-        let max_credits = crate::MaxCreditsStored::get();
-        let reads = 3;
-        let writes = para_ids.len() as u64;
+        let reads = 3 + 2 * para_ids.len() as u64;
+        let writes = 2 * para_ids.len() as u64;
 
         for para_id in para_ids {
-            pallet_services_payment::BlockProductionCredits::<Runtime>::insert(
-                para_id,
-                max_credits,
-            );
+            // 2 reads 2 writes
+            ServicesPayment::give_free_credits(&para_id);
         }
 
         let db_weights = T::DbWeight::get();

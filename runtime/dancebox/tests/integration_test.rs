@@ -691,6 +691,8 @@ fn test_paras_registered_but_zero_credits() {
                 Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
                 ()
             );
+            // Need to reset credits to 0 because now parachains are given free credits on register
+            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
@@ -742,6 +744,8 @@ fn test_paras_registered_but_not_enough_credits() {
                 Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
                 ()
             );
+            // Need to reset credits to 0 because now parachains are given free credits on register
+            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase 1 credit less that what is needed
             let credits_1001 = dancebox_runtime::Period::get() * 2 - 1;
             assert_ok!(ServicesPayment::purchase_credits(
@@ -816,6 +820,8 @@ fn test_paras_registered_but_only_credits_for_1_session() {
                 Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
                 ()
             );
+            // Need to reset credits to 0 because now parachains are given free credits on register
+            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase only enough credits for 1 session
             let credits_1001 = dancebox_runtime::Period::get() * 2;
             assert_ok!(ServicesPayment::purchase_credits(
@@ -4185,6 +4191,14 @@ fn test_migration_services_payment() {
                 Registrar::register(origin_of(ALICE.into()), 1002.into(), empty_genesis_data()),
                 ()
             );
+
+            // Need to reset credits to 0 because now parachains are given free credits on register
+            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_credits(root_origin(), 1002.into(), 0));
+            // And also remove the "given_free_credits" storage because the migration will only
+            // give them free credits if they have not received them already
+            pallet_services_payment::GivenFreeCredits::<Runtime>::remove(ParaId::from(1001));
+            pallet_services_payment::GivenFreeCredits::<Runtime>::remove(ParaId::from(1002));
 
             let credits_1001 = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
