@@ -25,8 +25,13 @@
     "devDependencies": {
         "@acala-network/chopsticks": "npm:@tanssi/chopsticks@^0.9.2",
         "@moonbeam-network/api-augment": "^0.2400.0",
+<<<<<<< Updated upstream
         "@moonwall/cli": "beta",
         "@moonwall/util": "beta",
+=======
+        "@moonwall/cli": "^5.0.0-beta.4",
+        "@moonwall/util": "5.0.0-beta.4",
+>>>>>>> Stashed changes
         "@polkadot/api": "^10.9.1",
         "@polkadot/api-augment": "^10.9.1",
         "@polkadot/keyring": "^12.4.2",
