@@ -35,5 +35,5 @@ polkadot-primitives = { workspace = true, optional = true }
 
 [features]
 default = [ "std" ]
-std = [ "serde/std", "cumulus-primitives-core/std", "frame-support/std", "parity-scale-codec/std", "polkadot-primitives", "serde/std", "sp-core/std", "sp-runtime/std", "sp-state-machine/std", "sp-std/std", "sp-trie/std", "tp-traits/std" ]
+std = [ "cumulus-primitives-core/std", "frame-support/std", "parity-scale-codec/std", "polkadot-primitives", "serde/std", "serde/std", "sp-core/std", "sp-runtime/std", "sp-state-machine/std", "sp-std/std", "sp-trie/std", "tp-traits/std" ]
 json = [ "hex", "serde_json" ]

@@ -1601,6 +1601,7 @@ dependencies = [
  "manual-xcm-rpc",
  "nimbus-consensus",
  "nimbus-primitives",
+ "node-common",
  "pallet-ethereum",
  "pallet-transaction-payment-rpc",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -1754,6 +1755,7 @@ dependencies = [
  "log",
  "nimbus-consensus",
  "nimbus-primitives",
+ "node-common",
  "parity-scale-codec",
  "polkadot-cli",
  "polkadot-primitives",
@@ -1891,6 +1893,12 @@ checksum = "b49ba7ef1ad6107f8824dbe97de947cbaac53c44e7f9756a1fba0d37c1eec505"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "core_extensions"
+version = "1.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92c71dc07c9721607e7a16108336048ee978c3a8b129294534272e8bac96c0ee"
 
 [[package]]
 name = "cpp_demangle"
@@ -6914,6 +6922,76 @@ name = "no-std-net"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43794a0ace135be66a25d3ae77d41b91615fb68ae937f904090203e81f755b65"
+
+[[package]]
+name = "node-common"
+version = "0.1.0"
+dependencies = [
+ "async-io",
+ "async-trait",
+ "clap",
+ "core_extensions",
+ "cumulus-client-cli",
+ "cumulus-client-collator",
+ "cumulus-client-consensus-aura",
+ "cumulus-client-consensus-common",
+ "cumulus-client-network",
+ "cumulus-client-service",
+ "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
+ "cumulus-relay-chain-interface",
+ "flume",
+ "frame-benchmarking",
+ "frame-benchmarking-cli",
+ "futures 0.3.28",
+ "jsonrpsee",
+ "log",
+ "nimbus-consensus",
+ "nimbus-primitives",
+ "parity-scale-codec",
+ "polkadot-cli",
+ "polkadot-primitives",
+ "polkadot-service",
+ "sc-basic-authorship",
+ "sc-chain-spec",
+ "sc-cli",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-consensus-manual-seal",
+ "sc-executor",
+ "sc-network",
+ "sc-network-common",
+ "sc-network-sync",
+ "sc-network-transactions",
+ "sc-offchain",
+ "sc-rpc",
+ "sc-service",
+ "sc-sysinfo",
+ "sc-telemetry",
+ "sc-tracing",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
+ "sc-utils",
+ "serde",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-inherents",
+ "sp-io",
+ "sp-keystore",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-timestamp",
+ "sp-transaction-pool",
+ "substrate-frame-rpc-system",
+ "substrate-prometheus-endpoint",
+ "tc-consensus",
+ "try-runtime-cli",
+]
 
 [[package]]
 name = "nodrop"
@@ -14786,6 +14864,7 @@ dependencies = [
  "manual-xcm-rpc",
  "nimbus-consensus",
  "nimbus-primitives",
+ "node-common",
  "pallet-author-noting-runtime-api",
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
