@@ -193,6 +193,26 @@ pub mod pallet {
 
             Ok(().into())
         }
+
+        /// Helper to set and cleanup the `GivenFreeCredits` storage.
+        /// Can only be called by root.
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::set_given_free_credits())]
+        pub fn set_given_free_credits(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            given_free_credits: bool,
+        ) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+
+            if given_free_credits {
+                GivenFreeCredits::<T>::insert(para_id, ());
+            } else {
+                GivenFreeCredits::<T>::remove(para_id);
+            }
+
+            Ok(().into())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -217,10 +237,10 @@ pub mod pallet {
             Ok(().into())
         }
 
-        pub fn give_free_credits(para_id: &ParaId) {
+        pub fn give_free_credits(para_id: &ParaId) -> Weight {
             if GivenFreeCredits::<T>::contains_key(para_id) {
                 // This para id has already received free credits
-                return;
+                return Weight::default();
             }
             // Set number of credits to MaxCreditsStored
             let existing_credits =
@@ -238,6 +258,8 @@ pub mod pallet {
             // We only allow to call this function once per para id, even if it didn't actually
             // receive all the free credits
             GivenFreeCredits::<T>::insert(para_id, ());
+
+            Weight::default()
         }
     }
 

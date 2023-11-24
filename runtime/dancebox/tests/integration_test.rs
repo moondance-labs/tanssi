@@ -4226,6 +4226,18 @@ fn test_migration_services_payment() {
             )
             .unwrap_or_default();
             assert_ne!(credits_1002, 0);
+
+            // Calling mark_valid_for_collating(1002) will not give it any credits
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1002.into()
+            ));
+            let credits_1002_after =
+                pallet_services_payment::BlockProductionCredits::<Runtime>::get(&ParaId::from(
+                    1002,
+                ))
+                .unwrap_or_default();
+            assert_eq!(credits_1002, credits_1002_after);
         });
 }
 
@@ -4385,5 +4397,133 @@ fn test_can_buy_credits_before_registering_para() {
             let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
                 * u128::from(dancebox_runtime::MaxCreditsStored::get());
             assert_eq!(balance_before - balance_after, expected_cost);
+        });
+}
+
+#[test]
+fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // Try to buy (MaxCreditsStored - 1) credits
+            let balance_before = System::account(AccountId::from(ALICE)).data.free;
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dancebox_runtime::MaxCreditsStored::get() - 1,
+                None,
+            ));
+            let balance_after = System::account(AccountId::from(ALICE)).data.free;
+
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get() - 1);
+
+            let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
+                * u128::from(dancebox_runtime::MaxCreditsStored::get() - 1);
+            assert_eq!(balance_before - balance_after, expected_cost);
+
+            // Now register para
+            assert_ok!(
+                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ()
+            );
+
+            // We received 1 free credit, because we cannot have more than MaxCreditsStored
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get());
+        });
+}
+
+#[test]
+fn test_deregister_and_register_again_does_not_give_free_credits() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // Register
+            assert_ok!(
+                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ()
+            );
+            // We received free credits
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get());
+            // Deregister after 1 session
+            run_to_session(1);
+            assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
+
+            run_to_session(3);
+            let credits_before_2nd_register = pallet_services_payment::BlockProductionCredits::<
+                Runtime,
+            >::get(&ParaId::from(1001))
+            .unwrap_or_default();
+            // We spent some credits because this container chain had collators for 1 session
+            assert_ne!(
+                credits_before_2nd_register,
+                dancebox_runtime::MaxCreditsStored::get()
+            );
+            // Register again
+            assert_ok!(
+                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
+                ()
+            );
+            assert_ok!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                ()
+            );
+            // No more free credits
+            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits, credits_before_2nd_register);
         });
 }

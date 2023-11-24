@@ -54,6 +54,7 @@ use sp_std::marker::PhantomData;
 pub trait WeightInfo {
 	fn purchase_credits() -> Weight;
 	fn set_credits() -> Weight;
+	fn set_given_free_credits() -> Weight;
 }
 
 /// Weights for pallet_services_payment using the Substrate node and recommended hardware.
@@ -82,6 +83,11 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		Weight::from_parts(7_268_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+	fn set_given_free_credits() -> Weight {
+		// TODO: run this benchmark, I just copied the values from above
+		Weight::from_parts(7_268_000, 0)
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -106,6 +112,11 @@ impl WeightInfo for () {
 		//  Measured:  `0`
 		//  Estimated: `0`
 		// Minimum execution time: 7_098_000 picoseconds.
+		Weight::from_parts(7_268_000, 0)
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	fn set_given_free_credits() -> Weight {
+		// TODO: run this benchmark, I just copied the values from above
 		Weight::from_parts(7_268_000, 0)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
