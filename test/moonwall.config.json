@@ -11,11 +11,11 @@
             "timeout": 120000,
             "multiThreads": {
                 "threads": {
-                  "isolate": true,
-                  "minThreads": 1,
-                  "maxThreads": 4,
-                  "singleThread": false,
-                  "useAtomics": false
+                    "isolate": true,
+                    "minThreads": 1,
+                    "maxThreads": 4,
+                    "singleThread": false,
+                    "useAtomics": false
                 }
             },
             "reporters": ["basic"],
@@ -63,11 +63,11 @@
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": {
                 "threads": {
-                  "isolate": true,
-                  "minThreads": 1,
-                  "maxThreads": 4,
-                  "singleThread": false,
-                  "useAtomics": false
+                    "isolate": true,
+                    "minThreads": 1,
+                    "maxThreads": 4,
+                    "singleThread": false,
+                    "useAtomics": false
                 }
             },
             "reporters": ["basic"],
