@@ -306,7 +306,7 @@
         },
         {
             "name": "chopsticks_stagenet_dancebox_upgrade",
-            "testFileDir": ["suites/rt-ugprade-chopsticks"],
+            "testFileDir": ["suites/rt-ugprade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -328,7 +328,7 @@
         },
         {
             "name": "chopsticks_dancebox_upgrade",
-            "testFileDir": ["suites/rt-ugprade-chopsticks"],
+            "testFileDir": ["suites/rt-ugprade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -337,6 +337,28 @@
                         "name": "db",
                         "type": "parachain",
                         "configPath": "./configs/dancebox.yml"
+                    }
+                ]
+            },
+            "connections": [
+                {
+                    "name": "DB",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_frontier_template_upgrade",
+            "testFileDir": ["suites/rt-ugprade-chopsticks-frontier-template"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/frontierContainer.yml"
                     }
                 ]
             },
