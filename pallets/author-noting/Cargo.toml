@@ -28,8 +28,8 @@ sp-trie = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
-tp-chain-state-snapshot = { workspace = true }
-tp-core = { workspace = true }
+dp-chain-state-snapshot = { workspace = true }
+dp-core = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -60,8 +60,8 @@ std = [
 	"sp-state-machine/std",
 	"sp-trie/std",
 	"tp-author-noting-inherent/std",
-	"tp-chain-state-snapshot/std",
-	"tp-core/std",
+	"dp-chain-state-snapshot/std",
+	"dp-core/std",
 	"tp-traits/std",
 ]
 runtime-benchmarks = [

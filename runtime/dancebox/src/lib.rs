@@ -93,8 +93,8 @@ use {
     tp_traits::{GetSessionContainerChains, RemoveInvulnerables, RemoveParaIdsWithNoCredits},
 };
 pub use {
+    dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
     sp_runtime::{MultiAddress, Perbill, Permill},
-    tp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
 };
 
 const LOG_TARGET: &str = "runtime::moonbeam";

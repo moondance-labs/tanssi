@@ -425,7 +425,7 @@ fn encode_proof_for_benchmarks() {
             let mut s = ParaHeaderSproofBuilderItem::default();
             s.para_id = para_id.into();
             // TODO: this header can be arbitrarily large, because "digest.logs" is an unbounded vec
-            let header = HeaderAs::NonEncoded(tp_core::Header {
+            let header = HeaderAs::NonEncoded(dp_core::Header {
                 parent_hash: Default::default(),
                 number: Default::default(),
                 state_root: Default::default(),

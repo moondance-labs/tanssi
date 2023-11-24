@@ -14,71 +14,81 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use fp_evm::IsPrecompileResult;
-
 use {
-    pallet_evm::{Precompile, PrecompileHandle, PrecompileResult, PrecompileSet},
+    crate::xcm_config::XcmConfig,
+    pallet_evm_precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata},
+    pallet_evm_precompile_batch::BatchPrecompile,
+    pallet_evm_precompile_call_permit::CallPermitPrecompile,
     pallet_evm_precompile_modexp::Modexp,
     pallet_evm_precompile_sha3fips::Sha3FIPS256,
     pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256},
-    sp_core::H160,
-    sp_std::marker::PhantomData,
+    pallet_evm_precompile_xcm_utils::{AllExceptXcmExecute, XcmUtilsPrecompile},
+    precompile_utils::precompile_set::{
+        AcceptDelegateCall, AddressU64, CallableByContract, CallableByPrecompile, PrecompileAt,
+        PrecompileSetBuilder, PrecompilesInRangeInclusive, SubcallWithMaxNesting,
+    },
 };
 
-pub struct FrontierPrecompiles<R>(PhantomData<R>);
+/// ERC20 metadata for the native token.
+pub struct NativeErc20Metadata;
 
-impl<R> Default for FrontierPrecompiles<R> {
-    fn default() -> Self {
-        Self(PhantomData)
+impl Erc20Metadata for NativeErc20Metadata {
+    /// Returns the name of the token.
+    fn name() -> &'static str {
+        "UNIT token"
+    }
+
+    /// Returns the symbol of the token.
+    fn symbol() -> &'static str {
+        "UNIT"
+    }
+
+    /// Returns the decimals places of the token.
+    fn decimals() -> u8 {
+        18
+    }
+
+    /// Must return `true` only if it represents the main native currency of
+    /// the network. It must be the currency used in `pallet_evm`.
+    fn is_native_currency() -> bool {
+        true
     }
 }
 
-impl<R> FrontierPrecompiles<R>
-where
-    R: pallet_evm::Config,
-{
-    pub fn new() -> Self {
-        Self::default()
-    }
-    pub fn used_addresses() -> [H160; 7] {
-        [
-            hash(1),
-            hash(2),
-            hash(3),
-            hash(4),
-            hash(5),
-            hash(1024),
-            hash(1025),
-        ]
-    }
-}
-impl<R> PrecompileSet for FrontierPrecompiles<R>
-where
-    R: pallet_evm::Config,
-{
-    fn execute(&self, handle: &mut impl PrecompileHandle) -> Option<PrecompileResult> {
-        match handle.code_address() {
-            // Ethereum precompiles :
-            a if a == hash(1) => Some(ECRecover::execute(handle)),
-            a if a == hash(2) => Some(Sha256::execute(handle)),
-            a if a == hash(3) => Some(Ripemd160::execute(handle)),
-            a if a == hash(4) => Some(Identity::execute(handle)),
-            a if a == hash(5) => Some(Modexp::execute(handle)),
-            // Non-Frontier specific nor Ethereum precompiles :
-            a if a == hash(1024) => Some(Sha3FIPS256::execute(handle)),
-            a if a == hash(1025) => Some(ECRecoverPublicKey::execute(handle)),
-            _ => None,
-        }
-    }
+type EthereumPrecompilesChecks = (AcceptDelegateCall, CallableByContract, CallableByPrecompile);
 
-    fn is_precompile(&self, address: H160, _remaining_gas: u64) -> IsPrecompileResult {
-        IsPrecompileResult::Answer {
-            is_precompile: Self::used_addresses().contains(&address),
-            extra_cost: 0,
-        }
-    }
-}
+#[precompile_utils::precompile_name_from_address]
+type TemplatePrecompilesAt<R> = (
+    // Ethereum precompiles:
+    // Allow DELEGATECALL to stay compliant with Ethereum behavior.
+    PrecompileAt<AddressU64<1>, ECRecover, EthereumPrecompilesChecks>,
+    PrecompileAt<AddressU64<2>, Sha256, EthereumPrecompilesChecks>,
+    PrecompileAt<AddressU64<3>, Ripemd160, EthereumPrecompilesChecks>,
+    PrecompileAt<AddressU64<4>, Identity, EthereumPrecompilesChecks>,
+    PrecompileAt<AddressU64<5>, Modexp, EthereumPrecompilesChecks>,
+    // Non-template specific nor Ethereum precompiles :
+    PrecompileAt<AddressU64<1024>, Sha3FIPS256, (CallableByContract, CallableByPrecompile)>,
+    PrecompileAt<AddressU64<1025>, ECRecoverPublicKey, (CallableByContract, CallableByPrecompile)>,
+    // Template specific precompiles:
+    PrecompileAt<
+        AddressU64<2048>,
+        Erc20BalancesPrecompile<R, NativeErc20Metadata>,
+        (CallableByContract, CallableByPrecompile),
+    >,
+    PrecompileAt<AddressU64<2049>, BatchPrecompile<R>, SubcallWithMaxNesting<2>>,
+    PrecompileAt<
+        AddressU64<2050>,
+        CallPermitPrecompile<R>,
+        (SubcallWithMaxNesting<0>, CallableByContract),
+    >,
+    PrecompileAt<
+        AddressU64<2051>,
+        XcmUtilsPrecompile<R, XcmConfig>,
+        CallableByContract<AllExceptXcmExecute<R, XcmConfig>>,
+    >,
+);
 
-fn hash(a: u64) -> H160 {
-    H160::from_low_u64_be(a)
-}
+pub type TemplatePrecompiles<R> = PrecompileSetBuilder<
+    R,
+    (PrecompilesInRangeInclusive<(AddressU64<1>, AddressU64<4095>), TemplatePrecompilesAt<R>>,),
+>;

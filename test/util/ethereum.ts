@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { FMT_BYTES, FMT_NUMBER } from "web3";
 
 import Debug from "debug";
+import { fromHex } from "viem";
 const debug = Debug("test:transaction");
 
 export const createTransaction = async (
@@ -193,4 +194,18 @@ export async function waitUntilEthTxIncluded(promise, web3, txHash) {
     while ((await customWeb3Request(web3, "eth_getTransactionByHash", [txHash])).result.blockNumber == null) {
         await promise();
     }
+}
+
+export function getSignatureParameters(signature: string) {
+    const r = signature.slice(0, 66); // 32 bytes
+    const s = `0x${signature.slice(66, 130)}`; // 32 bytes
+    let v = fromHex(`0x${signature.slice(130, 132)}`, "number"); // 1 byte
+
+    if (![27, 28].includes(v)) v += 27; // not sure why we coerce 27
+
+    return {
+        r,
+        s,
+        v,
+    };
 }
