@@ -51,7 +51,6 @@ use {
         traits::{AtLeast32BitUnsigned, BadOrigin},
         Either, Saturating,
     },
-    sp_std::collections::btree_set::BTreeSet,
     sp_std::prelude::*,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId},
@@ -278,6 +277,7 @@ pub mod pallet {
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
             use scale_info::prelude::format;
+            use sp_std::collections::btree_set::BTreeSet;
             // A para id can only be in 1 of [`RegisteredParaIds`, `PendingVerification`, `Paused`]
             // Get all those para ids and check for duplicates
             let mut para_ids: Vec<ParaId> = vec![];
