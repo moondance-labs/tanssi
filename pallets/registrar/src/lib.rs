@@ -275,8 +275,9 @@ pub mod pallet {
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
-        #[cfg(feature = "std")]
-        fn integrity_test() {
+        #[cfg(feature = "try-runtime")]
+        fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+            use scale_info::prelude::format;
             // A para id can only be in 1 of [`RegisteredParaIds`, `PendingVerification`, `Paused`]
             // Get all those para ids and check for duplicates
             let mut para_ids: Vec<ParaId> = vec![];
@@ -286,7 +287,7 @@ pub mod pallet {
             para_ids.sort();
             para_ids.dedup_by(|a, b| {
                 if a == b {
-                    panic!("Duplicate para id: {}", a);
+                    panic!("Duplicate para id: {}", u32::from(*a));
                 } else {
                     false
                 }
@@ -297,18 +298,34 @@ pub mod pallet {
                 assert!(
                     ParaGenesisData::<T>::contains_key(&para_id),
                     "Para id {} missing genesis data",
-                    para_id
+                    u32::from(*para_id)
                 );
             }
 
             // All entries in `RegistrarDeposit` and `ParaGenesisData` are in one of the other lists
-            let para_id_set = BTreeSet::from_iter(para_ids.iter().cloned());
+            let mut para_id_set = BTreeSet::from_iter(para_ids.iter().cloned());
+            // Also add the Pending lists here
+            para_id_set.extend(
+                PendingParaIds::<T>::get()
+                    .into_iter()
+                    .flat_map(|(_session_index, x)| x),
+            );
+            para_id_set.extend(
+                PendingPaused::<T>::get()
+                    .into_iter()
+                    .flat_map(|(_session_index, x)| x),
+            );
+            para_id_set.extend(
+                PendingToRemove::<T>::get()
+                    .into_iter()
+                    .flat_map(|(_session_index, x)| x),
+            );
             let entries: Vec<_> = RegistrarDeposit::<T>::iter().map(|(k, _v)| k).collect();
             for para_id in entries {
                 assert!(
                     para_id_set.contains(&para_id),
                     "Found RegistrarDeposit for unknown para id: {}",
-                    para_id
+                    u32::from(para_id)
                 );
             }
             let entries: Vec<_> = ParaGenesisData::<T>::iter().map(|(k, _v)| k).collect();
@@ -316,39 +333,32 @@ pub mod pallet {
                 assert!(
                     para_id_set.contains(&para_id),
                     "Found ParaGenesisData for unknown para id: {}",
-                    para_id
+                    u32::from(para_id)
                 );
             }
 
             // Sorted storage items are sorted
-            fn assert_is_sorted<T: Ord>(x: &[T], name: &str) {
-                assert!(
-                    x.windows(2).all(|w| w[0] <= w[1]),
-                    "sorted list not sorted: {}",
-                    name
-                );
-            }
-            assert_is_sorted(&RegisteredParaIds::<T>::get(), "RegisteredParaIds");
-            assert_is_sorted(&PendingVerification::<T>::get(), "RegisteredParaIds");
-            assert_is_sorted(&Paused::<T>::get(), "RegisteredParaIds");
-            for (i, (_session_index, x)) in PendingParaIds::<T>::get().into_iter().enumerate() {
-                assert_is_sorted(&x, &format!("PendingParaIds[{}]", i));
-            }
-            for (i, (_session_index, x)) in PendingPaused::<T>::get().into_iter().enumerate() {
-                assert_is_sorted(&x, &format!("PendingPaused[{}]", i));
-            }
-            for (i, (_session_index, x)) in PendingToRemove::<T>::get().into_iter().enumerate() {
-                assert_is_sorted(&x, &format!("PendingToRemove[{}]", i));
-            }
-
-            // Pending storage items are sorted and session index is unique
             fn assert_is_sorted_and_unique<T: Ord>(x: &[T], name: &str) {
                 assert!(
                     x.windows(2).all(|w| w[0] < w[1]),
                     "sorted list not sorted or not unique: {}",
-                    name
+                    name,
                 );
             }
+            assert_is_sorted_and_unique(&RegisteredParaIds::<T>::get(), "RegisteredParaIds");
+            assert_is_sorted_and_unique(&PendingVerification::<T>::get(), "PendingVerification");
+            assert_is_sorted_and_unique(&Paused::<T>::get(), "Paused");
+            for (i, (_session_index, x)) in PendingParaIds::<T>::get().into_iter().enumerate() {
+                assert_is_sorted_and_unique(&x, &format!("PendingParaIds[{}]", i));
+            }
+            for (i, (_session_index, x)) in PendingPaused::<T>::get().into_iter().enumerate() {
+                assert_is_sorted_and_unique(&x, &format!("PendingPaused[{}]", i));
+            }
+            for (i, (_session_index, x)) in PendingToRemove::<T>::get().into_iter().enumerate() {
+                assert_is_sorted_and_unique(&x, &format!("PendingToRemove[{}]", i));
+            }
+
+            // Pending storage items are sorted and session index is unique
             let pending: Vec<_> = PendingParaIds::<T>::get()
                 .into_iter()
                 .map(|(session_index, _x)| session_index)
@@ -364,6 +374,8 @@ pub mod pallet {
                 .map(|(session_index, _x)| session_index)
                 .collect();
             assert_is_sorted_and_unique(&pending, "PendingToRemove");
+
+            Ok(())
         }
     }
 
