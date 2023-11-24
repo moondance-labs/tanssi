@@ -16,6 +16,7 @@ parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 serde = { workspace = true, optional = true, features = [ "derive" ] }
 smallvec = { workspace = true }
+num_enum = { workspace = true }
 
 # Local
 ccp-xcm = { workspace = true }
@@ -28,6 +29,10 @@ pallet-author-inherent = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
+pallet-evm-precompile-balances-erc20 = { workspace = true }
+pallet-evm-precompile-batch = { workspace = true }
+pallet-evm-precompile-call-permit = { workspace = true }
+pallet-evm-precompile-xcm-utils = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
@@ -91,6 +96,8 @@ pallet-evm-precompile-modexp = { workspace = true }
 pallet-evm-precompile-sha3fips = { workspace = true }
 pallet-evm-precompile-simple = { workspace = true }
 pallet-hotfix-sufficients = { workspace = true }
+precompile-utils = { workspace = true }
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 
@@ -125,6 +132,11 @@ std = [
 	"pallet-evm-precompile-modexp/std",
 	"pallet-evm-precompile-sha3fips/std",
 	"pallet-evm-precompile-simple/std",
+	"pallet-evm-precompile-balances-erc20/std",
+	"pallet-evm-precompile-batch/std",
+	"pallet-evm-precompile-call-permit/std",
+	"pallet-evm-precompile-xcm-utils/std",
+	"precompile-utils/std",
 	"pallet-evm/std",
 	"pallet-hotfix-sufficients/std",
 	"pallet-maintenance-mode/std",
@@ -192,6 +204,7 @@ try-runtime = [
 	"pallet-hotfix-sufficients/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-proxy/try-runtime",
+	"pallet-migrations/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",

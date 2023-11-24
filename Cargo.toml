@@ -66,6 +66,10 @@ pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", br
 pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+pallet-evm-precompile-balances-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+pallet-evm-precompile-batch = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+pallet-evm-precompile-call-permit = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+pallet-evm-precompile-xcm-utils = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 
 # Substrate (wasm)
 frame-benchmarking = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }
@@ -210,6 +214,7 @@ pallet-evm-precompile-modexp = { git = "https://github.com/moondance-labs/fronti
 pallet-evm-precompile-sha3fips = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 pallet-evm-precompile-simple = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 pallet-hotfix-sufficients = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+precompile-utils = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }
 
 # Frontier (client)
 fc-api = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.1.0", default-features = false }
@@ -230,6 +235,7 @@ log = { version = "0.4.17", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 serde = { version = "1.0.152", default-features = false }
 smallvec = "1.10.0"
+num_enum = { version = "0.7.1", default-features = false }
 impl-trait-for-tuples = "0.2.2"
 
 # General (client)

@@ -27,7 +27,6 @@
             "name": "dev_dancebox_specs",
             "testFileDir": ["suites/dancebox-specs"],
             "multiThreads": true,
-            "html": false,
             "foundation": {
                 "type": "dev",
                 "launchSpec": [
@@ -244,7 +243,7 @@
         },
         {
             "name": "zombie_dancebox_upgrade",
-            "testFileDir": ["suites/rt-upgrade"],
+            "testFileDir": ["suites/rt-upgrade-zombienet"],
             "runScripts": ["download-polkadot.sh"],
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -287,7 +286,7 @@
         },
         {
             "name": "chopsticks_stagenet_dancebox_upgrade",
-            "testFileDir": ["suites/rt-ugprade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -309,7 +308,7 @@
         },
         {
             "name": "chopsticks_dancebox_upgrade",
-            "testFileDir": ["suites/rt-ugprade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
