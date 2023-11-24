@@ -17,16 +17,15 @@
 use {
     container_chain_template_frontier_runtime::{
         AccountId, EVMChainIdConfig, EVMConfig, MaintenanceModeConfig, MigrationsConfig,
-        PolkadotXcmConfig,
+        PolkadotXcmConfig, Precompiles,
     },
     cumulus_primitives_core::ParaId,
+    fp_evm::GenesisAccount,
     hex_literal::hex,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
-    sp_core::{H160, U256},
-    std::{collections::BTreeMap, str::FromStr},
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -155,6 +154,12 @@ fn testnet_genesis(
     id: ParaId,
     root_key: AccountId,
 ) -> container_chain_template_frontier_runtime::RuntimeGenesisConfig {
+    // This is the simplest bytecode to revert without returning any data.
+    // We will pre-deploy it under all of our precompiles to ensure they can be called from
+    // within contracts.
+    // (PUSH1 0x00 PUSH1 0x00 REVERT)
+    let revert_bytecode = vec![0x60, 0x00, 0x60, 0x00, 0xFD];
+
     container_chain_template_frontier_runtime::RuntimeGenesisConfig {
         system: container_chain_template_frontier_runtime::SystemConfig {
             code: container_chain_template_frontier_runtime::WASM_BINARY
@@ -182,49 +187,21 @@ fn testnet_genesis(
             ..Default::default()
         },
         evm: EVMConfig {
-            accounts: {
-                let mut map = BTreeMap::new();
-                map.insert(
-                    // H160 address of Alice dev account
-                    // Derived from SS58 (42 prefix) address
-                    // SS58: 5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY
-                    // hex: 0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d
-                    // Using the full hex key, truncating to the first 20 bytes (the first 40 hex chars)
-                    H160::from_str("d43593c715fdd31c61141abd04a99fd6822c8558")
-                        .expect("internal H160 is valid; qed"),
-                    fp_evm::GenesisAccount {
-                        balance: U256::from_str("0xffffffffffffffffffffffffffffffff")
-                            .expect("internal U256 is valid; qed"),
-                        code: Default::default(),
-                        nonce: Default::default(),
-                        storage: Default::default(),
-                    },
-                );
-                map.insert(
-                    // H160 address of CI test runner account
-                    H160::from_str("6be02d1d3665660d22ff9624b7be0551ee1ac91b")
-                        .expect("internal H160 is valid; qed"),
-                    fp_evm::GenesisAccount {
-                        balance: U256::from_str("0xffffffffffffffffffffffffffffffff")
-                            .expect("internal U256 is valid; qed"),
-                        code: Default::default(),
-                        nonce: Default::default(),
-                        storage: Default::default(),
-                    },
-                );
-                map.insert(
-                    // H160 address for benchmark usage
-                    H160::from_str("1000000000000000000000000000000000000001")
-                        .expect("internal H160 is valid; qed"),
-                    fp_evm::GenesisAccount {
-                        nonce: U256::from(1),
-                        balance: U256::from(1_000_000_000_000_000_000_000_000u128),
-                        storage: Default::default(),
-                        code: vec![0x00],
-                    },
-                );
-                map
-            },
+            // We need _some_ code inserted at the precompile address so that
+            // the evm will actually call the address.
+            accounts: Precompiles::used_addresses()
+                .map(|addr| {
+                    (
+                        addr.into(),
+                        GenesisAccount {
+                            nonce: Default::default(),
+                            balance: Default::default(),
+                            storage: Default::default(),
+                            code: revert_bytecode.clone(),
+                        },
+                    )
+                })
+                .collect(),
             ..Default::default()
         },
         ethereum: Default::default(),
