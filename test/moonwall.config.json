@@ -36,7 +36,6 @@
             "name": "dev_dancebox_specs",
             "testFileDir": ["suites/dancebox-specs"],
             "multiThreads": true,
-            "html": false,
             "foundation": {
                 "type": "dev",
                 "launchSpec": [
@@ -263,7 +262,7 @@
         },
         {
             "name": "zombie_dancebox_upgrade",
-            "testFileDir": ["suites/rt-upgrade"],
+            "testFileDir": ["suites/rt-upgrade-zombienet"],
             "runScripts": ["download-polkadot.sh"],
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",

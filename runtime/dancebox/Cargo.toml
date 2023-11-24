@@ -32,7 +32,7 @@ pallet-proxy = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-services-payment = { workspace = true }
-tp-core = { workspace = true }
+dp-core = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -233,7 +233,6 @@ try-runtime = [
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
-	"pallet-migrations/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-pooled-staking/try-runtime",
 	"pallet-proxy/try-runtime",

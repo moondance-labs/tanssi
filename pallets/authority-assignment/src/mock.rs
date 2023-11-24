@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use tp_collator_assignment::AssignedCollators;
+use dp_collator_assignment::AssignedCollators;
 
 use {
     crate::{self as pallet_authority_assignment},

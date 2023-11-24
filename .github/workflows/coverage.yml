@@ -58,6 +58,8 @@ jobs:
         shell: bash
         run: |
           echo "RUSTFLAGS=-C opt-level=3 -D warnings -C instrument-coverage -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
+          # Disable coverage when building
+          echo "LLVM_PROFILE_FILE=/dev/null" >> $GITHUB_ENV
       - name: Setup grcov
         run: |
           wget https://github.com/mozilla/grcov/releases/download/v${{ env.GRCOV_VERSION }}/grcov-x86_64-unknown-linux-gnu.tar.bz2
@@ -67,9 +69,10 @@ jobs:
         uses: ./.github/workflow-templates/cargo-build
         with:
           features: "fast-runtime"
-      - name: Clean-up possible coverage generated during builds
+      - name: Enable coverage gathering
         run: |
-          rm default_*.profraw
+          # Enable coverage when running tests
+          echo "LLVM_PROFILE_FILE=$(pwd)/proffiles/default_%m_%p.profraw" >> $GITHUB_ENV
       - name: Upload runtimes
         uses: actions/upload-artifact@v3.1.2
         with:
@@ -101,14 +104,6 @@ jobs:
       - name: Retrieve coverage
         id: coverage
         run: |
-          mkdir -p /tmp/proffiles
-
-          find . -type f -name \*.profraw -exec ls -l {}  \;
-
-          echo "Copying profraw files to /tmp/proffiles"
-          find . -name \*.profraw -exec mv {} /tmp/proffiles/ \;
-
-          mv /tmp/proffiles proffiles
           du -sh proffiles
 
           echo "Executing grcov"
@@ -137,7 +132,7 @@ jobs:
             -o coverage/ --llvm
           fi
 
-          if [ "${{ needs.set-tags.outputs.coverage_report }}" == "true" ]; then
+          if [ "${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}" == "true" ]; then
             echo "Generating coverage report"
             wget ${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/covdir \
               -O base_covdir || true
@@ -177,17 +172,18 @@ jobs:
           echo "${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html"
 
       - name: Create coverage report comment
-        if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
+        if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         run: |
           mv coverage_report.md temp_coverage_report.md
           echo "## [Coverage Report](${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html)" > coverage_report.md
+          echo "[(master)](${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/html/index.html)" >> coverage_report.md
           cat temp_coverage_report.md >> coverage_report.md
           rm temp_coverage_report.md
           echo "> Coverage generated ${{ steps.coverage.outputs.coverage_date }}" >> coverage_report.md
           echo "Generated coverage report comment"
-          cat coverage_report.md    
+          cat coverage_report.md
       - name: Find Comment
-        if: ${{ needs.set-tags.outputs.coverage_report == 'true' }}
+        if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         uses: peter-evans/find-comment@v2
         id: fc
         with:

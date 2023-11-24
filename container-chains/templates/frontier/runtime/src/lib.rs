@@ -28,11 +28,12 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+pub mod migrations;
 mod precompiles;
 pub mod xcm_config;
 
 use {
-    crate::precompiles::FrontierPrecompiles,
+    crate::precompiles::TemplatePrecompiles,
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, DmpMessageHandler},
     fp_account::EthereumSignature,
@@ -95,6 +96,10 @@ pub use {
 
 // Polkadot imports
 use polkadot_runtime_common::BlockHashCount;
+
+const LOG_TARGET: &str = "runtime::evm_template";
+
+pub type Precompiles = TemplatePrecompiles<Runtime>;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.
 pub type Signature = EthereumSignature;
@@ -623,7 +628,7 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = ();
+    type MigrationsList = (migrations::TemplateMigrations<Runtime>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
 
@@ -781,7 +786,7 @@ impl FindAuthor<H160> for FindAuthorAdapter {
 
 parameter_types! {
     pub BlockGasLimit: U256 = U256::from(BLOCK_GAS_LIMIT);
-    pub PrecompilesValue: FrontierPrecompiles<Runtime> = FrontierPrecompiles::<_>::new();
+    pub PrecompilesValue: TemplatePrecompiles<Runtime> = TemplatePrecompiles::<_>::new();
     pub WeightPerGas: Weight = Weight::from_parts(weight_per_gas(BLOCK_GAS_LIMIT, NORMAL_DISPATCH_RATIO, WEIGHT_MILLISECS_PER_BLOCK), 0);
 }
 
@@ -796,7 +801,7 @@ impl pallet_evm::Config for Runtime {
     type AddressMapping = IdentityAddressMapping;
     type Currency = Balances;
     type RuntimeEvent = RuntimeEvent;
-    type PrecompilesType = FrontierPrecompiles<Self>;
+    type PrecompilesType = TemplatePrecompiles<Self>;
     type PrecompilesValue = PrecompilesValue;
     type ChainId = EVMChainId;
     type BlockGasLimit = BlockGasLimit;

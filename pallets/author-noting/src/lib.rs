@@ -30,21 +30,21 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub use tp_chain_state_snapshot::*;
+pub use dp_chain_state_snapshot::*;
 use {
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     cumulus_primitives_core::{
         relay_chain::{BlakeTwo256, BlockNumber, HeadData},
         ParaId,
     },
+    dp_core::well_known_keys::PARAS_HEADS_INDEX,
     frame_support::{dispatch::PostDispatchInfo, pallet_prelude::*, Hashable},
     frame_system::pallet_prelude::*,
     parity_scale_codec::{Decode, Encode},
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
-    sp_runtime::{traits::Header, DispatchResult, RuntimeString},
+    sp_runtime::{traits::Header, DigestItem, DispatchResult, RuntimeString},
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
-    tp_core::well_known_keys::PARAS_HEADS_INDEX,
     tp_traits::{AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChains},
 };
 
@@ -337,19 +337,35 @@ impl<T: Config> Pallet<T> {
             })?;
 
         // We later take the Header decoded
-        let mut author_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
+        let author_header = sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
             &mut head_data.0.as_slice(),
         )
         .map_err(|_| Error::<T>::FailedDecodingHeader)?;
 
-        // We take the aura digest as the first item
-        // TODO: improve in the future as iteration
-        let aura_digest = author_header
-            .digest_mut()
-            .logs()
-            .first()
-            .ok_or(Error::<T>::AuraDigestFirstItem)?;
+        // Return author from first aura log.
+        // If there are no aura logs, it iterates over all the logs, then returns the error from the first element.
+        // This is because it is hard to return a `Vec<Error<T>>`.
+        let mut first_error = None;
+        for aura_digest in author_header.digest().logs() {
+            match Self::author_from_log(aura_digest, para_id, &author_header) {
+                Ok(x) => return Ok(x),
+                Err(e) => {
+                    if first_error.is_none() {
+                        first_error = Some(e);
+                    }
+                }
+            }
+        }
 
+        Err(first_error.unwrap_or(Error::<T>::AuraDigestFirstItem))
+    }
+
+    /// Get block author from aura digest
+    fn author_from_log(
+        aura_digest: &DigestItem,
+        para_id: ParaId,
+        author_header: &sp_runtime::generic::Header<BlockNumber, BlakeTwo256>,
+    ) -> Result<ContainerChainBlockInfo<T>, Error<T>> {
         // We decode the digest as pre-runtime digest
         let (id, mut data) = aura_digest
             .as_pre_runtime()

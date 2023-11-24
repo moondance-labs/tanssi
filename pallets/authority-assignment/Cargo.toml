@@ -18,7 +18,7 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
-tp-collator-assignment = { workspace = true }
+dp-collator-assignment = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -32,7 +32,7 @@ std = [
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde",
-	"tp-collator-assignment/std",
+	"dp-collator-assignment/std",
 	"tp-traits/std",
 ]
 try-runtime = [ "frame-support/try-runtime" ]

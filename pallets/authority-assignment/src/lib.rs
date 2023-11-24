@@ -20,13 +20,13 @@
 
 pub use pallet::*;
 use {
+    dp_collator_assignment::AssignedCollators,
     frame_support::pallet_prelude::*,
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, One, Zero},
         Saturating,
     },
     sp_std::{collections::btree_map::BTreeMap, prelude::*, vec},
-    tp_collator_assignment::AssignedCollators,
 };
 
 #[cfg(test)]
