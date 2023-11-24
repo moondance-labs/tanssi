@@ -7,14 +7,14 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
+targets = [ "x86_64-unknown-linux-gnu" ]
 
 [dependencies]
 hex-literal = { workspace = true, optional = true }
 log = { workspace = true }
-parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
-serde = { workspace = true, optional = true, features = ["derive"] }
+parity-scale-codec = { workspace = true, features = [ "derive" ] }
+scale-info = { workspace = true, features = [ "derive" ] }
+serde = { workspace = true, optional = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Local
@@ -24,7 +24,7 @@ tp-consensus = { workspace = true }
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
-pallet-maintenance-mode = { workspace = true, features = ["xcm-support"] }
+pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
 
@@ -34,13 +34,13 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-balances = { workspace = true }
+pallet-proxy = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-utility = { workspace = true }
-pallet-proxy = { workspace = true }
 sp-api = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
@@ -83,7 +83,7 @@ frame-try-runtime = { workspace = true, optional = true }
 substrate-wasm-builder = { workspace = true }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
@@ -127,15 +127,15 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
-	"tp-consensus/std",
 	"staging-xcm-builder/std",
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
+	"tp-consensus/std",
 	"xcm-primitives/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
-force-debug = ["sp-debug-derive/force-debug"]
+force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
@@ -162,11 +162,11 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-cc-authorities-noting/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
+	"pallet-proxy/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-utility/try-runtime",
-	"pallet-proxy/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",

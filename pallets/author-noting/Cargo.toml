@@ -27,9 +27,9 @@ sp-trie = { workspace = true }
 
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
-tp-author-noting-inherent = { workspace = true }
 dp-chain-state-snapshot = { workspace = true }
 dp-core = { workspace = true }
+tp-author-noting-inherent = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -49,6 +49,8 @@ std = [
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-core/std",
+	"dp-chain-state-snapshot/std",
+	"dp-core/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
@@ -60,8 +62,6 @@ std = [
 	"sp-state-machine/std",
 	"sp-trie/std",
 	"tp-author-noting-inherent/std",
-	"dp-chain-state-snapshot/std",
-	"dp-core/std",
 	"tp-traits/std",
 ]
 runtime-benchmarks = [
