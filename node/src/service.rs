@@ -16,10 +16,6 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use dc_orchestrator_chain_interface::OrchestratorChainError;
-use dc_orchestrator_chain_interface::OrchestratorChainInterface;
-use dc_orchestrator_chain_interface::OrchestratorChainResult;
-
 #[allow(deprecated)]
 use {
     crate::{
@@ -43,6 +39,9 @@ use {
     },
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{opaque::Block, RuntimeApi},
+    dc_orchestrator_chain_interface::{
+        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
+    },
     futures::{channel::mpsc, StreamExt},
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
