@@ -16,6 +16,7 @@
 
 use {
     clap::Parser,
+    node_common::service::Sealing,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::path::PathBuf,
 };
@@ -95,7 +96,7 @@ pub struct RunCmd {
     ///
     /// Options are "instant", "manual", or timer interval in milliseconds
     #[arg(long, default_value = "instant")]
-    pub sealing: crate::service::Sealing,
+    pub sealing: Sealing,
 }
 
 impl std::ops::Deref for RunCmd {

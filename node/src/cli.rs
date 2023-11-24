@@ -15,7 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::{chain_spec::RawGenesisConfig, service::Sealing},
+    crate::chain_spec::RawGenesisConfig,
+    node_common::service::Sealing,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     sc_network::config::MultiaddrWithPeerId,
