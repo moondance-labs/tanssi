@@ -29,6 +29,7 @@ mod mock;
 mod tests;
 
 use {
+    dp_core::{BlockNumber, ParaId},
     frame_support::{
         pallet_prelude::*,
         traits::{
@@ -42,7 +43,6 @@ use {
         traits::{Get, Saturating},
         Perbill,
     },
-    tp_core::{BlockNumber, ParaId},
     tp_traits::{AuthorNotingHook, DistributeRewards, GetCurrentContainerChains},
 };
 

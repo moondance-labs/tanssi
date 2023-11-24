@@ -2478,8 +2478,8 @@ export default {
     PalletConfigurationError: {
         _enum: ["InvalidNewValue"],
     },
-    /** Lookup294: tp_collator_assignment::AssignedCollators<sp_core::crypto::AccountId32> */
-    TpCollatorAssignmentAssignedCollatorsAccountId32: {
+    /** Lookup294: dp_collator_assignment::AssignedCollators<sp_core::crypto::AccountId32> */
+    DpCollatorAssignmentAssignedCollatorsAccountId32: {
         orchestratorChain: "Vec<AccountId32>",
         containerChains: "BTreeMap<u32, Vec<AccountId32>>",
     },
@@ -2500,8 +2500,8 @@ export default {
             "NonAuraDigest",
         ],
     },
-    /** Lookup301: tp_collator_assignment::AssignedCollators<nimbus_primitives::nimbus_crypto::Public> */
-    TpCollatorAssignmentAssignedCollatorsPublic: {
+    /** Lookup301: dp_collator_assignment::AssignedCollators<nimbus_primitives::nimbus_crypto::Public> */
+    DpCollatorAssignmentAssignedCollatorsPublic: {
         orchestratorChain: "Vec<NimbusPrimitivesNimbusCryptoPublic>",
         containerChains: "BTreeMap<u32, Vec<NimbusPrimitivesNimbusCryptoPublic>>",
     },

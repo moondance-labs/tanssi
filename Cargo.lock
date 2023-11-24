@@ -1215,16 +1215,17 @@ dependencies = [
 [[package]]
 name = "ccp-authorities-noting-inherent"
 version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.1.0#71179d40c390a1b1a67c288279635b462c99714e"
 dependencies = [
  "async-trait",
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
- "futures 0.3.28",
+ "dc-orchestrator-chain-interface",
+ "dp-collator-assignment",
+ "dp-core",
  "nimbus-primitives",
  "parity-scale-codec",
- "polkadot-overseer",
- "sc-client-api",
  "scale-info",
  "sp-consensus-aura",
  "sp-core",
@@ -1234,20 +1235,14 @@ dependencies = [
  "sp-state-machine",
  "sp-std",
  "sp-trie",
- "substrate-test-runtime",
- "substrate-test-runtime-client",
- "tc-consensus",
- "tc-orchestrator-chain-interface",
  "test-relay-sproof-builder",
- "tokio",
- "tp-collator-assignment",
- "tp-core",
  "tracing",
 ]
 
 [[package]]
 name = "ccp-xcm"
 version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.1.0#71179d40c390a1b1a67c288279635b462c99714e"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -2832,6 +2827,7 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "cumulus-test-relay-sproof-builder",
+ "dp-core",
  "frame-benchmarking",
  "frame-executive",
  "frame-support",
@@ -2907,7 +2903,6 @@ dependencies = [
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-consensus",
- "tp-core",
  "tp-traits",
  "westend-runtime",
  "westend-runtime-constants",
@@ -2974,6 +2969,23 @@ checksum = "8fdf3fce3ce863539ec1d7fd1b6dcc3c645663376b43ed376bbf887733e4f772"
 dependencies = [
  "data-encoding",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "dc-orchestrator-chain-interface"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.1.0#71179d40c390a1b1a67c288279635b462c99714e"
+dependencies = [
+ "async-trait",
+ "cumulus-primitives-core",
+ "futures 0.3.28",
+ "parity-scale-codec",
+ "polkadot-overseer",
+ "sc-client-api",
+ "sp-api",
+ "sp-blockchain",
+ "sp-state-machine",
+ "thiserror",
 ]
 
 [[package]]
@@ -3240,6 +3252,53 @@ name = "downcast-rs"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ea835d29036a4087793836fa931b08837ad5e957da9e23886b29586fb9b6650"
+
+[[package]]
+name = "dp-chain-state-snapshot"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.1.0#71179d40c390a1b1a67c288279635b462c99714e"
+dependencies = [
+ "cumulus-primitives-core",
+ "parity-scale-codec",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-trie",
+]
+
+[[package]]
+name = "dp-collator-assignment"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.1.0#71179d40c390a1b1a67c288279635b462c99714e"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "hex-literal 0.3.4",
+ "log",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-state-machine",
+ "sp-std",
+ "sp-trie",
+]
+
+[[package]]
+name = "dp-core"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.1.0#71179d40c390a1b1a67c288279635b462c99714e"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "hex-literal 0.3.4",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
 
 [[package]]
 name = "dtoa"
@@ -7282,6 +7341,8 @@ dependencies = [
  "bounded-collections",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
+ "dp-chain-state-snapshot",
+ "dp-core",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -7305,8 +7366,6 @@ dependencies = [
  "sp-version",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
- "tp-chain-state-snapshot",
- "tp-core",
  "tp-traits",
 ]
 
@@ -7322,6 +7381,7 @@ dependencies = [
 name = "pallet-authority-assignment"
 version = "0.1.0"
 dependencies = [
+ "dp-collator-assignment",
  "frame-support",
  "frame-system",
  "log",
@@ -7332,7 +7392,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "tp-collator-assignment",
  "tp-traits",
 ]
 
@@ -7521,36 +7580,30 @@ dependencies = [
 [[package]]
 name = "pallet-cc-authorities-noting"
 version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.1.0#71179d40c390a1b1a67c288279635b462c99714e"
 dependencies = [
  "ccp-authorities-noting-inherent",
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
+ "dp-chain-state-snapshot",
+ "dp-collator-assignment",
+ "dp-core",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "hex",
- "hex-literal 0.3.4",
  "log",
  "nimbus-primitives",
  "parity-scale-codec",
- "polkadot-parachain-primitives",
- "polkadot-primitives",
  "scale-info",
  "serde",
  "sp-consensus-aura",
  "sp-core",
- "sp-externalities",
  "sp-inherents",
- "sp-io",
  "sp-runtime",
  "sp-state-machine",
  "sp-std",
  "sp-trie",
- "sp-version",
- "test-relay-sproof-builder",
- "tp-chain-state-snapshot",
- "tp-collator-assignment",
- "tp-core",
 ]
 
 [[package]]
@@ -7576,6 +7629,7 @@ dependencies = [
 name = "pallet-collator-assignment"
 version = "0.1.0"
 dependencies = [
+ "dp-collator-assignment",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -7589,7 +7643,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "tp-collator-assignment",
  "tp-traits",
 ]
 
@@ -7969,6 +8022,7 @@ name = "pallet-inflation-rewards"
 version = "0.1.0"
 dependencies = [
  "bounded-collections",
+ "dp-core",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -7984,7 +8038,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "tp-core",
  "tp-traits",
 ]
 
@@ -8239,6 +8292,7 @@ dependencies = [
 name = "pallet-pooled-staking"
 version = "0.1.0"
 dependencies = [
+ "dp-core",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -8254,7 +8308,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
- "tp-core",
  "tp-maths",
  "tp-traits",
 ]
@@ -14644,6 +14697,7 @@ dependencies = [
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
  "dancebox-runtime",
+ "dc-orchestrator-chain-interface",
  "exit-future",
  "flume",
  "frame-benchmarking",
@@ -14702,7 +14756,6 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
- "tc-orchestrator-chain-interface",
  "tokio",
  "tp-author-noting-inherent",
  "tp-container-chain-genesis-data",
@@ -14767,22 +14820,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tc-orchestrator-chain-interface"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "cumulus-primitives-core",
- "futures 0.3.28",
- "parity-scale-codec",
- "polkadot-overseer",
- "sc-client-api",
- "sp-api",
- "sp-blockchain",
- "sp-state-machine",
- "thiserror",
-]
-
-[[package]]
 name = "tempfile"
 version = "3.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14814,15 +14851,16 @@ checksum = "3369f5ac52d5eb6ab48c6b4ffdc8efbcad6b89c765749064ba298f2c68a16a76"
 [[package]]
 name = "test-relay-sproof-builder"
 version = "0.1.0"
+source = "git+https://github.com/moondance-labs/dancekit?branch=tanssi-polkadot-v1.1.0#71179d40c390a1b1a67c288279635b462c99714e"
 dependencies = [
  "cumulus-primitives-core",
+ "dp-collator-assignment",
+ "dp-core",
  "frame-support",
  "parity-scale-codec",
  "sp-runtime",
  "sp-state-machine",
  "sp-trie",
- "tp-collator-assignment",
- "tp-core",
 ]
 
 [[package]]
@@ -15175,6 +15213,7 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
+ "dp-core",
  "frame-support",
  "futures 0.3.28",
  "hex-literal 0.3.4",
@@ -15194,38 +15233,6 @@ dependencies = [
  "sp-storage",
  "sp-trie",
  "test-relay-sproof-builder",
- "tp-core",
-]
-
-[[package]]
-name = "tp-chain-state-snapshot"
-version = "0.1.0"
-dependencies = [
- "cumulus-primitives-core",
- "parity-scale-codec",
- "sp-runtime",
- "sp-state-machine",
- "sp-trie",
-]
-
-[[package]]
-name = "tp-collator-assignment"
-version = "0.1.0"
-dependencies = [
- "cumulus-primitives-core",
- "frame-support",
- "hex-literal 0.3.4",
- "log",
- "parity-scale-codec",
- "polkadot-primitives",
- "scale-info",
- "serde",
- "sp-core",
- "sp-runtime",
- "sp-state-machine",
- "sp-std",
- "sp-trie",
- "tp-traits",
 ]
 
 [[package]]
@@ -15266,20 +15273,6 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "tp-traits",
-]
-
-[[package]]
-name = "tp-core"
-version = "0.1.0"
-dependencies = [
- "cumulus-primitives-core",
- "frame-support",
- "hex-literal 0.3.4",
- "parity-scale-codec",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]

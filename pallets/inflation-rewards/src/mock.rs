@@ -17,6 +17,7 @@
 use {
     crate::{self as pallet_inflation_rewards},
     bounded_collections::bounded_vec,
+    dp_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         parameter_types,
@@ -30,7 +31,6 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
     },
-    tp_core::ParaId,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;

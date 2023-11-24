@@ -16,6 +16,10 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use dc_orchestrator_chain_interface::OrchestratorChainError;
+use dc_orchestrator_chain_interface::OrchestratorChainInterface;
+use dc_orchestrator_chain_interface::OrchestratorChainResult;
+
 #[allow(deprecated)]
 use {
     crate::{
@@ -64,9 +68,6 @@ use {
     std::{future::Future, pin::Pin, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
-    tc_orchestrator_chain_interface::{
-        OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
-    },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
 

@@ -3382,8 +3382,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "InvalidNewValue";
     }
 
-    /** @name TpCollatorAssignmentAssignedCollatorsAccountId32 (294) */
-    interface TpCollatorAssignmentAssignedCollatorsAccountId32 extends Struct {
+    /** @name DpCollatorAssignmentAssignedCollatorsAccountId32 (294) */
+    interface DpCollatorAssignmentAssignedCollatorsAccountId32 extends Struct {
         readonly orchestratorChain: Vec<AccountId32>;
         readonly containerChains: BTreeMap<u32, Vec<AccountId32>>;
     }
@@ -3413,8 +3413,8 @@ declare module "@polkadot/types/lookup" {
             | "NonAuraDigest";
     }
 
-    /** @name TpCollatorAssignmentAssignedCollatorsPublic (301) */
-    interface TpCollatorAssignmentAssignedCollatorsPublic extends Struct {
+    /** @name DpCollatorAssignmentAssignedCollatorsPublic (301) */
+    interface DpCollatorAssignmentAssignedCollatorsPublic extends Struct {
         readonly orchestratorChain: Vec<NimbusPrimitivesNimbusCryptoPublic>;
         readonly containerChains: BTreeMap<u32, Vec<NimbusPrimitivesNimbusCryptoPublic>>;
     }
