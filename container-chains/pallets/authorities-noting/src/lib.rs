@@ -16,6 +16,7 @@
 
 //! # Authorities Noting Pallet
 //!
+// SBP-M1 review: 'by an orchestrator chain'
 //! This pallet notes the authorities assigned to this container-chain in an orchestrator chain
 //!
 //! First the pallet receives a storage proof of the header of the orchestrator chain
@@ -23,6 +24,7 @@
 //! chain is retrieved from the header
 //!  
 //! A second storage proof is verified against the storage root of the orchestrator chain. From
+// SBP-M1 review: 'collator assignment'?
 //! this the collator-assignation is read, and the authorities assigned to these container-chain
 //! are retrieved and stored
 
@@ -61,6 +63,7 @@ use {
     tp_core::well_known_keys,
 };
 
+// SBP-M1 review: not used?
 pub trait GetContainerChains {
     fn container_chains() -> Vec<ParaId>;
 }
@@ -71,6 +74,7 @@ pub mod pallet {
 
     use super::*;
 
+    // SBP-M1 review: add doc comments for all associated types
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// The overarching event type.
@@ -78,6 +82,7 @@ pub mod pallet {
 
         type SelfParaId: Get<ParaId>;
 
+        // SBP-M1 review: unnecessary prefix
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
 
         type AuthorityId: sp_std::fmt::Debug + PartialEq + Clone + FullCodec + TypeInfo;
@@ -86,6 +91,7 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
     }
 
+    // SBP-M1 review: add doc comments for all variants, no unit test coverage
     #[pallet::error]
     pub enum Error<T> {
         /// The new value for a configuration parameter is invalid.
@@ -95,6 +101,7 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
+    // SBP-M1 review: prefer bounded storage
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
@@ -106,9 +113,11 @@ pub mod pallet {
             // We clear this storage item to make sure its always included
             DidSetOrchestratorAuthorityData::<T>::kill();
 
+            // SBP-M1 review: prefer safe math by convention
             weight += T::DbWeight::get().writes(1);
 
             // The read onfinalizes
+            // SBP-M1 review: prefer benchmark to include proof size, prefer safe math by convention
             weight += T::DbWeight::get().reads(1);
 
             weight
@@ -124,18 +133,23 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn orchestrator_para_id)]
+    // SBP-M1 review: reduce visibility, add doc comment
     pub type OrchestratorParaId<T: Config> = StorageValue<_, ParaId, ValueQuery>;
 
+    // SBP-M1 review: add doc comments
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
         pub orchestrator_para_id: ParaId,
         #[serde(skip)]
+        // SBP-M1 review: unnecessary prefix
         pub _config: sp_std::marker::PhantomData<T>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {
         fn default() -> Self {
+            // SBP-M1 review: consider Self
             GenesisConfig {
+                // SBP-M1 review: consider if hardcoded para id is valid for a default value
                 orchestrator_para_id: 1000u32.into(),
                 _config: Default::default(),
             }
@@ -151,16 +165,22 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(0)]
+        // SBP-M1 review: use benchmarked weight function
         #[pallet::weight((0, DispatchClass::Mandatory))]
         // TODO: This weight should be corrected.
         pub fn set_latest_authorities_data(
             origin: OriginFor<T>,
+            // SBP-M1 review: add import
             data: ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData,
+            // SBP-M1 review: use DispatchResult as no change to weight within function
         ) -> DispatchResultWithPostInfo {
+            // SBP-M1 review: unnecessary, set via pre-dispatch weight attribute instead
             let total_weight = T::WeightInfo::set_latest_authorities_data();
             ensure_none(origin)?;
 
+            // SBP-M1 review: consider returning error instead
             assert!(
                 !<DidSetOrchestratorAuthorityData<T>>::exists(),
                 "DidSetOrchestratorAuthorityData must be updated only once in a block",
@@ -184,6 +204,7 @@ pub mod pallet {
                 let orchestrator_root = Self::fetch_orchestrator_header_from_relay_proof(
                     &relay_chain_state_proof,
                     para_id,
+                // SBP-M1 review: no unit test coverage of error case
                 )?;
 
                 let orchestrator_chain_state_proof =
@@ -206,30 +227,37 @@ pub mod pallet {
 
             DidSetOrchestratorAuthorityData::<T>::put(true);
 
+            // SBP-M1 review: unnecessary after amending weight attribute, use Ok(())
             Ok(PostDispatchInfo {
                 actual_weight: Some(total_weight),
                 pays_fee: Pays::No,
             })
         }
 
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::set_authorities(authorities.len() as u32))]
         pub fn set_authorities(
             origin: OriginFor<T>,
+            // SBP-M1 review: use BoundedVec
             authorities: Vec<T::AuthorityId>,
         ) -> DispatchResult {
+            // SBP-M1 review: consider custom origin on pallet config
             ensure_root(origin)?;
             Authorities::<T>::put(&authorities);
+            // SBP-M1 review: 'AuthoritiesSet'?
             Self::deposit_event(Event::AuthoritiesInserted { authorities });
             Ok(())
         }
 
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::set_orchestrator_para_id())]
         pub fn set_orchestrator_para_id(
             origin: OriginFor<T>,
             new_para_id: ParaId,
         ) -> DispatchResult {
+            // SBP-M1 review: consider custom origin on pallet config
             ensure_root(origin)?;
             OrchestratorParaId::<T>::put(new_para_id);
             Self::deposit_event(Event::OrchestratorParachainIdUpdated { new_para_id });
@@ -246,12 +274,15 @@ pub mod pallet {
         OrchestratorParachainIdUpdated { new_para_id: ParaId },
     }
 
+    // SBP-M1 review: add doc comment
     #[pallet::storage]
     #[pallet::getter(fn authorities)]
+    // SBP-M1 review: reduce visibility, bound storage using BoundedVec, prefer grouping of storage items
     pub type Authorities<T: Config> = StorageValue<_, Vec<T::AuthorityId>, ValueQuery>;
 
     /// Was the containerAuthorData set?
     #[pallet::storage]
+    // SBP-M1 review: prefer grouping of storage items
     pub(super) type DidSetOrchestratorAuthorityData<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     #[pallet::inherent]
@@ -260,6 +291,7 @@ pub mod pallet {
         type Error = InherentError;
         const INHERENT_IDENTIFIER: InherentIdentifier = INHERENT_IDENTIFIER;
 
+        // SBP-M1 review: no unit test coverage
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
             // Return Ok(Some(_)) unconditionally because this inherent is required in every block
             Ok(Some(InherentError::Other(
@@ -274,11 +306,13 @@ pub mod pallet {
                 .get_data(&INHERENT_IDENTIFIER)
                 .ok()
                 .flatten()
+                // SBP-M1 review: typo 'no data'
                 .expect("there is not data to be posted; qed");
 
             Some(Call::set_latest_authorities_data { data })
         }
 
+        // SBP-M1 review: no unit test coverage
         fn is_inherent(call: &Self::Call) -> bool {
             matches!(call, Call::set_latest_authorities_data { .. })
         }
@@ -286,9 +320,12 @@ pub mod pallet {
 }
 
 impl<T: Config> Pallet<T> {
+    // SBP-M1 review: correct doc comment - returns storage root and not author slot
     /// Fetch author slot from a proof of header
+    // SBP-M1 review: address todo
     /// TODO: fix me once we have a proper Block type
     fn fetch_orchestrator_header_from_relay_proof(
+        // SBP-M1 review: consider type import
         relay_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
     ) -> Result<<BlakeTwo256 as HashT>::Output, Error<T>> {
@@ -303,8 +340,11 @@ impl<T: Config> Pallet<T> {
         // then panic
         let head_data = relay_state_proof
             .read_entry::<HeadData>(key.as_slice(), None)
+            // SBP-M1 review: no unit test coverage of error case
             .map_err(|e| match e {
+                // SBP-M1 review: bubble error up rather than panic
                 ReadEntryErr::Proof => panic!("Invalid proof provided for para head key"),
+                // SBP-M1 review: wildcard will match future added variants
                 _ => Error::<T>::FailedReading,
             })?;
 
@@ -313,24 +353,31 @@ impl<T: Config> Pallet<T> {
             sp_runtime::generic::Header::<BlockNumber, BlakeTwo256>::decode(
                 &mut head_data.0.as_slice(),
             )
+            // SBP-M1 review: no unit test coverage of error case
             .map_err(|_| Error::<T>::FailedDecodingHeader)?;
 
         // Fetch the orchestrator chain storage root
+        // SBP-M1 review: return directly
         let orchestrator_chain_storage_root = orchestrator_chain_header.state_root;
 
         Ok(orchestrator_chain_storage_root)
     }
 
+    // SBP-M1 review: correct doc comment - returns authorities
     /// Fetch author slot from a proof of header
     fn fetch_authorities_from_orchestrator_proof(
+        // SBP-M1 review: consider type import
         orchestrator_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
     ) -> Result<Vec<T::AuthorityId>, Error<T>> {
         // Read orchestrator session index
         let session_index = orchestrator_state_proof
             .read_entry::<u32>(well_known_keys::SESSION_INDEX, None)
+            // SBP-M1 review: no unit test coverage of error case
             .map_err(|e| match e {
+                // SBP-M1 review: bubble error up rather than panic
                 ReadEntryErr::Proof => panic!("Invalid proof: cannot read session index"),
+                // SBP-M1 review: wildcard will match future added variants
                 _ => Error::<T>::FailedReading,
             })?;
 
@@ -340,8 +387,11 @@ impl<T: Config> Pallet<T> {
                 &well_known_keys::authority_assignment_for_session(session_index),
                 None,
             )
+            // SBP-M1 review: no unit test coverage of error case
             .map_err(|e| match e {
+                // SBP-M1 review: bubble error up rather than panic
                 ReadEntryErr::Proof => panic!("Invalid proof: cannot read assignment"),
+                // SBP-M1 review: wildcard will match future added variants
                 _ => Error::<T>::FailedReading,
             })?;
 
@@ -356,13 +406,16 @@ impl<T: Config> Pallet<T> {
 
 #[derive(Encode)]
 #[cfg_attr(feature = "std", derive(Debug, Decode))]
+// SBP-M1 review: no unit test coverage
 pub enum InherentError {
     Other(RuntimeString),
 }
 
 impl IsFatalError for InherentError {
+    // SBP-M1 review: no unit test coverage
     fn is_fatal_error(&self) -> bool {
         match *self {
+            // SBP-M1 review: consider Self
             InherentError::Other(_) => true,
         }
     }
@@ -371,8 +424,10 @@ impl IsFatalError for InherentError {
 impl InherentError {
     /// Try to create an instance ouf of the given identifier and data.
     #[cfg(feature = "std")]
+    // SBP-M1 review: no unit test coverage
     pub fn try_from(id: &InherentIdentifier, data: &[u8]) -> Option<Self> {
         if id == &INHERENT_IDENTIFIER {
+            // SBP-M1 review: consider Self
             <InherentError as parity_scale_codec::Decode>::decode(&mut &data[..]).ok()
         } else {
             None
@@ -383,6 +438,7 @@ impl InherentError {
 pub struct CanAuthor<T>(PhantomData<T>);
 
 impl<T: Config> nimbus_primitives::CanAuthor<T::AuthorityId> for CanAuthor<T> {
+    // SBP-M1 review: no unit test coverage
     fn can_author(author: &T::AuthorityId, slot: &u32) -> bool {
         let authorities = Pallet::<T>::authorities();
 
@@ -390,6 +446,7 @@ impl<T: Config> nimbus_primitives::CanAuthor<T::AuthorityId> for CanAuthor<T> {
             return false;
         }
 
+        // SBP-M1 review: prefer .get(), consider checked_rem
         let expected_author = &authorities[(*slot as usize) % authorities.len()];
 
         expected_author == author

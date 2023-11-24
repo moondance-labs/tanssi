@@ -45,6 +45,7 @@ pub struct FullDeps<C, P> {
     pub pool: Arc<P>,
     /// Whether to deny unsafe calls
     pub deny_unsafe: DenyUnsafe,
+    // SBP-M1 review: missing some configuration available within Frontier template (e.g. command_sink, xcm_senders)
 }
 
 /// Instantiate all RPC extensions.

@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    // SBP-M1 review: suggest a dependency/package alias, simply using 'runtime' to make template diffing easier
     container_chain_template_frontier_runtime::{
         AccountId, EVMChainIdConfig, EVMConfig, MaintenanceModeConfig, MigrationsConfig,
         PolkadotXcmConfig,
@@ -35,6 +36,7 @@ pub type ChainSpec = sc_service::GenericChainSpec<
     Extensions,
 >;
 
+// SBP-M1 review: typo 'Orchestrator'
 /// Orcherstrator's parachain id
 pub const ORCHESTRATOR: ParaId = ParaId::new(1000);
 
@@ -174,6 +176,7 @@ fn testnet_genesis(
             ..Default::default()
         },
         parachain_system: Default::default(),
+        // SBP-M1 review: revisit config as suggested
         // EVM compatibility
         // We should change this to something different than Moonbeam
         // For now moonwall is very tailored for moonbeam so we need it for tests
@@ -183,6 +186,7 @@ fn testnet_genesis(
         },
         evm: EVMConfig {
             accounts: {
+                // SBP-M1 review: consider whether BTreeMap::from([]) simplifies
                 let mut map = BTreeMap::new();
                 map.insert(
                     // H160 address of Alice dev account
@@ -238,6 +242,7 @@ fn testnet_genesis(
             orchestrator_para_id: ORCHESTRATOR,
             ..Default::default()
         },
+        // SBP-M1 review: use MigrationsConfig::default() as in simple template
         migrations: MigrationsConfig {
             ..Default::default()
         },
@@ -247,6 +252,7 @@ fn testnet_genesis(
         },
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),
+        // SBP-M1 review: missing transaction_payment defined in simple template, consider whether it should be added to the Frontier runtime
     }
 }
 

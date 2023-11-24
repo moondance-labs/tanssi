@@ -56,8 +56,10 @@ impl<B, C, P> OrchestratorManualSealAuraConsensusDataProvider<B, C, P>
 where
     B: BlockT,
     C: AuxStore + ProvideRuntimeApi<B> + UsageProvider<B>,
+    // SBP-M1 review: unnecessary path prefix
     C::Api: AuraApi<B, nimbus_primitives::NimbusId>,
 {
+    // SBP-M1 review: update comment with correct struct name
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
     pub fn new(client: Arc<C>, keystore: KeystorePtr, orchestrator_para_id: ParaId) -> Self {
@@ -93,6 +95,7 @@ where
 
         // we always calculate the new slot number based on the current time-stamp and the slot
         // duration.
+        // SBP-M1 review: address todo
         // TODO: we need to add the nimbus digest here
         let slot = Slot::from_timestamp(timestamp, self.slot_duration);
         let aura_digest_item =
@@ -109,6 +112,7 @@ where
 
         let expected_author = crate::slot_author::<NimbusPair>(slot, authorities.as_ref());
 
+        // SBP-M1 review: address todo
         // TODO: this should always be included, but breaks manual seal tests. We should modify
         // once configuration on how manual seal changes
         let digest = if let Some(author) = expected_author {
@@ -138,6 +142,7 @@ where
 
 /// Helper function to generate a crypto pair from seed
 pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
+    // SBP-M1 review: unnecessary prefix, inline format arg
     sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
@@ -153,6 +158,7 @@ pub struct ContainerManualSealAuraConsensusDataProvider<B, C, P> {
 
     /// Shared reference to the client
     pub client: Arc<C>,
+    // SBP-M1 review: convert to doc comment for public field
     // Authorities from which the author should be calculated
     pub authorities: Vec<NimbusId>,
     // phantom data for required generics
@@ -164,6 +170,7 @@ where
     B: BlockT,
     C: AuxStore + ProvideRuntimeApi<B> + UsageProvider<B>,
 {
+    // SBP-M1 review: update comment with correct struct name
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
     pub fn new(
@@ -204,6 +211,7 @@ where
 
         // we always calculate the new slot number based on the current time-stamp and the slot
         // duration.
+        // SBP-M1 review: address todo
         // TODO: we need to add the nimbus digest here
         let slot = Slot::from_timestamp(timestamp, self.slot_duration);
         let aura_digest_item =
@@ -212,6 +220,7 @@ where
         let alice_id = get_aura_id_from_seed("alice");
         let expected_author: Option<nimbus_primitives::NimbusId> = Some(alice_id);
 
+        // SBP-M1 review: address todo
         // TODO: this should always be included, but breaks manual seal tests. We should modify
         // once configuration on how manual seal changes
         let digest = if let Some(author) = expected_author {

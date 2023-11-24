@@ -99,6 +99,7 @@ impl<Block: sp_runtime::traits::Block> GenericStateProof<Block> {
 
         let db = proof.into_memory_db::<HashingFor<Block>>();
         // If the proof is empty we should not compare against any root, but rather, expect that the pallet
+        // SBP-M1 review: typo 'do the'
         // will dot he job when looking for certain keys
         if !db.contains(&relay_parent_storage_root, EMPTY_PREFIX) && !proof_empty {
             return Err(ReadEntryErr::RootMismatch);

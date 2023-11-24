@@ -46,10 +46,12 @@ use {
     sp_inherents::InherentIdentifier,
 };
 
+// SBP-M1 review: add doc comments
 #[derive(Encode, Decode, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo)]
 pub struct OwnParachainInherentData {
     pub relay_storage_proof: sp_trie::StorageProof,
 }
 
 // Identifier of the author-noting inherent
+// SBP-M1 review: 1337 -> tans?
 pub const INHERENT_IDENTIFIER: InherentIdentifier = *b"auno1337";

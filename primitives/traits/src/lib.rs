@@ -52,6 +52,7 @@ impl<AccountId> AuthorNotingHook<AccountId> for Tuple {
     }
 }
 
+// SBP-M1 review: add doc comments
 pub trait DistributeRewards<AccountId, Imbalance> {
     fn distribute_rewards(rewarded: AccountId, amount: Imbalance) -> DispatchResultWithPostInfo;
 }
@@ -63,6 +64,7 @@ impl<AccountId, Imbalance> DistributeRewards<AccountId, Imbalance> for () {
 }
 
 /// Get the current list of container chains parachain ids.
+// SBP-M1 review: add doc comments for associated type and functions
 pub trait GetCurrentContainerChains {
     type MaxContainerChains: Get<u32>;
 
@@ -75,12 +77,15 @@ pub trait GetCurrentContainerChains {
 /// Get the list of container chains parachain ids at given
 /// session index.
 pub trait GetSessionContainerChains<SessionIndex> {
+    // SBP-M1 review: add doc comments
     fn session_container_chains(session_index: SessionIndex) -> Vec<ParaId>;
+    // SBP-M1 review: add doc comments
     #[cfg(feature = "runtime-benchmarks")]
     fn set_session_container_chains(session_index: SessionIndex, container_chains: &[ParaId]);
 }
 
 /// Returns author for a parachain id for the given slot.
+// SBP-M1 review: add doc comments for trait functions
 pub trait GetContainerChainAuthor<AccountId> {
     fn author_for_slot(slot: Slot, para_id: ParaId) -> Option<AccountId>;
     #[cfg(feature = "runtime-benchmarks")]
@@ -89,6 +94,7 @@ pub trait GetContainerChainAuthor<AccountId> {
 
 /// Returns the host configuration composed of the amount of collators assigned
 /// to the orchestrator chain, and how many collators are assigned per container chain.
+// SBP-M1 review: add doc comments to trait functions
 pub trait GetHostConfiguration<SessionIndex> {
     fn min_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn max_collators_for_orchestrator(session_index: SessionIndex) -> u32;
@@ -102,6 +108,7 @@ pub trait GetSessionIndex<SessionIndex> {
 
 /// Should pallet_collator_assignment trigger a full rotation on this session?
 pub trait ShouldRotateAllCollators<SessionIndex> {
+    // SBP-M1 review: add doc comment
     fn should_rotate_all_collators(session_index: SessionIndex) -> bool;
 }
 

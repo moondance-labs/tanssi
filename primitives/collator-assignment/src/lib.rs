@@ -29,10 +29,14 @@ use {
     tp_traits::ParaId,
 };
 
+// SBP-M1 review: add doc comments
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
+// SBP-M1 review: consider renaming to CollatorSet or CollatorAssignment as collator assignment can be pending
 pub struct AssignedCollators<AccountId> {
+    // SBP-M1 review: bound collators to some max value
     pub orchestrator_chain: Vec<AccountId>,
+    // SBP-M1 review: bound collators per para to some max value (e.g. 2)
     pub container_chains: BTreeMap<ParaId, Vec<AccountId>>,
 }
 
@@ -46,17 +50,20 @@ impl<AccountId> Default for AssignedCollators<AccountId> {
     }
 }
 
+// SBP-M1 review: add doc comments
 impl<AccountId> AssignedCollators<AccountId>
 where
     AccountId: PartialEq,
 {
     pub fn para_id_of(&self, x: &AccountId, orchestrator_chain_para_id: ParaId) -> Option<ParaId> {
+        // SBP-M1 review: prefer bounded container chains
         for (id, cs) in self.container_chains.iter() {
             if cs.contains(x) {
                 return Some(*id);
             }
         }
 
+        // SBP-M1 review: prefer bounded orchestrator chain collators
         if self.orchestrator_chain.contains(x) {
             return Some(orchestrator_chain_para_id);
         }
@@ -69,12 +76,16 @@ where
     }
 
     pub fn remove_container_chains_not_in_list(&mut self, container_chains: &[ParaId]) {
+        // SBP-M1 review: prefer bounded container chains
         self.container_chains
             .retain(|id, _cs| container_chains.contains(id));
     }
 
     pub fn remove_collators_not_in_list(&mut self, collators: &[AccountId]) {
+        // SBP-M1 review: prefer bounded orchestrator chain collators
         self.orchestrator_chain.retain(|c| collators.contains(c));
+        // SBP-M1 review: consider .values_mut()
+        // SBP-M1 review: unbounded loop, prefer bounded container chains
         for (_id, cs) in self.container_chains.iter_mut() {
             cs.retain(|c| collators.contains(c))
         }
@@ -84,6 +95,7 @@ where
         &mut self,
         num_orchestrator_chain: usize,
     ) -> Vec<AccountId> {
+        // SBP-M1 review: unbounded orchestrator chain length
         if num_orchestrator_chain <= self.orchestrator_chain.len() {
             self.orchestrator_chain.split_off(num_orchestrator_chain)
         } else {
@@ -92,6 +104,7 @@ where
     }
 
     pub fn remove_container_chain_excess_collators(&mut self, num_each_container_chain: usize) {
+        // SBP-M1 review: unbounded loop, prefer bounded container chains
         for (_id, cs) in self.container_chains.iter_mut() {
             cs.truncate(num_each_container_chain);
         }
@@ -102,6 +115,7 @@ where
     /// If the `next_collator` iterator does not have enough elements, this function will try to
     /// fill the list as much as it can.
     ///
+    // SBP-M1 review: can these methods not be merged to eliminate the following manual requirement?
     /// Call `remove_orchestrator_chain_excess_collators` before calling this function to ensure
     /// that the list has no more than `num_orchestrator_chain`.
     pub fn fill_orchestrator_chain_collators<I>(
@@ -111,6 +125,7 @@ where
     ) where
         I: Iterator<Item = AccountId>,
     {
+        // SBP-M1 review: consider the effect of number of iterations on block limits
         while self.orchestrator_chain.len() < num_orchestrator_chain {
             if let Some(nc) = next_collator.next() {
                 self.orchestrator_chain.push(nc);
@@ -130,6 +145,7 @@ where
     ) where
         I: Iterator<Item = AccountId>,
     {
+        // SBP-M1 review: consider the effect of number of iterations on block limits
         for para_id in container_chains {
             let cs = self.container_chains.entry(*para_id).or_default();
 
@@ -160,6 +176,7 @@ where
     ) -> Vec<AccountId> {
         let mut incomplete_container_chains: VecDeque<_> = VecDeque::new();
 
+        // SBP-M1 review: consider the effect of number of iterations on block limits
         for para_id in container_chains {
             let collators = self.container_chains.entry(*para_id).or_default();
             if !collators.is_empty() && collators.len() < num_each_container_chain {

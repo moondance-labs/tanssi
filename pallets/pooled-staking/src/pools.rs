@@ -30,6 +30,7 @@ use {
     tp_maths::{ErrAdd, ErrMul, ErrSub, MulDiv},
 };
 
+// SBP-M1 review: add doc comment for trait
 pub trait Pool<T: Config> {
     /// Get the amount of shares a delegator have for given candidate.
     fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T::Balance>;
@@ -91,6 +92,7 @@ pub trait Pool<T: Config> {
         Ok(Shares(stake.0.mul_div(supply, total_staked)?))
     }
 
+    // SBP-M1 review: add doc comment
     fn computed_stake(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
@@ -191,6 +193,7 @@ pub trait Pool<T: Config> {
         Ok(stake)
     }
 
+    // SBP-M1 review: add doc comment
     fn increase_hold(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
@@ -202,6 +205,7 @@ pub trait Pool<T: Config> {
         Ok(())
     }
 
+    // SBP-M1 review: add doc comment
     fn decrease_hold(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
@@ -214,6 +218,7 @@ pub trait Pool<T: Config> {
     }
 }
 
+// SBP-M1 review: reduce visibility
 pub fn check_candidate_consistency<T: Config>(candidate: &Candidate<T>) -> Result<(), Error<T>> {
     let total0 = Pools::<T>::get(candidate, &PoolsKey::CandidateTotalStake);
 
@@ -353,6 +358,7 @@ impl<T: Config> ManualRewards<T> {
             return Ok(Stake(0u32.into()));
         }
 
+        // SBP-M1 review: as highlighted in weights.rs, consider merging values into struct to limit the number of individual reads/cost
         let counter = Pools::<T>::get(candidate, &PoolsKey::ManualRewardsCounter);
         let checkpoint = Pools::<T>::get(
             candidate,
@@ -361,6 +367,7 @@ impl<T: Config> ManualRewards<T> {
             },
         );
 
+        // SBP-M1 review: address todo comment
         // TODO: Should be safe to wrap around.
         let diff = counter.err_sub(&checkpoint)?;
         Ok(Stake(diff.err_mul(&shares.0)?))
@@ -372,8 +379,10 @@ impl<T: Config> ManualRewards<T> {
         candidate: &Candidate<T>,
         rewards: Stake<T::Balance>,
     ) -> Result<Stake<T::Balance>, Error<T>> {
+        // SBP-M1 review: unnecessary borrow
         let Shares(supply) = Self::shares_supply(&candidate);
         if supply.is_zero() {
+            // SBP-M1 review: no unit test coverage
             return Ok(Stake(Zero::zero()));
         }
 
@@ -382,6 +391,7 @@ impl<T: Config> ManualRewards<T> {
             .checked_div(&supply)
             .ok_or(Error::<T>::InconsistentState)?;
         if rewards_per_share.is_zero() {
+            // SBP-M1 review: no unit test coverage
             return Ok(Stake(Zero::zero()));
         }
 
@@ -408,6 +418,7 @@ impl<T: Config> ManualRewards<T> {
             },
         );
 
+        // SBP-M1 review: address todo comment
         // TODO: Should be safe to wrap around.
         let diff = counter.err_sub(&checkpoint)?;
 
@@ -454,8 +465,10 @@ impl<T: Config> ManualRewards<T> {
 /// self-delegated (instantly). It is thus implemented by creating new
 /// AutoCompounding shares. This can lead to some rounding, which will be
 /// absorbed in the ManualRewards distribution, which simply consist of
+// SBP-M1 review: typo 'transferring'
 /// transfering the funds to the candidate account.
 #[frame_support::transactional]
+// SBP-M1 review: reduce visibility to crate, accessible via DistributeRewards trait impl for pallet
 pub fn distribute_rewards<T: Config>(
     candidate: &Candidate<T>,
     rewards: CreditOf<T>,
@@ -465,6 +478,7 @@ pub fn distribute_rewards<T: Config>(
     let (candidate_manual_rewards, other_rewards) = rewards.split(candidate_manual_rewards);
 
     if !candidate_manual_rewards.peek().is_zero() {
+        // SBP-M1 review: unnecessary borrow
         T::Currency::resolve(&candidate, candidate_manual_rewards)
             .map_err(|_| DispatchError::NoProviders)?;
     }
@@ -475,11 +489,13 @@ pub fn distribute_rewards<T: Config>(
     Ok(Some(T::WeightInfo::distribute_rewards()).into())
 }
 
+// SBP-M1 review: too many lines, consider refactoring
 fn distribute_rewards_inner<T: Config>(
     candidate: &Candidate<T>,
     rewards: T::Balance,
 ) -> Result<T::Balance, Error<T>> {
     // `RewardsCollatorCommission` is a `Perbill` so we're not worried about overflow.
+    // SBP-M1 review: prefer .checked_mul() by convention
     let candidate_rewards = T::RewardsCollatorCommission::get() * rewards;
     let delegators_rewards = rewards.err_sub(&candidate_rewards)?;
 
@@ -498,6 +514,7 @@ fn distribute_rewards_inner<T: Config>(
         Zero::zero()
     } else {
         let rewards = delegators_rewards.mul_div(manual_total_stake, combined_total_stake)?;
+        // SBP-M1 review: unnecessary borrow
         ManualRewards::<T>::increase_rewards(&candidate, Stake(rewards))?.0
     };
 
@@ -507,6 +524,7 @@ fn distribute_rewards_inner<T: Config>(
     // with 0 share supply will cause issues, so in this case we distribute this
     // dust as candidate manual rewards.
     let delegators_auto_rewards = delegators_rewards.err_sub(&delegators_manual_rewards)?;
+    // SBP-M1 review: unnecessary boolean not operation
     let (delegators_auto_rewards, delegators_auto_dust) = if !auto_total_stake.is_zero() {
         AutoCompounding::<T>::share_stake_among_holders(candidate, Stake(delegators_auto_rewards))?;
         (delegators_auto_rewards, Zero::zero())
@@ -518,6 +536,7 @@ fn distribute_rewards_inner<T: Config>(
     let candidate_auto_rewards = if auto_total_stake.is_zero() {
         Zero::zero()
     } else {
+        // SBP-M1 review: nice! :)
         'a: {
             let candidate_auto_stake =
                 AutoCompounding::<T>::computed_stake(candidate, candidate)?.0;
@@ -532,6 +551,7 @@ fn distribute_rewards_inner<T: Config>(
             let new_shares = AutoCompounding::<T>::stake_to_shares(candidate, Stake(rewards))?;
 
             if new_shares.0.is_zero() {
+                // SBP-M1 review: no unit test coverage
                 break 'a Zero::zero();
             }
 
@@ -540,6 +560,7 @@ fn distribute_rewards_inner<T: Config>(
     };
 
     // Distribute candidate ManualRewards rewards with dust from AutoCompounding.
+    // SBP-M1 review: typo 'transferred'
     // The amount is returned by the function and will be transfered to the candidate account.
     let candidate_manual_rewards = candidate_rewards
         .err_sub(&candidate_auto_rewards)?

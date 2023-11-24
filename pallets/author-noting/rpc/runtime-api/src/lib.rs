@@ -19,6 +19,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 sp_api::decl_runtime_apis! {
+    // SBP-M1 review: add doc comments
     pub trait AuthorNotingApi<AccountId, BlockNumber, ParaId>
     where
         AccountId: parity_scale_codec::Codec,

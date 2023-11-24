@@ -22,7 +22,9 @@ url = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true }
+# SBP-M1 review: suggest a dependency/package alias, simply using 'runtime' to make template diffing easier
 container-chain-template-frontier-runtime = { workspace = true, features = [ "std" ] }
+# SBP-M1 review: consider feature gating so only available when running integration tests
 manual-xcm-rpc = { workspace = true }
 tc-consensus = { workspace = true }
 
@@ -102,6 +104,7 @@ fc-storage = { workspace = true }
 fp-evm = { workspace = true }
 fp-rpc = { workspace = true }
 pallet-ethereum = { workspace = true }
+# SBP-M1 review: add line break
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 

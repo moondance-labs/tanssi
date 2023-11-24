@@ -45,6 +45,7 @@ pub trait Timer {
 
 /// A timer using block numbers.
 /// `T` is the Runtime type while `G` is a getter for the delay.
+// SBP-M1 review: consider improving generic type names to avoid above comment - e.g. BlockNumberTimer<Runtime, Delay>
 pub struct BlockNumberTimer<T, G>(PhantomData<(T, G)>);
 
 impl<T, G> Timer for BlockNumberTimer<T, G>
@@ -61,6 +62,7 @@ where
     fn is_elapsed(start: &Self::Instant) -> bool {
         let delay = G::get();
         let Some(end) = start.checked_add(&delay) else {
+            // SBP-M1 review: no unit test coverage
             return false;
         };
         end <= Self::now()
@@ -85,6 +87,7 @@ pub trait IsCandidateEligible<AccountId> {
     /// Is the provided account id eligible?
     fn is_candidate_eligible(a: &AccountId) -> bool;
 
+    // SBP-M1 review: 'not eligible' -> 'ineligible'
     /// Make the provided account id eligible if `eligible` is true, and not
     /// eligible if false.
     #[cfg(feature = "runtime-benchmarks")]

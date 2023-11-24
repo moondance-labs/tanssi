@@ -103,6 +103,7 @@ pub fn new_test_ext_with_genesis(config: HostConfiguration) -> sp_io::TestExtern
     .into()
 }
 
+// SBP-M1 review: reduce visibility
 pub fn run_to_block(n: u64) {
     let old_block_number = System::block_number();
     let session_len = 5;

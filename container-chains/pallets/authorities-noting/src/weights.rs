@@ -51,6 +51,7 @@ use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
 /// Weight functions needed for pallet_cc_authorities_noting.
+// SBP-M1 review: consider adding unit tests to ensure resulting weights remain within block limits
 pub trait WeightInfo {
 	fn set_latest_authorities_data() -> Weight;
 	fn set_authorities(x: u32, ) -> Weight;

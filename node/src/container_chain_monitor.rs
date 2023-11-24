@@ -32,6 +32,7 @@ use {
     },
 };
 
+// SBP-M1 review: add doc comment
 #[derive(Default)]
 pub struct SpawnedContainersMonitor {
     /// List of the N most recently started container chains, with some statistics related to
@@ -41,6 +42,7 @@ pub struct SpawnedContainersMonitor {
     count: usize,
 }
 
+// SBP-M1 review: add doc comment
 pub struct SpawnedContainer {
     /// Unique identifier for a spawned container (not ParaId)
     pub id: usize,
@@ -72,11 +74,13 @@ impl SpawnedContainer {
 
                 true
             } else {
+                // SBP-M1 review: no unit test coverage
                 false
             }
         }
     }
 
+    // SBP-M1 review: no unit test coverage
     pub fn summary(&self) -> String {
         #[derive(Debug)]
         #[allow(unused)]
@@ -130,6 +134,7 @@ impl SpawnedContainersMonitor {
         id
     }
 
+    // SBP-M1 review: add doc comment, no unit test coverage
     pub fn set_stop_signal_time(&mut self, id: usize, when: Instant) {
         let i = self.list.iter().position(|x| x.id == id);
 
@@ -138,6 +143,7 @@ impl SpawnedContainersMonitor {
         }
     }
 
+    // SBP-M1 review: add doc comment, no unit test coverage
     pub fn set_stop_task_manager_time(&mut self, id: usize, when: Instant) {
         let i = self.list.iter().position(|x| x.id == id);
 
@@ -146,6 +152,7 @@ impl SpawnedContainersMonitor {
         }
     }
 
+    // SBP-M1 review: add doc comment, no unit test coverage
     #[allow(unused)]
     pub fn set_stop_refcount_time(&mut self, id: usize, when: Instant) {
         let i = self.list.iter().position(|x| x.id == id);
@@ -155,6 +162,7 @@ impl SpawnedContainersMonitor {
         }
     }
 
+    // SBP-M1 review: add doc comment, no unit test coverage
     pub fn running_chains(&self) -> Vec<&SpawnedContainer> {
         self.list
             .iter()
@@ -162,6 +170,7 @@ impl SpawnedContainersMonitor {
             .collect()
     }
 
+    // SBP-M1 review: add doc comment
     #[allow(unused)]
     pub fn truncate_old(&mut self, new_len: usize) {
         if self.list.len() <= new_len {
@@ -172,6 +181,7 @@ impl SpawnedContainersMonitor {
         self.list.drain(0..idx_new_first_element);
     }
 
+    // SBP-M1 review: add doc comment
     pub fn truncate_old_stopped_chains(&mut self, new_len: usize) -> Result<(), ()> {
         if self.list.len() <= new_len {
             return Ok(());
@@ -187,6 +197,7 @@ impl SpawnedContainersMonitor {
                 to_retain -= 1;
                 false
             } else {
+                // SBP-M1 review: no unit test coverage
                 true
             }
         });
@@ -194,18 +205,22 @@ impl SpawnedContainersMonitor {
         if self.list.len() <= new_len {
             Ok(())
         } else {
+            // SBP-M1 review: no unit test coverage
             Err(())
         }
     }
 }
 
 /// Background task that monitors the number of running container chains.
+// SBP-M1 review: no unit test coverage
 pub async fn monitor_task(state: Arc<Mutex<ContainerChainSpawnerState>>) {
     // Main loop frequency, doesn't need to be fast
+    // SBP-M1 review: use constant
     let monitor_period = Duration::from_secs(300 * 0 + 10);
     // Max number of allowed container chains before printing warnings.
     // There should be at most 2 container chains running at the same time (1 syncing + 1 collating),
     // but add a margin of error because a container chain may take a few seconds to stop.
+    // SBP-M1 review: use constant
     let max_running_container_chains = 4;
 
     loop {
@@ -239,6 +254,7 @@ pub async fn monitor_task(state: Arc<Mutex<ContainerChainSpawnerState>>) {
         }
 
         // Remove stopped container chains to keep the list small
+        // SBP-M1 review: use constant
         let _ = monitor_state.truncate_old_stopped_chains(10);
     }
 }
@@ -246,6 +262,7 @@ pub async fn monitor_task(state: Arc<Mutex<ContainerChainSpawnerState>>) {
 #[allow(unused)]
 /// Start and stop the same container chain in a loop, used for testing and debugging
 pub async fn debug_start_and_stop_same_cc(cc_spawn_tx: UnboundedSender<CcSpawnMsg>) {
+    // SBP-M1 review: use constant
     let sleep_delay = Duration::from_secs(10);
 
     loop {

@@ -83,6 +83,7 @@ pub mod mock_data {
     impl<T: Config> Pallet<T> {}
 
     #[pallet::pallet]
+    // SBP-M1 review: prefer bounded storage
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 

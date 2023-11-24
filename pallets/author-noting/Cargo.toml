@@ -5,9 +5,11 @@ description = "Author noting pallet"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
+# SBP-M1 review: consider adding missing repository, readme, keywords, categories
 
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]
+# SBP-M1 review: add line break
 [dependencies]
 frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }

@@ -37,6 +37,7 @@ use {
 const SEED: u32 = 0;
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
+    // SBP-M1 review: consider frame_system::Pallet::<T>::assert_last_event(generic_event.into());
     let events = frame_system::Pallet::<T>::events();
     let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
@@ -102,7 +103,9 @@ pub type BalanceOf<T> =
 
 pub(crate) fn currency_issue<T: Config + frame_system::Config>(
     amount: BalanceOf<T>,
+    // SBP-M1 review: unnecessary crate prefix
 ) -> crate::CreditOf<T, T::Currency> {
+    // SBP-M1 review: unnecessary crate prefix
     <<T as crate::Config>::Currency as Balanced<T::AccountId>>::issue(amount)
 }
 

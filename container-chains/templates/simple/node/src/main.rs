@@ -22,6 +22,8 @@ mod chain_spec;
 #[macro_use]
 mod service;
 mod cli;
+
+// SBP-M1 review: missing client module as per Frontier template?
 mod command;
 mod rpc;
 

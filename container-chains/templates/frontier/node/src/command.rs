@@ -380,6 +380,7 @@ pub fn run() -> Result<()> {
 				info!("Parachain Account: {}", parachain_account);
 				info!("Parachain genesis state V0: {}", genesis_state_v0);
                 info!("Parachain genesis state V1: {}", genesis_state_v1);
+                // SBP-M1 review: remove line break to align with Simple template to ease diffing
 
 				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
 
@@ -447,6 +448,7 @@ impl CliConfiguration<Self> for RelayChainCli {
     fn rpc_addr(&self, default_listen_port: u16) -> Result<Option<SocketAddr>> {
         self.base.base.rpc_addr(default_listen_port)
     }
+    // SBP-M1 review: remove line break to align with Simple template to ease diffing
 
     fn prometheus_config(
         &self,

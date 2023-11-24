@@ -18,6 +18,7 @@
 //!
 //! This pallet is in charge of registering containerChains (identified by their Id)
 //! that have to be served by the orchestrator chain. Parachains registrations and de-
+// SBP-M1 review: typo 'immediately'
 //! registrations are not immediatly applied, but rather they take T::SessionDelay sessions
 //! to be applied.
 //!
@@ -62,6 +63,7 @@ pub mod pallet {
     };
 
     #[pallet::pallet]
+    // SBP-M1 review: not in review scope, but prefer bounded storage
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
@@ -122,6 +124,7 @@ pub mod pallet {
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
+    // SBP-M1 review: add doc comments for all types
     pub trait Config: frame_system::Config {
         /// Because this pallet emits events, it depends on the runtime's definition of an event.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -158,6 +161,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn registered_para_ids)]
+    // SBP-M1 review: reduce visibility for all storage items
     pub type RegisteredParaIds<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
 
@@ -241,6 +245,7 @@ pub mod pallet {
         /// Tried to mark_valid_for_collating a ParaId that is not in PendingVerification
         ParaIdNotInPendingVerification,
         /// Tried to register a ParaId with an account that did not have enough balance for the deposit
+        // SBP-M1 review: Insufficient
         NotSufficientDeposit,
     }
 
@@ -475,6 +480,7 @@ pub mod pallet {
         }
     }
 
+    // SBP-M1 review: add doc comment
     pub struct SessionChangeOutcome<T: Config> {
         /// Previously active parachains.
         pub prev_paras: BoundedVec<ParaId, T::MaxLengthParaIds>,
@@ -524,6 +530,8 @@ pub mod pallet {
         /// Returns the parachain list that was actual before the session change and the parachain list
         /// that became active after the session change. If there were no scheduled changes, both will
         /// be the same.
+        // SBP-M1 review: consider benchmarking in anticipation of https://github.com/paritytech/polkadot-sdk/issues/184
+        // SBP-M1 review: consider exposing via trait
         pub fn initializer_on_new_session(
             session_index: &T::SessionIndex,
         ) -> SessionChangeOutcome<T> {

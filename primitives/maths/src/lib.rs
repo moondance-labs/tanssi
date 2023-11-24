@@ -23,10 +23,12 @@ use {
 
 /// Error returned by math operations which can overflow.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+// SBP-M1 review: easier to use existing sp_arithmetic::ArithmeticError?
 pub struct OverflowError;
 
 /// Error returned by math operations which can underflow.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+// SBP-M1 review: easier to use existing sp_arithmetic::ArithmeticError?
 pub struct UnderflowError;
 
 /// Helper to compute ratios by multiplying then dividing by some values, while

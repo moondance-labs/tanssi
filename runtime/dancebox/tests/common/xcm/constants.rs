@@ -53,6 +53,7 @@ pub mod accounts {
     pub const CHARLIE: &str = "Charlie";
     pub const DAVE: &str = "Dave";
     pub const EVE: &str = "Eve";
+    // SBP-M1 review: typo
     pub const FERDIE: &str = "Ferdei";
     pub const ALICE_STASH: &str = "Alice//stash";
     pub const BOB_STASH: &str = "Bob//stash";

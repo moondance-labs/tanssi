@@ -40,6 +40,7 @@ use {
 };
 
 parameter_types! {
+    // SBP-M1 review: typo 'identifying'
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
     // a MultiLocation: (Self Balances pallet index)
@@ -54,6 +55,7 @@ parameter_types! {
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
+    // SBP-M1 review: address todo
     // TODO: revisit
     pub const RelayNetwork: NetworkId = NetworkId::Westend;
 
@@ -63,11 +65,13 @@ parameter_types! {
     pub const MaxAssetsIntoHolding: u32 = 64;
 
     /// Maximum number of instructions in a single XCM fragment. A sanity check against
+    // SBP-M1 review: typo 'calculations'
     /// weight caculations getting too crazy.
     pub MaxInstructions: u32 = 100;
 
     // The universal location within the global consensus system
     pub UniversalLocation: InteriorMultiLocation =
+    // SBP-M1 review: indent
     X2(GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into()));
 }
 
@@ -76,6 +80,7 @@ parameter_types! {
     pub ReachableDest: Option<MultiLocation> = Some(Parent.into());
 }
 
+// SBP-M1 review: consider updating to include TrailingSetTopicAsId, DenyThenTry with DenyReserveTransferToRelayChain if applicable, consider renaming to Barrier
 pub type XcmBarrier = (
     // Weight that is paid for may be consumed.
     TakeWeightCredit,
@@ -83,6 +88,7 @@ pub type XcmBarrier = (
     AllowKnownQueryResponses<PolkadotXcm>,
     WithComputedOrigin<
         (
+            // SBP-M1 review: typo 'attempts'
             // If the message is one that immediately attemps to pay for execution, then allow it.
             AllowTopLevelPaidExecutionFrom<Everything>,
             // Subscriptions for version tracking are OK.
@@ -114,6 +120,7 @@ pub type LocationToAccountId = (
 pub type LocalOriginToLocation = SignedToAccountId32<RuntimeOrigin, AccountId, RelayNetwork>;
 
 /// Means for transacting the native currency on this chain.
+// SBP-M1 review: consider renaming currency to asset
 pub type CurrencyTransactor = CurrencyAdapter<
     // Use this currency:
     Balances,
@@ -155,6 +162,7 @@ pub type XcmWeigher =
 
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
+// SBP-M1 review: consider updating to use WithUniqueTopic in line with Barrier suggestion above
 pub type XcmRouter = (
     // Two routers - use UMP to communicate with the relay chain:
     cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, ()>,
@@ -174,6 +182,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type Barrier = XcmBarrier;
     type Weigher = XcmWeigher;
     // Local token trader only
+    // SBP-M1 review: address todo - e.g. DealWithFees<Runtime>
     // TODO: update once we have a way to do fees
     type Trader = UsingComponents<WeightToFee, SelfReserve, AccountId, Balances, ()>;
     type ResponseHandler = PolkadotXcm;
@@ -197,6 +206,7 @@ impl pallet_xcm::Config for Runtime {
     type SendXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
     type XcmRouter = XcmRouter;
     type ExecuteXcmOrigin = EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
+    // SBP-M1 review: consider setting to Nothing to disable execute() dispatchable
     type XcmExecuteFilter = Everything;
     type XcmExecutor = XcmExecutor<XcmConfig>;
     type XcmTeleportFilter = Nothing;
@@ -214,6 +224,7 @@ impl pallet_xcm::Config for Runtime {
     type MaxLockers = ConstU32<8>;
     type MaxRemoteLockConsumers = ConstU32<0>;
     type RemoteLockConsumerIdentifier = ();
+    // SBP-M1 review: address todo
     // TODO pallet-xcm weights
     type WeightInfo = pallet_xcm::TestWeightInfo;
     #[cfg(feature = "runtime-benchmarks")]

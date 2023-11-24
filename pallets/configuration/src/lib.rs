@@ -17,13 +17,16 @@
 //! # Configuration Pallet
 //!
 //! This pallet stores the configuration for an orchestration-collator assignation chain. In
+// SBP-M1 review: 'In particular, it stores:'
 //! particular stores:
 //!
 //!    - How many collators are taken.
 //!    - How many of those collators should be serving the orchestrator chain
+// SBP-M1 review: typo 'How'
 //!    - Howe many of those collators should be serving the containerChains
 //!
 //! All configuration changes are protected behind the root origin
+// SBP-M1 review: typos 'Changes' and 'immediately'
 //! CHanges to the configuration are not immeditaly applied, but rather we wait
 //! T::SessionDelay to apply these changes
 
@@ -36,6 +39,7 @@ mod mock;
 mod tests;
 pub mod weights;
 
+// SBP-M1 review: group with imports below
 use crate::weights::WeightInfo;
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
@@ -54,17 +58,22 @@ use {
 const LOG_TARGET: &str = "pallet_configuration";
 
 /// All configuration of the runtime with respect to parachains and parathreads.
+// SBP-M1 review: missing field doc comments
 #[derive(
     Clone,
     Encode,
     Decode,
+    // SBP-M1 review: consider deriving Eq as well
     PartialEq,
+    // SBP-M1 review: unnecessary prefix
     sp_core::RuntimeDebug,
     scale_info::TypeInfo,
     Serialize,
     Deserialize,
 )]
 pub struct HostConfiguration {
+    // SBP-M1 review: consider the effects of changing these values and how they may cause loops to exhaust block limits
+    // SBP-M1 review: consider reducing to u16
     pub max_collators: u32,
     pub min_orchestrator_collators: u32,
     pub max_orchestrator_collators: u32,
@@ -78,6 +87,7 @@ impl Default for HostConfiguration {
         Self {
             max_collators: 100u32,
             min_orchestrator_collators: 2u32,
+            // SBP-M1 review: complete todo
             // TODO: for zombienet testing
             max_orchestrator_collators: 5u32,
             collators_per_container: 2u32,
@@ -103,6 +113,7 @@ impl HostConfiguration {
     /// # Errors
     ///
     /// This function returns an error if the configuration is inconsistent.
+    // SBP-M1 review: consider visibility
     pub fn check_consistency(&self) -> Result<(), InconsistentError> {
         if self.max_collators < 1 {
             return Err(InconsistentError::MaxCollatorsTooLow);
@@ -111,6 +122,7 @@ impl HostConfiguration {
             return Err(InconsistentError::MinOrchestratorCollatorsTooLow);
         }
         if self.max_orchestrator_collators < self.min_orchestrator_collators {
+            // SBP-M1 review: no unit test coverage
             return Err(InconsistentError::MaxCollatorsLowerThanMinCollators);
         }
         Ok(())
@@ -121,8 +133,11 @@ impl HostConfiguration {
     /// # Panics
     ///
     /// This function panics if the configuration is inconsistent.
+    // SBP-M1 review: consider gating with feature flag, reduce visibility
     pub fn panic_if_not_consistent(&self) {
         if let Err(err) = self.check_consistency() {
+            // SBP-M1 review: no unit test coverage
+            // SBP-M1 review: inline argument
             panic!("Host configuration is inconsistent: {:?}", err);
         }
     }
@@ -135,12 +150,14 @@ pub mod pallet {
     use super::*;
 
     #[pallet::pallet]
+    // SBP-M1 review: prefer bounded storage
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        // SBP-M1 review: add doc comments
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
 
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
@@ -148,6 +165,7 @@ pub mod pallet {
         // which guarantees that at least one full session has passed before any changes are applied.
         type SessionDelay: Get<Self::SessionIndex>;
 
+        // SBP-M1 review: add doc comments
         type CurrentSessionIndex: GetSessionIndex<Self::SessionIndex>;
 
         /// The identifier type for an authority.
@@ -182,6 +200,7 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn pending_configs)]
     pub(crate) type PendingConfigs<T: Config> =
+        // SBP-M1 review: bound storage - e.g. BoundedVec<(T::SessionIndex, HostConfiguration), ConstU32<2>>
         StorageValue<_, Vec<(T::SessionIndex, HostConfiguration)>, ValueQuery>;
 
     /// If this is set, then the configuration setters will bypass the consistency checks. This
@@ -194,6 +213,7 @@ pub mod pallet {
     pub struct GenesisConfig<T: Config> {
         pub config: HostConfiguration,
         #[serde(skip)]
+        // SBP-M1 review: unnecessary prefix
         pub _config: sp_std::marker::PhantomData<T>,
     }
 
@@ -205,28 +225,36 @@ pub mod pallet {
         }
     }
 
+    // SBP-M1 review: consider adding a set_config(origin: OriginFor<T>, new: HostConfiguration) dispatchable for changing multiple config values within a single xt
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(0)]
         #[pallet::weight((
+            // SBP-M1 review: prefer explicit benchmark to automatically capture any future changes to dispatchable
 			T::WeightInfo::set_config_with_u32(),
 			DispatchClass::Operational,
 		))]
         pub fn set_max_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
+            // SBP-M1 review: consider custom origin
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
                 config.max_collators = new;
             })
         }
 
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(1)]
         #[pallet::weight((
+            // SBP-M1 review: prefer explicit benchmark to automatically capture any future changes to dispatchable
 			T::WeightInfo::set_config_with_u32(),
 			DispatchClass::Operational,
 		))]
         pub fn set_min_orchestrator_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
+            // SBP-M1 review: consider custom origin
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
+                // SBP-M1 review: consider moving logic to config.set_min_orchestrator_collators(new)
                 if config.max_orchestrator_collators < new {
                     config.max_orchestrator_collators = new;
                 }
@@ -234,14 +262,18 @@ pub mod pallet {
             })
         }
 
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(2)]
         #[pallet::weight((
+            // SBP-M1 review: prefer explicit benchmark to automatically capture any future changes to dispatchable
 			T::WeightInfo::set_config_with_u32(),
 			DispatchClass::Operational,
 		))]
         pub fn set_max_orchestrator_collators(origin: OriginFor<T>, new: u32) -> DispatchResult {
+            // SBP-M1 review: consider custom origin
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
+                // SBP-M1 review: consider moving logic to config.set_max_orchestrator_collators(new)
                 if config.min_orchestrator_collators > new {
                     config.min_orchestrator_collators = new;
                 }
@@ -249,24 +281,31 @@ pub mod pallet {
             })
         }
 
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(3)]
         #[pallet::weight((
+            // SBP-M1 review: prefer explicit benchmark to automatically capture any future changes to dispatchable
 			T::WeightInfo::set_config_with_u32(),
 			DispatchClass::Operational,
 		))]
         pub fn set_collators_per_container(origin: OriginFor<T>, new: u32) -> DispatchResult {
+            // SBP-M1 review: consider custom origin
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
                 config.collators_per_container = new;
             })
         }
 
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(4)]
         #[pallet::weight((
+            // SBP-M1 review: prefer explicit benchmark to automatically capture any future changes to dispatchable
 			T::WeightInfo::set_config_with_u32(),
 			DispatchClass::Operational,
 		))]
+        // SBP-M1 review: no unit test coverage for error case
         pub fn set_full_rotation_period(origin: OriginFor<T>, new: u32) -> DispatchResult {
+            // SBP-M1 review: consider custom origin
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
                 config.full_rotation_period = new;
@@ -275,12 +314,16 @@ pub mod pallet {
 
         /// Setting this to true will disable consistency checks for the configuration setters.
         /// Use with caution.
+        // SBP-M1 review: double-check call index value is intentional
+        // SBP-M1 review: no unit test coverage
         #[pallet::call_index(44)]
         #[pallet::weight((
+            // SBP-M1 review: does not include proof size, prefer explicit benchmark to automatically capture any future changes to dispatchable
 			T::DbWeight::get().writes(1),
 			DispatchClass::Operational,
 		))]
         pub fn set_bypass_consistency_check(origin: OriginFor<T>, new: bool) -> DispatchResult {
+            // SBP-M1 review: consider custom origin
             ensure_root(origin)?;
             BypassConsistencyCheck::<T>::put(new);
             Ok(())
@@ -302,6 +345,8 @@ pub mod pallet {
         /// Returns the configuration that was actual before the session change and the configuration
         /// that became active after the session change. If there were no scheduled changes, both will
         /// be the same.
+        // SBP-M1 review: consider benchmarking in anticipation of https://github.com/paritytech/polkadot-sdk/issues/184
+        // SBP-M1 review: consider exposing via trait
         pub fn initializer_on_new_session(session_index: &T::SessionIndex) -> SessionChangeOutcome {
             let pending_configs = <PendingConfigs<T>>::get();
             let prev_config = ActiveConfig::<T>::get();
@@ -354,6 +399,8 @@ pub mod pallet {
         /// Forcibly set the active config. This should be used with extreme care, and typically
         /// only when enabling parachains runtime pallets for the first time on a chain which has
         /// been running without them.
+        // SBP-M1 review: consider reducing visibility until required
+        // SBP-M1 review: no unit test coverage
         pub fn force_set_active_config(config: HostConfiguration) {
             ActiveConfig::<T>::set(config);
         }
@@ -365,12 +412,14 @@ pub mod pallet {
         /// will check if the previous configuration was valid. If it was invalid, we proceed with
         /// updating the configuration, giving a chance to recover from such a condition.
         ///
+        // SBP-M1 review: typo 'takes place'
         /// The actual configuration change take place after a couple of sessions have passed. In case
         /// this function is called more than once in a session, then the pending configuration change
         /// will be updated and the changes will be applied at once.
         // NOTE: Explicitly tell rustc not to inline this because otherwise heuristics note the incoming
         // closure making it's attractive to inline. However, in this case, we will end up with lots of
         // duplicated code (making this function to show up in the top of heaviest functions) only for
+        // SBP-M1 review: 'Doesn't seem worth it.'
         // the sake of essentially avoiding an indirect call. Doesn't worth it.
         #[inline(never)]
         fn schedule_config_update(updater: impl FnOnce(&mut HostConfiguration)) -> DispatchResult {
@@ -405,14 +454,18 @@ pub mod pallet {
             // First, we need to decide what we should use as the base configuration.
             let mut base_config = pending_configs
                 .last()
+                // SBP-M1 review: consider using .map_or_else()
                 .map(|(_, config)| config.clone())
                 .unwrap_or_else(Self::config);
             let base_config_consistent = base_config.check_consistency().is_ok();
 
             // Now, we need to decide what the new configuration should be.
+
+            // SBP-M1 review: typo 'emphasize'
             // We also move the `base_config` to `new_config` to empahsize that the base config was
             // destroyed by the `updater`.
             updater(&mut base_config);
+            // SBP-M1 review: let new_config = updater(base_config)?
             let new_config = base_config;
 
             if BypassConsistencyCheck::<T>::get() {
@@ -422,6 +475,7 @@ pub mod pallet {
                     target: LOG_TARGET,
                     "Bypassing the consistency check for the configuration change!",
                 );
+            // SBP-M1 review: consider else {} scenario
             } else if let Err(e) = new_config.check_consistency() {
                 if base_config_consistent {
                     // Base configuration is consistent and the new configuration is inconsistent.
@@ -459,46 +513,62 @@ pub mod pallet {
             }
 
             <PendingConfigs<T>>::put(pending_configs);
+            // SBP-M1 review: consider emitting event
 
             Ok(())
         }
     }
 
     impl<T: Config> GetHostConfiguration<T::SessionIndex> for Pallet<T> {
+        // SBP-M1 review: no unit test coverage
         fn collators_per_container(session_index: T::SessionIndex) -> u32 {
+            // SBP-M1 review: duplicate code, refactor to simplify
+            // SBP-M1 review: consider using Self
             let (past_and_present, _) = Pallet::<T>::pending_configs()
                 .into_iter()
                 .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
 
+            // SBP-M1 review: consider using .map_or_else()
             let config = if let Some(last) = past_and_present.last() {
                 last.1.clone()
             } else {
+                // SBP-M1 review: consider using Self
                 Pallet::<T>::config()
             };
             config.collators_per_container
         }
 
+        // SBP-M1 review: no unit test coverage
         fn min_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
+            // SBP-M1 review: duplicate code, refactor to simplify
+            // SBP-M1 review: consider using Self
             let (past_and_present, _) = Pallet::<T>::pending_configs()
                 .into_iter()
                 .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
 
+            // SBP-M1 review: consider using .map_or_else()
             let config = if let Some(last) = past_and_present.last() {
                 last.1.clone()
             } else {
+                // SBP-M1 review: consider using Self
                 Pallet::<T>::config()
             };
             config.min_orchestrator_collators
         }
 
+        // SBP-M1 review: no unit test coverage
         fn max_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
+            // SBP-M1 review: duplicate code, refactor to simplify
+            // SBP-M1 review: consider using Self
             let (past_and_present, _) = Pallet::<T>::pending_configs()
                 .into_iter()
                 .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
 
+            // SBP-M1 review: consider using .map_or_else()
             let config = if let Some(last) = past_and_present.last() {
                 last.1.clone()
             } else {
+                // SBP-M1 review: consider using Self
                 Pallet::<T>::config()
             };
             config.max_orchestrator_collators

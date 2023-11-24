@@ -73,6 +73,7 @@ where
         "TM_MigrateInvulnerables"
     }
 
+    // SBP-M1 review: available_weight not checked, consider writing benchmark for determining migration weight
     fn migrate(&self, _available_weight: Weight) -> Weight {
         log::info!(target: LOG_TARGET, "migrate");
 
@@ -138,6 +139,7 @@ where
         "TM_MigrateHoldReason"
     }
 
+    // SBP-M1 review: available_weight not checked, consider writing benchmark for determining migration weight
     fn migrate(&self, _available_weight: Weight) -> Weight {
         log::info!(target: LOG_TARGET, "migrate");
         let pallet_prefix: &[u8] = b"Balances";
@@ -234,6 +236,7 @@ where
         "TM_MigrateConfigurationFullRotationPeriod"
     }
 
+    // SBP-M1 review: available_weight not checked, consider writing benchmark for determining migration weight
     fn migrate(&self, _available_weight: Weight) -> Weight {
         log::info!(target: LOG_TARGET, "migrate");
 
@@ -319,6 +322,7 @@ where
         "MM_PolkadotXcmMigration"
     }
 
+    // SBP-M1 review: available_weight not checked, consider writing benchmark for determining migration weight
     fn migrate(&self, _available_weight: Weight) -> Weight {
         pallet_xcm::migration::v1::VersionUncheckedMigrateToV1::<T>::on_runtime_upgrade()
     }
@@ -333,6 +337,7 @@ where
         "MM_XcmpQueueMigration"
     }
 
+    // SBP-M1 review: available_weight not checked, consider writing benchmark for determining migration weight
     fn migrate(&self, _available_weight: Weight) -> Weight {
         cumulus_pallet_xcmp_queue::migration::Migration::<T>::on_runtime_upgrade()
     }
@@ -347,6 +352,7 @@ where
         "TM_MigrateServicesPaymentAddCredits"
     }
 
+    // SBP-M1 review: available_weight not checked, consider writing benchmark for determining migration weight
     fn migrate(&self, _available_weight: Weight) -> Weight {
         // For each parachain in pallet_registrar (active, pending or pending_verification),
         // insert `MaxCreditsStored` to pallet_services_payment

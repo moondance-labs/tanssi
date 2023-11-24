@@ -60,6 +60,7 @@ pub(crate) fn slot_author<P: Pair>(
     authorities: &[AuthorityId<P>],
 ) -> Option<&AuthorityId<P>> {
     if authorities.is_empty() {
+        // SBP-M1 review: no unit test coverage
         return None;
     }
 
@@ -90,6 +91,7 @@ where
     B: BlockT,
     C: ProvideRuntimeApi<B>,
     C::Api: TanssiAuthorityAssignmentApi<B, AuthorityId<P>>,
+    // SBP-M1 review: unnecessary prefix
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
 {
     let runtime_api = client.runtime_api();
@@ -105,15 +107,18 @@ where
     authorities
 }
 
+// SBP-M1 review: group imports at top
 use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
 /// Grab the first eligible nimbus key from the keystore
 /// If multiple keys are eligible this function still only returns one
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.
 /// This is the standard way of determining which key to author with.
 /// It also returns its ParaId assignment
+// SBP-M1 review: no unit test coverage
 pub fn first_eligible_key<B: BlockT, C, P>(
     client: &C,
     parent_hash: &B::Hash,
+    // SBP-M1 review: consider taking by reference
     keystore: KeystorePtr,
 ) -> Option<(AuthorityId<P>, ParaId)>
 where
@@ -142,6 +147,7 @@ where
     // If we are skipping prediction, then we author with the first key we find.
     // prediction skipping only really makes sense when there is a single key in the keystore.
     available_keys.into_iter().find_map(|type_public_pair| {
+        // SBP-M1 review: consider .map_or_else()
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
             // If we dont find any parachain that we are assigned to, return none
 
@@ -167,9 +173,11 @@ where
 /// and makes no guarantees which one as that depends on the keystore's iterator behavior.
 /// This is the standard way of determining which key to author with.
 /// It also returns its ParaId assignment
+// SBP-M1 review: no unit test coverage
 pub fn first_eligible_key_next_session<B: BlockT, C, P>(
     client: &C,
     parent_hash: &B::Hash,
+    // SBP-M1 review: consider taking by reference
     keystore: KeystorePtr,
 ) -> Option<(AuthorityId<P>, ParaId)>
 where
@@ -198,6 +206,7 @@ where
     // If we are skipping prediction, then we author with the first key we find.
     // prediction skipping only really makes sense when there is a single key in the keystore.
     available_keys.into_iter().find_map(|type_public_pair| {
+        // SBP-M1 review: consider .map_or_else()
         if let Ok(nimbus_id) = NimbusId::from_slice(&type_public_pair) {
             // If we dont find any parachain that we are assigned to, return none
 

@@ -51,6 +51,7 @@ use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
 /// Weight functions needed for pallet_pooled_staking.
+// SBP-M1 review: consider adding unit tests to ensure resulting weights remain within block limits
 pub trait WeightInfo {
 	fn request_delegate() -> Weight;
 	fn execute_pending_operations(b: u32, ) -> Weight;
@@ -65,7 +66,9 @@ pub trait WeightInfo {
 /// Weights for pallet_pooled_staking using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+	// SBP-M1 review: consider cost of many pool reads versus grouping data into a pool struct to optimise
 	/// Storage: PooledStaking Pools (r:11 w:5)
+	// SBP-M1 review: skipped proofs due to dev_mode
 	/// Proof Skipped: PooledStaking Pools (max_values: None, max_size: None, mode: Measured)
 	/// Storage: System Account (r:1 w:1)
 	/// Proof: System Account (max_values: None, max_size: Some(128), added: 2603, mode: MaxEncodedLen)
@@ -92,6 +95,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof Skipped: PooledStaking PendingOperations (max_values: None, max_size: None, mode: Measured)
 	/// Storage: Session CurrentIndex (r:1 w:0)
 	/// Proof Skipped: Session CurrentIndex (max_values: Some(1), max_size: None, mode: Measured)
+	// SBP-M1 review: check total weight at worse case vs block limits
 	/// Storage: PooledStaking Pools (r:1000 w:800)
 	/// Proof Skipped: PooledStaking Pools (max_values: None, max_size: None, mode: Measured)
 	/// Storage: Balances Holds (r:1 w:1)
@@ -113,6 +117,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes((9_u64).saturating_mul(b.into())))
 			.saturating_add(Weight::from_parts(0, 25141).saturating_mul(b.into()))
 	}
+	// SBP-M1 review: consider cost of many pool reads versus grouping data into a pool struct to optimise
 	/// Storage: PooledStaking Pools (r:13 w:9)
 	/// Proof Skipped: PooledStaking Pools (max_values: None, max_size: None, mode: Measured)
 	/// Storage: PooledStaking SortedEligibleCandidates (r:1 w:1)
@@ -130,6 +135,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(16_u64))
 			.saturating_add(T::DbWeight::get().writes(11_u64))
 	}
+	// SBP-M1 review: consider cost of many pool reads versus grouping data into a pool struct to optimise
 	/// Storage: PooledStaking Pools (r:300 w:100)
 	/// Proof Skipped: PooledStaking Pools (max_values: None, max_size: None, mode: Measured)
 	/// Storage: System Account (r:2 w:2)
@@ -164,6 +170,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(7_u64))
 			.saturating_add(T::DbWeight::get().writes(4_u64))
 	}
+	// SBP-M1 review: consider cost of many pool reads versus grouping data into a pool struct to optimise
 	/// Storage: PooledStaking Pools (r:600 w:100)
 	/// Proof Skipped: PooledStaking Pools (max_values: None, max_size: None, mode: Measured)
 	/// Storage: PooledStaking SortedEligibleCandidates (r:1 w:1)
@@ -185,6 +192,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes((1_u64).saturating_mul(b.into())))
 			.saturating_add(Weight::from_parts(0, 15206).saturating_mul(b.into()))
 	}
+	// SBP-M1 review: consider cost of many pool reads versus grouping data into a pool struct to optimise
 	/// Storage: PooledStaking Pools (r:12 w:8)
 	/// Proof Skipped: PooledStaking Pools (max_values: None, max_size: None, mode: Measured)
 	fn swap_pool() -> Weight {
@@ -196,6 +204,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(12_u64))
 			.saturating_add(T::DbWeight::get().writes(8_u64))
 	}
+	// SBP-M1 review: consider cost of many pool reads versus grouping data into a pool struct to optimise
 	/// Storage: PooledStaking Pools (r:9 w:5)
 	/// Proof Skipped: PooledStaking Pools (max_values: None, max_size: None, mode: Measured)
 	/// Storage: PooledStaking SortedEligibleCandidates (r:1 w:1)

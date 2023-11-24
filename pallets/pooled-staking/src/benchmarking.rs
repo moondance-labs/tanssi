@@ -43,6 +43,7 @@ fn min_candidate_stk<T: Config>() -> T::Balance {
 }
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
+    // SBP-M1 review: consider frame_system::Pallet::<T>::assert_last_event(generic_event.into());
     let events = frame_system::Pallet::<T>::events();
     let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
@@ -50,6 +51,7 @@ fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
     assert_eq!(event, &system_event);
 }
 
+// SBP-M1 review: 'delegate' better than user to use consistent terminology?
 /// Create a funded user.
 /// Extra + min_candidate_stk is total minted funds
 /// Returns tuple (id, balance)
@@ -68,7 +70,9 @@ fn create_funded_user<T: Config>(
 
 pub(crate) fn currency_issue<T: Config + frame_system::Config>(
     amount: T::Balance,
+    // SBP-M1 review: unnecessary crate prefix
 ) -> crate::CreditOf<T> {
+    // SBP-M1 review: unnecessary crate prefix
     <<T as crate::Config>::Currency as Balanced<T::AccountId>>::issue(amount)
 }
 
@@ -78,6 +82,7 @@ mod benchmarks {
 
     #[benchmark]
     fn request_delegate() -> Result<(), BenchmarkError> {
+        // SBP-M1 review: 'delegate' better than user to use consistent terminology?
         const USER_SEED: u32 = 1;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * 3u32.into());
@@ -151,6 +156,7 @@ mod benchmarks {
     fn execute_pending_operations(
         b: Linear<1, { T::EligibleCandidatesBufferSize::get() }>,
     ) -> Result<(), BenchmarkError> {
+        // SBP-M1 review: 'delegate' better than user to use consistent terminology?
         const USER_SEED: u32 = 1000;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * b.into());
@@ -190,6 +196,7 @@ mod benchmarks {
         }
 
         T::JoiningRequestTimer::skip_to_elapsed();
+        // SBP-M1 review: add line break
         #[extrinsic_call]
         _(RawOrigin::Signed(caller.clone()), pending_operations);
 
@@ -210,6 +217,7 @@ mod benchmarks {
 
     #[benchmark]
     fn request_undelegate() -> Result<(), BenchmarkError> {
+        // SBP-M1 review: 'delegate' better than user to use consistent terminology?
         const USER_SEED: u32 = 1;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
@@ -257,6 +265,7 @@ mod benchmarks {
         let dust = min_candidate_stk::<T>() - on_hold;
 
         // assert that it comes out sorted
+        // SBP-M1 review: seems todo can be removed?
         // TODO: hardcoded numbers should dissapear
         assert_last_event::<T>(
             Event::RequestedUndelegate {
@@ -275,6 +284,7 @@ mod benchmarks {
     fn claim_manual_rewards(
         b: Linear<1, { T::EligibleCandidatesBufferSize::get() }>,
     ) -> Result<(), BenchmarkError> {
+        // SBP-M1 review: 'delegate' better than user to use consistent terminology?
         const USER_SEED: u32 = 1000;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * b.into());
@@ -314,6 +324,7 @@ mod benchmarks {
 
         // Set counter to simulate rewards.
         let counter = 100u32;
+        // SBP-M1 review: typo 'possible'
         // Execute as many pending operations as posible
         for i in 0..b {
             let candidate: T::AccountId = account("candidate", USER_SEED - i - 1, 0);
@@ -329,6 +340,7 @@ mod benchmarks {
                 }],
             )?;
 
+            // SBP-M1 review: unnecessary crate prefix
             crate::Pools::<T>::set(candidate, &PoolsKey::ManualRewardsCounter, counter.into());
         }
 
@@ -355,11 +367,13 @@ mod benchmarks {
 
     #[benchmark]
     fn rebalance_hold() -> Result<(), BenchmarkError> {
+        // SBP-M1 review: 'delegate' better than user to use consistent terminology?
         const USER_SEED: u32 = 1000;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>() * 2u32.into());
 
         T::Currency::set_balance(&T::StakingAccount::get(), min_candidate_stk::<T>());
+        // SBP-M1 review: remove comment
         // Create as many delegations as one can
 
         let (candidate, _deposit) = create_funded_user::<T>(
@@ -427,6 +441,7 @@ mod benchmarks {
     fn update_candidate_position(
         b: Linear<1, { T::EligibleCandidatesBufferSize::get() }>,
     ) -> Result<(), BenchmarkError> {
+        // SBP-M1 review: 'delegate' better than user to use consistent terminology?
         const USER_SEED: u32 = 1000;
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, min_candidate_stk::<T>());
@@ -460,10 +475,13 @@ mod benchmarks {
         _(RawOrigin::Signed(caller.clone()), candidates);
 
         Ok(())
+
+        // SBP-M1 review: missing assertions for consistency
     }
 
     #[benchmark]
     fn swap_pool() -> Result<(), BenchmarkError> {
+        // SBP-M1 review: 'delegate' better than user to use consistent terminology?
         const USER_SEED: u32 = 1;
 
         let source_stake = min_candidate_stk::<T>() * 10u32.into();
@@ -503,6 +521,7 @@ mod benchmarks {
         );
 
         let target_stake = source_stake;
+        // SBP-M1 review: unnecessary crate prefix
         let source_shares = crate::pools::AutoCompounding::<T>::stake_to_shares_or_init(
             &caller,
             Stake(source_stake),
@@ -511,6 +530,7 @@ mod benchmarks {
         .0;
 
         let target_shares =
+            // SBP-M1 review: unnecessary crate prefix
             crate::pools::ManualRewards::<T>::stake_to_shares_or_init(&caller, Stake(target_stake))
                 .unwrap()
                 .0;
@@ -535,6 +555,7 @@ mod benchmarks {
 
     #[benchmark]
     fn distribute_rewards() -> Result<(), BenchmarkError> {
+        // SBP-M1 review: 'delegate' better than user to use consistent terminology?
         const USER_SEED: u32 = 1;
 
         let source_stake = min_candidate_stk::<T>() * 10u32.into();
@@ -585,6 +606,7 @@ mod benchmarks {
 
         #[block]
         {
+            // SBP-M1 review: unnecessary crate prefix
             crate::pools::distribute_rewards::<T>(&caller, currency_issue::<T>(source_stake))?;
         }
 

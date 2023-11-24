@@ -40,6 +40,7 @@ pub mod pallet {
     use super::*;
 
     #[pallet::pallet]
+    // SBP-M1 review: prefer bounded storage
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
@@ -66,6 +67,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         /// Assign new collators
         /// collators should be queued collators
+        // SBP-M1 review: reduce visibility
         pub fn assign_collators(
             current_session_index: &T::SessionIndex,
             queued_id_to_nimbus_map: &BTreeMap<T::AccountId, T::AuthorityId>,
@@ -98,6 +100,7 @@ pub mod pallet {
             );
         }
 
+        // SBP-M1 review: consider exposing via trait
         pub fn initializer_on_new_session(
             current_session_index: &T::SessionIndex,
             queued_id_to_nimbus_map: &BTreeMap<T::AccountId, T::AuthorityId>,

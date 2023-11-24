@@ -68,6 +68,8 @@ use crate::weights::WeightInfo;
 pub mod pallet {
     use super::*;
 
+
+    // SBP-M1 review: add doc comments for all associated types
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// The overarching event type.
@@ -79,8 +81,10 @@ pub mod pallet {
 
         type ContainerChainAuthor: GetContainerChainAuthor<Self::AccountId>;
 
+        // SBP-M1 review: unnecessary qualification
         type RelayChainStateProvider: cumulus_pallet_parachain_system::RelaychainStateProvider;
 
+        // SBP-M1 review: typo 'container chains'
         /// An entry-point for higher-level logic to react to containers chains authoring.
         ///
         /// Typically, this can be a hook to reward block authors.
@@ -90,6 +94,7 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
     }
 
+    // SBP-M1 review: add doc comments for all variants, no unit test coverage
     #[pallet::error]
     pub enum Error<T> {
         /// The new value for a configuration parameter is invalid.
@@ -113,9 +118,11 @@ pub mod pallet {
             // We clear this storage item to make sure its always included
             DidSetContainerAuthorData::<T>::kill();
 
+            // SBP-M1 review: prefer safe math by convention
             weight += T::DbWeight::get().writes(1);
 
             // The read onfinalizes
+            // SBP-M1 review: prefer benchmark to include proof size, prefer safe math by convention
             weight += T::DbWeight::get().reads(1);
 
             weight
@@ -131,7 +138,9 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(0)]
+        // SBP-M1 review: consider starting with worst case weight T::WeightInfo::set_latest_author_data(100) and refunding, to ensure inherent remains within block weight limits from early in development cycle
         #[pallet::weight((0, DispatchClass::Mandatory))]
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
@@ -151,6 +160,7 @@ pub mod pallet {
             // We do this first to make sure we dont do 2 reads (parachains and relay state)
             // when we have no containers registered
             // Essentially one can pass an empty proof if no container-chains are registered
+            // SBP-M1 review: consider returning early to reduce nesting
             if !registered_para_ids.is_empty() {
                 let tp_author_noting_inherent::OwnParachainInherentData {
                     relay_storage_proof,
@@ -162,6 +172,7 @@ pub mod pallet {
                     GenericStateProof::new(relay_storage_root, relay_storage_proof)
                         .expect("Invalid relay chain state proof");
 
+                // SBP-M1 review: address todo
                 // TODO: we should probably fetch all authors-containers first
                 // then pass the vector to the hook, this would allow for a better estimation
                 for para_id in registered_para_ids {
@@ -171,6 +182,7 @@ pub mod pallet {
                                 para_id,
                                 |maybe_old_block_info: &mut Option<ContainerChainBlockInfo<T>>| {
                                     if let Some(ref mut old_block_info) = maybe_old_block_info {
+                                        // SBP-M1 review: return early to reduce nesting
                                         if block_info.block_number > old_block_info.block_number {
                                             // We only reward author if the block increases
                                             total_weight = total_weight.saturating_add(
@@ -183,6 +195,7 @@ pub mod pallet {
                                             let _ = core::mem::replace(old_block_info, block_info);
                                         }
                                     } else {
+                                        // SBP-M1 review: duplicate logic, consider refactoring
                                         // If there is no previous block, we should reward the author of the first block
                                         total_weight = total_weight.saturating_add(
                                             T::AuthorNotingHook::on_container_author_noted(
@@ -199,6 +212,7 @@ pub mod pallet {
                                 },
                             );
                         }
+                        // SBP-M1 review: no unit test coverage
                         Err(e) => log::warn!(
                             "Author-noting error {:?} found in para {:?}",
                             e,
@@ -217,6 +231,7 @@ pub mod pallet {
             })
         }
 
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::set_author())]
         pub fn set_author(
@@ -225,6 +240,7 @@ pub mod pallet {
             block_number: BlockNumber,
             author: T::AccountId,
         ) -> DispatchResult {
+            // SBP-M1 review: consider custom origin on pallet config
             ensure_root(origin)?;
             LatestAuthor::<T>::insert(
                 para_id,
@@ -241,9 +257,11 @@ pub mod pallet {
             Ok(())
         }
 
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::kill_author_data())]
         pub fn kill_author_data(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            // SBP-M1 review: consider custom origin on pallet config
             ensure_root(origin)?;
             LatestAuthor::<T>::remove(para_id);
             Self::deposit_event(Event::RemovedAuthorData { para_id });
@@ -251,6 +269,7 @@ pub mod pallet {
         }
     }
 
+    // SBP-M1 review: add doc comment, including named fields
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -264,22 +283,28 @@ pub mod pallet {
         RemovedAuthorData { para_id: ParaId },
     }
 
+    // SBP-M1 review: add doc comment
     #[pallet::storage]
     #[pallet::getter(fn latest_author)]
     pub(super) type LatestAuthor<T: Config> =
+        // SBP-M1 review: OptionQuery is default and can be omitted
         StorageMap<_, Blake2_128Concat, ParaId, ContainerChainBlockInfo<T>, OptionQuery>;
 
+    // SBP-M1 review: typo 'latest'
     /// Information extracted from the lastest container chain header
     #[derive(
+        // SBP-M1 review: unnecessary path prefix
         Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
     )]
     #[scale_info(skip_type_params(T))]
+    // SBP-M1 review: add doc comments, prefer ContainerChainBlockInfo<AccountId> as only single type used
     pub struct ContainerChainBlockInfo<T: Config> {
         pub block_number: BlockNumber,
         pub author: T::AccountId,
     }
 
     /// Was the containerAuthorData set?
+    // SBP-M1 review: prefer grouping of storage items
     #[pallet::storage]
     pub(super) type DidSetContainerAuthorData<T: Config> = StorageValue<_, bool, ValueQuery>;
 
@@ -287,13 +312,16 @@ pub mod pallet {
     impl<T: Config> ProvideInherent for Pallet<T> {
         type Call = Call<T>;
         type Error = InherentError;
+        // SBP-M1 review: address todo
         // TODO, what should we put here
         const INHERENT_IDENTIFIER: InherentIdentifier =
             tp_author_noting_inherent::INHERENT_IDENTIFIER;
 
+        // SBP-M1 review: no unit test coverage
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
             // Return Ok(Some(_)) unconditionally because this inherent is required in every block
             Ok(Some(InherentError::Other(
+                // SBP-M1 review: unnecessary prefix
                 sp_runtime::RuntimeString::Borrowed("Pallet Author Noting Inherent required"),
             )))
         }
@@ -303,11 +331,13 @@ pub mod pallet {
                 .get_data(&INHERENT_IDENTIFIER)
                 .ok()
                 .flatten()
+                // SBP-M1 review: typo 'no data'
                 .expect("there is not data to be posted; qed");
 
             Some(Call::set_latest_author_data { data })
         }
 
+        // SBP-M1 review: no unit test coverage
         fn is_inherent(call: &Self::Call) -> bool {
             matches!(call, Call::set_latest_author_data { .. })
         }
@@ -317,6 +347,7 @@ pub mod pallet {
 impl<T: Config> Pallet<T> {
     /// Fetch author and block number from a proof of header
     fn fetch_block_info_from_proof(
+        // SBP-M1 review: consider type import
         relay_state_proof: &GenericStateProof<cumulus_primitives_core::relay_chain::Block>,
         para_id: ParaId,
     ) -> Result<ContainerChainBlockInfo<T>, Error<T>> {
@@ -332,7 +363,9 @@ impl<T: Config> Pallet<T> {
         let head_data = relay_state_proof
             .read_entry::<HeadData>(key.as_slice(), None)
             .map_err(|e| match e {
+                // SBP-M1 review: bubble error up rather than panic
                 ReadEntryErr::Proof => panic!("Invalid proof provided for para head key"),
+                // SBP-M1 review: wildcard will match future added variants
                 _ => Error::<T>::FailedReading,
             })?;
 
@@ -376,13 +409,16 @@ impl<T: Config> Pallet<T> {
 
 #[derive(Encode)]
 #[cfg_attr(feature = "std", derive(Debug, Decode))]
+// SBP-M1 review: no unit test coverage
 pub enum InherentError {
     Other(RuntimeString),
 }
 
 impl IsFatalError for InherentError {
+    // SBP-M1 review: no unit test coverage
     fn is_fatal_error(&self) -> bool {
         match *self {
+            // SBP-M1 review: consider Self
             InherentError::Other(_) => true,
         }
     }
@@ -391,8 +427,10 @@ impl IsFatalError for InherentError {
 impl InherentError {
     /// Try to create an instance ouf of the given identifier and data.
     #[cfg(feature = "std")]
+    // SBP-M1 review: no unit test coverage
     pub fn try_from(id: &InherentIdentifier, data: &[u8]) -> Option<Self> {
         if id == &INHERENT_IDENTIFIER {
+            // SBP-M1 review: consider Self
             <InherentError as parity_scale_codec::Decode>::decode(&mut &data[..]).ok()
         } else {
             None

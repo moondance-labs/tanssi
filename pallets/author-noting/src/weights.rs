@@ -51,6 +51,7 @@ use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
 /// Weight functions needed for pallet_author_noting.
+// SBP-M1 review: consider adding unit tests to ensure resulting weights remain within block limits
 pub trait WeightInfo {
 	fn set_latest_author_data(x: u32, ) -> Weight;
 	fn set_author() -> Weight;

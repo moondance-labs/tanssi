@@ -53,6 +53,7 @@ pub struct FullDeps<C, P> {
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for manual xcm messages (downward, hrmp)
+    // SBP-M1 review: consider feature gating so only available when running integration tests
     pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
 }
 

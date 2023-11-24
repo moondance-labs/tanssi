@@ -39,13 +39,16 @@ use {
 pub struct Calls<T>(PhantomData<T>);
 
 impl<T: Config> Calls<T> {
+    // SBP-M1 review: reduce visibility to crate
     pub fn rebalance_hold(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
         pool: AllTargetPool,
+        // SBP-M1 review: seems unnecessary, use DispatchResult or return actual weight
     ) -> DispatchResultWithPostInfo {
         let (held, stake) = match pool {
             AllTargetPool::Joining => {
+                // SBP-M1 review: no unit test coverage
                 let held = pools::Joining::<T>::hold(&candidate, &delegator);
                 let shares = pools::Joining::<T>::shares(&candidate, &delegator);
                 let stake = pools::Joining::<T>::shares_to_stake(&candidate, shares)?;
@@ -67,6 +70,7 @@ impl<T: Config> Calls<T> {
                 (held, stake)
             }
             AllTargetPool::Leaving => {
+                // SBP-M1 review: no unit test coverage
                 let held = pools::Leaving::<T>::hold(&candidate, &delegator);
                 let shares = pools::Leaving::<T>::shares(&candidate, &delegator);
                 let stake = pools::Leaving::<T>::shares_to_stake(&candidate, shares)?;
@@ -110,11 +114,13 @@ impl<T: Config> Calls<T> {
         Ok(().into())
     }
 
+    // SBP-M1 review: reduce visibility to crate
     pub fn request_delegate(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
         pool: TargetPool,
         stake: T::Balance,
+        // SBP-M1 review: seems unnecessary, use DispatchResult or return actual weight
     ) -> DispatchResultWithPostInfo {
         ensure!(!stake.is_zero(), Error::<T>::StakeMustBeNonZero);
 
@@ -148,9 +154,11 @@ impl<T: Config> Calls<T> {
         };
 
         // We store/mutate the operation in storage.
+        // SBP-M1 review: consider using PendingOperations::<T>::try_mutate()
         let operation = PendingOperations::<T>::get(&delegator, &operation_key);
         let operation = operation
             .err_add(&shares.0)
+            // SBP-M1 review: no unit test coverage
             .map_err(|_| Error::<T>::MathOverflow)?;
         PendingOperations::<T>::set(&delegator, &operation_key, operation);
 
@@ -159,6 +167,7 @@ impl<T: Config> Calls<T> {
         Pallet::<T>::deposit_event(Event::<T>::RequestedDelegate {
             candidate,
             delegator,
+            // SBP-M1 review: use shorthand initializer
             pool: pool,
             pending: stake.0,
         });
@@ -166,13 +175,16 @@ impl<T: Config> Calls<T> {
         Ok(().into())
     }
 
+    // SBP-M1 review: reduce visibility to crate
     pub fn request_undelegate(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
         pool: TargetPool,
         amount: SharesOrStake<T::Balance>,
+        // SBP-M1 review: seems unnecessary, use DispatchResult or return actual weight
     ) -> DispatchResultWithPostInfo {
         // Converts amount to shares of the correct pool
+        // SBP-M1 review: duplicate code fragment, refactor into reusable function
         let shares = match (amount, pool) {
             (SharesOrStake::Shares(s), _) => s,
             (SharesOrStake::Stake(s), TargetPool::AutoCompounding) => {
@@ -195,6 +207,7 @@ impl<T: Config> Calls<T> {
         Candidates::<T>::sub_total_stake(&candidate, removed_stake)?;
 
         // We proceed with the leaving, which create Leaving shares and request,
+        // SBP-M1 review: 'conversion'
         // and release the dust from the convertion to Leaving shares.
         let (leaving_stake, dust) = Self::leave_stake(&candidate, &delegator, removed_stake)?;
 
@@ -211,8 +224,10 @@ impl<T: Config> Calls<T> {
         Ok(().into())
     }
 
+    // SBP-M1 review: reduce visibility to crate
     pub fn execute_pending_operations(
         operations: Vec<PendingOperationQueryOf<T>>,
+        // SBP-M1 review: seems unnecessary, use DispatchResult or return actual weight
     ) -> DispatchResultWithPostInfo {
         for (index, query) in operations.into_iter().enumerate() {
             // We deconstruct the query and find the balance associated with it.
@@ -277,6 +292,7 @@ impl<T: Config> Calls<T> {
         delegator: Delegator<T>,
         pool: TargetPool,
         joining_shares: Shares<T::Balance>,
+        // SBP-M1 review: seems unnecessary, use DispatchResult or return actual weight
     ) -> DispatchResultWithPostInfo {
         // Convert joining shares into stake.
         let stake = pools::Joining::<T>::sub_shares(&candidate, &delegator, joining_shares)?;
@@ -300,8 +316,10 @@ impl<T: Config> Calls<T> {
             }
         };
 
+        // SBP-M1 review: should this case emit an event?
         // If stake doesn't allow to get at least one share we release all the funds.
         if shares.0.is_zero() {
+            // SBP-M1 review: no unit test coverage
             T::Currency::release(
                 &T::CurrencyHoldReason::get(),
                 &delegator,
@@ -315,6 +333,7 @@ impl<T: Config> Calls<T> {
 
         // We create the new shares. It returns the actual amount of stake those shares
         // represents (due to rounding).
+        // SBP-M1 review: duplicate code fragment, consider refactoring into function
         let actually_staked = match pool {
             TargetPool::AutoCompounding => {
                 let stake =
@@ -330,10 +349,12 @@ impl<T: Config> Calls<T> {
         };
 
         // We release currency that couldn't be converted to shares due to rounding.
+        // SBP-M1 review: 'slightly'
         // This thus can reduce slighly the total stake of the candidate.
         let release = stake
             .0
             .err_sub(&actually_staked.0)
+            // SBP-M1 review: no unit test coverage
             .map_err(|_| Error::<T>::MathUnderflow)?;
         T::Currency::release(
             &T::CurrencyHoldReason::get(),
@@ -365,6 +386,7 @@ impl<T: Config> Calls<T> {
         Pallet::<T>::deposit_event(Event::<T>::ExecutedDelegate {
             candidate,
             delegator,
+            // SBP-M1 review: use shorthand initializer
             pool: pool,
             staked: actually_staked.0,
             released: release,
@@ -376,7 +398,9 @@ impl<T: Config> Calls<T> {
     fn execute_leaving(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
+        // SBP-M1 review: 'leaving_shares'
         leavinig_shares: Shares<T::Balance>,
+        // SBP-M1 review: seems unnecessary, use DispatchResult or return actual weight
     ) -> DispatchResultWithPostInfo {
         // Convert leaving shares into stake.
         let stake = pools::Leaving::<T>::sub_shares(&candidate, &delegator, leavinig_shares)?;
@@ -402,8 +426,10 @@ impl<T: Config> Calls<T> {
         Ok(().into())
     }
 
+    // SBP-M1 review: reduce visibility to crate
     pub fn claim_manual_rewards(
         pairs: &[(Candidate<T>, Delegator<T>)],
+        // SBP-M1 review: seems unnecessary, use DispatchResult or return actual weight
     ) -> DispatchResultWithPostInfo {
         for (candidate, delegator) in pairs {
             let Stake(rewards) = pools::ManualRewards::<T>::claim_rewards(candidate, delegator)?;
@@ -429,6 +455,8 @@ impl<T: Config> Calls<T> {
         Ok(().into())
     }
 
+    // SBP-M1 review: reduce visibility to crate
+    // SBP-M1 review: seems unnecessary, use DispatchResult or return actual weight
     pub fn update_candidate_position(candidates: &[Candidate<T>]) -> DispatchResultWithPostInfo {
         for candidate in candidates {
             let stake = Candidates::<T>::total_stake(candidate);
@@ -438,13 +466,16 @@ impl<T: Config> Calls<T> {
         Ok(().into())
     }
 
+    // SBP-M1 review: reduce visibility to crate
     pub fn swap_pool(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
         source_pool: TargetPool,
         amount: SharesOrStake<T::Balance>,
+        // SBP-M1 review: seems unnecessary, use DispatchResult or return actual weight
     ) -> DispatchResultWithPostInfo {
         // Converts amount to shares of the correct pool
+        // SBP-M1 review: duplicate code fragment, consider refactoring into reusable function
         let old_shares = match (amount, source_pool) {
             (SharesOrStake::Shares(s), _) => s,
             (SharesOrStake::Stake(s), TargetPool::AutoCompounding) => {
@@ -477,6 +508,7 @@ impl<T: Config> Calls<T> {
 
         // We create new shares in the new pool. It returns the actual amount of stake those shares
         // represents (due to rounding).
+        // SBP-M1 review: duplicate code fragment, consider refactoring into reusable function
         let actually_staked = match source_pool {
             TargetPool::ManualRewards => {
                 let stake =
@@ -495,12 +527,14 @@ impl<T: Config> Calls<T> {
         let stake_decrease = removed_stake
             .0
             .err_sub(&actually_staked.0)
+            // SBP-M1 review: no unit test coverage
             .map_err(Error::<T>::from)?;
 
         // The left-over no longer contribute to the election of the candidate.
         Candidates::<T>::sub_total_stake(&candidate, Stake(stake_decrease))?;
 
         // We proceed with the leaving, which create Leaving shares and request,
+        // SBP-M1 review: typo 'conversion'
         // and release the dust from the convertion to Leaving shares.
         let (leaving_stake, dust) = if stake_decrease.is_zero() {
             (Stake(0u32.into()), Stake(0u32.into()))
@@ -525,6 +559,7 @@ impl<T: Config> Calls<T> {
         Ok(().into())
     }
 
+    // SBP-M1 review: typo 'Destroy'
     /// Destory ManualReward or AutoCompounding shares while performing hold rebalancing if
     /// necessary.
     fn destroy_shares(
@@ -532,6 +567,7 @@ impl<T: Config> Calls<T> {
         delegator: &Delegator<T>,
         pool: TargetPool,
         shares: Shares<T::Balance>,
+        // SBP-M1 review: DispatchErrorWithPostInfo seems unnecessary as post dispatch info not used, use DispatchError
     ) -> Result<Stake<T::Balance>, DispatchErrorWithPostInfo> {
         match pool {
             TargetPool::AutoCompounding => {
@@ -572,6 +608,7 @@ impl<T: Config> Calls<T> {
         }
     }
 
+    // SBP-M1 review: typo 'procedure'
     /// Perform the leaving proceduce with provided stake, which will create
     /// Leaving shares and request, and release the rounding dust. It DOES NOT
     /// destroy shares in other pools.
@@ -581,6 +618,7 @@ impl<T: Config> Calls<T> {
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
         stake: Stake<T::Balance>,
+        // SBP-M1 review: DispatchErrorWithPostInfo seems unnecessary as post dispatch info not used, use DispatchError
     ) -> Result<(Stake<T::Balance>, Stake<T::Balance>), DispatchErrorWithPostInfo> {
         // Create leaving shares.
         // As with all pools there will be some rounding error, this amount
@@ -600,6 +638,7 @@ impl<T: Config> Calls<T> {
         let operation = PendingOperations::<T>::get(&delegator, &operation_key);
         let operation = operation
             .err_add(&leaving_shares.0)
+            // SBP-M1 review: no unit test coverage
             .map_err(|_| Error::<T>::MathOverflow)?;
         PendingOperations::<T>::set(&delegator, &operation_key, operation);
 
@@ -607,6 +646,7 @@ impl<T: Config> Calls<T> {
         let dust = stake
             .0
             .err_sub(&leaving_stake.0)
+            // SBP-M1 review: no unit test coverage
             .map_err(Error::<T>::from)?;
 
         if !dust.is_zero() {

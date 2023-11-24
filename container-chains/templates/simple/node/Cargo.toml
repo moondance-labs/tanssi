@@ -18,8 +18,10 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
+# SBP-M1 review: suggest a dependency/package alias, simply using 'runtime' to make template diffing easier
 container-chain-template-simple-runtime = { workspace = true, features = [ "std" ] }
 tc-consensus = { workspace = true }
+# SBP-M1 review: missing manual-xcm-rpc as in frontier template
 
 # Nimbus
 nimbus-consensus = { workspace = true }
@@ -28,6 +30,7 @@ nimbus-primitives = { workspace = true, features = [ "std" ] }
 # Substrate
 frame-benchmarking = { workspace = true }
 frame-benchmarking-cli = { workspace = true }
+# SBP-M1 review: missing frame-system-rpc-runtime-api, pallet-transaction-payment-rpc, pallet-transaction-payment-rpc-runtime-api in Frontier, if required
 sc-basic-authorship = { workspace = true }
 sc-chain-spec = { workspace = true }
 sc-cli = { workspace = true }
@@ -79,6 +82,7 @@ cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
+# SBP-M1 review: add line break
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
 

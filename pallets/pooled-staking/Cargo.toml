@@ -5,6 +5,7 @@ description = "A staking pallet implemented using shares in pools"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
+# SBP-M1 review: consider adding missing repository, readme, keywords, categories
 
 [package.metadata.docs.rs]
 targets = [ "x86_64-unknown-linux-gnu" ]

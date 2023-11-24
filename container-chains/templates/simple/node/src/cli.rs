@@ -64,6 +64,8 @@ pub enum Subcommand {
     TryRuntime,
 }
 
+// SBP-M1 review: missing RunCmd as defined in Frontier template. Consider if any args should be included here
+
 #[derive(Debug, clap::Parser)]
 #[command(
     propagate_version = true,
@@ -150,3 +152,5 @@ impl CliConfiguration for BuildSpecCmd {
         Some(&self.base.node_key_params)
     }
 }
+
+// SBP-M1 review: missing RpcConfig as defined in Frontier template. Consider if any args should be included here

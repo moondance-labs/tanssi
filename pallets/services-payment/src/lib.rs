@@ -76,9 +76,11 @@ pub mod pallet {
         /// The maximum number of credits that can be accumulated
         type MaxCreditsStored: Get<BlockNumberFor<Self>>;
 
+        // SBP-M1 review: not in review scope, add doc comment
         type WeightInfo: WeightInfo;
     }
 
+    // SBP-M1 review: add doc comments
     #[pallet::error]
     pub enum Error<T> {
         InsufficientFundsToPurchaseCredits,
@@ -89,6 +91,7 @@ pub mod pallet {
     #[pallet::pallet]
     pub struct Pallet<T>(PhantomData<T>);
 
+    // SBP-M1 review: add doc comments
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -111,6 +114,7 @@ pub mod pallet {
 
     #[pallet::storage]
     #[pallet::getter(fn collator_commission)]
+    // SBP-M1 review: reduce visibility
     pub type BlockProductionCredits<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, BlockNumberFor<T>, OptionQuery>;
 
@@ -119,6 +123,7 @@ pub mod pallet {
     where
         BalanceOf<T>: From<BlockNumberFor<T>>,
     {
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::purchase_credits())]
         pub fn purchase_credits(
@@ -126,6 +131,7 @@ pub mod pallet {
             para_id: ParaId,
             credits: BlockNumberFor<T>,
             max_price_per_credit: Option<BalanceOf<T>>,
+            // SBP-M1 review: use DispatchResult
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
 
@@ -175,7 +181,9 @@ pub mod pallet {
             origin: OriginFor<T>,
             para_id: ParaId,
             credits: BlockNumberFor<T>,
+            // SBP-M1 review: use DispatchResult
         ) -> DispatchResultWithPostInfo {
+            // SBP-M1 review: use custom origin
             ensure_root(origin)?;
 
             if credits.is_zero() {
@@ -258,6 +266,7 @@ impl<T: Config> OnChargeForBlockCredit<T> for ChargeForBlockCredit<T> {
         _para_id: &ParaId,
         _credits: BlockNumberFor<T>,
         fee: BalanceOf<T>,
+        // SBP-M1 review: unnecessary prefix
     ) -> Result<(), crate::Error<T>> {
         use frame_support::traits::tokens::imbalance::Imbalance;
 
@@ -270,6 +279,7 @@ impl<T: Config> OnChargeForBlockCredit<T> for ChargeForBlockCredit<T> {
         let imbalance = result.map_err(|_| crate::Error::InsufficientFundsToPurchaseCredits)?;
 
         if imbalance.peek() != fee {
+            // SBP-M1 review: runtime should not panic
             panic!("withdrawn balance incorrect");
         }
 

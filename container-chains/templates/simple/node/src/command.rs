@@ -37,6 +37,7 @@ use {
 };
 
 #[cfg(feature = "try-runtime")]
+// SBP-M1 review: does not use the same TemplateRuntimeExecutor in Frontier template?
 use crate::service::ParachainNativeExecutor;
 #[cfg(feature = "try-runtime")]
 use try_runtime_cli::block_building_info::substrate_info;
@@ -285,6 +286,7 @@ pub fn run() -> Result<()> {
             let info_provider = substrate_info(SLOT_DURATION);
             runner.async_run(|_| {
                 Ok((
+                    // SBP-M1 review: does not use the same TemplateRuntimeExecutor in Frontier template?
                     cmd.run::<Block, HostFunctionsOf<ParachainNativeExecutor>, _>(Some(
                         info_provider,
                     )),
@@ -316,9 +318,14 @@ pub fn run() -> Result<()> {
 					[RelayChainCli::executable_name()].iter().chain(cli.relay_chain_args.iter()),
 				);
 
-				let id = ParaId::from(para_id);
+                // SBP-M1 review: does not set up dev service as in Frontier template?
 
-				let parachain_account =
+
+                let id = ParaId::from(para_id);
+
+                // SBP-M1 review: does not have dev node support as in Frontier template?
+
+                let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
                 // We log both genesis states for reference, as fetching it from runtime would take significant time
@@ -353,6 +360,7 @@ pub fn run() -> Result<()> {
 					polkadot_config,
 					collator_options,
 					id,
+                    // SBP-M1 review: missing rpc_config as in Frontier template, if required
 					hwbench,
 				)
 				.await

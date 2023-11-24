@@ -34,6 +34,7 @@ use serde::{Deserialize, Serialize};
 /// Eligible candidate with its stake.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+// SBP-M1 review: add doc comments for public fields
 pub struct EligibleCandidate<C, S> {
     pub candidate: C,
     pub stake: S,
@@ -54,13 +55,16 @@ impl<C: Ord, S: Ord> PartialOrd for EligibleCandidate<C, S> {
     }
 }
 
+// SBP-M1 review: reduce visibility to crate
 pub struct Candidates<T>(PhantomData<T>);
 
 impl<T: Config> Candidates<T> {
+    // SBP-M1 review: reduce visibility to crate
     pub fn total_stake(candidate: &Candidate<T>) -> Stake<T::Balance> {
         Stake(Pools::<T>::get(candidate, &PoolsKey::CandidateTotalStake))
     }
 
+    // SBP-M1 review: reduce visibility to crate
     pub fn add_total_stake(
         candidate: &Candidate<T>,
         stake: &Stake<T::Balance>,
@@ -76,11 +80,13 @@ impl<T: Config> Candidates<T> {
             stake_diff: stake.0,
         });
 
+        // SBP-M1 review: unnecessary Ok(()) below, return result directly - i.e. remove ?;
         Self::update_total_stake(candidate, Stake(new_stake))?;
 
         Ok(())
     }
 
+    // SBP-M1 review: reduce visibility to crate
     pub fn sub_total_stake(
         candidate: &Candidate<T>,
         stake: Stake<T::Balance>,
@@ -96,11 +102,13 @@ impl<T: Config> Candidates<T> {
             stake_diff: stake.0,
         });
 
+        // SBP-M1 review: unnecessary Ok(()) below, return result directly - i.e. remove ?;
         Self::update_total_stake(candidate, Stake(new_stake))?;
 
         Ok(())
     }
 
+    // SBP-M1 review: reduce visibility to crate
     pub fn update_total_stake(
         candidate: &Candidate<T>,
         new_stake: Stake<T::Balance>,

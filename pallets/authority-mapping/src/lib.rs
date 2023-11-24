@@ -44,6 +44,7 @@ pub mod pallet {
     use super::*;
 
     #[pallet::pallet]
+    // SBP-M1 review: pallet not in review scope, but prefer bounded storage
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
@@ -74,6 +75,8 @@ pub mod pallet {
     >;
 
     impl<T: Config> Pallet<T> {
+        // SBP-M1 review: consider benchmarking in anticipation of https://github.com/paritytech/polkadot-sdk/issues/184
+        // SBP-M1 review: consider exposing via trait
         pub fn initializer_on_new_session(
             session_index: &T::SessionIndex,
             authorities: &[(T::AccountId, T::AuthorityId)],

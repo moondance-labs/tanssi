@@ -30,6 +30,7 @@ use {
 };
 
 #[test]
+// SBP-M1 review: typo 'assets'
 fn trapping_asserts_works_with_polkadot_xcm() {
     // XcmPallet send arguments
     let sudo_origin = <Westend as Chain>::RuntimeOrigin::root();

@@ -56,14 +56,19 @@ pub mod pallet {
 
     /// Inflation rewards pallet.
     #[pallet::pallet]
+    // SBP-M1 review: prefer bounded storage
     #[pallet::without_storage_info]
+    // SBP-M1 review: unnecessary path prefix
     pub struct Pallet<T>(core::marker::PhantomData<T>);
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        // SBP-M1 review: too many lines, consider refactor
         fn on_initialize(_: BlockNumberFor<T>) -> Weight {
+            // SBP-M1 review: prefer benchmarking to include proof size
             let mut weight = T::DbWeight::get().reads(1);
 
+            // SBP-M1 review: typo 'undistributed'
             // Collect indistributed rewards, if any
             // Any parachain we have not rewarded is handled by onUnbalanced
             let not_distributed_rewards =
@@ -85,6 +90,7 @@ pub mod pallet {
                 };
 
             // Get the number of chains at this block (tanssi + container chain blocks)
+            // SBP-M1 review: prefer safe math
             weight += T::DbWeight::get().reads_writes(1, 1);
             let registered_para_ids = T::ContainerChains::current_container_chains();
             let number_of_chains: BalanceOf<T> =
@@ -92,14 +98,19 @@ pub mod pallet {
 
             // Issue new supply
             let new_supply =
+                // SBP-M1 review: prefer safe math
                 T::Currency::issue(T::InflationRate::get() * T::Currency::total_issuance());
 
             // Split staking reward portion
+            // SBP-M1 review: prefer safe math
             let total_rewards = T::RewardsPortion::get() * new_supply.peek();
+            // SBP-M1 review: typo 'remainder'?
             let (rewards_credit, reminder_credit) = new_supply.split(total_rewards);
 
+            // SBP-M1 review: prefer safe math
             let rewards_per_chain: BalanceOf<T> = rewards_credit.peek() / number_of_chains;
             let (mut total_reminder, staking_rewards) = rewards_credit.split_merge(
+                // SBP-M1 review: prefer safe math
                 total_rewards % number_of_chains,
                 (reminder_credit, CreditOf::<T>::zero()),
             );
@@ -108,6 +119,7 @@ pub mod pallet {
             if let Err(undistributed_rewards) =
                 T::Currency::resolve(&T::PendingRewardsAccount::get(), staking_rewards)
             {
+                // SBP-M1 review: no unit test coverage
                 total_reminder = total_reminder.merge(undistributed_rewards);
             }
 
@@ -120,12 +132,14 @@ pub mod pallet {
             // Let the runtime handle the non-staking part
             T::OnUnbalanced::on_unbalanced(not_distributed_rewards.merge(total_reminder));
 
+            // SBP-M1 review: prefer safe math
             weight += Self::reward_orchestrator_author();
 
             weight
         }
     }
 
+    // SBP-M1 review: add doc comments for all associated types
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// Overarching event type.
@@ -156,6 +170,7 @@ pub mod pallet {
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    // SBP-M1 review: add doc comments for named fields, no unit test coverage
     pub enum Event<T: Config> {
         /// Rewarding orchestrator author
         RewardedOrchestrator {
@@ -174,7 +189,10 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn container_chains_to_reward)]
     pub(super) type ChainsToReward<T: Config> =
+        // SBP-M1 review: OptionQuery is default value and can be omitted
         StorageValue<_, ChainsToRewardValue<T>, OptionQuery>;
+
+    // SBP-M1 review: unnecessary prefix
     #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
     #[scale_info(skip_type_params(T))]
     pub struct ChainsToRewardValue<T: Config> {
@@ -186,11 +204,14 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        // SBP-M1 review: too many lines, consider refactor
         fn reward_orchestrator_author() -> Weight {
+            // SBP-M1 review: prefer benchmark to account for proof size
             let mut total_weight = T::DbWeight::get().reads(1);
             let orchestrator_author = T::GetSelfChainBlockAuthor::get();
 
             if let Some(chains_to_reward) = ChainsToReward::<T>::get() {
+                // SBP-M1 review: prefer safe math
                 total_weight += T::DbWeight::get().reads(1);
                 match T::StakingRewardsDistributor::distribute_rewards(
                     orchestrator_author.clone(),
@@ -210,14 +231,17 @@ pub mod pallet {
                         });
 
                         if let Some(weight) = actual_weight {
+                            // SBP-M1 review: prefer safe math, no unit test coverage
                             total_weight += weight
                         }
                     }
+                    // SBP-M1 review: no unit test coverage
                     Err(e) => {
                         log::debug!("Fail to distribute rewards: {:?}", e)
                     }
                 }
             } else {
+                // SBP-M1 review: runtime should not panic, no unit test coverage
                 panic!("ChainsToReward not filled");
             }
 
@@ -232,11 +256,13 @@ pub mod pallet {
 // Any additional check should be done in the calling function
 // TODO: consider passing a vector here
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
+    // SBP-M1 review: too many lines, consider refactoring
     fn on_container_author_noted(
         author: &T::AccountId,
         _block_number: BlockNumber,
         para_id: ParaId,
     ) -> Weight {
+        // SBP-M1 review: prefer benchmark
         let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
         // We take chains to reward, to see what containers are left to reward
         if let Some(mut container_chains_to_reward) = ChainsToReward::<T>::get() {
@@ -261,10 +287,12 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                             para_id,
                         });
                         if let Some(weight) = actual_weight {
+                            // SBP-M1 review: prefer safe math, no unit test coverage
                             total_weight += weight
                         }
                     }
                     Err(e) => {
+                        // SBP-M1 review: no unit test coverage
                         log::debug!("Fail to distribute rewards: {:?}", e)
                     }
                 }
@@ -272,6 +300,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                 // this makes sure we dont reward it twice in the same block
                 container_chains_to_reward.para_ids.remove(index);
 
+                // SBP-M1 review: prefer safe math
                 total_weight += T::DbWeight::get().writes(1);
                 // Keep track of chains to reward
                 ChainsToReward::<T>::put(container_chains_to_reward);

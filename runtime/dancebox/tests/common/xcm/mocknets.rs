@@ -38,6 +38,7 @@ decl_test_relay_chains! {
         runtime = westend_runtime,
         core = {
             MessageProcessor: DefaultMessageProcessor<Westend>,
+            // SBP-M1 review: assess todo comment
             SovereignAccountOf: westend_runtime::xcm_config::LocationConverter, //TODO: rename to SovereignAccountOf,
         },
         pallets = {

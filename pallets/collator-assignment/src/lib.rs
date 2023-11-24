@@ -75,10 +75,12 @@ pub mod pallet {
     use super::*;
 
     #[pallet::pallet]
+    // SBP-M1 review: prefer bounded storage
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
+    // SBP-M1 review: add missing doc comments for all associated types
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// The overarching event type.
@@ -88,6 +90,7 @@ pub mod pallet {
             + Copy
             + AtLeast32BitUnsigned
             + Debug;
+        // SBP-M1 review: invalid comment
         // `SESSION_DELAY` is used to delay any changes to Paras registration or configurations.
         // Wait until the session index is 2 larger then the current index to apply any changes,
         // which guarantees that at least one full session has passed before any changes are applied.
@@ -102,6 +105,7 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
     }
 
+    // SBP-M1 review: add doc comments for variants and fields
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -112,11 +116,15 @@ pub mod pallet {
         },
     }
 
+    // SBP-M1 review: add doc comment
     #[pallet::storage]
+    // SBP-M1 review: consider renaming to assigned_collators
     #[pallet::getter(fn collator_container_chain)]
+    // SBP-M1 review: consider renaming to AssignedCollators as value stores both orchestrator and container chain assignments
     pub(crate) type CollatorContainerChain<T: Config> =
         StorageValue<_, AssignedCollators<T::AccountId>, ValueQuery>;
 
+    // SBP-M1 review: invalid doc comment
     /// Pending configuration changes.
     ///
     /// This is a list of configuration changes, each with a session index at which it should
@@ -125,11 +133,14 @@ pub mod pallet {
     /// The list is sorted ascending by session index. Also, this list can only contain at most
     /// 2 items: for the next session and for the `scheduled_session`.
     #[pallet::storage]
+    // SBP-M1 review: consider renaming to pending_collators
     #[pallet::getter(fn pending_collator_container_chain)]
+    // SBP-M1 review: consider renaming to PendingCollators as value stores both orchestrator and container chain assignments
     pub(crate) type PendingCollatorContainerChain<T: Config> =
         StorageValue<_, Option<AssignedCollators<T::AccountId>>, ValueQuery>;
 
     /// Randomness from previous block. Used to shuffle collators on session change.
+    // SBP-M1 review: randomness removed within initializer_on_new_session rather than on_initialize
     /// Should only be set on the last block of each session and should be killed on the on_initialize of the next block.
     /// The default value of [0; 32] disables randomness in the pallet.
     #[pallet::storage]
@@ -141,18 +152,21 @@ pub mod pallet {
 
     /// A struct that holds the assignment that is active after the session change and optionally
     /// the assignment that becomes active after the next session change.
+    // SBP-M1 review: prefer SessionChangeOutcome<AccountId> as only a single type used
     pub struct SessionChangeOutcome<T: Config> {
         /// New active assignment.
         pub active_assignment: AssignedCollators<T::AccountId>,
         /// Next session active assignment.
         pub next_assignment: AssignedCollators<T::AccountId>,
         /// Total number of registered parachains before filtering them out, used as a weight hint
+        // SBP-M1 review: consider u16
         pub num_total_registered_paras: u32,
     }
 
     impl<T: Config> Pallet<T> {
         /// Assign new collators
         /// collators should be queued collators
+        // SBP-M1 review: reduce visibility, too many lines, consider refactoring
         pub fn assign_collators(
             current_session_index: &T::SessionIndex,
             random_seed: [u8; 32],
@@ -164,6 +178,7 @@ pub mod pallet {
             // We get the containerChains that we will have at the target session
             let mut container_chain_ids =
                 T::ContainerChains::session_container_chains(target_session_index);
+            // SBP-M1 review: cast may truncate
             let num_total_registered_paras = container_chain_ids.len() as u32;
             // Remove the containerChains that do not have enough credits for block production
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
@@ -277,6 +292,7 @@ pub mod pallet {
             num_each_container_chain: usize,
         ) -> AssignedCollators<T::AccountId> {
             // This is just the "always_keep_old" algorithm but with an empty "old"
+            // SBP-M1 review: consider AssignedCollators::default() for clarity
             let old_assigned = Default::default();
 
             Self::assign_collators_always_keep_old(
@@ -296,17 +312,22 @@ pub mod pallet {
         /// `container_chain_ids` should be shuffled or at least rotated on every session to ensure
         /// a fair distribution, because the order of that list affects container chain priority:
         /// the first container chain on that list will be the first one to get new collators.
+        // SBP-M1 review: too many lines, consider refactor
         fn assign_collators_always_keep_old(
+            // SBP-M1 review: prefer bounded
             collators: Vec<T::AccountId>,
             container_chain_ids: &[ParaId],
             min_num_orchestrator_chain: usize,
             max_num_orchestrator_chain: usize,
             num_each_container_chain: usize,
+            // SBP-M1 review: consider 'existing' rather than old
             old_assigned: AssignedCollators<T::AccountId>,
         ) -> AssignedCollators<T::AccountId> {
+            // SBP-M1 review: address todo
             // TODO: the performance of this function is sad, could be improved by having sets of
             // old_collators and new_collators instead of doing array.contains() every time.
             let mut new_assigned = old_assigned;
+            // SBP-M1 review: consider refactoring below calls into a single method
             new_assigned.remove_collators_not_in_list(&collators);
             new_assigned.remove_container_chains_not_in_list(container_chain_ids);
             let extra_orchestrator_collators =
@@ -318,6 +339,7 @@ pub mod pallet {
             // This is used to keep track of which collators are old and which ones are new, to keep
             // the old collators on the same chain if possible.
             let mut new_collators = vec![];
+            // SBP-M1 review: 'unbounded loop'
             for c in collators {
                 if !new_assigned.find_collator(&c) && !extra_orchestrator_collators.contains(&c) {
                     new_collators.push(c);
@@ -336,6 +358,7 @@ pub mod pallet {
                 min_num_orchestrator_chain,
                 &mut invulnerables_for_orchestrator.into_iter(),
             );
+            // SBP-M1 review: typo 'not'
             // If there are no enough invulnerables, or if the invulnerables are currently assigned to other chains,
             // fill orchestrator chain with regular collators
             let mut new_collators = new_collators.into_iter();
@@ -389,12 +412,15 @@ pub mod pallet {
             new_assigned
         }
 
+        // SBP-M1 review: consider converting to doc comments
         // Returns the assigned collators as read from storage.
         // If there is any item in PendingCollatorContainerChain, returns that element.
         // Otherwise, reads and returns the current CollatorContainerChain
         fn read_assigned_collators() -> AssignedCollators<T::AccountId> {
+            // SBP-M1 review: consider using getter function
             let mut pending_collator_list = PendingCollatorContainerChain::<T>::get();
 
+            // SBP-M1 review: consider .map_or_else()
             if let Some(assigned_collators) = pending_collator_list.take() {
                 assigned_collators
             } else {
@@ -403,6 +429,7 @@ pub mod pallet {
             }
         }
 
+        // SBP-M1 review: consider exposing via trait
         pub fn initializer_on_new_session(
             session_index: &T::SessionIndex,
             collators: Vec<T::AccountId>,
@@ -412,7 +439,9 @@ pub mod pallet {
             let assigned_collators = Self::assign_collators(session_index, random_seed, collators);
             let num_total_registered_paras = assigned_collators.num_total_registered_paras;
 
+            // SBP-M1 review: consider side effect on new_session benchmark (System::BlockWeight) vs setting aggregate weight once higher up in call stack (i.e apply_new_session(..) in dancebox runtime)
             frame_system::Pallet::<T>::register_extra_weight_unchecked(
+                // SBP-M1 review: possible truncation
                 T::WeightInfo::new_session(num_collators as u32, num_total_registered_paras),
                 DispatchClass::Mandatory,
             );
@@ -422,8 +451,11 @@ pub mod pallet {
     }
 
     impl<T: Config> GetContainerChainAuthor<T::AccountId> for Pallet<T> {
+        // SBP-M1 review: address todo
         // TODO: pending collator container chain if the block is a session change!
+        // SBP-M1 review: no unit test coverage
         fn author_for_slot(slot: Slot, para_id: ParaId) -> Option<T::AccountId> {
+            // SBP-M1 review: consider using Self
             let assigned_collators = Pallet::<T>::collator_container_chain();
             let collators = if para_id == T::SelfParaId::get() {
                 Some(&assigned_collators.orchestrator_chain)
@@ -435,7 +467,9 @@ pub mod pallet {
                 // Avoid division by zero below
                 return None;
             }
+            // SBP-M1 review: consider .checked_rem()
             let author_index = u64::from(slot) % collators.len() as u64;
+            // SBP-M1 review: cast may truncate
             collators.get(author_index as usize).cloned()
         }
 
@@ -454,6 +488,9 @@ pub mod pallet {
 
             // Account reads and writes for on_finalize
             if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
+                // SBP-M1 review: prefer benchmarked weight function as type configured by runtime may differ from static weight defined below. Also excludes proof size.
+                // SBP-M1 review: doesnt accurately account for BabeCurrentBlockRandomnessGetter::get_block_randomness() reads in on_finalize()
+                // SBP-M1 review: prefer safe math
                 weight += T::DbWeight::get().reads_writes(1, 1);
             }
 
@@ -481,13 +518,17 @@ where
 
         if period == 0 {
             // A period of 0 disables rotation
+            // SBP-M1 review: no unit test coverage
             false
         } else {
+            // SBP-M1 review: consider .checked_rem()
+            // SBP-M1 review: reuse `period`
             session_index % Period::get() == 0
         }
     }
 }
 
+// SBP-M1 review: add doc comments
 pub trait GetRandomnessForNextBlock<BlockNumber> {
     fn should_end_session(block_number: BlockNumber) -> bool;
     fn get_randomness() -> [u8; 32];

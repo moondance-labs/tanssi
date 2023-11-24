@@ -48,6 +48,7 @@ fn invulnerables<T: Config + frame_system::Config>(count: u32, seed: u32) -> Vec
 }
 
 fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
+    // SBP-M1 review: consider frame_system::Pallet::<T>::assert_last_event(generic_event.into());
     let events = frame_system::Pallet::<T>::events();
     let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
     // compare to the last event record
@@ -60,6 +61,7 @@ mod benchmarks {
     use super::*;
 
     // worst case for new session.
+    // SBP-M1 review: address todo
     // TODO: this should be parametric over the config values:
     // * min_collators_for_orchestrator
     // * max_collators_for_orchestrator
@@ -76,6 +78,7 @@ mod benchmarks {
 
         // Assign random collators to test worst case: when collators need to be checked against existing collators
         // In this case all of the old collators don't exist anymore
+        // SBP-M1 review: consider linking these values to some max values sourced from config rather than static values here
         let old_container_chains: Vec<(ParaId, _)> = (0..20)
             .map(|para_id| (para_id.into(), invulnerables::<T>(10, SEED + 2 + para_id)))
             .collect();

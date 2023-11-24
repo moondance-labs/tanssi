@@ -6,6 +6,7 @@ description = "container-chain xcm primitives"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
+# SBP-M1 review: add line break and remove excess line breaks below
 [dependencies]
 
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }

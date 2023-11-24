@@ -112,8 +112,10 @@ struct DummyProposer(u64, Arc<TestClient>);
 
 // This is going to be our block verifier
 // It will mimic what the Nimbus verifier does, but again, Nimbus verifier is non-public
+// SBP-M1 review: typo 'subtract'
 // It should substract the seal from logs and put it in post_logs
 #[derive(Clone)]
+// SBP-M1 review: typo 'Verifier'
 pub struct SealExtractorVerfier {
     finalized: bool,
 }
@@ -303,6 +305,7 @@ where
     Block: BlockT,
     SC: SelectChain<Block>,
     IDP: CreateInherentDataProviders<Block, ()> + 'static,
+    // SBP-M1 review: unnecessary path prefix
     IDP::InherentDataProviders: crate::InherentDataProviderExt,
 {
     /// Returns a future that fires when the next slot starts.
@@ -579,6 +582,7 @@ async fn current_node_authority_should_claim_slot() {
     let environ = DummyFactory(client.clone());
 
     let mut worker =
+        // SBP-M1 review: unnecessary path prefix
         build_orchestrator_aura_worker::<nimbus_primitives::NimbusPair, _, _, _, _, _, _, _, _>(
             BuildOrchestratorAuraWorkerParams {
                 client: client.clone(),
@@ -655,6 +659,7 @@ async fn on_slot_returns_correct_block() {
     let environ = DummyFactory(client.clone());
 
     let mut worker =
+        // SBP-M1 review: unnecessary path prefix
         build_orchestrator_aura_worker::<nimbus_primitives::NimbusPair, _, _, _, _, _, _, _, _>(
             BuildOrchestratorAuraWorkerParams {
                 client: client.clone(),
@@ -712,6 +717,7 @@ async fn authorities_runtime_api_tests() {
 
     let default_hash = Default::default();
 
+    // SBP-M1 review: unnecessary path prefix
     let authorities = crate::authorities::<_, _, nimbus_primitives::NimbusPair>(
         &environ,
         &default_hash,

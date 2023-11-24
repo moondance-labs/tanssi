@@ -37,6 +37,7 @@ frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
 pallet-balances = { workspace = true, features = ["insecure_zero_ed"] }
 pallet-root-testing = { workspace = true }
+# SBP-M1 review: missing pallet-session as in Frontier template (if required)
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
@@ -77,6 +78,8 @@ cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
 
+# SBP-M1 review: missing Benchmarking section as in Simple template
+
 # Frontier
 fp-account = { workspace = true, features = ["serde"] }
 fp-evm = { workspace = true, features = ["serde"] }
@@ -91,6 +94,7 @@ pallet-evm-precompile-modexp = { workspace = true }
 pallet-evm-precompile-sha3fips = { workspace = true }
 pallet-evm-precompile-simple = { workspace = true }
 pallet-hotfix-sufficients = { workspace = true }
+# SBP-M1 review: add line break
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 

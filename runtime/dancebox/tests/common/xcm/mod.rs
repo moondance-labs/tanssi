@@ -22,6 +22,7 @@ mod transact;
 mod trap;
 
 pub use xcm_emulator::{
+    // SBP-M1 review: unused import
     assert_expected_events, bx, helpers::weight_within_threshold, Parachain as Para,
     RelayChain as Relay, TestExt,
 };

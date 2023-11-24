@@ -71,6 +71,7 @@ pub mod json;
 #[serde(bound = "")]
 pub struct ContainerChainGenesisData<MaxLengthTokenSymbol: Get<u32>> {
     pub storage: Vec<ContainerChainGenesisDataItem>,
+    // SBP-M1 review: address todo
     // TODO: make all these Vec<u8> bounded
     #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
     pub name: Vec<u8>,

@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    // SBP-M1 review: suggest a dependency/package alias, simply using 'runtime' to make template diffing easier
     container_chain_template_simple_runtime::{
         AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, Signature,
     },
@@ -40,6 +41,7 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
         .public()
 }
 
+// SBP-M1 review: typo 'Orchestrator'
 /// Orcherstrator's parachain id
 const ORCHESTRATOR: ParaId = ParaId::new(1000);
 
@@ -60,8 +62,10 @@ impl Extensions {
     }
 }
 
+// SBP-M1 review: prefer grouping of type aliases, suggest moving above
 type AccountPublic = <Signature as Verify>::Signer;
 
+// SBP-M1 review: suggest moving up under the get_from_seed function to make diffing templates easier
 /// Helper function to generate an account ID from seed
 pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
 where
@@ -76,6 +80,7 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
     properties.insert("tokenSymbol".into(), "UNIT".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
+    // SBP-M1 review: can the omission of the property not be treated as the value being false? Feels 'dirty' using the Ethereum term in a template which has nothing to do with Ethereum. :)
     properties.insert("isEthereum".into(), false.into());
 
     let mut default_funded_accounts = pre_funded_accounts();
@@ -120,6 +125,7 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     properties.insert("tokenSymbol".into(), "UNIT".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
+    // SBP-M1 review: as above, can the omission of the property not be treated as the value being false?
     properties.insert("isEthereum".into(), false.into());
     let protocol_id = Some(format!("container-chain-{}", para_id));
 

@@ -23,6 +23,7 @@
 use scale_info::prelude::vec::Vec;
 
 sp_api::decl_runtime_apis! {
+    // SBP-M1 review: add doc comment
     pub trait CollatorAssignmentApi<AccountId, ParaId> where
         AccountId: parity_scale_codec::Codec,
         ParaId: parity_scale_codec::Codec,

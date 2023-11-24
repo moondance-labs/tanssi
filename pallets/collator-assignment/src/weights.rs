@@ -80,6 +80,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: `CollatorAssignment::CollatorContainerChain` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// The range of component `x` is `[1, 200]`.
 	/// The range of component `y` is `[1, 20]`.
+	// SBP-M1 review: consider adding a unit test to ensure resulting weight remains within block limits
 	fn new_session(x: u32, y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `766 + y * (32 ±0)`

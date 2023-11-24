@@ -24,6 +24,7 @@ tokio = { workspace = true }
 # Local
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
+# SBP-M1 review: consider feature gating so only available when running integration tests
 manual-xcm-rpc = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
 pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }

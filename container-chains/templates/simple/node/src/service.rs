@@ -1,3 +1,4 @@
+// SBP-M1 review: copyright should be top. Move this lower, inline with Frontier template to ease diffing
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 // Copyright (C) Moondance Labs Ltd.
@@ -49,6 +50,7 @@ use {
 };
 
 /// Native executor type.
+// SBP-M1 review: different executor to Frontier template, perhaps move to separate crate to standardise on a single executor?
 pub struct ParachainNativeExecutor;
 
 impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
@@ -77,6 +79,7 @@ type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, P
 /// be able to perform chain operations.
 pub fn new_partial(
     config: &Configuration,
+    // SBP-M1 review: missing dev_service parameter as in Frontier template
 ) -> Result<
     PartialComponents<
         ParachainClient,
@@ -103,6 +106,7 @@ pub fn new_partial(
         })
         .transpose()?;
 
+    // SBP-M1 review: missing 'Default runtime_cache_size' comment block as in Frontier template
     let heap_pages = config
         .default_heap_pages
         .map_or(DEFAULT_HEAP_ALLOC_STRATEGY, |h| HeapAllocStrategy::Static {
@@ -180,6 +184,7 @@ async fn start_node_impl(
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
+    // SBP-M1 review: missing rpc_config parameter in Frontier template
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(parachain_config);
@@ -309,6 +314,7 @@ pub async fn start_parachain_node(
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
+    // SBP-M1 review: missing rpc_config
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     start_node_impl(
@@ -316,7 +322,10 @@ pub async fn start_parachain_node(
         polkadot_config,
         collator_options,
         para_id,
+        // SBP-M1 review: missing rpc_config
         hwbench,
     )
     .await
 }
+
+// SBP-M1 review: missing start_dev_node(..)

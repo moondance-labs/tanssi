@@ -56,6 +56,7 @@ use {
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
 /// and creating the ChainSpec from on-chain data from the orchestrator chain.
 #[derive(Clone)]
+// SBP-M1 review: add doc comments for all public fields
 pub struct ContainerChainSpawner {
     // Start container chain params
     pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
@@ -78,6 +79,7 @@ pub struct ContainerChainSpawner {
     pub collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
 }
 
+// SBP-M1 review: add doc comments
 #[derive(Default)]
 pub struct ContainerChainSpawnerState {
     spawned_container_chains: HashMap<ParaId, ContainerChainState>,
@@ -87,6 +89,7 @@ pub struct ContainerChainSpawnerState {
     pub spawned_containers_monitor: SpawnedContainersMonitor,
 }
 
+// SBP-M1 review: add doc comment
 pub struct ContainerChainState {
     /// Async callback that enables collation on this container chain
     // We don't use it since we are always restarting container chains
@@ -116,6 +119,7 @@ pub enum CcSpawnMsg {
 
 impl ContainerChainSpawner {
     /// Try to start a new container chain. In case of error, this panics and stops the node.
+    // SBP-M1 review: no unit test coverage
     fn spawn(
         &self,
         container_chain_para_id: ParaId,
@@ -143,6 +147,7 @@ impl ContainerChainSpawner {
             // The preload must finish before calling create_configuration, so any async operations
             // need to be awaited.
 
+            // SBP-M1 review: address todo
             // TODO: the orchestrator chain node may not be fully synced yet,
             // in that case we will be reading an old state.
             let orchestrator_chain_info = orchestrator_client.chain_info();
@@ -247,9 +252,11 @@ impl ContainerChainSpawner {
                 // Need to add a sleep here to ensure that the partial components created in
                 // `open_and_maybe_delete_db` have enough time to close.
                 log::info!("Restarting container chain {}", container_chain_para_id);
+                // SBP-M1 review: use constant
                 sleep(Duration::from_secs(10)).await;
             }
 
+            // SBP-M1 review: typo 'appropriate'
             // Select appropiate sync mode. We want to use WarpSync unless the db still exists,
             // or the block number is 0 (because of a warp sync bug in that case).
             let db_still_exists = db_path.exists();
@@ -374,6 +381,7 @@ impl ContainerChainSpawner {
     }
 
     /// Stop a container chain. Prints a warning if the container chain was not running.
+    // SBP-M1 review: no unit test coverage
     fn stop(&self, container_chain_para_id: ParaId, keep_db: bool) {
         let mut state = self.state.lock().expect("poison error");
         let stop_handle = state
@@ -402,6 +410,7 @@ impl ContainerChainSpawner {
     }
 
     /// Receive and process `CcSpawnMsg`s indefinitely
+    // SBP-M1 review: no unit test coverage
     pub async fn rx_loop(self, mut rx: mpsc::UnboundedReceiver<CcSpawnMsg>) {
         while let Some(msg) = rx.recv().await {
             match msg {
@@ -418,6 +427,7 @@ impl ContainerChainSpawner {
     }
 
     /// Handle `CcSpawnMsg::UpdateAssignment`
+    // SBP-M1 review: no unit test coverage
     async fn handle_update_assignment(&self, current: Option<ParaId>, next: Option<ParaId>) {
         let HandleUpdateAssignmentResult {
             call_collate_on,
@@ -446,6 +456,7 @@ impl ContainerChainSpawner {
 
         if need_to_restart {
             // Give it some time to stop properly
+            // SBP-M1 review: use constant
             sleep(Duration::from_secs(10)).await;
         }
 
@@ -570,6 +581,7 @@ fn handle_update_assignment_state_change(
 /// Select `SyncMode` to use for a container chain.
 /// We want to use warp sync unless the db still exists, or the block number is 0 (because of a warp sync bug in that case).
 /// The reason is that warp sync doesn't work if a database already exists, it falls back to full sync instead.
+// SBP-M1 review: no unit test coverage
 fn select_sync_mode(
     db_exists: bool,
     orchestrator_client: &Arc<ParachainClient>,
@@ -614,8 +626,10 @@ fn select_sync_mode(
 /// Start a container chain using `new_partial` and check if the database is valid. If not, delete the db.
 /// The caller may need to wait a few seconds before trying to start the same container chain again, to
 /// give the database enough time to close.
+// SBP-M1 review: address todo
 // TODO: instead of waiting, we could also return Weak references to the components `temp_cli.backend`
 // and `temp_cli.client`, and then the caller would only need to check if the reference counts are 0.
+// SBP-M1 review: no unit test coverage
 fn open_and_maybe_delete_db(
     container_chain_cli_config: sc_service::Configuration,
     db_path: &Path,
@@ -638,6 +652,7 @@ fn open_and_maybe_delete_db(
             .latest_block_number(orchestrator_chain_info.best_hash, container_chain_para_id)
             .unwrap_or_default();
 
+        // SBP-M1 review: use constant
         let max_block_diff_allowed = 100u32;
         if last_container_block_from_orchestrator
             .unwrap_or(0u32)
@@ -682,10 +697,12 @@ fn open_and_maybe_delete_db(
     Ok(())
 }
 
+// SBP-M1 review: address todo
 // TODO: this leaves some empty folders behind, because it is called with db_path:
 //     Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002
 // but we want to delete everything under
 //     Collator2002-01/data/containers/chains/simple_container_2002
+// SBP-M1 review: no unit test coverage
 fn delete_container_chain_db(db_path: &Path) {
     if db_path.exists() {
         std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");

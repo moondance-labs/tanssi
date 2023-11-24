@@ -96,6 +96,8 @@ pub use {
     tp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
 };
 
+
+// SBP-M1 review: update value
 const LOG_TARGET: &str = "runtime::moonbeam";
 
 /// Block type as expected by this runtime.
@@ -122,6 +124,7 @@ pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
 /// Extrinsic type that has already been checked.
+// SBP-M1 review: seems to be unused?
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 
 /// Executive: handles dispatch to the various modules.
@@ -168,6 +171,7 @@ impl WeightToFeePolynomial for WeightToFee {
     fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
         // in Rococo, extrinsic base weight (smallest non-zero weight) is mapped to 1 MILLIUNIT:
         // in our template, we map to 1/10 of that, or 1/10 MILLIUNIT
+        // SBP-M1 review: should this not be currency::MILLIDANCE?
         let p = MILLIUNIT / 10;
         let q = 100 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
         smallvec![WeightToFeeCoefficient {
@@ -193,8 +197,10 @@ pub mod opaque {
     /// Opaque block header type.
     pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
     /// Opaque block type.
+    // SBP-M1 review: duplicate as defined above, reuse type alias
     pub type Block = generic::Block<Header, UncheckedExtrinsic>;
     /// Opaque block identifier type.
+    // SBP-M1 review: duplicate as defined above, reuse type alias
     pub type BlockId = generic::BlockId<Block>;
 }
 
@@ -234,11 +240,15 @@ pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
 // Unit = the base number of indivisible units for balances
+// SBP-M1 review: DANCE defined in currency module above
 pub const UNIT: Balance = 1_000_000_000_000;
+// SBP-M1 review: MILLIDANCE defined in currency module above
 pub const MILLIUNIT: Balance = 1_000_000_000;
+// SBP-M1 review: MICRODANCE defined in currency module above
 pub const MICROUNIT: Balance = 1_000_000;
 
 /// The existential deposit. Set to 1/10 of the Connected Relay Chain.
+// SBP-M1 review: use MILLIDANCE
 pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
 
 /// We assume that ~5% of the block weight is consumed by `on_initialize` handlers. This is
@@ -295,6 +305,7 @@ parameter_types! {
 }
 
 // Configure FRAME pallets to include in runtime.
+// SBP-M1 review: remove line break
 
 impl frame_system::Config for Runtime {
     /// The identifier used to distinguish between accounts.
@@ -341,6 +352,7 @@ impl frame_system::Config for Runtime {
     type SS58Prefix = SS58Prefix;
     /// The action to take on a Runtime Upgrade
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
+    // SBP-M1 review: unnecessary prefix
     type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
@@ -366,6 +378,7 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
             return false;
         }
 
+        // SBP-M1 review: consider checked_rem and .get()
         let author_index = (*slot as usize) % authorities.len();
         let expected_author = &authorities[author_index];
 
@@ -389,6 +402,7 @@ parameter_types! {
 #[derive(
     Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, Debug, TypeInfo,
 )]
+// SBP-M1 review: suggest moving to pallet and using `#[pallet::composite_enum]` to expose (e.g. https://github.com/paritytech/polkadot-sdk/blob/066bad6329cc327b0ff310309128832d411c4370/substrate/frame/nis/src/lib.rs#L470)
 pub enum HoldReason {
     /// The Pooled Stake holds
     PooledStake,
@@ -413,17 +427,21 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
+    // SBP-M1 review: set proper value - e.g. MILLIDANCE
     pub const TransactionByteFee: Balance = 1;
+    // SBP-M1 review: consider removing in favour of SlowAdjustingFeeUpdate
     pub const FeeMultiplier: Multiplier = Multiplier::from_u32(1);
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     // This will burn the fees
+    // SBP-M1 review: implement mechanism for handling fees (DealWithFees)
     type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
+    // SBP-M1 review: consider removing in favour of SlowAdjustingFeeUpdate
     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
 }
 
@@ -505,6 +523,7 @@ impl frame_support::traits::Randomness<Hash, BlockNumber> for BabeCurrentBlockRa
     }
 }
 
+// SBP-M1 review: consider renaming to something like 'OrchestrateNewSession'
 pub struct OwnApplySession;
 impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
@@ -526,16 +545,20 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         let assignments =
             CollatorAssignment::initializer_on_new_session(&session_index, next_collators);
 
+        // SBP-M1 review: missing comment based on convention of other steps
         let queued_id_to_nimbus_map = queued.iter().cloned().collect();
         AuthorityAssignment::initializer_on_new_session(
             &session_index,
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+
+        // SBP-M1 review: register extra aggregate weight of above calls in anticipation of https://github.com/paritytech/polkadot-sdk/issues/184
     }
 }
 
 impl pallet_initializer::Config for Runtime {
+    // SBP-M1 review: use sp_staking::SessionIndex?
     type SessionIndex = u32;
 
     /// The identifier type for an authority.
@@ -578,6 +601,7 @@ impl SessionManager<AccountId> for CollatorsFromInvulnerablesAndThenFromStaking 
             .take(max_collators as usize)
             .collect();
 
+        // SBP-M1 review: address weight as noted
         // TODO: weight?
         /*
         frame_system::Pallet::<T>::register_extra_weight_unchecked(
@@ -608,6 +632,7 @@ impl pallet_session::Config for Runtime {
     type ShouldEndSession = pallet_session::PeriodicSessions<Period, Offset>;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type SessionManager = CollatorsFromInvulnerablesAndThenFromStaking;
+    // SBP-M1 review: consider updating comment to reflect Nimbus in use
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
@@ -644,10 +669,12 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
                 buf
             } else {
                 // If there is no randomness (e.g when running in dev mode), return [0; 32]
+                // SBP-M1 review: add suggested test
                 // TODO: smoke test to ensure this never happens in a live network
                 [0; 32]
             }
         } else {
+            // SBP-M1 review: '..there is no randomness'?
             // In block 0 (genesis) there is randomness
             [0; 32]
         };
@@ -666,12 +693,14 @@ impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
         if num_invulnerables == 0 {
             return vec![];
         }
+        // SBP-M1 review: address todo
         // TODO: check if this works on session changes
         let all_invulnerables = pallet_invulnerables::Invulnerables::<Runtime>::get();
         if all_invulnerables.is_empty() {
             return vec![];
         }
         let mut invulnerables = vec![];
+        // SBP-M1 review: address todo
         // TODO: use binary_search when invulnerables are sorted
         collators.retain(|x| {
             if invulnerables.len() < num_invulnerables && all_invulnerables.contains(x) {
@@ -724,6 +753,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = Configuration;
     type ContainerChains = Registrar;
+    // SBP-M1 review: use sp_staking::SessionIndex?
     type SessionIndex = u32;
     type SelfParaId = ParachainInfo;
     type ShouldRotateAllCollators =
@@ -735,6 +765,7 @@ impl pallet_collator_assignment::Config for Runtime {
 }
 
 impl pallet_authority_assignment::Config for Runtime {
+    // SBP-M1 review: use sp_staking::SessionIndex?
     type SessionIndex = u32;
     type AuthorityId = NimbusId;
 }
@@ -744,6 +775,7 @@ pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * currency::MICRODANCE;
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
     fn block_cost(_para_id: &ParaId) -> (u128, Weight) {
+        // SBP-M1 review: weight not set
         (FIXED_BLOCK_PRODUCTION_COST, Weight::zero())
     }
 }
@@ -758,6 +790,7 @@ impl pallet_services_payment::Config for Runtime {
     /// Handler for fees
     type OnChargeForBlockCredit = ChargeForBlockCredit<Runtime>;
     /// Currency type for fee payment
+    // SBP-M1 review: consider renaming to Asset
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block
     type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
@@ -777,11 +810,16 @@ impl pallet_author_noting::Config for Runtime {
 }
 
 parameter_types! {
+    // SBP-M1 review: not used
     pub const PotId: PalletId = PalletId(*b"PotStake");
+    // SBP-M1 review: not used
     pub const MaxCandidates: u32 = 1000;
+    // SBP-M1 review: not used
     pub const MinCandidates: u32 = 5;
+    // SBP-M1 review: not used
     pub const SessionLength: BlockNumber = 5;
     pub const MaxInvulnerables: u32 = 100;
+    // SBP-M1 review: not used
     pub const ExecutiveBody: BodyId = BodyId::Executive;
 }
 
@@ -798,6 +836,7 @@ impl pallet_invulnerables::Config for Runtime {
 }
 
 parameter_types! {
+    // SBP-M1 review: `MaxContainerChains`?
     pub const MaxLengthParaIds: u32 = 100u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
     pub const MaxBootNodes: u32 = 10;
@@ -814,7 +853,9 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
 }
 
 impl pallet_configuration::Config for Runtime {
+    // SBP-M1 review: use StakingSessionDelay?
     type SessionDelay = ConstU32<2>;
+    // SBP-M1 review: use sp_staking::SessionIndex?
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type AuthorityId = NimbusId;
@@ -822,7 +863,9 @@ impl pallet_configuration::Config for Runtime {
 }
 
 parameter_types! {
+    // SBP-M1 review: use DANCE
     pub const DepositAmount: Balance = 100 * UNIT;
+    // SBP-M1 review: does it need to be this large?
     pub const MaxLengthTokenSymbol: u32 = 255;
 }
 impl pallet_registrar::Config for Runtime {
@@ -833,7 +876,9 @@ impl pallet_registrar::Config for Runtime {
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
     type MaxLengthTokenSymbol = MaxLengthTokenSymbol;
+    // SBP-M1 review: use StakingSessionDelay?
     type SessionDelay = ConstU32<2>;
+    // SBP-M1 review: use sp_staking::SessionIndex?
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
@@ -842,7 +887,9 @@ impl pallet_registrar::Config for Runtime {
 }
 
 impl pallet_authority_mapping::Config for Runtime {
+    // SBP-M1 review: use sp_staking::SessionIndex?
     type SessionIndex = u32;
+    // SBP-M1 review: use StakingSessionDelay?
     type SessionRemovalBoundary = ConstU32<2>;
     type AuthorityId = NimbusId;
 }
@@ -934,6 +981,7 @@ impl pallet_proxy::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type Currency = Balances;
     type ProxyType = ProxyType;
+    // SBP-M1 review: check value size is still correct
     // One storage item; key size 32, value size 8
     type ProxyDepositBase = ConstU128<{ currency::deposit(1, 8) }>;
     // Additional storage item size of 33 bytes (32 bytes AccountId + 1 byte sizeof(ProxyType)).
@@ -941,6 +989,7 @@ impl pallet_proxy::Config for Runtime {
     type MaxProxies = ConstU32<32>;
     type MaxPending = ConstU32<32>;
     type CallHasher = BlakeTwo256;
+    // SBP-M1 review: check value size is still correct
     type AnnouncementDepositBase = ConstU128<{ currency::deposit(1, 8) }>;
     // Additional storage item size of 68 bytes:
     // - 32 bytes AccountId
@@ -984,6 +1033,7 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 }
 
 /// Normal Call Filter
+// SBP-M1 review: update doc comments
 /// We dont allow to create nor mint assets, this for now is disabled
 /// We only allow transfers. For now creation of assets will go through
 /// asset-manager, while minting/burning only happens through xcm messages
@@ -1190,7 +1240,9 @@ parameter_types! {
     // The equation to solve is:
     // initial_supply * (1.05) = initial_supply * (1+x)^2_629_800
     // we should solve for x = (1.05)^(1/2_629_800) -1 -> 0.000000019 per block or 19/1_000_000_000
+    // SBP-M1 review: typo 'mode'
     // 1% in the case of dev moed
+    // SBP-M1 review: address todos
     // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));
@@ -1204,6 +1256,7 @@ use {nimbus_primitives::SlotBeacon, tp_traits::GetContainerChainAuthor};
 pub struct GetSelfChainBlockAuthor;
 impl Get<AccountId32> for GetSelfChainBlockAuthor {
     fn get() -> AccountId32 {
+        // SBP-M1 review: address todo
         // TODO: we should do a refactor here, and use either authority-mapping or collator-assignemnt
         // we should also make sure we actually account for the weight of these
         // although most of these should be cached as they are read every block
@@ -1270,12 +1323,15 @@ construct_runtime!(
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
 
+
+        // SBP-M1 review: typo, add space
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 53,
 
+        // SBP-M1 review: feature gate?
         RootTesting: pallet_root_testing = 100,
     }
 );
@@ -1283,6 +1339,7 @@ construct_runtime!(
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
     frame_benchmarking::define_benchmarks!(
+        // SBP-M1 review: ensure all pallets are included - missing balances, session, timestamp etc
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
         [pallet_author_noting, AuthorNoting]
         [pallet_collator_assignment, CollatorAssignment]
@@ -1379,6 +1436,7 @@ impl_runtime_apis! {
         }
     }
 
+    // SBP-M1 review: consider whether offchain workers will be required
     impl sp_offchain::OffchainWorkerApi<Block> for Runtime {
         fn offchain_worker(header: &<Block as BlockT>::Header) {
             Executive::offchain_worker(header)
@@ -1446,6 +1504,7 @@ impl_runtime_apis! {
                 }
                 fn worst_case_holding(_depositable_count: u32) -> MultiAssets {
                     // We only care for native asset until we support others
+                    // SBP-M1 review: address todo
                     // TODO: refactor this case once other assets are supported
                     vec![MultiAsset{
                         id: Concrete(MultiLocation::here()),
@@ -1498,6 +1557,7 @@ impl_runtime_apis! {
                 }
             }
 
+            // SBP-M1 review: can be simplified with `let whitelist = AllPalletsWithSystem::whitelisted_storage_keys();`
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
                 hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac")
@@ -1535,6 +1595,7 @@ impl_runtime_apis! {
 
             add_benchmarks!(params, batches);
 
+            // SBP-M1 review: missing batches check
             Ok(batches)
         }
     }
@@ -1727,6 +1788,7 @@ impl_runtime_apis! {
 
 struct CheckInherents;
 
+// SBP-M1 review: appears to be deprecated in favour of `cumulus-pallet-parachain-system::ConsensusHook`
 impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
     fn check_inherents(
         block: &Block,

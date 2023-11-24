@@ -52,9 +52,11 @@ mod test_sproof {
     }
 }
 
+// SBP-M1 review: update to newer benchmark syntax
 benchmarks! {
     set_latest_author_data {
         // Depend on the number of parachains registered
+        // SBP-M1 review: consider changing x -> p to denote paras
         let x in 0..100;
 
         let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();

@@ -18,7 +18,9 @@
 //!
 //! It calculates based on the orchestrator-state dictated authorities
 //! It is identical to AuraWorker and AuraConsensus, except for the fact that we re-implement
+// SBP-M1 review: typo 'dictated'
 //! the ParachainConsensus trait to access the orchestrator-dicated authorities, and further
+// SBP-M1 review: comments missing?
 //! it implements the TanssiWorker to TanssiOnSlot trait. This trait is
 use {
     cumulus_client_consensus_common::{ParachainCandidate, ParachainConsensus},
@@ -85,6 +87,7 @@ pub struct OrchestratorAuraConsensus<B, CIDP, GOH, W> {
 }
 
 impl<B, CIDP, GOH, W> Clone for OrchestratorAuraConsensus<B, CIDP, GOH, W> {
+    // SBP-M1 review: no unit test coverage
     fn clone(&self) -> Self {
         Self {
             create_inherent_data_providers: self.create_inherent_data_providers.clone(),
@@ -126,6 +129,7 @@ pub fn build_orchestrator_aura_worker<P, B, C, PF, I, SO, L, BS, Error>(
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync,
+    // SBP-M1 review: unnecessary path prefix
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     PF: Environment<B, Error = Error> + Send + Sync + 'static,
     PF::Proposer: Proposer<B, Error = Error>,
@@ -156,6 +160,7 @@ where
 }
 
 /// Parameters of [`OrchestratorAuraConsensus::build`].
+// SBP-M1 review: add doc comments for fields
 pub struct BuildOrchestratorAuraConsensusParams<PF, BI, GOH, CIDP, Client, BS, SO> {
     pub proposer_factory: PF,
     pub create_inherent_data_providers: CIDP,
@@ -200,6 +205,7 @@ where
     where
         Client:
             ProvideRuntimeApi<B> + BlockOf + AuxStore + HeaderBackend<B> + Send + Sync + 'static,
+        // SBP-M1 review: unnecessary path prefix
         AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
         BI: BlockImport<B> + Send + Sync + 'static,
         SO: SyncOracle + Send + Sync + Clone + 'static,
@@ -234,6 +240,7 @@ where
                 telemetry,
                 block_proposal_slot_portion,
                 max_block_proposal_slot_portion,
+                // SBP-M1 review: unnecessary path prefix
                 compatibility_mode: sc_consensus_aura::CompatibilityMode::None,
             },
         );
@@ -270,6 +277,7 @@ where
             .create_inherent_data_providers(parent, (relay_parent, validation_data.clone()))
             .await
             .map_err(|e| {
+                // SBP-M1 review: no unit test coverage
                 tracing::error!(
                     target: LOG_TARGET,
                     error = ?e,
@@ -291,6 +299,7 @@ where
     W: TanssiSlotWorker<B> + Send + Sync,
     W::Proposer: Proposer<B, Proof = <EnableProofRecording as ProofRecording>::Proof>,
 {
+    // SBP-M1 review: too many lines, consider refactor
     async fn produce_candidate(
         &mut self,
         parent: &B::Header,
@@ -309,6 +318,7 @@ where
             )
             .await
             .map_err(|e| {
+                // SBP-M1 review: no unit test coverage
                 tracing::error!(
                     target: LOG_TARGET,
                     error = ?e,
@@ -324,6 +334,7 @@ where
             parent.clone(),
             // Set the block limit to 50% of the maximum PoV size.
             //
+            // SBP-M1 review: address todo
             // TODO: If we got benchmarking that includes the proof size,
             // we should be able to use the maximum pov size.
             Some((validation_data.max_pov_size / 2) as usize),
@@ -361,11 +372,13 @@ struct OrchestratorAuraWorker<C, E, I, P, SO, L, BS, N> {
 }
 
 #[async_trait::async_trait]
+// SBP-M1 review: unnecessary path prefix
 impl<B, C, E, I, P, Error, SO, L, BS> sc_consensus_slots::SimpleSlotWorker<B>
     for OrchestratorAuraWorker<C, E, I, P, SO, L, BS, NumberFor<B>>
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
+    // SBP-M1 review: unnecessary path prefix
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
     E::Proposer: Proposer<B, Error = Error>,
@@ -403,6 +416,7 @@ where
         Ok(Default::default())
     }
 
+    // SBP-M1 review: consider using `authorities` parameter name
     fn authorities_len(&self, epoch_data: &Self::AuxData) -> Option<usize> {
         Some(epoch_data.len())
     }
@@ -411,12 +425,16 @@ where
         &mut self,
         _header: &B::Header,
         slot: Slot,
+        // SBP-M1 review: consider using `authorities` parameter name
         epoch_data: &Self::AuxData,
     ) -> Option<Self::Claim> {
+        // SBP-M1 review: consider moving within !self.force_authoring check
         let expected_author = slot_author::<P>(slot, epoch_data);
         // if not running with force-authoring, just do the usual slot check
+        // SBP-M1 review: swap ! order
         if !self.force_authoring {
             expected_author.and_then(|p| {
+                // SBP-M1 review: consider using .then()
                 if Keystore::has_keys(&*self.keystore, &[(p.to_raw_vec(), NIMBUS_KEY_ID)]) {
                     Some(p.clone())
                 } else {
@@ -427,6 +445,7 @@ where
         // if running with force-authoring, as long as you are in the authority set,
         // propose
         else {
+            // SBP-M1 review: no unit test coverage
             epoch_data
                 .iter()
                 .find(|key| {
@@ -436,11 +455,14 @@ where
         }
     }
 
+    // SBP-M1 review: unnecessary path prefix
     fn pre_digest_data(&self, slot: Slot, claim: &Self::Claim) -> Vec<sp_runtime::DigestItem> {
         vec![
             <DigestItem as CompatibleDigestItem<P::Signature>>::aura_pre_digest(slot),
+            // SBP-M1 review: typo 'crucial'
             // We inject the nimbus digest as well. Crutial to be able to verify signatures
             <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(
+                // SBP-M1 review: address todo
                 // TODO remove this unwrap through trait reqs
                 nimbus_primitives::NimbusId::from_slice(claim.as_ref()).unwrap(),
             ),
@@ -455,6 +477,7 @@ where
         storage_changes: StorageChanges<B>,
         public: Self::Claim,
         _epoch: Self::AuxData,
+        // SBP-M1 review: unnecessary path prefix
     ) -> Result<sc_consensus::BlockImportParams<B>, sp_consensus::Error> {
         // sign the pre-sealed hash of the block and then
         // add it to a digest item.
@@ -465,8 +488,10 @@ where
             public.as_slice(),
             header_hash.as_ref(),
         )
+        // SBP-M1 review: inline format arg
         .map_err(|e| sp_consensus::Error::CannotSign(format!("{}. Key: {:?}", e, public)))?
         .ok_or_else(|| {
+            // SBP-M1 review: no unit test coverage, inline format arg
             sp_consensus::Error::CannotSign(format!(
                 "Could not find key in keystore. Key: {:?}",
                 public
@@ -506,6 +531,7 @@ where
                 );
             }
         }
+        // SBP-M1 review: no unit test coverage
         false
     }
 
@@ -520,6 +546,7 @@ where
     fn proposer(&mut self, block: &B::Header) -> Self::CreateProposer {
         self.env
             .init(block)
+            // SBP-M1 review: no unit test coverage, inline format arg
             .map_err(|e| sp_consensus::Error::ClientImport(format!("{:?}", e)))
             .boxed()
     }
@@ -528,6 +555,7 @@ where
         self.telemetry.clone()
     }
 
+    // SBP-M1 review: unnecessary path prefix
     fn proposing_remaining_duration(&self, slot_info: &SlotInfo<B>) -> std::time::Duration {
         let parent_slot = find_pre_digest::<B, P::Signature>(&slot_info.chain_head).ok();
 
@@ -592,6 +620,7 @@ impl<F, Block, ExtraArgs, Fut, A> RetrieveAuthoritiesFromOrchestrator<Block, Ext
 where
     Block: BlockT,
     F: Fn(Block::Hash, ExtraArgs) -> Fut + Sync + Send,
+    // SBP-M1 review: unnecessary path prefix
     Fut: std::future::Future<Output = Result<A, Box<dyn std::error::Error + Send + Sync>>>
         + Send
         + 'static,
@@ -606,6 +635,7 @@ where
     }
 }
 
+// SBP-M1 review: add doc comment
 #[async_trait::async_trait]
 pub trait TanssiSlotWorker<B: BlockT>: SimpleSlotWorker<B> {
     /// Called when a new slot is triggered.
@@ -626,6 +656,7 @@ impl<B, C, E, I, P, Error, SO, L, BS> TanssiSlotWorker<B>
 where
     B: BlockT,
     C: ProvideRuntimeApi<B> + BlockOf + HeaderBackend<B> + Sync,
+    // SBP-M1 review: unnecessary path prefix
     AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
     E: Environment<B, Error = Error> + Send + Sync,
     E::Proposer: Proposer<B, Error = Error>,
@@ -638,6 +669,7 @@ where
     BS: BackoffAuthoringBlocksStrategy<NumberFor<B>> + Send + Sync + 'static,
     Error: std::error::Error + Send + From<sp_consensus::Error> + 'static,
 {
+    // SBP-M1 review: too many lines, consider refactoring
     async fn tanssi_on_slot(
         &mut self,
         slot_info: SlotInfo<B>,
@@ -653,6 +685,7 @@ where
         let proposing_remaining_duration = self.proposing_remaining_duration(&slot_info);
 
         let end_proposing_at = if proposing_remaining_duration == Duration::default() {
+            // SBP-M1 review: no unit test coverage
             debug!(
                 target: logging_target,
                 "Skipping proposal slot {} since there's no time left to propose", slot,
@@ -669,8 +702,10 @@ where
 
         if !self.force_authoring()
             && self.sync_oracle().is_offline()
+            // SBP-M1 review: no unit test coverage, use .map_or()
             && authorities_len.map(|a| a > 1).unwrap_or(false)
         {
+            // SBP-M1 review: no unit test coverage
             debug!(
                 target: logging_target,
                 "Skipping proposal slot. Waiting for the network."
@@ -689,9 +724,11 @@ where
             .claim_slot(&slot_info.chain_head, slot, &aux_data)
             .await?;
 
+        // SBP-M1 review: unnecessary path prefix
         log::info!("claim valid for slot {:?}", slot);
 
         if self.should_backoff(slot, &slot_info.chain_head) {
+            // SBP-M1 review: no unit test coverage
             return None;
         }
 
@@ -705,6 +742,7 @@ where
         let proposer = match self.proposer(&slot_info.chain_head).await {
             Ok(p) => p,
             Err(err) => {
+                // SBP-M1 review: no unit test coverage
                 warn!(
                     target: logging_target,
                     "Unable to author block in slot {slot:?}: {err}"
@@ -744,6 +782,7 @@ where
             .await
         {
             Ok(bi) => bi,
+            // SBP-M1 review: no unit test coverage
             Err(err) => {
                 warn!(
                     target: logging_target,
@@ -781,6 +820,7 @@ where
                 );
             }
             Err(err) => {
+                // SBP-M1 review: no unit test coverage
                 warn!(
                     target: logging_target,
                     "Error with block built on {:?}: {}", parent_hash, err,

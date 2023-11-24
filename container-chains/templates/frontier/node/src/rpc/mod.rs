@@ -104,6 +104,7 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     /// Manual seal command sink
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Channels for manual xcm messages (downward, hrmp)
+    // SBP-M1 review: consider feature gating so only available when running integration tests
     pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
 }
 
@@ -193,6 +194,7 @@ where
             fee_history_limit,
             10,
             None,
+            // SBP-M1 review: typo, address todo
             // TODO: resvisit
             pending_create_inherent_data_providers,
             None,

@@ -55,6 +55,7 @@ where
             "Slot duration cannot be zero."
         );
 
+        // SBP-M1 review: reuse result from SlotDuration::get() above
         let timestamp_slot = moment / SlotDuration::get();
 
         assert!(

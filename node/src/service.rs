@@ -369,6 +369,7 @@ pub fn new_partial_dev(
         client.clone(),
         block_import.clone(),
         config,
+        // SBP-M1 review: redundant closure, use method
         telemetry.as_ref().map(|telemetry| telemetry.handle()),
         &task_manager,
     )?;
@@ -547,6 +548,7 @@ async fn start_node_impl(
             client.clone(),
             block_import,
             prometheus_registry.as_ref(),
+            // SBP-M1 review: redundant closure
             telemetry.as_ref().map(|t| t.handle()),
             &task_manager,
             relay_chain_interface.clone(),
@@ -688,6 +690,7 @@ async fn start_node_impl(
 // This needs to be a separate function because the `prefix_logs_with` macro
 // has trouble parsing expressions.
 fn container_log_str(para_id: ParaId) -> String {
+    // SBP-M1 review: inline format arg
     format!("Container-{}", para_id)
 }
 
@@ -808,6 +811,7 @@ pub async fn start_node_impl_container(
         config: parachain_config,
         keystore: keystore.clone(),
         backend: backend.clone(),
+        // SBP-M1 review: redundant clone
         network: network.clone(),
         system_rpc_tx,
         tx_handler_controller,
@@ -1068,9 +1072,11 @@ fn build_consensus_container(
         telemetry.clone(),
     );
 
+    // SBP-M1 review: typo 'interface'
     let relay_chain_interace_for_orch = relay_chain_interface.clone();
     let orchestrator_client_for_cidp = orchestrator_client;
 
+    // SBP-M1 review: unnecessary path prefix
     let params = tc_consensus::BuildOrchestratorAuraConsensusParams {
         proposer_factory,
         create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
@@ -1112,6 +1118,7 @@ fn build_consensus_container(
 
                 let authorities_noting_inherent = authorities_noting_inherent.ok_or_else(|| {
                     Box::<dyn std::error::Error + Send + Sync>::from(
+                        // SBP-M1 review: typo, add space
                         "Failed to create authoritiesnoting inherent",
                     )
                 })?;
@@ -1125,6 +1132,7 @@ fn build_consensus_container(
             }
         },
         get_authorities_from_orchestrator: move |_block_hash, (relay_parent, _validation_data)| {
+            // SBP-M1 review: typo 'interface'
             let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
             let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
 
@@ -1352,6 +1360,7 @@ pub fn new_dev(
         sc_consensus_manual_seal::{run_manual_seal, EngineCommand, ManualSealParams},
     };
 
+    // SBP-M1 review: unnecessary path prefix
     let sc_service::PartialComponents {
         client,
         backend,
@@ -1409,6 +1418,7 @@ pub fn new_dev(
             client.clone(),
             transaction_pool.clone(),
             prometheus_registry.as_ref(),
+            // SBP-M1 review: redundant closure, use method
             telemetry.as_ref().map(|x| x.handle()),
         );
         // Create channels for mocked XCM messages.
@@ -1542,6 +1552,7 @@ pub fn new_dev(
                             raw_downward_messages: downward_xcm_receiver.drain().collect(),
                             raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                             additional_key_values: Some(
+                                // SBP-M1 review: redundant clone
                                 mocked_author_noting.get_key_values().clone(),
                             ),
                         };
@@ -1685,9 +1696,11 @@ where
     }
 }
 
+// SBP-M1 review: typo 'fulfil'
 /// But we need to implement the ParachainBlockImportMarker trait to fullfil
 impl<BI> ParachainBlockImportMarker for OrchestratorParachainBlockImport<BI> {}
 
+// SBP-M1 review: update comments with correct struct name
 /// Builder for a concrete relay chain interface, created from a full node. Builds
 /// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.
 ///
@@ -1712,6 +1725,7 @@ impl OrchestratorChainInProcessInterfaceBuilder {
     }
 }
 
+// SBP-M1 review: update comments with correct struct name
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
 pub struct OrchestratorChainInProcessInterface<Client> {
     full_client: Arc<Client>,
@@ -1721,6 +1735,7 @@ pub struct OrchestratorChainInProcessInterface<Client> {
 }
 
 impl<Client> OrchestratorChainInProcessInterface<Client> {
+    // SBP-M1 review: update comments with correct struct name
     /// Create a new instance of [`RelayChainInProcessInterface`]
     pub fn new(
         full_client: Arc<Client>,

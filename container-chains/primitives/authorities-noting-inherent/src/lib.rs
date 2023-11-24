@@ -44,6 +44,7 @@ use {
     sp_inherents::InherentIdentifier,
 };
 
+// SBP-M1 review: add doc comments
 #[derive(Encode, Decode, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo)]
 pub struct ContainerChainAuthoritiesInherentData {
     pub relay_chain_state: sp_trie::StorageProof,
@@ -51,4 +52,5 @@ pub struct ContainerChainAuthoritiesInherentData {
 }
 
 // Identifier of the author-noting inherent
+// SBP-M1 review: 1337 -> tans?
 pub const INHERENT_IDENTIFIER: InherentIdentifier = *b"ccno1337";

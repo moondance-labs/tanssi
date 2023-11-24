@@ -64,8 +64,10 @@ mod test_sproof {
     }
 }
 
+// SBP-M1 review: update to newer benchmark syntax
 benchmarks! {
     set_latest_authorities_data {
+        // SBP-M1 review: address todo
         // TODO: this could measure the proof size
         let sproof_builder_relay = test_sproof::ParaHeaderSproofBuilder::default();
         let sproof_builder_orchestrator = test_sproof::AuthorityAssignmentSproofBuilder::default();

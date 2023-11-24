@@ -28,6 +28,8 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
+// SBP-M1 review: missing TryRuntimeError
+
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
@@ -127,6 +129,7 @@ pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
 
 /// Extrinsic type that has already been checked.
+// SBP-M1 review: seems to be unused?
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
 
 /// Executive: handles dispatch to the various modules.
@@ -190,6 +193,7 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
+    // SBP-M1 review: simple-template?
     spec_name: create_runtime_str!("container-chain-template"),
     impl_name: create_runtime_str!("container-chain-template"),
     authoring_version: 1,
@@ -287,6 +291,7 @@ parameter_types! {
 }
 
 // Configure FRAME pallets to include in runtime.
+// SBP-M1 review: remove line break to ease template diffing
 
 impl frame_system::Config for Runtime {
     /// The identifier used to distinguish between accounts.
@@ -333,6 +338,7 @@ impl frame_system::Config for Runtime {
     type SS58Prefix = SS58Prefix;
     /// The action to take on a Runtime Upgrade
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
+    // SBP-M1 review: unnecessary prefix
     type MaxConsumers = frame_support::traits::ConstU32<16>;
 }
 
@@ -369,8 +375,11 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
+// SBP-M1 review: move above pallet_timestamp::Config to ease template diffing
 parameter_types! {
+    // SBP-M1 review: set proper value - e.g. MILLIUNIT
     pub const TransactionByteFee: Balance = 1;
+    // SBP-M1 review: consider removing in favour of SlowAdjustingFeeUpdate
     pub const FeeMultiplier: Multiplier = Multiplier::from_u32(1);
 }
 
@@ -404,6 +413,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 impl parachain_info::Config for Runtime {}
 
 parameter_types! {
+    // SBP-M1 review: does this need to align with orchestrater chain?
     pub const Period: u32 = 6 * HOURS;
     pub const Offset: u32 = 0;
 }
@@ -486,6 +496,7 @@ impl pallet_proxy::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type Currency = Balances;
     type ProxyType = ProxyType;
+    // SBP-M1 review: check value size is still correct
     // One storage item; key size 32, value size 8
     type ProxyDepositBase = ConstU128<{ deposit(1, 8) }>;
     // Additional storage item size of 33 bytes (32 bytes AccountId + 1 byte sizeof(ProxyType)).
@@ -493,6 +504,7 @@ impl pallet_proxy::Config for Runtime {
     type MaxProxies = ConstU32<32>;
     type MaxPending = ConstU32<32>;
     type CallHasher = BlakeTwo256;
+    // SBP-M1 review: check value size is still correct
     type AnnouncementDepositBase = ConstU128<{ deposit(1, 8) }>;
     // Additional storage item size of 68 bytes:
     // - 32 bytes AccountId
@@ -531,6 +543,7 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 }
 
 /// Normal Call Filter
+// SBP-M1 review: update doc comments
 /// We dont allow to create nor mint assets, this for now is disabled
 /// We only allow transfers. For now creation of assets will go through
 /// asset-manager, while minting/burning only happens through xcm messages
@@ -608,6 +621,8 @@ impl OnRuntimeUpgrade for MaintenanceHooks {
     fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         AllPalletsWithSystem::post_upgrade(state)
     }
+
+    // SBP-M1 review: missing try_on_runtime_upgrade()
 }
 
 impl OnFinalize<BlockNumber> for MaintenanceHooks {
@@ -681,8 +696,11 @@ construct_runtime!(
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
 
+        // SBP-M1 review: no RootTesting as in Frontier template?
     }
 );
+
+// SBP-M1 review: missing define_benchmarks!
 
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
@@ -737,6 +755,7 @@ impl_runtime_apis! {
     impl sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block> for Runtime {
         fn validate_transaction(
             source: TransactionSource,
+            // SBP-M1 review: use xt as per Frontier template
             tx: <Block as BlockT>::Extrinsic,
             block_hash: <Block as BlockT>::Hash,
         ) -> TransactionValidity {
@@ -812,6 +831,7 @@ impl_runtime_apis! {
             impl frame_system_benchmarking::Config for Runtime {}
             use pallet_cc_authorities_noting::Pallet as PalletAuthoritiesNotingBench;
 
+            // SBP-M1 review: can be simplified with `let whitelist = AllPalletsWithSystem::whitelisted_storage_keys();`
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
                 hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac")
@@ -903,6 +923,7 @@ impl_runtime_apis! {
 
 struct CheckInherents;
 
+// SBP-M1 review: appears to be deprecated in favour of `cumulus-pallet-parachain-system::ConsensusHook`
 impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
     fn check_inherents(
         block: &Block,

@@ -4,6 +4,8 @@ authors = { workspace = true }
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
+# SBP-M1 review: consider adding missing repository, readme, keywords, categories
+# SBP-M1 review: add line break
 [dependencies]
 async-trait = { workspace = true }
 futures = { workspace = true }

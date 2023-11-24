@@ -511,6 +511,7 @@ pub async fn start_dev_node(
         sp_core::H256,
     };
 
+    // SBP-M1 review: unnecessary path prefix
     let sc_service::PartialComponents {
         client,
         backend,
@@ -701,6 +702,7 @@ pub async fn start_dev_node(
                             current_para_block,
                             relay_offset: 1000,
                             relay_blocks_per_para_block: 2,
+                            // SBP-M1 review: address todo
                             // TODO: Recheck
                             para_blocks_per_relay_epoch: 10,
                             relay_randomness_config: (),

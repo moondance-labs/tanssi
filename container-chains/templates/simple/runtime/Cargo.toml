@@ -18,6 +18,7 @@ serde = { workspace = true, optional = true, features = ["derive"] }
 smallvec = { workspace = true }
 
 # Local
+# SBP-M1 review: missing ccp-xm as in Frontier template
 pallet-cc-authorities-noting = { workspace = true }
 tp-consensus = { workspace = true }
 
@@ -33,6 +34,7 @@ frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
+# SBP-M1 review: missing frame-try-runtime root as in Frontier template
 pallet-balances = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -79,6 +81,7 @@ parachain-info = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
+# SBP-M1 review: add line break
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
 

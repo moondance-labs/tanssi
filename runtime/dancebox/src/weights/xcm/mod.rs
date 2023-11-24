@@ -46,6 +46,7 @@ const ASSET_TRANSFER_MAX_PROOF_SIZE: u64 = 13412;
 // Fungible XCM instructions will return a fixed weight value of
 // 200_000_000 ref_time and its proper PoV weight taken from statemint benchmarks.
 //
+// SBP-M1 review: reassess whether todo can be actioned
 // TODO: add the fungible benchmarked values once these are calculated.
 pub struct XcmWeight<RuntimeCall>(core::marker::PhantomData<RuntimeCall>);
 impl<RuntimeCall> XcmWeightInfo<RuntimeCall> for XcmWeight<RuntimeCall>

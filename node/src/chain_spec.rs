@@ -405,6 +405,7 @@ impl IdentifyVariant for Box<dyn sc_service::ChainSpec> {
         self.id().starts_with("dancebox")
     }
 
+    // SBP-M1 review: unnecessary path prefix
     fn is_dev(&self) -> bool {
         self.chain_type() == sc_chain_spec::ChainType::Development
     }

@@ -19,6 +19,7 @@
 //! This pallet works with pools inspired by AMM liquidity pools to easily distribute
 //! rewards with support for both non-compounding and compounding rewards.
 //!
+// SBP-M1 review: readme lists 4 pools?
 //! Each candidate internally have 3 pools:
 //! - a pool for all delegators willing to auto compound.
 //! - a pool for all delegators not willing to auto compound.
@@ -26,9 +27,11 @@
 //!
 //! When delegating the funds of the delegator are reserved, and shares allow to easily
 //! distribute auto compounding rewards (by simply increasing the total shared amount)
+// SBP-M1 review: '...each share loses part...'
 //! and easily slash (each share loose part of its value). Rewards are distributed to an account
 //! id dedicated to the staking pallet, and delegators can call an extrinsic to transfer their rewards
 //! to their own account (but as reserved). Keeping funds reserved in user accounts allow them to
+// SBP-M1 review: typo 'governance'
 //! participate in other processes such as gouvernance.
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -53,6 +56,7 @@ use frame_support::pallet;
 
 pub use {candidate::EligibleCandidate, pallet::*};
 
+// SBP-M1 review: remove dev_mode
 #[pallet(dev_mode)]
 pub mod pallet {
     use {
@@ -91,6 +95,7 @@ pub mod pallet {
     /// StorageDoubleMap first key is the account id of the candidate.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    // SBP-M1 review: consider better name for generic parameter to convey intent (e.g. AccountId)
     pub enum PoolsKey<A: FullCodec> {
         /// Total amount of currency backing this candidate across all pools.
         CandidateTotalStake,
@@ -147,6 +152,7 @@ pub mod pallet {
     /// Value is the amount of shares in the joining/leaving pool.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    // SBP-M1 review: consider better name for generic parameters to better convey intent (e.g. AccountId, Join, Leave)
     pub enum PendingOperationKey<A: FullCodec, J: FullCodec, L: FullCodec> {
         /// Candidate requested to join the auto compounding pool of a candidate.
         JoiningAutoCompounding { candidate: A, at: J },
@@ -156,25 +162,30 @@ pub mod pallet {
         Leaving { candidate: A, at: L },
     }
 
+    // SBP-M1 review: prefer grouping type aliases with those above
     pub type PendingOperationKeyOf<T> = PendingOperationKey<
         <T as frame_system::Config>::AccountId,
         <<T as Config>::JoiningRequestTimer as Timer>::Instant,
         <<T as Config>::LeavingRequestTimer as Timer>::Instant,
     >;
 
+    // SBP-M1 review: add doc comments
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    // SBP-M1 review: consider better name for generic parameters to better convey intent
     pub struct PendingOperationQuery<A: FullCodec, J: FullCodec, L: FullCodec> {
         pub delegator: A,
         pub operation: PendingOperationKey<A, J, L>,
     }
 
+    // SBP-M1 review: prefer grouping type aliases with those above
     pub type PendingOperationQueryOf<T> = PendingOperationQuery<
         <T as frame_system::Config>::AccountId,
         <<T as Config>::JoiningRequestTimer as Timer>::Instant,
         <<T as Config>::LeavingRequestTimer as Timer>::Instant,
     >;
 
+    // SBP-M1 review: add doc comments
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
     pub enum TargetPool {
@@ -182,6 +193,7 @@ pub mod pallet {
         ManualRewards,
     }
 
+    // SBP-M1 review: add doc comments
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
     pub enum AllTargetPool {
@@ -194,6 +206,7 @@ pub mod pallet {
     impl From<TargetPool> for AllTargetPool {
         fn from(value: TargetPool) -> Self {
             match value {
+                // SBP-M1 review: consider using Self
                 TargetPool::AutoCompounding => AllTargetPool::AutoCompounding,
                 TargetPool::ManualRewards => AllTargetPool::ManualRewards,
             }
@@ -223,6 +236,7 @@ pub mod pallet {
 
     /// Pooled Staking pallet.
     #[pallet::pallet]
+    // SBP-M1 review: prefer bounded storage
     #[pallet::without_storage_info]
     pub struct Pallet<T>(PhantomData<T>);
 
@@ -232,6 +246,7 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// The currency type.
         /// Shares will use the same Balance type.
+        // SBP-M1 review: consider renaming to Asset
         type Currency: fungible::Inspect<Self::AccountId, Balance = Self::Balance>
             + fungible::Mutate<Self::AccountId>
             + fungible::Balanced<Self::AccountId>
@@ -243,6 +258,7 @@ pub mod pallet {
         type Balance: Balance + MulDiv;
 
         /// Identifier reserved for this pallet holding account funds.
+        // SBP-M1 review: consider renaming to HoldReason
         type CurrencyHoldReason: Get<
             <Self::Currency as fungible::hold::Inspect<Self::AccountId>>::Reason,
         >;
@@ -251,6 +267,7 @@ pub mod pallet {
         type StakingAccount: Get<Self::AccountId>;
 
         /// When creating the first Shares for a candidate the supply can be arbitrary.
+        // SBP-M1 review: typo 'a higher'
         /// Picking a value too low will make an higher supply, which means each share will get
         /// less rewards, and rewards calculations will have more impactful rounding errors.
         /// Picking a value too high is a barrier of entry for staking.
@@ -271,14 +288,18 @@ pub mod pallet {
         /// Condition for when a leaving request can be executed.
         type LeavingRequestTimer: Timer;
         /// All eligible candidates are stored in a sorted list that is modified each time
+        // SBP-M1 review: 'change', 'candidates'
         /// delegations changes. It is safer to bound this list, in which case eligible candidate
         /// could fall out of this list if they have less stake than the top `EligibleCandidatesBufferSize`
+        // SBP-M1 review: 'One of these...'
         /// eligible candidates. One of this top candidates leaving will then not bring the dropped candidate
+        // SBP-M1 review: prefer 'dispatchable' to 'extrinsic' in this context
         /// in the list. An extrinsic is available to manually bring back such dropped candidate.
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
 
+        // SBP-M1 review: add doc comment for consistency
         type WeightInfo: WeightInfo;
     }
 
@@ -286,9 +307,12 @@ pub mod pallet {
     /// This can be quickly updated using a binary search, and allow to easily take the top
     /// `MaxCollatorSetSize`.
     #[pallet::storage]
+    // SBP-M1 review: reduce visibility
     pub type SortedEligibleCandidates<T: Config> = StorageValue<
         _,
+        // SBP-M1 review: consider effect on PoV to read list with max candidates on each change
         BoundedVec<
+            // SBP-M1 review: unnecessary prefix
             candidate::EligibleCandidate<Candidate<T>, T::Balance>,
             T::EligibleCandidatesBufferSize,
         >,
@@ -297,6 +321,7 @@ pub mod pallet {
 
     /// Pools balances.
     #[pallet::storage]
+    // SBP-M1 review: reduce visibility
     pub type Pools<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
@@ -310,6 +335,7 @@ pub mod pallet {
     /// Pending operations balances.
     /// Balances are expressed in joining/leaving shares amounts.
     #[pallet::storage]
+    // SBP-M1 review: reduce visibility
     pub type PendingOperations<T: Config> = StorageDoubleMap<
         _,
         Blake2_128Concat,
@@ -320,6 +346,7 @@ pub mod pallet {
         ValueQuery,
     >;
 
+    // SBP-M1 review: add doc comments for named fields, consider 'nounverb' convention for event naming, use `` quotes for types
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -386,6 +413,7 @@ pub mod pallet {
             stake: T::Balance,
         },
         /// Delegator unstaked towards a candidate with AutoCompounding Shares.
+        // SBP-M1 review: no unit test coverage
         UnstakedAutoCompounding {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
@@ -400,6 +428,7 @@ pub mod pallet {
             stake: T::Balance,
         },
         /// Delegator unstaked towards a candidate with ManualRewards Shares.
+        // SBP-M1 review: no unit test coverage
         UnstakedManualRewards {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
@@ -419,6 +448,7 @@ pub mod pallet {
             manual_claim_rewards: T::Balance,
         },
         /// Rewards manually claimed.
+        // SBP-M1 review: no unit test coverage
         ClaimedManualRewards {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
@@ -438,6 +468,7 @@ pub mod pallet {
         },
     }
 
+    // SBP-M1 review: low unit test coverage, add doc comments
     #[pallet::error]
     pub enum Error<T> {
         InvalidPalletSetting,
@@ -445,31 +476,38 @@ pub mod pallet {
         NoOneIsStaking,
         StakeMustBeNonZero,
         RewardsMustBeNonZero,
+        // SBP-M1 review: consider using existing sp_runtime::ArithmeticError instead of introducing similar variant types
         MathUnderflow,
         MathOverflow,
         NotEnoughShares,
         TryingToLeaveTooSoon,
         InconsistentState,
+        // SBP-M1 review: typo 'insufficient'
         UnsufficientSharesForTransfer,
+        // SBP-M1 review: typo 'transferring'
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
     }
 
     impl<T: Config> From<tp_maths::OverflowError> for Error<T> {
+        // SBP-M1 review: no unit test coverage
         fn from(_: tp_maths::OverflowError) -> Self {
+            // SBP-M1 review: consider using Self
             Error::MathOverflow
         }
     }
 
     impl<T: Config> From<tp_maths::UnderflowError> for Error<T> {
         fn from(_: tp_maths::UnderflowError) -> Self {
+            // SBP-M1 review: consider using Self
             Error::MathUnderflow
         }
     }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::rebalance_hold())]
         pub fn rebalance_hold(
@@ -477,6 +515,7 @@ pub mod pallet {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
             pool: AllTargetPool,
+            // SBP-M1 review: weight doesnt appear to be changed based on rebalance_hold impl, can simplify to DispatchResult
         ) -> DispatchResultWithPostInfo {
             // We don't care about the sender.
             let _ = ensure_signed(origin)?;
@@ -484,6 +523,7 @@ pub mod pallet {
             Calls::<T>::rebalance_hold(candidate, delegator, pool)
         }
 
+        // SBP-M1 review: add doc comments
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::request_delegate())]
         pub fn request_delegate(
@@ -491,6 +531,7 @@ pub mod pallet {
             candidate: Candidate<T>,
             pool: TargetPool,
             stake: T::Balance,
+            // SBP-M1 review: weight doesnt appear to be changed based on request_delegate impl, can simplify to DispatchResult
         ) -> DispatchResultWithPostInfo {
             let delegator = ensure_signed(origin)?;
 
@@ -498,10 +539,14 @@ pub mod pallet {
         }
 
         /// Execute pending operations can incur in claim manual rewards per operation, we simply add the worst case
+        // SBP-M1 review: missing call index attribute
+        // SBP-M1 review: consider benchmark for each operation variant and returning the max pre-dispatch, with actual accumulated weight based on submitted values
+        // SBP-M1 review: unused weight is not refunded, affecting both the caller and available blockspace/throughput
         #[pallet::weight(T::WeightInfo::execute_pending_operations(operations.len() as u32).saturating_add(T::WeightInfo::claim_manual_rewards(operations.len() as u32)))]
         pub fn execute_pending_operations(
             origin: OriginFor<T>,
             operations: Vec<PendingOperationQueryOf<T>>,
+            // SBP-M1 review: weight doesnt appear to be changed based on execute_pending_operations impl, can simplify to DispatchResult
         ) -> DispatchResultWithPostInfo {
             // We don't care about the sender.
             let _ = ensure_signed(origin)?;
@@ -510,22 +555,28 @@ pub mod pallet {
         }
 
         /// Request undelegate can incur in either claim manual rewards or hold rebalances, we simply add the worst case
+        // SBP-M1 review: missing call index attribute
+        // SBP-M1 review: should request_undelegate benchmark not account for these cases? Perhaps T::WeightInfo::request_undelegate_manual_rewards().max(T::WeightInfo::request_undelegate_auto_compounding())
+        // SBP-M1 review: unused weight is not refunded, affecting both the caller and available blockspace/throughput
         #[pallet::weight(T::WeightInfo::request_undelegate().saturating_add(T::WeightInfo::claim_manual_rewards(1).max(T::WeightInfo::rebalance_hold())))]
         pub fn request_undelegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
             pool: TargetPool,
             amount: SharesOrStake<T::Balance>,
+            // SBP-M1 review: weight doesnt appear to be changed based on request_undelegate impl, can simplify to DispatchResult
         ) -> DispatchResultWithPostInfo {
             let delegator = ensure_signed(origin)?;
 
             Calls::<T>::request_undelegate(candidate, delegator, pool, amount)
         }
 
+        // SBP-M1 review: no unit test coverage, missing call index attribute, add doc comments
         #[pallet::weight(T::WeightInfo::claim_manual_rewards(pairs.len() as u32))]
         pub fn claim_manual_rewards(
             origin: OriginFor<T>,
             pairs: Vec<(Candidate<T>, Delegator<T>)>,
+            // SBP-M1 review: weight doesnt appear to be changed based on claim_manual_rewards impl, can simplify to DispatchResult
         ) -> DispatchResultWithPostInfo {
             // We don't care about the sender.
             let _ = ensure_signed(origin)?;
@@ -533,10 +584,12 @@ pub mod pallet {
             Calls::<T>::claim_manual_rewards(&pairs)
         }
 
+        // SBP-M1 review: missing call index attribute, add doc comments
         #[pallet::weight(T::WeightInfo::update_candidate_position(candidates.len() as u32))]
         pub fn update_candidate_position(
             origin: OriginFor<T>,
             candidates: Vec<Candidate<T>>,
+            // SBP-M1 review: weight doesnt appear to be changed based on update_candidate_position impl, can simplify to DispatchResult
         ) -> DispatchResultWithPostInfo {
             // We don't care about the sender.
             let _ = ensure_signed(origin)?;
@@ -544,12 +597,14 @@ pub mod pallet {
             Calls::<T>::update_candidate_position(&candidates)
         }
 
+        // SBP-M1 review: missing call index attribute, add doc comments
         #[pallet::weight(T::WeightInfo::swap_pool())]
         pub fn swap_pool(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
             source_pool: TargetPool,
             amount: SharesOrStake<T::Balance>,
+            // SBP-M1 review: weight doesnt appear to be changed based on swap_pool impl, can simplify to DispatchResult
         ) -> DispatchResultWithPostInfo {
             let delegator = ensure_signed(origin)?;
 
@@ -558,8 +613,11 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        // SBP-M1 review: no unit test coverage, appears to only be used by external tests, consider adding attribute to limit
         pub fn computed_stake(
+            // SBP-M1 review: consider taking by reference
             candidate: Candidate<T>,
+            // SBP-M1 review: consider taking by reference
             delegator: Delegator<T>,
             pool: AllTargetPool,
         ) -> Option<T::Balance> {

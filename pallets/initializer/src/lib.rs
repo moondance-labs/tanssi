@@ -17,8 +17,10 @@
 //! # Initializer Pallet
 //!
 //! This pallet is in charge of organizing what happens on session changes.
+// SBP-M1 review: consider using code quotes for `OneSessionHandler`
 //! In particular this pallet has implemented the OneSessionHandler trait
 //! which will be called upon a session change. There it will call the
+// SBP-M1 review: consider using code quotes for `SessionHandler`
 //! SessionHandler config trait
 
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -41,9 +43,12 @@ use {
 pub mod pallet {
     use super::*;
 
+    // SBP-M1 review: add doc comments
     // The apply_new_session trait. We need to comply with this
+    // SBP-M1 review: consider ApplyNewSession<AccountId, AuthorityId, SessionIndex>, although that may increase usage complexity in dancebox runtime
     pub trait ApplyNewSession<T: Config> {
         fn apply_new_session(
+            // SBP-M1 review: doesnt appear to be used, consider removing
             changed: bool,
             session_index: T::SessionIndex,
             all_validators: Vec<(T::AccountId, T::AuthorityId)>,
@@ -52,9 +57,11 @@ pub mod pallet {
     }
 
     #[pallet::pallet]
+    // SBP-M1 review: prefer bounded storage
     #[pallet::without_storage_info]
     pub struct Pallet<T>(_);
 
+    // SBP-M1 review: add doc comments
     #[pallet::config]
     pub trait Config: frame_system::Config {
         type SessionIndex: parity_scale_codec::FullCodec + TypeInfo + Copy + AtLeast32BitUnsigned;
@@ -82,9 +89,11 @@ impl<T: Config> Pallet<T> {
         I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
     {
         let validators: Vec<_> = validators.map(|(k, v)| (k.clone(), v)).collect();
+        // SBP-M1 review: consider using .map_or_else()
         let queued: Vec<_> = if let Some(queued) = queued {
             queued.map(|(k, v)| (k.clone(), v)).collect()
         } else {
+            // SBP-M1 review: no unit test coverage
             validators.clone()
         };
 
@@ -93,10 +102,12 @@ impl<T: Config> Pallet<T> {
 
     /// Should be called when a new session occurs. Buffers the session notification to be applied
     /// at the end of the block. If `queued` is `None`, the `validators` are considered queued.
+    // SBP-M1 review: seems unnecessary, consider moving function body to OneSessionHandler::on_genesis_session to eliminate this additional step
     fn on_genesis_session<'a, I: 'a>(validators: I)
     where
         I: Iterator<Item = (&'a T::AccountId, T::AuthorityId)>,
     {
+        // SBP-M1 review: consider using Self, no unit test coverage
         <Pallet<T>>::on_new_session(false, 0u32.into(), validators, None);
     }
 
@@ -126,6 +137,7 @@ impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pal
     where
         I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
     {
+        // SBP-M1 review: consider using Self, no unit test coverage
         <Pallet<T>>::on_genesis_session(validators);
     }
 
@@ -133,7 +145,9 @@ impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pal
     where
         I: Iterator<Item = (&'a T::AccountId, Self::Key)>,
     {
+        // SBP-M1 review: no unit test coverage, consider GetSessionIndex trait via pallet config to reduce coupling to session pallet
         let session_index = <pallet_session::Pallet<T>>::current_index();
+        // SBP-M1 review: consider using Self
         <Pallet<T>>::on_new_session(changed, session_index.into(), validators, Some(queued));
     }
 

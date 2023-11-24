@@ -17,6 +17,7 @@
 //! # Orchestrator chain interface client primitives
 //!
 //! This file contains the OrchestratorChainInterface trait which serves to generate
+// SBP-M1 review: consider using 'ContainerChains'
 //! storage proofs to be provided to containerchains
 //!
 //! get_storage_by_key: retrieves a storage item from the Orchestrator interface at a given
@@ -34,15 +35,18 @@ use {
 pub enum OrchestratorChainError {
     #[error("Blockchain returned an error: {0}")]
     BlockchainError(#[from] sp_blockchain::Error),
+    // SBP-M1 review: typo 'occurred'
     #[error("State machine error occured: {0}")]
     StateMachineError(Box<dyn sp_state_machine::Error>),
     #[error(transparent)]
     Application(#[from] Box<dyn std::error::Error + Send + Sync + 'static>),
+    // SBP-M1 review: typo 'occurred'
     #[error("Unspecified error occured: {0}")]
     GenericError(String),
 }
 
 impl From<OrchestratorChainError> for ApiError {
+    // SBP-M1 review: unnecessary path prefix
     fn from(r: OrchestratorChainError) -> Self {
         sp_api::ApiError::Application(Box::new(r))
     }
@@ -66,6 +70,7 @@ impl From<Box<dyn sp_state_machine::Error>> for OrchestratorChainError {
     }
 }
 
+// SBP-M1 review: address todo
 // TODO: proper errors
 pub type OrchestratorChainResult<T> = Result<T, OrchestratorChainError>;
 
