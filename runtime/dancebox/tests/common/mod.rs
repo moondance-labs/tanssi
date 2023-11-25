@@ -67,7 +67,7 @@ pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
     let mut summaries = BTreeMap::new();
 
     while System::block_number() < n {
-        let summary = run_block();
+        let summary = run_block(false);
         let block_number = System::block_number();
         summaries.insert(block_number, summary);
     }
@@ -75,8 +75,12 @@ pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
     summaries
 }
 
-pub fn run_block() -> RunSummary {
-    let slot = current_slot() + 1;
+pub fn run_block(same_slot:bool) -> RunSummary {
+    let mut slot: u64 = current_slot().0.into();
+
+    if !same_slot {
+        slot +=1;
+    }
 
     let authorities =
         Runtime::para_id_authorities(ParachainInfo::get()).expect("authorities should be set");
@@ -131,8 +135,20 @@ pub fn run_block() -> RunSummary {
 /// source of randomness.
 pub fn set_parachain_inherent_data() {
     use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
+
+    frame_support::storage::unhashed::put(&frame_support::storage::storage_prefix(
+        b"AuthorInherent",
+        b"HighestSlotInfo",
+    ), &current_slot());
+    
+    let mut relay_sproof = RelayStateSproofBuilder::default();
+    relay_sproof.para_id = 100u32.into();
+    relay_sproof.included_para_head = Some(HeadData(vec![1,2,3]));
+    relay_sproof.current_slot = u64::from(current_slot().0 * 2).into();
+
     let (relay_parent_storage_root, relay_chain_state) =
-        RelayStateSproofBuilder::default().into_state_root_and_proof();
+    relay_sproof.into_state_root_and_proof();
+
     let vfp = PersistedValidationData {
         relay_parent_number: 1u32,
         relay_parent_storage_root,
@@ -144,6 +160,13 @@ pub fn set_parachain_inherent_data() {
         downward_messages: Default::default(),
         horizontal_messages: Default::default(),
     };
+    // Delete existing flag to avoid error
+    // 'ValidationData must be updated only once in a block'
+    // TODO: this is a hack
+    frame_support::storage::unhashed::kill(&frame_support::storage::storage_prefix(
+        b"ParachainSystem",
+        b"ValidationData",
+    ));
     assert_ok!(RuntimeCall::ParachainSystem(
         cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
             data: parachain_inherent_data
@@ -382,7 +405,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
 }
 
 pub fn get_orchestrator_current_author() -> Option<AccountId> {
-    let slot: u64 = current_slot().into();
+    let slot: u64 = current_slot().0.into();
     let orchestrator_collators = Runtime::parachain_collators(ParachainInfo::get())?;
     let author_index = slot % orchestrator_collators.len() as u64;
     let account = orchestrator_collators.get(author_index as usize)?;
@@ -432,8 +455,8 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     }
 }
 
-pub fn current_slot() -> u64 {
-    pallet_author_inherent::HighestSlotSeen::<Runtime>::get().into()
+pub fn current_slot() -> (u32, u32) {
+    pallet_author_inherent::Pallet::<Runtime>::get_highest_slot_info().unwrap_or((0u32,0u32))
 }
 
 pub fn authorities() -> Vec<NimbusId> {

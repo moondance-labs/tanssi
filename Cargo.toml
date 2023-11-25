@@ -59,12 +59,12 @@ tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
 # Moonkit (wasm)
-nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0" }
-nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
-xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.1.0", default-features = false }
+nimbus-consensus = { git = "https://github.com/moonsong-labs/moonkit", branch = "tanssi-async-backing-test" }
+nimbus-primitives = { git = "https://github.com/moonsong-labs/moonkit", branch = "tanssi-async-backing-test", default-features = false }
+pallet-author-inherent = { git = "https://github.com/moonsong-labs/moonkit", branch = "tanssi-async-backing-test", default-features = false }
+pallet-maintenance-mode = { git = "https://github.com/moonsong-labs/moonkit", branch = "tanssi-async-backing-test", default-features = false }
+pallet-migrations = { git = "https://github.com/moonsong-labs/moonkit", branch = "tanssi-async-backing-test", default-features = false }
+xcm-primitives = { git = "https://github.com/moonsong-labs/moonkit", branch = "tanssi-async-backing-test", default-features = false }
 
 # Substrate (wasm)
 sp-consensus-beefy = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.1.0", default-features = false }

@@ -302,13 +302,13 @@ fn test_author_collation_aura() {
         .execute_with(|| {
             run_to_block(5);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 4u64);
+            assert_eq!(current_slot().0, 4u32);
             // slot 4, alice
             assert!(current_author() == AccountId::from(ALICE));
 
             run_to_block(6);
 
-            assert_eq!(current_slot(), 5u64);
+            assert_eq!(current_slot().0, 5u32);
             // slot 5, bob
             assert!(current_author() == AccountId::from(BOB));
         });
@@ -337,7 +337,7 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // We change invulnerables
@@ -409,7 +409,7 @@ fn test_author_collation_aura_add_assigned_to_paras() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // We change invulnerables
@@ -478,7 +478,7 @@ fn test_authors_without_paras() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // Only Alice and Bob collate for our chain
@@ -526,7 +526,7 @@ fn test_authors_paras_inserted_a_posteriori() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob collate in our chain
@@ -606,7 +606,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob collate in our chain
@@ -672,7 +672,7 @@ fn test_paras_registered_but_zero_credits() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob collate in our chain
@@ -723,7 +723,7 @@ fn test_paras_registered_but_not_enough_credits() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob collate in our chain
@@ -797,7 +797,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob collate in our chain
@@ -836,7 +836,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             );
 
             // No credits are consumed if the container chain is not producing blocks
-            run_block();
+            run_block(false);
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
             )
@@ -860,7 +860,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             sproof.items.push(s);
             set_author_noting_inherent_data(sproof);
 
-            run_block();
+            run_block(false);
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
             )
@@ -907,7 +907,7 @@ fn test_parachains_deregister_collators_re_assigned() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob are authorities
@@ -970,7 +970,7 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
 
             // Alice and Bob are authorities
@@ -1037,7 +1037,7 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(ALICE));
 
             // Alice and Bob are authorities
@@ -1124,7 +1124,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
         .execute_with(|| {
             run_to_block(2);
             // Assert current slot gets updated
-            assert_eq!(current_slot(), 1u64);
+            assert_eq!(current_slot().0, 1u32);
             assert!(current_author() == AccountId::from(BOB));
             assert_eq!(
                 Runtime::parachain_collators(100.into()),
@@ -3926,7 +3926,7 @@ fn test_reward_to_staking_candidate() {
             let balance_before = System::account(account.clone()).data.free;
             let summary = (0..100)
                 .find_map(|_| {
-                    let summary = run_block();
+                    let summary = run_block(false);
                     if summary.author_id == DAVE.into() {
                         Some(summary)
                     } else {
@@ -4029,7 +4029,7 @@ fn test_reward_to_invulnerable() {
 
             let summary = (0..100)
                 .find_map(|_| {
-                    let summary = run_block();
+                    let summary = run_block(false);
                     if summary.author_id == ALICE.into() {
                         Some(summary)
                     } else {
@@ -4094,7 +4094,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             let account: AccountId = ALICE.into();
             let balance_before = System::account(account.clone()).data.free;
 
-            let summary = run_block();
+            let summary = run_block(false);
             assert_eq!(summary.author_id, ALICE.into());
 
             let balance_after = System::account(account).data.free;
@@ -4371,3 +4371,89 @@ fn test_can_buy_credits_before_registering_para() {
             assert_eq!(balance_before - balance_after, expected_cost);
         });
 }
+
+#[test]
+fn test_can_build_up_to_velocity_in_the_same_slot() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+
+            // First we produce some blocks in the same slot.
+            run_block(true);
+            run_block(true);
+
+            // Then trigger set_validation_data to perform the checks inside 
+            // NimbusVelocityConsensusHook trait.
+            set_parachain_inherent_data();
+        });
+}
+
+#[test]
+#[should_panic = "authored blocks limit is reached for the slot"]
+fn test_fails_trying_to_build_more_than_velocity() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+
+            // First we produce some blocks in the same slot.
+            run_block(true);
+            run_block(true);
+            run_block(true);
+            run_block(true);
+
+            // Should fail as we are trying to produce more blocks 
+            // in the slot than the allowed in BLOCK_PROCESSING_VELOCITY.
+            set_parachain_inherent_data();
+        });
+}
+
+#[test]
+fn validation_data_should_succeed_when_producing_blocks_in_different_slots() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+
+            // First we produce some blocks in the same slot.
+            run_block(false);
+            run_block(false);
+            run_block(false);
+            run_block(false);
+
+            // Should succeed as we are changing the slot on each new block.
+            // Trigger set_validation_data to perform the checks.
+            set_parachain_inherent_data();
+        });
+}
+
+// TODO: build a test in which we use rewards. Two blocks should reward the same with async-backing.
+// check who is the author (what happens, if changes, not, etc.) 

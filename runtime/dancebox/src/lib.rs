@@ -37,7 +37,7 @@ pub mod weights;
 use sp_runtime::TryRuntimeError;
 
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases, RelayNumberMonotonicallyIncreases},
     cumulus_primitives_core::{
         relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
         BodyId, DmpMessageHandler, ParaId,
@@ -49,7 +49,7 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
+            ConstU128, ConstU32, ConstU64, ConstU8, ConstBool, Contains, InstanceFilter, OffchainWorker,
             OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
         },
         weights::{
@@ -249,9 +249,9 @@ const AVERAGE_ON_INITIALIZE_RATIO: Perbill = Perbill::from_percent(5);
 /// `Operational` extrinsics.
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
 
-/// We allow for 0.5 of a second of compute with a 12 second average block time.
+/// We allow for 2 seconds of compute with a 6 second average block time.
 const MAXIMUM_BLOCK_WEIGHT: Weight = Weight::from_parts(
-    WEIGHT_REF_TIME_PER_SECOND.saturating_div(2),
+    WEIGHT_REF_TIME_PER_SECOND.saturating_mul(2),
     cumulus_primitives_core::relay_chain::MAX_POV_SIZE as u64,
 );
 
@@ -378,6 +378,8 @@ impl pallet_author_inherent::Config for Runtime {
     type AccountLookup = tp_consensus::NimbusLookUp;
     type CanAuthor = CanAuthor;
     type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type AllowMultipleBlocksPerSlot = ConstBool<true>;
+	type SlotDuration = ConstU64<SLOT_DURATION>;
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
@@ -432,6 +434,17 @@ parameter_types! {
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
 
+pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
+pub const BLOCK_PROCESSING_VELOCITY: u32 = 2;
+
+type ConsensusHook = pallet_author_inherent::consensus_hook::NimbusVelocityConsensusHook<
+	Runtime,
+	RELAY_CHAIN_SLOT_DURATION_MILLIS,
+	BLOCK_PROCESSING_VELOCITY,
+	UNINCLUDED_SEGMENT_CAPACITY,
+>;
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
@@ -441,7 +454,8 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
-    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
+    type ConsensusHook = ConsensusHook;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way

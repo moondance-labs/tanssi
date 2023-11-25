@@ -6776,7 +6776,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
+source = "git+https://github.com/moonsong-labs/moonkit?branch=tanssi-async-backing-test#f2950d4719e45c4d4fee68716ad4ee33d7e08dc8"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -6806,7 +6806,7 @@ dependencies = [
 [[package]]
 name = "nimbus-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
+source = "git+https://github.com/moonsong-labs/moonkit?branch=tanssi-async-backing-test#f2950d4719e45c4d4fee68716ad4ee33d7e08dc8"
 dependencies = [
  "async-trait",
  "frame-support",
@@ -7181,8 +7181,9 @@ dependencies = [
 [[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
+source = "git+https://github.com/moonsong-labs/moonkit?branch=tanssi-async-backing-test#f2950d4719e45c4d4fee68716ad4ee33d7e08dc8"
 dependencies = [
+ "cumulus-pallet-parachain-system",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -7192,6 +7193,7 @@ dependencies = [
  "scale-info",
  "sp-api",
  "sp-application-crypto",
+ "sp-consensus-slots",
  "sp-inherents",
  "sp-runtime",
  "sp-std",
@@ -7949,7 +7951,7 @@ dependencies = [
 [[package]]
 name = "pallet-maintenance-mode"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
+source = "git+https://github.com/moonsong-labs/moonkit?branch=tanssi-async-backing-test#f2950d4719e45c4d4fee68716ad4ee33d7e08dc8"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -8001,7 +8003,7 @@ dependencies = [
 [[package]]
 name = "pallet-migrations"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
+source = "git+https://github.com/moonsong-labs/moonkit?branch=tanssi-async-backing-test#f2950d4719e45c4d4fee68716ad4ee33d7e08dc8"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -16824,7 +16826,7 @@ dependencies = [
 [[package]]
 name = "xcm-primitives"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.1.0#cb1c4fd10debd2d09d11292ff3ff7a4c053f622d"
+source = "git+https://github.com/moonsong-labs/moonkit?branch=tanssi-async-backing-test#f2950d4719e45c4d4fee68716ad4ee33d7e08dc8"
 dependencies = [
  "sp-runtime",
 ]
