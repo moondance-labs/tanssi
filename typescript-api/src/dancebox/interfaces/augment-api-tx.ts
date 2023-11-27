@@ -461,7 +461,7 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         pooledStaking: {
-            /** See `Pallet::claim_manual_rewards`. */
+            /** See [`Pallet::claim_manual_rewards`]. */
             claimManualRewards: AugmentedSubmittable<
                 (
                     pairs:
@@ -470,7 +470,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[AccountId32, AccountId32]>>]
             >;
-            /** See `Pallet::execute_pending_operations`. */
+            /** See [`Pallet::execute_pending_operations`]. */
             executePendingOperations: AugmentedSubmittable<
                 (
                     operations:
@@ -484,7 +484,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<PalletPooledStakingPendingOperationQuery>]
             >;
-            /** See `Pallet::rebalance_hold`. */
+            /** See [`Pallet::rebalance_hold`]. */
             rebalanceHold: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
@@ -500,7 +500,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, AccountId32, PalletPooledStakingAllTargetPool]
             >;
-            /** See `Pallet::request_delegate`. */
+            /** See [`Pallet::request_delegate`]. */
             requestDelegate: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
@@ -509,7 +509,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingTargetPool, u128]
             >;
-            /** See `Pallet::request_undelegate`. */
+            /** See [`Pallet::request_undelegate`]. */
             requestUndelegate: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
@@ -518,7 +518,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
             >;
-            /** See `Pallet::swap_pool`. */
+            /** See [`Pallet::swap_pool`]. */
             swapPool: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
@@ -532,7 +532,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
             >;
-            /** See `Pallet::update_candidate_position`. */
+            /** See [`Pallet::update_candidate_position`]. */
             updateCandidatePosition: AugmentedSubmittable<
                 (candidates: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
                 [Vec<AccountId32>]
