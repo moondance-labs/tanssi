@@ -83,11 +83,13 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     Dancebox::execute_with(|| {
         let origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
 
-        assert_ok!(<Dancebox as DanceboxPallet>::Balances::transfer(
-            origin,
-            sp_runtime::MultiAddress::Id(alice_westend_account_dancebox),
-            100 * DANCE
-        ));
+        assert_ok!(
+            <Dancebox as DanceboxPallet>::Balances::transfer_allow_death(
+                origin,
+                sp_runtime::MultiAddress::Id(alice_westend_account_dancebox),
+                100 * DANCE
+            )
+        );
     });
 
     // Send XCM message from Westend
@@ -183,7 +185,7 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
 
         let origin = <FrontierTemplate as Chain>::RuntimeOrigin::signed(EthereumSender::get());
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::Balances::transfer(
+            <FrontierTemplate as FrontierTemplatePallet>::Balances::transfer_allow_death(
                 origin,
                 alice_dancebox_account_frontier,
                 100 * FRONTIER_DEV

@@ -2444,7 +2444,7 @@ fn test_staking_join_no_keys_registered() {
 
             let stake = MinimumSelfDelegation::get() * 10;
             let new_account = AccountId::from([42u8; 32]);
-            assert_ok!(Balances::transfer(
+            assert_ok!(Balances::transfer_allow_death(
                 origin_of(ALICE.into()),
                 new_account.clone().into(),
                 stake * 2
@@ -2500,7 +2500,7 @@ fn test_staking_register_keys_after_joining() {
 
             let stake = MinimumSelfDelegation::get() * 10;
             let new_account = AccountId::from([42u8; 32]);
-            assert_ok!(Balances::transfer(
+            assert_ok!(Balances::transfer_allow_death(
                 origin_of(ALICE.into()),
                 new_account.clone().into(),
                 stake * 2
@@ -3836,7 +3836,10 @@ fn test_migration_holds() {
             let new_holds = pallet_balances::Holds::<Runtime>::get(AccountId::from(ALICE));
 
             assert_eq!(new_holds.len() as u32, 1u32);
-            assert_eq!(new_holds[0].id, dancebox_runtime::HoldReason::PooledStake);
+            assert_eq!(
+                new_holds[0].id,
+                pallet_pooled_staking::HoldReason::PooledStake.into()
+            );
             assert_eq!(new_holds[0].amount, 100u128);
         });
 }

@@ -386,15 +386,6 @@ parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
 }
 
-/// A reason for placing a hold on funds.
-#[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, Debug, TypeInfo,
-)]
-pub enum HoldReason {
-    /// The Pooled Stake holds
-    PooledStake,
-}
-
 impl pallet_balances::Config for Runtime {
     type MaxLocks = ConstU32<50>;
     /// The type for recording an account's balance.
@@ -408,7 +399,8 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = [u8; 8];
     type MaxFreezes = ConstU32<0>;
-    type RuntimeHoldReason = HoldReason;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<1>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
@@ -1132,7 +1124,6 @@ impl pallet_root_testing::Config for Runtime {}
 
 parameter_types! {
     pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
-    pub const CurrencyHoldReason: HoldReason = HoldReason::PooledStake;
     pub const InitialManualClaimShareValue: u128 = currency::MILLIDANCE;
     pub const InitialAutoCompoundingShareValue: u128 = currency::MILLIDANCE;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
@@ -1205,11 +1196,11 @@ impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Balance = Balance;
-    type CurrencyHoldReason = CurrencyHoldReason;
     type StakingAccount = StakingAccount;
     type InitialManualClaimShareValue = InitialManualClaimShareValue;
     type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
     type MinimumSelfDelegation = MinimumSelfDelegation;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
