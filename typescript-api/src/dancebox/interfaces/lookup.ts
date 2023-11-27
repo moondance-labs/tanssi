@@ -1966,6 +1966,10 @@ export default {
                 paraId: "u32",
                 credits: "u32",
             },
+            set_given_free_credits: {
+                paraId: "u32",
+                givenFreeCredits: "bool",
+            },
         },
     },
     /** Lookup215: pallet_invulnerables::pallet::Call<T> */
