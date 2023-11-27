@@ -36,6 +36,10 @@ pub mod weights;
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
 
+use frame_support::traits::EitherOfDiverse;
+use frame_system::EnsureSigned;
+use frame_system::RawOrigin;
+use sp_runtime::Either;
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
@@ -49,8 +53,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
-            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, EnsureOriginWithArg, InstanceFilter,
+            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -767,9 +772,52 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
 
+pub struct DanceboxContainerChainManagerOrRootOrigin<T, RootOrigin> {
+    // Configurable root origin
+    container_chain_manager_origin: PhantomData<RootOrigin>,
+    _phantom: PhantomData<T>,
+}
+
+impl<O, T, RootOrigin> EnsureOriginWithArg<O, ParaId>
+    for DanceboxContainerChainManagerOrRootOrigin<T, RootOrigin>
+where
+    T: pallet_registrar::Config,
+    RootOrigin: EnsureOriginWithArg<O, ParaId>,
+    O: From<RawOrigin<T::AccountId>>,
+    Result<RawOrigin<T::AccountId>, O>: From<O>,
+    O: Clone,
+{
+    type Success = Either<T::AccountId, <RootOrigin as EnsureOriginWithArg<O, ParaId>>::Success>;
+
+    fn try_origin(o: O, para_id: &ParaId) -> Result<Self::Success, O> {
+        let origin = EitherOfDiverse::<EnsureSigned<T::AccountId>, RootOrigin>::try_origin(
+            o.clone(),
+            para_id,
+        )?;
+
+        if let Either::Left(signed_account) = &origin {
+            // This check will only pass if both are true:
+            // * The para_id has a deposit in pallet_registrar
+            // * The deposit creator is the signed_account
+            pallet_registrar::RegistrarDeposit::<T>::get(para_id)
+                .and_then(|deposit_info| {
+                    if &deposit_info.creator != signed_account {
+                        None
+                    } else {
+                        Some(())
+                    }
+                })
+                .ok_or(o)?;
+        }
+
+        Ok(origin)
+    }
+}
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
+    type ContainerChainManagerOrRootOrigin =
+        DanceboxContainerChainManagerOrRootOrigin<Runtime, EnsureRoot<AccountId>>;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
     type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;

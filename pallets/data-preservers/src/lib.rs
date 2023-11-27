@@ -34,23 +34,16 @@ pub mod weights;
 
 use {
     crate::weights::WeightInfo,
-    dp_core::{BlockNumber, ParaId},
+    dp_core::ParaId,
     frame_support::{
         pallet_prelude::*,
-        parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect},
-            tokens::{Fortitude, Precision, Preservation},
-            Imbalance, OnUnbalanced,
+            EnsureOriginWithArg,
         },
     },
     frame_system::pallet_prelude::*,
-    sp_runtime::{
-        traits::{Get, Saturating},
-        Perbill,
-    },
-    sp_std::vec::Vec,
-    tp_traits::{AuthorNotingHook, DistributeRewards, GetCurrentContainerChains},
+    sp_runtime::traits::Get,
 };
 
 #[frame_support::pallet]
@@ -71,6 +64,7 @@ pub mod pallet {
         /// Overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
+        type ContainerChainManagerOrRootOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
         type MaxBootNodes: Get<u32>;
         type MaxBootNodeUrlLen: Get<u32>;
@@ -108,35 +102,13 @@ pub mod pallet {
             para_id: ParaId,
             boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
         ) -> DispatchResult {
-            // TODO: extract this logic somewhere and use it instead of ensure_root
-            // Something like ensure_container_chain_manager_or_root
-            // That will return Either::Left(container_chain_manager_addr), Either::Right for root, or error
-            /*
-            let origin =
-                EitherOfDiverse::<T::RegistrarOrigin, EnsureSigned<T::AccountId>>::ensure_origin(
-                    origin,
-                )?;
-
-            if let Either::Right(signed_account) = origin {
-                let deposit_info = RegistrarDeposit::<T>::get(para_id).ok_or(BadOrigin)?;
-                if deposit_info.creator != signed_account {
-                    Err(BadOrigin)?;
-                }
-            }
-            */
-            ensure_root(origin)?;
+            T::ContainerChainManagerOrRootOrigin::ensure_origin(origin, &para_id)?;
 
             BootNodes::<T>::insert(para_id, boot_nodes);
 
             Self::deposit_event(Event::BootNodesChanged { para_id });
 
             Ok(())
-        }
-    }
-
-    impl<T: Config> Pallet<T> {
-        fn some_method() -> Weight {
-            todo!()
         }
     }
 }

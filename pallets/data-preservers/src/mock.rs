@@ -23,13 +23,14 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU64, Everything,
+            ConstU64, EitherOfDiverse, EnsureOriginWithArg, Everything,
         },
     },
+    frame_system::{EnsureRoot, EnsureSigned, RawOrigin},
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
-        BuildStorage, Perbill,
+        BuildStorage, Either, Perbill,
     },
 };
 
@@ -199,9 +200,53 @@ parameter_types! {
     pub const InflationRate: Perbill = Perbill::from_percent(1);
 }
 
+pub struct MockContainerChainManagerOrRootOrigin<T, RootOrigin> {
+    // Configurable root origin
+    container_chain_manager_origin: PhantomData<RootOrigin>,
+    _phantom: PhantomData<T>,
+}
+
+impl<O, T, RootOrigin> EnsureOriginWithArg<O, ParaId>
+    for MockContainerChainManagerOrRootOrigin<T, RootOrigin>
+where
+    T: crate::Config,
+    RootOrigin: EnsureOriginWithArg<O, ParaId>,
+    O: From<RawOrigin<T::AccountId>>,
+    Result<RawOrigin<T::AccountId>, O>: From<O>,
+{
+    type Success = Either<T::AccountId, <RootOrigin as EnsureOriginWithArg<O, ParaId>>::Success>;
+
+    fn try_origin(o: O, para_id: &ParaId) -> Result<Self::Success, O> {
+        let origin =
+            EitherOfDiverse::<EnsureSigned<T::AccountId>, RootOrigin>::try_origin(o, para_id)?;
+
+        if let Either::Left(_signed_account) = &origin {
+            // TODO: mock deposit?
+            /*
+            // This check will only pass if both are true:
+            // * The para_id has a deposit in pallet_registrar
+            // * The deposit creator is the signed_account
+            pallet_registrar::RegistrarDeposit::<T>::get(para_id)
+                .and_then(|deposit_info| {
+                    if &deposit_info.creator != signed_account {
+                        None
+                    } else {
+                        Some(())
+                    }
+                })
+                .ok_or(o)?;
+            */
+        }
+
+        Ok(origin)
+    }
+}
+
 impl pallet_inflation_rewards::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
+    type ContainerChainManagerOrRootOrigin =
+        MockContainerChainManagerOrRootOrigin<Test, EnsureRoot<AccountId>>;
     type MaxBootNodes = ConstU32<10>;
     type MaxBootNodeUrlLen = ConstU32<200>;
     type WeightInfo = ();
