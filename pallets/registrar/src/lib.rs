@@ -246,7 +246,7 @@ pub mod pallet {
         ParaIdPaused { para_id: ParaId },
         /// A para id has been unpaused.
         ParaIdUnpaused { para_id: ParaId },
-        /// The list of boot_nodes
+        /// The list of boot_nodes changed.
         BootNodesChanged { para_id: ParaId },
     }
 

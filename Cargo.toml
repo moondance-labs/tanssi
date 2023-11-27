@@ -26,6 +26,7 @@ pallet-authority-mapping = { path = "pallets/authority-mapping", default-feature
 pallet-collator-assignment = { path = "pallets/collator-assignment", default-features = false }
 pallet-collator-assignment-runtime-api = { path = "pallets/collator-assignment/rpc/runtime-api", default-features = false }
 pallet-configuration = { path = "pallets/configuration", default-features = false }
+pallet-data-preservers = { path = "pallets/data-preservers", default-features = false }
 pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }

@@ -2859,6 +2859,7 @@ dependencies = [
  "pallet-collator-assignment",
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
+ "pallet-data-preservers",
  "pallet-im-online",
  "pallet-inflation-rewards",
  "pallet-initializer",
@@ -7742,6 +7743,30 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-data-preservers"
+version = "0.1.0"
+dependencies = [
+ "bounded-collections",
+ "dp-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "nimbus-primitives",
+ "num-traits",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "similar-asserts",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "tp-traits",
 ]
 
 [[package]]

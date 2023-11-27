@@ -767,6 +767,14 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_data_preservers::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type MaxBootNodes = MaxBootNodes;
+    type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
+    type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
@@ -1294,6 +1302,7 @@ construct_runtime!(
         AuthorNoting: pallet_author_noting = 24,
         AuthorityAssignment: pallet_authority_assignment = 25,
         ServicesPayment: pallet_services_payment = 26,
+        DataPreservers: pallet_data_preservers = 27,
 
         // Collator support. The order of these 6 are important and shall not change.
         Invulnerables: pallet_invulnerables = 30,
@@ -1325,6 +1334,7 @@ mod benches {
         [pallet_invulnerables, Invulnerables]
         [pallet_pooled_staking, PooledStaking]
         [pallet_services_payment, ServicesPayment]
+        [pallet_data_preservers, DataPreservers]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }
