@@ -37,7 +37,7 @@ use {
 #[test]
 fn using_signed_based_sovereign_works_in_tanssi() {
     // XcmPallet send arguments
-    let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
+    let root_origin = <Westend as Chain>::RuntimeOrigin::root();
     let dancebox_dest: VersionedMultiLocation = MultiLocation {
         parents: 0,
         interior: X1(Parachain(2000u32)),
@@ -50,6 +50,10 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     };
 
     let xcm = VersionedXcm::from(Xcm(vec![
+        DescendOrigin(X1(AccountId32 {
+            network: None,
+            id: WestendSender::get().into(),
+        })),
         WithdrawAsset {
             0: vec![buy_execution_fee.clone()].into(),
         },
@@ -95,7 +99,7 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(<Westend as WestendPallet>::XcmPallet::send(
-            alice_origin,
+            root_origin,
             bx!(dancebox_dest),
             bx!(xcm),
         ));
