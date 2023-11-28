@@ -15,7 +15,7 @@ describeSuite({
             privateKey = generatePrivateKey();
             randomAccount = privateKeyToAccount(privateKey);
             const { result } = await context.createBlock(
-                context.polkadotJs().tx.balances.transferAllowDeathKeepAlive(randomAccount.address, 10_000_000_000_000_000_000n)
+                context.polkadotJs().tx.balances.transferAllowDeath(randomAccount.address, 10_000_000_000_000_000_000n)
             );
             expect(result!.successful, result!.error?.name).to.be.true;
         });

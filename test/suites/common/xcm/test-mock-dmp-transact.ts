@@ -2,6 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair, alith } from "@moonwall/util";
 import { generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
+import { XcmVersionedXcm } from "@polkadot/types/lookup";
 import {
     RawXcmMessage,
     XcmFragment,
@@ -98,7 +99,7 @@ describeSuite({
 
                 // Send an XCM and create block to execute it
                 await injectDmpMessageAndSeal(context, {
-                    type: "StagingXcmVersionedXcm",
+                    type: "XcmVersionedXcm",
                     payload: xcmMessage,
                 } as RawXcmMessage);
 

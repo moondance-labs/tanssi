@@ -1,7 +1,7 @@
-import "@moonbeam-network/api-augment";
+import "@tanssi/api-augment";
 import { describeSuite, expect } from "@moonwall/cli";
 import { GLMR, extractWeight, generateKeyringPair } from "@moonwall/util";
-import { StagingXcmVersionedXcm } from "@polkadot/types/lookup";
+import { XcmVersionedXcm } from "@polkadot/types/lookup";
 import { u8aToHex } from "@polkadot/util";
 import { expectEVMResult, descendOriginFromAddress20 } from "../../../helpers";
 
@@ -188,9 +188,9 @@ describeSuite({
                     ],
                 };
 
-                const receivedMessage: StagingXcmVersionedXcm = context
+                const receivedMessage: XcmVersionedXcm = context
                     .polkadotJs()
-                    .createType("StagingXcmVersionedXcm", xcmMessage) as any;
+                    .createType("XcmVersionedXcm", xcmMessage) as any;
 
                 const rawTxn = await context.writeContract!({
                     contractAddress: XCM_UTILS_ADDRESS,
@@ -250,9 +250,9 @@ describeSuite({
         //       ],
         //     };
 
-        //     const receivedMessage: StagingXcmVersionedXcm = context
+        //     const receivedMessage: XcmVersionedXcm = context
         //       .polkadotJs()
-        //       .createType("StagingXcmVersionedXcm", xcmMessage);
+        //       .createType("XcmVersionedXcm", xcmMessage);
 
         //     const rawTxn = await context.writeContract!({
         //       contractAddress: XCM_UTILS_ADDRESS,
@@ -318,9 +318,9 @@ describeSuite({
                     ],
                 };
 
-                const sentMessage: StagingXcmVersionedXcm = context
+                const sentMessage: XcmVersionedXcm = context
                     .polkadotJs()
-                    .createType("StagingXcmVersionedXcm", xcmMessage) as any;
+                    .createType("XcmVersionedXcm", xcmMessage) as any;
 
                 // Try sending it with local view
                 const localRawTxn = await context.writeContract!({
@@ -420,9 +420,9 @@ describeSuite({
                     ],
                 };
 
-                const sentMessage: StagingXcmVersionedXcm = context
+                const sentMessage: XcmVersionedXcm = context
                     .polkadotJs()
-                    .createType("StagingXcmVersionedXcm", xcmMessage);
+                    .createType("XcmVersionedXcm", xcmMessage);
 
                 const rawTxn = await context.writeContract!({
                     contractAddress: XCM_UTILS_ADDRESS,
