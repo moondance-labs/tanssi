@@ -449,7 +449,10 @@ where
 
         let stored_data: Vec<_> = storage_key_iter::<
             T::AccountId,
-            BoundedVec<IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
+            BoundedVec<
+                IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>,
+                T::MaxHolds,
+            >,
             Blake2_128Concat,
         >(pallet_prefix, storage_item_prefix)
         .collect();
@@ -464,7 +467,10 @@ where
         use parity_scale_codec::Decode;
         let should_be_migrated: Vec<(
             T::AccountId,
-            BoundedVec<IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
+            BoundedVec<
+                IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>,
+                T::MaxHolds,
+            >,
         )> = Decode::decode(&mut migrated_holds.as_slice()).expect("should be decodable");
 
         // Write to the new storage
