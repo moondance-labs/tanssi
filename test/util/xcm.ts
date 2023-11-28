@@ -181,17 +181,13 @@ export interface RawXcmMessage {
 export function buildXcmpMessage(context: DevModeContext, message: RawXcmMessage): number[] {
     const format = message.format != null ? message.format : "ConcatenatedVersionedXcm";
     const xcmpFormat: XcmpMessageFormat = context.polkadotJs().createType("XcmpMessageFormat", format) as any;
-    const receivedMessage: XcmVersionedXcm = context
-        .polkadotJs()
-        .createType(message.type, message.payload) as any;
+    const receivedMessage: XcmVersionedXcm = context.polkadotJs().createType(message.type, message.payload) as any;
 
     return [...xcmpFormat.toU8a(), ...receivedMessage.toU8a()];
 }
 
 export function buildDmpMessage(context: DevModeContext, message: RawXcmMessage): number[] {
-    const receivedMessage: XcmVersionedXcm = context
-        .polkadotJs()
-        .createType("XcmVersionedXcm", message.payload) as any;
+    const receivedMessage: XcmVersionedXcm = context.polkadotJs().createType("XcmVersionedXcm", message.payload) as any;
 
     return [...receivedMessage.toU8a()];
 }
@@ -874,9 +870,7 @@ export class XcmFragment {
     // Overrides the weight limit of the first buyExeuction encountered
     // with the measured weight
     async override_weight(context: DevModeContext): Promise<this> {
-        const message: XcmVersionedXcm = context
-            .polkadotJs()
-            .createType("XcmVersionedXcm", this.as_v2()) as any;
+        const message: XcmVersionedXcm = context.polkadotJs().createType("XcmVersionedXcm", this.as_v2()) as any;
 
         const instructions = message.asV2;
         for (let i = 0; i < instructions.length; i++) {

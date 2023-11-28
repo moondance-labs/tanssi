@@ -2,7 +2,6 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair, alith } from "@moonwall/util";
 import { generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { XcmVersionedXcm } from "@polkadot/types/lookup";
 import {
     RawXcmMessage,
     XcmFragment,
@@ -61,7 +60,10 @@ describeSuite({
                     .find(({ name }) => name.toString() == "Balances")!
                     .index.toNumber();
 
-                const transferCall = polkadotJs.tx.balances.transferAllowDeath(random.address, transferredBalance / 10n);
+                const transferCall = polkadotJs.tx.balances.transferAllowDeath(
+                    random.address,
+                    transferredBalance / 10n
+                );
                 const transferCallEncoded = transferCall?.method.toHex();
 
                 // We are going to test that we can receive a transact operation from parachain 1

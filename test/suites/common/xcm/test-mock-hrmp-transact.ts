@@ -73,7 +73,10 @@ describeSuite({
                     .find(({ name }) => name.toString() == "Balances")!
                     .index.toNumber();
 
-                const transferCall = polkadotJs.tx.balances.transferAllowDeath(random.address, transferredBalance / 10n);
+                const transferCall = polkadotJs.tx.balances.transferAllowDeath(
+                    random.address,
+                    transferredBalance / 10n
+                );
                 const transferCallEncoded = transferCall?.method.toHex();
 
                 // We are going to test that we can receive a transact operation from parachain 1
@@ -135,7 +138,10 @@ describeSuite({
                     .find(({ name }) => name.toString() == "Balances")!
                     .index.toNumber();
 
-                const transferCall = polkadotJs.tx.balances.transferAllowDeath(random.address, transferredBalance / 10n);
+                const transferCall = polkadotJs.tx.balances.transferAllowDeath(
+                    random.address,
+                    transferredBalance / 10n
+                );
                 const transferCallEncoded = transferCall?.method.toHex();
                 // We are going to test that we can receive a transact operation from parachain 1
 

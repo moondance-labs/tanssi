@@ -420,9 +420,7 @@ describeSuite({
                     ],
                 };
 
-                const sentMessage: XcmVersionedXcm = context
-                    .polkadotJs()
-                    .createType("XcmVersionedXcm", xcmMessage);
+                const sentMessage: XcmVersionedXcm = context.polkadotJs().createType("XcmVersionedXcm", xcmMessage);
 
                 const rawTxn = await context.writeContract!({
                     contractAddress: XCM_UTILS_ADDRESS,
