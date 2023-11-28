@@ -34,7 +34,9 @@ pub mod xcm_config;
 
 use {
     crate::precompiles::TemplatePrecompiles,
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases, RelayNumberMonotonicallyIncreases},
+    cumulus_pallet_parachain_system::{
+        RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelayNumberStrictlyIncreases,
+    },
     cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, DmpMessageHandler},
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
@@ -45,9 +47,9 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstU128, ConstU32, ConstU64, ConstU8, ConstBool, Contains, Currency as CurrencyT, FindAuthor,
-            Imbalance, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
-            OnRuntimeUpgrade, OnUnbalanced,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, Currency as CurrencyT,
+            FindAuthor, Imbalance, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
+            OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -508,10 +510,10 @@ pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_author_inherent::consensus_hook::NimbusVelocityConsensusHook<
-	Runtime,
-	RELAY_CHAIN_SLOT_DURATION_MILLIS,
-	BLOCK_PROCESSING_VELOCITY,
-	UNINCLUDED_SEGMENT_CAPACITY,
+    Runtime,
+    RELAY_CHAIN_SLOT_DURATION_MILLIS,
+    BLOCK_PROCESSING_VELOCITY,
+    UNINCLUDED_SEGMENT_CAPACITY,
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
@@ -882,7 +884,7 @@ impl pallet_author_inherent::Config for Runtime {
     type CanAuthor = pallet_cc_authorities_noting::CanAuthor<Runtime>;
     type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
     type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type SlotDuration = ConstU64<SLOT_DURATION>;
+    type SlotDuration = ConstU64<SLOT_DURATION>;
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 

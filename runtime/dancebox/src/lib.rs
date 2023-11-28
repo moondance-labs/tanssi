@@ -37,7 +37,9 @@ pub mod weights;
 use sp_runtime::TryRuntimeError;
 
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases, RelayNumberMonotonicallyIncreases},
+    cumulus_pallet_parachain_system::{
+        RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelayNumberStrictlyIncreases,
+    },
     cumulus_primitives_core::{
         relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
         BodyId, DmpMessageHandler, ParaId,
@@ -49,8 +51,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, ConstBool, Contains, InstanceFilter, OffchainWorker,
-            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter,
+            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -380,7 +383,7 @@ impl pallet_author_inherent::Config for Runtime {
     type CanAuthor = CanAuthor;
     type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
     type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type SlotDuration = ConstU64<SLOT_DURATION>;
+    type SlotDuration = ConstU64<SLOT_DURATION>;
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
@@ -440,10 +443,10 @@ pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_author_inherent::consensus_hook::NimbusVelocityConsensusHook<
-	Runtime,
-	RELAY_CHAIN_SLOT_DURATION_MILLIS,
-	BLOCK_PROCESSING_VELOCITY,
-	UNINCLUDED_SEGMENT_CAPACITY,
+    Runtime,
+    RELAY_CHAIN_SLOT_DURATION_MILLIS,
+    BLOCK_PROCESSING_VELOCITY,
+    UNINCLUDED_SEGMENT_CAPACITY,
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
