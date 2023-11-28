@@ -16,7 +16,7 @@ describeSuite({
                 const block = await context.polkadotJs().rpc.chain.getBlock();
                 const allRecords = await context.polkadotJs().query.system.events();
 
-                // Get index of authorNoting.setLatestAuthorData
+                // Get index of authoritiesNoting.setLatestAuthoritiesData
                 const setAuthorIntrinsicIndex = block.block.extrinsics.reduce(
                     (filtered, extrinsic, idx) =>
                         filtered.concat(
