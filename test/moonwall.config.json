@@ -68,7 +68,6 @@
         {
             "name": "dev_simple_template",
             "testFileDir": ["suites/common"],
-            "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": true,
             "reporters": ["basic"],
             "contracts": "helpers/",

@@ -652,7 +652,7 @@ impl pallet_author_inherent::Config for Runtime {
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_root_testing::Config for Runtime { }
+impl pallet_root_testing::Config for Runtime {}
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(

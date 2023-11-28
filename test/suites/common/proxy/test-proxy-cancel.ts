@@ -69,7 +69,7 @@ describeSuite({
             title: "Add proxy CancelProxy",
             test: async function () {
                 const delegate = charlie.address;
-                const cancelProxy = (["frontier-template", "container-chain-template"].includes(chain))? 3 : 4;
+                const cancelProxy = ["frontier-template", "container-chain-template"].includes(chain) ? 3 : 4;
                 const delay = 0;
                 const tx = polkadotJs.tx.proxy.addProxy(delegate, cancelProxy, delay);
                 await context.createBlock([await tx.signAsync(alice)]);
