@@ -38,7 +38,7 @@ use sp_runtime::TryRuntimeError;
 
 use {
     cumulus_pallet_parachain_system::{
-        RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelayNumberStrictlyIncreases,
+        RelayChainStateProof, RelayNumberMonotonicallyIncreases,
     },
     cumulus_primitives_core::{
         relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
@@ -1777,7 +1777,7 @@ impl_runtime_apis! {
 }
 
 struct CheckInherents;
-
+#[allow(deprecated)]
 impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
     fn check_inherents(
         block: &Block,

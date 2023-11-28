@@ -34,9 +34,7 @@ pub mod xcm_config;
 
 use {
     crate::precompiles::TemplatePrecompiles,
-    cumulus_pallet_parachain_system::{
-        RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelayNumberStrictlyIncreases,
-    },
+    cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, DmpMessageHandler},
     fp_account::EthereumSignature,
     fp_evm::weight_per_gas,
@@ -1277,7 +1275,7 @@ impl_runtime_apis! {
 }
 
 struct CheckInherents;
-
+#[allow(deprecated)]
 impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
     fn check_inherents(
         block: &Block,

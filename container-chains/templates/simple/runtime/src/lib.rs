@@ -30,9 +30,7 @@ pub use sp_runtime::BuildStorage;
 
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
-    cumulus_pallet_parachain_system::{
-        RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelayNumberStrictlyIncreases,
-    },
+    cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, DmpMessageHandler},
     frame_support::{
         construct_runtime,
@@ -918,7 +916,7 @@ impl_runtime_apis! {
 }
 
 struct CheckInherents;
-
+#[allow(deprecated)]
 impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
     fn check_inherents(
         block: &Block,
