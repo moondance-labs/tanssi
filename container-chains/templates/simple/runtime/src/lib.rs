@@ -30,7 +30,7 @@ pub use sp_runtime::BuildStorage;
 
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
-    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases, RelayNumberMonotonicallyIncreases},
     cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, DmpMessageHandler},
     frame_support::{
         construct_runtime,
@@ -38,7 +38,7 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
+            ConstU128, ConstU32, ConstU64, ConstU8, ConstBool, Contains, InstanceFilter, OffchainWorker,
             OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
         },
         weights::{
@@ -389,6 +389,17 @@ parameter_types! {
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
 
+pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
+pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
+
+type ConsensusHook = pallet_author_inherent::consensus_hook::NimbusVelocityConsensusHook<
+	Runtime,
+	RELAY_CHAIN_SLOT_DURATION_MILLIS,
+	BLOCK_PROCESSING_VELOCITY,
+	UNINCLUDED_SEGMENT_CAPACITY,
+>;
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
@@ -398,7 +409,8 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
-    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
+    type ConsensusHook = ConsensusHook;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -649,6 +661,8 @@ impl pallet_author_inherent::Config for Runtime {
     type AccountLookup = tp_consensus::NimbusLookUp;
     type CanAuthor = pallet_cc_authorities_noting::CanAuthor<Runtime>;
     type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
+    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+	type SlotDuration = ConstU64<SLOT_DURATION>;
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 

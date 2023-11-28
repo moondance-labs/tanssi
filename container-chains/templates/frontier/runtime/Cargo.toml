@@ -73,7 +73,7 @@ staging-xcm-executor = { workspace = true }
 
 # Cumulus
 cumulus-pallet-dmp-queue = { workspace = true }
-cumulus-pallet-parachain-system = { workspace = true }
+cumulus-pallet-parachain-system = { workspace = true, features = ["parameterized-consensus-hook"] }
 cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-pallet-xcm = { workspace = true }
 cumulus-pallet-xcmp-queue = { workspace = true }
