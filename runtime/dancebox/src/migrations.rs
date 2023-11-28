@@ -215,7 +215,7 @@ where
                 );
                 assert_eq!(
                     migrated[index].id,
-                    crate::HoldReason::PooledStake.into(),
+                    pallet_pooled_staking::HoldReason::PooledStake.into(),
                     "Pooled stake should be migrated"
                 );
             }
@@ -397,7 +397,7 @@ where
     <T as pallet_balances::Config>::RuntimeHoldReason: From<pallet_pooled_staking::HoldReason>,
 {
     fn friendly_name(&self) -> &str {
-        "TM_BLABLA"
+        "TM_MigrateHoldReasonRuntimeHold"
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
@@ -423,7 +423,6 @@ where
             let mut new_holds = vec![];
 
             for hold in holds {
-                log::info!("setting for hold {:?}", hold);
                 let new_item: pallet_balances::IdAmount<
                     <T as pallet_balances::Config>::RuntimeHoldReason,
                     <T as pallet_balances::Config>::Balance,
@@ -450,7 +449,7 @@ where
 
         let stored_data: Vec<_> = storage_key_iter::<
             T::AccountId,
-            BoundedVec<IdAmount<[u8; 8], <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
+            BoundedVec<IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
             Blake2_128Concat,
         >(pallet_prefix, storage_item_prefix)
         .collect();
@@ -465,10 +464,8 @@ where
         use parity_scale_codec::Decode;
         let should_be_migrated: Vec<(
             T::AccountId,
-            BoundedVec<IdAmount<[u8; 8], <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
+            BoundedVec<IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>, T::MaxHolds>,
         )> = Decode::decode(&mut migrated_holds.as_slice()).expect("should be decodable");
-
-        log::info!(target: LOG_TARGET, "post_upgrade");
 
         // Write to the new storage
         for (account_id, holds) in should_be_migrated {
@@ -481,7 +478,7 @@ where
                 );
                 assert_eq!(
                     migrated[index].id,
-                    crate::HoldReason::PooledStake.into(),
+                    pallet_pooled_staking::HoldReason::PooledStake.into(),
                     "Pooled stake should be migrated"
                 );
             }

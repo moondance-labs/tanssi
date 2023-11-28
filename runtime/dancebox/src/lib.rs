@@ -1078,15 +1078,6 @@ impl OnRuntimeUpgrade for MaintenanceHooks {
     fn on_runtime_upgrade() -> Weight {
         AllPalletsWithSystem::on_runtime_upgrade()
     }
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        AllPalletsWithSystem::pre_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        AllPalletsWithSystem::post_upgrade(state)
-    }
 
     #[cfg(feature = "try-runtime")]
     fn try_on_runtime_upgrade(checks: bool) -> Result<Weight, TryRuntimeError> {
