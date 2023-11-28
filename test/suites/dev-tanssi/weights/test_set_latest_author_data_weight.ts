@@ -6,7 +6,7 @@ describeSuite({
     id: "DT0702",
     title: "On set latest author data weight check",
     foundationMethods: "dev",
-    testCases: ({ it, context, log }) => {
+    testCases: ({ it, context }) => {
         it({
             id: "E01",
             title: "Weight should be match expected",
