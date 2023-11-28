@@ -37,9 +37,7 @@ pub mod weights;
 use sp_runtime::TryRuntimeError;
 
 use {
-    cumulus_pallet_parachain_system::{
-        RelayChainStateProof, RelayNumberMonotonicallyIncreases,
-    },
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases},
     cumulus_primitives_core::{
         relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
         BodyId, DmpMessageHandler, ParaId,
