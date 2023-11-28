@@ -1831,6 +1831,7 @@ dependencies = [
  "pallet-maintenance-mode",
  "pallet-migrations",
  "pallet-proxy",
+ "pallet-root-testing",
  "pallet-session",
  "pallet-sudo",
  "pallet-timestamp",

@@ -652,6 +652,8 @@ impl pallet_author_inherent::Config for Runtime {
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_root_testing::Config for Runtime { }
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -680,6 +682,8 @@ construct_runtime!(
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
+
+        RootTesting: pallet_root_testing = 100,
 
     }
 );
