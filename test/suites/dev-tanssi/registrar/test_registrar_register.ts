@@ -90,7 +90,7 @@ describeSuite({
                 expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
                 // Check the para id has been given some free credits
-                const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
+                const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();
                 expect(credits, "Container chain 2002 should have been given credits").toBeGreaterThan(0);
 
                 // Checking that in session 2 paras are registered
