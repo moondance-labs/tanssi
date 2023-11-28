@@ -825,7 +825,7 @@ impl pallet_configuration::Config for Runtime {
 pub struct DanceboxRegistrarHooks;
 
 impl RegistrarHooks for DanceboxRegistrarHooks {
-    fn para_registered(para_id: ParaId) -> Weight {
+    fn para_marked_valid_for_collating(para_id: ParaId) -> Weight {
         // Give free credits but only once per para id
         ServicesPayment::give_free_credits(&para_id)
     }
