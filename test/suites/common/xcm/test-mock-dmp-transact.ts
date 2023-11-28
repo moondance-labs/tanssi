@@ -38,7 +38,7 @@ describeSuite({
             sendingAddress = originAddress;
             transferredBalance = 10_000_000_000_000n;
 
-            const txSigned = polkadotJs.tx.balances.transfer(descendOriginAddress, transferredBalance);
+            const txSigned = polkadotJs.tx.balances.transferAllowDeath(descendOriginAddress, transferredBalance);
 
             await context.createBlock(await txSigned.signAsync(alice, { nonce: aliceNonce++ }), {
                 allowFailures: false,
@@ -60,7 +60,7 @@ describeSuite({
                     .find(({ name }) => name.toString() == "Balances")!
                     .index.toNumber();
 
-                const transferCall = polkadotJs.tx.balances.transfer(random.address, transferredBalance / 10n);
+                const transferCall = polkadotJs.tx.balances.transferAllowDeath(random.address, transferredBalance / 10n);
                 const transferCallEncoded = transferCall?.method.toHex();
 
                 // We are going to test that we can receive a transact operation from parachain 1

@@ -53,8 +53,8 @@ describeSuite({
             transferredBalance = 10_000_000_000_000n;
             polkadotJs = context.polkadotJs();
 
-            const txSigned = polkadotJs.tx.balances.transfer(descendOriginAddress, transferredBalance);
-            const txRoot = polkadotJs.tx.balances.transfer(sovereign, transferredBalance);
+            const txSigned = polkadotJs.tx.balances.transferAllowDeath(descendOriginAddress, transferredBalance);
+            const txRoot = polkadotJs.tx.balances.transferAllowDeath(sovereign, transferredBalance);
 
             await context.createBlock(await txSigned.signAsync(alice, { nonce: aliceNonce++ }), {
                 allowFailures: false,
@@ -75,7 +75,7 @@ describeSuite({
                 .find(({ name }) => name.toString() == "Balances")!
                 .index.toNumber();
 
-            const transferCall = polkadotJs.tx.balances.transfer(random.address, transferredBalance / 10n);
+            const transferCall = polkadotJs.tx.balances.transferAllowDeath(random.address, transferredBalance / 10n);
             const transferCallEncoded = transferCall?.method.toHex();
 
             // Build the XCM message

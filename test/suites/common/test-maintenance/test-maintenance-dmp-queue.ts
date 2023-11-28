@@ -74,7 +74,7 @@ describeSuite({
             transferredBalance = 10_000_000_000_000n;
 
             // Send some tokens to the derivative address to cost Transact execution
-            const txSigned = polkadotJs.tx.balances.transfer(descendOriginAddress, transferredBalance);
+            const txSigned = polkadotJs.tx.balances.transferAllowDeath(descendOriginAddress, transferredBalance);
             await context.createBlock(await txSigned.signAsync(alice, { nonce: aliceNonce++ }), {
                 allowFailures: false,
             });
@@ -92,7 +92,7 @@ describeSuite({
                 .index.toNumber();
 
             // The call will be a simple balance transfer to random address
-            const transferCall = polkadotJs.tx.balances.transfer(random.address, transferredBalance / 10n);
+            const transferCall = polkadotJs.tx.balances.transferAllowDeath(random.address, transferredBalance / 10n);
             const transferCallEncoded = transferCall?.method.toHex();
 
             // Build the XCM message
