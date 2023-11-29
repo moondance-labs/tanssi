@@ -104,6 +104,14 @@ jobs:
       - name: Retrieve coverage
         id: coverage
         run: |
+          mkdir -p /tmp/proffiles
+
+          find . -type f -name \*.profraw -exec ls -l {}  \;
+
+          echo "Copying profraw files to /tmp/proffiles"
+          find . -name \*.profraw -exec mv {} /tmp/proffiles/ \;
+
+          mv /tmp/proffiles proffile
           du -sh proffiles
 
           echo "Executing grcov"
