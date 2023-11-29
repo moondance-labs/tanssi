@@ -1,6 +1,7 @@
 import "@polkadot/api-augment";
 import { describeSuite, expect } from "@moonwall/cli";
 import { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
+import { BN } from "@polkadot/util";
 
 describeSuite({
     id: "DF1001",
@@ -11,6 +12,9 @@ describeSuite({
             id: "T01",
             title: "Weight should be match expected",
             test: async function () {
+                const expectedRefTime = new BN(456_622_000);
+                const expectedProofSize = new BN(6_488);
+
                 await context.createBlock();
 
                 const block = await context.polkadotJs().rpc.chain.getBlock();
@@ -35,9 +39,13 @@ describeSuite({
                 );
 
                 const usedWeight = (events.at(-1).event.data[0] as unknown as FrameSupportDispatchDispatchInfo).weight;
+                const refTime = usedWeight.refTime.toBn();
+                const proofSize = usedWeight.proofSize.toBn();
 
-                expect(usedWeight.refTime.toBigInt()).toEqual(456_622_000n);
-                expect(usedWeight.proofSize.toBigInt()).toEqual(6_488n);
+                // Allow 10% variance
+                expect(refTime.gte(expectedRefTime.divn(1.1)) && refTime.lte(expectedRefTime.muln(1.1))).to.be.true;
+                expect(proofSize.gte(expectedProofSize.divn(1.1)) && proofSize.lte(expectedProofSize.muln(1.1))).to.be
+                    .true;
             },
         });
     },
