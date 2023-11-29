@@ -3,7 +3,7 @@ import { describeSuite, expect } from "@moonwall/cli";
 import { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "DF0901",
+    id: "DF1001",
     title: "On set latest authorities data weight check",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
