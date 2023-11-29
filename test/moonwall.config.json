@@ -352,7 +352,7 @@
             "testFileDir": ["suites/rt-ugprade-chopsticks-frontier-template"],
             "foundation": {
                 "type": "chopsticks",
-                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
+                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm",
                 "launchSpec": [
                     {
                         "name": "db",
