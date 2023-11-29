@@ -53,7 +53,7 @@ use frame_support::pallet;
 
 pub use {candidate::EligibleCandidate, pallet::*};
 
-#[pallet(dev_mode)]
+#[pallet]
 pub mod pallet {
     use {
         super::*,
@@ -468,6 +468,37 @@ pub mod pallet {
         }
     }
 
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        #[cfg(feature = "try-runtime")]
+        fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+            use sp_std::collections::btree_set::BTreeSet;
+            let mut all_candidates = BTreeSet::new();
+            for (candidate, _k2) in Pools::<T>::iter_keys() {
+                all_candidates.insert(candidate);
+            }
+
+            for candidate in all_candidates {
+                pools::check_candidate_consistency::<T>(&candidate)?;
+            }
+
+            // Sorted storage items are sorted
+            fn assert_is_sorted_and_unique<T: Ord>(x: &[T], name: &str) {
+                assert!(
+                    x.windows(2).all(|w| w[0] < w[1]),
+                    "sorted list not sorted or not unique: {}",
+                    name,
+                );
+            }
+            assert_is_sorted_and_unique(
+                &SortedEligibleCandidates::<T>::get(),
+                "SortedEligibleCandidates",
+            );
+
+            Ok(())
+        }
+    }
+
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
@@ -498,6 +529,7 @@ pub mod pallet {
         }
 
         /// Execute pending operations can incur in claim manual rewards per operation, we simply add the worst case
+        #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::execute_pending_operations(operations.len() as u32).saturating_add(T::WeightInfo::claim_manual_rewards(operations.len() as u32)))]
         pub fn execute_pending_operations(
             origin: OriginFor<T>,
@@ -510,6 +542,7 @@ pub mod pallet {
         }
 
         /// Request undelegate can incur in either claim manual rewards or hold rebalances, we simply add the worst case
+        #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::request_undelegate().saturating_add(T::WeightInfo::claim_manual_rewards(1).max(T::WeightInfo::rebalance_hold())))]
         pub fn request_undelegate(
             origin: OriginFor<T>,
@@ -522,6 +555,7 @@ pub mod pallet {
             Calls::<T>::request_undelegate(candidate, delegator, pool, amount)
         }
 
+        #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::claim_manual_rewards(pairs.len() as u32))]
         pub fn claim_manual_rewards(
             origin: OriginFor<T>,
@@ -533,6 +567,7 @@ pub mod pallet {
             Calls::<T>::claim_manual_rewards(&pairs)
         }
 
+        #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::update_candidate_position(candidates.len() as u32))]
         pub fn update_candidate_position(
             origin: OriginFor<T>,
@@ -544,6 +579,7 @@ pub mod pallet {
             Calls::<T>::update_candidate_position(&candidates)
         }
 
+        #[pallet::call_index(6)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
         pub fn swap_pool(
             origin: OriginFor<T>,

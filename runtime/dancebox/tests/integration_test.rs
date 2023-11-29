@@ -252,9 +252,7 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             run_to_block(2);
             assert_ok!(Registrar::deregister(root_origin(), 1002.into()), ());
 
-            // Deregistered container chains are deleted immediately
-            // TODO: they should stay until session 2, just like the para id does
-            assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), None);
+            assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), Some(&genesis_data_1002), "Deregistered container chain genesis data should not be removed until after 2 sessions");
 
             let genesis_data_1003 = ContainerChainGenesisData {
                 storage: vec![(b"key3".to_vec(), b"value3".to_vec()).into()],
@@ -278,6 +276,10 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
                 Runtime::genesis_data(1003.into()).as_ref(),
                 Some(&genesis_data_1003)
             );
+
+            // Deregistered container chain genesis data is removed after 2 sessions
+            run_to_session(2u32);
+            assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), None);
         });
 }
 

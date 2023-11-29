@@ -31,6 +31,6 @@ sp-runtime = { workspace = true }
 
 [features]
 default = [ "std" ]
-std = [ "serde/std", "pallet-configuration/std", "frame-benchmarking/std", "frame-support/std", "frame-system/std", "pallet-balances/std", "parity-scale-codec/std", "scale-info/std", "tp-container-chain-genesis-data/std", "tp-traits/std" ]
+std = [ "frame-benchmarking/std", "frame-support/std", "frame-system/std", "pallet-balances/std", "pallet-configuration/std", "parity-scale-codec/std", "scale-info/std", "serde/std", "tp-container-chain-genesis-data/std", "tp-traits/std" ]
 runtime-benchmarks = [ "frame-benchmarking", "tp-traits/runtime-benchmarks" ]
 try-runtime = [ "frame-support/try-runtime" ]

@@ -18,6 +18,7 @@ serde = { workspace = true, optional = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Own
+dp-core = { workspace = true }
 pallet-author-noting = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true }
 pallet-authority-assignment = { workspace = true }
@@ -32,7 +33,6 @@ pallet-proxy = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-services-payment = { workspace = true }
-dp-core = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -154,8 +154,8 @@ std = [
 	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
-	"pallet-session/std",
 	"pallet-services-payment/std",
+	"pallet-session/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
@@ -179,13 +179,13 @@ std = [
 	"sp-std/std",
 	"sp-transaction-pool/std",
 	"sp-version/std",
-	"tp-author-noting-inherent/std",
-	"tp-consensus/std",
-	"tp-traits/std",
 	"staging-xcm-builder/std",
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
-	"xcm-primitives/std"
+	"tp-author-noting-inherent/std",
+	"tp-consensus/std",
+	"tp-traits/std",
+	"xcm-primitives/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -204,10 +204,10 @@ runtime-benchmarks = [
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
-		"pallet-services-payment/runtime-benchmarks",
+	"pallet-services-payment/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
-	"pallet-xcm/runtime-benchmarks",
 	"pallet-xcm-benchmarks/runtime-benchmarks",
+	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
  ]
@@ -237,8 +237,8 @@ try-runtime = [
 	"pallet-pooled-staking/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",
-		"pallet-services-payment/try-runtime",
 	"pallet-root-testing/try-runtime",
+	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",

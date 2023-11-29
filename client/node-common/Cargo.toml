@@ -1,8 +1,7 @@
 [package]
-name = "container-chain-template-simple-node"
+name = "node-common"
 authors = { workspace = true }
-build = "build.rs"
-description = "Simple container-chain template node"
+description = "Common code between various nodes"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
@@ -11,6 +10,8 @@ version = "0.1.0"
 async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
+core_extensions = { workspace = true, features = [ "type_identity" ] }
+flume = { workspace = true }
 futures = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
@@ -18,8 +19,6 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
-container-chain-template-simple-runtime = { workspace = true, features = [ "std" ] }
-node-common = { workspace = true }
 tc-consensus = { workspace = true }
 
 # Nimbus
@@ -39,6 +38,7 @@ sc-executor = { workspace = true }
 sc-network = { workspace = true }
 sc-network-common = { workspace = true }
 sc-network-sync = { workspace = true }
+sc-network-transactions = { workspace = true }
 sc-offchain = { workspace = true }
 sc-rpc = { workspace = true }
 sc-service = { workspace = true }
@@ -47,6 +47,7 @@ sc-telemetry = { workspace = true }
 sc-tracing = { workspace = true }
 sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
+sc-utils = { workspace = true }
 sp-api = { workspace = true, features = [ "std" ] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
@@ -73,6 +74,7 @@ polkadot-service = { workspace = true }
 
 # Cumulus
 cumulus-client-cli = { workspace = true }
+cumulus-client-collator = { workspace = true }
 cumulus-client-consensus-aura = { workspace = true }
 cumulus-client-consensus-common = { workspace = true }
 cumulus-client-network = { workspace = true }
@@ -80,13 +82,3 @@ cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
-[build-dependencies]
-substrate-build-script-utils = { workspace = true }
-
-[features]
-default = []
-runtime-benchmarks = [ "container-chain-template-simple-runtime/runtime-benchmarks", "polkadot-cli/runtime-benchmarks" ]
-try-runtime = [
-	"container-chain-template-simple-runtime/try-runtime",
-	"try-runtime-cli/try-runtime",
- ]

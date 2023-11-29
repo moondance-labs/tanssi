@@ -25,7 +25,7 @@ use {
     crate::{
         cli::ContainerChainCli,
         container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
-        service::{start_node_impl_container, ParachainClient},
+        service::{start_node_impl_container, NodeConfig, ParachainClient},
     },
     cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
@@ -33,6 +33,7 @@ use {
     dancebox_runtime::{AccountId, Block, BlockNumber},
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     futures::FutureExt,
+    node_common::service::NodeBuilderConfig,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
@@ -49,8 +50,10 @@ use {
         sync::{Arc, Mutex},
         time::Instant,
     },
-    tokio::sync::{mpsc, oneshot},
-    tokio::time::{sleep, Duration},
+    tokio::{
+        sync::{mpsc, oneshot},
+        time::{sleep, Duration},
+    },
 };
 
 /// Struct with all the params needed to start a container chain node given the CLI arguments,
@@ -624,7 +627,7 @@ fn open_and_maybe_delete_db(
     container_chain_cli: &ContainerChainCli,
     keep_db: bool,
 ) -> sc_service::error::Result<()> {
-    let temp_cli = crate::service::new_partial(&container_chain_cli_config).unwrap();
+    let temp_cli = NodeConfig::new_builder(&container_chain_cli_config, None).unwrap();
 
     // Check block diff, only needed if keep-db is false
     if !keep_db {
@@ -645,7 +648,7 @@ fn open_and_maybe_delete_db(
             > max_block_diff_allowed
         {
             // if the diff is big, delete db and restart using warp sync
-            delete_container_chain_db(&db_path);
+            delete_container_chain_db(db_path);
             return Ok(());
         }
     }
@@ -675,7 +678,7 @@ fn open_and_maybe_delete_db(
             "Chain spec genesis {:?} did not match with any container genesis - Restarting...",
             container_client_genesis_hash
         );
-        delete_container_chain_db(&db_path);
+        delete_container_chain_db(db_path);
         return Ok(());
     }
 
@@ -688,7 +691,7 @@ fn open_and_maybe_delete_db(
 //     Collator2002-01/data/containers/chains/simple_container_2002
 fn delete_container_chain_db(db_path: &Path) {
     if db_path.exists() {
-        std::fs::remove_dir_all(&db_path).expect("failed to remove old container chain db");
+        std::fs::remove_dir_all(db_path).expect("failed to remove old container chain db");
     }
 }
 
