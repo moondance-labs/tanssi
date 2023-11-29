@@ -265,7 +265,7 @@
             "testFileDir": ["suites/rt-upgrade-zombienet"],
             "runScripts": ["download-polkadot.sh"],
             "foundation": {
-                "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.wasm",
+                "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
                 "type": "zombie",
                 "zombieSpec": {
                     "configPath": "./configs/zombieDanceboxUpgrade.json",
@@ -308,7 +308,7 @@
             "testFileDir": ["suites/rt-ugprade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
-                "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.wasm",
+                "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
                         "name": "db",
@@ -330,7 +330,7 @@
             "testFileDir": ["suites/rt-ugprade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
-                "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.wasm",
+                "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
                         "name": "db",
@@ -352,7 +352,7 @@
             "testFileDir": ["suites/rt-ugprade-chopsticks-frontier-template"],
             "foundation": {
                 "type": "chopsticks",
-                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm",
+                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
                         "name": "db",
