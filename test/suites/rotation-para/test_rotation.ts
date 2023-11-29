@@ -400,11 +400,10 @@ async function directoryExists(directoryPath) {
 
 /// Returns the /tmp/zombie-52234... path
 function getTmpZombiePath() {
-    const logFilePath = process.env.MOON_MONITORED_NODE;
+    const zombiePath = process.env.MOON_ZOMBIE_DIR;
 
-    if (logFilePath) {
-        const lastIndex = logFilePath.lastIndexOf("/");
-        return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
+    if (zombiePath) {
+        return zombiePath;
     }
 
     // Return null if the environment variable is not set
