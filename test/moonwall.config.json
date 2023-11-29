@@ -136,6 +136,7 @@
         {
             "name": "zombie_tanssi_keep_db",
             "testFileDir": ["suites/keep-db"],
+            "timeout": 300000,
             "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
             "foundation": {
                 "type": "zombie",
@@ -163,6 +164,7 @@
         },
         {
             "name": "zombie_tanssi_metrics",
+            "timeout": 300000,
             "testFileDir": ["suites/metrics"],
             "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
             "foundation": {
@@ -191,6 +193,7 @@
         },
         {
             "name": "zombie_tanssi_rotation",
+            "timeout": 300000,
             "testFileDir": ["suites/rotation-para"],
             "runScripts": ["build-spec.sh", "download-polkadot.sh"],
             "foundation": {
@@ -234,6 +237,7 @@
         },
         {
             "name": "zombie_tanssi_warp_sync",
+            "timeout": 300000,
             "testFileDir": ["suites/warp-sync"],
             "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
             "foundation": {
@@ -262,6 +266,7 @@
         },
         {
             "name": "zombie_dancebox_upgrade",
+            "timeout": 300000,
             "testFileDir": ["suites/rt-upgrade-zombienet"],
             "runScripts": ["download-polkadot.sh"],
             "foundation": {
