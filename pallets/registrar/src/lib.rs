@@ -43,14 +43,11 @@ use {
     crate::weights::WeightInfo,
     frame_support::{
         pallet_prelude::*,
-        traits::{Currency, EitherOfDiverse, ReservableCurrency},
+        traits::{Currency, ReservableCurrency},
         DefaultNoBound, LOG_TARGET,
     },
-    frame_system::{pallet_prelude::*, EnsureSigned},
-    sp_runtime::{
-        traits::{AtLeast32BitUnsigned, BadOrigin},
-        Either, Saturating,
-    },
+    frame_system::pallet_prelude::*,
+    sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
     sp_std::prelude::*,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId},
@@ -68,11 +65,7 @@ pub mod pallet {
     #[derive(DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
         /// Para ids
-        pub para_ids: Vec<(
-            ParaId,
-            ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
-            Vec<Vec<u8>>,
-        )>,
+        pub para_ids: Vec<(ParaId, ContainerChainGenesisData<T::MaxLengthTokenSymbol>)>,
     }
 
     #[pallet::genesis_build]
@@ -92,7 +85,7 @@ pub mod pallet {
 
             let mut bounded_para_ids = BoundedVec::default();
 
-            for (para_id, genesis_data, boot_nodes) in para_ids {
+            for (para_id, genesis_data) in para_ids {
                 bounded_para_ids
                     .try_push(*para_id)
                     .expect("too many para ids in genesis: bounded vec full");
@@ -107,12 +100,6 @@ pub mod pallet {
                     );
                 }
                 <ParaGenesisData<T>>::insert(para_id, genesis_data);
-                let boot_nodes: Vec<_> = boot_nodes
-                    .iter()
-                    .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
-                    .collect();
-                let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
-                <BootNodes<T>>::insert(para_id, boot_nodes);
             }
 
             <RegisteredParaIds<T>>::put(bounded_para_ids);
@@ -206,16 +193,6 @@ pub mod pallet {
         ValueQuery,
     >;
 
-    #[pallet::storage]
-    #[pallet::getter(fn boot_nodes)]
-    pub type BootNodes<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ParaId,
-        BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
-        ValueQuery,
-    >;
-
     pub type DepositBalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
@@ -246,8 +223,6 @@ pub mod pallet {
         ParaIdPaused { para_id: ParaId },
         /// A para id has been unpaused.
         ParaIdUnpaused { para_id: ParaId },
-        /// The list of boot_nodes changed.
-        BootNodesChanged { para_id: ParaId },
     }
 
     #[pallet::error]
@@ -544,36 +519,6 @@ pub mod pallet {
             Ok(())
         }
 
-        /// Set boot_nodes for this para id
-        #[pallet::call_index(3)]
-        #[pallet::weight(T::WeightInfo::set_boot_nodes(
-            T::MaxBootNodeUrlLen::get(),
-            boot_nodes.len() as u32,
-        ))]
-        pub fn set_boot_nodes(
-            origin: OriginFor<T>,
-            para_id: ParaId,
-            boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
-        ) -> DispatchResult {
-            let origin =
-                EitherOfDiverse::<T::RegistrarOrigin, EnsureSigned<T::AccountId>>::ensure_origin(
-                    origin,
-                )?;
-
-            if let Either::Right(signed_account) = origin {
-                let deposit_info = RegistrarDeposit::<T>::get(para_id).ok_or(BadOrigin)?;
-                if deposit_info.creator != signed_account {
-                    Err(BadOrigin)?;
-                }
-            }
-
-            BootNodes::<T>::insert(para_id, boot_nodes);
-
-            Self::deposit_event(Event::BootNodesChanged { para_id });
-
-            Ok(())
-        }
-
         /// Pause container-chain from collating. Does not remove its boot nodes nor its genesis config.
         /// Only container-chains that have been marked as valid_for_collating can be paused.
         #[pallet::call_index(4)]
@@ -836,7 +781,6 @@ pub mod pallet {
         /// and execute para_deregistered hook to clean up other pallets as well
         fn cleanup_deregistered_para_id(para_id: ParaId) {
             ParaGenesisData::<T>::remove(para_id);
-            BootNodes::<T>::remove(para_id);
             // Get asset creator and deposit amount
             // Deposit may not exist, for example if the para id was registered on genesis
             if let Some(asset_info) = RegistrarDeposit::<T>::take(para_id) {

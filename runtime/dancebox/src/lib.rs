@@ -816,7 +816,7 @@ where
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
-    type ContainerChainManagerOrRootOrigin =
+    type SetBootNodesOrigin =
         DanceboxContainerChainManagerOrRootOrigin<Runtime, EnsureRoot<AccountId>>;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
@@ -905,6 +905,8 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
                 e,
             );
         }
+        // Remove bootnodes from pallet_data_preservers
+        DataPreservers::para_deregistered(para_id);
 
         Weight::default()
     }
@@ -1717,7 +1719,8 @@ impl_runtime_apis! {
 
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
-            let bounded_vec = Registrar::boot_nodes(para_id);
+            // TODO: remember to write migration to move boot nodes from pallet_registrar to pallet_data_preservers
+            let bounded_vec = DataPreservers::boot_nodes(para_id);
 
             bounded_vec.into_iter().map(|x| x.into()).collect()
         }

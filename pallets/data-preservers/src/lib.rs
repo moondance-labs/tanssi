@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! # Inflation Rewards Pallet
+//! # Data Preservers Pallet
 //!
-//! This pallet handle native token inflation and rewards distribution.
+//! This pallet allows container chains to select data preservers.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -38,21 +38,53 @@ use {
     frame_support::{
         pallet_prelude::*,
         traits::{
-            fungible::{Balanced, Credit, Inspect},
+            fungible::{Balanced, Inspect},
             EnsureOriginWithArg,
         },
+        DefaultNoBound,
     },
     frame_system::pallet_prelude::*,
     sp_runtime::traits::Get,
+    sp_std::vec::Vec,
 };
 
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
 
-    pub type BalanceOf<T> =
-        <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
-    pub type CreditOf<T> = Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
+    #[pallet::genesis_config]
+    #[derive(DefaultNoBound)]
+    pub struct GenesisConfig<T: Config> {
+        /// Para ids
+        pub para_id_boot_nodes: Vec<(ParaId, Vec<Vec<u8>>)>,
+        pub _phantom: PhantomData<T>,
+    }
+
+    #[pallet::genesis_build]
+    impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
+        fn build(&self) {
+            // Sort para ids and detect duplicates, but do it using a vector of
+            // references to avoid cloning the boot nodes.
+            let mut para_ids: Vec<&_> = self.para_id_boot_nodes.iter().collect();
+            para_ids.sort_by(|a, b| a.0.cmp(&b.0));
+            para_ids.dedup_by(|a, b| {
+                if a.0 == b.0 {
+                    panic!("Duplicate para_id: {}", u32::from(a.0));
+                } else {
+                    false
+                }
+            });
+
+            for (para_id, boot_nodes) in para_ids {
+                let boot_nodes: Vec<_> = boot_nodes
+                    .iter()
+                    .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
+                    .collect();
+                let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
+                <BootNodes<T>>::insert(para_id, boot_nodes);
+            }
+        }
+    }
 
     /// Inflation rewards pallet.
     #[pallet::pallet]
@@ -64,7 +96,8 @@ pub mod pallet {
         /// Overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         type Currency: Inspect<Self::AccountId> + Balanced<Self::AccountId>;
-        type ContainerChainManagerOrRootOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
+        // Who can call set_boot_nodes?
+        type SetBootNodesOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
         type MaxBootNodes: Get<u32>;
         type MaxBootNodeUrlLen: Get<u32>;
@@ -102,13 +135,21 @@ pub mod pallet {
             para_id: ParaId,
             boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
         ) -> DispatchResult {
-            T::ContainerChainManagerOrRootOrigin::ensure_origin(origin, &para_id)?;
+            T::SetBootNodesOrigin::ensure_origin(origin, &para_id)?;
 
             BootNodes::<T>::insert(para_id, boot_nodes);
 
             Self::deposit_event(Event::BootNodesChanged { para_id });
 
             Ok(())
+        }
+    }
+
+    impl<T: Config> Pallet<T> {
+        /// Function that will be called when a container chain is deregistered. Cleans up all the storage related to this para_id.
+        /// Cannot fail.
+        pub fn para_deregistered(para_id: ParaId) {
+            BootNodes::<T>::remove(para_id);
         }
     }
 }

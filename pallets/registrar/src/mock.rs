@@ -255,11 +255,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(
-    para_ids: Vec<(
-        ParaId,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
-    )>,
+    para_ids: Vec<(ParaId, ContainerChainGenesisData<MaxLengthTokenSymbol>)>,
 ) -> sp_io::TestExternalities {
     RuntimeGenesisConfig {
         system: Default::default(),

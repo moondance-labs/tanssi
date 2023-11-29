@@ -84,8 +84,8 @@ describeSuite({
 
                 // Check the number of keys in storage
                 const palletKeysWithOnePara = await polkadotJs.rpc.state.getKeys("0x3fba98689ebed1138735e0e7a5a790ab");
-                // 4 fixed keys + genesis data + bootnodes
-                expect(palletKeysWithOnePara.length).to.be.eq(6);
+                // 4 fixed keys + genesis data
+                expect(palletKeysWithOnePara.length).to.be.eq(5);
 
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
                 const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;

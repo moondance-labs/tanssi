@@ -225,33 +225,6 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn set_boot_nodes(x: Linear<1, 200>, y: Linear<1, 10>) {
-        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
-        let storage = new_genesis_data(storage);
-
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
-
-        Pallet::<T>::register(
-            RawOrigin::Signed(caller.clone()).into(),
-            Default::default(),
-            storage,
-        )
-        .expect("Failed to register chain");
-
-        // x: url len, y: num boot_nodes
-        let boot_nodes = BoundedVec::try_from(vec![
-            BoundedVec::try_from(vec![b'A'; x as usize])
-                .unwrap();
-            y as usize
-        ])
-        .unwrap();
-
-        #[extrinsic_call]
-        Pallet::<T>::set_boot_nodes(RawOrigin::Signed(caller), Default::default(), boot_nodes);
-    }
-
-    #[benchmark]
     fn pause_container_chain(y: Linear<1, 50>) {
         let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
         let storage = new_genesis_data(storage);

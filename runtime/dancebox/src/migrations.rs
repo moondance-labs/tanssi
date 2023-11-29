@@ -20,10 +20,10 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    crate::{Invulnerables, ParaId, Runtime, RuntimeOrigin, LOG_TARGET},
     frame_support::{
-        migration::storage_key_iter, storage::types::StorageValue, traits::OnRuntimeUpgrade,
-        weights::Weight, Blake2_128Concat,
+        migration::storage_key_iter, pallet_prelude::ValueQuery, storage::types::StorageMap,
+        storage::types::StorageValue, traits::OnRuntimeUpgrade, weights::Weight, Blake2_128Concat,
     },
     pallet_balances::IdAmount,
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
@@ -375,6 +375,52 @@ where
     }
 }
 
+pub struct RegistrarBootNodesStorageValuePrefix<T>(PhantomData<T>);
+impl<T> frame_support::traits::StorageInstance for RegistrarBootNodesStorageValuePrefix<T> {
+    const STORAGE_PREFIX: &'static str = "BootNodes";
+    fn pallet_prefix() -> &'static str {
+        "Registrar"
+    }
+}
+pub type RegistrarBootNodesStorageMap<T> = StorageMap<
+    RegistrarBootNodesStorageValuePrefix<T>,
+    Blake2_128Concat,
+    ParaId,
+    //BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
+    Vec<Vec<u8>>,
+    ValueQuery,
+>;
+
+pub struct MigrateBootNodes<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateBootNodes<T>
+where
+    T: cumulus_pallet_xcmp_queue::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateBootNodes"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        let mut len = 0;
+        for (para_id, bootnodes) in RegistrarBootNodesStorageMap::<Runtime>::drain() {
+            len += 1;
+            // Convert Vec<Vec<u8>> into BoundedVec<BoundedVec<u8>>
+            // Cannot fail because the old storage was actually a BoundedVec with the same limit as the new one
+            let bootnodes: Vec<_> = bootnodes
+                .into_iter()
+                .map(|bootnode| bootnode.try_into().unwrap())
+                .collect();
+            let bootnodes: BoundedVec<_, _> = bootnodes.try_into().unwrap();
+            pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, bootnodes);
+        }
+
+        let db_weights = T::DbWeight::get();
+        let reads = len;
+        let writes = len;
+        db_weights.reads_writes(reads, writes)
+    }
+}
+
 pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
@@ -395,6 +441,7 @@ where
         let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
         let migrate_services_payment =
             MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+        let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
 
         vec![
             Box::new(migrate_invulnerables),
@@ -403,6 +450,7 @@ where
             Box::new(migrate_xcm),
             Box::new(migrate_xcmp_queue),
             Box::new(migrate_services_payment),
+            Box::new(migrate_boot_nodes),
         ]
     }
 }

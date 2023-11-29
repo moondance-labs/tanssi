@@ -271,8 +271,8 @@ impl ExtBuilder {
                 .para_ids
                 .iter()
                 .cloned()
-                .map(|(para_id, genesis_data, boot_nodes, _block_credits)| {
-                    (para_id.into(), genesis_data, boot_nodes)
+                .map(|(para_id, genesis_data, _boot_nodes, _block_credits)| {
+                    (para_id.into(), genesis_data)
                 })
                 .collect(),
         }
