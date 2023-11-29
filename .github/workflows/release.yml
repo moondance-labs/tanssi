@@ -587,6 +587,7 @@ jobs:
             path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
         - name: "Install and run upgrade test"
           run: |
+            ls target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
             cd test
             pnpm install
             pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
