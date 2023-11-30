@@ -89,13 +89,11 @@ jobs:
       - name: Typescript Tests Tanssi (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-dev-tanssi
         with:
-          timeout: 10000
           tanssi-binary: binaries/tanssi-node
           force-pass: true
       - name: Typescript Tests Frontier Template (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-dev-frontier-template
         with:
-          timeout: 10000
           frontier-template-binary: binaries/container-chain-template-frontier-node
           force-pass: true
       - name: Install llvm tools

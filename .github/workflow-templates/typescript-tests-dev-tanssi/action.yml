@@ -6,9 +6,6 @@ inputs:
   tanssi-binary:
     description: path to the tanssi binary
     required: true
-  timeout:
-    description: default timeout for the tests
-    default: "5000"
   force-pass:
     description: "Indicate whether the workflow should mark the test step as successful, even if actual test failures occur."
     default: "false"
