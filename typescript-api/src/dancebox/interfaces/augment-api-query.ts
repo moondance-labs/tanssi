@@ -393,7 +393,11 @@ declare module "@polkadot/api-base/types/storage" {
              */
             lastHrmpMqcHeads: AugmentedQuery<ApiType, () => Observable<BTreeMap<u32, H256>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** The relay chain block number associated with the last parachain block. */
+            /**
+             * The relay chain block number associated with the last parachain block.
+             *
+             * This is updated in `on_finalize`.
+             */
             lastRelayChainBlockNumber: AugmentedQuery<ApiType, () => Observable<u32>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
