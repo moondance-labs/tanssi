@@ -23,7 +23,7 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "@acala-network/chopsticks": "npm:@tanssi/chopsticks@^0.8.0-9",
+        "@acala-network/chopsticks": "npm:@tanssi/chopsticks@^0.9.2",
         "@moonbeam-network/api-augment": "^0.2400.0",
         "@moonwall/cli": "^4.1.6",
         "@moonwall/util": "^4.1.6",
