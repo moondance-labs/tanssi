@@ -76,18 +76,11 @@ jobs:
       - name: Install llvm tools
         run:
           rustup component add llvm-tools-preview
-      - name: Upload runtimes
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: runtimes
-          path: runtimes
-      - name: Upload binaries
-        uses: actions/upload-artifact@v3.1.2
-        with:
-          name: binaries
-          path: binaries
       - name: Unit tests
         run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+          echo $PATH
           cargo nextest run --release --workspace --features=fast-runtime
       - name: Typescript Tests Tanssi (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-dev-tanssi
