@@ -35,8 +35,9 @@ runs:
         #### Set the number of CPUs to use for parallel tests.
         echo "CPUS=$(lscpu | egrep '^CPU\(s\)' | grep -o '[0-9]*')" >> $GITHUB_ENV
 
-        echo "BINARY_PATH: $BINARY_PATH"
+        echo "BINARY_PATH: $  "
         echo "CPUS: $CPUS"
+        cp ${{ inputs.frontier-template-binary}} target/release/
 
     - name: Install and run
       shell: bash

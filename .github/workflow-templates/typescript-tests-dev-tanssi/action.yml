@@ -33,6 +33,8 @@ runs:
         echo "BINARY_PATH: $BINARY_PATH"
         echo "CPUS: $CPUS"
 
+        cp ${{ inputs.tanssi-binary}} target/release/
+
     - name: Setup Node
       uses: actions/setup-node@v3
       with:
