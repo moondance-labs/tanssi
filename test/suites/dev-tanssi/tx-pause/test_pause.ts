@@ -27,7 +27,7 @@ describeSuite({
             test: async function () {
                 // Pause Balances.transfer
                 const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.txPause.pause(["Balances", "transfer"])).signAsync(alice)
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.txPause.pause(["Balances", "transfer_allow_death"])).signAsync(alice)
                 );
 
                 expect(result.successful).to.be.true;
@@ -36,9 +36,9 @@ describeSuite({
                 expect(sudoEvents.length).toBe(1);
                 expect((sudoEvents[0].event.data[0] as Result<any, SpRuntimeDispatchError>).isOk).to.be.true;
 
-                // transfer should fail
+                // transfer_allow_death should fail
                 const { result: resultTransfer } = await context.createBlock(
-                    polkadotJs.tx.balances.transfer(bob.address, DANCE).signAsync(alice)
+                    polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice)
                 );
 
                 expect(resultTransfer.successful).to.be.false;
@@ -50,9 +50,9 @@ describeSuite({
             id: "E02",
             title: "transfer should succeed after unpausing it",
             test: async function () {
-                // Unpause Balances.transfer
+                // Unpause Balances.transferAllowDeath
                 const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.txPause.unpause(["Balances", "transfer"])).signAsync(alice),
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.txPause.unpause(["Balances", "transfer_allow_death"])).signAsync(alice),
                     {
                         // allowFailures: true,
                         expectEvents: [context.polkadotJs().events.sudo.Sudid],
@@ -65,9 +65,9 @@ describeSuite({
                 expect(sudoEvents.length).toBe(1);
                 expect((sudoEvents[0].event.data[0] as Result<any, SpRuntimeDispatchError>).isOk).to.be.true;
 
-                // transfer should fail
+                // transfer_allow_death should fail
                 const { result: resultTransfer } = await context.createBlock(
-                    polkadotJs.tx.balances.transfer(bob.address, DANCE).signAsync(alice)
+                    polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice)
                 );
 
                 expect(resultTransfer.successful).to.be.true;

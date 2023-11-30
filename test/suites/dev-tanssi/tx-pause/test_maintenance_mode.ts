@@ -25,9 +25,11 @@ describeSuite({
             id: "E01",
             title: "a paused tx should still fail during maintenance mode",
             test: async function () {
-                // Pause Balances.transfer
+                // Pause Balances.transfer_allow_death
                 const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.txPause.pause(["Balances", "transfer"])).signAsync(alice)
+                    polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.txPause.pause(["Balances", "transfer_allow_death"]))
+                        .signAsync(alice)
                 );
                 expect(result.successful).to.be.true;
 
@@ -42,13 +44,13 @@ describeSuite({
                 );
                 expect((await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON()).to.be.true;
 
-                // transfer should fail
-                const { result: resultTransfer1 } = await context.createBlock(
-                    polkadotJs.tx.balances.transfer(bob.address, DANCE).signAsync(alice)
+                // transfer_allow_death should fail
+                const { result: resultTransfer } = await context.createBlock(
+                    polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice)
                 );
 
-                expect(resultTransfer1.successful).to.be.false;
-                expect(resultTransfer1.error.name).to.eq("CallFiltered");
+                expect(resultTransfer.successful).to.be.false;
+                expect(resultTransfer.error.name).to.eq("CallFiltered");
             },
         });
 
@@ -65,12 +67,12 @@ describeSuite({
                 await context.createBlock();
 
                 // transfer should still fail
-                const { result: resultTransfer2 } = await context.createBlock(
-                    polkadotJs.tx.balances.transfer(bob.address, DANCE).signAsync(alice)
+                const { result } = await context.createBlock(
+                    polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice)
                 );
 
-                expect(resultTransfer2.successful).to.be.false;
-                expect(resultTransfer2.error.name).to.eq("CallFiltered");
+                expect(result.successful).to.be.false;
+                expect(result.error.name).to.eq("CallFiltered");
             },
         });
     },
