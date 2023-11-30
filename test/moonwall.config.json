@@ -10,7 +10,8 @@
             "testFileDir": ["suites/dev-tanssi", "suites/common"],
             "timeout": 120000,
             "multiThreads": true,
-            "reporters": ["basic"],
+            "reporters": ["basic", "html", "json"],
+            "reportFile": { "json": "./tmp/testResults.json" },
             "foundation": {
                 "type": "dev",
                 "launchSpec": [
@@ -53,7 +54,7 @@
             "timeout": 120000,
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": true,
-            "reporters": ["basic"],
+            "reporters": ["basic", "html", "json"],
             "contracts": "helpers/",
             "foundation": {
                 "type": "dev",
