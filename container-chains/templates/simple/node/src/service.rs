@@ -306,13 +306,6 @@ pub async fn start_dev_node(
 
     let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
-    // let relay_chain_slot_duration = Duration::from_secs(6);
-    // let node_builder = node_builder.start_full_node(
-    //     para_id,
-    //     relay_chain_interface.clone(),
-    //     relay_chain_slot_duration,
-    // )?;
-
     log::info!("Development Service Ready");
 
     node_builder.network.start_network.start_network();
