@@ -88,16 +88,16 @@ jobs:
           path: binaries
       - name: Unit tests
         run: |
-          cargo test --release --all --features=fast-runtime
+          cargo nextest run --release --workspace --features=fast-runtime
       - name: Typescript Tests Tanssi (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-dev-tanssi
         with:
-          tanssi-binary: binaries/tanssi-node
+          tanssi-binary: target/release/tanssi-node
           force-pass: true
       - name: Typescript Tests Frontier Template (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-dev-frontier-template
         with:
-          frontier-template-binary: binaries/container-chain-template-frontier-node
+          frontier-template-binary: target/release/container-chain-template-frontier-node
           force-pass: true
 
       - name: Retrieve coverage
