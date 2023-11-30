@@ -163,3 +163,11 @@ pub(crate) fn events() -> Vec<pallet_services_payment::Event<Test>> {
         })
         .collect::<Vec<_>>()
 }
+
+#[cfg(feature = "runtime-benchmarks")]
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    frame_system::GenesisConfig::<Test>::default()
+        .build_storage()
+        .unwrap()
+        .into()
+}
