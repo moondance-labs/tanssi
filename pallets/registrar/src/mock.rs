@@ -184,6 +184,14 @@ impl<T> RegistrarHooks for mock_data::Pallet<T> {
             Weight::default()
         })
     }
+
+    fn check_valid_for_collating(_para_id: ParaId) -> crate::DispatchResult {
+        // Ignored, we already test this in integration tests
+        Ok(())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(_para_id: ParaId) {}
 }
 
 impl mock_data::Config for Test {}

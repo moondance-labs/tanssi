@@ -157,6 +157,7 @@ where
     O: From<RawOrigin<T::AccountId>>,
     Result<RawOrigin<T::AccountId>, O>: From<O>,
     u64: From<T::AccountId>,
+    T::AccountId: From<u64>,
     O: Clone,
 {
     type Success = Either<T::AccountId, <RootOrigin as EnsureOriginWithArg<O, ParaId>>::Success>;
@@ -186,6 +187,29 @@ where
         }
 
         Ok(origin)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn try_successful_origin(para_id: &ParaId) -> Result<O, ()> {
+        // Return container chain manager, or register container chain as ALICE if it does not exist
+        MockData::mutate(|m| {
+            m.container_chain_managers
+                .entry(*para_id)
+                .or_insert_with(move || {
+                    const ALICE: u64 = 1;
+
+                    Some(ALICE)
+                });
+        });
+
+        // This panics if the container chain was registered by root (None)
+        let o = MockData::get()
+            .container_chain_managers
+            .get(para_id)
+            .unwrap()
+            .unwrap();
+
+        Ok(O::from(RawOrigin::Signed(o.into())))
     }
 }
 

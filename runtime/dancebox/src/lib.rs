@@ -785,6 +785,8 @@ where
     RootOrigin: EnsureOriginWithArg<O, ParaId>,
     O: From<RawOrigin<T::AccountId>>,
     Result<RawOrigin<T::AccountId>, O>: From<O>,
+    pallet_registrar::DepositBalanceOf<T>: From<u128>,
+    RuntimeOrigin: From<RawOrigin<T::AccountId>>,
     O: Clone,
 {
     type Success = Either<T::AccountId, <RootOrigin as EnsureOriginWithArg<O, ParaId>>::Success>;
@@ -811,6 +813,52 @@ where
         }
 
         Ok(origin)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn try_successful_origin(para_id: &ParaId) -> Result<O, ()> {
+        use frame_benchmarking::account;
+        use frame_support::assert_ok;
+        use frame_support::traits::Currency;
+        use pallet_registrar::DepositBalanceOf;
+        // Return container chain manager, or register container chain as ALICE if it does not exist
+        if !pallet_registrar::ParaGenesisData::<T>::contains_key(para_id) {
+            // Register as a new user
+
+            /// Create a funded user.
+            /// Used for generating the necessary amount for registering
+            fn create_funded_user<T: pallet_registrar::Config>(
+                string: &'static str,
+                n: u32,
+                total: DepositBalanceOf<T>,
+            ) -> (T::AccountId, DepositBalanceOf<T>)
+            where
+                DepositBalanceOf<T>: From<u128>,
+            {
+                const SEED: u32 = 0;
+                let user = account(string, n, SEED);
+                T::Currency::make_free_balance_be(&user, total);
+                T::Currency::issue(total);
+                (user, total)
+            }
+            let new_balance = (EXISTENTIAL_DEPOSIT + DepositAmount::get()) * 2;
+            let account = create_funded_user::<T>("caller", 1000, new_balance.into()).0;
+            let origin = RawOrigin::Signed(account);
+            assert_ok!(Registrar::register(
+                origin.into(),
+                *para_id,
+                Default::default()
+            ));
+        }
+
+        let deposit_info = pallet_registrar::RegistrarDeposit::<T>::get(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
+
+        // Fund deposit creator, just in case it is not a new account
+        let new_balance = (EXISTENTIAL_DEPOSIT + DepositAmount::get()) * 2;
+        T::Currency::make_free_balance_be(&deposit_info.creator, new_balance.into());
+        T::Currency::issue(new_balance.into());
+
+        Ok(O::from(RawOrigin::Signed(deposit_info.creator)))
     }
 }
 impl pallet_data_preservers::Config for Runtime {
@@ -909,6 +957,31 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
         DataPreservers::para_deregistered(para_id);
 
         Weight::default()
+    }
+
+    fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
+        // To be able to call mark_valid_for_collating, a container chain must have bootnodes
+        if DataPreservers::boot_nodes(para_id).len() > 0 {
+            Ok(())
+        } else {
+            // TODO: how to define an Error enum outside of a pallet?
+            Err("This container chain does not have boot nodes".into())
+        }
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
+        use sp_runtime::BoundedVec;
+        let boot_nodes: BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> = vec![
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+        ]
+        .try_into()
+        .unwrap();
+
+        pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, boot_nodes);
     }
 }
 

@@ -18,9 +18,9 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, DepositBalanceOf, Pallet},
+    crate::{Call, Config, DepositBalanceOf, Pallet, RegistrarHooks},
     frame_benchmarking::{account, v2::*},
-    frame_support::{traits::Currency, BoundedVec},
+    frame_support::traits::Currency,
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
@@ -145,6 +145,7 @@ mod benchmarks {
             .unwrap();
             // Call mark_valid_for_collating to ensure that the deregister call
             // does not execute the cleanup hooks immediately
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -208,6 +209,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
@@ -216,6 +218,7 @@ mod benchmarks {
 
         // We should have registered y
         assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        T::RegistrarHooks::benchmarks_ensure_valid_for_collating((y - 1).into());
 
         #[extrinsic_call]
         Pallet::<T>::mark_valid_for_collating(RawOrigin::Root, (y - 1).into());
@@ -246,6 +249,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -259,6 +263,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
             Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
@@ -308,6 +313,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -321,6 +327,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
             Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }

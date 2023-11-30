@@ -64,13 +64,18 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
+                const bootNodes = [
+                    "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
+                ];
 
                 const tx = polkadotJs.tx.registrar.register(2002, containerChainGenesisData);
-                const tx2 = polkadotJs.tx.registrar.markValidForCollating(2002);
+                const tx2 = polkadotJs.tx.dataPreservers.setBootNodes(2002, bootNodes);
+                const tx3 = polkadotJs.tx.registrar.markValidForCollating(2002);
                 const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
                 await context.createBlock([
                     await tx.signAsync(alice, { nonce }),
-                    await polkadotJs.tx.sudo.sudo(tx2).signAsync(alice, { nonce: nonce.addn(1) }),
+                    await tx2.signAsync(alice, { nonce: nonce.addn(1) }),
+                    await polkadotJs.tx.sudo.sudo(tx3).signAsync(alice, { nonce: nonce.addn(2) }),
                 ]);
 
                 const pendingParas = await polkadotJs.query.registrar.pendingParaIds();

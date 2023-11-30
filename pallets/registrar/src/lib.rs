@@ -511,6 +511,7 @@ pub mod pallet {
             })?;
 
             PendingVerification::<T>::put(pending_verification);
+            T::RegistrarHooks::check_valid_for_collating(para_id)?;
 
             Self::deposit_event(Event::ParaIdValidForCollating { para_id });
 
@@ -874,6 +875,12 @@ pub trait RegistrarHooks {
     fn para_deregistered(_para_id: ParaId) -> Weight {
         Weight::default()
     }
+    fn check_valid_for_collating(_para_id: ParaId) -> DispatchResult {
+        Ok(())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(_para_id: ParaId) {}
 }
 
 impl RegistrarHooks for () {}
