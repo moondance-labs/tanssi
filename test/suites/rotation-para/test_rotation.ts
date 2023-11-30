@@ -400,14 +400,7 @@ async function directoryExists(directoryPath) {
 
 /// Returns the /tmp/zombie-52234... path
 function getTmpZombiePath() {
-    const zombiePath = process.env.MOON_ZOMBIE_DIR;
-
-    if (zombiePath) {
-        return zombiePath;
-    }
-
-    // Return null if the environment variable is not set
-    return null;
+    return process.env.MOON_ZOMBIE_DIR;
 }
 
 /// Given a list of collators and a list of dbPaths, checks that the path does not exist for all the collators.

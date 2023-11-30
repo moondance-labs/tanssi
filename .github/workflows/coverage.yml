@@ -73,6 +73,9 @@ jobs:
         run: |
           # Enable coverage when running tests
           echo "LLVM_PROFILE_FILE=$(pwd)/proffiles/default_%m_%p.profraw" >> $GITHUB_ENV
+      - name: Install llvm tools
+        run:
+          rustup component add llvm-tools-preview
       - name: Upload runtimes
         uses: actions/upload-artifact@v3.1.2
         with:
@@ -96,9 +99,7 @@ jobs:
         with:
           frontier-template-binary: binaries/container-chain-template-frontier-node
           force-pass: true
-      - name: Install llvm tools
-        run:
-          rustup component add llvm-tools-preview
+
       - name: Retrieve coverage
         id: coverage
         run: |
