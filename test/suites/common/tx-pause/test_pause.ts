@@ -7,18 +7,20 @@ import { Result } from "@polkadot/types-codec";
 import { SpRuntimeDispatchError } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "DT0802",
+    id: "C0402",
     title: "Txs can be paused and unpaused",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
+        let chain: string;
 
         beforeAll(async function () {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             bob = context.keyring.bob;
+            chain = polkadotJs.consts.system.version.specName.toString();
         });
 
         it({
@@ -27,7 +29,9 @@ describeSuite({
             test: async function () {
                 // Pause Balances.transfer
                 const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.txPause.pause(["Balances", "transfer_allow_death"])).signAsync(alice)
+                    polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.txPause.pause(["Balances", "transfer_allow_death"]))
+                        .signAsync(alice)
                 );
 
                 expect(result.successful).to.be.true;
@@ -36,13 +40,19 @@ describeSuite({
                 expect(sudoEvents.length).toBe(1);
                 expect((sudoEvents[0].event.data[0] as Result<any, SpRuntimeDispatchError>).isOk).to.be.true;
 
-                // transfer_allow_death should fail
-                const { result: resultTransfer } = await context.createBlock(
-                    polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice)
-                );
+                const signedTx = polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice);
 
-                expect(resultTransfer.successful).to.be.false;
-                expect(resultTransfer.error.name).to.eq("CallFiltered");
+                // transfer_allow_death should fail
+                if (chain == "frontier-template") {
+                    expect(await context.createBlock(signedTx).catch((e) => e.toString())).to.equal(
+                        "RpcError: 1010: Invalid Transaction: Transaction call is not expected"
+                    );
+                } else {
+                    const { result: resultTransfer } = await context.createBlock(signedTx);
+
+                    expect(resultTransfer.successful).to.be.false;
+                    expect(resultTransfer.error.name).to.eq("CallFiltered");
+                }
             },
         });
 
@@ -52,11 +62,9 @@ describeSuite({
             test: async function () {
                 // Unpause Balances.transferAllowDeath
                 const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.txPause.unpause(["Balances", "transfer_allow_death"])).signAsync(alice),
-                    {
-                        // allowFailures: true,
-                        expectEvents: [context.polkadotJs().events.sudo.Sudid],
-                    }
+                    polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.txPause.unpause(["Balances", "transfer_allow_death"]))
+                        .signAsync(alice)
                 );
                 expect(result.successful).to.be.true;
 

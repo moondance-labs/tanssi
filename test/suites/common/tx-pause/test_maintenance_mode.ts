@@ -7,18 +7,20 @@ import { Result } from "@polkadot/types-codec";
 import { SpRuntimeDispatchError } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "DT0801",
+    id: "C0401",
     title: "Pausing is compatible with maintenance mode",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
+        let chain: string;
 
         beforeAll(async function () {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             bob = context.keyring.bob;
+            chain = polkadotJs.consts.system.version.specName.toString();
         });
 
         it({
@@ -44,13 +46,19 @@ describeSuite({
                 );
                 expect((await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON()).to.be.true;
 
-                // transfer_allow_death should fail
-                const { result: resultTransfer } = await context.createBlock(
-                    polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice)
-                );
+                const signedTx = polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice);
 
-                expect(resultTransfer.successful).to.be.false;
-                expect(resultTransfer.error.name).to.eq("CallFiltered");
+                // transfer_allow_death should fail
+                if (chain == "frontier-template") {
+                    expect(await context.createBlock(signedTx).catch((e) => e.toString())).to.equal(
+                        "RpcError: 1010: Invalid Transaction: Transaction call is not expected"
+                    );
+                } else {
+                    const { result: resultTransfer } = await context.createBlock(signedTx);
+
+                    expect(resultTransfer.successful).to.be.false;
+                    expect(resultTransfer.error.name).to.eq("CallFiltered");
+                }
             },
         });
 
@@ -66,13 +74,19 @@ describeSuite({
 
                 await context.createBlock();
 
-                // transfer should still fail
-                const { result } = await context.createBlock(
-                    polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice)
-                );
+                const signedTx = polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice);
 
-                expect(result.successful).to.be.false;
-                expect(result.error.name).to.eq("CallFiltered");
+                // transfer_allow_death should fail
+                if (chain == "frontier-template") {
+                    expect(await context.createBlock(signedTx).catch((e) => e.toString())).to.equal(
+                        "RpcError: 1010: Invalid Transaction: Transaction call is not expected"
+                    );
+                } else {
+                    const { result: resultTransfer } = await context.createBlock(signedTx);
+
+                    expect(resultTransfer.successful).to.be.false;
+                    expect(resultTransfer.error.name).to.eq("CallFiltered");
+                }
             },
         });
     },
