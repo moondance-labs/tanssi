@@ -242,6 +242,12 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        dataPreservers: {
+            bootNodes: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Bytes>>, [u32]> &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         dmpQueue: {
             /** The configuration. */
             configuration: AugmentedQuery<ApiType, () => Observable<CumulusPalletDmpQueueConfigData>, []> &
@@ -393,11 +399,7 @@ declare module "@polkadot/api-base/types/storage" {
              */
             lastHrmpMqcHeads: AugmentedQuery<ApiType, () => Observable<BTreeMap<u32, H256>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /**
-             * The relay chain block number associated with the last parachain block.
-             *
-             * This is updated in `on_finalize`.
-             */
+            /** The relay chain block number associated with the last parachain block. */
             lastRelayChainBlockNumber: AugmentedQuery<ApiType, () => Observable<u32>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
@@ -695,8 +697,6 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         registrar: {
-            bootNodes: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Bytes>>, [u32]> &
-                QueryableStorageEntry<ApiType, [u32]>;
             paraGenesisData: AugmentedQuery<
                 ApiType,
                 (
