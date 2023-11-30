@@ -96,6 +96,10 @@ jobs:
       - name: Retrieve coverage
         id: coverage
         run: |
+
+          find . -type f -name \*.profraw -exec ls -l {}  \;
+          echo "Copying profraw files to proffiles"
+          find . -name \*.profraw -exec mv {} proffiles/ \;
           du -sh proffiles
 
           echo "Executing grcov"
