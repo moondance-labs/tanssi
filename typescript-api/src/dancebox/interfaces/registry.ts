@@ -128,6 +128,9 @@ import type {
     PalletTransactionPaymentChargeTransactionPayment,
     PalletTransactionPaymentEvent,
     PalletTransactionPaymentReleases,
+    PalletTxPauseCall,
+    PalletTxPauseError,
+    PalletTxPauseEvent,
     PalletUtilityCall,
     PalletUtilityError,
     PalletUtilityEvent,
@@ -347,6 +350,9 @@ declare module "@polkadot/types/types/registry" {
         PalletTransactionPaymentChargeTransactionPayment: PalletTransactionPaymentChargeTransactionPayment;
         PalletTransactionPaymentEvent: PalletTransactionPaymentEvent;
         PalletTransactionPaymentReleases: PalletTransactionPaymentReleases;
+        PalletTxPauseCall: PalletTxPauseCall;
+        PalletTxPauseError: PalletTxPauseError;
+        PalletTxPauseEvent: PalletTxPauseEvent;
         PalletUtilityCall: PalletUtilityCall;
         PalletUtilityError: PalletUtilityError;
         PalletUtilityEvent: PalletUtilityEvent;

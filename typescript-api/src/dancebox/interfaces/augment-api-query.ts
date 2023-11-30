@@ -6,7 +6,20 @@
 import "@polkadot/api-base/types/storage";
 
 import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from "@polkadot/api-base/types";
-import type { BTreeMap, Bytes, Option, Struct, U8aFixed, Vec, bool, u128, u16, u32, u64 } from "@polkadot/types-codec";
+import type {
+    BTreeMap,
+    Bytes,
+    Null,
+    Option,
+    Struct,
+    U8aFixed,
+    Vec,
+    bool,
+    u128,
+    u16,
+    u32,
+    u64,
+} from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -882,6 +895,19 @@ declare module "@polkadot/api-base/types/storage" {
             nextFeeMultiplier: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
             storageVersion: AugmentedQuery<ApiType, () => Observable<PalletTransactionPaymentReleases>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        txPause: {
+            /** The set of calls that are explicitly paused. */
+            pausedCalls: AugmentedQuery<
+                ApiType,
+                (
+                    arg: ITuple<[Bytes, Bytes]> | [Bytes | string | Uint8Array, Bytes | string | Uint8Array]
+                ) => Observable<Option<Null>>,
+                [ITuple<[Bytes, Bytes]>]
+            > &
+                QueryableStorageEntry<ApiType, [ITuple<[Bytes, Bytes]>]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
