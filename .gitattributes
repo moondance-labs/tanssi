@@ -1,2 +1,2 @@
 # Mark typescript-api folder as auto generated
-typescript-api linguist-generated=true
+typescript-api/** linguist-generated=true
