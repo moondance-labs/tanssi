@@ -76,7 +76,6 @@ use {
     pallet_services_payment::{ChargeForBlockCredit, ProvideBlockProductionCost},
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
-    pallet_tx_pause::RuntimeCallNameOf,
     polkadot_runtime_common::BlockHashCount,
     scale_info::TypeInfo,
     smallvec::smallvec,
@@ -1249,23 +1248,12 @@ impl pallet_inflation_rewards::Config for Runtime {
     type RewardsPortion = RewardsPortion;
 }
 
-/// Calls that cannot be paused by the tx-pause pallet.
-pub struct TxPauseWhitelistedCalls;
-/// Whitelist `Balances::transfer_keep_alive`, all others are pauseable.
-impl Contains<RuntimeCallNameOf<Runtime>> for TxPauseWhitelistedCalls {
-    fn contains(full_name: &RuntimeCallNameOf<Runtime>) -> bool {
-        match (full_name.0.as_slice(), full_name.1.as_slice()) {
-            (b"Balances", b"transfer_keep_alive") => true,
-            _ => false,
-        }
-    }
-}
 impl pallet_tx_pause::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
     type PauseOrigin = EnsureRoot<AccountId>;
     type UnpauseOrigin = EnsureRoot<AccountId>;
-    type WhitelistedCalls = TxPauseWhitelistedCalls;
+    type WhitelistedCalls = ();
     type MaxNameLen = ConstU32<256>;
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
