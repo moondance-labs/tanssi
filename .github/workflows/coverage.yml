@@ -106,9 +106,6 @@ jobs:
           find . -type f -name \*.profraw -exec ls -l {}  \;
           echo "Copying profraw files to proffiles"
           find . -name \*.profraw -exec mv {} proffiles/ \;
-          ls /tmp/
-          ls test/
-          ls
           du -sh proffiles
 
           echo "Executing grcov"
