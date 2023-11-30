@@ -411,6 +411,7 @@ where
                 warp_sync_params: None,
                 block_announce_validator_builder: None,
                 net_config,
+                block_relay: None,
             })?;
 
         Ok(NodeBuilder {

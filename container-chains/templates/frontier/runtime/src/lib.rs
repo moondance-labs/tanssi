@@ -493,7 +493,8 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = [u8; 8];
     type MaxFreezes = ConstU32<0>;
-    type RuntimeHoldReason = [u8; 8];
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<0>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
@@ -788,6 +789,7 @@ parameter_types! {
     pub BlockGasLimit: U256 = U256::from(BLOCK_GAS_LIMIT);
     pub PrecompilesValue: TemplatePrecompiles<Runtime> = TemplatePrecompiles::<_>::new();
     pub WeightPerGas: Weight = Weight::from_parts(weight_per_gas(BLOCK_GAS_LIMIT, NORMAL_DISPATCH_RATIO, WEIGHT_MILLISECS_PER_BLOCK), 0);
+    pub SuicideQuickClearLimit: u32 = 0;
 }
 
 impl_on_charge_evm_transaction!();
@@ -811,6 +813,7 @@ impl pallet_evm::Config for Runtime {
     type FindAuthor = FindAuthorAdapter;
     // TODO: update in the future
     type GasLimitPovSizeRatio = ();
+    type SuicideQuickClearLimit = SuicideQuickClearLimit;
     type Timestamp = Timestamp;
     type WeightInfo = ();
 }
