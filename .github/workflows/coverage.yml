@@ -88,6 +88,11 @@ jobs:
       - name: Install llvm tools
         run:
           rustup component add llvm-tools-preview
+      
+      - name: Unit tests
+        run: |
+          cargo test --release --all --features=fast-runtime
+      
       - name: Typescript Tests Tanssi (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-dev-tanssi
         with:
