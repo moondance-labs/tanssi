@@ -1,7 +1,0 @@
- {
-  "pnpm": {
-        "overrides": {
-          "@zombienet/orchestrator": "0.0.67"
-        }
-   }
-}

@@ -6,6 +6,9 @@ inputs:
   frontier-template-binary:
     description: path to the frontier template binary
     required: true
+  timeout:
+    description: default timeout for the tests
+    default: "5000"
   force-pass:
     description: "Indicate whether the workflow should mark the test step as successful, even if actual test failures occur."
     default: "false"
@@ -22,7 +25,6 @@ runs:
       with:
         node-version: 20.x
         cache: "pnpm"
-        cache-dependency-path: test/pnpm-lock.yaml
     - name: Set binary path and number of CPUs
       shell: bash
       run: |
@@ -35,9 +37,8 @@ runs:
         #### Set the number of CPUs to use for parallel tests.
         echo "CPUS=$(lscpu | egrep '^CPU\(s\)' | grep -o '[0-9]*')" >> $GITHUB_ENV
 
-        echo "BINARY_PATH: $  "
+        echo "BINARY_PATH: $BINARY_PATH"
         echo "CPUS: $CPUS"
-        cp ${{ inputs.frontier-template-binary}} target/release/
 
     - name: Install and run
       shell: bash

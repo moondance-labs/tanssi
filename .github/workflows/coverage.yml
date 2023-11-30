@@ -73,7 +73,6 @@ jobs:
         run: |
           # Enable coverage when running tests
           echo "LLVM_PROFILE_FILE=$(pwd)/proffiles/default_%m_%p.profraw" >> $GITHUB_ENV
-
       - name: Upload runtimes
         uses: actions/upload-artifact@v3.1.2
         with:
@@ -84,28 +83,27 @@ jobs:
         with:
           name: binaries
           path: binaries
-
-      - name: Install llvm tools
-        run:
-          rustup component add llvm-tools-preview
+      - name: Unit tests
+        run: |
+          cargo test --release --all --features=fast-runtime
       - name: Typescript Tests Tanssi (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-dev-tanssi
         with:
+          timeout: 10000
           tanssi-binary: binaries/tanssi-node
           force-pass: true
       - name: Typescript Tests Frontier Template (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-dev-frontier-template
         with:
+          timeout: 10000
           frontier-template-binary: binaries/container-chain-template-frontier-node
           force-pass: true
-
+      - name: Install llvm tools
+        run:
+          rustup component add llvm-tools-preview
       - name: Retrieve coverage
         id: coverage
         run: |
-
-          find . -type f -name \*.profraw -exec ls -l {}  \;
-          echo "Copying profraw files to proffiles"
-          find . -name \*.profraw -exec mv {} proffiles/ \;
           du -sh proffiles
 
           echo "Executing grcov"

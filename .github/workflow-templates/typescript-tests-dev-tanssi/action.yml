@@ -6,6 +6,9 @@ inputs:
   tanssi-binary:
     description: path to the tanssi binary
     required: true
+  timeout:
+    description: default timeout for the tests
+    default: "5000"
   force-pass:
     description: "Indicate whether the workflow should mark the test step as successful, even if actual test failures occur."
     default: "false"
@@ -33,14 +36,11 @@ runs:
         echo "BINARY_PATH: $BINARY_PATH"
         echo "CPUS: $CPUS"
 
-        cp ${{ inputs.tanssi-binary}} target/release/
-
     - name: Setup Node
       uses: actions/setup-node@v3
       with:
         node-version: 20.x
         cache: "pnpm"
-        cache-dependency-path: test/pnpm-lock.yaml
 
     - name: Install typescript-api
       shell: bash
