@@ -393,7 +393,11 @@ declare module "@polkadot/api-base/types/storage" {
              */
             lastHrmpMqcHeads: AugmentedQuery<ApiType, () => Observable<BTreeMap<u32, H256>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** The relay chain block number associated with the last parachain block. */
+            /**
+             * The relay chain block number associated with the last parachain block.
+             *
+             * This is updated in `on_finalize`.
+             */
             lastRelayChainBlockNumber: AugmentedQuery<ApiType, () => Observable<u32>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
@@ -701,7 +705,12 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            paused: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> & QueryableStorageEntry<ApiType, []>;
             pendingParaIds: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, Vec<u32>]>>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            pendingPaused: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, Vec<u32>]>>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            pendingToRemove: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, Vec<u32>]>>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             pendingVerification: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
                 QueryableStorageEntry<ApiType, []>;

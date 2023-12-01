@@ -384,6 +384,9 @@ export default {
             ParaIdPaused: {
                 paraId: "u32",
             },
+            ParaIdUnpaused: {
+                paraId: "u32",
+            },
             BootNodesChanged: {
                 paraId: "u32",
             },
@@ -1817,6 +1820,9 @@ export default {
             pause_container_chain: {
                 paraId: "u32",
             },
+            unpause_container_chain: {
+                paraId: "u32",
+            },
         },
     },
     /** Lookup198: tp_container_chain_genesis_data::ContainerChainGenesisData<MaxLengthTokenSymbol> */
@@ -2458,8 +2464,10 @@ export default {
     PalletRegistrarError: {
         _enum: [
             "ParaIdAlreadyRegistered",
-            "ParaIdAlreadyPaused",
             "ParaIdNotRegistered",
+            "ParaIdAlreadyDeregistered",
+            "ParaIdAlreadyPaused",
+            "ParaIdNotPaused",
             "ParaIdListFull",
             "GenesisDataTooBig",
             "ParaIdNotInPendingVerification",

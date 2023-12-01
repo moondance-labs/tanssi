@@ -132,7 +132,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight((0, DispatchClass::Mandatory))]
+        #[pallet::weight((T::WeightInfo::set_latest_author_data(<T::ContainerChains as GetCurrentContainerChains>::MaxContainerChains::get()), DispatchClass::Mandatory))]
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
             data: tp_author_noting_inherent::OwnParachainInherentData,
@@ -148,7 +148,7 @@ pub mod pallet {
             let mut total_weight =
                 T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
 
-            // We do this first to make sure we dont do 2 reads (parachains and relay state)
+            // We do this first to make sure we don't do 2 reads (parachains and relay state)
             // when we have no containers registered
             // Essentially one can pass an empty proof if no container-chains are registered
             if !registered_para_ids.is_empty() {
@@ -269,7 +269,7 @@ pub mod pallet {
     pub(super) type LatestAuthor<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, ContainerChainBlockInfo<T>, OptionQuery>;
 
-    /// Information extracted from the lastest container chain header
+    /// Information extracted from the latest container chain header
     #[derive(
         Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo, MaxEncodedLen,
     )]
