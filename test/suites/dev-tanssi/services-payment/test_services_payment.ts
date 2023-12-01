@@ -185,7 +185,7 @@ describeSuite({
                 const randomAccount = generateKeyringPair("sr25519");
                 const value = 100_000_000_000n;
                 await context.createBlock([
-                    await polkadotJs.tx.balances.transfer(randomAccount.address, value).signAsync(alice),
+                    await polkadotJs.tx.balances.transferAllowDeath(randomAccount.address, value).signAsync(alice),
                 ]);
 
                 // Now, buy some credits for container chain 2000

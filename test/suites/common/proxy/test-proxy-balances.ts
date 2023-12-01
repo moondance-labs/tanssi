@@ -69,7 +69,7 @@ describeSuite({
                 const tx = polkadotJs.tx.proxy.proxy(
                     alice.address,
                     null,
-                    polkadotJs.tx.balances.transfer(charlie.address, 200_000)
+                    polkadotJs.tx.balances.transferAllowDeath(charlie.address, 200_000)
                 );
                 await context.createBlock([await tx.signAsync(charlie)]);
                 const events = await polkadotJs.query.system.events();

@@ -4,7 +4,7 @@ import { XcmpMessageFormat } from "@polkadot/types/interfaces";
 import {
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
     XcmV3JunctionNetworkId,
-    StagingXcmVersionedXcm,
+    XcmVersionedXcm,
 } from "@polkadot/types/lookup";
 import { BN, hexToU8a, stringToU8a, u8aToHex } from "@polkadot/util";
 import { xxhashAsU8a } from "@polkadot/util-crypto";
@@ -181,17 +181,13 @@ export interface RawXcmMessage {
 export function buildXcmpMessage(context: DevModeContext, message: RawXcmMessage): number[] {
     const format = message.format != null ? message.format : "ConcatenatedVersionedXcm";
     const xcmpFormat: XcmpMessageFormat = context.polkadotJs().createType("XcmpMessageFormat", format) as any;
-    const receivedMessage: StagingXcmVersionedXcm = context
-        .polkadotJs()
-        .createType(message.type, message.payload) as any;
+    const receivedMessage: XcmVersionedXcm = context.polkadotJs().createType(message.type, message.payload) as any;
 
     return [...xcmpFormat.toU8a(), ...receivedMessage.toU8a()];
 }
 
 export function buildDmpMessage(context: DevModeContext, message: RawXcmMessage): number[] {
-    const receivedMessage: StagingXcmVersionedXcm = context
-        .polkadotJs()
-        .createType("StagingXcmVersionedXcm", message.payload) as any;
+    const receivedMessage: XcmVersionedXcm = context.polkadotJs().createType("XcmVersionedXcm", message.payload) as any;
 
     return [...receivedMessage.toU8a()];
 }
@@ -209,7 +205,7 @@ export async function injectDmpMessage(context: DevModeContext, message?: RawXcm
 }
 
 // Weight a particular message using the xcm utils precompile
-export async function weightMessage(context: DevModeContext, message: StagingXcmVersionedXcm) {
+export async function weightMessage(context: DevModeContext, message: XcmVersionedXcm) {
     return (await context.readPrecompile!({
         precompileName: "XcmUtils",
         functionName: "weightMessage",
@@ -874,9 +870,7 @@ export class XcmFragment {
     // Overrides the weight limit of the first buyExeuction encountered
     // with the measured weight
     async override_weight(context: DevModeContext): Promise<this> {
-        const message: StagingXcmVersionedXcm = context
-            .polkadotJs()
-            .createType("StagingXcmVersionedXcm", this.as_v2()) as any;
+        const message: XcmVersionedXcm = context.polkadotJs().createType("XcmVersionedXcm", this.as_v2()) as any;
 
         const instructions = message.asV2;
         for (let i = 0; i < instructions.length; i++) {

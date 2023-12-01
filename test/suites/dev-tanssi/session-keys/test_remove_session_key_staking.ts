@@ -43,7 +43,7 @@ describeSuite({
                     .requestDelegate(bob.address, "ManualRewards", 10000n * DANCE)
                     .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
                 await polkadotJs.tx.balances
-                    .transfer(STAKING_ACCOUNT, existentialDeposit)
+                    .transferAllowDeath(STAKING_ACCOUNT, existentialDeposit)
                     .signAsync(context.keyring.bob, { nonce: bobNonce++ }),
             ]);
             // At least 2 sessions for the change to have effect
