@@ -86,7 +86,7 @@ pub mod pallet {
         }
     }
 
-    /// Inflation rewards pallet.
+    /// Data preservers pallet.
     #[pallet::pallet]
     #[pallet::without_storage_info]
     pub struct Pallet<T>(core::marker::PhantomData<T>);
@@ -110,6 +110,12 @@ pub mod pallet {
     pub enum Event<T: Config> {
         /// The list of boot_nodes changed.
         BootNodesChanged { para_id: ParaId },
+    }
+
+    #[pallet::error]
+    pub enum Error<T> {
+        /// This container chain does not have any boot nodes
+        NoBootNodes,
     }
 
     #[pallet::storage]
@@ -150,6 +156,15 @@ pub mod pallet {
         /// Cannot fail.
         pub fn para_deregistered(para_id: ParaId) {
             BootNodes::<T>::remove(para_id);
+        }
+
+        pub fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
+            // To be able to call mark_valid_for_collating, a container chain must have bootnodes
+            if Pallet::<T>::boot_nodes(para_id).len() > 0 {
+                Ok(())
+            } else {
+                Err(Error::<T>::NoBootNodes.into())
+            }
         }
     }
 }

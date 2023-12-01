@@ -951,12 +951,7 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
 
     fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
         // To be able to call mark_valid_for_collating, a container chain must have bootnodes
-        if DataPreservers::boot_nodes(para_id).len() > 0 {
-            Ok(())
-        } else {
-            // TODO: how to define an Error enum outside of a pallet?
-            Err("This container chain does not have boot nodes".into())
-        }
+        DataPreservers::check_valid_for_collating(para_id)
     }
 
     #[cfg(feature = "runtime-benchmarks")]
