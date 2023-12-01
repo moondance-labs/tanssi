@@ -105,13 +105,18 @@ describeSuite({
 
         it({
             id: "E03",
-            title: "Registered paraId has been given free credits",
+            title: "Registered paraId has been given free credits, and flag can be cleared",
             test: async function () {
                 const paraId = 2002;
-                const givenFreeCredits = await polkadotJs.query.servicesPayment.givenFreeCredits.key(paraId);
-                console.log("hasFreeCredits exists", givenFreeCredits);
-                const givenFreeCredits2 = await polkadotJs.query.servicesPayment.givenFreeCredits.key(paraId + 100);
-                console.log("hasFreeCredits not exists", givenFreeCredits2);
+                const givenFreeCredits = await polkadotJs.query.servicesPayment.givenFreeCredits(paraId);
+                expect(givenFreeCredits.isNone).to.be.false;
+                // Test that the storage can be cleared as root
+                const tx = polkadotJs.tx.servicesPayment.setGivenFreeCredits(paraId, false);
+                await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
+
+                // Flag has been cleared
+                const givenFreeCredits2 = await polkadotJs.query.servicesPayment.givenFreeCredits(paraId);
+                expect(givenFreeCredits2.isNone).to.be.true;
             },
         });
     },
