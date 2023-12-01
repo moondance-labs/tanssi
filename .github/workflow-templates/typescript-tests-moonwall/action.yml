@@ -43,4 +43,4 @@ runs:
       shell: bash
       run: |
         cd ./test
-        pnpm moonwall test ${{ inputs.moonwall_environment }} || [[ '${{ inputs.force-pass }}' == 'true' ]]
+        pnpm moonwall test ${{ inputs.moonwall-environment }} || [[ '${{ inputs.force-pass }}' == 'true' ]]
