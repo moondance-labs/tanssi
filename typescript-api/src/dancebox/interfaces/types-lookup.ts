@@ -2623,7 +2623,12 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly credits: u32;
         } & Struct;
-        readonly type: "PurchaseCredits" | "SetCredits";
+        readonly isSetGivenFreeCredits: boolean;
+        readonly asSetGivenFreeCredits: {
+            readonly paraId: u32;
+            readonly givenFreeCredits: bool;
+        } & Struct;
+        readonly type: "PurchaseCredits" | "SetCredits" | "SetGivenFreeCredits";
     }
 
     /** @name PalletInvulnerablesCall (216) */
