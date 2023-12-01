@@ -114,6 +114,11 @@ pub mod pallet {
     pub type BlockProductionCredits<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, BlockNumberFor<T>, OptionQuery>;
 
+    /// List of para ids that have already been given free credits
+    #[pallet::storage]
+    #[pallet::getter(fn given_free_credits)]
+    pub type GivenFreeCredits<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
+
     #[pallet::call]
     impl<T: Config> Pallet<T>
     where
@@ -188,6 +193,26 @@ pub mod pallet {
 
             Ok(().into())
         }
+
+        /// Helper to set and cleanup the `GivenFreeCredits` storage.
+        /// Can only be called by root.
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::set_given_free_credits())]
+        pub fn set_given_free_credits(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            given_free_credits: bool,
+        ) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+
+            if given_free_credits {
+                GivenFreeCredits::<T>::insert(para_id, ());
+            } else {
+                GivenFreeCredits::<T>::remove(para_id);
+            }
+
+            Ok(().into())
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -210,6 +235,31 @@ pub mod pallet {
             });
 
             Ok(().into())
+        }
+
+        pub fn give_free_credits(para_id: &ParaId) -> Weight {
+            if GivenFreeCredits::<T>::contains_key(para_id) {
+                // This para id has already received free credits
+                return Weight::default();
+            }
+            // Set number of credits to MaxCreditsStored
+            let existing_credits =
+                BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
+            let updated_credits = T::MaxCreditsStored::get();
+            // Do not update credits if for some reason this para id had more
+            if existing_credits < updated_credits {
+                BlockProductionCredits::<T>::insert(para_id, updated_credits);
+                Self::deposit_event(Event::<T>::CreditsSet {
+                    para_id: *para_id,
+                    credits: updated_credits,
+                });
+            }
+
+            // We only allow to call this function once per para id, even if it didn't actually
+            // receive all the free credits
+            GivenFreeCredits::<T>::insert(para_id, ());
+
+            Weight::default()
         }
     }
 
