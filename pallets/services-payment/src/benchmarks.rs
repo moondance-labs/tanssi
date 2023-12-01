@@ -20,10 +20,23 @@
 use {
     crate::{BalanceOf, BlockNumberFor, Call, Config, Pallet},
     frame_benchmarking::{account, v2::*},
-    frame_support::{assert_ok, traits::Currency},
+    frame_support::{
+        assert_ok,
+        traits::{Currency, Get},
+    },
     frame_system::RawOrigin,
     sp_std::prelude::*,
 };
+
+// Build genesis storage according to the mock runtime.
+#[cfg(test)]
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    const ALICE: u64 = 1;
+
+    crate::mock::ExtBuilder::default()
+        .with_balances(vec![(ALICE, 1_000)])
+        .build()
+}
 
 const SEED: u32 = 0;
 
@@ -44,9 +57,9 @@ mod benchmarks {
 
     #[benchmark]
     fn purchase_credits() {
-        let caller = create_funded_user::<T>("caller", 1, 100);
+        let caller = create_funded_user::<T>("caller", 1, 1000);
         let para_id = 1001u32.into();
-        let credits = 1000u32.into();
+        let credits = T::MaxCreditsStored::get();
 
         // Before call: 0 credits
         assert_eq!(
@@ -71,9 +84,9 @@ mod benchmarks {
 
     #[benchmark]
     fn set_credits() {
-        let caller = create_funded_user::<T>("caller", 1, 100);
+        let caller = create_funded_user::<T>("caller", 1, 1000);
         let para_id = 1001u32.into();
-        let credits = 1000u32.into();
+        let credits = T::MaxCreditsStored::get();
 
         assert_ok!(Pallet::<T>::purchase_credits(
             RawOrigin::Signed(caller).into(),
@@ -85,7 +98,7 @@ mod benchmarks {
         // Before call: 1000 credits
         assert_eq!(
             crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
-            1000u32.into()
+            T::MaxCreditsStored::get()
         );
 
         #[extrinsic_call]
@@ -98,5 +111,19 @@ mod benchmarks {
         );
     }
 
-    impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
+    #[benchmark]
+    fn set_given_free_credits() {
+        let para_id = 1001u32.into();
+
+        // Before call: no given free credits
+        assert!(crate::GivenFreeCredits::<T>::get(&para_id).is_none());
+
+        #[extrinsic_call]
+        Pallet::<T>::set_given_free_credits(RawOrigin::Root, para_id, true);
+
+        // After call: given free credits
+        assert!(crate::GivenFreeCredits::<T>::get(&para_id).is_some());
+    }
+
+    impl_benchmark_test_suite!(Pallet, crate::benchmarks::new_test_ext(), crate::mock::Test);
 }

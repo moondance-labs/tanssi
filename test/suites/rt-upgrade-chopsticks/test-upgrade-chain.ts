@@ -55,7 +55,7 @@ describeSuite({
                 /// Therefore we just retry at most MAX_BALANCE_TRANSFER_TRIES
                 while (tries < MAX_BALANCE_TRANSFER_TRIES) {
                     const txHash = await api.tx.balances
-                        .transfer(randomAccount.address, 1_000_000_000)
+                        .transferAllowDeath(randomAccount.address, 1_000_000_000)
                         .signAndSend(alice);
                     const result = await context.createBlock({ count: 1 });
 

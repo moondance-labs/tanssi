@@ -94,6 +94,10 @@ describeSuite({
                 // TODO: fix once we have types
                 expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
+                // Check the para id has been given some free credits
+                const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();
+                expect(credits, "Container chain 2002 should have been given credits").toBeGreaterThan(0);
+
                 // Checking that in session 2 paras are registered
                 await jumpSessions(context, 2);
 
@@ -101,6 +105,23 @@ describeSuite({
                 const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
                 expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001, 2002]);
+            },
+        });
+
+        it({
+            id: "E03",
+            title: "Registered paraId has been given free credits, and flag can be cleared",
+            test: async function () {
+                const paraId = 2002;
+                const givenFreeCredits = await polkadotJs.query.servicesPayment.givenFreeCredits(paraId);
+                expect(givenFreeCredits.isNone).to.be.false;
+                // Test that the storage can be cleared as root
+                const tx = polkadotJs.tx.servicesPayment.setGivenFreeCredits(paraId, false);
+                await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
+
+                // Flag has been cleared
+                const givenFreeCredits2 = await polkadotJs.query.servicesPayment.givenFreeCredits(paraId);
+                expect(givenFreeCredits2.isNone).to.be.true;
             },
         });
     },

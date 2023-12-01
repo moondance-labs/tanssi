@@ -78,6 +78,12 @@ pub mod pallet {
         tp_maths::MulDiv,
     };
 
+    /// A reason for this pallet placing a hold on funds.
+    #[pallet::composite_enum]
+    pub enum HoldReason {
+        PooledStake,
+    }
+
     #[cfg(feature = "std")]
     use serde::{Deserialize, Serialize};
 
@@ -235,17 +241,12 @@ pub mod pallet {
         type Currency: fungible::Inspect<Self::AccountId, Balance = Self::Balance>
             + fungible::Mutate<Self::AccountId>
             + fungible::Balanced<Self::AccountId>
-            + fungible::hold::Mutate<Self::AccountId>;
+            + fungible::MutateHold<Self::AccountId, Reason = Self::RuntimeHoldReason>;
 
         /// Same as Currency::Balance. Must impl `MulDiv` which perform
         /// multiplication followed by division using a bigger type to avoid
         /// overflows.
         type Balance: Balance + MulDiv;
-
-        /// Identifier reserved for this pallet holding account funds.
-        type CurrencyHoldReason: Get<
-            <Self::Currency as fungible::hold::Inspect<Self::AccountId>>::Reason,
-        >;
 
         /// Account holding Currency of all delegators.
         type StakingAccount: Get<Self::AccountId>;
@@ -265,6 +266,9 @@ pub mod pallet {
         type MinimumSelfDelegation: Get<Self::Balance>;
         /// Part of the rewards that will be sent exclusively to the collator.
         type RewardsCollatorCommission: Get<Perbill>;
+
+        /// The overarching runtime hold reason.
+        type RuntimeHoldReason: From<HoldReason>;
 
         /// Condition for when a joining request can be executed.
         type JoiningRequestTimer: Timer;
