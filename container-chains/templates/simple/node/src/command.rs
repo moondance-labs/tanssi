@@ -27,6 +27,7 @@ use {
     log::{info, warn},
     node_common::service::NodeBuilderConfig as _,
     parity_scale_codec::Encode,
+    polkadot_service::IdentifyVariant as _,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, SharedParams, SubstrateCli,
@@ -38,9 +39,10 @@ use {
 };
 
 #[cfg(feature = "try-runtime")]
-use crate::service::ParachainNativeExecutor;
-#[cfg(feature = "try-runtime")]
-use try_runtime_cli::block_building_info::substrate_info;
+use {
+    crate::service::ParachainNativeExecutor, try_runtime_cli::block_building_info::substrate_info,
+};
+
 #[cfg(feature = "try-runtime")]
 const SLOT_DURATION: u64 = 12;
 
@@ -321,7 +323,19 @@ pub fn run() -> Result<()> {
 					[RelayChainCli::executable_name()].iter().chain(cli.relay_chain_args.iter()),
 				);
 
-				let id = ParaId::from(para_id);
+                let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
+                let relay_chain_id = extension.map(|e| e.relay_chain.clone());
+
+                let dev_service =
+					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
+
+                let id = ParaId::from(para_id);
+
+                if dev_service {
+					return crate::service::start_dev_node(config, cli.run.sealing, id, hwbench).await
+                    .map_err(Into::into)
+				}
+
 
 				let parachain_account =
 					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
