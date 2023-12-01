@@ -2,12 +2,11 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll, isExtrinsicSuccessful } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
-import { u8aToHex } from "@polkadot/util";
 import { KeyringPair, generateKeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "BC0001",
-    title: "Session keys assignment test suite",
+    title: "Consumers balances holds test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
