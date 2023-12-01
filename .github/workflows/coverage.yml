@@ -87,16 +87,14 @@ jobs:
         run: |
           cargo test --release --all --features=fast-runtime
       - name: Typescript Tests Tanssi (Dev Service)
-        uses: ./.github/workflow-templates/typescript-tests-dev-tanssi
+        uses: ./.github/workflow-templates/typescript-tests-moonwall
         with:
-          timeout: 10000
-          tanssi-binary: binaries/tanssi-node
+          moonwall-environment: dev_tanssi
           force-pass: true
       - name: Typescript Tests Frontier Template (Dev Service)
-        uses: ./.github/workflow-templates/typescript-tests-dev-frontier-template
+        uses: ./.github/workflow-templates/typescript-tests-moonwall
         with:
-          timeout: 10000
-          frontier-template-binary: binaries/container-chain-template-frontier-node
+          moonwall-environment: dev_frontier_template
           force-pass: true
       - name: Install llvm tools
         run:
