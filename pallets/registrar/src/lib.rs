@@ -276,8 +276,7 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
-            use scale_info::prelude::format;
-            use sp_std::collections::btree_set::BTreeSet;
+            use {scale_info::prelude::format, sp_std::collections::btree_set::BTreeSet};
             // A para id can only be in 1 of [`RegisteredParaIds`, `PendingVerification`, `Paused`]
             // Get all those para ids and check for duplicates
             let mut para_ids: Vec<ParaId> = vec![];

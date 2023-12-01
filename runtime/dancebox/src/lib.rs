@@ -913,6 +913,8 @@ pub enum ProxyType {
     CancelProxy = 4,
     /// Allow extrinsic related to Balances.
     Balances = 5,
+    /// Allow extrinsics related to Registrar
+    Registrar = 6,
 }
 
 impl Default for ProxyType {
@@ -949,6 +951,9 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             ),
             ProxyType::Balances => {
                 matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+            }
+            ProxyType::Registrar => {
+                matches!(c, RuntimeCall::Registrar(..) | RuntimeCall::Utility(..))
             }
         }
     }
