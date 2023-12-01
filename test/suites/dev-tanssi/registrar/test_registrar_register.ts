@@ -102,5 +102,17 @@ describeSuite({
                 expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001, 2002]);
             },
         });
+
+        it({
+            id: "E03",
+            title: "Registered paraId has been given free credits",
+            test: async function () {
+                const paraId = 2002;
+                const givenFreeCredits = await polkadotJs.query.servicesPayment.givenFreeCredits.key(paraId);
+                console.log("hasFreeCredits exists", givenFreeCredits);
+                const givenFreeCredits2 = await polkadotJs.query.servicesPayment.givenFreeCredits.key(paraId + 100);
+                console.log("hasFreeCredits not exists", givenFreeCredits2);
+            },
+        });
     },
 });
