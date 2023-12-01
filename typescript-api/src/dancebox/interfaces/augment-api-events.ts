@@ -135,12 +135,6 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
-        dataPreservers: {
-            /** The list of boot_nodes changed. */
-            BootNodesChanged: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
-            /** Generic event */
-            [key: string]: AugmentedEvent<ApiType>;
-        };
         dmpQueue: {
             /** Downward message executed with the given outcome. */
             ExecutedDownward: AugmentedEvent<
@@ -712,6 +706,8 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         registrar: {
+            /** The list of boot_nodes */
+            BootNodesChanged: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /** A para id has been deregistered. [para_id] */
             ParaIdDeregistered: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             /** A para id has been paused from collating. */
