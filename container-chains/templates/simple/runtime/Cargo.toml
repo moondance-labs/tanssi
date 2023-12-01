@@ -29,6 +29,7 @@ pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
 
 # Substrate
+pallet-root-testing = { workspace = true }
 frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
