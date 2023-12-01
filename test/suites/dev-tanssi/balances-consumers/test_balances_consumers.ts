@@ -89,7 +89,7 @@ describeSuite({
 
                 await jumpSessions(context, 2);
 
-                // All pending operations where in session 0
+                // Leaving pending operations where in session 2
                 const tx6 = polkadotJs.tx.pooledStaking.executePendingOperations([
                     {
                         delegator: randomAccount.address,
