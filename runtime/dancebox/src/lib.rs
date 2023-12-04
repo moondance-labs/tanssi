@@ -773,7 +773,7 @@ pub struct DanceboxContainerChainManagerOrRootOrigin<T, RootOrigin> {
 impl<O, T, RootOrigin> EnsureOriginWithArg<O, ParaId>
     for DanceboxContainerChainManagerOrRootOrigin<T, RootOrigin>
 where
-    T: pallet_registrar::Config,
+    T: pallet_registrar::Config<AccountId = AccountId>,
     RootOrigin: EnsureOriginWithArg<O, ParaId>,
     O: From<RawOrigin<T::AccountId>>,
     Result<RawOrigin<T::AccountId>, O>: From<O>,
@@ -790,18 +790,9 @@ where
         )?;
 
         if let Either::Left(signed_account) = &origin {
-            // This check will only pass if both are true:
-            // * The para_id has a deposit in pallet_registrar
-            // * The deposit creator is the signed_account
-            pallet_registrar::RegistrarDeposit::<T>::get(para_id)
-                .and_then(|deposit_info| {
-                    if &deposit_info.creator != signed_account {
-                        None
-                    } else {
-                        Some(())
-                    }
-                })
-                .ok_or(o)?;
+            if !Registrar::is_para_manager(para_id, signed_account) {
+                return Err(o);
+            }
         }
 
         Ok(origin)
@@ -809,48 +800,9 @@ where
 
     #[cfg(feature = "runtime-benchmarks")]
     fn try_successful_origin(para_id: &ParaId) -> Result<O, ()> {
-        use frame_benchmarking::account;
-        use frame_support::assert_ok;
-        use frame_support::traits::Currency;
-        use pallet_registrar::DepositBalanceOf;
-        // Return container chain manager, or register container chain as ALICE if it does not exist
-        if !pallet_registrar::ParaGenesisData::<T>::contains_key(para_id) {
-            // Register as a new user
+        let manager = Registrar::benchmarks_get_or_create_para_manager(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
 
-            /// Create a funded user.
-            /// Used for generating the necessary amount for registering
-            fn create_funded_user<T: pallet_registrar::Config>(
-                string: &'static str,
-                n: u32,
-                total: DepositBalanceOf<T>,
-            ) -> (T::AccountId, DepositBalanceOf<T>)
-            where
-                DepositBalanceOf<T>: From<u128>,
-            {
-                const SEED: u32 = 0;
-                let user = account(string, n, SEED);
-                T::Currency::make_free_balance_be(&user, total);
-                T::Currency::issue(total);
-                (user, total)
-            }
-            let new_balance = (EXISTENTIAL_DEPOSIT + DepositAmount::get()) * 2;
-            let account = create_funded_user::<T>("caller", 1000, new_balance.into()).0;
-            let origin = RawOrigin::Signed(account);
-            assert_ok!(Registrar::register(
-                origin.into(),
-                *para_id,
-                Default::default()
-            ));
-        }
-
-        let deposit_info = pallet_registrar::RegistrarDeposit::<T>::get(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
-
-        // Fund deposit creator, just in case it is not a new account
-        let new_balance = (EXISTENTIAL_DEPOSIT + DepositAmount::get()) * 2;
-        T::Currency::make_free_balance_be(&deposit_info.creator, new_balance.into());
-        T::Currency::issue(new_balance.into());
-
-        Ok(O::from(RawOrigin::Signed(deposit_info.creator)))
+        Ok(O::from(RawOrigin::Signed(manager)))
     }
 }
 impl pallet_data_preservers::Config for Runtime {

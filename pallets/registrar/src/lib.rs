@@ -592,6 +592,57 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub fn is_para_manager(para_id: &ParaId, account: &T::AccountId) -> bool {
+            // This check will only pass if both are true:
+            // * The para_id has a deposit in pallet_registrar
+            // * The deposit creator is the signed_account
+            RegistrarDeposit::<T>::get(para_id)
+                .map(|deposit_info| deposit_info.creator)
+                .as_ref()
+                == Some(account)
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> Result<T::AccountId, ()> {
+            use frame_benchmarking::account;
+            use frame_support::assert_ok;
+            use frame_support::dispatch::RawOrigin;
+            use frame_support::traits::Currency;
+            // Return container chain manager, or register container chain as ALICE if it does not exist
+            if !ParaGenesisData::<T>::contains_key(para_id) {
+                // Register as a new user
+
+                /// Create a funded user.
+                /// Used for generating the necessary amount for registering
+                fn create_funded_user<T: crate::Config>(
+                    string: &'static str,
+                    n: u32,
+                    total: DepositBalanceOf<T>,
+                ) -> (T::AccountId, DepositBalanceOf<T>) {
+                    const SEED: u32 = 0;
+                    let user = account(string, n, SEED);
+                    T::Currency::make_free_balance_be(&user, total);
+                    T::Currency::issue(total);
+                    (user, total)
+                }
+                let new_balance =
+                    (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
+                let account = create_funded_user::<T>("caller", 1000, new_balance.into()).0;
+                let origin = RawOrigin::Signed(account);
+                assert_ok!(Self::register(origin.into(), *para_id, Default::default()));
+            }
+
+            let deposit_info = RegistrarDeposit::<T>::get(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
+
+            // Fund deposit creator, just in case it is not a new account
+            let new_balance =
+                (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
+            T::Currency::make_free_balance_be(&deposit_info.creator, new_balance.into());
+            T::Currency::issue(new_balance.into());
+
+            Ok(deposit_info.creator)
+        }
+
         fn schedule_parachain_change(
             updater: impl FnOnce(&mut BoundedVec<ParaId, T::MaxLengthParaIds>) -> DispatchResult,
         ) -> DispatchResult {
