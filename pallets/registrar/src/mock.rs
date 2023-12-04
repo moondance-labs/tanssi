@@ -87,6 +87,7 @@ impl pallet_balances::Config for Test {
     type FreezeIdentifier = ();
     type MaxFreezes = ();
     type RuntimeHoldReason = ();
+    type RuntimeFreezeReason = ();
     type MaxHolds = ();
     type WeightInfo = ();
 }
@@ -157,12 +158,12 @@ pub mod mock_data {
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub enum HookCall {
-    Registered(ParaId),
+    MarkedValid(ParaId),
     Deregistered(ParaId),
 }
 
 pub enum HookCallType {
-    Registered,
+    MarkedValid,
     Deregistered,
 }
 
@@ -177,9 +178,9 @@ impl<T> RegistrarHooks for mock_data::Pallet<T> {
         })
     }
 
-    fn para_registered(para_id: ParaId) -> Weight {
+    fn para_marked_valid_for_collating(para_id: ParaId) -> Weight {
         Mock::mutate(|m| {
-            m.called_hooks.push(HookCall::Registered(para_id));
+            m.called_hooks.push(HookCall::MarkedValid(para_id));
 
             Weight::default()
         })
@@ -204,18 +205,21 @@ impl Drop for Mocks {
 
 impl Mocks {
     pub fn check_consistency(&self) {
-        /// Asserts that the calls for each ParaId alternate between Register and Deregister,
+        /// Asserts that the calls for each ParaId alternate between MarkedValid and Deregister,
         /// we never see two calls with the same type.
         pub fn assert_alternating(hook_calls: &[HookCall]) {
             let mut last_call_type: BTreeMap<ParaId, HookCallType> = BTreeMap::new();
 
             for call in hook_calls {
                 match call {
-                    HookCall::Registered(para_id) => {
-                        if let Some(HookCallType::Registered) = last_call_type.get(para_id) {
-                            panic!("Two consecutive Registered calls for ParaId: {:?}", para_id);
+                    HookCall::MarkedValid(para_id) => {
+                        if let Some(HookCallType::MarkedValid) = last_call_type.get(para_id) {
+                            panic!(
+                                "Two consecutive MarkedValid calls for ParaId: {:?}",
+                                para_id
+                            );
                         }
-                        last_call_type.insert(*para_id, HookCallType::Registered);
+                        last_call_type.insert(*para_id, HookCallType::MarkedValid);
                     }
                     HookCall::Deregistered(para_id) => {
                         if let Some(HookCallType::Deregistered) = last_call_type.get(para_id) {
@@ -230,9 +234,9 @@ impl Mocks {
             }
         }
 
-        // For each para id, the calls must alterante between Register and Deregister
+        // For each para id, the calls must alterante between MarkedValid and Deregister
         assert_alternating(&self.called_hooks);
-        // Since para ids can already be registered in genesis, we cannot assert that the first call is Register
+        // Since para ids can already be registered in genesis, we cannot assert that the first call is MarkedValid
     }
 }
 

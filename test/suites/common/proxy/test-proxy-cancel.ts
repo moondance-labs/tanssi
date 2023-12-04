@@ -69,7 +69,7 @@ describeSuite({
             title: "Add proxy CancelProxy",
             test: async function () {
                 const delegate = charlie.address;
-                const cancelProxy = chain == "frontier-template" ? 3 : 4;
+                const cancelProxy = ["frontier-template", "container-chain-template"].includes(chain) ? 3 : 4;
                 const delay = 0;
                 const tx = polkadotJs.tx.proxy.addProxy(delegate, cancelProxy, delay);
                 await context.createBlock([await tx.signAsync(alice)]);
@@ -103,7 +103,7 @@ describeSuite({
                 await context.createBlock();
 
                 // Bob announces a transfer call
-                const balanceCall = polkadotJs.tx.balances.transfer(bob.address, 200_000);
+                const balanceCall = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const callHash = balanceCall.method.hash.toString();
                 const tx1 = polkadotJs.tx.proxy.announce(alice.address, callHash);
                 await context.createBlock([await tx1.signAsync(bob)]);
@@ -150,7 +150,7 @@ describeSuite({
             title: "Unauthorized account cannot reject announcement",
             test: async function () {
                 // Bob announces a transfer call
-                const balanceCall = polkadotJs.tx.balances.transfer(bob.address, 200_000);
+                const balanceCall = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const callHash = balanceCall.method.hash.toString();
                 const tx1 = polkadotJs.tx.proxy.announce(alice.address, callHash);
                 await context.createBlock([await tx1.signAsync(bob)]);
@@ -201,7 +201,7 @@ describeSuite({
                 const tx = polkadotJs.tx.proxy.proxy(
                     alice.address,
                     null,
-                    polkadotJs.tx.balances.transfer(charlie.address, 200_000)
+                    polkadotJs.tx.balances.transferAllowDeath(charlie.address, 200_000)
                 );
                 await context.createBlock([await tx.signAsync(charlie)]);
                 const events = await polkadotJs.query.system.events();

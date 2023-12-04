@@ -386,15 +386,6 @@ parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
 }
 
-/// A reason for placing a hold on funds.
-#[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, Debug, TypeInfo,
-)]
-pub enum HoldReason {
-    /// The Pooled Stake holds
-    PooledStake,
-}
-
 impl pallet_balances::Config for Runtime {
     type MaxLocks = ConstU32<50>;
     /// The type for recording an account's balance.
@@ -408,7 +399,8 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = [u8; 8];
     type MaxFreezes = ConstU32<0>;
-    type RuntimeHoldReason = HoldReason;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<1>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
@@ -825,11 +817,9 @@ impl pallet_configuration::Config for Runtime {
 pub struct DanceboxRegistrarHooks;
 
 impl RegistrarHooks for DanceboxRegistrarHooks {
-    fn para_registered(_para_id: ParaId) -> Weight {
-        // TODO: pallet_services_payment should give free credits but only once per para id
-        // A migration should mark any existing para ids as already received credits to avoid giving
-        // them more credits if they are deregistered and registered again
-        Weight::default()
+    fn para_marked_valid_for_collating(para_id: ParaId) -> Weight {
+        // Give free credits but only once per para id
+        ServicesPayment::give_free_credits(&para_id)
     }
 
     fn para_deregistered(para_id: ParaId) -> Weight {
@@ -1091,15 +1081,6 @@ impl OnRuntimeUpgrade for MaintenanceHooks {
     fn on_runtime_upgrade() -> Weight {
         AllPalletsWithSystem::on_runtime_upgrade()
     }
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        AllPalletsWithSystem::pre_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        AllPalletsWithSystem::post_upgrade(state)
-    }
 
     #[cfg(feature = "try-runtime")]
     fn try_on_runtime_upgrade(checks: bool) -> Result<Weight, TryRuntimeError> {
@@ -1137,7 +1118,6 @@ impl pallet_root_testing::Config for Runtime {}
 
 parameter_types! {
     pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
-    pub const CurrencyHoldReason: HoldReason = HoldReason::PooledStake;
     pub const InitialManualClaimShareValue: u128 = currency::MILLIDANCE;
     pub const InitialAutoCompoundingShareValue: u128 = currency::MILLIDANCE;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
@@ -1210,11 +1190,11 @@ impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Balance = Balance;
-    type CurrencyHoldReason = CurrencyHoldReason;
     type StakingAccount = StakingAccount;
     type InitialManualClaimShareValue = InitialManualClaimShareValue;
     type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
     type MinimumSelfDelegation = MinimumSelfDelegation;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
@@ -1480,6 +1460,7 @@ impl_runtime_apis! {
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = xcm_config::XcmConfig;
                 type AccountIdConverter = xcm_config::LocationToAccountId;
+                type DeliveryHelper = ();
                 fn valid_destination() -> Result<MultiLocation, BenchmarkError> {
                     Ok(MultiLocation::parent())
                 }
@@ -1494,6 +1475,7 @@ impl_runtime_apis! {
             }
 
             impl pallet_xcm_benchmarks::generic::Config for Runtime {
+                type TransactAsset = Balances;
                 type RuntimeCall = RuntimeCall;
 
                 fn worst_case_response() -> (u64, Response) {

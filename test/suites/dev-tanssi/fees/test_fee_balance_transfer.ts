@@ -31,7 +31,7 @@ describeSuite({
             title: "Fee of balances.transfer can be estimated using paymentInfo",
             test: async function () {
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
-                const tx = polkadotJs.tx.balances.transfer(bob.address, 200_000);
+                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 // Estimate fee of balances.transfer using paymentInfo API, before sending transaction
                 const info = await tx.paymentInfo(alice.address);
                 const signedTx = await tx.signAsync(alice);
@@ -84,7 +84,7 @@ describeSuite({
             title: "Fee of balances.transfer can be estimated using transactionPaymentApi.queryFeeDetails",
             test: async function () {
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
-                const tx = polkadotJs.tx.balances.transfer(bob.address, 200_000);
+                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const signedTx = await tx.signAsync(alice);
                 const feeDetails = await polkadotJs.call.transactionPaymentApi.queryFeeDetails(
                     tx,
@@ -140,7 +140,7 @@ describeSuite({
                 }
 
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
-                const tx = polkadotJs.tx.balances.transfer(bob.address, 200_000);
+                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const signedTx = await tx.signAsync(alice);
                 const feeDetails = await polkadotJs.call.transactionPaymentApi.queryFeeDetails(
                     tx,
@@ -175,7 +175,7 @@ describeSuite({
             test: async function () {
                 const totalSupplyBefore = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
-                const tx = polkadotJs.tx.balances.transfer(bob.address, 200_000);
+                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const signedTx = await tx.signAsync(alice);
 
                 await context.createBlock([signedTx]);

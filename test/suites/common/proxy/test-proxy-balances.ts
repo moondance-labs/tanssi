@@ -38,7 +38,7 @@ describeSuite({
             title: "Add proxy Balances",
             test: async function () {
                 const delegate = charlie.address;
-                const balances = chain == "frontier-template" ? 4 : 5;
+                const balances = ["frontier-template", "container-chain-template"].includes(chain) ? 4 : 5;
                 const delay = 0;
                 const tx = polkadotJs.tx.proxy.addProxy(delegate, balances, delay);
                 await context.createBlock([await tx.signAsync(alice)]);
@@ -69,7 +69,7 @@ describeSuite({
                 const tx = polkadotJs.tx.proxy.proxy(
                     alice.address,
                     null,
-                    polkadotJs.tx.balances.transfer(charlie.address, 200_000)
+                    polkadotJs.tx.balances.transferAllowDeath(charlie.address, 200_000)
                 );
                 await context.createBlock([await tx.signAsync(charlie)]);
                 const events = await polkadotJs.query.system.events();

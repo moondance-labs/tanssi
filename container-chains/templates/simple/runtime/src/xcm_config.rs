@@ -19,6 +19,7 @@ use {
         AccountId, AllPalletsWithSystem, Balances, ParachainInfo, ParachainSystem, PolkadotXcm,
         Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
     },
+    cumulus_primitives_core::ParaId,
     frame_support::{
         parameter_types,
         traits::{Everything, Nothing, PalletInfoAccess},
@@ -26,6 +27,7 @@ use {
     },
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
+    polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     sp_core::ConstU32,
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
@@ -228,7 +230,7 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type ControllerOrigin = EnsureRoot<AccountId>;
     type ControllerOriginConverter = XcmOriginToTransactDispatchOrigin;
     type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
-    type PriceForSiblingDelivery = ();
+    type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {

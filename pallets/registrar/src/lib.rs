@@ -538,7 +538,7 @@ pub mod pallet {
 
             Self::deposit_event(Event::ParaIdValidForCollating { para_id });
 
-            T::RegistrarHooks::para_registered(para_id);
+            T::RegistrarHooks::para_marked_valid_for_collating(para_id);
 
             Ok(())
         }
@@ -923,7 +923,7 @@ pub mod pallet {
 }
 
 pub trait RegistrarHooks {
-    fn para_registered(_para_id: ParaId) -> Weight {
+    fn para_marked_valid_for_collating(_para_id: ParaId) -> Weight {
         Weight::default()
     }
     fn para_deregistered(_para_id: ParaId) -> Weight {

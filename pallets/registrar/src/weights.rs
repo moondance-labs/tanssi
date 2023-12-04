@@ -158,18 +158,22 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `Session::CurrentIndex` (r:1 w:0)
 	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `ServicesPayment::GivenFreeCredits` (r:1 w:1)
+	/// Proof: `ServicesPayment::GivenFreeCredits` (`max_values`: None, `max_size`: Some(20), added: 2495, mode: `MaxEncodedLen`)
+	/// Storage: `ServicesPayment::BlockProductionCredits` (r:1 w:1)
+	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
 	/// The range of component `y` is `[1, 50]`.
 	fn mark_valid_for_collating(y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `437 + y * (8 ±0)`
-		//  Estimated: `1918 + y * (8 ±0)`
-		// Minimum execution time: 22_480_000 picoseconds.
-		Weight::from_parts(30_017_006, 1918)
-			// Standard Error: 7_648
-			.saturating_add(Weight::from_parts(346_663, 0).saturating_mul(y.into()))
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
-			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
+		//  Measured:  `791 + y * (27 ±0)`
+		//  Estimated: `3489 + y * (27 ±0)`
+		// Minimum execution time: 37_418_000 picoseconds.
+		Weight::from_parts(48_255_865, 3489)
+			// Standard Error: 10_362
+			.saturating_add(Weight::from_parts(449_416, 0).saturating_mul(y.into()))
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(4_u64))
+			.saturating_add(Weight::from_parts(0, 27).saturating_mul(y.into()))
 	}
 	/// Storage: `Registrar::RegistrarDeposit` (r:1 w:0)
 	/// Proof: `Registrar::RegistrarDeposit` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -326,18 +330,22 @@ impl WeightInfo for () {
 	/// Proof: `Registrar::RegisteredParaIds` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `Session::CurrentIndex` (r:1 w:0)
 	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `ServicesPayment::GivenFreeCredits` (r:1 w:1)
+	/// Proof: `ServicesPayment::GivenFreeCredits` (`max_values`: None, `max_size`: Some(20), added: 2495, mode: `MaxEncodedLen`)
+	/// Storage: `ServicesPayment::BlockProductionCredits` (r:1 w:1)
+	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
 	/// The range of component `y` is `[1, 50]`.
 	fn mark_valid_for_collating(y: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `437 + y * (8 ±0)`
-		//  Estimated: `1918 + y * (8 ±0)`
-		// Minimum execution time: 22_480_000 picoseconds.
-		Weight::from_parts(30_017_006, 1918)
-			// Standard Error: 7_648
-			.saturating_add(Weight::from_parts(346_663, 0).saturating_mul(y.into()))
-			.saturating_add(RocksDbWeight::get().reads(4_u64))
-			.saturating_add(RocksDbWeight::get().writes(2_u64))
-			.saturating_add(Weight::from_parts(0, 8).saturating_mul(y.into()))
+		//  Measured:  `791 + y * (27 ±0)`
+		//  Estimated: `3489 + y * (27 ±0)`
+		// Minimum execution time: 37_418_000 picoseconds.
+		Weight::from_parts(48_255_865, 3489)
+			// Standard Error: 10_362
+			.saturating_add(Weight::from_parts(449_416, 0).saturating_mul(y.into()))
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(4_u64))
+			.saturating_add(Weight::from_parts(0, 27).saturating_mul(y.into()))
 	}
 	/// Storage: `Registrar::RegistrarDeposit` (r:1 w:0)
 	/// Proof: `Registrar::RegistrarDeposit` (`max_values`: None, `max_size`: None, mode: `Measured`)
