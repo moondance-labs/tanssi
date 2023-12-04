@@ -627,7 +627,7 @@ pub mod pallet {
                 }
                 let new_balance =
                     (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
-                let account = create_funded_user::<T>("caller", 1000, new_balance.into()).0;
+                let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 let origin = RawOrigin::Signed(account);
                 assert_ok!(Self::register(origin.into(), *para_id, Default::default()));
             }
@@ -637,8 +637,8 @@ pub mod pallet {
             // Fund deposit creator, just in case it is not a new account
             let new_balance =
                 (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
-            T::Currency::make_free_balance_be(&deposit_info.creator, new_balance.into());
-            T::Currency::issue(new_balance.into());
+            T::Currency::make_free_balance_be(&deposit_info.creator, new_balance);
+            T::Currency::issue(new_balance);
 
             Ok(deposit_info.creator)
         }
