@@ -67,6 +67,12 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        dataPreservers: {
+            /** This container chain does not have any boot nodes */
+            NoBootNodes: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         dmpQueue: {
             /** The amount of weight given is possibly not enough for executing the message. */
             OverLimit: AugmentedError<ApiType>;
