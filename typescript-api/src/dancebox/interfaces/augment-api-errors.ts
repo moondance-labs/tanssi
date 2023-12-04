@@ -215,9 +215,7 @@ declare module "@polkadot/api-base/types/errors" {
             GenesisDataTooBig: AugmentedError<ApiType>;
             /** Tried to register a ParaId with an account that did not have enough balance for the deposit */
             NotSufficientDeposit: AugmentedError<ApiType>;
-            /** Attempted to deregister a ParaId that is already being deregistered */
-            ParaIdAlreadyDeregistered: AugmentedError<ApiType>;
-            /** Attempted to pause a ParaId that was already paused */
+            /** Attempted to pause a ParaId that was already in PendingVerification */
             ParaIdAlreadyPaused: AugmentedError<ApiType>;
             /** Attempted to register a ParaId that was already registered */
             ParaIdAlreadyRegistered: AugmentedError<ApiType>;
@@ -225,8 +223,6 @@ declare module "@polkadot/api-base/types/errors" {
             ParaIdListFull: AugmentedError<ApiType>;
             /** Tried to mark_valid_for_collating a ParaId that is not in PendingVerification */
             ParaIdNotInPendingVerification: AugmentedError<ApiType>;
-            /** Attempted to unpause a ParaId that was not paused */
-            ParaIdNotPaused: AugmentedError<ApiType>;
             /** Attempted to deregister a ParaId that is not registered */
             ParaIdNotRegistered: AugmentedError<ApiType>;
             /** Generic error */
