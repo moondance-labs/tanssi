@@ -375,6 +375,7 @@ fn testnet_genesis(
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
+        tx_pause: Default::default(),
     }
 }
 

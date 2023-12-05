@@ -904,6 +904,24 @@ declare module "@polkadot/api-base/types/submittable" {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        txPause: {
+            /** See [`Pallet::pause`]. */
+            pause: AugmentedSubmittable<
+                (
+                    fullName: ITuple<[Bytes, Bytes]> | [Bytes | string | Uint8Array, Bytes | string | Uint8Array]
+                ) => SubmittableExtrinsic<ApiType>,
+                [ITuple<[Bytes, Bytes]>]
+            >;
+            /** See [`Pallet::unpause`]. */
+            unpause: AugmentedSubmittable<
+                (
+                    ident: ITuple<[Bytes, Bytes]> | [Bytes | string | Uint8Array, Bytes | string | Uint8Array]
+                ) => SubmittableExtrinsic<ApiType>,
+                [ITuple<[Bytes, Bytes]>]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         utility: {
             /** See [`Pallet::as_derivative`]. */
             asDerivative: AugmentedSubmittable<

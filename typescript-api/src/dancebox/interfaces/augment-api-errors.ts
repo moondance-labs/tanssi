@@ -279,6 +279,17 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        txPause: {
+            /** The call is paused. */
+            IsPaused: AugmentedError<ApiType>;
+            /** The call is unpaused. */
+            IsUnpaused: AugmentedError<ApiType>;
+            NotFound: AugmentedError<ApiType>;
+            /** The call is whitelisted and cannot be paused. */
+            Unpausable: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         utility: {
             /** Too many calls batched. */
             TooManyCalls: AugmentedError<ApiType>;

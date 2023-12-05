@@ -54,6 +54,7 @@ pallet-timestamp = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-utility = { workspace = true }
+pallet-tx-pause = { workspace = true }
 sp-api = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-block-builder = { workspace = true }
@@ -160,6 +161,7 @@ std = [
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-utility/std",
+	"pallet-tx-pause/std",
 	"pallet-xcm/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
@@ -244,6 +246,7 @@ try-runtime = [
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-utility/try-runtime",
+	"pallet-tx-pause/try-runtime",
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",

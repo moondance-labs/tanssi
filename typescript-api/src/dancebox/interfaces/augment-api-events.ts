@@ -7,6 +7,7 @@ import "@polkadot/api-base/types/events";
 
 import type { ApiTypes, AugmentedEvent } from "@polkadot/api-base/types";
 import type { Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64, u8 } from "@polkadot/types-codec";
+import type { ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
     DanceboxRuntimeProxyType,
@@ -786,6 +787,22 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [who: AccountId32, actualFee: u128, tip: u128],
                 { who: AccountId32; actualFee: u128; tip: u128 }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        txPause: {
+            /** This pallet, or a specific call is now paused. */
+            CallPaused: AugmentedEvent<
+                ApiType,
+                [fullName: ITuple<[Bytes, Bytes]>],
+                { fullName: ITuple<[Bytes, Bytes]> }
+            >;
+            /** This pallet, or a specific call is now unpaused. */
+            CallUnpaused: AugmentedEvent<
+                ApiType,
+                [fullName: ITuple<[Bytes, Bytes]>],
+                { fullName: ITuple<[Bytes, Bytes]> }
             >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;

@@ -913,6 +913,19 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        txPause: {
+            /** The set of calls that are explicitly paused. */
+            pausedCalls: AugmentedQuery<
+                ApiType,
+                (
+                    arg: ITuple<[Bytes, Bytes]> | [Bytes | string | Uint8Array, Bytes | string | Uint8Array]
+                ) => Observable<Option<Null>>,
+                [ITuple<[Bytes, Bytes]>]
+            > &
+                QueryableStorageEntry<ApiType, [ITuple<[Bytes, Bytes]>]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         xcmpQueue: {
             /** Counter for the related counted storage map */
             counterForOverweight: AugmentedQuery<ApiType, () => Observable<u32>, []> &
