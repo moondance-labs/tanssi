@@ -38,6 +38,7 @@ use {
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
     sc_cli::SyncMode,
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
     sp_api::{ApiExt, ProvideRuntimeApi},
     sp_keystore::KeystorePtr,
@@ -174,10 +175,20 @@ impl ContainerChainSpawner {
             let boot_nodes_raw = orchestrator_runtime_api
                 .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
                 .expect("error");
-            let boot_nodes: Vec<String> = boot_nodes_raw
-                .into_iter()
-                .map(|x| String::from_utf8(x).map_err(|e| format!("{}", e)))
-                .collect::<Result<_, _>>()?;
+            if boot_nodes_raw.is_empty() {
+                log::warn!(
+                    "No boot nodes registered on-chain for container chain {}",
+                    container_chain_para_id
+                );
+            }
+            let boot_nodes =
+                parse_boot_nodes_ignore_invalid(boot_nodes_raw, container_chain_para_id);
+            if boot_nodes.is_empty() {
+                log::warn!(
+                    "No valid boot nodes for container chain {}",
+                    container_chain_para_id
+                );
+            }
 
             container_chain_cli
                 .preload_chain_spec_from_genesis_data(
@@ -695,6 +706,37 @@ fn delete_container_chain_db(db_path: &Path) {
     }
 }
 
+/// Parse a list of boot nodes in `Vec<u8>` format. Invalid boot nodes are filtered out.
+fn parse_boot_nodes_ignore_invalid(
+    boot_nodes_raw: Vec<Vec<u8>>,
+    container_chain_para_id: ParaId,
+) -> Vec<MultiaddrWithPeerId> {
+    boot_nodes_raw
+        .into_iter()
+        .filter_map(|x| {
+            let x = String::from_utf8(x)
+                .map_err(|e| {
+                    log::debug!(
+                        "Invalid boot node in container chain {}: {}",
+                        container_chain_para_id,
+                        e
+                    );
+                })
+                .ok()?;
+
+            x.parse::<MultiaddrWithPeerId>()
+                .map_err(|e| {
+                    log::debug!(
+                        "Invalid boot node in container chain {}: {}",
+                        container_chain_para_id,
+                        e
+                    )
+                })
+                .ok()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use futures::executor::block_on;
@@ -1107,5 +1149,26 @@ mod tests {
         m.handle_update_assignment(Some(2000.into()), Some(2000.into()));
         m.assert_collating_on(Some(2000.into()));
         m.assert_running_chains(&[2000.into()]);
+    }
+
+    #[test]
+    fn invalid_boot_nodes_are_ignored() {
+        let para_id = 100.into();
+        let bootnode1 =
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec();
+        assert_eq!(
+            parse_boot_nodes_ignore_invalid(vec![b"A".to_vec()], para_id),
+            vec![]
+        );
+        assert_eq!(
+            parse_boot_nodes_ignore_invalid(vec![b"\xff".to_vec()], para_id),
+            vec![]
+        );
+        // Valid boot nodes are not ignored
+        assert_eq!(
+            parse_boot_nodes_ignore_invalid(vec![bootnode1], para_id).len(),
+            1
+        );
     }
 }
