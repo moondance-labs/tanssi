@@ -73,7 +73,7 @@ describeSuite({
                 expect(sudoEvents.length).toBe(1);
                 expect((sudoEvents[0].event.data[0] as Result<any, SpRuntimeDispatchError>).isOk).to.be.true;
 
-                // transfer_allow_death should fail
+                // transfer_allow_death should succeed
                 const { result: resultTransfer } = await context.createBlock(
                     polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice)
                 );
