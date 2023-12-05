@@ -157,7 +157,7 @@ impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
     #[cfg(feature = "runtime-benchmarks")]
     fn set_current_container_chains(container_chains: &[ParaId]) {
         MockData::mutate(|m| {
-            m.container_chains = container_chains.to_vec();
+            m.container_chains = container_chains.to_vec().try_into().unwrap();
         });
     }
 }
