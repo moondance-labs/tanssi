@@ -39,7 +39,7 @@ describeSuite({
             test: async function () {
                 const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
 
-                await polkadotJs.tx.balances.transfer(bob.address, 1000).signAndSend(alice);
+                await polkadotJs.tx.balances.transferAllowDeath(bob.address, 1000).signAndSend(alice);
 
                 await context.createBlock();
                 const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;

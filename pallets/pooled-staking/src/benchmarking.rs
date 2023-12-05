@@ -22,6 +22,7 @@ use {
     crate::{
         pools::Pool,
         traits::{IsCandidateEligible, Timer},
+        HoldReason,
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
     },
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
@@ -252,7 +253,7 @@ mod benchmarks {
         );
 
         // lets get the hold amount to know dust
-        let on_hold = T::Currency::balance_on_hold(&T::CurrencyHoldReason::get(), &caller);
+        let on_hold = T::Currency::balance_on_hold(&HoldReason::PooledStake.into(), &caller);
         // dust gets released immediatly
         let dust = min_candidate_stk::<T>() - on_hold;
 
@@ -401,9 +402,9 @@ mod benchmarks {
 
         // We manually hack it such that hold!=stake
         pools::Joining::<T>::set_hold(&candidate, &caller, Stake(fake_hold));
-        let on_hold_before = T::Currency::balance_on_hold(&T::CurrencyHoldReason::get(), &caller);
+        let on_hold_before = T::Currency::balance_on_hold(&HoldReason::PooledStake.into(), &caller);
         T::Currency::release(
-            &T::CurrencyHoldReason::get(),
+            &HoldReason::PooledStake.into(),
             &caller,
             on_hold_before - fake_hold,
             Precision::Exact,
@@ -418,7 +419,7 @@ mod benchmarks {
         );
 
         // After this hold should have been rebalanced
-        let on_hold = T::Currency::balance_on_hold(&T::CurrencyHoldReason::get(), &caller);
+        let on_hold = T::Currency::balance_on_hold(&HoldReason::PooledStake.into(), &caller);
         assert_eq!(on_hold, min_candidate_stk::<T>());
         Ok(())
     }
