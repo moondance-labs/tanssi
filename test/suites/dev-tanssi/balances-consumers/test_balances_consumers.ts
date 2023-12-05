@@ -28,7 +28,7 @@ describeSuite({
                 expect(isExtrinsicSuccessful(await polkadotJs.query.system.events())).to.be.true;
 
                 const consumersAfterTx1 = await polkadotJs.query.system.account(randomAccount.address);
-                expect(consumersAfterTx1.consumers.toNumber()).to.be.equal(1);
+                expect(consumersAfterTx1.consumers.toNumber()).to.be.equal(0);
 
                 // Register keys in pallet_session
                 const newKey = await polkadotJs.rpc.author.rotateKeys();
@@ -48,7 +48,7 @@ describeSuite({
                 await context.createBlock([await tx3.signAsync(randomAccount)]);
                 const consumersAfterTx3 = await polkadotJs.query.system.account(randomAccount.address);
                 // We created a second consumer, which in this case is pooledStaking
-                expect(consumersAfterTx3.consumers.toNumber()).to.be.equal(1);
+                expect(consumersAfterTx3.consumers.toNumber()).to.be.equal(2);
 
                 await jumpSessions(context, 2);
 
