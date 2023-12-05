@@ -11,14 +11,9 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let bob: KeyringPair;
-        let charlie: KeyringPair;
 
         beforeAll(() => {
             alice = context.keyring.alice;
-            bob = context.keyring.bob;
-            charlie = context.keyring.charlie;
-
             polkadotJs = context.polkadotJs();
         });
 
@@ -32,16 +27,16 @@ describeSuite({
                 await context.createBlock([await tx.signAsync(alice)]);
                 expect(isExtrinsicSuccessful(await polkadotJs.query.system.events())).to.be.true;
 
-                const consumersAfterTx1= await polkadotJs.query.system.account(randomAccount.address);
-                expect(consumersAfterTx1.consumers.toNumber()).to.be.equal(1)
+                const consumersAfterTx1 = await polkadotJs.query.system.account(randomAccount.address);
+                expect(consumersAfterTx1.consumers.toNumber()).to.be.equal(1);
 
                 // Register keys in pallet_session
                 const newKey = await polkadotJs.rpc.author.rotateKeys();
                 const tx2 = polkadotJs.tx.session.setKeys(newKey, []);
                 await context.createBlock([await tx2.signAsync(randomAccount)]);
                 expect(isExtrinsicSuccessful(await polkadotJs.query.system.events())).to.be.true;
-                const consumersAfterTx2= await polkadotJs.query.system.account(randomAccount.address);
-                expect(consumersAfterTx2.consumers.toNumber()).to.be.equal(1)
+                const consumersAfterTx2 = await polkadotJs.query.system.account(randomAccount.address);
+                expect(consumersAfterTx2.consumers.toNumber()).to.be.equal(1);
 
                 // Self-delegate in pallet_pooled_staking
                 const tx3 = polkadotJs.tx.pooledStaking.requestDelegate(
@@ -51,12 +46,12 @@ describeSuite({
                 );
 
                 await context.createBlock([await tx3.signAsync(randomAccount)]);
-                const consumersAfterTx3= await polkadotJs.query.system.account(randomAccount.address);
+                const consumersAfterTx3 = await polkadotJs.query.system.account(randomAccount.address);
                 // We created a second consumer, which in this case is pooledStaking
-                expect(consumersAfterTx3.consumers.toNumber()).to.be.equal(1)
+                expect(consumersAfterTx3.consumers.toNumber()).to.be.equal(1);
 
                 await jumpSessions(context, 2);
-     
+
                 // All pending operations where in session 0
                 const tx4 = polkadotJs.tx.pooledStaking.executePendingOperations([
                     {
@@ -72,17 +67,12 @@ describeSuite({
                 await context.createBlock([await tx4.signAsync(randomAccount)]);
 
                 const consumersAfterTx4 = await polkadotJs.query.system.account(randomAccount.address);
-                expect(consumersAfterTx4.consumers.toNumber()).to.be.equal(2)
+                expect(consumersAfterTx4.consumers.toNumber()).to.be.equal(2);
 
                 // Self-delegate in pallet_pooled_staking
-                const tx5 = polkadotJs.tx.pooledStaking.requestUndelegate(
-                    randomAccount.address,
-                    "ManualRewards",
-                    {
-                        "Stake": 10000000000000000n
-                    }
-                    
-                );
+                const tx5 = polkadotJs.tx.pooledStaking.requestUndelegate(randomAccount.address, "ManualRewards", {
+                    Stake: 10000000000000000n,
+                });
                 await context.createBlock([await tx5.signAsync(randomAccount)]);
                 const consumersAfterTx5 = await polkadotJs.query.system.account(randomAccount.address);
                 expect(consumersAfterTx5.consumers.toNumber()).to.be.equal(2);
