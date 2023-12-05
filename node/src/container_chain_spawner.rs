@@ -38,6 +38,7 @@ use {
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
     sc_cli::SyncMode,
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
     sp_api::{ApiExt, ProvideRuntimeApi},
     sp_keystore::KeystorePtr,
@@ -174,10 +175,42 @@ impl ContainerChainSpawner {
             let boot_nodes_raw = orchestrator_runtime_api
                 .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
                 .expect("error");
-            let boot_nodes: Vec<String> = boot_nodes_raw
+            if boot_nodes_raw.is_empty() {
+                log::warn!(
+                    "No boot nodes registered on-chain for container chain {}",
+                    container_chain_para_id
+                );
+            }
+            let boot_nodes: Vec<MultiaddrWithPeerId> = boot_nodes_raw
                 .into_iter()
-                .map(|x| String::from_utf8(x).map_err(|e| format!("{}", e)))
-                .collect::<Result<_, _>>()?;
+                .filter_map(|x| {
+                    let x = String::from_utf8(x)
+                        .map_err(|e| {
+                            log::debug!(
+                                "Invalid boot node in container chain {}: {}",
+                                container_chain_para_id,
+                                e
+                            );
+                        })
+                        .ok()?;
+
+                    x.parse::<MultiaddrWithPeerId>()
+                        .map_err(|e| {
+                            log::debug!(
+                                "Invalid boot node in container chain {}: {}",
+                                container_chain_para_id,
+                                e
+                            )
+                        })
+                        .ok()
+                })
+                .collect();
+            if boot_nodes.is_empty() {
+                log::warn!(
+                    "No valid boot nodes for container chain {}",
+                    container_chain_para_id
+                );
+            }
 
             container_chain_cli
                 .preload_chain_spec_from_genesis_data(
