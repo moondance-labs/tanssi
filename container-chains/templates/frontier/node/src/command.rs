@@ -391,22 +391,22 @@ pub fn run() -> Result<()> {
 
                 if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
                 collator_options.clone().relay_chain_mode {
-                if !rpc_target_urls.is_empty() && !cli.relay_chain_args.is_empty() {
-                    warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
+                    if !rpc_target_urls.is_empty() && !cli.relay_chain_args.is_empty() {
+                        warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
+                    }
                 }
-            }
 
-				crate::service::start_parachain_node(
-					config,
-					polkadot_config,
-					collator_options,
-					id,
+                crate::service::start_parachain_node(
+                    config,
+                    polkadot_config,
+                    collator_options,
+                    id,
                     rpc_config,
-					hwbench,
-				)
-				.await
-				.map(|r| r.0)
-				.map_err(Into::into)
+                    hwbench,
+                )
+                    .await
+                    .map(|r| r.0)
+                    .map_err(Into::into)
 			})
         }
     }

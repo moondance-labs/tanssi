@@ -19,9 +19,9 @@ use {
         candidate::Candidates,
         pools::{self, Pool},
         traits::Timer,
-        AllTargetPool, Candidate, Config, Delegator, Error, Event, Pallet, PendingOperationKey,
-        PendingOperationQuery, PendingOperationQueryOf, PendingOperations, Shares, SharesOrStake,
-        Stake, TargetPool,
+        AllTargetPool, Candidate, Config, Delegator, Error, Event, HoldReason, Pallet,
+        PendingOperationKey, PendingOperationQuery, PendingOperationQueryOf, PendingOperations,
+        Shares, SharesOrStake, Stake, TargetPool,
     },
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
@@ -86,13 +86,13 @@ impl<T: Config> Calls<T> {
                 diff,
                 Preservation::Preserve,
             )?;
-            T::Currency::hold(&T::CurrencyHoldReason::get(), &delegator, diff)?;
+            T::Currency::hold(&HoldReason::PooledStake.into(), &delegator, diff)?;
             return Ok(().into());
         }
 
         if let Some(diff) = held.0.checked_sub(&stake.0) {
             T::Currency::release(
-                &T::CurrencyHoldReason::get(),
+                &HoldReason::PooledStake.into(),
                 &delegator,
                 diff,
                 Precision::Exact,
@@ -130,7 +130,7 @@ impl<T: Config> Calls<T> {
         let stake = pools::Joining::<T>::add_shares(&candidate, &delegator, shares)?;
 
         // We hold the funds of the delegator and register its stake into the candidate stake.
-        T::Currency::hold(&T::CurrencyHoldReason::get(), &delegator, stake.0)?;
+        T::Currency::hold(&HoldReason::PooledStake.into(), &delegator, stake.0)?;
         pools::Joining::<T>::increase_hold(&candidate, &delegator, &stake)?;
         Candidates::<T>::add_total_stake(&candidate, &stake)?;
 
@@ -303,7 +303,7 @@ impl<T: Config> Calls<T> {
         // If stake doesn't allow to get at least one share we release all the funds.
         if shares.0.is_zero() {
             T::Currency::release(
-                &T::CurrencyHoldReason::get(),
+                &HoldReason::PooledStake.into(),
                 &delegator,
                 stake.0,
                 Precision::Exact,
@@ -336,7 +336,7 @@ impl<T: Config> Calls<T> {
             .err_sub(&actually_staked.0)
             .map_err(|_| Error::<T>::MathUnderflow)?;
         T::Currency::release(
-            &T::CurrencyHoldReason::get(),
+            &HoldReason::PooledStake.into(),
             &delegator,
             release,
             Precision::Exact,
@@ -387,7 +387,7 @@ impl<T: Config> Calls<T> {
 
         // We release the funds and consider them unstaked.
         T::Currency::release(
-            &T::CurrencyHoldReason::get(),
+            &HoldReason::PooledStake.into(),
             &delegator,
             stake.0,
             Precision::Exact,
@@ -611,7 +611,7 @@ impl<T: Config> Calls<T> {
 
         if !dust.is_zero() {
             T::Currency::release(
-                &T::CurrencyHoldReason::get(),
+                &HoldReason::PooledStake.into(),
                 &delegator,
                 dust,
                 Precision::Exact,

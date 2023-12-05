@@ -85,7 +85,7 @@ describeSuite({
 
                 const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
 
-                const tx = polkadotJs.tx.balances.transfer(bob.address, 1000);
+                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 1000);
 
                 if (chain == "frontier-template") {
                     expect(await context.createBlock([await tx.signAsync(alice)]).catch((e) => e.toString())).to.equal(
@@ -175,7 +175,7 @@ describeSuite({
 
                 const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
 
-                const tx = polkadotJs.tx.balances.transfer(bob.address, 1000);
+                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 1000);
 
                 await context.createBlock([await tx.signAsync(alice)]);
                 const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;

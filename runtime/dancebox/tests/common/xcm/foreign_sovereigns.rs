@@ -76,7 +76,7 @@ fn using_sovereign_works_from_tanssi() {
             .unwrap();
 
         let origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
-        assert_ok!(<Westend as WestendPallet>::Balances::transfer(
+        assert_ok!(<Westend as WestendPallet>::Balances::transfer_allow_death(
             origin,
             sp_runtime::MultiAddress::Id(sovereign_account),
             100 * WND
@@ -183,7 +183,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
 
         let origin = <FrontierTemplate as Chain>::RuntimeOrigin::signed(EthereumSender::get());
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::Balances::transfer(
+            <FrontierTemplate as FrontierTemplatePallet>::Balances::transfer_allow_death(
                 origin,
                 sovereign_account,
                 100 * FRONTIER_DEV

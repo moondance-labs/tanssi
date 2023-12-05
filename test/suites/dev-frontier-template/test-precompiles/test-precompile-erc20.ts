@@ -31,7 +31,7 @@ describeSuite({
                 const transferAmount = 1000n;
                 const signedTx = context
                     .polkadotJs()
-                    .tx.balances.transfer(ETHAN_ADDRESS, transferAmount)
+                    .tx.balances.transferAllowDeath(ETHAN_ADDRESS, transferAmount)
                     .signAsync(baltathar);
                 await context.createBlock(signedTx);
 
