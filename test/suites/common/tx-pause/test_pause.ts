@@ -27,7 +27,7 @@ describeSuite({
             id: "E01",
             title: "transfer should fail after pausing it",
             test: async function () {
-                // Pause Balances.transfer
+                // Pause Balances.transfer_allow_death
                 const { result } = await context.createBlock(
                     polkadotJs.tx.sudo
                         .sudo(polkadotJs.tx.txPause.pause(["Balances", "transfer_allow_death"]))
@@ -79,6 +79,40 @@ describeSuite({
                 );
 
                 expect(resultTransfer.successful).to.be.true;
+            },
+        });
+
+        it({
+            id: "E03",
+            title: "sudo shoudn't be affected by a pause",
+            test: async function () {
+                await context.createBlock();
+
+                // Pause Balances.transfer
+                const { result } = await context.createBlock(
+                    polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.txPause.pause(["Balances", "force_transfer"]))
+                        .signAsync(alice)
+                );
+
+                expect(result.successful).to.be.true;
+                // Check sudo was successful
+                const sudoEvents = result.events.filter(({ event: { method } }) => method === "Sudid");
+                expect(sudoEvents.length).toBe(1);
+                expect((sudoEvents[0].event.data[0] as Result<any, SpRuntimeDispatchError>).isOk).to.be.true;
+
+                // force_transfer should succeed
+                const { result: resultTransfer } = await context.createBlock(
+                    polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.balances.forceTransfer(alice.address, bob.address, DANCE))
+                        .signAsync(alice)
+                );
+
+                expect(resultTransfer.successful).to.be.true;
+                // Check sudo was successful
+                const transferEvents = resultTransfer.events.filter(({ event: { method } }) => method === "Sudid");
+                expect(transferEvents.length).toBe(1);
+                expect((transferEvents[0].event.data[0] as Result<any, SpRuntimeDispatchError>).isOk).to.be.true;
             },
         });
     },
