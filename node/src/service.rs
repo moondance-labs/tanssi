@@ -995,6 +995,10 @@ pub fn start_dev_node(
                     .expect("registered_paras runtime API should exist")
                     .into_iter()
                     .collect();
+                
+                // Scale encoded para-header 2 blocks ago
+                let last_para_header_tanssi = (client.para_header(current_para_block.saturating_sub(2))).encode();
+                let key = &relay_chain::well_known_keys::para_head(para_id);
 
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
                 let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
@@ -1026,7 +1030,7 @@ pub fn start_dev_node(
                         ),
                         raw_downward_messages: downward_xcm_receiver.drain().collect(),
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
-                        additional_key_values: Some(mocked_author_noting.get_key_values()),
+                        additional_key_values: Some(mocked_author_noting.get_key_values().append((key, last_para_header_tanssi))),
                     };
 
                     Ok((time, mocked_parachain, mocked_author_noting))
