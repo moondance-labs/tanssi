@@ -935,3 +935,27 @@ pub trait RegistrarHooks {
 }
 
 impl RegistrarHooks for () {}
+
+pub struct EnsureSignedByManager<T>(sp_std::marker::PhantomData<T>);
+
+impl<T> frame_support::traits::EnsureOriginWithArg<T::RuntimeOrigin, ParaId>
+    for EnsureSignedByManager<T>
+where
+    T: Config,
+{
+    type Success = ();
+
+    fn try_origin(
+        o: T::RuntimeOrigin,
+        para_id: &ParaId,
+    ) -> Result<Self::Success, T::RuntimeOrigin> {
+        let signed_account =
+            <frame_system::EnsureSigned<_> as EnsureOrigin<_>>::try_origin(o.clone())?;
+
+        if !Pallet::<T>::is_para_manager(para_id, &signed_account) {
+            return Err(frame_system::RawOrigin::Signed(signed_account).into());
+        }
+
+        Ok(())
+    }
+}

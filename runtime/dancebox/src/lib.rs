@@ -37,9 +37,6 @@ pub mod weights;
 use sp_runtime::TryRuntimeError;
 
 use frame_support::traits::EitherOfDiverse;
-use frame_system::EnsureSigned;
-use frame_system::RawOrigin;
-use sp_runtime::Either;
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
@@ -53,9 +50,8 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, EnsureOriginWithArg, InstanceFilter,
-            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
-            ValidatorRegistration,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
+            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -764,52 +760,11 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
 
-pub struct DanceboxContainerChainManagerOrRootOrigin<T, RootOrigin> {
-    // Configurable root origin
-    container_chain_manager_origin: PhantomData<RootOrigin>,
-    _phantom: PhantomData<T>,
-}
-
-impl<O, T, RootOrigin> EnsureOriginWithArg<O, ParaId>
-    for DanceboxContainerChainManagerOrRootOrigin<T, RootOrigin>
-where
-    T: pallet_registrar::Config<AccountId = AccountId>,
-    RootOrigin: EnsureOriginWithArg<O, ParaId>,
-    O: From<RawOrigin<T::AccountId>>,
-    Result<RawOrigin<T::AccountId>, O>: From<O>,
-    pallet_registrar::DepositBalanceOf<T>: From<u128>,
-    RuntimeOrigin: From<RawOrigin<T::AccountId>>,
-    O: Clone,
-{
-    type Success = Either<T::AccountId, <RootOrigin as EnsureOriginWithArg<O, ParaId>>::Success>;
-
-    fn try_origin(o: O, para_id: &ParaId) -> Result<Self::Success, O> {
-        let origin = EitherOfDiverse::<EnsureSigned<T::AccountId>, RootOrigin>::try_origin(
-            o.clone(),
-            para_id,
-        )?;
-
-        if let Either::Left(signed_account) = &origin {
-            if !Registrar::is_para_manager(para_id, signed_account) {
-                return Err(o);
-            }
-        }
-
-        Ok(origin)
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn try_successful_origin(para_id: &ParaId) -> Result<O, ()> {
-        let manager = Registrar::benchmarks_get_or_create_para_manager(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
-
-        Ok(O::from(RawOrigin::Signed(manager)))
-    }
-}
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type SetBootNodesOrigin =
-        DanceboxContainerChainManagerOrRootOrigin<Runtime, EnsureRoot<AccountId>>;
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MaxBootNodes = MaxBootNodes;
     type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
     type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;
