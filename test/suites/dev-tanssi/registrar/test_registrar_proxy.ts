@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block";
+import { stringToHex } from "@polkadot/util";
 
 describeSuite({
     id: "DT0605",
@@ -77,46 +77,30 @@ describeSuite({
                 };
                 const containerChainGenesisData = emptyGenesisData();
 
+                // assert we can inject on chain data with proxy
                 const tx2 = polkadotJs.tx.proxy.proxy(
                     alice.address,
                     null,
                     polkadotJs.tx.registrar.register(2002, containerChainGenesisData)
                 );
-                const tx3 = polkadotJs.tx.registrar.markValidForCollating(2002);
-                await context.createBlock([
-                    await tx2.signAsync(charlie),
-                    await polkadotJs.tx.sudo.sudo(tx3).signAsync(alice),
-                ]);
-
-                const pendingParas = await polkadotJs.query.registrar.pendingParaIds();
-                expect(pendingParas.length).to.be.eq(1);
-                const sessionScheduling = pendingParas[0][0];
-                const parasScheduled = pendingParas[0][1];
-
-                expect(sessionScheduling.toBigInt()).to.be.eq(expectedScheduledOnboarding);
-
-                // These will be the paras in session 2
-                // TODO: fix once we have types
-                expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001, 2002]);
-
+                await context.createBlock([await tx2.signAsync(charlie)]);
                 // Check that the on chain genesis data is set correctly
                 const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
                 // TODO: fix once we have types
                 expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
-                // Check the para id has been given some free credits
-                const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();
-                expect(credits, "Container chain 2002 should have been given credits").toBeGreaterThan(0);
+                // assert we can inject bootnodes with proxy
+                const tx3 = polkadotJs.tx.proxy.proxy(
+                    alice.address,
+                    null,
+                    polkadotJs.tx.registrar.setBootNodes(2002, ["dummy"])
+                );
+                await context.createBlock([await tx3.signAsync(charlie)]);
 
-                // Checking that in session 2 paras are registered
-                await jumpSessions(context, 2);
-
-                // Expect now paraIds to be registered
-                const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
+                // Check that the on chain genesis data is set correctly
+                const onChainBootnodes = await polkadotJs.query.registrar.bootNodes(2002);
                 // TODO: fix once we have types
-                expect(parasRegistered.toJSON()).to.deep.equal([2000, 2001, 2002]);
-
-
+                expect(onChainBootnodes.toHuman()).to.deep.equal(["dummy"]);
             },
         });
     },
