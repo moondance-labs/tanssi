@@ -958,4 +958,11 @@ where
 
         Ok(())
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn try_successful_origin(para_id: &ParaId) -> Result<T::RuntimeOrigin, ()> {
+        let manager = Pallet::<T>::benchmarks_get_or_create_para_manager(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
+
+        Ok(frame_system::RawOrigin::Signed(manager).into())
+    }
 }
