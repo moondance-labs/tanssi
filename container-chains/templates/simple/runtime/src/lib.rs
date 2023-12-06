@@ -38,8 +38,8 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
-            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth, InstanceFilter,
+            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
         },
         weights::{
             constants::{
@@ -322,7 +322,7 @@ impl frame_system::Config for Runtime {
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = MaintenanceMode;
+    type BaseCallFilter = InsideBoth<MaintenanceMode, TxPause>;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// Block & extrinsics weights: base values and limits.
@@ -655,6 +655,16 @@ impl pallet_author_inherent::Config for Runtime {
 
 impl pallet_root_testing::Config for Runtime {}
 
+impl pallet_tx_pause::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type PauseOrigin = EnsureRoot<AccountId>;
+    type UnpauseOrigin = EnsureRoot<AccountId>;
+    type WhitelistedCalls = ();
+    type MaxNameLen = ConstU32<256>;
+    type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -669,6 +679,7 @@ construct_runtime!(
         Proxy: pallet_proxy = 6,
         Migrations: pallet_migrations = 7,
         MaintenanceMode: pallet_maintenance_mode = 8,
+        TxPause: pallet_tx_pause = 9,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
