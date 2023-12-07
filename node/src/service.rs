@@ -31,7 +31,7 @@ use {
     cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
     cumulus_client_service::prepare_node_config,
     cumulus_primitives_core::{
-        relay_chain::{CollatorPair, Hash as PHash},
+        relay_chain::{CollatorPair, Hash as PHash, well_known_keys as RelayWellKnownKeys},
         ParaId,
     },
     cumulus_primitives_parachain_inherent::{
@@ -47,7 +47,9 @@ use {
     node_common::service::NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
     pallet_registrar_runtime_api::RegistrarApi,
+    parity_scale_codec::Encode,
     polkadot_cli::ProvideRuntimeApi,
+    polkadot_parachain_primitives::primitives::HeadData,
     polkadot_service::Handle,
     sc_client_api::{
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
@@ -995,13 +997,35 @@ pub fn start_dev_node(
                     .expect("registered_paras runtime API should exist")
                     .into_iter()
                     .collect();
-                
-                // Scale encoded para-header 2 blocks ago
-                let last_para_header_tanssi = (client.para_header(current_para_block.saturating_sub(2))).encode();
-                let key = &relay_chain::well_known_keys::para_head(para_id);
+
+                let hash = client
+                    .hash(current_para_block.saturating_sub(2))
+                    .expect("Hash of the desired block must be present")
+                    .expect("Hash of the desired block should exist");
+
+                let para_header = client
+                    .expect_header(hash)
+                    .expect("Expected parachain header should exist")
+                    .encode();
+
+                let para_head_data = HeadData(para_header).encode();
+                let para_head_key = RelayWellKnownKeys::para_head(para_id);
 
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
                 let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
+
+                //let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client.clone()).expect("Slot duration should be set");
+
+                //let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+                //let timestamp2 = sp_timestamp::InherentDataProvider::from_system_time();
+
+/*                 let slot =
+						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+							TIMESTAMP.into(),
+							slot_duration,
+						).to_string();
+                log::error!("SLOT CALCULATED: {:?}", slot);
+                log::error!("TIMESTAMP CALCULATED: {:?}", timestamp2.to_string()); */
 
                 let client_for_xcm = client.clone();
                 async move {
@@ -1013,6 +1037,9 @@ pub fn start_dev_node(
                             para_ids,
                             slots_per_para_block: 1,
                         };
+                    
+                    let mut additional_keys = mocked_author_noting.get_key_values();
+                    additional_keys.append(&mut vec![(para_head_key, para_head_data)]);
 
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
@@ -1030,7 +1057,7 @@ pub fn start_dev_node(
                         ),
                         raw_downward_messages: downward_xcm_receiver.drain().collect(),
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
-                        additional_key_values: Some(mocked_author_noting.get_key_values().append((key, last_para_header_tanssi))),
+                        additional_key_values: Some(additional_keys),
                     };
 
                     Ok((time, mocked_parachain, mocked_author_noting))
