@@ -905,6 +905,8 @@ pub enum ProxyType {
     Balances = 5,
     /// Allow extrinsics related to Registrar
     Registrar = 6,
+    /// Allow extrinsics related to Registrar that needs to be called through Sudo
+    SudoRegistrar = 8,
 }
 
 impl Default for ProxyType {
@@ -944,6 +946,13 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             }
             ProxyType::Registrar => {
                 matches!(c, RuntimeCall::Registrar(..) | RuntimeCall::Utility(..))
+            }
+            ProxyType::SudoRegistrar => {
+                matches!(
+                    c,
+                    RuntimeCall::Sudo(pallet_sudo::Call::sudo {call: ref x})
+                    if matches!(x.as_ref(), RuntimeCall::Registrar(..))
+                )
             }
         }
     }
