@@ -37,6 +37,7 @@ pallet-services-payment = { workspace = true }
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
+pallet-foreign-asset-creator = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
@@ -149,6 +150,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-configuration/std",
+	"pallet-foreign-asset-creator/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",

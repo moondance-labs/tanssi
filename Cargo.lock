@@ -1533,7 +1533,7 @@ dependencies = [
 [[package]]
 name = "common"
 version = "0.1.0"
-source = "git+https://github.com/w3f/ring-proof#61e7b528bc0170d6bf541be32440d569b784425d"
+source = "git+https://github.com/w3f/ring-proof#b273d33f9981e2bb3375ab45faeb537f7ee35224"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -2939,6 +2939,7 @@ dependencies = [
  "pallet-collator-assignment",
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
+ "pallet-foreign-asset-creator",
  "pallet-im-online",
  "pallet-inflation-rewards",
  "pallet-initializer",
@@ -4063,7 +4064,7 @@ dependencies = [
 [[package]]
 name = "fflonk"
 version = "0.1.0"
-source = "git+https://github.com/w3f/fflonk#95f3a57d1f4252fe95310c1567d153f25f3066b4"
+source = "git+https://github.com/w3f/fflonk#1e854f35e9a65d08b11a86291405cdc95baa0a35"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -8147,6 +8148,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-foreign-asset-creator"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-foreign-asset-creator#c83f986e5e104a836172947a021beeadcb105e4d"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-grandpa"
 version = "4.0.0-dev"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.3.0#d93a55aeadb3278640b2e6a9aa03198f98ce94d3"
@@ -11155,7 +11172,7 @@ dependencies = [
 [[package]]
 name = "ring"
 version = "0.1.0"
-source = "git+https://github.com/w3f/ring-proof#61e7b528bc0170d6bf541be32440d569b784425d"
+source = "git+https://github.com/w3f/ring-proof#b273d33f9981e2bb3375ab45faeb537f7ee35224"
 dependencies = [
  "ark-ec",
  "ark-ff",

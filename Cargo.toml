@@ -63,6 +63,7 @@ dc-orchestrator-chain-interface = { git = "https://github.com/moondance-labs/dan
 nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-foreign-asset-creator" }
 nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-foreign-asset-creator", default-features = false }
 pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-foreign-asset-creator", default-features = false }
+pallet-foreign-asset-creator = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-foreign-asset-creator", default-features = false }
 pallet-evm-precompile-balances-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-foreign-asset-creator", default-features = false }
 pallet-evm-precompile-batch = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-foreign-asset-creator", default-features = false }
 pallet-evm-precompile-call-permit = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-foreign-asset-creator", default-features = false }

@@ -17,7 +17,7 @@
 use {
     super::{
         weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, Balances, Balance, ExistentialDeposit,
-        ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent,
+        ForeignAssetsCreator, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent,
         RuntimeOrigin, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::ParaId,
@@ -33,7 +33,7 @@ use {
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-        AllowTopLevelPaidExecutionFrom, CurrencyAdapter, EnsureXcmOrigin, IsConcrete,
+        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, CurrencyAdapter, EnsureXcmOrigin, IsConcrete,
         ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative, SiblingParachainConvertsVia,
         SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
         TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin,
@@ -257,6 +257,7 @@ parameter_types! {
     pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }
 
+pub type AssetId = u16;
 /// Assets managed by some foreign location. Note: we do not declare a `ForeignAssetsCall` type, as
 /// this type is used in proxy definitions. We assume that a foreign location would not want to set
 /// an individual, local account as a proxy for the issuance of their assets. This issuance should
@@ -265,8 +266,8 @@ pub type ForeignAssetsInstance = pallet_assets::Instance1;
 impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Balance = Balance;
-	type AssetId = MultiLocation;
-	type AssetIdParameter = MultiLocation;
+	type AssetId = AssetId;
+	type AssetIdParameter = AssetId;
 	type Currency = Balances;
 	type CreateOrigin = frame_support::traits::NeverEnsureOrigin<AccountId>;
 	type ForceOrigin = EnsureRoot<AccountId>;
@@ -285,26 +286,34 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
 	type BenchmarkHelper = xcm_config::XcmBenchmarkHelper;
 }
 
+impl pallet_foreign_asset_creator::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ForeignAsset = MultiLocation;
+    type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
+    type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
+    type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
+    type Fungibles = ForeignAssets;
+}
+
 use staging_xcm_executor::traits::{Identity, JustTry};
 use staging_xcm_builder::MatchedConvertedConcreteId;
 use staging_xcm_builder::FungiblesAdapter;
 use crate::ForeignAssets;
 use staging_xcm_builder::NoChecking;
-/// `AssetId`/`Balance` converter for `ForeignAssets`.
-pub type ForeignAssetsConvertedConcreteId = MatchedConvertedConcreteId<
-    MultiLocation,
-    Balance,
-    Everything,
-    Identity,
-    JustTry,
->;
 
 /// Means for transacting foreign assets from different global consensus.
 pub type ForeignFungiblesTransactor = FungiblesAdapter<
 	// Use this fungibles implementation:
 	ForeignAssets,
 	// Use this currency when it is a fungible asset matching the given location or name:
-	ForeignAssetsConvertedConcreteId,
+	(
+		ConvertedConcreteId<
+            AssetId,
+			Balance,
+			ForeignAssetsCreator,
+			JustTry,
+		>,
+	),
 	// Convert an XCM MultiLocation into a local account id:
 	LocationToAccountId,
 	// Our chain's account ID type (we can't get away without mentioning it explicitly):
