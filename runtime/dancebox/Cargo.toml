@@ -46,6 +46,7 @@ frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
+pallet-assets = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
@@ -144,6 +145,7 @@ std = [
 	"pallet-author-noting-runtime-api/std",
 	"pallet-author-noting/std",
 	"pallet-authority-assignment/std",
+	"pallet-assets/std",
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-configuration/std",

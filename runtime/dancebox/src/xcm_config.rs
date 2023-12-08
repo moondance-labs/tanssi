@@ -16,7 +16,7 @@
 
 use {
     super::{
-        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, Balances,
+        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, Balances, Balance, ExistentialDeposit,
         ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent,
         RuntimeOrigin, WeightToFee, XcmpQueue,
     },
@@ -151,7 +151,7 @@ pub type XcmOriginToTransactDispatchOrigin = (
 );
 
 /// Means for transacting assets on this chain.
-pub type AssetTransactors = CurrencyTransactor;
+pub type AssetTransactors = (CurrencyTransactor, ForeignFungiblesTransactor);
 pub type XcmWeigher =
     WeightInfoBounds<XcmGenericWeights<RuntimeCall>, RuntimeCall, MaxInstructions>;
 
@@ -245,3 +245,72 @@ impl cumulus_pallet_dmp_queue::Config for Runtime {
     type XcmExecutor = XcmExecutor<XcmConfig>;
     type ExecuteOverweightOrigin = EnsureRoot<AccountId>;
 }
+
+parameter_types! {
+	// we just reuse the same deposits
+	pub const ForeignAssetsAssetDeposit: Balance = 0;
+	pub const ForeignAssetsAssetAccountDeposit: Balance = 0;
+	pub const ForeignAssetsApprovalDeposit: Balance = 0;
+	pub const ForeignAssetsAssetsStringLimit: u32 = 50;
+	pub const ForeignAssetsMetadataDepositBase: Balance = 0;
+	pub const ForeignAssetsMetadataDepositPerByte: Balance = 0;
+    pub CheckingAccount: AccountId = PolkadotXcm::check_account();
+}
+
+/// Assets managed by some foreign location. Note: we do not declare a `ForeignAssetsCall` type, as
+/// this type is used in proxy definitions. We assume that a foreign location would not want to set
+/// an individual, local account as a proxy for the issuance of their assets. This issuance should
+/// be managed by the foreign location's governance.
+pub type ForeignAssetsInstance = pallet_assets::Instance1;
+impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Balance = Balance;
+	type AssetId = MultiLocation;
+	type AssetIdParameter = MultiLocation;
+	type Currency = Balances;
+	type CreateOrigin = frame_support::traits::NeverEnsureOrigin<AccountId>;
+	type ForceOrigin = EnsureRoot<AccountId>;
+	type AssetDeposit = ForeignAssetsAssetDeposit;
+	type MetadataDepositBase = ForeignAssetsMetadataDepositBase;
+	type MetadataDepositPerByte = ForeignAssetsMetadataDepositPerByte;
+	type ApprovalDeposit = ForeignAssetsApprovalDeposit;
+	type StringLimit = ForeignAssetsAssetsStringLimit;
+	type Freezer = ();
+	type Extra = ();
+	type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+	type CallbackHandle = ();
+	type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
+	type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = xcm_config::XcmBenchmarkHelper;
+}
+
+use staging_xcm_executor::traits::{Identity, JustTry};
+use staging_xcm_builder::MatchedConvertedConcreteId;
+use staging_xcm_builder::FungiblesAdapter;
+use crate::ForeignAssets;
+use staging_xcm_builder::NoChecking;
+/// `AssetId`/`Balance` converter for `ForeignAssets`.
+pub type ForeignAssetsConvertedConcreteId = MatchedConvertedConcreteId<
+    MultiLocation,
+    Balance,
+    Everything,
+    Identity,
+    JustTry,
+>;
+
+/// Means for transacting foreign assets from different global consensus.
+pub type ForeignFungiblesTransactor = FungiblesAdapter<
+	// Use this fungibles implementation:
+	ForeignAssets,
+	// Use this currency when it is a fungible asset matching the given location or name:
+	ForeignAssetsConvertedConcreteId,
+	// Convert an XCM MultiLocation into a local account id:
+	LocationToAccountId,
+	// Our chain's account ID type (we can't get away without mentioning it explicitly):
+	AccountId,
+	// We dont need to check teleports here.
+	NoChecking,
+	// The account to use for tracking teleports.
+	CheckingAccount,
+>;
