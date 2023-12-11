@@ -276,12 +276,13 @@ impl ContainerChainSpawner {
                 "Container chain sync mode: {:?}",
                 container_chain_cli.base.base.network_params.sync
             );
-            let container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
                 &container_chain_cli,
                 &container_chain_cli,
                 tokio_handle.clone(),
             )
             .map_err(|err| format!("Container chain argument error: {}", err))?;
+            container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
             let (
