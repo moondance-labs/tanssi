@@ -3,6 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 import { stringToHex } from "@polkadot/util";
+import { jumpSessions } from "util/block";
 
 describeSuite({
     id: "DT0605",
@@ -11,10 +12,12 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let bob: KeyringPair;
         let charlie: KeyringPair;
 
         beforeAll(() => {
             alice = context.keyring.alice;
+            bob = context.keyring.bob;
             charlie = context.keyring.charlie;
             polkadotJs = context.polkadotJs();
         });
@@ -28,7 +31,7 @@ describeSuite({
                 const registrar_proxy = 6;
                 const delay = 0;
                 const tx = polkadotJs.tx.proxy.addProxy(delegate, registrar_proxy, delay);
-                await context.createBlock([await tx.signAsync(alice)]);
+                await context.createBlock([await tx.signAsync(bob)]);
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
@@ -36,7 +39,7 @@ describeSuite({
                 });
                 expect(ev1.length).to.be.equal(1);
 
-                const proxies = await polkadotJs.query.proxy.proxies(alice.address);
+                const proxies = await polkadotJs.query.proxy.proxies(bob.address);
                 expect(proxies.toJSON()[0]).to.deep.equal([
                     {
                         delegate: charlie.address,
@@ -79,7 +82,7 @@ describeSuite({
 
                 // assert we can inject on chain data with proxy
                 const tx2 = polkadotJs.tx.proxy.proxy(
-                    alice.address,
+                    bob.address,
                     null,
                     polkadotJs.tx.registrar.register(2002, containerChainGenesisData)
                 );
@@ -91,7 +94,7 @@ describeSuite({
 
                 // assert we can inject bootnodes with proxy
                 const tx3 = polkadotJs.tx.proxy.proxy(
-                    alice.address,
+                    bob.address,
                     null,
                     polkadotJs.tx.registrar.setBootNodes(2002, ["dummy"])
                 );
@@ -113,6 +116,7 @@ describeSuite({
                 const sudo_registrar_proxy = 7;
                 const delay = 0;
                 const tx = polkadotJs.tx.proxy.addProxy(delegate, sudo_registrar_proxy, delay);
+                await context.createBlock();
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 const events = await polkadotJs.query.system.events();
@@ -168,11 +172,9 @@ describeSuite({
                 const nonce = await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
                 await context.createBlock([
                     await tx2.signAsync(alice, { nonce }),
-                    await polkadotJs.tx.proxy.proxy(
-                        alice.address,
-                        null,
-                        polkadotJs.tx.sudo.sudo(tx3)
-                    ).signAsync(charlie),
+                    await polkadotJs.tx.proxy
+                        .proxy(alice.address, null, polkadotJs.tx.sudo.sudo(tx3))
+                        .signAsync(charlie),
                 ]);
 
                 const pendingParas = await polkadotJs.query.registrar.pendingParaIds();
