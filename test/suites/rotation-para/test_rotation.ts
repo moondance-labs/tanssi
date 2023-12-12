@@ -73,8 +73,8 @@ describeSuite({
             console.log(collatorName);
 
             containerDbPaths = [
-                "/data/containers/chains/simple_container_2000/db/full-container-2000",
-                "/data/containers/chains/frontier_container_2001/db/full-container-2001",
+                "/data/containers/chains/simple_container_2000/paritydb/full-container-2000",
+                "/data/containers/chains/frontier_container_2001/paritydb/full-container-2001",
             ];
         }, 120000);
 
@@ -292,10 +292,10 @@ describeSuite({
                 const oldC2001 = collatorName[assignment3.containerChains[2001][0]];
                 const oldContainer2000DbPath =
                     getTmpZombiePath() +
-                    `/${oldC2000}/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/${oldC2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
                 const oldContainer2001DbPath =
                     getTmpZombiePath() +
-                    `/${oldC2001}/data/containers/chains/frontier_container_2001/db/full-container-2001`;
+                    `/${oldC2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
                 expect(await directoryExists(oldContainer2000DbPath)).to.be.true;
                 expect(await directoryExists(oldContainer2001DbPath)).to.be.true;
 
@@ -311,10 +311,10 @@ describeSuite({
                 // and unassignedCollators should not have any db path
                 const container2000DbPath =
                     getTmpZombiePath() +
-                    `/${c2000}/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/${c2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
                 const container2001DbPath =
                     getTmpZombiePath() +
-                    `/${c2001}/data/containers/chains/frontier_container_2001/db/full-container-2001`;
+                    `/${c2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
                 expect(await directoryExists(container2000DbPath)).to.be.true;
                 expect(await directoryExists(container2001DbPath)).to.be.true;
 
@@ -342,10 +342,10 @@ describeSuite({
                 const c2001 = collatorName[assignment5.containerChains[2001][0]];
                 const oldContainer2000DbPath =
                     getTmpZombiePath() +
-                    `/${oldC2000}/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/${oldC2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
                 const oldContainer2001DbPath =
                     getTmpZombiePath() +
-                    `/${oldC2001}/data/containers/chains/frontier_container_2001/db/full-container-2001`;
+                    `/${oldC2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
                 // Edge case: collators may be assigned to the same chain, in that case the directory will still exist
                 if (oldC2000 != c2000) {
                     expect(await directoryExists(oldContainer2000DbPath)).to.be.false;
@@ -361,10 +361,10 @@ describeSuite({
                 // and unassignedCollators should not have any db path
                 const container2000DbPath =
                     getTmpZombiePath() +
-                    `/${c2000}/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/${c2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
                 const container2001DbPath =
                     getTmpZombiePath() +
-                    `/${c2001}/data/containers/chains/frontier_container_2001/db/full-container-2001`;
+                    `/${c2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
                 expect(await directoryExists(container2000DbPath)).to.be.true;
                 expect(await directoryExists(container2001DbPath)).to.be.true;
                 await ensureContainerDbPathsDontExist(unassignedCollators, containerDbPaths);

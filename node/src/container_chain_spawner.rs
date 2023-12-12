@@ -35,7 +35,8 @@ use {
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
-    sc_cli::SyncMode,
+    sc_cli::{Database, SyncMode},
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
     sp_api::{ApiExt, ProvideRuntimeApi},
     sp_keystore::KeystorePtr,
@@ -206,6 +207,12 @@ impl ContainerChainSpawner {
 
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
+            container_chain_cli
+                .base
+                .base
+                .import_params
+                .database_params
+                .database = Some(Database::ParityDb);
 
             let create_container_chain_cli_config = || {
                 let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
@@ -705,7 +712,7 @@ fn open_and_maybe_delete_db(
 }
 
 // TODO: this leaves some empty folders behind, because it is called with db_path:
-//     Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002
+//     Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002
 // but we want to delete everything under
 //     Collator2002-01/data/containers/chains/simple_container_2002
 fn delete_container_chain_db(db_path: &Path) {
