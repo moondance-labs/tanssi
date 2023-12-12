@@ -1564,7 +1564,7 @@ checksum = "21a53c0a4d288377e7415b53dcfc3c04da5cdc2cc95c8d5ac178b58f0b861ad6"
 
 [[package]]
 name = "container-chain-template-frontier-node"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "async-io",
  "async-trait",
@@ -1726,7 +1726,7 @@ dependencies = [
 
 [[package]]
 name = "container-chain-template-simple-node"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "async-io",
  "async-trait",
@@ -14545,7 +14545,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-node"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "async-io",
  "async-trait",
