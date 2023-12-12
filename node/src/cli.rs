@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::chain_spec::RawGenesisConfig,
+    crate::chain_spec::dancebox::RawGenesisConfig,
     node_common::service::Sealing,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
@@ -238,7 +238,7 @@ impl RelayChainCli {
         para_config: &sc_service::Configuration,
         relay_chain_args: impl Iterator<Item = &'a String>,
     ) -> Self {
-        let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
+        let extension = crate::chain_spec::dancebox::Extensions::try_get(&*para_config.chain_spec);
         let chain_id = extension.map(|e| e.relay_chain.clone());
         let base_path = para_config.base_path.path().join("polkadot");
 
@@ -317,7 +317,7 @@ impl ContainerChainCli {
         chain_type: sc_chain_spec::ChainType,
         relay_chain: String,
         boot_nodes: Vec<MultiaddrWithPeerId>,
-    ) -> Result<crate::chain_spec::RawChainSpec, String> {
+    ) -> Result<crate::chain_spec::dancebox::RawChainSpec, String> {
         let name = String::from_utf8(genesis_data.name).map_err(|_e| "Invalid name".to_string())?;
         let id: String =
             String::from_utf8(genesis_data.id).map_err(|_e| "Invalid id".to_string())?;
@@ -333,11 +333,11 @@ impl ContainerChainCli {
             properties_to_map(&genesis_data.properties)
                 .map_err(|e| format!("Invalid properties: {}", e))?,
         );
-        let extensions = crate::chain_spec::Extensions {
+        let extensions = crate::chain_spec::dancebox::Extensions {
             relay_chain,
             para_id,
         };
-        let chain_spec = crate::chain_spec::RawChainSpec::from_genesis(
+        let chain_spec = crate::chain_spec::dancebox::RawChainSpec::from_genesis(
             &name,
             &id,
             chain_type,
