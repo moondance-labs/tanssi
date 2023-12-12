@@ -125,7 +125,7 @@ describeSuite({
                 expect(proxies.toJSON()[0]).to.deep.equal([
                     {
                         delegate: charlie.address,
-                        proxyType: "Registrar",
+                        proxyType: "SudoRegistrar",
                         delay: 0,
                     },
                 ]);

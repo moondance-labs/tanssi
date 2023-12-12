@@ -25,12 +25,12 @@ import type {
     PalletPooledStakingTargetPool,
     SpWeightsWeightV2Weight,
     StagingXcmV3MultiLocation,
-    StagingXcmV3WeightLimit,
-    StagingXcmVersionedMultiAssets,
-    StagingXcmVersionedMultiLocation,
-    StagingXcmVersionedXcm,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
+    XcmV3WeightLimit,
+    XcmVersionedMultiAssets,
+    XcmVersionedMultiLocation,
+    XcmVersionedXcm,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedSubmittable = AugmentedSubmittable<() => unknown>;
@@ -135,39 +135,6 @@ declare module "@polkadot/api-base/types/submittable" {
                     amount: u128 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [MultiAddress, u128]
-            >;
-            /** See [`Pallet::set_balance_deprecated`]. */
-            setBalanceDeprecated: AugmentedSubmittable<
-                (
-                    who:
-                        | MultiAddress
-                        | { Id: any }
-                        | { Index: any }
-                        | { Raw: any }
-                        | { Address32: any }
-                        | { Address20: any }
-                        | string
-                        | Uint8Array,
-                    newFree: Compact<u128> | AnyNumber | Uint8Array,
-                    oldReserved: Compact<u128> | AnyNumber | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [MultiAddress, Compact<u128>, Compact<u128>]
-            >;
-            /** See [`Pallet::transfer`]. */
-            transfer: AugmentedSubmittable<
-                (
-                    dest:
-                        | MultiAddress
-                        | { Id: any }
-                        | { Index: any }
-                        | { Raw: any }
-                        | { Address32: any }
-                        | { Address20: any }
-                        | string
-                        | Uint8Array,
-                    value: Compact<u128> | AnyNumber | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [MultiAddress, Compact<u128>]
             >;
             /** See [`Pallet::transfer_all`]. */
             transferAll: AugmentedSubmittable<
@@ -348,10 +315,10 @@ declare module "@polkadot/api-base/types/submittable" {
             /** See [`Pallet::execute`]. */
             execute: AugmentedSubmittable<
                 (
-                    message: StagingXcmVersionedXcm | { V2: any } | { V3: any } | string | Uint8Array,
+                    message: XcmVersionedXcm | { V2: any } | { V3: any } | string | Uint8Array,
                     maxWeight: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [StagingXcmVersionedXcm, SpWeightsWeightV2Weight]
+                [XcmVersionedXcm, SpWeightsWeightV2Weight]
             >;
             /** See [`Pallet::force_default_xcm_version`]. */
             forceDefaultXcmVersion: AugmentedSubmittable<
@@ -361,9 +328,9 @@ declare module "@polkadot/api-base/types/submittable" {
             /** See [`Pallet::force_subscribe_version_notify`]. */
             forceSubscribeVersionNotify: AugmentedSubmittable<
                 (
-                    location: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array
+                    location: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [StagingXcmVersionedMultiLocation]
+                [XcmVersionedMultiLocation]
             >;
             /** See [`Pallet::force_suspension`]. */
             forceSuspension: AugmentedSubmittable<
@@ -373,9 +340,9 @@ declare module "@polkadot/api-base/types/submittable" {
             /** See [`Pallet::force_unsubscribe_version_notify`]. */
             forceUnsubscribeVersionNotify: AugmentedSubmittable<
                 (
-                    location: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array
+                    location: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [StagingXcmVersionedMultiLocation]
+                [XcmVersionedMultiLocation]
             >;
             /** See [`Pallet::force_xcm_version`]. */
             forceXcmVersion: AugmentedSubmittable<
@@ -388,80 +355,58 @@ declare module "@polkadot/api-base/types/submittable" {
             /** See [`Pallet::limited_reserve_transfer_assets`]. */
             limitedReserveTransferAssets: AugmentedSubmittable<
                 (
-                    dest: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
-                    beneficiary: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
-                    assets: StagingXcmVersionedMultiAssets | { V2: any } | { V3: any } | string | Uint8Array,
+                    dest: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    beneficiary: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    assets: XcmVersionedMultiAssets | { V2: any } | { V3: any } | string | Uint8Array,
                     feeAssetItem: u32 | AnyNumber | Uint8Array,
-                    weightLimit: StagingXcmV3WeightLimit | { Unlimited: any } | { Limited: any } | string | Uint8Array
+                    weightLimit: XcmV3WeightLimit | { Unlimited: any } | { Limited: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [
-                    StagingXcmVersionedMultiLocation,
-                    StagingXcmVersionedMultiLocation,
-                    StagingXcmVersionedMultiAssets,
-                    u32,
-                    StagingXcmV3WeightLimit
-                ]
+                [XcmVersionedMultiLocation, XcmVersionedMultiLocation, XcmVersionedMultiAssets, u32, XcmV3WeightLimit]
             >;
             /** See [`Pallet::limited_teleport_assets`]. */
             limitedTeleportAssets: AugmentedSubmittable<
                 (
-                    dest: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
-                    beneficiary: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
-                    assets: StagingXcmVersionedMultiAssets | { V2: any } | { V3: any } | string | Uint8Array,
+                    dest: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    beneficiary: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    assets: XcmVersionedMultiAssets | { V2: any } | { V3: any } | string | Uint8Array,
                     feeAssetItem: u32 | AnyNumber | Uint8Array,
-                    weightLimit: StagingXcmV3WeightLimit | { Unlimited: any } | { Limited: any } | string | Uint8Array
+                    weightLimit: XcmV3WeightLimit | { Unlimited: any } | { Limited: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [
-                    StagingXcmVersionedMultiLocation,
-                    StagingXcmVersionedMultiLocation,
-                    StagingXcmVersionedMultiAssets,
-                    u32,
-                    StagingXcmV3WeightLimit
-                ]
+                [XcmVersionedMultiLocation, XcmVersionedMultiLocation, XcmVersionedMultiAssets, u32, XcmV3WeightLimit]
             >;
             /** See [`Pallet::reserve_transfer_assets`]. */
             reserveTransferAssets: AugmentedSubmittable<
                 (
-                    dest: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
-                    beneficiary: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
-                    assets: StagingXcmVersionedMultiAssets | { V2: any } | { V3: any } | string | Uint8Array,
+                    dest: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    beneficiary: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    assets: XcmVersionedMultiAssets | { V2: any } | { V3: any } | string | Uint8Array,
                     feeAssetItem: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [
-                    StagingXcmVersionedMultiLocation,
-                    StagingXcmVersionedMultiLocation,
-                    StagingXcmVersionedMultiAssets,
-                    u32
-                ]
+                [XcmVersionedMultiLocation, XcmVersionedMultiLocation, XcmVersionedMultiAssets, u32]
             >;
             /** See [`Pallet::send`]. */
             send: AugmentedSubmittable<
                 (
-                    dest: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
-                    message: StagingXcmVersionedXcm | { V2: any } | { V3: any } | string | Uint8Array
+                    dest: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    message: XcmVersionedXcm | { V2: any } | { V3: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [StagingXcmVersionedMultiLocation, StagingXcmVersionedXcm]
+                [XcmVersionedMultiLocation, XcmVersionedXcm]
             >;
             /** See [`Pallet::teleport_assets`]. */
             teleportAssets: AugmentedSubmittable<
                 (
-                    dest: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
-                    beneficiary: StagingXcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
-                    assets: StagingXcmVersionedMultiAssets | { V2: any } | { V3: any } | string | Uint8Array,
+                    dest: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    beneficiary: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    assets: XcmVersionedMultiAssets | { V2: any } | { V3: any } | string | Uint8Array,
                     feeAssetItem: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [
-                    StagingXcmVersionedMultiLocation,
-                    StagingXcmVersionedMultiLocation,
-                    StagingXcmVersionedMultiAssets,
-                    u32
-                ]
+                [XcmVersionedMultiLocation, XcmVersionedMultiLocation, XcmVersionedMultiAssets, u32]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         pooledStaking: {
-            /** See `Pallet::claim_manual_rewards`. */
+            /** See [`Pallet::claim_manual_rewards`]. */
             claimManualRewards: AugmentedSubmittable<
                 (
                     pairs:
@@ -470,7 +415,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[AccountId32, AccountId32]>>]
             >;
-            /** See `Pallet::execute_pending_operations`. */
+            /** See [`Pallet::execute_pending_operations`]. */
             executePendingOperations: AugmentedSubmittable<
                 (
                     operations:
@@ -484,7 +429,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<PalletPooledStakingPendingOperationQuery>]
             >;
-            /** See `Pallet::rebalance_hold`. */
+            /** See [`Pallet::rebalance_hold`]. */
             rebalanceHold: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
@@ -500,7 +445,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, AccountId32, PalletPooledStakingAllTargetPool]
             >;
-            /** See `Pallet::request_delegate`. */
+            /** See [`Pallet::request_delegate`]. */
             requestDelegate: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
@@ -509,7 +454,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingTargetPool, u128]
             >;
-            /** See `Pallet::request_undelegate`. */
+            /** See [`Pallet::request_undelegate`]. */
             requestUndelegate: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
@@ -518,7 +463,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
             >;
-            /** See `Pallet::swap_pool`. */
+            /** See [`Pallet::swap_pool`]. */
             swapPool: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
@@ -532,7 +477,7 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
             >;
-            /** See `Pallet::update_candidate_position`. */
+            /** See [`Pallet::update_candidate_position`]. */
             updateCandidatePosition: AugmentedSubmittable<
                 (candidates: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
                 [Vec<AccountId32>]
@@ -561,6 +506,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Staking"
                         | "CancelProxy"
                         | "Balances"
+                        | "Registrar"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -594,6 +541,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Staking"
                         | "CancelProxy"
                         | "Balances"
+                        | "Registrar"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array,
@@ -621,6 +570,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Staking"
                         | "CancelProxy"
                         | "Balances"
+                        | "Registrar"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     index: u16 | AnyNumber | Uint8Array,
@@ -652,6 +603,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Staking"
                         | "CancelProxy"
                         | "Balances"
+                        | "Registrar"
+                        | "SudoRegistrar"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -689,6 +642,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Staking"
                         | "CancelProxy"
                         | "Balances"
+                        | "Registrar"
+                        | "SudoRegistrar"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -748,6 +703,8 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "Staking"
                         | "CancelProxy"
                         | "Balances"
+                        | "Registrar"
+                        | "SudoRegistrar"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -793,11 +750,16 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, Vec<Bytes>]
             >;
+            /** See [`Pallet::unpause_container_chain`]. */
+            unpauseContainerChain: AugmentedSubmittable<
+                (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         rootTesting: {
-            /** See [`Pallet::fill_block`]. */
+            /** See `Pallet::fill_block`. */
             fillBlock: AugmentedSubmittable<
                 (ratio: Perbill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [Perbill]
@@ -822,6 +784,14 @@ declare module "@polkadot/api-base/types/submittable" {
                     credits: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u32]
+            >;
+            /** See [`Pallet::set_given_free_credits`]. */
+            setGivenFreeCredits: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    givenFreeCredits: bool | boolean | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, bool]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

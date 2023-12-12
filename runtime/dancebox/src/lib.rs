@@ -906,7 +906,7 @@ pub enum ProxyType {
     /// Allow extrinsics related to Registrar
     Registrar = 6,
     /// Allow extrinsics related to Registrar that needs to be called through Sudo
-    SudoRegistrar = 8,
+    SudoRegistrar = 7,
 }
 
 impl Default for ProxyType {
