@@ -36,18 +36,17 @@ use sp_runtime::TryRuntimeError;
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
-        relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
+        relay_chain::{self, SessionIndex},
         BodyId, ParaId,
     },
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
-        pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
             ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
-            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
+            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
         },
         weights::{
             constants::{
@@ -64,9 +63,8 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
-    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_collator_assignment::{GetRandomnessForNextBlock},
     pallet_invulnerables::InvulnerableRewardDistribution,
-    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ChargeForBlockCredit, ProvideBlockProductionCost},
@@ -96,8 +94,6 @@ pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
-
-const LOG_TARGET: &str = "runtime::moonbeam";
 
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;

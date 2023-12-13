@@ -203,7 +203,7 @@ impl SubstrateCli for ContainerChainCli {
 
         match &self.preloaded_chain_spec {
             Some(spec) => {
-                let spec_para_id = crate::chain_spec::dancebox::Extensions::try_get(&**spec)
+                let spec_para_id = crate::chain_spec::Extensions::try_get(&**spec)
                     .map(|extension| extension.para_id);
 
                 if spec_para_id == Some(para_id) {

@@ -247,10 +247,9 @@ async fn start_node_impl(
     let parachain_config = prepare_node_config(orchestrator_config);
 
     let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
-    let relay_chain =
-        crate::chain_spec::dancebox::Extensions::try_get(&*parachain_config.chain_spec)
-            .map(|e| e.relay_chain.clone())
-            .ok_or("Could not find relay_chain extension in chain-spec.")?;
+    let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
+        .map(|e| e.relay_chain.clone())
+        .ok_or("Could not find relay_chain extension in chain-spec.")?;
 
     // Channel to send messages to start/stop container chains
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();

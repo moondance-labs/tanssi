@@ -1,20 +1,11 @@
 use {
-    cumulus_primitives_core::ParaId,
-    dancebox_runtime::{
-        prod_or_fast, AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig,
-        RegistrarConfig, ServicesPaymentConfig, Signature, SudoConfig,
-    },
+    dancebox_runtime::{AccountId, Signature},
     nimbus_primitives::NimbusId,
-    pallet_configuration::HostConfiguration,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
-    sc_service::ChainType,
     serde::{Deserialize, Serialize},
     sp_core::{sr25519, Pair, Public},
-    sp_runtime::traits::{Get, IdentifyAccount, Verify},
+    sp_runtime::traits::{IdentifyAccount, Verify},
     std::collections::BTreeMap,
-    tp_container_chain_genesis_data::{
-        json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
-    },
 };
 
 pub mod dancebox;
@@ -101,12 +92,6 @@ where
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-/// Generate the session keys from individual elements.
-///
-/// The input must be a tuple of individual keys (a single arg for now since we have just one key).
-pub fn template_session_keys(keys: NimbusId) -> dancebox_runtime::SessionKeys {
-    dancebox_runtime::SessionKeys { nimbus: keys }
-}
 
 /// Helper function to turn a list of names into a list of `(AccountId, NimbusId)`
 pub fn invulnerables_from_seeds<S: AsRef<str>, I: Iterator<Item = S>>(

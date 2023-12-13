@@ -35,8 +35,6 @@ use {
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
-mod xcm;
-
 pub use dancebox_runtime::{
     AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, InflationRewards, Initializer, Invulnerables,
