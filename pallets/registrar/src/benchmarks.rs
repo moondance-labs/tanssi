@@ -18,9 +18,9 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, DepositBalanceOf, Pallet},
+    crate::{Call, Config, DepositBalanceOf, Pallet, RegistrarHooks},
     frame_benchmarking::{account, v2::*},
-    frame_support::{traits::Currency, BoundedVec},
+    frame_support::traits::Currency,
     frame_system::RawOrigin,
     sp_core::Get,
     sp_std::{vec, vec::Vec},
@@ -145,6 +145,7 @@ mod benchmarks {
             .unwrap();
             // Call mark_valid_for_collating to ensure that the deregister call
             // does not execute the cleanup hooks immediately
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -208,6 +209,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
         }
 
@@ -216,39 +218,13 @@ mod benchmarks {
 
         // We should have registered y
         assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        T::RegistrarHooks::benchmarks_ensure_valid_for_collating((y - 1).into());
 
         #[extrinsic_call]
         Pallet::<T>::mark_valid_for_collating(RawOrigin::Root, (y - 1).into());
 
         // We should have y-1
         assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
-    }
-
-    #[benchmark]
-    fn set_boot_nodes(x: Linear<1, 200>, y: Linear<1, 10>) {
-        let storage = vec![(b"code".to_vec(), vec![1; x as usize]).into()];
-        let storage = new_genesis_data(storage);
-
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
-
-        Pallet::<T>::register(
-            RawOrigin::Signed(caller.clone()).into(),
-            Default::default(),
-            storage,
-        )
-        .expect("Failed to register chain");
-
-        // x: url len, y: num boot_nodes
-        let boot_nodes = BoundedVec::try_from(vec![
-            BoundedVec::try_from(vec![b'A'; x as usize])
-                .unwrap();
-            y as usize
-        ])
-        .unwrap();
-
-        #[extrinsic_call]
-        Pallet::<T>::set_boot_nodes(RawOrigin::Signed(caller), Default::default(), boot_nodes);
     }
 
     #[benchmark]
@@ -273,6 +249,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -286,6 +263,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
             Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
@@ -335,6 +313,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
         }
 
@@ -348,6 +327,7 @@ mod benchmarks {
                 storage.clone(),
             )
             .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(k.into());
             Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), k.into()).unwrap();
             Pallet::<T>::pause_container_chain(RawOrigin::Root.into(), k.into()).unwrap();
         }
