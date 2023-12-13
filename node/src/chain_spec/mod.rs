@@ -92,7 +92,6 @@ where
     AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
 }
 
-
 /// Helper function to turn a list of names into a list of `(AccountId, NimbusId)`
 pub fn invulnerables_from_seeds<S: AsRef<str>, I: Iterator<Item = S>>(
     names: I,

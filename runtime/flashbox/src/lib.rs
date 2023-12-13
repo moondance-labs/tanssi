@@ -63,7 +63,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
-    pallet_collator_assignment::{GetRandomnessForNextBlock},
+    pallet_collator_assignment::GetRandomnessForNextBlock,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
