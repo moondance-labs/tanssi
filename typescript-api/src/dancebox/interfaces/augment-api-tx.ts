@@ -230,6 +230,18 @@ declare module "@polkadot/api-base/types/submittable" {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        dataPreservers: {
+            /** See [`Pallet::set_boot_nodes`]. */
+            setBootNodes: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    bootNodes: Vec<Bytes> | (Bytes | string | Uint8Array)[]
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Vec<Bytes>]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         dmpQueue: {
             /** See [`Pallet::service_overweight`]. */
             serviceOverweight: AugmentedSubmittable<
@@ -729,14 +741,6 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, TpContainerChainGenesisDataContainerChainGenesisData]
-            >;
-            /** See [`Pallet::set_boot_nodes`]. */
-            setBootNodes: AugmentedSubmittable<
-                (
-                    paraId: u32 | AnyNumber | Uint8Array,
-                    bootNodes: Vec<Bytes> | (Bytes | string | Uint8Array)[]
-                ) => SubmittableExtrinsic<ApiType>,
-                [u32, Vec<Bytes>]
             >;
             /** See [`Pallet::unpause_container_chain`]. */
             unpauseContainerChain: AugmentedSubmittable<

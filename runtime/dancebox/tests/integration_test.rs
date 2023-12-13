@@ -21,8 +21,9 @@ use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
         migrations::{
-            CollatorSelectionInvulnerablesValue, MigrateConfigurationFullRotationPeriod,
-            MigrateInvulnerables, MigrateServicesPaymentAddCredits,
+            CollatorSelectionInvulnerablesValue, MigrateBootNodes,
+            MigrateConfigurationFullRotationPeriod, MigrateInvulnerables,
+            MigrateServicesPaymentAddCredits,
         },
         BlockProductionCost, RewardsCollatorCommission,
     },
@@ -537,28 +538,40 @@ fn test_authors_paras_inserted_a_posteriori() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
                 100_000,
                 None,
             ));
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1002.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1002.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1002.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1002.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1002.into()
+            ));
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1002.into(),
@@ -619,14 +632,20 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id, charlie_id, dave_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
@@ -683,14 +702,20 @@ fn test_paras_registered_but_zero_credits() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
 
@@ -736,14 +761,20 @@ fn test_paras_registered_but_not_enough_credits() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase 1 credit less that what is needed
@@ -762,7 +793,7 @@ fn test_paras_registered_but_not_enough_credits() {
             run_to_session(2u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
 
             // Now purchase the missing block credit
             assert_ok!(ServicesPayment::purchase_credits(
@@ -812,14 +843,20 @@ fn test_paras_registered_but_only_credits_for_1_session() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase only enough credits for 1 session
@@ -4220,6 +4257,45 @@ fn test_migration_config_full_rotation_period() {
 }
 
 #[test]
+fn test_migration_bootnodes() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            const KEY_BOOTNODES_3020: &[u8] =
+                &hex_literal::hex!("3fba98689ebed1138735e0e7a5a790ab253a9125cb0317c86ff7493156974217f27780ac9847469aeafec9361489307ecc0b0000");
+            const KEY_BOOTNODES_3021: &[u8] =
+                &hex_literal::hex!("3fba98689ebed1138735e0e7a5a790ab253a9125cb0317c86ff74931569742179dd8d6ac9c6f5cd42c639b4877667c44cd0b0000");
+            let boot_nodes = dummy_boot_nodes();
+
+            frame_support::storage::unhashed::put_raw(KEY_BOOTNODES_3020, &boot_nodes.encode());
+            frame_support::storage::unhashed::put_raw(KEY_BOOTNODES_3021, &boot_nodes.encode());
+            assert_eq!(DataPreservers::boot_nodes(ParaId::from(3020)), vec![]);
+            assert_eq!(DataPreservers::boot_nodes(ParaId::from(3021)), vec![]);
+
+            let migration = MigrateBootNodes::<Runtime>(Default::default());
+            migration.migrate(Default::default());
+
+            assert_eq!(DataPreservers::boot_nodes(ParaId::from(3020)), boot_nodes);
+            assert_eq!(DataPreservers::boot_nodes(ParaId::from(3021)), boot_nodes);
+
+            // Old keys have been deleted
+            assert_eq!(frame_support::storage::unhashed::get_raw(KEY_BOOTNODES_3020), None);
+            assert_eq!(frame_support::storage::unhashed::get_raw(KEY_BOOTNODES_3021), None);
+
+        });
+}
+
+#[test]
 fn test_migration_services_payment() {
     ExtBuilder::default()
         .with_balances(vec![
@@ -4235,19 +4311,31 @@ fn test_migration_services_payment() {
         .build()
         .execute_with(|| {
             // Register a new parachain with no credits
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             // Register another parachain with no credits, do not mark this as valid for collation
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1002.into(), empty_genesis_data()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1002.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1002.into(),
+                dummy_boot_nodes()
+            ));
 
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
@@ -4285,6 +4373,11 @@ fn test_migration_services_payment() {
             assert_ne!(credits_1002, 0);
 
             // Calling mark_valid_for_collating(1002) will not give it any credits
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1002.into(),
+                dummy_boot_nodes()
+            ));
             assert_ok!(Registrar::mark_valid_for_collating(
                 root_origin(),
                 1002.into()
@@ -4458,6 +4551,38 @@ fn test_can_buy_credits_before_registering_para() {
 }
 
 #[test]
+fn test_cannot_mark_valid_para_with_no_bootnodes() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_noop!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                pallet_data_preservers::Error::<Runtime>::NoBootNodes,
+            );
+        });
+}
+
+#[test]
 fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
     ExtBuilder::default()
         .with_balances(vec![
@@ -4499,14 +4624,20 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_eq!(balance_before - balance_after, expected_cost);
 
             // Now register para
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
 
             // We received 1 free credit, because we cannot have more than MaxCreditsStored
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
@@ -4539,14 +4670,20 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             run_to_block(2);
 
             // Register
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ),);
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ),);
             // We received free credits
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
@@ -4568,14 +4705,20 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
                 dancebox_runtime::MaxCreditsStored::get()
             );
             // Register again
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ),);
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ),);
             // No more free credits
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),

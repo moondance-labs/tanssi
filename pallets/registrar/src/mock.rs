@@ -185,6 +185,14 @@ impl<T> RegistrarHooks for mock_data::Pallet<T> {
             Weight::default()
         })
     }
+
+    fn check_valid_for_collating(_para_id: ParaId) -> crate::DispatchResult {
+        // Ignored, we already test this in integration tests
+        Ok(())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(_para_id: ParaId) {}
 }
 
 impl mock_data::Config for Test {}
@@ -259,11 +267,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext_with_genesis(
-    para_ids: Vec<(
-        ParaId,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
-    )>,
+    para_ids: Vec<(ParaId, ContainerChainGenesisData<MaxLengthTokenSymbol>)>,
 ) -> sp_io::TestExternalities {
     RuntimeGenesisConfig {
         system: Default::default(),
