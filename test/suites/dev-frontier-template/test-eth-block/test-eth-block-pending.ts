@@ -1,5 +1,6 @@
 import { describeSuite, expect } from "@moonwall/cli";
-import { ALITH_ADDRESS, ALITH_PRIVATE_KEY, customWeb3Request } from "@moonwall/util";
+import { ALITH_ADDRESS, ALITH_PRIVATE_KEY, customWeb3Request, generateKeyringPair } from "@moonwall/util";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 describeSuite({
     id: "DF0201",
@@ -60,6 +61,22 @@ describeSuite({
                 await context.createBlock();
                 const latest_block = await context.web3().eth.getBlock("latest", false);
                 expect(pending_transactions).to.be.deep.eq(latest_block.transactions);
+            },
+        });
+
+        it({
+            id: "T02",
+            title: "should be able to estimate gas with pending block",
+            test: async function () {
+                const randomAccount = generateKeyringPair();
+                const randomAddress = randomAccount.address as `0x${string}`;
+              const estimatedGas = await context.viem().estimateGas({
+                account: ALITH_ADDRESS,
+                value: 10_000_000_000_000_000_000n,
+                to: randomAddress,
+                blockTag: "pending"
+              });
+              expect(estimatedGas, "Estimated bal transfer incorrect").toBe(21000n);
             },
         });
     },
