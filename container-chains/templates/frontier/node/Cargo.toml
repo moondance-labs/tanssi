@@ -89,6 +89,7 @@ cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
+cumulus-test-relay-sproof-builder = { workspace = true }
 
 # Frontier
 fc-api = { workspace = true }

@@ -668,8 +668,6 @@ pub async fn start_dev_node(
 				commands_stream,
 				select_chain,
 				consensus_data_provider: Some(Box::new(tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
-                    client.clone(),
-                    keystore_container.keystore(),
                     SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION),
                     authorities.clone(),
                 ))),
