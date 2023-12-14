@@ -73,7 +73,7 @@ describeSuite({
                     account: ALITH_ADDRESS,
                     value: 10_000_000_000_000_000_000n,
                     to: randomAddress,
-                    blockTag: "pending"
+                    blockTag: "pending",
                 });
                 expect(estimatedGas, "Estimated bal transfer incorrect").toBe(21000n);
             },
@@ -85,11 +85,11 @@ describeSuite({
             test: async function () {
                 const { bytecode } = fetchCompiledContract("MultiplyBy7");
                 expect(
-                  await context.viem().estimateGas({
-                    account: ALITH_ADDRESS,
-                    data: bytecode,
-                    blockTag: "pending"
-                  })
+                    await context.viem().estimateGas({
+                        account: ALITH_ADDRESS,
+                        data: bytecode,
+                        blockTag: "pending",
+                    })
                 ).to.toBeGreaterThan(21000n);
             },
         });
