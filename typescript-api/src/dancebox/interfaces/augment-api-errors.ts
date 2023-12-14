@@ -67,6 +67,12 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        dataPreservers: {
+            /** This container chain does not have any boot nodes */
+            NoBootNodes: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         dmpQueue: {
             /** The amount of weight given is possibly not enough for executing the message. */
             OverLimit: AugmentedError<ApiType>;
@@ -276,6 +282,17 @@ declare module "@polkadot/api-base/types/errors" {
             NonZeroRefCount: AugmentedError<ApiType>;
             /** The specification version is not allowed to decrease between the current runtime and the new runtime. */
             SpecVersionNeedsToIncrease: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
+        txPause: {
+            /** The call is paused. */
+            IsPaused: AugmentedError<ApiType>;
+            /** The call is unpaused. */
+            IsUnpaused: AugmentedError<ApiType>;
+            NotFound: AugmentedError<ApiType>;
+            /** The call is whitelisted and cannot be paused. */
+            Unpausable: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };

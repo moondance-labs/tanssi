@@ -255,6 +255,12 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        dataPreservers: {
+            bootNodes: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Bytes>>, [u32]> &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         dmpQueue: {
             /** The configuration. */
             configuration: AugmentedQuery<ApiType, () => Observable<CumulusPalletDmpQueueConfigData>, []> &
@@ -711,8 +717,6 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         registrar: {
-            bootNodes: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<Bytes>>, [u32]> &
-                QueryableStorageEntry<ApiType, [u32]>;
             paraGenesisData: AugmentedQuery<
                 ApiType,
                 (
@@ -910,6 +914,19 @@ declare module "@polkadot/api-base/types/storage" {
             nextFeeMultiplier: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
             storageVersion: AugmentedQuery<ApiType, () => Observable<PalletTransactionPaymentReleases>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        txPause: {
+            /** The set of calls that are explicitly paused. */
+            pausedCalls: AugmentedQuery<
+                ApiType,
+                (
+                    arg: ITuple<[Bytes, Bytes]> | [Bytes | string | Uint8Array, Bytes | string | Uint8Array]
+                ) => Observable<Option<Null>>,
+                [ITuple<[Bytes, Bytes]>]
+            > &
+                QueryableStorageEntry<ApiType, [ITuple<[Bytes, Bytes]>]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

@@ -85,6 +85,9 @@ import type {
     PalletConfigurationCall,
     PalletConfigurationError,
     PalletConfigurationHostConfiguration,
+    PalletDataPreserversCall,
+    PalletDataPreserversError,
+    PalletDataPreserversEvent,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -129,6 +132,9 @@ import type {
     PalletTransactionPaymentChargeTransactionPayment,
     PalletTransactionPaymentEvent,
     PalletTransactionPaymentReleases,
+    PalletTxPauseCall,
+    PalletTxPauseError,
+    PalletTxPauseEvent,
     PalletUtilityCall,
     PalletUtilityError,
     PalletUtilityEvent,
@@ -305,6 +311,9 @@ declare module "@polkadot/types/types/registry" {
         PalletConfigurationCall: PalletConfigurationCall;
         PalletConfigurationError: PalletConfigurationError;
         PalletConfigurationHostConfiguration: PalletConfigurationHostConfiguration;
+        PalletDataPreserversCall: PalletDataPreserversCall;
+        PalletDataPreserversError: PalletDataPreserversError;
+        PalletDataPreserversEvent: PalletDataPreserversEvent;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
@@ -349,6 +358,9 @@ declare module "@polkadot/types/types/registry" {
         PalletTransactionPaymentChargeTransactionPayment: PalletTransactionPaymentChargeTransactionPayment;
         PalletTransactionPaymentEvent: PalletTransactionPaymentEvent;
         PalletTransactionPaymentReleases: PalletTransactionPaymentReleases;
+        PalletTxPauseCall: PalletTxPauseCall;
+        PalletTxPauseError: PalletTxPauseError;
+        PalletTxPauseEvent: PalletTxPauseEvent;
         PalletUtilityCall: PalletUtilityCall;
         PalletUtilityError: PalletUtilityError;
         PalletUtilityEvent: PalletUtilityEvent;

@@ -151,10 +151,10 @@ describeSuite({
                 // Collator2000-02 should have a container 2000 db, and Collator1000-03 should not
                 const collator100003DbPath =
                     getTmpZombiePath() +
-                    "/Collator1000-03/data/containers/chains/simple_container_2000/db/full-container-2000";
+                    "/Collator1000-03/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
                 const container200002DbPath =
                     getTmpZombiePath() +
-                    "/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000";
+                    "/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
                 expect(await directoryExists(container200002DbPath)).to.be.true;
                 expect(await directoryExists(collator100003DbPath)).to.be.false;
 

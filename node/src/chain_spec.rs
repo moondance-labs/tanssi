@@ -17,8 +17,8 @@
 use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
-        prod_or_fast, AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig,
-        RegistrarConfig, ServicesPaymentConfig, Signature, SudoConfig,
+        prod_or_fast, AccountId, DataPreserversConfig, MaintenanceModeConfig, MigrationsConfig,
+        PolkadotXcmConfig, RegistrarConfig, ServicesPaymentConfig, Signature, SudoConfig,
     },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
@@ -314,6 +314,15 @@ fn testnet_genesis(
         .iter()
         .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000))
         .collect();
+    let para_id_boot_nodes: Vec<_> = para_ids
+        .iter()
+        .map(|(para_id, _genesis_data, boot_nodes)| (*para_id, boot_nodes.clone()))
+        .collect();
+    let para_ids: Vec<_> = para_ids
+        .into_iter()
+        .map(|(para_id, genesis_data, _boot_nodes)| (para_id, genesis_data))
+        .collect();
+
     let accounts_with_ed = vec![
         dancebox_runtime::StakingAccount::get(),
         dancebox_runtime::ParachainBondAccount::get(),
@@ -360,6 +369,10 @@ fn testnet_genesis(
         },
         parachain_system: Default::default(),
         configuration,
+        data_preservers: DataPreserversConfig {
+            para_id_boot_nodes,
+            ..Default::default()
+        },
         registrar: RegistrarConfig { para_ids },
         services_payment: ServicesPaymentConfig { para_id_credits },
         sudo: SudoConfig {
@@ -375,6 +388,7 @@ fn testnet_genesis(
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
+        tx_pause: Default::default(),
     }
 }
 

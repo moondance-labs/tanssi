@@ -143,6 +143,16 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        txPause: {
+            /**
+             * Maximum length for pallet name and call name SCALE encoded string names.
+             *
+             * TOO LONG NAMES WILL BE TREATED AS PAUSED.
+             */
+            maxNameLen: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         utility: {
             /** The limit on the number of batched calls. */
             batchedCallsLimit: u32 & AugmentedConst<ApiType>;

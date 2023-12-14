@@ -17,7 +17,7 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
-    dancebox_runtime::{AuthorInherent, MaxLengthTokenSymbol},
+    dancebox_runtime::{AuthorInherent, MaxBootNodeUrlLen, MaxBootNodes, MaxLengthTokenSymbol},
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -29,7 +29,7 @@ use {
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::{Get, Pair},
-    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
@@ -39,9 +39,10 @@ mod xcm;
 
 pub use dancebox_runtime::{
     AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
-    CollatorAssignment, Configuration, InflationRewards, Initializer, Invulnerables,
-    MinimumSelfDelegation, ParachainInfo, PooledStaking, Proxy, ProxyType, Registrar,
-    RewardsPortion, Runtime, RuntimeCall, RuntimeEvent, ServicesPayment, Session, System,
+    CollatorAssignment, Configuration, DataPreservers, InflationRewards, Initializer,
+    Invulnerables, MinimumSelfDelegation, ParachainInfo, PooledStaking, Proxy, ProxyType,
+    Registrar, RewardsPortion, Runtime, RuntimeCall, RuntimeEvent, ServicesPayment, Session,
+    System,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -271,8 +272,8 @@ impl ExtBuilder {
                 .para_ids
                 .iter()
                 .cloned()
-                .map(|(para_id, genesis_data, boot_nodes, _block_credits)| {
-                    (para_id.into(), genesis_data, boot_nodes)
+                .map(|(para_id, genesis_data, _boot_nodes, _block_credits)| {
+                    (para_id.into(), genesis_data)
                 })
                 .collect(),
         }
@@ -430,6 +431,16 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
         extensions: Default::default(),
         properties: Default::default(),
     }
+}
+
+pub fn dummy_boot_nodes() -> BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> {
+    vec![BoundedVec::try_from(
+        b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+            .to_vec(),
+    )
+    .unwrap()]
+    .try_into()
+    .unwrap()
 }
 
 pub fn current_slot() -> u64 {

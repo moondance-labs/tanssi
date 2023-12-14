@@ -1758,6 +1758,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-tx-pause",
  "pallet-utility",
  "pallet-xcm",
  "parachain-info",
@@ -1894,6 +1895,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-tx-pause",
  "pallet-utility",
  "pallet-xcm",
  "parachain-info",
@@ -2936,6 +2938,7 @@ dependencies = [
  "pallet-collator-assignment",
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
+ "pallet-data-preservers",
  "pallet-im-online",
  "pallet-inflation-rewards",
  "pallet-initializer",
@@ -2955,6 +2958,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-tx-pause",
  "pallet-utility",
  "pallet-xcm",
  "pallet-xcm-benchmarks",
@@ -4059,7 +4063,7 @@ dependencies = [
 [[package]]
 name = "fflonk"
 version = "0.1.0"
-source = "git+https://github.com/w3f/fflonk#1beb0585e1c8488956fac7f05da061f9b41e8948"
+source = "git+https://github.com/w3f/fflonk#95f3a57d1f4252fe95310c1567d153f25f3066b4"
 dependencies = [
  "ark-ec",
  "ark-ff",
@@ -7859,6 +7863,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-data-preservers"
+version = "0.1.0"
+dependencies = [
+ "bounded-collections",
+ "dp-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "nimbus-primitives",
+ "num-traits",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "similar-asserts",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "tp-traits",
+]
+
+[[package]]
 name = "pallet-democracy"
 version = "4.0.0-dev"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.3.0#d93a55aeadb3278640b2e6a9aa03198f98ce94d3"
@@ -8939,6 +8967,23 @@ dependencies = [
  "scale-info",
  "serde",
  "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-tx-pause"
+version = "4.0.0-dev"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.3.0#d93a55aeadb3278640b2e6a9aa03198f98ce94d3"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-proxy",
+ "pallet-utility",
+ "parity-scale-codec",
+ "scale-info",
  "sp-runtime",
  "sp-std",
 ]

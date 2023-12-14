@@ -15,22 +15,20 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{self as pallet_inflation_rewards},
-    bounded_collections::bounded_vec,
+    crate::{self as pallet_data_preservers},
     dp_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         parameter_types,
-        traits::{
-            fungible::{Balanced, Credit},
-            ConstU64, Everything,
-        },
+        traits::{ConstU64, EitherOfDiverse, EnsureOriginWithArg, Everything},
     },
+    frame_system::{EnsureRoot, EnsureSigned, RawOrigin},
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
-        BuildStorage, Perbill,
+        BuildStorage, Either,
     },
+    sp_std::collections::btree_map::BTreeMap,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -43,7 +41,7 @@ frame_support::construct_runtime!(
     {
         System: frame_system,
         Balances: pallet_balances,
-        InflationRewards: pallet_inflation_rewards,
+        DataPreservers: pallet_data_preservers,
         MockData: mock_data,
     }
 );
@@ -132,84 +130,97 @@ impl mock_data::Config for Test {}
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 pub struct Mocks {
-    pub container_chains: BoundedVec<ParaId, ConstU32<5>>,
-    pub orchestrator_author: AccountId,
+    /// List of container chains, with the corresponding "manager" account.
+    /// In dancebox, the manager is the one who put the deposit in pallet_registrar.
+    /// The manager can be None if the chain was registered by root, or in genesis.
+    pub container_chain_managers: BTreeMap<ParaId, Option<AccountId>>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            container_chains: bounded_vec![1001.into()],
-            orchestrator_author: 1,
+            container_chain_managers: BTreeMap::from_iter([(ParaId::from(1001), None)]),
         }
     }
 }
 
-pub struct MockContainerChainGetter;
+pub struct MockContainerChainManagerOrRootOrigin<T, RootOrigin> {
+    // Configurable root origin
+    container_chain_manager_origin: PhantomData<RootOrigin>,
+    _phantom: PhantomData<T>,
+}
 
-impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
-    type MaxContainerChains = ConstU32<5>;
+impl<O, T, RootOrigin> EnsureOriginWithArg<O, ParaId>
+    for MockContainerChainManagerOrRootOrigin<T, RootOrigin>
+where
+    T: crate::Config,
+    RootOrigin: EnsureOriginWithArg<O, ParaId>,
+    O: From<RawOrigin<T::AccountId>>,
+    Result<RawOrigin<T::AccountId>, O>: From<O>,
+    u64: From<T::AccountId>,
+    T::AccountId: From<u64>,
+    O: Clone,
+{
+    type Success = Either<T::AccountId, <RootOrigin as EnsureOriginWithArg<O, ParaId>>::Success>;
 
-    fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains> {
-        MockData::mock().container_chains
+    fn try_origin(o: O, para_id: &ParaId) -> Result<Self::Success, O> {
+        let origin = EitherOfDiverse::<EnsureSigned<T::AccountId>, RootOrigin>::try_origin(
+            o.clone(),
+            para_id,
+        )?;
+
+        if let Either::Left(signed_account) = &origin {
+            // This check will only pass if both are true:
+            // * The para_id has a deposit in pallet_registrar
+            // * The deposit creator is the signed_account
+            MockData::get()
+                .container_chain_managers
+                .get(para_id)
+                .and_then(|inner| inner.clone())
+                .and_then(|manager| {
+                    if manager != u64::from(signed_account.clone()) {
+                        None
+                    } else {
+                        Some(())
+                    }
+                })
+                .ok_or(o)?;
+        }
+
+        Ok(origin)
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_current_container_chains(container_chains: &[ParaId]) {
+    fn try_successful_origin(para_id: &ParaId) -> Result<O, ()> {
+        // Return container chain manager, or register container chain as ALICE if it does not exist
         MockData::mutate(|m| {
-            m.container_chains = container_chains.to_vec().try_into().unwrap();
+            m.container_chain_managers
+                .entry(*para_id)
+                .or_insert_with(move || {
+                    const ALICE: u64 = 1;
+
+                    Some(ALICE)
+                });
         });
+
+        // This panics if the container chain was registered by root (None)
+        let o = MockData::get()
+            .container_chain_managers
+            .get(para_id)
+            .unwrap()
+            .unwrap();
+
+        Ok(O::from(RawOrigin::Signed(o.into())))
     }
 }
 
-pub struct MockGetSelfChainBlockAuthor;
-
-impl Get<AccountId> for MockGetSelfChainBlockAuthor {
-    fn get() -> AccountId {
-        MockData::mock().orchestrator_author
-    }
-}
-
-pub struct OnUnbalancedInflation;
-impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
-    fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
-        let _ = <Balances as Balanced<_>>::resolve(&OnUnbalancedInflationAccount::get(), credit);
-    }
-}
-
-pub struct MockRewardsDistributor;
-impl tp_traits::DistributeRewards<AccountId, Credit<AccountId, Balances>>
-    for MockRewardsDistributor
-{
-    fn distribute_rewards(
-        rewarded: AccountId,
-        amount: Credit<AccountId, Balances>,
-    ) -> DispatchResultWithPostInfo {
-        <<Test as pallet_inflation_rewards::Config>::Currency as Balanced<AccountId>>::resolve(
-            &rewarded, amount,
-        )
-        .map_err(|_| DispatchError::NoProviders)?;
-        Ok(().into())
-    }
-}
-
-parameter_types! {
-    pub OnUnbalancedInflationAccount: AccountId = 0;
-    pub PendingRewardsAccount: AccountId = 99;
-    pub const RewardsPortion: Perbill = Perbill::from_percent(70);
-    pub const InflationRate: Perbill = Perbill::from_percent(1);
-}
-
-impl pallet_inflation_rewards::Config for Test {
+impl pallet_data_preservers::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
-    type ContainerChains = MockContainerChainGetter;
-    type GetSelfChainBlockAuthor = MockGetSelfChainBlockAuthor;
-    type InflationRate = InflationRate;
-    type OnUnbalanced = OnUnbalancedInflation;
-    type PendingRewardsAccount = PendingRewardsAccount;
-    type StakingRewardsDistributor = MockRewardsDistributor;
-    type RewardsPortion = RewardsPortion;
+    type SetBootNodesOrigin = MockContainerChainManagerOrRootOrigin<Test, EnsureRoot<AccountId>>;
+    type MaxBootNodes = ConstU32<10>;
+    type MaxBootNodeUrlLen = ConstU32<200>;
+    type WeightInfo = ();
 }
 
 // Build genesis storage according to the mock runtime.

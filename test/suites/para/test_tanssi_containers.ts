@@ -245,7 +245,7 @@ describeSuite({
                 const bootNodes = [
                     "/ip4/127.0.0.1/tcp/33051/ws/p2p/12D3KooWSDsmAa7iFbHdQW4X8B2KbeRYPDLarK6EbevUSYfGkeQw",
                 ];
-                const tx3 = paraApi.tx.registrar.setBootNodes(2002, bootNodes);
+                const tx3 = paraApi.tx.dataPreservers.setBootNodes(2002, bootNodes);
                 const tx4 = paraApi.tx.registrar.markValidForCollating(2002);
                 const tx34 = paraApi.tx.utility.batchAll([tx3, tx4]);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx34), alice);

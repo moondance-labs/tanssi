@@ -217,10 +217,10 @@ describeSuite({
                 // Check db has not been deleted
                 const dbPath01 =
                     getTmpZombiePath() +
-                    `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
                 const dbPath02 =
                     getTmpZombiePath() +
-                    `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.true;
@@ -255,10 +255,10 @@ describeSuite({
                 // Collator2000-01 db path exists because it was started with `--keep-db`, Collator2000-02 has deleted it
                 const dbPath01 =
                     getTmpZombiePath() +
-                    `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
                 const dbPath02 =
                     getTmpZombiePath() +
-                    `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.false;

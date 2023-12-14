@@ -36,6 +36,7 @@ pub mod weights;
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
 
+use frame_support::traits::EitherOfDiverse;
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
@@ -49,8 +50,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
-            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth, InstanceFilter,
+            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -331,7 +333,7 @@ impl frame_system::Config for Runtime {
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = MaintenanceMode;
+    type BaseCallFilter = InsideBoth<MaintenanceMode, TxPause>;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// Block & extrinsics weights: base values and limits.
@@ -759,6 +761,16 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_data_preservers::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type SetBootNodesOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    type MaxBootNodes = MaxBootNodes;
+    type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
+    type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
@@ -839,8 +851,30 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
                 e,
             );
         }
+        // Remove bootnodes from pallet_data_preservers
+        DataPreservers::para_deregistered(para_id);
 
         Weight::default()
+    }
+
+    fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
+        // To be able to call mark_valid_for_collating, a container chain must have bootnodes
+        DataPreservers::check_valid_for_collating(para_id)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
+        use sp_runtime::BoundedVec;
+        let boot_nodes: BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> = vec![
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+        ]
+        .try_into()
+        .unwrap();
+
+        pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, boot_nodes);
     }
 }
 
@@ -1263,6 +1297,16 @@ impl pallet_inflation_rewards::Config for Runtime {
     type RewardsPortion = RewardsPortion;
 }
 
+impl pallet_tx_pause::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type PauseOrigin = EnsureRoot<AccountId>;
+    type UnpauseOrigin = EnsureRoot<AccountId>;
+    type WhitelistedCalls = ();
+    type MaxNameLen = ConstU32<256>;
+    type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1277,6 +1321,7 @@ construct_runtime!(
         Proxy: pallet_proxy = 6,
         Migrations: pallet_migrations = 7,
         MaintenanceMode: pallet_maintenance_mode = 8,
+        TxPause: pallet_tx_pause = 9,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
@@ -1290,6 +1335,7 @@ construct_runtime!(
         AuthorNoting: pallet_author_noting = 24,
         AuthorityAssignment: pallet_authority_assignment = 25,
         ServicesPayment: pallet_services_payment = 26,
+        DataPreservers: pallet_data_preservers = 27,
 
         // Collator support. The order of these 6 are important and shall not change.
         Invulnerables: pallet_invulnerables = 30,
@@ -1321,6 +1367,7 @@ mod benches {
         [pallet_invulnerables, Invulnerables]
         [pallet_pooled_staking, PooledStaking]
         [pallet_services_payment, ServicesPayment]
+        [pallet_data_preservers, DataPreservers]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }
@@ -1657,7 +1704,8 @@ impl_runtime_apis! {
 
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
-            let bounded_vec = Registrar::boot_nodes(para_id);
+            // TODO: remember to write migration to move boot nodes from pallet_registrar to pallet_data_preservers
+            let bounded_vec = DataPreservers::boot_nodes(para_id);
 
             bounded_vec.into_iter().map(|x| x.into()).collect()
         }
