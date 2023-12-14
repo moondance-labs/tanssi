@@ -23,9 +23,13 @@
 
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 
+use sp_consensus_aura::SlotDuration;
 use {
     container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
     cumulus_primitives_core::ParaId,
+    cumulus_primitives_core::PersistedValidationData,
+    cumulus_primitives_parachain_inherent::ParachainInherentData,
+    cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     fc_rpc::{EthTask, TxPool},
     fc_rpc_core::TxPoolApiServer,
     fp_rpc::EthereumRuntimeRPCApi,
@@ -51,11 +55,7 @@ use {
     sp_core::H256,
     sp_runtime::traits::{BlakeTwo256, Block as BlockT},
     std::{sync::Arc, time::Duration},
-    cumulus_primitives_parachain_inherent::ParachainInherentData,
-    cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
-    cumulus_primitives_core::PersistedValidationData,
 };
-use sp_consensus_aura::SlotDuration;
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
 
 impl<C, BE> fc_rpc::EthConfig<Block, C> for DefaultEthConfig<C, BE>
@@ -179,8 +179,7 @@ where
     let convert_transaction: Option<Never> = None;
     let authorities = vec![get_aura_id_from_seed("alice")];
 
-    let pending_create_inherent_data_providers = move |_,_| async move {
-
+    let pending_create_inherent_data_providers = move |_, _| async move {
         let mocked_authorities_noting =
             ccp_authorities_noting_inherent::MockAuthoritiesNotingInherentDataProvider {
                 current_para_block: 1000,
@@ -188,41 +187,45 @@ where
                 relay_blocks_per_para_block: 2,
                 orchestrator_para_id: 1000u32.into(),
                 container_para_id: 2000u32.into(),
-                authorities: vec![get_aura_id_from_seed("alice")]
+                authorities: vec![get_aura_id_from_seed("alice")],
+            };
+
+        let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+        // Create a dummy parachain inherent data provider which is required to pass
+        // the checks by the para chain system. We use dummy values because in the 'pending context'
+        // neither do we have access to the real values nor do we need them.
+        let (relay_parent_storage_root, relay_chain_state) = RelayStateSproofBuilder {
+            additional_key_values: mocked_authorities_noting.get_key_values(),
+            ..Default::default()
+        }
+        .into_state_root_and_proof();
+        let vfp = PersistedValidationData {
+            // This is a hack to make `cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases`
+            // happy. Relay parent number can't be bigger than u32::MAX.
+            relay_parent_number: u32::MAX,
+            relay_parent_storage_root,
+            ..Default::default()
         };
+        let parachain_inherent_data = ParachainInherentData {
+            validation_data: vfp,
+            relay_chain_state: relay_chain_state,
+            downward_messages: Default::default(),
+            horizontal_messages: Default::default(),
+        };
+        Ok((
+            timestamp,
+            parachain_inherent_data,
+            mocked_authorities_noting,
+        ))
+    };
 
-		let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-		// Create a dummy parachain inherent data provider which is required to pass
-		// the checks by the para chain system. We use dummy values because in the 'pending context'
-		// neither do we have access to the real values nor do we need them.
-		let (relay_parent_storage_root, relay_chain_state) =
-			RelayStateSproofBuilder {
-                additional_key_values:  mocked_authorities_noting.get_key_values(),
-                ..Default::default()
-            }.into_state_root_and_proof();
-		let vfp = PersistedValidationData {
-			// This is a hack to make `cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases`
-			// happy. Relay parent number can't be bigger than u32::MAX.
-			relay_parent_number: u32::MAX,
-			relay_parent_storage_root,
-			..Default::default()
-		};
-		let parachain_inherent_data = ParachainInherentData {
-			validation_data: vfp,
-			relay_chain_state: relay_chain_state,
-			downward_messages: Default::default(),
-			horizontal_messages: Default::default(),
-		};
-		Ok((timestamp, parachain_inherent_data, mocked_authorities_noting))
-	};
-
-    let pending_consensus_data_provider_frontier: Option<Box<(dyn fc_rpc::pending::ConsensusDataProvider<_>)>> = Some(Box::new(
+    let pending_consensus_data_provider_frontier: Option<
+        Box<(dyn fc_rpc::pending::ConsensusDataProvider<_>)>,
+    > = Some(Box::new(
         tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
-            SlotDuration::from_millis(
-                container_chain_template_frontier_runtime::SLOT_DURATION,
-            ),
+            SlotDuration::from_millis(container_chain_template_frontier_runtime::SLOT_DURATION),
             authorities.clone(),
-        )
+        ),
     ));
 
     io.merge(

@@ -160,10 +160,7 @@ where
 {
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
-    pub fn new(
-        slot_duration: SlotDuration,
-        authorities: Vec<NimbusId>,
-    ) -> Self {
+    pub fn new(slot_duration: SlotDuration, authorities: Vec<NimbusId>) -> Self {
         Self {
             slot_duration,
             authorities,
@@ -223,7 +220,8 @@ where
     }
 }
 
-impl<B> fc_rpc::pending::ConsensusDataProvider<B> for ContainerManualSealAuraConsensusDataProvider<B>
+impl<B> fc_rpc::pending::ConsensusDataProvider<B>
+    for ContainerManualSealAuraConsensusDataProvider<B>
 where
     B: BlockT,
 {
@@ -231,7 +229,8 @@ where
         &self,
         _parent: &B::Header,
         inherents: &InherentData,
-    ) ->  Result<sp_runtime::Digest, sp_inherents::Error> {
-        <Self as ConsensusDataProvider<B>>::create_digest(self, _parent, inherents).map_err(|_|sp_inherents::Error::FatalErrorReported)
+    ) -> Result<sp_runtime::Digest, sp_inherents::Error> {
+        <Self as ConsensusDataProvider<B>>::create_digest(self, _parent, inherents)
+            .map_err(|_| sp_inherents::Error::FatalErrorReported)
     }
 }
