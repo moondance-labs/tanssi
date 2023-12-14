@@ -96,12 +96,12 @@ describeSuite({
                 const tx3 = polkadotJs.tx.proxy.proxy(
                     bob.address,
                     null,
-                    polkadotJs.tx.registrar.setBootNodes(2002, ["dummy"])
+                    polkadotJs.tx.dataPreservers.setBootNodes(2002, ["dummy"])
                 );
                 await context.createBlock([await tx3.signAsync(charlie)]);
 
                 // Check that the on chain genesis data is set correctly
-                const onChainBootnodes = await polkadotJs.query.registrar.bootNodes(2002);
+                const onChainBootnodes = await polkadotJs.query.dataPreservers.bootNodes(2002);
                 // TODO: fix once we have types
                 expect(onChainBootnodes.toHuman()).to.deep.equal(["dummy"]);
             },
