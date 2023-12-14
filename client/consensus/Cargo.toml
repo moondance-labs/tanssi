@@ -42,7 +42,6 @@ nimbus-primitives = { workspace = true, features = [ "std" ] }
 # Frontier Dependencies
 fc-rpc = { workspace = true }
 
-
 # Other deps
 async-trait = { workspace = true }
 futures = { workspace = true }

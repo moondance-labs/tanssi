@@ -1,6 +1,5 @@
-import { describeSuite, expect } from "@moonwall/cli";
+import { describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
 import { ALITH_ADDRESS, ALITH_PRIVATE_KEY, customWeb3Request, generateKeyringPair } from "@moonwall/util";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 describeSuite({
     id: "DF0201",
@@ -66,17 +65,32 @@ describeSuite({
 
         it({
             id: "T02",
-            title: "should be able to estimate gas with pending block",
+            title: "should be able to estimate gas with pending block with transfers",
             test: async function () {
                 const randomAccount = generateKeyringPair();
                 const randomAddress = randomAccount.address as `0x${string}`;
-              const estimatedGas = await context.viem().estimateGas({
-                account: ALITH_ADDRESS,
-                value: 10_000_000_000_000_000_000n,
-                to: randomAddress,
-                blockTag: "pending"
-              });
-              expect(estimatedGas, "Estimated bal transfer incorrect").toBe(21000n);
+                const estimatedGas = await context.viem().estimateGas({
+                    account: ALITH_ADDRESS,
+                    value: 10_000_000_000_000_000_000n,
+                    to: randomAddress,
+                    blockTag: "pending"
+                });
+                expect(estimatedGas, "Estimated bal transfer incorrect").toBe(21000n);
+            },
+        });
+
+        it({
+            id: "T03",
+            title: "should be able to estimate gas with pending block with contract creators",
+            test: async function () {
+                const { bytecode } = fetchCompiledContract("MultiplyBy7");
+                expect(
+                  await context.viem().estimateGas({
+                    account: ALITH_ADDRESS,
+                    data: bytecode,
+                    blockTag: "pending"
+                  })
+                ).to.toBeGreaterThan(21000n);
             },
         });
     },
