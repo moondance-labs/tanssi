@@ -231,8 +231,6 @@ pub async fn start_dev_node(
             select_chain: sc_consensus::LongestChain::new(node_builder.backend.clone()),
             consensus_data_provider: Some(Box::new(
                 tc_consensus::ContainerManualSealAuraConsensusDataProvider::new(
-                    client.clone(),
-                    node_builder.keystore_container.keystore(),
                     SlotDuration::from_millis(
                         container_chain_template_simple_runtime::SLOT_DURATION,
                     ),
