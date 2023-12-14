@@ -917,6 +917,12 @@ impl Default for ProxyType {
 
 impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
+        // Since proxy filters are respected in all dispatches of the Utility
+        // pallet, it should never need to be filtered by any proxy.
+        if let RuntimeCall::Utility(..) = c {
+            return true;
+        }
+
         match self {
             ProxyType::Any => true,
             ProxyType::NonTransfer => {
@@ -925,35 +931,31 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                     RuntimeCall::System(..)
                         | RuntimeCall::ParachainSystem(..)
                         | RuntimeCall::Timestamp(..)
-                        | RuntimeCall::Utility(..)
                         | RuntimeCall::Proxy(..)
                         | RuntimeCall::Registrar(..)
                 )
             }
-            ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(
-                c,
-                RuntimeCall::Session(..)
-                    | RuntimeCall::Utility(..)
-                    | RuntimeCall::PooledStaking(..)
-            ),
+            // We don't have governance yet
+            ProxyType::Governance => false,
+            ProxyType::Staking => {
+                matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
+            }
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
             ),
             ProxyType::Balances => {
-                matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+                matches!(c, RuntimeCall::Balances(..))
             }
             ProxyType::Registrar => {
-                matches!(c, RuntimeCall::Registrar(..) | RuntimeCall::Utility(..))
+                matches!(c, RuntimeCall::Registrar(..))
             }
-            ProxyType::SudoRegistrar => {
-                matches!(
-                    c,
-                    RuntimeCall::Sudo(pallet_sudo::Call::sudo {call: ref x})
-                    if matches!(x.as_ref(), RuntimeCall::Registrar(..))
-                )
-            }
+            ProxyType::SudoRegistrar => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(x.as_ref(), &RuntimeCall::Registrar(..))
+                }
+                _ => false,
+            },
         }
     }
 
