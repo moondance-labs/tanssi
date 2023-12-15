@@ -14457,6 +14457,7 @@ dependencies = [
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
+ "polkadot-parachain-primitives",
  "polkadot-primitives",
  "polkadot-service",
  "sc-basic-authorship",

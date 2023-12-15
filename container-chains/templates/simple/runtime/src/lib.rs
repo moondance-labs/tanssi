@@ -38,8 +38,8 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstU128, ConstU32, ConstU64, ConstU8, ConstBool, Contains, InsideBoth, InstanceFilter,
-            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth,
+            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
         },
         weights::{
             constants::{
@@ -395,9 +395,9 @@ pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 1;
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
-	Runtime,
-	BLOCK_PROCESSING_VELOCITY,
-	UNINCLUDED_SEGMENT_CAPACITY,
+    Runtime,
+    BLOCK_PROCESSING_VELOCITY,
+    UNINCLUDED_SEGMENT_CAPACITY,
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
@@ -414,8 +414,8 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 }
 
 impl pallet_async_backing::Config for Runtime {
-	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type GetAndVerifySlot = pallet_async_backing::RelaySlot;
+    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type GetAndVerifySlot = pallet_async_backing::RelaySlot;
 }
 
 impl parachain_info::Config for Runtime {}
@@ -712,6 +712,7 @@ construct_runtime!(
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
 
         RootTesting: pallet_root_testing = 100,
+        AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
 
     }
 );

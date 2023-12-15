@@ -38,7 +38,9 @@ use sp_runtime::TryRuntimeError;
 
 use frame_support::traits::EitherOfDiverse;
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases, RelayNumberMonotonicallyIncreases},
+    cumulus_pallet_parachain_system::{
+        RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelayNumberStrictlyIncreases,
+    },
     cumulus_primitives_core::{
         relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
         BodyId, DmpMessageHandler, ParaId,
@@ -50,8 +52,8 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, ConstBool, Contains, InsideBoth, InstanceFilter,
-            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth,
+            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
             ValidatorRegistration,
         },
         weights::{
@@ -432,9 +434,9 @@ pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 2;
 pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
 
 type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
-	Runtime,
-	BLOCK_PROCESSING_VELOCITY,
-	UNINCLUDED_SEGMENT_CAPACITY,
+    Runtime,
+    BLOCK_PROCESSING_VELOCITY,
+    UNINCLUDED_SEGMENT_CAPACITY,
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
@@ -451,8 +453,9 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
 }
 
 impl pallet_async_backing::Config for Runtime {
-	type AllowMultipleBlocksPerSlot = ConstBool<false>;
-	type GetAndVerifySlot = pallet_async_backing::RelaySlot;
+    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    // TODO: implement our custom GetAndVerifySlot
+    type GetAndVerifySlot = pallet_async_backing::RelaySlot;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
@@ -1353,6 +1356,7 @@ construct_runtime!(
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 53,
 
         RootTesting: pallet_root_testing = 100,
+        AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
     }
 );
 
