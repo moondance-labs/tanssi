@@ -9,21 +9,21 @@ version = "0.1.0"
 [dependencies]
 async-io = { workspace = true }
 async-trait = { workspace = true }
-clap = { workspace = true, features = [ "derive" ] }
-core_extensions = { workspace = true, features = [ "type_identity" ] }
+clap = { workspace = true, features = ["derive"] }
+core_extensions = { workspace = true, features = ["type_identity"] }
 flume = { workspace = true }
 futures = { workspace = true }
-jsonrpsee = { workspace = true, features = [ "server" ] }
+jsonrpsee = { workspace = true, features = ["server"] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
-serde = { workspace = true, features = [ "derive" ] }
+serde = { workspace = true, features = ["derive"] }
 
 # Local
 tc-consensus = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }
-nimbus-primitives = { workspace = true, features = [ "std" ] }
+nimbus-primitives = { workspace = true, features = ["std"] }
 
 # Substrate
 frame-benchmarking = { workspace = true }
@@ -48,19 +48,19 @@ sc-tracing = { workspace = true }
 sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
 sc-utils = { workspace = true }
-sp-api = { workspace = true, features = [ "std" ] }
+sp-api = { workspace = true, features = ["std"] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }
 sp-consensus-aura = { workspace = true }
-sp-core = { workspace = true, features = [ "std" ] }
-sp-inherents = { workspace = true, features = [ "std" ] }
-sp-io = { workspace = true, features = [ "std" ] }
-sp-keystore = { workspace = true, features = [ "std" ] }
-sp-offchain = { workspace = true, features = [ "std" ] }
-sp-runtime = { workspace = true, features = [ "std" ] }
-sp-session = { workspace = true, features = [ "std" ] }
-sp-timestamp = { workspace = true, features = [ "std" ] }
+sp-core = { workspace = true, features = ["std"] }
+sp-inherents = { workspace = true, features = ["std"] }
+sp-io = { workspace = true, features = ["std"] }
+sp-keystore = { workspace = true, features = ["std"] }
+sp-offchain = { workspace = true, features = ["std"] }
+sp-runtime = { workspace = true, features = ["std"] }
+sp-session = { workspace = true, features = ["std"] }
+sp-timestamp = { workspace = true, features = ["std"] }
 
 sp-transaction-pool = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }

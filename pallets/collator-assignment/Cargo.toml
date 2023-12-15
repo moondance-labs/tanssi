@@ -7,18 +7,18 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = [ "x86_64-unknown-linux-gnu" ]
+targets = ["x86_64-unknown-linux-gnu"]
 [dependencies]
 dp-collator-assignment = { workspace = true }
 frame-benchmarking = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 log = { workspace = true }
-parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
 rand = { workspace = true }
 rand_chacha = { workspace = true }
 scale-info = { workspace = true }
-serde = { workspace = true, optional = true, features = [ "derive" ] }
+serde = { workspace = true, optional = true, features = ["derive"] }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
@@ -28,34 +28,34 @@ tp-traits = { workspace = true }
 sp-io = { workspace = true }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"dp-collator-assignment/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
+	"log/std",
 	"parity-scale-codec/std",
+	"rand/std",
+	"rand_chacha/std",
 	"scale-info/std",
 	"serde",
+	"serde?/std",
+	"sp-core/std",
+	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
 	"tp-traits/std",
-	"log/std",
-	"rand/std",
-	"rand_chacha/std",
-	"serde?/std",
-	"sp-core/std",
-	"sp-io/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks"
 ]
 try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
-	"sp-runtime/try-runtime"
+	"sp-runtime/try-runtime",
 ]

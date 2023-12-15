@@ -13,7 +13,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-authors = [ "Moondance Labs" ]
+authors = ["Moondance Labs"]
 repository = "https://github.com/moondance-labs/tanssi"
 
 [workspace.dependencies]
@@ -92,7 +92,7 @@ pallet-timestamp = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 pallet-transaction-payment = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-utility = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-tx-pause = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
-parity-scale-codec = { version = "3.0.0", default-features = false, features = [ "derive", "max-encoded-len" ] }
+parity-scale-codec = { version = "3.0.0", default-features = false, features = ["derive", "max-encoded-len"] }
 scale-info = { version = "2.10.0", default-features = false }
 sp-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 sp-application-crypto = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
@@ -243,17 +243,17 @@ smallvec = "1.10.0"
 # General (client)
 async-io = "1.3"
 async-trait = "0.1"
-clap = { version = "4.1.6", default-features = false, features = [ "derive" ] }
+clap = { version = "4.1.6", default-features = false, features = ["derive"] }
 core_extensions = "1.5.3"
 exit-future = { version = "0.2.0" }
 flume = "0.10.9"
 futures = { version = "0.3.1" }
 futures-timer = "3.0.1"
 hex = { version = "0.4.3", default-features = false }
-jsonrpsee = { version = "0.16.2", features = [ "server" ] }
+jsonrpsee = { version = "0.16.2", features = ["server"] }
 num-traits = "0.2.8"
 parking_lot = "0.12.1"
-rand = { version = "0.8.5", default-features = false, features = [ "std_rng" ] }
+rand = { version = "0.8.5", default-features = false, features = ["std_rng"] }
 serde_json = { version = "1.0.96", default-features = false }
 similar-asserts = "1.1.0"
 tempfile = "3.1.0"
