@@ -603,10 +603,10 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> Result<T::AccountId, ()> {
-            use frame_benchmarking::account;
-            use frame_support::assert_ok;
-            use frame_support::dispatch::RawOrigin;
-            use frame_support::traits::Currency;
+            use {
+                frame_benchmarking::account,
+                frame_support::{assert_ok, dispatch::RawOrigin, traits::Currency},
+            };
             // Return container chain manager, or register container chain as ALICE if it does not exist
             if !ParaGenesisData::<T>::contains_key(para_id) {
                 // Register as a new user

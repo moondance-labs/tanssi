@@ -36,7 +36,6 @@ pub mod weights;
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
 
-use frame_support::traits::EitherOfDiverse;
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
@@ -50,8 +49,8 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth, InstanceFilter,
-            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse, InsideBoth,
+            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
             ValidatorRegistration,
         },
         weights::{
