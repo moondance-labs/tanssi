@@ -883,7 +883,7 @@ mod tests {
                 chains_to_start,
                 need_to_restart,
             } = handle_update_assignment_state_change(
-                &mut *self.state.lock().unwrap(),
+                &mut self.state.lock().unwrap(),
                 self.orchestrator_para_id,
                 self.collate_on_tanssi.clone(),
                 current,
