@@ -117,6 +117,45 @@ jobs:
             - name: Clippy
               run: SKIP_WASM_BUILD=1 env -u RUSTFLAGS cargo clippy --features runtime-benchmarks
 
+    cargo-toml-feature-propagation:
+        runs-on: ubuntu-latest
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+
+            - name: Setup Rust toolchain
+              run: rustup show
+
+            - name: Install zepter
+              run: cargo install --locked -f zepter
+
+            - name: Run zepter
+              run: zepter run check
+
+    toml-formatting:
+        runs-on: ubuntu-latest
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+
+            - name: Setup Rust toolchain
+              run: rustup show
+
+            - name: Install taplo
+              run: cargo install --locked -f taplo-cli
+
+            - name: Run taplo
+              run: |
+                  taplo format --check --config .cargo/taplo.toml
+                  echo "Please run `taplo format --config .cargo/taplo.toml` to fix any toml formatting issues"
+
+
     typescript-formatting:
         runs-on: ubuntu-latest
         needs: ["set-tags"]
