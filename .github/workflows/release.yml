@@ -152,9 +152,7 @@ jobs:
 
             - name: Run taplo
               run: |
-                  taplo format --check --config .cargo/taplo.toml
-                  echo "Please run `taplo format --config .cargo/taplo.toml` to fix any toml formatting issues"
-
+                  taplo format --check --config .cargo/taplo.toml || (echo "Please run `taplo format --config .cargo/taplo.toml` to fix any toml formatting issues" && exit 1)
 
     typescript-formatting:
         runs-on: ubuntu-latest
