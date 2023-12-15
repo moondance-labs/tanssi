@@ -115,7 +115,7 @@ jobs:
               run: rustup show
 
             - name: Clippy
-              run: SKIP_WASM_BUILD=1 env -u RUSTFLAGS cargo clippy --features runtime-benchmarks
+              run: SKIP_WASM_BUILD=1 env -u RUSTFLAGS cargo clippy --all-targets --locked --workspace --features runtime-benchmarks
 
     typescript-formatting:
         runs-on: ubuntu-latest
