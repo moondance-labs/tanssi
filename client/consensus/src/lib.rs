@@ -35,7 +35,7 @@ pub use {
 pub use {
     cumulus_primitives_core::ParaId,
     manual_seal::{
-        ContainerManualSealAuraConsensusDataProvider,
+        get_aura_id_from_seed, ContainerManualSealAuraConsensusDataProvider,
         OrchestratorManualSealAuraConsensusDataProvider,
     },
     parity_scale_codec::{Decode, Encode},
