@@ -26,6 +26,7 @@ tp-consensus = { workspace = true }
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
+pallet-async-backing = { workspace = true }
 pallet-evm-precompile-balances-erc20 = { workspace = true }
 pallet-evm-precompile-batch = { workspace = true }
 pallet-evm-precompile-call-permit = { workspace = true }
@@ -123,6 +124,8 @@ std = [
 	"frame-system/std",
 	"frame-try-runtime/std",
 	"log/std",
+	"pallet-author-inherent/std",
+	"pallet-async-backing/std",
 	"pallet-balances/std",
 	"pallet-base-fee/std",
 	"pallet-cc-authorities-noting/std",

@@ -38,7 +38,7 @@ use sp_runtime::TryRuntimeError;
 
 use frame_support::traits::EitherOfDiverse;
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases, RelayNumberMonotonicallyIncreases},
     cumulus_primitives_core::{
         relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
         BodyId, DmpMessageHandler, ParaId,
@@ -50,7 +50,7 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth, InstanceFilter,
+            ConstU128, ConstU32, ConstU64, ConstU8, ConstBool, Contains, InsideBoth, InstanceFilter,
             OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
             ValidatorRegistration,
         },
@@ -427,6 +427,16 @@ parameter_types! {
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
 
+pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 2;
+pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
+
+type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
+	Runtime,
+	BLOCK_PROCESSING_VELOCITY,
+	UNINCLUDED_SEGMENT_CAPACITY,
+>;
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
@@ -436,7 +446,13 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
-    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
+    type ConsensusHook = ConsensusHook;
+}
+
+impl pallet_async_backing::Config for Runtime {
+	type AllowMultipleBlocksPerSlot = ConstBool<false>;
+	type GetAndVerifySlot = pallet_async_backing::RelaySlot;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
@@ -1814,7 +1830,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
 
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>
+    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
     CheckInherents = CheckInherents,
 }
 
