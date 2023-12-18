@@ -34,5 +34,15 @@ std = [
 	"scale-info/std",
 	"serde",
 	"tp-traits/std",
+	"log/std",
+	"serde?/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-std/std"
 ]
-try-runtime = [ "frame-support/try-runtime" ]
+try-runtime = [
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+	"sp-runtime/try-runtime"
+]

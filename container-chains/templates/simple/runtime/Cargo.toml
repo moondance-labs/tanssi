@@ -135,6 +135,15 @@ std = [
 	"staging-xcm/std",
 	"tp-consensus/std",
 	"xcm-primitives/std",
+	"cumulus-pallet-session-benchmarking/std",
+	"frame-benchmarking?/std",
+	"frame-system-benchmarking?/std",
+	"pallet-root-testing/std",
+	"pallet-transaction-payment/std",
+	"serde?/std",
+	"sp-debug-derive/std",
+	"sp-session/std",
+	"sp-trie/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -153,6 +162,21 @@ runtime-benchmarks = [
 	"pallet-xcm/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
+	"cumulus-pallet-parachain-system/runtime-benchmarks",
+	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
+	"cumulus-primitives-utility/runtime-benchmarks",
+	"frame-benchmarking/runtime-benchmarks",
+	"nimbus-primitives/runtime-benchmarks",
+	"pallet-author-inherent/runtime-benchmarks",
+	"pallet-migrations/runtime-benchmarks",
+	"pallet-proxy/runtime-benchmarks",
+	"pallet-sudo/runtime-benchmarks",
+	"pallet-tx-pause/runtime-benchmarks",
+	"pallet-utility/runtime-benchmarks",
+	"polkadot-parachain-primitives/runtime-benchmarks",
+	"polkadot-runtime-common/runtime-benchmarks",
+	"staging-xcm-executor/runtime-benchmarks",
+	"xcm-primitives/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -174,4 +198,13 @@ try-runtime = [
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
+	"cumulus-pallet-dmp-queue/try-runtime",
+	"cumulus-pallet-xcm/try-runtime",
+	"cumulus-pallet-xcmp-queue/try-runtime",
+	"frame-try-runtime/try-runtime",
+	"pallet-author-inherent/try-runtime",
+	"pallet-migrations/try-runtime",
+	"pallet-root-testing/try-runtime",
+	"pallet-transaction-payment/try-runtime",
+	"pallet-xcm/try-runtime"
 ]

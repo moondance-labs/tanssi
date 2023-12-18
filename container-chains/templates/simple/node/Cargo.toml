@@ -88,8 +88,22 @@ substrate-build-script-utils = { workspace = true }
 
 [features]
 default = []
-runtime-benchmarks = [ "container-chain-template-simple-runtime/runtime-benchmarks", "polkadot-cli/runtime-benchmarks" ]
+runtime-benchmarks = [
+	"container-chain-template-simple-runtime/runtime-benchmarks",
+	"polkadot-cli/runtime-benchmarks",
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-benchmarking-cli/runtime-benchmarks",
+	"nimbus-primitives/runtime-benchmarks",
+	"polkadot-primitives/runtime-benchmarks",
+	"polkadot-service/runtime-benchmarks",
+	"sc-service/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks"
+]
 try-runtime = [
 	"container-chain-template-simple-runtime/try-runtime",
 	"try-runtime-cli/try-runtime",
+	"nimbus-primitives/try-runtime",
+	"polkadot-cli/try-runtime",
+	"polkadot-service/try-runtime",
+	"sp-runtime/try-runtime"
  ]
