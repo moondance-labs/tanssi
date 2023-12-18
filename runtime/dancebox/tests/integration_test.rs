@@ -3860,7 +3860,7 @@ fn test_migration_holds() {
                 <Runtime as pallet_balances::Config>::Balance,
             > = pallet_balances::IdAmount {
                 id: *b"POOLSTAK",
-                amount: 100u128.into(),
+                amount: 100u128,
             };
             let holds = vec![hold];
             let bounded_holds =
@@ -3914,7 +3914,7 @@ fn test_migration_holds_runtime_enum() {
                 <Runtime as pallet_balances::Config>::Balance,
             > = pallet_balances::IdAmount {
                 id: OldHoldReason::PooledStake,
-                amount: 100u128.into(),
+                amount: 100u128,
             };
             let holds = vec![hold];
             let bounded_holds =
