@@ -22,4 +22,7 @@ std = [
 	"parity-scale-codec/std",
 	"sp-api/std",
 	"tp-container-chain-genesis-data/std",
+	"frame-support/std",
+	"pallet-registrar/std",
+	"scale-info/std"
 ]

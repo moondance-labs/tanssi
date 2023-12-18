@@ -6990,6 +6990,7 @@ version = "0.9.0"
 source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
 dependencies = [
  "async-trait",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -8380,6 +8381,7 @@ name = "pallet-migrations"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "impl-trait-for-tuples",
