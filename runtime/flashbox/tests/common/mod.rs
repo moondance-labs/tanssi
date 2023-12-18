@@ -362,7 +362,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
 }
 
 pub fn get_orchestrator_current_author() -> Option<AccountId> {
-    let slot: u64 = current_slot().into();
+    let slot: u64 = current_slot();
     let orchestrator_collators = Runtime::parachain_collators(ParachainInfo::get())?;
     let author_index = slot % orchestrator_collators.len() as u64;
     let account = orchestrator_collators.get(author_index as usize)?;
