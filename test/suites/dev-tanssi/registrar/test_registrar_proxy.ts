@@ -2,7 +2,6 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { stringToHex } from "@polkadot/util";
 import { jumpSessions } from "util/block";
 
 describeSuite({
@@ -50,10 +49,6 @@ describeSuite({
 
                 // Use proxy
                 await context.createBlock();
-                const currentSesssion = await polkadotJs.query.session.currentIndex();
-                const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
-                const expectedScheduledOnboarding =
-                    BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("TpContainerChainGenesisDataContainerChainGenesisData", {
