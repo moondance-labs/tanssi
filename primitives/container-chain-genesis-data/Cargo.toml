@@ -38,20 +38,20 @@ default = [ "std" ]
 std = [
 	"cumulus-primitives-core/std",
 	"frame-support/std",
+	"hex?/std",
+	"log/std",
 	"parity-scale-codec/std",
 	"polkadot-primitives",
+	"polkadot-primitives?/std",
+	"scale-info/std",
 	"serde/std",
 	"serde/std",
+	"serde_json?/std",
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-state-machine/std",
 	"sp-std/std",
 	"sp-trie/std",
 	"tp-traits/std",
-	"hex?/std",
-	"log/std",
-	"polkadot-primitives?/std",
-	"scale-info/std",
-	"serde_json?/std"
 ]
 json = [ "hex", "serde_json" ]
