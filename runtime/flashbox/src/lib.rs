@@ -28,18 +28,13 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-pub mod weights;
-
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
 
 use frame_support::traits::EitherOfDiverse;
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
-    cumulus_primitives_core::{
-        relay_chain::{self, SessionIndex},
-        BodyId, ParaId,
-    },
+    cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
+    cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
@@ -47,8 +42,8 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
-            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth, InstanceFilter,
+            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
         },
         weights::{
             constants::{
@@ -65,7 +60,6 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
-    pallet_collator_assignment::GetRandomnessForNextBlock,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
@@ -79,9 +73,7 @@ use {
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
-        traits::{
-            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Hash as HashT,
-        },
+        traits::{AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT},
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
@@ -329,7 +321,7 @@ impl frame_system::Config for Runtime {
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = MaintenanceMode;
+    type BaseCallFilter = InsideBoth<MaintenanceMode, TxPause>;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// Block & extrinsics weights: base values and limits.
@@ -430,67 +422,6 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
 }
 
-/// Only callable after `set_validation_data` is called which forms this proof the same way
-fn relay_chain_state_proof() -> RelayChainStateProof {
-    let relay_storage_root = ParachainSystem::validation_data()
-        .expect("set in `set_validation_data`")
-        .relay_parent_storage_root;
-    let relay_chain_state =
-        ParachainSystem::relay_state_proof().expect("set in `set_validation_data`");
-    RelayChainStateProof::new(ParachainInfo::get(), relay_storage_root, relay_chain_state)
-        .expect("Invalid relay chain state proof, already constructed in `set_validation_data`")
-}
-
-pub struct BabeCurrentBlockRandomnessGetter;
-impl BabeCurrentBlockRandomnessGetter {
-    fn get_block_randomness() -> Option<Hash> {
-        if cfg!(feature = "runtime-benchmarks") {
-            // storage reads as per actual reads
-            let _relay_storage_root = ParachainSystem::validation_data();
-            let _relay_chain_state = ParachainSystem::relay_state_proof();
-            let benchmarking_babe_output = Hash::default();
-            return Some(benchmarking_babe_output);
-        }
-
-        relay_chain_state_proof()
-            .read_optional_entry::<Option<Hash>>(
-                relay_chain::well_known_keys::CURRENT_BLOCK_RANDOMNESS,
-            )
-            .ok()
-            .flatten()
-            .flatten()
-    }
-
-    /// Return the block randomness from the relay mixed with the provided subject.
-    /// This ensures that the randomness will be different on different pallets, as long as the subject is different.
-    // TODO: audit usage of randomness API
-    // https://github.com/paritytech/polkadot/issues/2601
-    fn get_block_randomness_mixed(subject: &[u8]) -> Option<Hash> {
-        Self::get_block_randomness()
-            .map(|random_hash| mix_randomness::<Runtime>(random_hash, subject))
-    }
-}
-
-/// Combines the vrf output of the previous relay block with the provided subject.
-/// This ensures that the randomness will be different on different pallets, as long as the subject is different.
-fn mix_randomness<T: frame_system::Config>(vrf_output: Hash, subject: &[u8]) -> T::Hash {
-    let mut digest = Vec::new();
-    digest.extend_from_slice(vrf_output.as_ref());
-    digest.extend_from_slice(subject);
-
-    T::Hashing::hash(digest.as_slice())
-}
-
-// Randomness trait
-impl frame_support::traits::Randomness<Hash, BlockNumber> for BabeCurrentBlockRandomnessGetter {
-    fn random(subject: &[u8]) -> (Hash, BlockNumber) {
-        let block_number = frame_system::Pallet::<Runtime>::block_number();
-        let randomness = Self::get_block_randomness_mixed(subject).unwrap_or_default();
-
-        (randomness, block_number)
-    }
-}
-
 pub struct OwnApplySession;
 impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     fn apply_new_session(
@@ -544,15 +475,14 @@ impl SessionManager<AccountId> for CollatorsFromInvulnerables {
         );
 
         let invulnerables = Invulnerables::invulnerables().to_vec();
+        let max_collators = Configuration::config().max_collators;
+        let collators = invulnerables
+            .iter()
+            .take(max_collators as usize)
+            .cloned()
+            .collect();
 
-        // TODO: weight?
-        /*
-        frame_system::Pallet::<T>::register_extra_weight_unchecked(
-            T::WeightInfo::new_session(invulnerables.len() as u32),
-            DispatchClass::Mandatory,
-        );
-        */
-        Some(invulnerables)
+        Some(collators)
     }
     fn start_session(_: SessionIndex) {
         // we don't care.
@@ -590,41 +520,20 @@ impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     }
 }
 
-pub struct BabeGetRandomnessForNextBlock;
-
-impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
-    fn should_end_session(n: u32) -> bool {
-        <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(n)
-    }
-
-    fn get_randomness() -> [u8; 32] {
-        let block_number = System::block_number();
-        let random_seed = if block_number != 0 {
-            if let Some(random_hash) =
-                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
-            {
-                // Return random_hash as a [u8; 32] instead of a Hash
-                let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
-                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
-
-                buf
-            } else {
-                // If there is no randomness (e.g when running in dev mode), return [0; 32]
-                // TODO: smoke test to ensure this never happens in a live network
-                [0; 32]
-            }
-        } else {
-            // In block 0 (genesis) there is randomness
-            [0; 32]
-        };
-
-        random_seed
-    }
-}
-
 pub struct RemoveInvulnerablesImpl;
 
+// impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
+//     fn remove_invulnerables(
+//         collators: &mut Vec<AccountId>,
+//         num_invulnerables: usize,
+//     ) -> Vec<AccountId> {
+//         if num_invulnerables == 0 {
+//             return vec![];
+//         }
+
+//         collators.iter().take(num_invulnerables).cloned().collect()
+//     }
+// }
 impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
     fn remove_invulnerables(
         collators: &mut Vec<AccountId>,
@@ -688,12 +597,9 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
 }
 
 // TODO remove Period?
-pub struct NeverRotateCollators<Period>(PhantomData<Period>);
+pub struct NeverRotateCollators(PhantomData<u32>);
 
-impl<Period> ShouldRotateAllCollators<u32> for NeverRotateCollators<Period>
-where
-    Period: Get<u32>,
-{
+impl ShouldRotateAllCollators<u32> for NeverRotateCollators {
     fn should_rotate_all_collators(_: u32) -> bool {
         false
     }
@@ -705,9 +611,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type ContainerChains = Registrar;
     type SessionIndex = u32;
     type SelfParaId = ParachainInfo;
-    type ShouldRotateAllCollators =
-        NeverRotateCollators<ConfigurationCollatorRotationSessionPeriod>;
-    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
+    type ShouldRotateAllCollators = NeverRotateCollators;
+    type GetRandomnessForNextBlock = ();
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
@@ -1098,83 +1003,6 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-// pub struct SessionTimer<G>(PhantomData<G>);
-
-// impl<G> Timer for SessionTimer<G>
-// where
-//     G: Get<u32>,
-// {
-//     type Instant = u32;
-
-//     fn now() -> Self::Instant {
-//         Session::current_index()
-//     }
-
-//     fn is_elapsed(instant: &Self::Instant) -> bool {
-//         let delay = G::get();
-//         let Some(end) = instant.checked_add(delay) else {
-//             return false;
-//         };
-//         end <= Self::now()
-//     }
-
-//     #[cfg(feature = "runtime-benchmarks")]
-//     fn elapsed_instant() -> Self::Instant {
-//         let delay = G::get();
-//         Self::now()
-//             .checked_add(delay)
-//             .expect("overflow when computing valid elapsed instant")
-//     }
-
-//     #[cfg(feature = "runtime-benchmarks")]
-//     fn skip_to_elapsed() {
-//         let session_to_reach = Self::elapsed_instant();
-//         while Self::now() < session_to_reach {
-//             Session::rotate_session();
-//         }
-//     }
-// }
-
-// pub struct CandidateHasRegisteredKeys;
-// impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
-//     fn is_candidate_eligible(a: &AccountId) -> bool {
-//         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
-//     }
-//     #[cfg(feature = "runtime-benchmarks")]
-//     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
-//         use sp_core::crypto::UncheckedFrom;
-//         if eligible {
-//             let account_slice: &[u8; 32] = a.as_ref();
-//             let _ = Session::set_keys(
-//                 RuntimeOrigin::signed(a.clone()),
-//                 SessionKeys {
-//                     nimbus: NimbusId::unchecked_from(*account_slice),
-//                 },
-//                 vec![],
-//             );
-//         } else {
-//             let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
-//         }
-//     }
-// }
-
-// impl pallet_pooled_staking::Config for Runtime {
-//     type RuntimeEvent = RuntimeEvent;
-//     type Currency = Balances;
-//     type Balance = Balance;
-//     type StakingAccount = StakingAccount;
-//     type InitialManualClaimShareValue = InitialManualClaimShareValue;
-//     type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
-//     type MinimumSelfDelegation = MinimumSelfDelegation;
-//     type RuntimeHoldReason = RuntimeHoldReason;
-//     type RewardsCollatorCommission = RewardsCollatorCommission;
-//     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
-//     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-//     type EligibleCandidatesBufferSize = ConstU32<100>;
-//     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
-//     type WeightInfo = pallet_pooled_staking::weights::SubstrateWeight<Runtime>;
-// }
-
 parameter_types! {
     pub ParachainBondAccount: AccountId32 = PalletId(*b"ParaBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
@@ -1225,6 +1053,16 @@ impl pallet_inflation_rewards::Config for Runtime {
     type RewardsPortion = RewardsPortion;
 }
 
+impl pallet_tx_pause::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type PauseOrigin = EnsureRoot<AccountId>;
+    type UnpauseOrigin = EnsureRoot<AccountId>;
+    type WhitelistedCalls = ();
+    type MaxNameLen = ConstU32<256>;
+    type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1239,6 +1077,7 @@ construct_runtime!(
         Proxy: pallet_proxy = 6,
         Migrations: pallet_migrations = 7,
         MaintenanceMode: pallet_maintenance_mode = 8,
+        TxPause: pallet_tx_pause = 9,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,

@@ -52,7 +52,7 @@ pub fn development_config(
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "DANCE".into());
+    properties.insert("tokenSymbol".into(), "FLASH".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
@@ -109,7 +109,7 @@ pub fn development_config(
     )
 }
 
-pub fn local_dancebox_config(
+pub fn local_flashbox_config(
     para_id: ParaId,
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
@@ -117,16 +117,16 @@ pub fn local_dancebox_config(
 ) -> ChainSpec {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "DANCE".into());
+    properties.insert("tokenSymbol".into(), "FLASH".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
     ChainSpec::from_genesis(
         // Name
-        "Dancebox Local Testnet",
+        "Flashbox Local Testnet",
         // ID
-        "dancebox_local",
+        "flashbox_local",
         ChainType::Local,
         move || {
             testnet_genesis(
@@ -281,9 +281,8 @@ fn testnet_genesis(
             start_in_maintenance_mode: false,
             ..Default::default()
         },
-        // This should initialize it to whatever we have set in the pallet
         transaction_payment: Default::default(),
-        // tx_pause: Default::default(),
+        tx_pause: Default::default(),
     }
 }
 
@@ -303,15 +302,15 @@ fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
 /// Can be called for a `Configuration` to check if it is a configuration for
 /// the `Tanssi` network.
 pub trait IdentifyVariant {
-    /// Returns `true` if this is a configuration for the `Dancebox` network.
-    fn is_dancebox(&self) -> bool;
+    /// Returns `true` if this is a configuration for the `Flashbox` network.
+    fn is_flashbox(&self) -> bool;
     /// Returns `true` if this is a configuration for a dev network.
     fn is_dev(&self) -> bool;
 }
 
 impl IdentifyVariant for Box<dyn sc_service::ChainSpec> {
-    fn is_dancebox(&self) -> bool {
-        self.id().starts_with("dancebox")
+    fn is_flashbox(&self) -> bool {
+        self.id().starts_with("flashbox")
     }
 
     fn is_dev(&self) -> bool {

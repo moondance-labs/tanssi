@@ -19,24 +19,13 @@
 use {
     common::*,
     cumulus_primitives_core::ParaId,
-    dancebox_runtime::{
-        migrations::{
-            CollatorSelectionInvulnerablesValue, MigrateConfigurationFullRotationPeriod,
-            MigrateInvulnerables, MigrateServicesPaymentAddCredits,
-        },
-        BlockProductionCost, RewardsCollatorCommission,
-    },
     dp_core::well_known_keys,
+    flashbox_runtime::BlockProductionCost,
     frame_support::{assert_noop, assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting::ContainerChainBlockInfo,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
-    pallet_migrations::Migration,
-    pallet_pooled_staking::{
-        traits::IsCandidateEligible, AllTargetPool, EligibleCandidate, PendingOperationKey,
-        PendingOperationQuery, PoolsKey, SharesOrStake, TargetPool,
-    },
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
@@ -353,14 +342,14 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -425,12 +414,12 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys { nimbus: charlie_id },
+                flashbox_runtime::SessionKeys { nimbus: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys { nimbus: dave_id },
+                flashbox_runtime::SessionKeys { nimbus: dave_id },
                 vec![]
             ));
 
@@ -448,7 +437,7 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             assert_eq!(authorities(), vec![alice_id.clone(), bob_id.clone()]);
 
             // Invulnerables should have triggered on new session authorities change
-            // However charlie and dave shoudl have gone to one para (1001)
+            // However charlie and dave should have gone to one para (1001)
             run_to_session(2u32);
             assert_eq!(authorities(), vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
@@ -537,28 +526,40 @@ fn test_authors_paras_inserted_a_posteriori() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
                 100_000,
                 None,
             ));
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1002.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1002.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1002.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1002.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1002.into()
+            ));
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1002.into(),
@@ -619,14 +620,20 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id, charlie_id, dave_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
@@ -683,14 +690,20 @@ fn test_paras_registered_but_zero_credits() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
 
@@ -702,7 +715,7 @@ fn test_paras_registered_but_zero_credits() {
 
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
         });
 }
 
@@ -736,18 +749,24 @@ fn test_paras_registered_but_not_enough_credits() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase 1 credit less that what is needed
-            let credits_1001 = dancebox_runtime::Period::get() * 2 - 1;
+            let credits_1001 = flashbox_runtime::Period::get() * 2 - 1;
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
@@ -762,7 +781,7 @@ fn test_paras_registered_but_not_enough_credits() {
             run_to_session(2u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
 
             // Now purchase the missing block credit
             assert_ok!(ServicesPayment::purchase_credits(
@@ -812,18 +831,24 @@ fn test_paras_registered_but_only_credits_for_1_session() {
 
             assert_eq!(authorities(), vec![alice_id, bob_id]);
 
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
             // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase only enough credits for 1 session
-            let credits_1001 = dancebox_runtime::Period::get() * 2;
+            let credits_1001 = flashbox_runtime::Period::get() * 2;
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
@@ -1167,12 +1192,12 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys { nimbus: charlie_id },
+                flashbox_runtime::SessionKeys { nimbus: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys { nimbus: dave_id },
+                flashbox_runtime::SessionKeys { nimbus: dave_id },
                 vec![]
             ));
 
@@ -1321,14 +1346,14 @@ fn test_consensus_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -1416,14 +1441,14 @@ fn test_consensus_runtime_api_session_changes() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -1435,7 +1460,7 @@ fn test_consensus_runtime_api_session_changes() {
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
 
-            let session_two_edge = dancebox_runtime::Period::get() * 2;
+            let session_two_edge = flashbox_runtime::Period::get() * 2;
             // Let's run just 2 blocks before the session 2 change first
             // Prediction should still be identical, as we are not in the
             // edge of a session change
@@ -1550,14 +1575,14 @@ fn test_consensus_runtime_api_next_session() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -1569,7 +1594,7 @@ fn test_consensus_runtime_api_next_session() {
                 vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()]
             ));
 
-            let session_two_edge = dancebox_runtime::Period::get() * 2;
+            let session_two_edge = flashbox_runtime::Period::get() * 2;
             // Let's run just 2 blocks before the session 2 change first
             // Prediction should still be identical, as we are not in the
             // edge of a session change
@@ -1903,63 +1928,9 @@ fn test_author_noting_runtime_api() {
 }
 
 #[test]
-fn test_collator_assignment_rotation() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .build()
-        .execute_with(|| {
-            // Charlie and Dave to 1001
-            let assignment = CollatorAssignment::collator_container_chain();
-            let initial_assignment = assignment.clone();
-            assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
-            );
-
-            let rotation_period = Configuration::config().full_rotation_period;
-
-            run_to_session(rotation_period - 2);
-
-            set_parachain_inherent_data_random_seed([1; 32]);
-
-            assert!(CollatorAssignment::pending_collator_container_chain().is_none());
-
-            run_to_session(rotation_period - 1);
-            assert_eq!(
-                CollatorAssignment::collator_container_chain(),
-                initial_assignment,
-            );
-            assert!(CollatorAssignment::pending_collator_container_chain().is_some());
-
-            run_to_session(rotation_period);
-            // Assignment changed
-            assert_ne!(
-                CollatorAssignment::collator_container_chain(),
-                initial_assignment,
-            );
-        });
-}
-
-#[test]
 fn session_keys_key_type_id() {
     assert_eq!(
-        dancebox_runtime::SessionKeys::key_ids(),
+        flashbox_runtime::SessionKeys::key_ids(),
         vec![NIMBUS_KEY_ID]
     );
 }
@@ -2003,14 +1974,14 @@ fn test_session_keys_with_authority_mapping() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: bob_id_2.clone(),
                 },
                 vec![]
@@ -2105,14 +2076,14 @@ fn test_session_keys_with_authority_assignment() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: bob_id_2.clone(),
                 },
                 vec![]
@@ -2283,7 +2254,7 @@ fn check_well_known_keys() {
     // Tanssi storage. Since we cannot access the storages themselves,
     // we test the pallet prefix matches and then compute manually the full prefix.
     assert_eq!(
-        dancebox_runtime::PalletInfo::name::<AuthorityAssignment>(),
+        flashbox_runtime::PalletInfo::name::<AuthorityAssignment>(),
         Some("AuthorityAssignment")
     );
     assert_eq!(
@@ -2292,1726 +2263,13 @@ fn check_well_known_keys() {
     );
 
     assert_eq!(
-        dancebox_runtime::PalletInfo::name::<Session>(),
+        flashbox_runtime::PalletInfo::name::<Session>(),
         Some("Session")
     );
     assert_eq!(
         well_known_keys::SESSION_INDEX,
         frame_support::storage::storage_prefix(b"Session", b"CurrentIndex")
     );
-}
-
-#[test]
-fn test_invulnerables_migration() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            // Populate the invulnerables storage
-            let collators = vec![AccountId::from(ALICE), AccountId::from(BOB)];
-            CollatorSelectionInvulnerablesValue::<Runtime>::put(
-                BoundedVec::try_from(collators).expect("Failed to create BoundedVec"),
-            );
-
-            let invulnerables_before_migration = Invulnerables::invulnerables();
-            assert_eq!(
-                invulnerables_before_migration.len(),
-                2,
-                "invulnerables has wrong length"
-            );
-            let migration = MigrateInvulnerables::<Runtime>(Default::default());
-            migration.migrate(Default::default());
-            let invulnerables_after_migration = Invulnerables::invulnerables();
-            assert_eq!(
-                invulnerables_before_migration,
-                invulnerables_after_migration
-            )
-        });
-}
-
-#[test]
-fn test_staking_no_candidates_in_genesis() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let initial_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-
-            assert_eq!(initial_candidates, vec![]);
-        });
-}
-
-#[test]
-fn test_staking_join() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let balance_before = System::account(AccountId::from(ALICE)).data.free;
-            assert_eq!(System::account(AccountId::from(ALICE)).data.reserved, 0);
-            let stake = MinimumSelfDelegation::get() * 10;
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake
-            ));
-
-            // Immediately after joining, Alice is the top candidate
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![EligibleCandidate {
-                    candidate: ALICE.into(),
-                    stake
-                }]
-            );
-
-            // And staked amount is immediately marked as "reserved"
-            let balance_after = System::account(AccountId::from(ALICE)).data.free;
-            assert_eq!(balance_before - balance_after, stake);
-            assert_eq!(System::account(AccountId::from(ALICE)).data.reserved, stake);
-        });
-}
-
-#[test]
-fn test_staking_join_no_keys_registered() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = MinimumSelfDelegation::get() * 10;
-            let new_account = AccountId::from([42u8; 32]);
-            assert_ok!(Balances::transfer_allow_death(
-                origin_of(ALICE.into()),
-                new_account.clone().into(),
-                stake * 2
-            ));
-            let balance_before = System::account(new_account.clone()).data.free;
-            assert_eq!(System::account(new_account.clone()).data.reserved, 0);
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(new_account.clone()),
-                new_account.clone(),
-                TargetPool::AutoCompounding,
-                stake
-            ));
-
-            // The new account should be the top candidate but it has no keys registered in
-            // pallet_session, so it is not eligible
-            assert!(!<Runtime as pallet_pooled_staking::Config>::EligibleCandidatesFilter::is_candidate_eligible(&new_account));
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-
-            assert_eq!(eligible_candidates, vec![]);
-
-            // And staked amount is immediately marked as "reserved"
-            let balance_after = System::account(new_account.clone()).data.free;
-            assert_eq!(balance_before - balance_after, stake);
-            assert_eq!(System::account(new_account.clone()).data.reserved, stake);
-        });
-}
-
-#[test]
-fn test_staking_register_keys_after_joining() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = MinimumSelfDelegation::get() * 10;
-            let new_account = AccountId::from([42u8; 32]);
-            assert_ok!(Balances::transfer_allow_death(
-                origin_of(ALICE.into()),
-                new_account.clone().into(),
-                stake * 2
-            ));
-            let balance_before = System::account(new_account.clone()).data.free;
-            assert_eq!(System::account(new_account.clone()).data.reserved, 0);
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(new_account.clone()),
-                new_account.clone(),
-                TargetPool::AutoCompounding,
-                stake
-            ));
-
-            // The new account should be the top candidate but it has no keys registered in
-            // pallet_session, so it is not eligible
-            assert!(!<Runtime as pallet_pooled_staking::Config>::EligibleCandidatesFilter::is_candidate_eligible(&new_account));
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(eligible_candidates, vec![]);
-
-            // And staked amount is immediately marked as "reserved"
-            let balance_after = System::account(new_account.clone()).data.free;
-            assert_eq!(balance_before - balance_after, stake);
-            assert_eq!(System::account(new_account.clone()).data.reserved, stake);
-
-            // Now register the keys
-            let new_account_id = get_aura_id_from_seed(&new_account.to_string());
-            assert_ok!(Session::set_keys(
-                origin_of(new_account.clone()),
-                dancebox_runtime::SessionKeys {
-                    nimbus: new_account_id,
-                },
-                vec![]
-            ));
-
-            // Now eligible according to filter
-            assert!(<Runtime as pallet_pooled_staking::Config>::EligibleCandidatesFilter::is_candidate_eligible(&new_account));
-            // But not eligible according to pallet_pooled_staking, need to manually update candidate list
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(eligible_candidates, vec![]);
-
-            // Update candidate list
-            assert_ok!(PooledStaking::update_candidate_position(
-                origin_of(BOB.into()),
-                vec![new_account.clone()]
-            ));
-
-            // Now it is eligible
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![EligibleCandidate {
-                    candidate: new_account.clone(),
-                    stake
-                }]
-            );
-        });
-}
-
-#[test]
-fn test_staking_join_bad_origin() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_noop!(
-                PooledStaking::request_delegate(
-                    root_origin(),
-                    ALICE.into(),
-                    TargetPool::AutoCompounding,
-                    stake
-                ),
-                BadOrigin,
-            );
-        });
-}
-
-#[test]
-fn test_staking_join_below_self_delegation_min() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake1 = MinimumSelfDelegation::get() / 3;
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake1
-            ));
-
-            // Since stake is below MinimumSelfDelegation, the join operation succeeds
-            // but the candidate is not eligible
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(eligible_candidates, vec![],);
-
-            let stake2 = MinimumSelfDelegation::get() - stake1 - 1;
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake2,
-            ));
-
-            // Still below, missing 1 unit
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(eligible_candidates, vec![],);
-
-            let stake3 = 1;
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake3,
-            ));
-
-            // Increasing the stake to above MinimumSelfDelegation makes the candidate eligible
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![EligibleCandidate {
-                    candidate: ALICE.into(),
-                    stake: stake1 + stake2 + stake3
-                }],
-            );
-        });
-}
-
-#[test]
-fn test_staking_join_no_self_delegation() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            // Bob delegates to Alice, but Alice is not a valid candidate (not enough self-delegation)
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(BOB.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(eligible_candidates, vec![],);
-        });
-}
-
-#[test]
-fn test_staking_join_before_self_delegation() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            // Bob delegates to Alice, but Alice is not a valid candidate (not enough self-delegation)
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(BOB.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake
-            ));
-
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(eligible_candidates, vec![],);
-
-            run_to_session(2);
-            assert_ok!(PooledStaking::execute_pending_operations(
-                origin_of(ALICE.into()),
-                vec![PendingOperationQuery {
-                    delegator: BOB.into(),
-                    operation: PendingOperationKey::JoiningAutoCompounding {
-                        candidate: ALICE.into(),
-                        at: 0,
-                    }
-                }]
-            ),);
-
-            // Now Alice joins with enough self-delegation
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake
-            ));
-
-            // Alice is a valid candidate, and Bob's stake is also counted
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![EligibleCandidate {
-                    candidate: ALICE.into(),
-                    stake: stake * 2,
-                }],
-            );
-        });
-}
-
-#[test]
-fn test_staking_join_twice_in_same_block() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake1 = 10 * MinimumSelfDelegation::get();
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake1
-            ));
-
-            let stake2 = 9 * MinimumSelfDelegation::get();
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake2
-            ));
-
-            // Both operations succeed and the total stake is the sum of the individual stakes
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-
-            assert_eq!(
-                eligible_candidates,
-                vec![EligibleCandidate {
-                    candidate: ALICE.into(),
-                    stake: stake1 + stake2,
-                }]
-            );
-
-            run_to_session(2);
-
-            assert_ok!(PooledStaking::execute_pending_operations(
-                origin_of(ALICE.into()),
-                vec![PendingOperationQuery {
-                    delegator: ALICE.into(),
-                    operation: PendingOperationKey::JoiningAutoCompounding {
-                        candidate: ALICE.into(),
-                        at: 0,
-                    }
-                }]
-            ),);
-
-            // TODO: ensure the total stake has been moved to auto compounding pool
-        });
-}
-
-#[test]
-fn test_staking_join_execute_before_time() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake
-            ));
-
-            // Immediately after joining, Alice is the top candidate
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![EligibleCandidate {
-                    candidate: ALICE.into(),
-                    stake
-                }]
-            );
-
-            // We called request_delegate in session 0, we will be able to execute it starting from session 2
-            let start_of_session_2 = session_to_block(2);
-            // Session 2 starts at block 600, but run_to_session runs to block 601, so subtract 2 here to go to 599
-            run_to_block(start_of_session_2 - 2);
-            assert_noop!(
-                PooledStaking::execute_pending_operations(
-                    origin_of(ALICE.into()),
-                    vec![PendingOperationQuery {
-                        delegator: ALICE.into(),
-                        operation: PendingOperationKey::JoiningAutoCompounding {
-                            candidate: ALICE.into(),
-                            at: 0,
-                        }
-                    }]
-                ),
-                pallet_pooled_staking::Error::<Runtime>::RequestCannotBeExecuted(0),
-            );
-
-            run_to_block(start_of_session_2);
-            assert_ok!(PooledStaking::execute_pending_operations(
-                origin_of(ALICE.into()),
-                vec![PendingOperationQuery {
-                    delegator: ALICE.into(),
-                    operation: PendingOperationKey::JoiningAutoCompounding {
-                        candidate: ALICE.into(),
-                        at: 0,
-                    }
-                }]
-            ),);
-        });
-}
-
-#[test]
-fn test_staking_join_execute_any_origin() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake
-            ));
-
-            // Immediately after joining, Alice is the top candidate
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![EligibleCandidate {
-                    candidate: ALICE.into(),
-                    stake
-                }]
-            );
-
-            // We called request_delegate in session 0, we will be able to execute it starting from session 2
-            run_to_session(2);
-            // Anyone can execute pending operations for anyone else
-            assert_ok!(PooledStaking::execute_pending_operations(
-                origin_of(BOB.into()),
-                vec![PendingOperationQuery {
-                    delegator: ALICE.into(),
-                    operation: PendingOperationKey::JoiningAutoCompounding {
-                        candidate: ALICE.into(),
-                        at: 0,
-                    }
-                }]
-            ),);
-        });
-}
-
-#[test]
-fn test_staking_join_execute_bad_origin() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake
-            ));
-
-            // Immediately after joining, Alice is the top candidate
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![EligibleCandidate {
-                    candidate: ALICE.into(),
-                    stake
-                }]
-            );
-
-            // We called request_delegate in session 0, we will be able to execute it starting from session 2
-            run_to_session(2);
-            assert_noop!(
-                PooledStaking::execute_pending_operations(
-                    root_origin(),
-                    vec![PendingOperationQuery {
-                        delegator: ALICE.into(),
-                        operation: PendingOperationKey::JoiningAutoCompounding {
-                            candidate: ALICE.into(),
-                            at: 0,
-                        }
-                    }]
-                ),
-                BadOrigin,
-            );
-        });
-}
-
-struct A {
-    delegator: AccountId,
-    candidate: AccountId,
-    target_pool: TargetPool,
-    stake: u128,
-}
-
-// Setup test environment with provided delegations already being executed. Input function f gets executed at start session 2
-fn setup_staking_join_and_execute<R>(ops: Vec<A>, f: impl FnOnce() -> R) {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            for op in ops.iter() {
-                assert_ok!(PooledStaking::request_delegate(
-                    origin_of(op.delegator.clone()),
-                    op.candidate.clone(),
-                    op.target_pool,
-                    op.stake,
-                ));
-            }
-
-            // We called request_delegate in session 0, we will be able to execute it starting from session 2
-            run_to_session(2);
-
-            for op in ops.iter() {
-                let operation = match op.target_pool {
-                    TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
-                        candidate: op.candidate.clone(),
-                        at: 0,
-                    },
-                    TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
-                        candidate: op.candidate.clone(),
-                        at: 0,
-                    },
-                };
-
-                assert_ok!(PooledStaking::execute_pending_operations(
-                    origin_of(op.delegator.clone()),
-                    vec![PendingOperationQuery {
-                        delegator: op.delegator.clone(),
-                        operation,
-                    }]
-                ));
-            }
-
-            f()
-        });
-}
-
-#[test]
-fn test_staking_leave_exact_amount() {
-    setup_staking_join_and_execute(
-        vec![A {
-            delegator: ALICE.into(),
-            candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
-            stake: 10 * MinimumSelfDelegation::get(),
-        }],
-        || {
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_ok!(PooledStaking::request_undelegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                SharesOrStake::Stake(stake),
-            ));
-
-            // Immediately after calling request_undelegate, Alice is no longer a candidate
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(eligible_candidates, vec![]);
-        },
-    )
-}
-
-#[test]
-fn test_staking_leave_bad_origin() {
-    setup_staking_join_and_execute(
-        vec![A {
-            delegator: ALICE.into(),
-            candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
-            stake: 10 * MinimumSelfDelegation::get(),
-        }],
-        || {
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_noop!(
-                PooledStaking::request_undelegate(
-                    root_origin(),
-                    ALICE.into(),
-                    TargetPool::AutoCompounding,
-                    SharesOrStake::Stake(stake),
-                ),
-                BadOrigin
-            );
-        },
-    )
-}
-
-#[test]
-fn test_staking_leave_more_than_allowed() {
-    setup_staking_join_and_execute(
-        vec![A {
-            delegator: ALICE.into(),
-            candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
-            stake: 10 * MinimumSelfDelegation::get(),
-        }],
-        || {
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_noop!(
-                PooledStaking::request_undelegate(
-                    origin_of(ALICE.into()),
-                    ALICE.into(),
-                    TargetPool::AutoCompounding,
-                    SharesOrStake::Stake(stake + 1 * MinimumSelfDelegation::get()),
-                ),
-                pallet_pooled_staking::Error::<Runtime>::MathUnderflow,
-            );
-        },
-    );
-}
-
-#[test]
-fn test_staking_leave_in_separate_transactions() {
-    let stake = 10 * MinimumSelfDelegation::get();
-
-    setup_staking_join_and_execute(
-        vec![A {
-            delegator: ALICE.into(),
-            candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
-            stake,
-        }],
-        || {
-            let half_stake = stake / 2;
-            assert_ok!(PooledStaking::request_undelegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                SharesOrStake::Stake(half_stake),
-            ));
-
-            // Alice is still a valid candidate, now with less stake
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            let remaining_stake = stake - half_stake;
-            assert_eq!(
-                eligible_candidates,
-                vec![EligibleCandidate {
-                    candidate: ALICE.into(),
-                    stake: remaining_stake,
-                }],
-            );
-
-            assert_ok!(PooledStaking::request_undelegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                SharesOrStake::Stake(remaining_stake),
-            ));
-
-            // Unstaked remaining stake, so no longer a valid candidate
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(eligible_candidates, vec![],);
-        },
-    );
-}
-
-#[test]
-fn test_staking_leave_all_except_some_dust() {
-    let stake = 10 * MinimumSelfDelegation::get();
-
-    setup_staking_join_and_execute(
-        vec![A {
-            delegator: ALICE.into(),
-            candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
-            stake,
-        }],
-        || {
-            let dust = MinimumSelfDelegation::get() / 2;
-            assert_ok!(PooledStaking::request_undelegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                SharesOrStake::Stake(stake - dust),
-            ));
-
-            // Alice still has some stake left, but not enough to reach MinimumSelfDelegation
-            assert_eq!(
-                pallet_pooled_staking::Pools::<Runtime>::get(
-                    AccountId::from(ALICE),
-                    PoolsKey::CandidateTotalStake
-                ),
-                dust,
-            );
-
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(eligible_candidates, vec![],);
-
-            // Leave with remaining stake
-            assert_ok!(PooledStaking::request_undelegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                SharesOrStake::Stake(dust),
-            ));
-
-            // Alice has no more stake left
-            assert_eq!(
-                pallet_pooled_staking::Pools::<Runtime>::get(
-                    AccountId::from(ALICE),
-                    PoolsKey::CandidateTotalStake
-                ),
-                0,
-            );
-        },
-    );
-}
-
-#[test]
-fn test_staking_leave_execute_before_time() {
-    let stake = 10 * MinimumSelfDelegation::get();
-
-    setup_staking_join_and_execute(
-        vec![A {
-            delegator: ALICE.into(),
-            candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
-            stake,
-        }],
-        || {
-            let balance_before = System::account(AccountId::from(ALICE)).data.free;
-            let at = Session::current_index();
-            assert_ok!(PooledStaking::request_undelegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                SharesOrStake::Stake(stake),
-            ));
-
-            // Request undelegate does not change account balance
-            assert_eq!(
-                balance_before,
-                System::account(AccountId::from(ALICE)).data.free
-            );
-
-            // We called request_delegate in session 0, we will be able to execute it starting from session 2
-            let start_of_session_4 = session_to_block(4);
-            // Session 4 starts at block 1200, but run_to_session runs to block 1201, so subtract 2 here to go to 1999
-            run_to_block(start_of_session_4 - 2);
-
-            assert_noop!(
-                PooledStaking::execute_pending_operations(
-                    origin_of(ALICE.into()),
-                    vec![PendingOperationQuery {
-                        delegator: ALICE.into(),
-                        operation: PendingOperationKey::Leaving {
-                            candidate: ALICE.into(),
-                            at,
-                        }
-                    }]
-                ),
-                pallet_pooled_staking::Error::<Runtime>::RequestCannotBeExecuted(0)
-            );
-        },
-    );
-}
-
-#[test]
-fn test_staking_leave_execute_any_origin() {
-    let stake = 10 * MinimumSelfDelegation::get();
-
-    setup_staking_join_and_execute(
-        vec![A {
-            delegator: ALICE.into(),
-            candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
-            stake,
-        }],
-        || {
-            let balance_before = System::account(AccountId::from(ALICE)).data.free;
-            let at = Session::current_index();
-            assert_ok!(PooledStaking::request_undelegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                SharesOrStake::Stake(stake),
-            ));
-
-            // Request undelegate does not change account balance
-            assert_eq!(
-                balance_before,
-                System::account(AccountId::from(ALICE)).data.free
-            );
-
-            run_to_session(4);
-
-            let balance_before = System::account(AccountId::from(ALICE)).data.free;
-
-            assert_ok!(PooledStaking::execute_pending_operations(
-                // Any signed origin can execute this, the stake will go to Alice account
-                origin_of(BOB.into()),
-                vec![PendingOperationQuery {
-                    delegator: ALICE.into(),
-                    operation: PendingOperationKey::Leaving {
-                        candidate: ALICE.into(),
-                        at,
-                    }
-                }]
-            ),);
-
-            let balance_after = System::account(AccountId::from(ALICE)).data.free;
-            assert_eq!(balance_after - balance_before, stake);
-        },
-    );
-}
-
-#[test]
-fn test_staking_leave_execute_bad_origin() {
-    let stake = 10 * MinimumSelfDelegation::get();
-
-    setup_staking_join_and_execute(
-        vec![A {
-            delegator: ALICE.into(),
-            candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
-            stake,
-        }],
-        || {
-            let at = Session::current_index();
-            assert_ok!(PooledStaking::request_undelegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                SharesOrStake::Stake(stake),
-            ));
-
-            run_to_session(4);
-
-            assert_noop!(
-                PooledStaking::execute_pending_operations(
-                    root_origin(),
-                    vec![PendingOperationQuery {
-                        delegator: ALICE.into(),
-                        operation: PendingOperationKey::Leaving {
-                            candidate: ALICE.into(),
-                            at,
-                        }
-                    }]
-                ),
-                BadOrigin
-            );
-        },
-    );
-}
-
-#[test]
-fn test_staking_swap() {
-    setup_staking_join_and_execute(
-        vec![A {
-            delegator: ALICE.into(),
-            candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
-            stake: 10 * MinimumSelfDelegation::get(),
-        }],
-        || {
-            let stake = 10 * MinimumSelfDelegation::get();
-            assert_ok!(PooledStaking::swap_pool(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                SharesOrStake::Stake(stake),
-            ));
-
-            assert_eq!(
-                PooledStaking::computed_stake(
-                    ALICE.into(),
-                    ALICE.into(),
-                    AllTargetPool::AutoCompounding
-                ),
-                Some(0u32.into())
-            );
-            assert_eq!(
-                PooledStaking::computed_stake(
-                    ALICE.into(),
-                    ALICE.into(),
-                    AllTargetPool::ManualRewards
-                ),
-                Some(stake)
-            );
-
-            assert_ok!(PooledStaking::swap_pool(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::ManualRewards,
-                SharesOrStake::Stake(stake),
-            ));
-
-            assert_eq!(
-                PooledStaking::computed_stake(
-                    ALICE.into(),
-                    ALICE.into(),
-                    AllTargetPool::AutoCompounding
-                ),
-                Some(stake)
-            );
-            assert_eq!(
-                PooledStaking::computed_stake(
-                    ALICE.into(),
-                    ALICE.into(),
-                    AllTargetPool::ManualRewards
-                ),
-                Some(0u32.into())
-            );
-        },
-    )
-}
-
-#[test]
-fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
-    // Alice, Bob, Charlie are invulnerables
-    // Alice, Dave are in pallet_staking
-    // Expected collators are Alice, Bob, Charlie, Dave
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = 10 * MinimumSelfDelegation::get();
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            // Register Dave in pallet_session (invulnerables are automatically registered)
-            let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
-            assert_ok!(Session::set_keys(
-                origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
-                    nimbus: dave_account_id,
-                },
-                vec![]
-            ));
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(DAVE.into()),
-                DAVE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![
-                    EligibleCandidate {
-                        candidate: ALICE.into(),
-                        stake
-                    },
-                    EligibleCandidate {
-                        candidate: DAVE.into(),
-                        stake
-                    },
-                ]
-            );
-
-            assert_eq!(
-                pallet_invulnerables::Invulnerables::<Runtime>::get().to_vec(),
-                vec![
-                    AccountId::from(ALICE),
-                    AccountId::from(BOB),
-                    AccountId::from(CHARLIE),
-                ]
-            );
-
-            // Need to trigger new session to update pallet_session
-            run_to_session(2);
-
-            assert_eq!(
-                Session::validators(),
-                vec![
-                    AccountId::from(ALICE),
-                    AccountId::from(BOB),
-                    AccountId::from(CHARLIE),
-                    AccountId::from(DAVE),
-                ]
-            );
-        });
-}
-
-#[test]
-fn test_pallet_session_limits_num_validators() {
-    // Set max_collators = 2, now only the first 2 invulnerables are valid collators
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 2,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-            full_rotation_period: 24,
-        })
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = 10 * MinimumSelfDelegation::get();
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            // Register Dave in pallet_session (invulnerables are automatically registered)
-            let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
-            assert_ok!(Session::set_keys(
-                origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
-                    nimbus: dave_account_id,
-                },
-                vec![]
-            ));
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(DAVE.into()),
-                DAVE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![
-                    EligibleCandidate {
-                        candidate: ALICE.into(),
-                        stake
-                    },
-                    EligibleCandidate {
-                        candidate: DAVE.into(),
-                        stake
-                    },
-                ]
-            );
-
-            assert_eq!(
-                pallet_invulnerables::Invulnerables::<Runtime>::get().to_vec(),
-                vec![
-                    AccountId::from(ALICE),
-                    AccountId::from(BOB),
-                    AccountId::from(CHARLIE),
-                ]
-            );
-
-            // Need to trigger new session to update pallet_session
-            run_to_session(2);
-
-            assert_eq!(
-                Session::validators(),
-                vec![AccountId::from(ALICE), AccountId::from(BOB),]
-            );
-        });
-}
-
-#[test]
-fn test_pallet_session_limits_num_validators_from_staking() {
-    // Set max_collators = 2, take 1 invulnerable and the rest from staking
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 2,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-            full_rotation_period: 24,
-        })
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = 10 * MinimumSelfDelegation::get();
-
-            // Register accounts in pallet_session (invulnerables are automatically registered)
-            let bob_account_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
-            assert_ok!(Session::set_keys(
-                origin_of(BOB.into()),
-                dancebox_runtime::SessionKeys {
-                    nimbus: bob_account_id,
-                },
-                vec![]
-            ));
-            let charlie_account_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
-            assert_ok!(Session::set_keys(
-                origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
-                    nimbus: charlie_account_id,
-                },
-                vec![]
-            ));
-            let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
-            assert_ok!(Session::set_keys(
-                origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
-                    nimbus: dave_account_id,
-                },
-                vec![]
-            ));
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(BOB.into()),
-                BOB.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(CHARLIE.into()),
-                CHARLIE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(DAVE.into()),
-                DAVE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![
-                    EligibleCandidate {
-                        candidate: BOB.into(),
-                        stake
-                    },
-                    EligibleCandidate {
-                        candidate: CHARLIE.into(),
-                        stake
-                    },
-                    EligibleCandidate {
-                        candidate: DAVE.into(),
-                        stake
-                    },
-                ]
-            );
-
-            assert_eq!(
-                pallet_invulnerables::Invulnerables::<Runtime>::get().to_vec(),
-                vec![AccountId::from(ALICE),]
-            );
-
-            // Need to trigger new session to update pallet_session
-            run_to_session(2);
-
-            assert_eq!(
-                Session::validators(),
-                vec![AccountId::from(ALICE), AccountId::from(BOB),]
-            );
-        });
-}
-
-#[test]
-fn test_migration_holds() {
-    use {
-        dancebox_runtime::migrations::MigrateHoldReason,
-        frame_support::{migration::put_storage_value, Blake2_128Concat, StorageHasher},
-    };
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            let pallet_prefix: &[u8] = b"Balances";
-            let storage_item_prefix: &[u8] = b"Holds";
-            use parity_scale_codec::Encode;
-            let hold: pallet_balances::IdAmount<
-                [u8; 8],
-                <Runtime as pallet_balances::Config>::Balance,
-            > = pallet_balances::IdAmount {
-                id: *b"POOLSTAK",
-                amount: 100u128.into(),
-            };
-            let holds = vec![hold];
-            let bounded_holds =
-                BoundedVec::<_, <Runtime as pallet_balances::Config>::MaxHolds>::truncate_from(
-                    holds.clone(),
-                );
-
-            put_storage_value(
-                pallet_prefix,
-                storage_item_prefix,
-                &Blake2_128Concat::hash(&AccountId::from(ALICE).encode()),
-                bounded_holds,
-            );
-            let migration = MigrateHoldReason::<Runtime>(Default::default());
-            migration.migrate(Default::default());
-            let new_holds = pallet_balances::Holds::<Runtime>::get(AccountId::from(ALICE));
-
-            assert_eq!(new_holds.len() as u32, 1u32);
-            assert_eq!(
-                new_holds[0].id,
-                pallet_pooled_staking::HoldReason::PooledStake.into()
-            );
-            assert_eq!(new_holds[0].amount, 100u128);
-        });
-}
-
-#[test]
-fn test_migration_holds_runtime_enum() {
-    use {
-        dancebox_runtime::migrations::{MigrateHoldReasonRuntimeEnum, OldHoldReason},
-        frame_support::{migration::put_storage_value, Blake2_128Concat, StorageHasher},
-    };
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            let pallet_prefix: &[u8] = b"Balances";
-            let storage_item_prefix: &[u8] = b"Holds";
-            use parity_scale_codec::Encode;
-            let hold: pallet_balances::IdAmount<
-                OldHoldReason,
-                <Runtime as pallet_balances::Config>::Balance,
-            > = pallet_balances::IdAmount {
-                id: OldHoldReason::PooledStake,
-                amount: 100u128.into(),
-            };
-            let holds = vec![hold];
-            let bounded_holds =
-                BoundedVec::<_, <Runtime as pallet_balances::Config>::MaxHolds>::truncate_from(
-                    holds.clone(),
-                );
-
-            put_storage_value(
-                pallet_prefix,
-                storage_item_prefix,
-                &Blake2_128Concat::hash(&AccountId::from(ALICE).encode()),
-                bounded_holds,
-            );
-            let migration = MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
-            migration.migrate(Default::default());
-            let new_holds = pallet_balances::Holds::<Runtime>::get(AccountId::from(ALICE));
-
-            assert_eq!(new_holds.len() as u32, 1u32);
-            assert_eq!(
-                new_holds[0].id,
-                pallet_pooled_staking::HoldReason::PooledStake.into()
-            );
-            assert_eq!(new_holds[0].amount, 100u128);
-        });
-}
-
-#[test]
-fn test_reward_to_staking_candidate() {
-    // Alice, Bob, Charlie are invulnerables
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 100,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 2,
-            collators_per_container: 2,
-            full_rotation_period: 24,
-        })
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
-            assert_ok!(Session::set_keys(
-                origin_of(DAVE.into()),
-                dancebox_runtime::SessionKeys {
-                    nimbus: dave_account_id,
-                },
-                vec![]
-            ));
-
-            // We make delegations to DAVE so that she is an elligible candidate.
-
-            let stake = 10 * MinimumSelfDelegation::get();
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(DAVE.into()),
-                DAVE.into(),
-                TargetPool::ManualRewards,
-                stake,
-            ));
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(BOB.into()),
-                DAVE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            // wait few sessions for the request to be executable
-            run_to_session(3u32);
-            assert_ok!(PooledStaking::execute_pending_operations(
-                origin_of(ALICE.into()),
-                vec![
-                    PendingOperationQuery {
-                        delegator: DAVE.into(),
-                        operation: PendingOperationKey::JoiningManualRewards {
-                            candidate: DAVE.into(),
-                            at: 0
-                        }
-                    },
-                    PendingOperationQuery {
-                        delegator: BOB.into(),
-                        operation: PendingOperationKey::JoiningAutoCompounding {
-                            candidate: DAVE.into(),
-                            at: 0
-                        }
-                    }
-                ]
-            ));
-
-            // wait for next session so that DAVE is elected
-            run_to_session(4u32);
-
-            assert_eq!(
-                Session::validators(),
-                vec![AccountId::from(ALICE), AccountId::from(DAVE)]
-            );
-
-            let account: AccountId = DAVE.into();
-            let balance_before = System::account(account.clone()).data.free;
-            let summary = (0..100)
-                .find_map(|_| {
-                    let summary = run_block();
-                    if summary.author_id == DAVE.into() {
-                        Some(summary)
-                    } else {
-                        None
-                    }
-                })
-                .unwrap_or_else(|| panic!("DAVE doesn't seem to author any blocks"));
-            let balance_after = System::account(account).data.free;
-
-            let all_rewards = RewardsPortion::get() * summary.inflation;
-            // rewards are shared between orchestrator and registered paras
-            let orchestrator_rewards = all_rewards / 3;
-            let candidate_rewards = RewardsCollatorCommission::get() * orchestrator_rewards;
-
-            assert_eq!(
-                candidate_rewards,
-                balance_after - balance_before,
-                "dave should get the correct reward portion"
-            );
-        });
 }
 
 #[test]
@@ -4048,43 +2306,6 @@ fn test_reward_to_invulnerable() {
             // We make delegations to ALICE so that she is an elligible candidate.
             // However since she is an invulnerable she should get all the
             // rewards.
-
-            let stake = 10 * MinimumSelfDelegation::get();
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(ALICE.into()),
-                ALICE.into(),
-                TargetPool::ManualRewards,
-                stake,
-            ));
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(BOB.into()),
-                ALICE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            // wait few sessions for the request to be executable
-            run_to_session(3u32);
-            assert_ok!(PooledStaking::execute_pending_operations(
-                origin_of(ALICE.into()),
-                vec![
-                    PendingOperationQuery {
-                        delegator: ALICE.into(),
-                        operation: PendingOperationKey::JoiningAutoCompounding {
-                            candidate: ALICE.into(),
-                            at: 0
-                        }
-                    },
-                    PendingOperationQuery {
-                        delegator: BOB.into(),
-                        operation: PendingOperationKey::JoiningAutoCompounding {
-                            candidate: ALICE.into(),
-                            at: 0
-                        }
-                    }
-                ]
-            ));
 
             // wait for next session so that ALICE is elected
             run_to_session(4u32);
@@ -4148,7 +2369,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             let alice_new_key = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                dancebox_runtime::SessionKeys {
+                flashbox_runtime::SessionKeys {
                     nimbus: alice_new_key,
                 },
                 vec![]
@@ -4171,244 +2392,6 @@ fn test_reward_to_invulnerable_with_key_change() {
                 orchestrator_rewards,
                 balance_after - balance_before,
                 "alice should get the correct reward portion"
-            );
-        });
-}
-
-#[test]
-fn test_migration_config_full_rotation_period() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
-                &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
-            const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
-                &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
-
-            // Modify active config
-            frame_support::storage::unhashed::put_raw(CONFIGURATION_ACTIVE_CONFIG_KEY, &hex_literal::hex!("63000000020000000500000002000000"));
-            // Modify pending configs
-            frame_support::storage::unhashed::put_raw(CONFIGURATION_PENDING_CONFIGS_KEY, &hex_literal::hex!("08b108000063000000020000000500000002000000b208000064000000020000000500000002000000"));
-
-            let migration = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
-            migration.migrate(Default::default());
-
-            let expected_active = pallet_configuration::HostConfiguration {
-                max_collators: 99,
-                min_orchestrator_collators: 2,
-                max_orchestrator_collators: 5,
-                collators_per_container: 2,
-                full_rotation_period: 0,
-            };
-            assert_eq!(Configuration::config(), expected_active);
-
-            let expected_pending = vec![
-                (2225, pallet_configuration::HostConfiguration { max_collators: 99, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 0 }), (2226, pallet_configuration::HostConfiguration { max_collators: 100, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 0 })
-            ];
-            assert_eq!(Configuration::pending_configs(), expected_pending);
-        });
-}
-
-#[test]
-fn test_migration_services_payment() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            // Register a new parachain with no credits
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
-            // Register another parachain with no credits, do not mark this as valid for collation
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1002.into(), empty_genesis_data()),
-                ()
-            );
-
-            // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1002.into(), 0));
-            // And also remove the "given_free_credits" storage because the migration will only
-            // give them free credits if they have not received them already
-            pallet_services_payment::GivenFreeCredits::<Runtime>::remove(ParaId::from(1001));
-            pallet_services_payment::GivenFreeCredits::<Runtime>::remove(ParaId::from(1002));
-
-            let credits_1001 = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
-            )
-            .unwrap_or_default();
-            assert_eq!(credits_1001, 0);
-            let credits_1002 = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1002),
-            )
-            .unwrap_or_default();
-            assert_eq!(credits_1002, 0);
-
-            // Apply migration
-            let migration = MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
-            migration.migrate(Default::default());
-
-            // Both parachains have been given credits
-            let credits_1001 = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
-            )
-            .unwrap_or_default();
-            assert_ne!(credits_1001, 0);
-            let credits_1002 = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1002),
-            )
-            .unwrap_or_default();
-            assert_ne!(credits_1002, 0);
-
-            // Calling mark_valid_for_collating(1002) will not give it any credits
-            assert_ok!(Registrar::mark_valid_for_collating(
-                root_origin(),
-                1002.into()
-            ));
-            let credits_1002_after =
-                pallet_services_payment::BlockProductionCredits::<Runtime>::get(&ParaId::from(
-                    1002,
-                ))
-                .unwrap_or_default();
-            assert_eq!(credits_1002, credits_1002_after);
-        });
-}
-
-#[test]
-fn test_collator_assignment_gives_priority_to_invulnerables() {
-    // Set max_collators = 2, take 1 invulnerable and the rest from staking
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
-        ])
-        .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
-        ])
-        .with_config(default_config())
-        .build()
-        .execute_with(|| {
-            run_to_block(2);
-
-            let stake = 10 * MinimumSelfDelegation::get();
-
-            // Register accounts in pallet_session (invulnerables are automatically registered)
-            let bob_account_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
-            assert_ok!(Session::set_keys(
-                origin_of(BOB.into()),
-                dancebox_runtime::SessionKeys {
-                    nimbus: bob_account_id,
-                },
-                vec![]
-            ));
-            let charlie_account_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
-            assert_ok!(Session::set_keys(
-                origin_of(CHARLIE.into()),
-                dancebox_runtime::SessionKeys {
-                    nimbus: charlie_account_id,
-                },
-                vec![]
-            ));
-
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(BOB.into()),
-                BOB.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-            assert_ok!(PooledStaking::request_delegate(
-                origin_of(CHARLIE.into()),
-                CHARLIE.into(),
-                TargetPool::AutoCompounding,
-                stake,
-            ));
-
-            let eligible_candidates =
-                pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
-            assert_eq!(
-                eligible_candidates,
-                vec![
-                    EligibleCandidate {
-                        candidate: BOB.into(),
-                        stake
-                    },
-                    EligibleCandidate {
-                        candidate: CHARLIE.into(),
-                        stake
-                    },
-                ]
-            );
-
-            assert_eq!(
-                pallet_invulnerables::Invulnerables::<Runtime>::get().to_vec(),
-                vec![AccountId::from(ALICE), AccountId::from(DAVE)]
-            );
-
-            set_parachain_inherent_data_random_seed([1; 32]);
-
-            // Need to trigger new session to update pallet_session
-            run_to_session(2);
-
-            assert_eq!(
-                Session::validators(),
-                vec![
-                    AccountId::from(ALICE),
-                    AccountId::from(DAVE),
-                    AccountId::from(BOB),
-                    AccountId::from(CHARLIE)
-                ]
-            );
-
-            // Need to trigger full rotation to ensure invulnerables are assigned
-            let rotation_period = Configuration::config().full_rotation_period;
-            run_to_session(rotation_period);
-
-            assert!(
-                CollatorAssignment::collator_container_chain()
-                    .orchestrator_chain
-                    .contains(&AccountId::from(ALICE)),
-                "CollatorAssignment did not give priority to invulnerable ALICE: {:?}",
-                CollatorAssignment::collator_container_chain()
-            );
-
-            assert!(
-                CollatorAssignment::collator_container_chain()
-                    .orchestrator_chain
-                    .contains(&AccountId::from(DAVE)),
-                "CollatorAssignment did not give priority to invulnerable DAVE: {:?}",
-                CollatorAssignment::collator_container_chain()
             );
         });
 }
@@ -4449,11 +2432,43 @@ fn test_can_buy_credits_before_registering_para() {
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get());
+            assert_eq!(credits, flashbox_runtime::MaxCreditsStored::get());
 
             let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
-                * u128::from(dancebox_runtime::MaxCreditsStored::get());
+                * u128::from(flashbox_runtime::MaxCreditsStored::get());
             assert_eq!(balance_before - balance_after, expected_cost);
+        });
+}
+
+#[test]
+fn test_cannot_mark_valid_para_with_no_bootnodes() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_noop!(
+                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
+                pallet_data_preservers::Error::<Runtime>::NoBootNodes,
+            );
         });
 }
 
@@ -4483,7 +2498,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                dancebox_runtime::MaxCreditsStored::get() - 1,
+                flashbox_runtime::MaxCreditsStored::get() - 1,
                 None,
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
@@ -4492,28 +2507,34 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get() - 1);
+            assert_eq!(credits, flashbox_runtime::MaxCreditsStored::get() - 1);
 
             let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
-                * u128::from(dancebox_runtime::MaxCreditsStored::get() - 1);
+                * u128::from(flashbox_runtime::MaxCreditsStored::get() - 1);
             assert_eq!(balance_before - balance_after, expected_cost);
 
             // Now register para
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
 
             // We received 1 free credit, because we cannot have more than MaxCreditsStored
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get());
+            assert_eq!(credits, flashbox_runtime::MaxCreditsStored::get());
         });
 }
 
@@ -4539,20 +2560,26 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             run_to_block(2);
 
             // Register
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ),);
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ),);
             // We received free credits
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get());
+            assert_eq!(credits, flashbox_runtime::MaxCreditsStored::get());
             // Deregister after 1 session
             run_to_session(1);
             assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
@@ -4565,17 +2592,23 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             // We spent some credits because this container chain had collators for 1 session
             assert_ne!(
                 credits_before_2nd_register,
-                dancebox_runtime::MaxCreditsStored::get()
+                flashbox_runtime::MaxCreditsStored::get()
             );
             // Register again
-            assert_ok!(
-                Registrar::register(origin_of(ALICE.into()), 1001.into(), empty_genesis_data()),
-                ()
-            );
-            assert_ok!(
-                Registrar::mark_valid_for_collating(root_origin(), 1001.into()),
-                ()
-            );
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ),);
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ),);
             // No more free credits
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),

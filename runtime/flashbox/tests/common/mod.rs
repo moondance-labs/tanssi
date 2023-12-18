@@ -17,7 +17,7 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
-    dancebox_runtime::{AuthorInherent, MaxLengthTokenSymbol},
+    flashbox_runtime::{AuthorInherent, MaxBootNodeUrlLen, MaxBootNodes, MaxLengthTokenSymbol},
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -29,21 +29,21 @@ use {
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::{Get, Pair},
-    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
 };
 
-pub use dancebox_runtime::{
+pub use flashbox_runtime::{
     AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
-    CollatorAssignment, Configuration, InflationRewards, Initializer, Invulnerables,
-    MinimumSelfDelegation, ParachainInfo, PooledStaking, Proxy, ProxyType, Registrar,
+    CollatorAssignment, Configuration, DataPreservers, InflationRewards, Initializer,
+    Invulnerables, MinimumSelfDelegation, ParachainInfo, Proxy, ProxyType, Registrar,
     RewardsPortion, Runtime, RuntimeCall, RuntimeEvent, ServicesPayment, Session, System,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
-    let block_number = dancebox_runtime::Period::get() * n;
+    let block_number = flashbox_runtime::Period::get() * n;
 
     // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
     // so this is the first block of the new session that can actually be used
@@ -207,7 +207,6 @@ pub struct ExtBuilder {
     )>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
-    safe_xcm_version: Option<u32>,
     own_para_id: Option<ParaId>,
 }
 
@@ -240,16 +239,6 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_safe_xcm_version(mut self, safe_xcm_version: u32) -> Self {
-        self.safe_xcm_version = Some(safe_xcm_version);
-        self
-    }
-
-    pub fn with_own_para_id(mut self, own_para_id: ParaId) -> Self {
-        self.own_para_id = Some(own_para_id);
-        self
-    }
-
     pub fn build_storage(self) -> sp_core::storage::Storage {
         let mut t = frame_system::GenesisConfig::<Runtime>::default()
             .build_storage()
@@ -269,8 +258,8 @@ impl ExtBuilder {
                 .para_ids
                 .iter()
                 .cloned()
-                .map(|(para_id, genesis_data, boot_nodes, _block_credits)| {
-                    (para_id.into(), genesis_data, boot_nodes)
+                .map(|(para_id, genesis_data, _boot_nodes, _block_credits)| {
+                    (para_id.into(), genesis_data)
                 })
                 .collect(),
         }
@@ -291,13 +280,6 @@ impl ExtBuilder {
 
         pallet_configuration::GenesisConfig::<Runtime> {
             config: self.config,
-            ..Default::default()
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
-        pallet_xcm::GenesisConfig::<Runtime> {
-            safe_xcm_version: self.safe_xcm_version,
             ..Default::default()
         }
         .assimilate_storage(&mut t)
@@ -336,7 +318,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        dancebox_runtime::SessionKeys { nimbus: nimbus_id },
+                        flashbox_runtime::SessionKeys { nimbus: nimbus_id },
                     )
                 })
                 .collect();
@@ -428,6 +410,16 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
         extensions: Default::default(),
         properties: Default::default(),
     }
+}
+
+pub fn dummy_boot_nodes() -> BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> {
+    vec![BoundedVec::try_from(
+        b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+            .to_vec(),
+    )
+    .unwrap()]
+    .try_into()
+    .unwrap()
 }
 
 pub fn current_slot() -> u64 {
