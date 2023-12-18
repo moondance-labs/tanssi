@@ -248,7 +248,7 @@ impl ContainerChainSpawner {
                 sc_service::error::Result::Ok((container_chain_cli_config, db_path))
             };
 
-            let (container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
+            let (_container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
             let db_exists = db_path.exists();
             let db_exists_but_may_need_removal = db_exists && validator;
             if db_exists_but_may_need_removal {
@@ -278,6 +278,17 @@ impl ContainerChainSpawner {
                 &orchestrator_client,
                 container_chain_para_id,
             )?;
+            log::info!(
+                "Container chain sync mode: {:?}",
+                container_chain_cli.base.base.network_params.sync
+            );
+            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+                &container_chain_cli,
+                &container_chain_cli,
+                tokio_handle.clone(),
+            )
+            .map_err(|err| format!("Container chain argument error: {}", err))?;
+            container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
             let (
@@ -872,7 +883,7 @@ mod tests {
                 chains_to_start,
                 need_to_restart,
             } = handle_update_assignment_state_change(
-                &mut *self.state.lock().unwrap(),
+                &mut self.state.lock().unwrap(),
                 self.orchestrator_para_id,
                 self.collate_on_tanssi.clone(),
                 current,

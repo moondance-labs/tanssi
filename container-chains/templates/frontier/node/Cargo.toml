@@ -90,6 +90,7 @@ cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
+cumulus-test-relay-sproof-builder = { workspace = true }
 
 # Frontier
 fc-api = { workspace = true }
@@ -108,8 +109,24 @@ substrate-build-script-utils = { workspace = true }
 
 [features]
 default = []
-runtime-benchmarks = [ "container-chain-template-frontier-runtime/runtime-benchmarks", "pallet-ethereum/runtime-benchmarks", "polkadot-cli/runtime-benchmarks" ]
+runtime-benchmarks = [
+	"container-chain-template-frontier-runtime/runtime-benchmarks",
+	"pallet-ethereum/runtime-benchmarks",
+	"polkadot-cli/runtime-benchmarks",
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-benchmarking-cli/runtime-benchmarks",
+	"nimbus-primitives/runtime-benchmarks",
+	"polkadot-primitives/runtime-benchmarks",
+	"polkadot-service/runtime-benchmarks",
+	"sc-service/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks"
+]
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",
 	"try-runtime-cli/try-runtime",
+	"nimbus-primitives/try-runtime",
+	"pallet-ethereum/try-runtime",
+	"polkadot-cli/try-runtime",
+	"polkadot-service/try-runtime",
+	"sp-runtime/try-runtime"
  ]

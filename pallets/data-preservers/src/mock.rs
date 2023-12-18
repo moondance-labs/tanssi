@@ -176,7 +176,7 @@ where
             MockData::get()
                 .container_chain_managers
                 .get(para_id)
-                .and_then(|inner| inner.clone())
+                .and_then(|inner| *inner)
                 .and_then(|manager| {
                     if manager != u64::from(signed_account.clone()) {
                         None

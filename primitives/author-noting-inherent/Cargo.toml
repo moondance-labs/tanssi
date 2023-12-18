@@ -66,4 +66,10 @@ std = [
 	"sp-storage",
 	"sp-trie/std",
 	"test-relay-sproof-builder/std",
+	"cumulus-primitives-parachain-inherent/std",
+	"frame-support?/std",
+	"log/std",
+	"polkadot-primitives?/std",
+	"sp-api?/std",
+	"sp-storage?/std"
 ]
