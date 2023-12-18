@@ -850,10 +850,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 )
             }
             ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(
-                c,
-                RuntimeCall::Session(..) | RuntimeCall::Utility(..)
-            ),
+            ProxyType::Staking => matches!(c, RuntimeCall::Session(..) | RuntimeCall::Utility(..)),
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
