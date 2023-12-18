@@ -351,7 +351,7 @@
             "name": "dev_flashbox",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/common"],
-            "multiThreads": false,
+            "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
                 "type": "dev",
@@ -362,9 +362,9 @@
                         "options": [
                             "--chain=flashbox_dev",
                             "--sealing=manual",
-                            "--collator",
-                            "--dev-service",
-                            "--no-hardware-benchmarks",
+                            "--alice",
+                            "--force-authoring",
+                            "--rpc-cors=all", 
                             "--tmp"
                         ],
                         "disableDefaultEthProviders": true,
