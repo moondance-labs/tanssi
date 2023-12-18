@@ -852,7 +852,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
             ProxyType::Staking => matches!(
                 c,
-                RuntimeCall::Session(..) | RuntimeCall::Utility(..) // | RuntimeCall::PooledStaking(..)
+                RuntimeCall::Session(..) | RuntimeCall::Utility(..)
             ),
             ProxyType::CancelProxy => matches!(
                 c,
@@ -911,7 +911,6 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
                 | RuntimeCall::Registrar(..)
                 | RuntimeCall::Session(..)
                 | RuntimeCall::System(..)
-                // | RuntimeCall::PooledStaking(..)
                 | RuntimeCall::Utility(..)
         )
     }
@@ -1049,7 +1048,6 @@ impl pallet_inflation_rewards::Config for Runtime {
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, ()>;
-    // type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
     type RewardsPortion = RewardsPortion;
 }
 
