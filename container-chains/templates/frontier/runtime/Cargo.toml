@@ -7,15 +7,15 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
+targets = [ "x86_64-unknown-linux-gnu" ]
 
 [dependencies]
 hex-literal = { workspace = true, optional = true }
 log = { workspace = true }
 num_enum = { workspace = true }
-parity-scale-codec = { workspace = true, features = ["derive"] }
-scale-info = { workspace = true, features = ["derive"] }
-serde = { workspace = true, optional = true, features = ["derive"] }
+parity-scale-codec = { workspace = true, features = [ "derive" ] }
+scale-info = { workspace = true, features = [ "derive" ] }
+serde = { workspace = true, optional = true, features = [ "derive" ] }
 smallvec = { workspace = true }
 
 # Local
@@ -30,7 +30,7 @@ pallet-evm-precompile-balances-erc20 = { workspace = true }
 pallet-evm-precompile-batch = { workspace = true }
 pallet-evm-precompile-call-permit = { workspace = true }
 pallet-evm-precompile-xcm-utils = { workspace = true }
-pallet-maintenance-mode = { workspace = true, features = ["xcm-support"] }
+pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
 
@@ -40,7 +40,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
-pallet-balances = { workspace = true, features = ["insecure_zero_ed"] }
+pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
 pallet-proxy = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -84,10 +84,10 @@ cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
 
 # Frontier
-fp-account = { workspace = true, features = ["serde"] }
-fp-evm = { workspace = true, features = ["serde"] }
+fp-account = { workspace = true, features = [ "serde" ] }
+fp-evm = { workspace = true, features = [ "serde" ] }
 fp-rpc = { workspace = true }
-fp-self-contained = { workspace = true, features = ["serde"] }
+fp-self-contained = { workspace = true, features = [ "serde" ] }
 pallet-base-fee = { workspace = true }
 pallet-dynamic-fee = { workspace = true }
 pallet-ethereum = { workspace = true }
@@ -103,12 +103,11 @@ precompile-utils = { workspace = true }
 substrate-wasm-builder = { workspace = true }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
 	"ccp-xcm/std",
 	"cumulus-pallet-dmp-queue/std",
 	"cumulus-pallet-parachain-system/std",
-	"cumulus-pallet-session-benchmarking/std",
 	"cumulus-pallet-xcm/std",
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
@@ -124,9 +123,6 @@ std = [
 	"frame-system/std",
 	"frame-try-runtime/std",
 	"log/std",
-	"nimbus-primitives/std",
-	"num_enum/std",
-	"pallet-author-inherent/std",
 	"pallet-balances/std",
 	"pallet-base-fee/std",
 	"pallet-cc-authorities-noting/std",
@@ -146,13 +142,11 @@ std = [
 	"pallet-maintenance-mode/std",
 	"pallet-migrations/std",
 	"pallet-proxy/std",
-	"pallet-root-testing/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
-	"pallet-transaction-payment/std",
-	"pallet-tx-pause/std",
 	"pallet-utility/std",
+	"pallet-tx-pause/std",
 	"pallet-xcm/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
@@ -161,73 +155,75 @@ std = [
 	"precompile-utils/std",
 	"scale-info/std",
 	"serde",
-	"serde?/std",
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
 	"sp-core/std",
-	"sp-debug-derive/std",
 	"sp-inherents/std",
 	"sp-offchain/std",
 	"sp-runtime/std",
-	"sp-session/std",
 	"sp-std/std",
 	"sp-transaction-pool/std",
-	"sp-trie/std",
 	"sp-version/std",
 	"staging-xcm-builder/std",
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
 	"tp-consensus/std",
 	"xcm-primitives/std",
+	"cumulus-pallet-session-benchmarking/std",
+	"nimbus-primitives/std",
+	"num_enum/std",
+	"pallet-author-inherent/std",
+	"pallet-root-testing/std",
+	"pallet-transaction-payment/std",
+	"serde?/std",
+	"sp-debug-derive/std",
+	"sp-session/std",
+	"sp-trie/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
-force-debug = ["sp-debug-derive/force-debug"]
+force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [
-	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
-	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
-	"cumulus-primitives-utility/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"hex-literal",
+	"pallet-balances/runtime-benchmarks",
+	"pallet-ethereum/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
+	"pallet-xcm/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"staging-xcm-builder/runtime-benchmarks",
+	"cumulus-pallet-parachain-system/runtime-benchmarks",
+	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
+	"cumulus-primitives-utility/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-author-inherent/runtime-benchmarks",
-	"pallet-balances/runtime-benchmarks",
 	"pallet-cc-authorities-noting/runtime-benchmarks",
-	"pallet-ethereum/runtime-benchmarks",
-	"pallet-evm-precompile-xcm-utils/runtime-benchmarks",
 	"pallet-evm/runtime-benchmarks",
+	"pallet-evm-precompile-xcm-utils/runtime-benchmarks",
 	"pallet-hotfix-sufficients/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
-	"pallet-timestamp/runtime-benchmarks",
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
-	"pallet-xcm/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
-	"xcm-primitives/runtime-benchmarks",
+	"xcm-primitives/runtime-benchmarks"
 ]
 
 try-runtime = [
-	"cumulus-pallet-dmp-queue/try-runtime",
 	"cumulus-pallet-parachain-system/try-runtime",
-	"cumulus-pallet-xcm/try-runtime",
-	"cumulus-pallet-xcmp-queue/try-runtime",
 	"fp-self-contained/try-runtime",
 	"frame-executive/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
-	"pallet-author-inherent/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-base-fee/try-runtime",
 	"pallet-cc-authorities-noting/try-runtime",
@@ -239,14 +235,18 @@ try-runtime = [
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-proxy/try-runtime",
-	"pallet-root-testing/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
-	"pallet-tx-pause/try-runtime",
 	"pallet-utility/try-runtime",
-	"pallet-xcm/try-runtime",
+	"pallet-tx-pause/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
+	"cumulus-pallet-dmp-queue/try-runtime",
+	"cumulus-pallet-xcm/try-runtime",
+	"cumulus-pallet-xcmp-queue/try-runtime",
+	"pallet-author-inherent/try-runtime",
+	"pallet-root-testing/try-runtime",
+	"pallet-xcm/try-runtime"
 ]

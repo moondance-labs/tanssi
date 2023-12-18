@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-#![allow(clippy::await_holding_lock)]
-
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
@@ -212,7 +210,12 @@ impl Proposer<TestBlock> for DummyProposer {
         _: Duration,
         _: Option<usize>,
     ) -> Self::Proposal {
-        let r = self.1.new_block(digests).unwrap().build();
+        let r = self
+            .1
+            .new_block(digests)
+            .unwrap()
+            .build()
+            .map_err(|e| e.into());
 
         futures::future::ready(r.map(|b| Proposal {
             block: b.block,

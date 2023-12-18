@@ -7,16 +7,16 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
+targets = [ "x86_64-unknown-linux-gnu" ]
 [dependencies]
 frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
-hex = { workspace = true, optional = true, features = ["alloc"] }
+hex = { workspace = true, optional = true, features = [ "alloc" ] }
 log = { workspace = true }
-parity-scale-codec = { workspace = true, features = ["derive", "max-encoded-len"] }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }
-serde = { workspace = true, optional = true, features = ["derive"] }
+serde = { workspace = true, optional = true, features = [ "derive" ] }
 sp-consensus-aura = { workspace = true }
 sp-core = { workspace = true }
 sp-inherents = { workspace = true }
@@ -44,9 +44,8 @@ sp-version = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
-	"bounded-collections/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-core/std",
@@ -56,43 +55,44 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"hex",
-	"hex?/std",
-	"log/std",
 	"parity-scale-codec/std",
-	"polkadot-parachain-primitives/std",
-	"polkadot-primitives/std",
 	"scale-info/std",
 	"serde",
-	"serde?/std",
 	"sp-consensus-aura/std",
+	"sp-state-machine/std",
+	"sp-trie/std",
+	"tp-author-noting-inherent/std",
+	"tp-traits/std",
+	"bounded-collections/std",
+	"hex?/std",
+	"log/std",
+	"polkadot-parachain-primitives/std",
+	"polkadot-primitives/std",
+	"serde?/std",
 	"sp-core/std",
 	"sp-externalities/std",
 	"sp-inherents/std",
 	"sp-io/std",
 	"sp-runtime/std",
-	"sp-state-machine/std",
 	"sp-std/std",
-	"sp-trie/std",
 	"sp-version/std",
-	"test-relay-sproof-builder/std",
-	"tp-author-noting-inherent/std",
-	"tp-traits/std",
+	"test-relay-sproof-builder/std"
 ]
 runtime-benchmarks = [
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"frame-benchmarking",
+	"hex",
+	"tp-traits/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
-	"hex",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-primitives/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"tp-traits/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks"
 ]
 try-runtime = [
-	"cumulus-pallet-parachain-system/try-runtime",
 	"frame-support/try-runtime",
+	"cumulus-pallet-parachain-system/try-runtime",
 	"frame-system/try-runtime",
-	"sp-runtime/try-runtime",
+	"sp-runtime/try-runtime"
 ]

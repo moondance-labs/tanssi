@@ -424,7 +424,7 @@ pub(crate) fn events() -> Vec<crate::Event<Runtime>> {
 macro_rules! assert_last_event {
     ($event:expr) => {
         match &$event {
-            e => assert_eq!(*e, $crate::mock::last_event()),
+            e => assert_eq!(*e, crate::mock::last_event()),
         }
     };
 }
@@ -435,7 +435,7 @@ macro_rules! assert_last_event {
 macro_rules! assert_eq_events {
     ($events:expr) => {
         match &$events {
-            e => similar_asserts::assert_eq!(*e, $crate::mock::events()),
+            e => similar_asserts::assert_eq!(*e, crate::mock::events()),
         }
     };
 }
@@ -459,7 +459,7 @@ macro_rules! assert_eq_events {
 #[macro_export]
 macro_rules! assert_eq_last_events {
     ($events:expr) => {
-        $crate::assert_tail_eq!($events, $crate::mock::events())
+        crate::assert_tail_eq!($events, crate::mock::events())
     };
 }
 
@@ -488,10 +488,10 @@ macro_rules! assert_event_emitted {
         match &$event {
             e => {
                 assert!(
-                    $crate::mock::events().iter().find(|x| *x == e).is_some(),
+                    crate::mock::events().iter().find(|x| *x == e).is_some(),
                     "Event {:?} was not found in events: \n {:?}",
                     e,
-                    $crate::mock::events()
+                    crate::mock::events()
                 );
             }
         }
@@ -505,10 +505,10 @@ macro_rules! assert_event_not_emitted {
         match &$event {
             e => {
                 assert!(
-                    $crate::mock::events().iter().find(|x| *x == e).is_none(),
+                    crate::mock::events().iter().find(|x| *x == e).is_none(),
                     "Event {:?} was found in events: \n {:?}",
                     e,
-                    $crate::mock::events()
+                    crate::mock::events()
                 );
             }
         }

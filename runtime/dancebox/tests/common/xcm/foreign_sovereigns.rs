@@ -71,7 +71,7 @@ fn using_sovereign_works_from_tanssi() {
         let sovereign_account =
             westend_runtime::xcm_config::LocationConverter::convert_location(&MultiLocation {
                 parents: 0,
-                interior: X1(Parachain(2000u32)),
+                interior: X1(Parachain(2000u32.into())),
             })
             .unwrap();
 
@@ -119,7 +119,7 @@ fn using_sovereign_works_from_tanssi() {
                         success,
                         ..
                     }) => {
-                    success: *success,
+                    success: *success == true,
                 },
             ]
         );
@@ -177,7 +177,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
         let sovereign_account =
             container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(&MultiLocation {
                 parents: 1,
-                interior: X1(Parachain(2000u32)),
+                interior: X1(Parachain(2000u32.into())),
             })
             .unwrap();
 

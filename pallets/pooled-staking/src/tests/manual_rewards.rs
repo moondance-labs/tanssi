@@ -91,6 +91,7 @@ fn second_delegation_transfer_rewards() {
             request_amount: amount,
             expected_increase: amount,
             expected_manual_rewards: expected_rewards,
+            ..default()
         }
         .test::<pools::ManualRewards<Runtime>>();
 

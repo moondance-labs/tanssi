@@ -592,8 +592,8 @@ fn reward_distribution_is_transactional() {
         let request_time = <Runtime as crate::Config>::JoiningRequestTimer::now();
 
         assert_ok!(Staking::request_delegate(
-            RuntimeOrigin::signed(ACCOUNT_CANDIDATE_1),
-            ACCOUNT_CANDIDATE_1,
+            RuntimeOrigin::signed(ACCOUNT_CANDIDATE_1.into()),
+            ACCOUNT_CANDIDATE_1.into(),
             TargetPool::AutoCompounding,
             1_000_000_000,
         ));
@@ -604,18 +604,18 @@ fn reward_distribution_is_transactional() {
         }
 
         assert_ok!(Staking::execute_pending_operations(
-            RuntimeOrigin::signed(ACCOUNT_CANDIDATE_1),
+            RuntimeOrigin::signed(ACCOUNT_CANDIDATE_1.into()),
             vec![PendingOperationQuery {
-                delegator: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_CANDIDATE_1.into(),
                 operation: PendingOperationKey::JoiningAutoCompounding {
-                    candidate: ACCOUNT_CANDIDATE_1,
+                    candidate: ACCOUNT_CANDIDATE_1.into(),
                     at: request_time
                 },
             }]
         ));
 
         let total_staked_before =
-            pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1);
+            pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1.into());
 
         // Increase ED to make reward destribution fail when resolving
         // credit to Staking account.
@@ -623,12 +623,12 @@ fn reward_distribution_is_transactional() {
 
         let rewards = Balances::issue(1_000_000_000);
         assert_err!(
-            Staking::distribute_rewards(ACCOUNT_CANDIDATE_1, rewards),
+            Staking::distribute_rewards(ACCOUNT_CANDIDATE_1.into(), rewards),
             DispatchError::NoProviders
         );
 
         let total_staked_after =
-            pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1);
+            pools::AutoCompounding::<Runtime>::total_staked(&ACCOUNT_CANDIDATE_1.into());
         assert_eq!(
             total_staked_before, total_staked_after,
             "distribution should be reverted"

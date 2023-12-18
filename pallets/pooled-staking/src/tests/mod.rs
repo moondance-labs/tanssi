@@ -51,10 +51,14 @@ pub(crate) fn operation_stake(
     at: u64,
 ) -> Balance {
     let operation_key = match pool {
-        TargetPool::AutoCompounding => {
-            PendingOperationKey::JoiningAutoCompounding { candidate, at }
-        }
-        TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards { candidate, at },
+        TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
+            candidate: candidate.clone(),
+            at,
+        },
+        TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
+            candidate: candidate.clone(),
+            at,
+        },
     };
 
     let shares = PendingOperations::<Runtime>::get(&delegator, &operation_key);

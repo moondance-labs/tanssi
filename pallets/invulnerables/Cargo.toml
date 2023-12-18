@@ -7,13 +7,13 @@ license = "GPL-3.0-only"
 version = "0.1.0"
 
 [package.metadata.docs.rs]
-targets = ["x86_64-unknown-linux-gnu"]
+targets = [ "x86_64-unknown-linux-gnu" ]
 
 [dependencies]
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 rand = { workspace = true, optional = true }
-scale-info = { workspace = true, features = ["derive"] }
+scale-info = { workspace = true, features = [ "derive" ] }
 
 frame-support = { workspace = true }
 frame-system = { workspace = true }
@@ -32,7 +32,7 @@ sp-core = { workspace = true }
 sp-io = { workspace = true }
 
 [features]
-default = ["std"]
+default = [ "std" ]
 std = [
 	"frame-benchmarking/std",
 	"frame-support/std",
@@ -41,14 +41,14 @@ std = [
 	"pallet-balances/std",
 	"pallet-session/std",
 	"parity-scale-codec/std",
-	"rand?/std",
 	"scale-info/std",
-	"sp-core/std",
-	"sp-io/std",
 	"sp-runtime/std",
-	"sp-staking/std",
 	"sp-std/std",
 	"tp-traits/std",
+	"rand?/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-staking/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
@@ -58,7 +58,7 @@ runtime-benchmarks = [
 	"rand",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
-	"tp-traits/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -66,5 +66,5 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"pallet-balances?/try-runtime",
 	"pallet-session/try-runtime",
-	"sp-runtime/try-runtime",
+	"sp-runtime/try-runtime"
 ]
