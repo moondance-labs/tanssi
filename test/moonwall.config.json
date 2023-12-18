@@ -351,7 +351,7 @@
             "name": "dev_flashbox",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/common"],
-            "multiThreads": true,
+            "multiThreads": false,
             "reporters": ["basic"],
             "foundation": {
                 "type": "dev",
