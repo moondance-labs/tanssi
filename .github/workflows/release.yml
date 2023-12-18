@@ -135,6 +135,25 @@ jobs:
             - name: Run zepter
               run: zepter run check
 
+    toml-formatting:
+        runs-on: ubuntu-latest
+        needs: ["set-tags"]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+
+            - name: Setup Rust toolchain
+              run: rustup show
+
+            - name: Install toml-maid
+              run: cargo install --locked -f toml-maid
+
+            - name: Run toml-maid
+              # TODO: change command to `toml-maid --check` when toml-maid.toml supports excluding files and directories
+              run: find . -name "Cargo.toml" -print0 | xargs -0 -I {} sh -c 'toml-maid --check "{}" || exit 255'
+
     typescript-formatting:
         runs-on: ubuntu-latest
         needs: ["set-tags"]
