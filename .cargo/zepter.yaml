@@ -1,3 +1,6 @@
+# This file should be kept updated with the upstream config file:
+# https://github.com/paritytech/polkadot-sdk/blob/master/.config/zepter.yaml
+
 version:
   format: 1
   # Minimum version of the binary that is expected to work. This is just for printing a nice error
