@@ -7,7 +7,7 @@ import { Result } from "@polkadot/types-codec";
 import { SpRuntimeDispatchError } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "C0402",
+    id: "C0302",
     title: "Txs can be paused and unpaused",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -27,6 +27,7 @@ describeSuite({
             id: "E01",
             title: "transfer should fail after pausing it",
             test: async function () {
+                await context.createBlock();
                 // Pause Balances.transfer_allow_death
                 const { result } = await context.createBlock(
                     polkadotJs.tx.sudo

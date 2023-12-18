@@ -7,7 +7,7 @@ import { Result } from "@polkadot/types-codec";
 import { SpRuntimeDispatchError } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "C0401",
+    id: "C0301",
     title: "Pausing is compatible with maintenance mode",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

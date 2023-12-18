@@ -7,7 +7,7 @@
         {
             "name": "dev_tanssi",
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/dev-tanssi", "suites/common"],
+            "testFileDir": ["suites/dev-tanssi", "suites/common", "suites/xcm-common"],
             "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
@@ -48,7 +48,7 @@
         },
         {
             "name": "dev_frontier_template",
-            "testFileDir": ["suites/dev-frontier-template", "suites/common"],
+            "testFileDir": ["suites/dev-frontier-template", "suites/common", "suites/xcm-common"],
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": true,
             "reporters": ["basic"],
@@ -67,7 +67,7 @@
         },
         {
             "name": "dev_simple_template",
-            "testFileDir": ["suites/common"],
+            "testFileDir": ["suites/common", "suites/xcm-common"],
             "multiThreads": true,
             "reporters": ["basic"],
             "contracts": "helpers/",

@@ -1,47 +1,19 @@
-import { DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
-import { generateKeyringPair } from "@moonwall/util";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { xxhashAsU8a } from "@polkadot/util-crypto";
-import { u8aToHex } from "@polkadot/util";
-import { CumulusPalletDmpQueueConfigData } from "@polkadot/types/lookup";
 import {
     RawXcmMessage,
     XcmFragment,
-    descendParentOriginForAddress20,
-    descendParentOriginFromAddress32,
-    injectDmpMessageAndSeal,
+    descendSiblingOriginFromAddress20,
+    descendSiblingOriginFromAddress32,
+    injectHrmpMessageAndSeal,
+    sovereignAccountOfSiblingForAddress20,
+    sovereignAccountOfSiblingForAddress32,
 } from "../../../util/xcm.ts";
 
-async function setDmpConfigStorage(context: DevModeContext, api: ApiPromise, sudoAccount: KeyringPair) {
-    // Get module and storage name keys
-    const module = xxhashAsU8a(new TextEncoder().encode("DmpQueue"), 128);
-    const configuration_key = xxhashAsU8a(new TextEncoder().encode("Configuration"), 128);
-
-    // Build the element to insert in 'Configuration' storage
-    const configToEncode: CumulusPalletDmpQueueConfigData = context
-        .polkadotJs()
-        .createType("CumulusPalletDmpQueueConfigData", {
-            maxIndividual: {
-                refTime: 10_000_000_000n,
-                proofSize: 300_000n,
-            },
-        });
-
-    // Build the entire key for 'Configuration' storage
-    const overallConfigKey = new Uint8Array([...module, ...configuration_key]);
-
-    await context.createBlock(
-        api.tx.sudo
-            .sudo(api.tx.system.setStorage([[u8aToHex(overallConfigKey), u8aToHex(configToEncode.toU8a())]]))
-            .signAsync(sudoAccount)
-    );
-    return;
-}
-
 describeSuite({
-    id: "C0101",
-    title: "Maintenance mode - DMP queue",
+    id: "CX0104",
+    title: "Maintenance mode - XCM queue",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
@@ -63,23 +35,35 @@ describeSuite({
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
-
-            const descendFunction =
-                chain == "frontier-template" ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
             let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce.toNumber();
 
-            // Generate the parent address constructed by DescendOrigin
-            const { originAddress, descendOriginAddress } = descendFunction(context);
-            sendingAddress = originAddress;
-            transferredBalance = 10_000_000_000_000n;
+            const descendFunction =
+                chain == "frontier-template" ? descendSiblingOriginFromAddress20 : descendSiblingOriginFromAddress32;
+            const sovereignFunction =
+                chain == "frontier-template"
+                    ? sovereignAccountOfSiblingForAddress20
+                    : sovereignAccountOfSiblingForAddress32;
 
-            // Send some tokens to the derivative address to cost Transact execution
+            // Generate the sibling sovereign and derivative accounts
+            const { originAddress, descendOriginAddress } = descendFunction(context);
+            const sovereign = sovereignFunction(context, 1);
+            sendingAddress = originAddress;
+
+            // Transfer some tokens to sovereign and derivative accounts for execution costs
+            transferredBalance = 10_000_000_000_000n;
+            polkadotJs = context.polkadotJs();
+
             const txSigned = polkadotJs.tx.balances.transferAllowDeath(descendOriginAddress, transferredBalance);
+            const txRoot = polkadotJs.tx.balances.transferAllowDeath(sovereign, transferredBalance);
+
             await context.createBlock(await txSigned.signAsync(alice, { nonce: aliceNonce++ }), {
                 allowFailures: false,
             });
+            await context.createBlock(await txRoot.signAsync(alice, { nonce: aliceNonce++ }), { allowFailures: false });
             const balanceSigned = (await polkadotJs.query.system.account(descendOriginAddress)).data.free.toBigInt();
             expect(balanceSigned).to.eq(transferredBalance);
+            const balanceRoot = (await polkadotJs.query.system.account(sovereign)).data.free.toBigInt();
+            expect(balanceRoot).to.eq(transferredBalance);
 
             // Now let's start building the message
             // Generate random receiver address
@@ -91,7 +75,6 @@ describeSuite({
                 .find(({ name }) => name.toString() == "Balances")!
                 .index.toNumber();
 
-            // The call will be a simple balance transfer to random address
             const transferCall = polkadotJs.tx.balances.transferAllowDeath(random.address, transferredBalance / 10n);
             const transferCallEncoded = transferCall?.method.toHex();
 
@@ -126,16 +109,11 @@ describeSuite({
                     },
                 })
                 .as_v3();
-
-            // In case of templates, we set a different Config for DmpQueue
-            if (["frontier-template", "container-chain-template"].includes(chain)) {
-                await setDmpConfigStorage(context, polkadotJs, alice);
-            }
         });
 
         it({
             id: "T01",
-            title: "Should queue DMP execution during maintenance mode",
+            title: "Should queue XCM execution during maintenance mode (HRMP)",
             test: async function () {
                 // Enter maintenance mode with sudo
                 const maintenanceTx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
@@ -145,8 +123,8 @@ describeSuite({
                 let maintenanceOn = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
                 expect(maintenanceOn).to.be.true;
 
-                // This XCM message coming by DMP should not be executed since we are in maintenance mode
-                await injectDmpMessageAndSeal(context, {
+                // This XCM message coming by HRMP should not be executed since we are in maintenance mode
+                await injectHrmpMessageAndSeal(context, 1, {
                     type: "XcmVersionedXcm",
                     payload: xcmMessage,
                 } as RawXcmMessage);
@@ -161,12 +139,12 @@ describeSuite({
                 const resumeTx = polkadotJs.tx.maintenanceMode.resumeNormalOperation();
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(resumeTx).signAsync(alice)]);
 
+                // Create a block in which the XCM message will be executed
+                await context.createBlock();
+
                 // Ensure we are NOT in maintenance mode
                 maintenanceOn = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
                 expect(maintenanceOn).to.be.false;
-
-                // Create a block in which the previous queued XCM message will execute
-                await context.createBlock();
 
                 // Make sure the random address has received the tokens
                 const balanceAfter = (await polkadotJs.query.system.account(random.address)).data.free.toBigInt();
