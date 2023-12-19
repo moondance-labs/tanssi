@@ -511,29 +511,8 @@ impl pallet_session::Config for Runtime {
     type WeightInfo = pallet_session::weights::SubstrateWeight<Runtime>;
 }
 
-/// Read full_rotation_period from pallet_configuration
-pub struct ConfigurationCollatorRotationSessionPeriod;
-
-impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
-    fn get() -> u32 {
-        Configuration::config().full_rotation_period
-    }
-}
-
 pub struct RemoveInvulnerablesImpl;
 
-// impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
-//     fn remove_invulnerables(
-//         collators: &mut Vec<AccountId>,
-//         num_invulnerables: usize,
-//     ) -> Vec<AccountId> {
-//         if num_invulnerables == 0 {
-//             return vec![];
-//         }
-
-//         collators.iter().take(num_invulnerables).cloned().collect()
-//     }
-// }
 impl RemoveInvulnerables<AccountId> for RemoveInvulnerablesImpl {
     fn remove_invulnerables(
         collators: &mut Vec<AccountId>,
