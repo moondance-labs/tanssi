@@ -2324,8 +2324,8 @@ fn test_proxy_utility() {
         | ProxyType::SudoRegistrar => (),
     };
 
+    // All except for any
     let proxy_types = &[
-        ProxyType::Any,
         ProxyType::NonTransfer,
         ProxyType::Governance,
         ProxyType::Staking,
@@ -2348,6 +2348,7 @@ fn test_proxy_utility() {
                 (AccountId::from(ALICE), 210 * UNIT),
                 (AccountId::from(BOB), 100 * UNIT),
             ])
+            .with_sudo(AccountId::from(ALICE))
             .with_config(default_config())
             .build()
             .execute_with(|| {
