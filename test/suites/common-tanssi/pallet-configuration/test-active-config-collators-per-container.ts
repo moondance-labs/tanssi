@@ -2,7 +2,7 @@ import { expect, beforeAll, describeSuite } from "@moonwall/cli";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "DT0201",
+    id: "CT0401",
     title: "Configuration - ActiveConfig - CollatorsPerContainer",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

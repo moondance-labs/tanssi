@@ -7,7 +7,7 @@
         {
             "name": "dev_tanssi",
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/dev-tanssi", "suites/common-all", "suites/common-xcm", "suites/common-tanssi"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
             "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
@@ -48,7 +48,7 @@
         },
         {
             "name": "dev_frontier_template",
-            "testFileDir": ["suites/dev-frontier-template", "suites/common-all", "suites/common-xcm"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/dev-frontier-template"],
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": true,
             "reporters": ["basic"],
@@ -373,7 +373,7 @@
             "name": "dev_flashbox",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/common-all", "suites/common-tanssi"],
-            "multiThreads": false,
+            "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
                 "type": "dev",

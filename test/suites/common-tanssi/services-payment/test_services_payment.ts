@@ -5,7 +5,7 @@ import { generateKeyringPair, KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "util/block";
 
 describeSuite({
-    id: "SP0801",
+    id: "CT0601",
     title: "Services payment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

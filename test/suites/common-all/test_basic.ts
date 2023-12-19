@@ -4,7 +4,7 @@ import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "C011",
+    id: "C0001",
     title: "Dev test suite",
     foundationMethods: "dev",
     testCases: ({ it, context, log }) => {

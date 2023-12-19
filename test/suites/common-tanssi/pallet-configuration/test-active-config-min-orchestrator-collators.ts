@@ -2,18 +2,18 @@ import { expect, beforeAll, describeSuite } from "@moonwall/cli";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "DT0202",
-    title: "Configuration - ActiveConfig - MaxCollators",
+    id: "CT0404",
+    title: "Configuration - ActiveConfig - MinOrchestratorCollators",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         beforeAll(async function () {
             const config = await context.polkadotJs().query.configuration.activeConfig();
-            expect(config["maxCollators"].toString()).toBe("100");
+            expect(config["minOrchestratorCollators"].toString()).toBe("1");
 
             const { result } = await context.createBlock(
                 context
                     .polkadotJs()
-                    .tx.sudo.sudo(context.polkadotJs().tx.configuration.setMaxCollators(200))
+                    .tx.sudo.sudo(context.polkadotJs().tx.configuration.setMinOrchestratorCollators(2))
                     .signAsync(context.keyring.alice)
             );
             expect(result!.successful, result!.error?.name).to.be.true;
@@ -23,10 +23,10 @@ describeSuite({
 
         it({
             id: "T01",
-            title: "should set max collators after 2 sessions",
+            title: "should set max orchestrator collators after 2 sessions",
             test: async function () {
                 const config = await context.polkadotJs().query.configuration.activeConfig();
-                expect(config["maxCollators"].toString()).toBe("200");
+                expect(config["minOrchestratorCollators"].toString()).toBe("2");
             },
         });
     },
