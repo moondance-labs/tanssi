@@ -37,6 +37,7 @@ pub mod weights;
 use sp_runtime::TryRuntimeError;
 
 use frame_support::traits::EitherOfDiverse;
+use cumulus_primitives_core::PersistedValidationData;
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
@@ -1143,6 +1144,25 @@ impl pallet_maintenance_mode::Config for Runtime {
     type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
+pub struct PersistedValidationDataGetter;
+
+impl Get<PersistedValidationData> for PersistedValidationDataGetter {
+    fn get() -> PersistedValidationData {
+        ParachainSystem::validation_data().unwrap()
+    }
+}
+
+parameter_types! {
+    pub const MaxStorageRoots: u32 = 10; // 1 minute of relay blocks
+}
+
+impl pallet_relay_storage_roots::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type GetPersistedValidationData = PersistedValidationDataGetter;
+    type MaxStorageRoots = MaxStorageRoots;
+    type WeightInfo = ();
+}
+
 impl pallet_root_testing::Config for Runtime {}
 
 parameter_types! {
@@ -1335,6 +1355,9 @@ construct_runtime!(
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 53,
+
+        // More system support stuff
+        RelayStorageRoots: pallet_relay_storage_roots = 60,
 
         RootTesting: pallet_root_testing = 100,
     }

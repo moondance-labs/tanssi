@@ -1269,7 +1269,7 @@ dependencies = [
  "dc-orchestrator-chain-interface",
  "dp-collator-assignment",
  "dp-core",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0)",
  "parity-scale-codec",
  "scale-info",
  "sp-consensus-aura",
@@ -1658,7 +1658,7 @@ dependencies = [
  "log",
  "manual-xcm-rpc",
  "nimbus-consensus",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "node-common",
  "pallet-ethereum",
  "pallet-transaction-payment-rpc",
@@ -1733,7 +1733,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal 0.3.4",
  "log",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "num_enum",
  "pallet-author-inherent",
  "pallet-balances",
@@ -1816,7 +1816,7 @@ dependencies = [
  "log",
  "manual-xcm-rpc",
  "nimbus-consensus",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "node-common",
  "parity-scale-codec",
  "polkadot-cli",
@@ -1883,7 +1883,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal 0.3.4",
  "log",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "pallet-author-inherent",
  "pallet-balances",
  "pallet-cc-authorities-noting",
@@ -2929,7 +2929,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal 0.3.4",
  "log",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "pallet-author-inherent",
  "pallet-author-noting",
  "pallet-author-noting-runtime-api",
@@ -2951,6 +2951,7 @@ dependencies = [
  "pallet-proxy",
  "pallet-registrar",
  "pallet-registrar-runtime-api",
+ "pallet-relay-storage-roots",
  "pallet-root-testing",
  "pallet-services-payment",
  "pallet-session",
@@ -6957,7 +6958,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -6965,7 +6966,7 @@ dependencies = [
  "cumulus-primitives-parachain-inherent",
  "futures 0.3.28",
  "log",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "sc-client-api",
@@ -6988,6 +6989,23 @@ dependencies = [
 name = "nimbus-primitives"
 version = "0.9.0"
 source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+dependencies = [
+ "async-trait",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-inherents",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "nimbus-primitives"
+version = "0.9.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "async-trait",
  "frame-benchmarking",
@@ -7044,7 +7062,7 @@ dependencies = [
  "jsonrpsee",
  "log",
  "nimbus-consensus",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "parity-scale-codec",
  "polkadot-cli",
  "polkadot-primitives",
@@ -7456,13 +7474,13 @@ dependencies = [
 [[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
@@ -7731,7 +7749,7 @@ dependencies = [
  "frame-system",
  "hex",
  "log",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0)",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -7874,7 +7892,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "num-traits",
  "pallet-balances",
  "parity-scale-codec",
@@ -8041,7 +8059,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-balances-erc20"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -8063,7 +8081,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-batch"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "evm",
  "fp-evm",
@@ -8084,7 +8102,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-call-permit"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "evm",
  "fp-evm",
@@ -8134,7 +8152,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-xcm-utils"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -8274,7 +8292,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "num-traits",
  "pallet-balances",
  "parity-scale-codec",
@@ -8327,7 +8345,7 @@ dependencies = [
 [[package]]
 name = "pallet-maintenance-mode"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -8379,7 +8397,7 @@ dependencies = [
 [[package]]
 name = "pallet-migrations"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -8545,7 +8563,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "num-traits",
  "pallet-balances",
  "parity-scale-codec",
@@ -8675,6 +8693,26 @@ dependencies = [
  "scale-info",
  "sp-api",
  "tp-container-chain-genesis-data",
+]
+
+[[package]]
+name = "pallet-relay-storage-roots"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+dependencies = [
+ "cumulus-primitives-core",
+ "environmental",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "log",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
@@ -14845,7 +14883,7 @@ dependencies = [
  "log",
  "manual-xcm-rpc",
  "nimbus-consensus",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "node-common",
  "pallet-author-noting-runtime-api",
  "pallet-collator-assignment-runtime-api",
@@ -14925,7 +14963,7 @@ dependencies = [
  "futures-timer",
  "log",
  "nimbus-consensus",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "sc-block-builder",
@@ -15381,7 +15419,7 @@ dependencies = [
  "cumulus-primitives-core",
  "frame-support",
  "frame-system",
- "nimbus-primitives",
+ "nimbus-primitives 0.9.0 (git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi)",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
@@ -17066,7 +17104,7 @@ dependencies = [
 [[package]]
 name = "xcm-primitives"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#de13eacce0681be329ec06c57c469ef98df22ad9"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
 dependencies = [
  "sp-runtime",
 ]

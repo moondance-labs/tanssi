@@ -33,6 +33,7 @@ pallet-pooled-staking = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+pallet-relay-storage-roots = { workspace = true }
 pallet-services-payment = { workspace = true }
 
 # Moonkit
