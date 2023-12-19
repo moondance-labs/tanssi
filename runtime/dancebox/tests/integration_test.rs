@@ -2365,12 +2365,17 @@ fn test_proxy_utility() {
                     AccountId::from(ALICE).into(),
                     None,
                     Box::new(
-                        pallet_utility::Call::batch {
-                            calls: vec![pallet_balances::Call::force_set_balance {
-                                who: AccountId::from(BOB).into(),
-                                new_free: 42424242424242
-                            }
-                            .into()]
+                        pallet_sudo::Call::sudo {
+                            call: Box::new(
+                                pallet_utility::Call::batch {
+                                    calls: vec![pallet_balances::Call::force_set_balance {
+                                        who: AccountId::from(BOB).into(),
+                                        new_free: 42424242424242
+                                    }
+                                    .into()]
+                                }
+                                .into()
+                            )
                         }
                         .into()
                     )
