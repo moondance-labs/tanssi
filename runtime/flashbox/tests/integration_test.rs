@@ -2242,6 +2242,86 @@ fn test_proxy_non_transfer() {
 }
 
 #[test]
+fn test_proxy_utility() {
+    // All proxy types should be able to use Utility pallet, but we ensure
+    // subcalls don't allow to circumvent filters.
+
+    // Dummy match to ensure we update this test when adding new proxy types.
+    match ProxyType::Any {
+        ProxyType::Any
+        | ProxyType::NonTransfer
+        | ProxyType::Governance
+        | ProxyType::Staking
+        | ProxyType::CancelProxy
+        | ProxyType::Balances
+        | ProxyType::Registrar
+        | ProxyType::SudoRegistrar => (),
+    };
+
+    // All except for any
+    let proxy_types = &[
+        ProxyType::NonTransfer,
+        ProxyType::Governance,
+        ProxyType::Staking,
+        ProxyType::CancelProxy,
+        ProxyType::Balances,
+        ProxyType::Registrar,
+        ProxyType::SudoRegistrar,
+    ];
+
+    for &proxy_type in proxy_types {
+        ExtBuilder::default()
+            .with_balances(vec![
+                // Alice gets 10k extra tokens for her mapping deposit
+                (AccountId::from(ALICE), 210_000 * UNIT),
+                (AccountId::from(BOB), 100_000 * UNIT),
+                (AccountId::from(CHARLIE), 100_000 * UNIT),
+                (AccountId::from(DAVE), 100_000 * UNIT),
+            ])
+            .with_collators(vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ])
+            .with_sudo(AccountId::from(ALICE))
+            .with_config(default_config())
+            .build()
+            .execute_with(|| {
+                assert_ok!(Proxy::add_proxy(
+                    origin_of(ALICE.into()),
+                    AccountId::from(BOB).into(),
+                    proxy_type,
+                    0
+                ));
+
+                let free_balance = Balances::free_balance(AccountId::from(BOB));
+
+                assert_ok!(Proxy::proxy(
+                    origin_of(BOB.into()),
+                    AccountId::from(ALICE).into(),
+                    None,
+                    Box::new(
+                        pallet_sudo::Call::sudo {
+                            call: Box::new(
+                                pallet_utility::Call::batch {
+                                    calls: vec![pallet_balances::Call::force_set_balance {
+                                        who: AccountId::from(BOB).into(),
+                                        new_free: 42424242424242
+                                    }
+                                    .into()]
+                                }
+                                .into()
+                            )
+                        }
+                        .into()
+                    )
+                ));
+
+                assert_eq!(Balances::free_balance(AccountId::from(BOB)), free_balance);
+            });
+    }
+}
+
+#[test]
 fn check_well_known_keys() {
     use frame_support::traits::PalletInfo;
 

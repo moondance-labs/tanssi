@@ -156,6 +156,8 @@ pub struct ExtBuilder {
     balances: Vec<(AccountId, Balance)>,
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
+    // sudo key
+    sudo: Option<AccountId>,
     // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits
     para_ids: Vec<(
         u32,
@@ -171,6 +173,11 @@ pub struct ExtBuilder {
 impl ExtBuilder {
     pub fn with_balances(mut self, balances: Vec<(AccountId, Balance)>) -> Self {
         self.balances = balances;
+        self
+    }
+
+    pub fn with_sudo(mut self, sudo: AccountId) -> Self {
+        self.sudo = Some(sudo);
         self
     }
 
@@ -284,6 +291,9 @@ impl ExtBuilder {
                 .assimilate_storage(&mut t)
                 .unwrap();
         }
+        pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
+            .assimilate_storage(&mut t)
+            .unwrap();
         t
     }
 
