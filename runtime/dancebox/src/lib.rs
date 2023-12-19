@@ -981,7 +981,10 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                 matches!(c, RuntimeCall::Balances(..))
             }
             ProxyType::Registrar => {
-                matches!(c, RuntimeCall::Registrar(..) | RuntimeCall::DataPreservers(..))
+                matches!(
+                    c,
+                    RuntimeCall::Registrar(..) | RuntimeCall::DataPreservers(..)
+                )
             }
             ProxyType::SudoRegistrar => match c {
                 RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
