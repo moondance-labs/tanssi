@@ -23,11 +23,9 @@
 
 pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
 
-use sp_consensus_aura::SlotDuration;
 use {
     container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
-    cumulus_primitives_core::ParaId,
-    cumulus_primitives_core::PersistedValidationData,
+    cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     fc_rpc::{EthTask, TxPool},
@@ -52,6 +50,7 @@ use {
     sp_blockchain::{
         Backend as BlockchainBackend, Error as BlockChainError, HeaderBackend, HeaderMetadata,
     },
+    sp_consensus_aura::SlotDuration,
     sp_core::H256,
     sp_runtime::traits::{BlakeTwo256, Block as BlockT},
     std::{sync::Arc, time::Duration},
