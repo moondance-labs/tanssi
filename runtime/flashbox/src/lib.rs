@@ -41,8 +41,8 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse, InsideBoth, InstanceFilter,
-            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse, InsideBoth,
+            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
         },
         weights::{
             constants::{
