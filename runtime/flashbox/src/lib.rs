@@ -574,8 +574,7 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     }
 }
 
-// TODO remove Period?
-pub struct NeverRotateCollators(PhantomData<u32>);
+pub struct NeverRotateCollators;
 
 impl ShouldRotateAllCollators<u32> for NeverRotateCollators {
     fn should_rotate_all_collators(_: u32) -> bool {
