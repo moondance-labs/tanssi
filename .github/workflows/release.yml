@@ -644,6 +644,7 @@ jobs:
         matrix:
           chains: [
             { chain: "stagenet_dancebox", runtime: "dancebox" },
+            { chain: "flashbox", runtime: "flashbox" },
             { chain: "dancebox", runtime: "dancebox" },
           ]
       env:
