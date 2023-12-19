@@ -26,4 +26,4 @@ inline_keys = [
     "features",
 ]
 
-sort_string_arrays = true
+sort_arrays = true

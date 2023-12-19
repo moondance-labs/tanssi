@@ -17,6 +17,6 @@ sp-api = { workspace = true }
 default = [ "std" ]
 std = [
 	"parity-scale-codec/std",
+	"scale-info/std",
 	"sp-api/std",
-	"scale-info/std"
 ]
