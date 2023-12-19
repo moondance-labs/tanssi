@@ -251,8 +251,7 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
-            use scale_info::prelude::format;
-            use sp_std::collections::btree_set::BTreeSet;
+            use {scale_info::prelude::format, sp_std::collections::btree_set::BTreeSet};
             // A para id can only be in 1 of [`RegisteredParaIds`, `PendingVerification`, `Paused`]
             // Get all those para ids and check for duplicates
             let mut para_ids: Vec<ParaId> = vec![];
@@ -604,10 +603,10 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> Result<T::AccountId, ()> {
-            use frame_benchmarking::account;
-            use frame_support::assert_ok;
-            use frame_support::dispatch::RawOrigin;
-            use frame_support::traits::Currency;
+            use {
+                frame_benchmarking::account,
+                frame_support::{assert_ok, dispatch::RawOrigin, traits::Currency},
+            };
             // Return container chain manager, or register container chain as ALICE if it does not exist
             if !ParaGenesisData::<T>::contains_key(para_id) {
                 // Register as a new user

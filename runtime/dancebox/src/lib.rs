@@ -36,7 +36,6 @@ pub mod weights;
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
 
-use frame_support::traits::EitherOfDiverse;
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
@@ -50,8 +49,8 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth, InstanceFilter,
-            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse, InsideBoth,
+            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
             ValidatorRegistration,
         },
         weights::{
@@ -937,6 +936,10 @@ pub enum ProxyType {
     CancelProxy = 4,
     /// Allow extrinsic related to Balances.
     Balances = 5,
+    /// Allow extrinsics related to Registrar
+    Registrar = 6,
+    /// Allow extrinsics related to Registrar that needs to be called through Sudo
+    SudoRegistrar = 7,
 }
 
 impl Default for ProxyType {
@@ -947,6 +950,12 @@ impl Default for ProxyType {
 
 impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
+        // Since proxy filters are respected in all dispatches of the Utility
+        // pallet, it should never need to be filtered by any proxy.
+        if let RuntimeCall::Utility(..) = c {
+            return true;
+        }
+
         match self {
             ProxyType::Any => true,
             ProxyType::NonTransfer => {
@@ -955,25 +964,37 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                     RuntimeCall::System(..)
                         | RuntimeCall::ParachainSystem(..)
                         | RuntimeCall::Timestamp(..)
-                        | RuntimeCall::Utility(..)
                         | RuntimeCall::Proxy(..)
                         | RuntimeCall::Registrar(..)
                 )
             }
-            ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(
-                c,
-                RuntimeCall::Session(..)
-                    | RuntimeCall::Utility(..)
-                    | RuntimeCall::PooledStaking(..)
-            ),
+            // We don't have governance yet
+            ProxyType::Governance => false,
+            ProxyType::Staking => {
+                matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
+            }
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
             ),
             ProxyType::Balances => {
-                matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+                matches!(c, RuntimeCall::Balances(..))
             }
+            ProxyType::Registrar => {
+                matches!(
+                    c,
+                    RuntimeCall::Registrar(..) | RuntimeCall::DataPreservers(..)
+                )
+            }
+            ProxyType::SudoRegistrar => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(
+                        x.as_ref(),
+                        &RuntimeCall::Registrar(..) | &RuntimeCall::DataPreservers(..)
+                    )
+                }
+                _ => false,
+            },
         }
     }
 

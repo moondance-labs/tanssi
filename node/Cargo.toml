@@ -107,15 +107,15 @@ default = []
 runtime-benchmarks = [
 	"dancebox-runtime/runtime-benchmarks",
 	"flashbox-runtime/runtime-benchmarks",
-	"polkadot-cli/runtime-benchmarks",
-	"polkadot-service/runtime-benchmarks",
-	"frame-benchmarking/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
+	"frame-benchmarking/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
+	"polkadot-cli/runtime-benchmarks",
 	"polkadot-primitives/runtime-benchmarks",
+	"polkadot-service/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks"
+	"sp-runtime/runtime-benchmarks",
 ]
 try-runtime = [ "dancebox-runtime/try-runtime", "flashbox-runtime/try-runtime", "nimbus-primitives/try-runtime", "pallet-configuration/try-runtime", "polkadot-cli/try-runtime", "polkadot-service/try-runtime", "sp-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
 

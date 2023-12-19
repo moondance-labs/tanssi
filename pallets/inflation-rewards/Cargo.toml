@@ -39,23 +39,23 @@ sp-io = { workspace = true, features = [ "std" ] }
 [features]
 default = [ "std" ]
 std = [
+	"bounded-collections/std",
 	"dp-core/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
 	"log/std",
 	"nimbus-primitives/std",
+	"pallet-balances/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde",
+	"serde?/std",
+	"sp-core/std",
+	"sp-io/std",
 	"sp-runtime/std",
 	"sp-std/std",
 	"tp-traits/std",
-	"bounded-collections/std",
-	"pallet-balances/std",
-	"serde?/std",
-	"sp-core/std",
-	"sp-io/std"
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",
@@ -65,12 +65,12 @@ runtime-benchmarks = [
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"tp-traits/runtime-benchmarks"
+	"tp-traits/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"nimbus-primitives/try-runtime",
 	"pallet-balances/try-runtime",
-	"sp-runtime/try-runtime"
+	"sp-runtime/try-runtime",
 ]
