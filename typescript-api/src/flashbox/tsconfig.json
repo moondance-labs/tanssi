@@ -1,0 +1,13 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "rootDir": ".",
+        "outDir": "../../build/flashbox",
+        "paths": {
+            "@tanssi/api-augment/flashbox/*": ["src/flashbox/*"],
+            "@polkadot/api/augment": ["src/flashbox/interfaces/augment-api.ts"],
+            "@polkadot/types/augment": ["src/flashbox/interfaces/augment-types.ts"],
+            "@polkadot/types/lookup": ["src/flashbox/interfaces/types-lookup.ts"]
+        }
+    }
+}
