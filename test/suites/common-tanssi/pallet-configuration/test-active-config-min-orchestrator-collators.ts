@@ -1,5 +1,5 @@
 import { expect, beforeAll, describeSuite } from "@moonwall/cli";
-import { jumpSessions } from "../../../util/block";
+import { initializeCustomCreateBlock, jumpSessions } from "../../../util/block";
 
 describeSuite({
     id: "CT0404",
@@ -7,6 +7,8 @@ describeSuite({
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         beforeAll(async function () {
+            initializeCustomCreateBlock(context);
+
             const config = await context.polkadotJs().query.configuration.activeConfig();
             expect(config["minOrchestratorCollators"].toString()).toBe("1");
 
