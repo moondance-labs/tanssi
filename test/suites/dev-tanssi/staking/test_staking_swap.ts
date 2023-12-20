@@ -6,7 +6,7 @@ import { numberToHex } from "@polkadot/util";
 import { jumpToBlock } from "../../../util/block";
 
 describeSuite({
-    id: "DT3303",
+    id: "DT0305",
     title: "Staking poolSwap test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

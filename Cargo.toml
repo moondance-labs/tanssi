@@ -9,6 +9,7 @@ members = [
 	"pallets/registrar/rpc/runtime-api",
 	"primitives/*",
 	"runtime/dancebox",
+	"runtime/flashbox",
 ]
 resolver = "2"
 
@@ -39,6 +40,7 @@ container-chain-template-frontier-runtime = { path = "container-chains/templates
 container-chain-template-simple-runtime = { path = "container-chains/templates/simple/runtime", default-features = false }
 
 dancebox-runtime = { path = "runtime/dancebox", default-features = false }
+flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
 tc-consensus = { path = "client/consensus" }

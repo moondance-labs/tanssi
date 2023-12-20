@@ -6,7 +6,7 @@ import { numberToHex } from "@polkadot/util";
 import { jumpToBlock } from "../../../util/block";
 
 describeSuite({
-    id: "DT3302",
+    id: "DT0304",
     title: "Fee test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

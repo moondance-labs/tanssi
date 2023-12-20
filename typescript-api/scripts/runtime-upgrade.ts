@@ -6,7 +6,7 @@ import chalk from "chalk";
 let nodeProcess: ChildProcessWithoutNullStreams | undefined = undefined;
 
 async function main() {
-    const CHAINS = ["dancebox"];
+    const CHAINS = ["dancebox", "flashbox"];
 
     const RUNTIME_CHAIN_SPEC = process.argv[2];
 
