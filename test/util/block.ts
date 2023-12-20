@@ -229,7 +229,7 @@ export function initializeCustomCreateBlock(context): any {
             } else {
                 const res = await originalCreateBlock(tx, opt);
                 // Ensure that all the extrinsics have been included
-                const txs = Array.isArray(tx) ? tx : [tx]
+                const txs = Array.isArray(tx) ? tx : [tx];
                 const expectedTxHashes = txs.map((x) => x.hash.toString());
                 const block = await context.polkadotJs().rpc.chain.getBlock(res.block.hash);
                 const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
