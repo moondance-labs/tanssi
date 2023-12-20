@@ -1971,7 +1971,9 @@ fn test_collator_assignment_rotation() {
 
             let rotation_period = Configuration::config().full_rotation_period;
 
+            println!("SLOT INFO BEFORE: {:#?}", dancebox_runtime::AsyncBacking::slot_info());
             run_to_session(rotation_period - 2);
+            println!("SLOT INFO AFTER: {:#?}", dancebox_runtime::AsyncBacking::slot_info());
 
             set_parachain_inherent_data_random_seed([1; 32]);
 

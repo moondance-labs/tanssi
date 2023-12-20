@@ -84,6 +84,7 @@ use {
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
+    sp_consensus_slots::{Slot, SlotDuration},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -451,11 +452,17 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
 }
+pub struct ParaSlotProvider;
+impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
+    fn get() -> (Slot, SlotDuration) {
+        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
+    }
+}
 
 impl pallet_async_backing::Config for Runtime {
     type AllowMultipleBlocksPerSlot = ConstBool<false>;
-    // TODO: implement our custom GetAndVerifySlot
-    type GetAndVerifySlot = pallet_async_backing::RelaySlot;
+    type GetAndVerifySlot = pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way

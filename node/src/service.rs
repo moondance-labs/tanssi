@@ -16,6 +16,8 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use sc_consensus_manual_seal::consensus::timestamp;
+
 #[allow(deprecated)]
 use {
     crate::{
@@ -63,6 +65,7 @@ use {
     sc_telemetry::TelemetryHandle,
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
+    sp_consensus_slots::Slot,
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
@@ -1019,10 +1022,17 @@ pub fn start_dev_node(
                     timestamp = x.clone().take();
                 });
 
+                timestamp += dancebox_runtime::SLOT_DURATION;
+                
+                log::info!("TIMESTAMP SERVICE {}", timestamp);
+                log::info!("SLOT DURATION SERVICE {:#?}", slot_duration.clone());
+
                 let relay_slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
 						timestamp.into(),
 						slot_duration,
                     );
+                let relay_slot = u64::from(relay_slot.clone()).saturating_mul(2);
+                log::info!("RELAY SLOT SERVICE {:#?}", relay_slot);
 
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
                 let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
@@ -1039,7 +1049,7 @@ pub fn start_dev_node(
                         };
                     
                     let mut additional_keys = mocked_author_noting.get_key_values();
-                    additional_keys.append(&mut vec![(para_head_key, para_head_data), (relay_slot_key, relay_slot.clone().encode())]);
+                    additional_keys.append(&mut vec![(para_head_key, para_head_data), (relay_slot_key, Slot::from(relay_slot).encode())]);
 
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
