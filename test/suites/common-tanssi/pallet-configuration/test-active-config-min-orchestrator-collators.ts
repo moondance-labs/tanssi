@@ -13,7 +13,7 @@ describeSuite({
             expect(config["minOrchestratorCollators"].toString()).toBe("1");
 
             const { result } = await context.createBlock(
-                context
+                await context
                     .polkadotJs()
                     .tx.sudo.sudo(context.polkadotJs().tx.configuration.setMinOrchestratorCollators(2))
                     .signAsync(context.keyring.alice)
