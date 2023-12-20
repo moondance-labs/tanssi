@@ -330,7 +330,7 @@
             "testFileDir": ["suites/rt-upgrade-chopsticks"],
             "foundation": {
                 "type": "chopsticks",
-                "rtUpgradePath": "../target/release/wbuild//dancebox_runtime.compact.compressed.wasm",
+                "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
                         "name": "db",
