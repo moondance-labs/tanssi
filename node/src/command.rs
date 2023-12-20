@@ -75,7 +75,7 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
                 "Dave".to_string(),
             ],
         )),
-        "flashbox_local" => Box::new(chain_spec::flashbox::local_flashbox_config(
+        "flashbox-local" => Box::new(chain_spec::flashbox::local_flashbox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],

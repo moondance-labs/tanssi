@@ -20,8 +20,8 @@ use {
     },
     cumulus_primitives_core::ParaId,
     flashbox_runtime::{
-        prod_or_fast, AccountId, DataPreserversConfig, MaintenanceModeConfig, MigrationsConfig,
-        RegistrarConfig, ServicesPaymentConfig, SudoConfig,
+        AccountId, DataPreserversConfig, MaintenanceModeConfig, MigrationsConfig, RegistrarConfig,
+        ServicesPaymentConfig, SudoConfig,
     },
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
@@ -91,7 +91,7 @@ pub fn development_config(
                         min_orchestrator_collators: 1u32,
                         max_orchestrator_collators: 1u32,
                         collators_per_container: 2u32,
-                        full_rotation_period: prod_or_fast!(24u32, 5u32),
+                        full_rotation_period: 0,
                     },
                     ..Default::default()
                 },
@@ -156,7 +156,7 @@ pub fn local_flashbox_config(
                         min_orchestrator_collators: 2u32,
                         max_orchestrator_collators: 5u32,
                         collators_per_container: 2u32,
-                        full_rotation_period: prod_or_fast!(24u32, 5u32),
+                        full_rotation_period: 0,
                     },
                     ..Default::default()
                 },

@@ -94,7 +94,7 @@ fn default_config() -> pallet_configuration::HostConfiguration {
         min_orchestrator_collators: 2,
         max_orchestrator_collators: 2,
         collators_per_container: 2,
-        full_rotation_period: 24,
+        full_rotation_period: 0,
     }
 }
 
@@ -603,7 +603,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             min_orchestrator_collators: 2,
             max_orchestrator_collators: 5,
             collators_per_container: 2,
-            full_rotation_period: 24,
+            full_rotation_period: 0,
         })
         .build()
         .execute_with(|| {
@@ -2377,7 +2377,7 @@ fn test_reward_to_invulnerable() {
             min_orchestrator_collators: 2,
             max_orchestrator_collators: 2,
             collators_per_container: 2,
-            full_rotation_period: 24,
+            full_rotation_period: 0,
         })
         .build()
         .execute_with(|| {
@@ -2437,7 +2437,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             min_orchestrator_collators: 2,
             max_orchestrator_collators: 2,
             collators_per_container: 2,
-            full_rotation_period: 24,
+            full_rotation_period: 0,
         })
         .build()
         .execute_with(|| {
