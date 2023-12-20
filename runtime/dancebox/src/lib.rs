@@ -40,7 +40,7 @@ use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
         relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
-        BodyId, DmpMessageHandler, ParaId, PersistedValidationData,
+        BodyId, DmpMessageHandler, ParaId,
     },
     frame_support::{
         construct_runtime,
@@ -1164,21 +1164,12 @@ impl pallet_maintenance_mode::Config for Runtime {
     type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
-pub struct PersistedValidationDataGetter;
-
-impl Get<PersistedValidationData> for PersistedValidationDataGetter {
-    fn get() -> PersistedValidationData {
-        ParachainSystem::validation_data().unwrap()
-    }
-}
-
 parameter_types! {
     pub const MaxStorageRoots: u32 = 10; // 1 minute of relay blocks
 }
 
 impl pallet_relay_storage_roots::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type GetPersistedValidationData = PersistedValidationDataGetter;
+    type RelaychainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type MaxStorageRoots = MaxStorageRoots;
     type WeightInfo = ();
 }

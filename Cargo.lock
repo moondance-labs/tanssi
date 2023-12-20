@@ -6958,7 +6958,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "async-trait",
  "cumulus-client-consensus-common",
@@ -7005,7 +7005,7 @@ dependencies = [
 [[package]]
 name = "nimbus-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "async-trait",
  "frame-benchmarking",
@@ -7474,7 +7474,7 @@ dependencies = [
 [[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -8059,7 +8059,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-balances-erc20"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -8081,7 +8081,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-batch"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "evm",
  "fp-evm",
@@ -8102,7 +8102,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-call-permit"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "evm",
  "fp-evm",
@@ -8152,7 +8152,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-xcm-utils"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -8345,7 +8345,7 @@ dependencies = [
 [[package]]
 name = "pallet-maintenance-mode"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -8397,7 +8397,7 @@ dependencies = [
 [[package]]
 name = "pallet-migrations"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -8698,8 +8698,9 @@ dependencies = [
 [[package]]
 name = "pallet-relay-storage-roots"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
+ "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "environmental",
  "frame-support",
@@ -17104,7 +17105,7 @@ dependencies = [
 [[package]]
 name = "xcm-primitives"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#eabbfef72d4829c29a97a5eed36071a404d06903"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tomasz-storage-roots-tanssi#d5630faa3f2863b04a1c9546eb2bc07f97b02605"
 dependencies = [
  "sp-runtime",
 ]
