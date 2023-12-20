@@ -220,6 +220,7 @@ std = [
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
 	"xcm-primitives/std",
+	"pallet-relay-storage-roots/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -270,6 +271,7 @@ runtime-benchmarks = [
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
+	"pallet-relay-storage-roots/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -318,6 +320,7 @@ try-runtime = [
 	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
 	"westend-runtime/try-runtime",
+	"pallet-relay-storage-roots/try-runtime"
 ]
 
 fast-runtime = []
