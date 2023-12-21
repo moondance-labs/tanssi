@@ -38,9 +38,7 @@ use sp_runtime::TryRuntimeError;
 
 use frame_support::traits::EitherOfDiverse;
 use {
-    cumulus_pallet_parachain_system::{
-        RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelayNumberStrictlyIncreases,
-    },
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases},
     cumulus_primitives_core::{
         relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
         BodyId, DmpMessageHandler, ParaId,
@@ -83,8 +81,8 @@ use {
     scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_consensus_slots::{Slot, SlotDuration},
+    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -462,7 +460,8 @@ impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
 
 impl pallet_async_backing::Config for Runtime {
     type AllowMultipleBlocksPerSlot = ConstBool<false>;
-    type GetAndVerifySlot = pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
+    type GetAndVerifySlot =
+        pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
@@ -1816,33 +1815,9 @@ impl_runtime_apis! {
     }
 }
 
-struct CheckInherents;
-
-impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
-    fn check_inherents(
-        block: &Block,
-        relay_state_proof: &cumulus_pallet_parachain_system::RelayChainStateProof,
-    ) -> sp_inherents::CheckInherentsResult {
-        let relay_chain_slot = relay_state_proof
-            .read_slot()
-            .expect("Could not read the relay chain slot from the proof");
-
-        let inherent_data =
-            cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
-                relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
-            )
-            .create_inherent_data()
-            .expect("Could not create the timestamp inherent data");
-
-        inherent_data.check_extrinsics(block)
-    }
-}
-
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
     BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
-    CheckInherents = CheckInherents,
 }
 
 #[macro_export]
