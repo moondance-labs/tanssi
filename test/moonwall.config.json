@@ -387,7 +387,11 @@
                             "--alice",
                             "--force-authoring",
                             "--rpc-cors=all", 
-                            "--tmp"
+                            "--tmp",
+                            "--no-hardware-benchmarks",
+                            "--no-prometheus",
+                            "--no-telemetry",
+                            "--reserved-only"
                         ],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true
