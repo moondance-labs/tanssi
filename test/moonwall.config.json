@@ -6,6 +6,7 @@
     "environments": [
         {
             "name": "dev_tanssi",
+            "timeout": 120000,
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
             "multiThreads": true,
@@ -285,7 +286,7 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["basic", "html"],
+            "reporters": ["html"],
             "connections": [
                 {
                     "name": "para",
@@ -300,7 +301,7 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["basic", "html"],
+            "reporters": ["html"],
             "connections": [
                 {
                     "name": "para",
@@ -311,7 +312,7 @@
         },
         {
             "name": "chopsticks_stagenet_dancebox_upgrade",
-            "testFileDir": ["suites/rt-upgrade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -333,7 +334,7 @@
         },
         {
             "name": "chopsticks_dancebox_upgrade",
-            "testFileDir": ["suites/rt-upgrade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -355,7 +356,7 @@
         },
         {
             "name": "chopsticks_flashbox_upgrade",
-            "testFileDir": ["suites/rt-upgrade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm",
@@ -404,6 +405,28 @@
                     }
                 ]
             }
+        },
+        {
+            "name": "chopsticks_frontier_template_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-frontier-template"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/frontierContainer.yml"
+                    }
+                ]
+            },
+            "connections": [
+                {
+                    "name": "para",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
         }
     ]
 }
