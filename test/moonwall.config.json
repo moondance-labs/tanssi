@@ -286,7 +286,7 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["basic", "html"],
+            "reporters": ["html"],
             "connections": [
                 {
                     "name": "DBX",
@@ -301,7 +301,7 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["basic", "html"],
+            "reporters": ["html"],
             "connections": [
                 {
                     "name": "DBX",
@@ -356,7 +356,7 @@
         },
         {
             "name": "chopsticks_flashbox_upgrade",
-            "testFileDir": ["suites/rt-upgrade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm",
