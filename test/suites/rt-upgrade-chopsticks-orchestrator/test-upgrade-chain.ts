@@ -17,7 +17,7 @@ describeSuite({
             log(`About to upgrade to runtime at:`);
             log((await MoonwallContext.getContext()).rtUpgradePath);
 
-            await context.upgradeRuntime(context);
+            await context.upgradeRuntime();
 
             const rtafter = api.consts.system.version.specVersion.toNumber();
             log(`RT upgrade has increased specVersion from ${rtBefore} to ${rtafter}`);
