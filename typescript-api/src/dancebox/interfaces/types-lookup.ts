@@ -348,7 +348,17 @@ declare module "@polkadot/types/lookup" {
         readonly isStaking: boolean;
         readonly isCancelProxy: boolean;
         readonly isBalances: boolean;
-        readonly type: "Any" | "NonTransfer" | "Governance" | "Staking" | "CancelProxy" | "Balances";
+        readonly isRegistrar: boolean;
+        readonly isSudoRegistrar: boolean;
+        readonly type:
+            | "Any"
+            | "NonTransfer"
+            | "Governance"
+            | "Staking"
+            | "CancelProxy"
+            | "Balances"
+            | "Registrar"
+            | "SudoRegistrar";
     }
 
     /** @name PalletMigrationsEvent (40) */

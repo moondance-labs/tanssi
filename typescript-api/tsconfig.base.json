@@ -12,7 +12,8 @@
         "composite": true,
         "declaration": true,
         "paths": {
-            "dancebox": ["dancebox/src"]
+            "dancebox": ["dancebox/src"],
+            "flashbox": ["flashbox/src"]
         }
     },
     "exclude": ["node_modules", "build"]

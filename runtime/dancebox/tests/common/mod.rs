@@ -226,6 +226,8 @@ pub struct ExtBuilder {
     balances: Vec<(AccountId, Balance)>,
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
+    // sudo key
+    sudo: Option<AccountId>,
     // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits
     para_ids: Vec<(
         u32,
@@ -247,6 +249,11 @@ impl ExtBuilder {
 
     pub fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
         self.collators = collators;
+        self
+    }
+
+    pub fn with_sudo(mut self, sudo: AccountId) -> Self {
+        self.sudo = Some(sudo);
         self
     }
 
@@ -372,6 +379,10 @@ impl ExtBuilder {
                 .assimilate_storage(&mut t)
                 .unwrap();
         }
+        pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
         t
     }
 
@@ -412,7 +423,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
 }
 
 pub fn get_orchestrator_current_author() -> Option<AccountId> {
-    let slot: u64 = current_slot().into();
+    let slot: u64 = current_slot();
     let orchestrator_collators = Runtime::parachain_collators(ParachainInfo::get())?;
     let author_index = slot % orchestrator_collators.len() as u64;
     let account = orchestrator_collators.get(author_index as usize)?;

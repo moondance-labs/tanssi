@@ -12,7 +12,7 @@ import {
 import { DANCE, STAKING_ACCOUNT } from "util/constants";
 
 describeSuite({
-    id: "SR0401",
+    id: "DT0302",
     title: "Staking candidate reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

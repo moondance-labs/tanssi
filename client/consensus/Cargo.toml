@@ -39,6 +39,9 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 nimbus-consensus = { workspace = true }
 nimbus-primitives = { workspace = true, features = [ "std" ] }
 
+# Frontier Dependencies
+fc-rpc = { workspace = true }
+
 # Other deps
 async-trait = { workspace = true }
 futures = { workspace = true }

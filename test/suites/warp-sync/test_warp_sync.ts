@@ -235,8 +235,64 @@ describeSuite({
                 expect(authors).to.contain(getKeyringNimbusIdHex("Collator1000-03"));
             },
         });
+
+        it({
+            id: "T14",
+            title: "Check Collator1000-03.log to ensure it used warp sync",
+            timeout: 300000,
+            test: async function () {
+                // Use collator logs to ensure that it used warp sync to first the first time.
+                // Not ideal because logs can change, but better than nothing.
+                const logFilePath = getTmpZombiePath() + "/Collator1000-03.log";
+                await checkLogs(logFilePath, [
+                    "[Orchestrator] Detected assignment for container chain 2000",
+                    "[Orchestrator] Loaded chain spec for container chain 2000",
+                    "[Orchestrator] This is a syncing container chain, using random ports",
+                    "[Orchestrator] Container chain sync mode: Warp",
+                    "[Container-2000] Warp sync is complete",
+                    "[Orchestrator] Detected assignment for container chain 2000",
+                    "[Orchestrator] Loaded chain spec for container chain 2000",
+                    "[Orchestrator] Restarting container chain 2000",
+                    "[Orchestrator] Container chain sync mode: Full",
+                ]);
+            },
+        });
     },
 });
+
+// Read log file path and check that all the logs are found in order.
+// Only supports single-line logs.
+async function checkLogs(logFilePath: string, logs: string[]): Promise<void> {
+    const fileContent = await fs.readFile(logFilePath, "utf8");
+    const lines = fileContent.split("\n");
+
+    let logIndex = 0;
+    let lastFoundLogIndex = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+        if (logIndex < logs.length && lines[i].includes(logs[logIndex])) {
+            logIndex++;
+            lastFoundLogIndex = i;
+        }
+
+        if (logIndex === logs.length) {
+            break;
+        }
+    }
+
+    if (logIndex !== logs.length) {
+        // In case of missing logs, show some context around the last found log
+        const contextSize = 3;
+        const contextStart = Math.max(0, lastFoundLogIndex - contextSize);
+        const contextEnd = Math.min(lines.length - 1, lastFoundLogIndex + contextSize);
+        const contextLines = lines.slice(contextStart, contextEnd + 1);
+        const contextStr = contextLines.join("\n");
+
+        expect.fail(
+            `Not all logs were found in the correct order. Missing log: '${logs[logIndex]}'\nContext around the last found log:\n${contextStr}`
+        );
+    }
+}
 
 async function directoryExists(directoryPath) {
     try {
@@ -249,13 +305,5 @@ async function directoryExists(directoryPath) {
 
 /// Returns the /tmp/zombie-52234... path
 function getTmpZombiePath() {
-    const logFilePath = process.env.MOON_MONITORED_NODE;
-
-    if (logFilePath) {
-        const lastIndex = logFilePath.lastIndexOf("/");
-        return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
-    }
-
-    // Return null if the environment variable is not set
-    return null;
+    return process.env.MOON_ZOMBIE_DIR;
 }

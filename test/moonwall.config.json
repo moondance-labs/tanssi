@@ -1,13 +1,14 @@
 {
     "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/types/config_schema.json",
-    "label": "MasterConfig 🌔",
-    "defaultTestTimeout": 30000,
+    "label": "💃 MasterConfig",
+    "defaultTestTimeout": 120000,
     "scriptsDir": "scripts/",
     "environments": [
         {
             "name": "dev_tanssi",
+            "timeout": 120000,
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/dev-tanssi", "suites/common"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
             "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
@@ -48,7 +49,7 @@
         },
         {
             "name": "dev_frontier_template",
-            "testFileDir": ["suites/dev-frontier-template", "suites/common"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/dev-frontier-template"],
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": true,
             "reporters": ["basic"],
@@ -67,7 +68,7 @@
         },
         {
             "name": "dev_simple_template",
-            "testFileDir": ["suites/common"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm"],
             "multiThreads": true,
             "reporters": ["basic"],
             "contracts": "helpers/",
@@ -86,6 +87,7 @@
         },
         {
             "name": "zombie_tanssi",
+            "timeout": 600000,
             "testFileDir": ["suites/para"],
             "runScripts": ["build-spec.sh", "download-polkadot.sh"],
             "foundation": {
@@ -137,6 +139,7 @@
             "name": "zombie_tanssi_keep_db",
             "testFileDir": ["suites/keep-db"],
             "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -165,6 +168,7 @@
             "name": "zombie_tanssi_metrics",
             "testFileDir": ["suites/metrics"],
             "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -193,6 +197,7 @@
             "name": "zombie_tanssi_rotation",
             "testFileDir": ["suites/rotation-para"],
             "runScripts": ["build-spec.sh", "download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -236,6 +241,7 @@
             "name": "zombie_tanssi_warp_sync",
             "testFileDir": ["suites/warp-sync"],
             "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -264,6 +270,7 @@
             "name": "zombie_dancebox_upgrade",
             "testFileDir": ["suites/rt-upgrade-zombienet"],
             "runScripts": ["download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
                 "type": "zombie",
@@ -279,10 +286,10 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["basic", "html"],
+            "reporters": ["html"],
             "connections": [
                 {
-                    "name": "DBX",
+                    "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["wss://dancebox.tanssi-api.network"]
                 }
@@ -294,10 +301,10 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["basic", "html"],
+            "reporters": ["html"],
             "connections": [
                 {
-                    "name": "DBX",
+                    "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["wss://fraa-stagebox-rpc.a.stagenet.tanssi.network"]
                 }
@@ -305,7 +312,7 @@
         },
         {
             "name": "chopsticks_stagenet_dancebox_upgrade",
-            "testFileDir": ["suites/rt-upgrade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -327,7 +334,7 @@
         },
         {
             "name": "chopsticks_dancebox_upgrade",
-            "testFileDir": ["suites/rt-upgrade-chopsticks"],
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -342,6 +349,80 @@
             "connections": [
                 {
                     "name": "DB",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_flashbox_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/stagenet-flashbox.yml"
+                    }
+                ]
+            },
+            "connections": [
+                {
+                    "name": "DB",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "dev_flashbox",
+            "envVars": ["DEBUG_COLORS=1"],
+            "testFileDir": ["suites/common-all", "suites/common-tanssi"],
+            "multiThreads": true,
+            "reporters": ["basic"],
+            "foundation": {
+                "type": "dev",
+                "launchSpec": [
+                    {
+                        "name": "tanssi",
+                        "binPath": "../target/release/tanssi-node",
+                        "options": [
+                            "--chain=flashbox_dev",
+                            "--sealing=manual",
+                            "--alice",
+                            "--force-authoring",
+                            "--rpc-cors=all",
+                            "--tmp",
+                            "--no-hardware-benchmarks",
+                            "--no-prometheus",
+                            "--no-telemetry",
+                            "--reserved-only"
+                        ],
+                        "disableDefaultEthProviders": true,
+                        "newRpcBehaviour": true
+                    }
+                ]
+            }
+        },
+        {
+            "name": "chopsticks_frontier_template_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-frontier-template"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/frontierContainer.yml"
+                    }
+                ]
+            },
+            "connections": [
+                {
+                    "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:8000"]
                 }

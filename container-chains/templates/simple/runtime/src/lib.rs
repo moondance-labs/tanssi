@@ -465,6 +465,12 @@ impl Default for ProxyType {
 
 impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
+        // Since proxy filters are respected in all dispatches of the Utility
+        // pallet, it should never need to be filtered by any proxy.
+        if let RuntimeCall::Utility(..) = c {
+            return true;
+        }
+
         match self {
             ProxyType::Any => true,
             ProxyType::NonTransfer => {
@@ -473,17 +479,17 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                     RuntimeCall::System(..)
                         | RuntimeCall::ParachainSystem(..)
                         | RuntimeCall::Timestamp(..)
-                        | RuntimeCall::Utility(..)
                         | RuntimeCall::Proxy(..)
                 )
             }
-            ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
+            // We don't have governance yet
+            ProxyType::Governance => false,
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
             ),
             ProxyType::Balances => {
-                matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+                matches!(c, RuntimeCall::Balances(..))
             }
         }
     }

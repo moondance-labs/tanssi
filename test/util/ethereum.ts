@@ -12,7 +12,7 @@ export const createTransaction = async (
     options: TransactionOptions,
     txType?: EthTransactionType
 ): Promise<string> => {
-    const defaultTxnStyle = MoonwallContext.getContext()!.defaultEthTxnStyle;
+    const defaultTxnStyle = (await MoonwallContext.getContext())!.defaultEthTxnStyle;
 
     const isLegacy = txType ? txType === "Legacy" : defaultTxnStyle ? defaultTxnStyle === "Legacy" : true;
 
