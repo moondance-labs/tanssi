@@ -11,18 +11,12 @@ importers:
       '@zombienet/orchestrator':
         specifier: 0.0.68
         version: 0.0.68(@polkadot/util@12.6.2)(@types/node@20.10.5)
-      cli:
-        specifier: link:../../moonwall/packages/cli
-        version: link:../../moonwall/packages/cli
       inquirer:
         specifier: 9.2.12
         version: 9.2.12
       ps-node:
         specifier: 0.1.6
         version: 0.1.6
-      util:
-        specifier: link:../../moonwall/packages/util
-        version: link:../../moonwall/packages/util
     devDependencies:
       '@acala-network/chopsticks':
         specifier: npm:@tanssi/chopsticks@0.9.2
