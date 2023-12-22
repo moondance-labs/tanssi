@@ -37,7 +37,8 @@ use {
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
-    sc_cli::SyncMode,
+    sc_cli::{Database, SyncMode},
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
     sp_api::{ApiExt, ProvideRuntimeApi},
     sp_keystore::KeystorePtr,
@@ -174,10 +175,20 @@ impl ContainerChainSpawner {
             let boot_nodes_raw = orchestrator_runtime_api
                 .boot_nodes(orchestrator_chain_info.best_hash, container_chain_para_id)
                 .expect("error");
-            let boot_nodes: Vec<String> = boot_nodes_raw
-                .into_iter()
-                .map(|x| String::from_utf8(x).map_err(|e| format!("{}", e)))
-                .collect::<Result<_, _>>()?;
+            if boot_nodes_raw.is_empty() {
+                log::warn!(
+                    "No boot nodes registered on-chain for container chain {}",
+                    container_chain_para_id
+                );
+            }
+            let boot_nodes =
+                parse_boot_nodes_ignore_invalid(boot_nodes_raw, container_chain_para_id);
+            if boot_nodes.is_empty() {
+                log::warn!(
+                    "No valid boot nodes for container chain {}",
+                    container_chain_para_id
+                );
+            }
 
             container_chain_cli
                 .preload_chain_spec_from_genesis_data(
@@ -209,6 +220,12 @@ impl ContainerChainSpawner {
 
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
+            container_chain_cli
+                .base
+                .base
+                .import_params
+                .database_params
+                .database = Some(Database::ParityDb);
 
             let create_container_chain_cli_config = || {
                 let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
@@ -231,7 +248,7 @@ impl ContainerChainSpawner {
                 sc_service::error::Result::Ok((container_chain_cli_config, db_path))
             };
 
-            let (container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
+            let (_container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
             let db_exists = db_path.exists();
             let db_exists_but_may_need_removal = db_exists && validator;
             if db_exists_but_may_need_removal {
@@ -261,6 +278,17 @@ impl ContainerChainSpawner {
                 &orchestrator_client,
                 container_chain_para_id,
             )?;
+            log::info!(
+                "Container chain sync mode: {:?}",
+                container_chain_cli.base.base.network_params.sync
+            );
+            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+                &container_chain_cli,
+                &container_chain_cli,
+                tokio_handle.clone(),
+            )
+            .map_err(|err| format!("Container chain argument error: {}", err))?;
+            container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
             let (
@@ -686,13 +714,44 @@ fn open_and_maybe_delete_db(
 }
 
 // TODO: this leaves some empty folders behind, because it is called with db_path:
-//     Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002
+//     Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002
 // but we want to delete everything under
 //     Collator2002-01/data/containers/chains/simple_container_2002
 fn delete_container_chain_db(db_path: &Path) {
     if db_path.exists() {
         std::fs::remove_dir_all(db_path).expect("failed to remove old container chain db");
     }
+}
+
+/// Parse a list of boot nodes in `Vec<u8>` format. Invalid boot nodes are filtered out.
+fn parse_boot_nodes_ignore_invalid(
+    boot_nodes_raw: Vec<Vec<u8>>,
+    container_chain_para_id: ParaId,
+) -> Vec<MultiaddrWithPeerId> {
+    boot_nodes_raw
+        .into_iter()
+        .filter_map(|x| {
+            let x = String::from_utf8(x)
+                .map_err(|e| {
+                    log::debug!(
+                        "Invalid boot node in container chain {}: {}",
+                        container_chain_para_id,
+                        e
+                    );
+                })
+                .ok()?;
+
+            x.parse::<MultiaddrWithPeerId>()
+                .map_err(|e| {
+                    log::debug!(
+                        "Invalid boot node in container chain {}: {}",
+                        container_chain_para_id,
+                        e
+                    )
+                })
+                .ok()
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -824,7 +883,7 @@ mod tests {
                 chains_to_start,
                 need_to_restart,
             } = handle_update_assignment_state_change(
-                &mut *self.state.lock().unwrap(),
+                &mut self.state.lock().unwrap(),
                 self.orchestrator_para_id,
                 self.collate_on_tanssi.clone(),
                 current,
@@ -1107,5 +1166,26 @@ mod tests {
         m.handle_update_assignment(Some(2000.into()), Some(2000.into()));
         m.assert_collating_on(Some(2000.into()));
         m.assert_running_chains(&[2000.into()]);
+    }
+
+    #[test]
+    fn invalid_boot_nodes_are_ignored() {
+        let para_id = 100.into();
+        let bootnode1 =
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec();
+        assert_eq!(
+            parse_boot_nodes_ignore_invalid(vec![b"A".to_vec()], para_id),
+            vec![]
+        );
+        assert_eq!(
+            parse_boot_nodes_ignore_invalid(vec![b"\xff".to_vec()], para_id),
+            vec![]
+        );
+        // Valid boot nodes are not ignored
+        assert_eq!(
+            parse_boot_nodes_ignore_invalid(vec![bootnode1], para_id).len(),
+            1
+        );
     }
 }

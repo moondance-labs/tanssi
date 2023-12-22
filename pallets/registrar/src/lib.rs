@@ -43,14 +43,11 @@ use {
     crate::weights::WeightInfo,
     frame_support::{
         pallet_prelude::*,
-        traits::{Currency, EitherOfDiverse, ReservableCurrency},
+        traits::{Currency, ReservableCurrency},
         DefaultNoBound, LOG_TARGET,
     },
-    frame_system::{pallet_prelude::*, EnsureSigned},
-    sp_runtime::{
-        traits::{AtLeast32BitUnsigned, BadOrigin},
-        Either, Saturating,
-    },
+    frame_system::pallet_prelude::*,
+    sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
     sp_std::prelude::*,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId},
@@ -68,11 +65,7 @@ pub mod pallet {
     #[derive(DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
         /// Para ids
-        pub para_ids: Vec<(
-            ParaId,
-            ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
-            Vec<Vec<u8>>,
-        )>,
+        pub para_ids: Vec<(ParaId, ContainerChainGenesisData<T::MaxLengthTokenSymbol>)>,
     }
 
     #[pallet::genesis_build]
@@ -92,7 +85,7 @@ pub mod pallet {
 
             let mut bounded_para_ids = BoundedVec::default();
 
-            for (para_id, genesis_data, boot_nodes) in para_ids {
+            for (para_id, genesis_data) in para_ids {
                 bounded_para_ids
                     .try_push(*para_id)
                     .expect("too many para ids in genesis: bounded vec full");
@@ -107,12 +100,6 @@ pub mod pallet {
                     );
                 }
                 <ParaGenesisData<T>>::insert(para_id, genesis_data);
-                let boot_nodes: Vec<_> = boot_nodes
-                    .iter()
-                    .map(|x| BoundedVec::try_from(x.clone()).expect("boot node url too long"))
-                    .collect();
-                let boot_nodes = BoundedVec::try_from(boot_nodes).expect("too many boot nodes");
-                <BootNodes<T>>::insert(para_id, boot_nodes);
             }
 
             <RegisteredParaIds<T>>::put(bounded_para_ids);
@@ -206,16 +193,6 @@ pub mod pallet {
         ValueQuery,
     >;
 
-    #[pallet::storage]
-    #[pallet::getter(fn boot_nodes)]
-    pub type BootNodes<T: Config> = StorageMap<
-        _,
-        Blake2_128Concat,
-        ParaId,
-        BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
-        ValueQuery,
-    >;
-
     pub type DepositBalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
@@ -246,8 +223,6 @@ pub mod pallet {
         ParaIdPaused { para_id: ParaId },
         /// A para id has been unpaused.
         ParaIdUnpaused { para_id: ParaId },
-        /// The list of boot_nodes
-        BootNodesChanged { para_id: ParaId },
     }
 
     #[pallet::error]
@@ -276,8 +251,7 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
-            use scale_info::prelude::format;
-            use sp_std::collections::btree_set::BTreeSet;
+            use {scale_info::prelude::format, sp_std::collections::btree_set::BTreeSet};
             // A para id can only be in 1 of [`RegisteredParaIds`, `PendingVerification`, `Paused`]
             // Get all those para ids and check for duplicates
             let mut para_ids: Vec<ParaId> = vec![];
@@ -536,40 +510,11 @@ pub mod pallet {
             })?;
 
             PendingVerification::<T>::put(pending_verification);
+            T::RegistrarHooks::check_valid_for_collating(para_id)?;
 
             Self::deposit_event(Event::ParaIdValidForCollating { para_id });
 
-            T::RegistrarHooks::para_registered(para_id);
-
-            Ok(())
-        }
-
-        /// Set boot_nodes for this para id
-        #[pallet::call_index(3)]
-        #[pallet::weight(T::WeightInfo::set_boot_nodes(
-            T::MaxBootNodeUrlLen::get(),
-            boot_nodes.len() as u32,
-        ))]
-        pub fn set_boot_nodes(
-            origin: OriginFor<T>,
-            para_id: ParaId,
-            boot_nodes: BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
-        ) -> DispatchResult {
-            let origin =
-                EitherOfDiverse::<T::RegistrarOrigin, EnsureSigned<T::AccountId>>::ensure_origin(
-                    origin,
-                )?;
-
-            if let Either::Right(signed_account) = origin {
-                let deposit_info = RegistrarDeposit::<T>::get(para_id).ok_or(BadOrigin)?;
-                if deposit_info.creator != signed_account {
-                    Err(BadOrigin)?;
-                }
-            }
-
-            BootNodes::<T>::insert(para_id, boot_nodes);
-
-            Self::deposit_event(Event::BootNodesChanged { para_id });
+            T::RegistrarHooks::para_marked_valid_for_collating(para_id);
 
             Ok(())
         }
@@ -646,6 +591,57 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        pub fn is_para_manager(para_id: &ParaId, account: &T::AccountId) -> bool {
+            // This check will only pass if both are true:
+            // * The para_id has a deposit in pallet_registrar
+            // * The deposit creator is the signed_account
+            RegistrarDeposit::<T>::get(para_id)
+                .map(|deposit_info| deposit_info.creator)
+                .as_ref()
+                == Some(account)
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        pub fn benchmarks_get_or_create_para_manager(para_id: &ParaId) -> Result<T::AccountId, ()> {
+            use {
+                frame_benchmarking::account,
+                frame_support::{assert_ok, dispatch::RawOrigin, traits::Currency},
+            };
+            // Return container chain manager, or register container chain as ALICE if it does not exist
+            if !ParaGenesisData::<T>::contains_key(para_id) {
+                // Register as a new user
+
+                /// Create a funded user.
+                /// Used for generating the necessary amount for registering
+                fn create_funded_user<T: crate::Config>(
+                    string: &'static str,
+                    n: u32,
+                    total: DepositBalanceOf<T>,
+                ) -> (T::AccountId, DepositBalanceOf<T>) {
+                    const SEED: u32 = 0;
+                    let user = account(string, n, SEED);
+                    T::Currency::make_free_balance_be(&user, total);
+                    T::Currency::issue(total);
+                    (user, total)
+                }
+                let new_balance =
+                    (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
+                let account = create_funded_user::<T>("caller", 1000, new_balance).0;
+                let origin = RawOrigin::Signed(account);
+                assert_ok!(Self::register(origin.into(), *para_id, Default::default()));
+            }
+
+            let deposit_info = RegistrarDeposit::<T>::get(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
+
+            // Fund deposit creator, just in case it is not a new account
+            let new_balance =
+                (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
+            T::Currency::make_free_balance_be(&deposit_info.creator, new_balance);
+            T::Currency::issue(new_balance);
+
+            Ok(deposit_info.creator)
+        }
+
         fn schedule_parachain_change(
             updater: impl FnOnce(&mut BoundedVec<ParaId, T::MaxLengthParaIds>) -> DispatchResult,
         ) -> DispatchResult {
@@ -836,7 +832,6 @@ pub mod pallet {
         /// and execute para_deregistered hook to clean up other pallets as well
         fn cleanup_deregistered_para_id(para_id: ParaId) {
             ParaGenesisData::<T>::remove(para_id);
-            BootNodes::<T>::remove(para_id);
             // Get asset creator and deposit amount
             // Deposit may not exist, for example if the para id was registered on genesis
             if let Some(asset_info) = RegistrarDeposit::<T>::take(para_id) {
@@ -924,12 +919,49 @@ pub mod pallet {
 }
 
 pub trait RegistrarHooks {
-    fn para_registered(_para_id: ParaId) -> Weight {
+    fn para_marked_valid_for_collating(_para_id: ParaId) -> Weight {
         Weight::default()
     }
     fn para_deregistered(_para_id: ParaId) -> Weight {
         Weight::default()
     }
+    fn check_valid_for_collating(_para_id: ParaId) -> DispatchResult {
+        Ok(())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(_para_id: ParaId) {}
 }
 
 impl RegistrarHooks for () {}
+
+pub struct EnsureSignedByManager<T>(sp_std::marker::PhantomData<T>);
+
+impl<T> frame_support::traits::EnsureOriginWithArg<T::RuntimeOrigin, ParaId>
+    for EnsureSignedByManager<T>
+where
+    T: Config,
+{
+    type Success = ();
+
+    fn try_origin(
+        o: T::RuntimeOrigin,
+        para_id: &ParaId,
+    ) -> Result<Self::Success, T::RuntimeOrigin> {
+        let signed_account =
+            <frame_system::EnsureSigned<_> as EnsureOrigin<_>>::try_origin(o.clone())?;
+
+        if !Pallet::<T>::is_para_manager(para_id, &signed_account) {
+            return Err(frame_system::RawOrigin::Signed(signed_account).into());
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn try_successful_origin(para_id: &ParaId) -> Result<T::RuntimeOrigin, ()> {
+        let manager = Pallet::<T>::benchmarks_get_or_create_para_manager(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
+
+        Ok(frame_system::RawOrigin::Signed(manager).into())
+    }
+}

@@ -42,7 +42,7 @@ use crate::service::ParachainNativeExecutor;
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::development_config(
+        "dev" => Box::new(chain_spec::dancebox::development_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
@@ -53,7 +53,7 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
                 "Dave".to_string(),
             ],
         )),
-        "template-rococo" => Box::new(chain_spec::local_dancebox_config(
+        "" | "dancebox-local" => Box::new(chain_spec::dancebox::local_dancebox_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
@@ -64,7 +64,7 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
                 "Dave".to_string(),
             ],
         )),
-        "" | "dancebox-local" => Box::new(chain_spec::local_dancebox_config(
+        "flashbox_dev" => Box::new(chain_spec::flashbox::development_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
@@ -75,7 +75,18 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
                 "Dave".to_string(),
             ],
         )),
-        path => Box::new(chain_spec::ChainSpec::from_json_file(
+        "flashbox-local" => Box::new(chain_spec::flashbox::local_flashbox_config(
+            para_id,
+            vec![],
+            vec![2000.into(), 2001.into()],
+            vec![
+                "Alice".to_string(),
+                "Bob".to_string(),
+                "Charlie".to_string(),
+                "Dave".to_string(),
+            ],
+        )),
+        path => Box::new(chain_spec::dancebox::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
     })
@@ -251,7 +262,7 @@ pub fn run() -> Result<()> {
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.parachain_id {
                     if config.chain_spec.is_dev() {
-                        Box::new(chain_spec::development_config(
+                        Box::new(chain_spec::dancebox::development_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],
@@ -265,7 +276,7 @@ pub fn run() -> Result<()> {
                             }),
                         ))
                     } else {
-                        Box::new(chain_spec::local_dancebox_config(
+                        Box::new(chain_spec::dancebox::local_dancebox_config(
                             para_id.into(),
                             cmd.add_container_chain.clone(),
                             vec![],

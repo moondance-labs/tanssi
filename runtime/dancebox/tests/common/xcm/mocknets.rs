@@ -19,7 +19,7 @@ use {
         accounts::{ALICE, BOB, RANDOM},
         frontier_template, simple_template, westend,
     },
-    cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV6,
+    cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV8,
     frame_support::parameter_types,
     staging_xcm::prelude::*,
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},

@@ -71,12 +71,12 @@ fn using_sovereign_works_from_tanssi() {
         let sovereign_account =
             westend_runtime::xcm_config::LocationConverter::convert_location(&MultiLocation {
                 parents: 0,
-                interior: X1(Parachain(2000u32.into())),
+                interior: X1(Parachain(2000u32)),
             })
             .unwrap();
 
         let origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
-        assert_ok!(<Westend as WestendPallet>::Balances::transfer(
+        assert_ok!(<Westend as WestendPallet>::Balances::transfer_allow_death(
             origin,
             sp_runtime::MultiAddress::Id(sovereign_account),
             100 * WND
@@ -119,7 +119,7 @@ fn using_sovereign_works_from_tanssi() {
                         success,
                         ..
                     }) => {
-                    success: *success == true,
+                    success: *success,
                 },
             ]
         );
@@ -177,13 +177,13 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
         let sovereign_account =
             container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(&MultiLocation {
                 parents: 1,
-                interior: X1(Parachain(2000u32.into())),
+                interior: X1(Parachain(2000u32)),
             })
             .unwrap();
 
         let origin = <FrontierTemplate as Chain>::RuntimeOrigin::signed(EthereumSender::get());
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::Balances::transfer(
+            <FrontierTemplate as FrontierTemplatePallet>::Balances::transfer_allow_death(
                 origin,
                 sovereign_account,
                 100 * FRONTIER_DEV

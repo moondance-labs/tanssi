@@ -30,9 +30,19 @@ std = [
 	"dp-collator-assignment/std",
 	"frame-support/std",
 	"frame-system/std",
+	"log/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde",
+	"serde?/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-std/std",
 	"tp-traits/std",
 ]
-try-runtime = [ "frame-support/try-runtime" ]
+try-runtime = [
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+	"sp-runtime/try-runtime",
+]

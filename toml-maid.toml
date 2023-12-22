@@ -1,0 +1,29 @@
+keys = [
+    "workspace",
+    "name",
+    "package",
+    "bin",
+    "lib",
+    "test",
+    "dependencies",
+    "dev-dependencies",
+    "build-dependencies",
+    "features",
+    "default",
+    "std",
+]
+
+inline_keys = [
+    "package",
+    "workspace",
+    "path",
+    "git",
+    "branch",
+    "rev",
+    "version",
+    "default-features",
+    "optional",
+    "features",
+]
+
+sort_arrays = true

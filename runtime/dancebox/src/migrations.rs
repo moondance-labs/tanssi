@@ -20,10 +20,14 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{Invulnerables, Runtime, RuntimeOrigin, LOG_TARGET},
+    crate::{Invulnerables, ParaId, Runtime, RuntimeOrigin, ServicesPayment, LOG_TARGET},
     frame_support::{
-        migration::storage_key_iter, storage::types::StorageValue, traits::OnRuntimeUpgrade,
-        weights::Weight, Blake2_128Concat,
+        migration::storage_key_iter,
+        pallet_prelude::ValueQuery,
+        storage::types::{StorageMap, StorageValue},
+        traits::OnRuntimeUpgrade,
+        weights::Weight,
+        Blake2_128Concat,
     },
     pallet_balances::IdAmount,
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
@@ -132,7 +136,7 @@ impl<T> Migration for MigrateHoldReason<T>
 where
     T: pallet_balances::Config,
     T: pallet_pooled_staking::Config,
-    T::RuntimeHoldReason: From<crate::HoldReason>,
+    <T as pallet_balances::Config>::RuntimeHoldReason: From<pallet_pooled_staking::HoldReason>,
 {
     fn friendly_name(&self) -> &str {
         "TM_MigrateHoldReason"
@@ -159,10 +163,10 @@ where
 
             for hold in holds {
                 let new_item: pallet_balances::IdAmount<
-                    T::RuntimeHoldReason,
+                    <T as pallet_balances::Config>::RuntimeHoldReason,
                     <T as pallet_balances::Config>::Balance,
                 > = pallet_balances::IdAmount {
-                    id: crate::HoldReason::PooledStake.into(),
+                    id: pallet_pooled_staking::HoldReason::PooledStake.into(),
                     amount: hold.amount,
                 };
                 new_holds.push(new_item);
@@ -215,7 +219,7 @@ where
                 );
                 assert_eq!(
                     migrated[index].id,
-                    crate::HoldReason::PooledStake.into(),
+                    pallet_pooled_staking::HoldReason::PooledStake.into(),
                     "Pooled stake should be migrated"
                 );
             }
@@ -349,28 +353,192 @@ where
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
         // For each parachain in pallet_registrar (active, pending or pending_verification),
-        // insert `MaxCreditsStored` to pallet_services_payment
+        // insert `MaxCreditsStored` to pallet_services_payment,
+        // and mark that parachain as "given_free_credits".
         let mut para_ids = BTreeSet::new();
         let active = pallet_registrar::RegisteredParaIds::<Runtime>::get();
         let pending = pallet_registrar::PendingParaIds::<Runtime>::get();
         let pending_verification = pallet_registrar::PendingVerification::<Runtime>::get();
+        // This migration ignores Paused and PendingPaused because they do not exist yet in dancebox
 
         para_ids.extend(active);
         para_ids.extend(pending.into_iter().flat_map(|(_session, active)| active));
         para_ids.extend(pending_verification);
 
-        let max_credits = crate::MaxCreditsStored::get();
-        let reads = 3;
-        let writes = para_ids.len() as u64;
+        let reads = 3 + 2 * para_ids.len() as u64;
+        let writes = 2 * para_ids.len() as u64;
 
         for para_id in para_ids {
-            pallet_services_payment::BlockProductionCredits::<Runtime>::insert(
-                para_id,
-                max_credits,
-            );
+            // 2 reads 2 writes
+            ServicesPayment::give_free_credits(&para_id);
         }
 
         let db_weights = T::DbWeight::get();
+        db_weights.reads_writes(reads, writes)
+    }
+}
+
+/// A reason for placing a hold on funds.
+#[derive(
+    Clone,
+    parity_scale_codec::Encode,
+    parity_scale_codec::Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+)]
+pub enum OldHoldReason {
+    /// The Pooled Stake holds
+    PooledStake,
+}
+
+pub struct MigrateHoldReasonRuntimeEnum<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateHoldReasonRuntimeEnum<T>
+where
+    T: pallet_balances::Config,
+    T: pallet_pooled_staking::Config,
+    <T as pallet_balances::Config>::RuntimeHoldReason: From<pallet_pooled_staking::HoldReason>,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateHoldReasonRuntimeHold"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        log::info!(target: LOG_TARGET, "migrate");
+        let pallet_prefix: &[u8] = b"Balances";
+        let storage_item_prefix: &[u8] = b"Holds";
+
+        let stored_data: Vec<_> = storage_key_iter::<
+            T::AccountId,
+            BoundedVec<
+                IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>,
+                T::MaxHolds,
+            >,
+            Blake2_128Concat,
+        >(pallet_prefix, storage_item_prefix)
+        .collect();
+
+        let migrated_count_read = stored_data.len() as u64;
+        let mut migrated_count_write = 0u64;
+
+        // Write to the new storage
+        for (account_id, holds) in stored_data {
+            let mut new_holds = vec![];
+
+            for hold in holds {
+                let new_item: pallet_balances::IdAmount<
+                    <T as pallet_balances::Config>::RuntimeHoldReason,
+                    <T as pallet_balances::Config>::Balance,
+                > = pallet_balances::IdAmount {
+                    id: pallet_pooled_staking::HoldReason::PooledStake.into(),
+                    amount: hold.amount,
+                };
+                new_holds.push(new_item);
+            }
+            let bounded = BoundedVec::<_, T::MaxHolds>::truncate_from(new_holds.clone());
+            pallet_balances::Holds::<T>::insert(&account_id, bounded);
+            migrated_count_write += 1;
+        }
+        let db_weights = T::DbWeight::get();
+        db_weights.reads_writes(migrated_count_read, migrated_count_write)
+    }
+
+    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        log::info!(target: LOG_TARGET, "pre_upgrade");
+        let pallet_prefix: &[u8] = b"Balances";
+        let storage_item_prefix: &[u8] = b"Holds";
+
+        let stored_data: Vec<_> = storage_key_iter::<
+            T::AccountId,
+            BoundedVec<
+                IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>,
+                T::MaxHolds,
+            >,
+            Blake2_128Concat,
+        >(pallet_prefix, storage_item_prefix)
+        .collect();
+        use parity_scale_codec::Encode;
+
+        Ok(stored_data.encode())
+    }
+
+    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, migrated_holds: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use parity_scale_codec::Decode;
+        let should_be_migrated: Vec<(
+            T::AccountId,
+            BoundedVec<
+                IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>,
+                T::MaxHolds,
+            >,
+        )> = Decode::decode(&mut migrated_holds.as_slice()).expect("should be decodable");
+
+        // Write to the new storage
+        for (account_id, holds) in should_be_migrated {
+            let migrated = pallet_balances::Holds::<T>::get(&account_id);
+
+            for (index, hold) in holds.iter().enumerate() {
+                assert_eq!(
+                    migrated[index].amount, hold.amount,
+                    "after migration, there should be the same number held amount"
+                );
+                assert_eq!(
+                    migrated[index].id,
+                    pallet_pooled_staking::HoldReason::PooledStake.into(),
+                    "Pooled stake should be migrated"
+                );
+            }
+        }
+
+        Ok(())
+    }
+}
+
+pub struct RegistrarBootNodesStorageValuePrefix<T>(PhantomData<T>);
+impl<T> frame_support::traits::StorageInstance for RegistrarBootNodesStorageValuePrefix<T> {
+    const STORAGE_PREFIX: &'static str = "BootNodes";
+    fn pallet_prefix() -> &'static str {
+        "Registrar"
+    }
+}
+pub type RegistrarBootNodesStorageMap<T> = StorageMap<
+    RegistrarBootNodesStorageValuePrefix<T>,
+    Blake2_128Concat,
+    ParaId,
+    //BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
+    Vec<Vec<u8>>,
+    ValueQuery,
+>;
+
+pub struct MigrateBootNodes<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateBootNodes<T>
+where
+    T: cumulus_pallet_xcmp_queue::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateBootNodes"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        let mut len = 0;
+        for (para_id, bootnodes) in RegistrarBootNodesStorageMap::<Runtime>::drain() {
+            len += 1;
+            // Convert Vec<Vec<u8>> into BoundedVec<BoundedVec<u8>>
+            // Cannot fail because the old storage was actually a BoundedVec with the same limit as the new one
+            let bootnodes: Vec<_> = bootnodes
+                .into_iter()
+                .map(|bootnode| bootnode.try_into().unwrap())
+                .collect();
+            let bootnodes: BoundedVec<_, _> = bootnodes.try_into().unwrap();
+            pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, bootnodes);
+        }
+
+        let db_weights = T::DbWeight::get();
+        let reads = len;
+        let writes = len;
         db_weights.reads_writes(reads, writes)
     }
 }
@@ -385,24 +553,35 @@ where
     Runtime: pallet_configuration::Config,
     Runtime: pallet_xcm::Config,
     Runtime: cumulus_pallet_xcmp_queue::Config,
-    Runtime::RuntimeHoldReason: From<crate::HoldReason>,
+    <Runtime as pallet_balances::Config>::RuntimeHoldReason:
+        From<pallet_pooled_staking::HoldReason>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
-        let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
-        let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
-        let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
-        let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
+        //let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
+        //let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
+        //let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
+        //let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
+        // let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
         let migrate_services_payment =
             MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+        let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
 
+        let migrate_hold_reason_runtime_enum =
+            MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
         vec![
-            Box::new(migrate_invulnerables),
-            Box::new(migrate_holds),
-            Box::new(migrate_config),
-            Box::new(migrate_xcm),
-            Box::new(migrate_xcmp_queue),
+            // Applied in runtime 200
+            //Box::new(migrate_invulnerables),
+            // Applied in runtime 200
+            //Box::new(migrate_holds),
+            // Applied in runtime 300
+            //Box::new(migrate_config),
+            // Applied in runtime 300
+            //Box::new(migrate_xcm),
+            // Applied in runtime 300
+            //Box::new(migrate_xcmp_queue),
             Box::new(migrate_services_payment),
+            Box::new(migrate_hold_reason_runtime_enum),
+            Box::new(migrate_boot_nodes),
         ]
     }
 }

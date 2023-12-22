@@ -8,7 +8,7 @@
             "name": "dev_tanssi",
             "timeout": 120000,
             "envVars": ["DEBUG_COLORS=1"],
-            "testFileDir": ["suites/dev-tanssi", "suites/common"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
             "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
@@ -49,8 +49,7 @@
         },
         {
             "name": "dev_frontier_template",
-            "timeout": 120000,
-            "testFileDir": ["suites/dev-frontier-template", "suites/common"],
+            "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/dev-frontier-template"],
             "runScripts": ["pre-build-contracts.ts"],
             "multiThreads": true,
             "reporters": ["basic"],
@@ -63,6 +62,25 @@
                         "binPath": "../target/release/container-chain-template-frontier-node",
                         "options": ["--dev", "--sealing=manual", "--para-id=2000"],
                         "newRpcBehaviour": true
+                    }
+                ]
+            }
+        },
+        {
+            "name": "dev_simple_template",
+            "testFileDir": ["suites/common-all", "suites/common-xcm"],
+            "multiThreads": true,
+            "reporters": ["basic"],
+            "contracts": "helpers/",
+            "foundation": {
+                "type": "dev",
+                "launchSpec": [
+                    {
+                        "name": "simple-template",
+                        "binPath": "../target/release/container-chain-template-simple-node",
+                        "options": ["--dev", "--sealing=manual", "--para-id=2000"],
+                        "newRpcBehaviour": true,
+                        "disableDefaultEthProviders": true
                     }
                 ]
             }
@@ -331,16 +349,16 @@
             ]
         },
         {
-            "name": "chopsticks_frontier_template_upgrade",
-            "testFileDir": ["suites/rt-upgrade-chopsticks-frontier-template"],
+            "name": "chopsticks_flashbox_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks"],
             "foundation": {
                 "type": "chopsticks",
-                "rtUpgradePath": "../target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm",
+                "rtUpgradePath": "../target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm",
                 "launchSpec": [
                     {
                         "name": "db",
                         "type": "parachain",
-                        "configPath": "./configs/frontierContainer.yml"
+                        "configPath": "./configs/stagenet-flashbox.yml"
                     }
                 ]
             },
@@ -351,6 +369,36 @@
                     "endpoints": ["ws://127.0.0.1:8000"]
                 }
             ]
+        },
+        {
+            "name": "dev_flashbox",
+            "envVars": ["DEBUG_COLORS=1"],
+            "testFileDir": ["suites/common-all", "suites/common-tanssi"],
+            "multiThreads": true,
+            "reporters": ["basic"],
+            "foundation": {
+                "type": "dev",
+                "launchSpec": [
+                    {
+                        "name": "tanssi",
+                        "binPath": "../target/release/tanssi-node",
+                        "options": [
+                            "--chain=flashbox_dev",
+                            "--sealing=manual",
+                            "--alice",
+                            "--force-authoring",
+                            "--rpc-cors=all", 
+                            "--tmp",
+                            "--no-hardware-benchmarks",
+                            "--no-prometheus",
+                            "--no-telemetry",
+                            "--reserved-only"
+                        ],
+                        "disableDefaultEthProviders": true,
+                        "newRpcBehaviour": true
+                    }
+                ]
+            }
         }
     ]
 }

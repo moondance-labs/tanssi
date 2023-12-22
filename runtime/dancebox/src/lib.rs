@@ -49,8 +49,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InstanceFilter, OffchainWorker,
-            OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, ValidatorRegistration,
+            ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse, InsideBoth,
+            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -97,7 +98,7 @@ pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
-const LOG_TARGET: &str = "runtime::moonbeam";
+const LOG_TARGET: &str = "runtime::tanssi";
 
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
@@ -331,7 +332,7 @@ impl frame_system::Config for Runtime {
     /// The weight of database operations that the runtime can invoke.
     type DbWeight = RocksDbWeight;
     /// The basic call filter to use in dispatchable.
-    type BaseCallFilter = MaintenanceMode;
+    type BaseCallFilter = InsideBoth<MaintenanceMode, TxPause>;
     /// Weight information for the extrinsics of this pallet.
     type SystemWeightInfo = ();
     /// Block & extrinsics weights: base values and limits.
@@ -386,15 +387,6 @@ parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
 }
 
-/// A reason for placing a hold on funds.
-#[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, MaxEncodedLen, Debug, TypeInfo,
-)]
-pub enum HoldReason {
-    /// The Pooled Stake holds
-    PooledStake,
-}
-
 impl pallet_balances::Config for Runtime {
     type MaxLocks = ConstU32<50>;
     /// The type for recording an account's balance.
@@ -408,7 +400,8 @@ impl pallet_balances::Config for Runtime {
     type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = [u8; 8];
     type MaxFreezes = ConstU32<0>;
-    type RuntimeHoldReason = HoldReason;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<1>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
@@ -767,6 +760,16 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_data_preservers::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type SetBootNodesOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    type MaxBootNodes = MaxBootNodes;
+    type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
+    type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
@@ -825,11 +828,9 @@ impl pallet_configuration::Config for Runtime {
 pub struct DanceboxRegistrarHooks;
 
 impl RegistrarHooks for DanceboxRegistrarHooks {
-    fn para_registered(_para_id: ParaId) -> Weight {
-        // TODO: pallet_services_payment should give free credits but only once per para id
-        // A migration should mark any existing para ids as already received credits to avoid giving
-        // them more credits if they are deregistered and registered again
-        Weight::default()
+    fn para_marked_valid_for_collating(para_id: ParaId) -> Weight {
+        // Give free credits but only once per para id
+        ServicesPayment::give_free_credits(&para_id)
     }
 
     fn para_deregistered(para_id: ParaId) -> Weight {
@@ -849,8 +850,30 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
                 e,
             );
         }
+        // Remove bootnodes from pallet_data_preservers
+        DataPreservers::para_deregistered(para_id);
 
         Weight::default()
+    }
+
+    fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
+        // To be able to call mark_valid_for_collating, a container chain must have bootnodes
+        DataPreservers::check_valid_for_collating(para_id)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
+        use sp_runtime::BoundedVec;
+        let boot_nodes: BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> = vec![
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+        ]
+        .try_into()
+        .unwrap();
+
+        pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, boot_nodes);
     }
 }
 
@@ -913,6 +936,10 @@ pub enum ProxyType {
     CancelProxy = 4,
     /// Allow extrinsic related to Balances.
     Balances = 5,
+    /// Allow extrinsics related to Registrar
+    Registrar = 6,
+    /// Allow extrinsics related to Registrar that needs to be called through Sudo
+    SudoRegistrar = 7,
 }
 
 impl Default for ProxyType {
@@ -923,6 +950,12 @@ impl Default for ProxyType {
 
 impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
+        // Since proxy filters are respected in all dispatches of the Utility
+        // pallet, it should never need to be filtered by any proxy.
+        if let RuntimeCall::Utility(..) = c {
+            return true;
+        }
+
         match self {
             ProxyType::Any => true,
             ProxyType::NonTransfer => {
@@ -931,25 +964,37 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                     RuntimeCall::System(..)
                         | RuntimeCall::ParachainSystem(..)
                         | RuntimeCall::Timestamp(..)
-                        | RuntimeCall::Utility(..)
                         | RuntimeCall::Proxy(..)
                         | RuntimeCall::Registrar(..)
                 )
             }
-            ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(
-                c,
-                RuntimeCall::Session(..)
-                    | RuntimeCall::Utility(..)
-                    | RuntimeCall::PooledStaking(..)
-            ),
+            // We don't have governance yet
+            ProxyType::Governance => false,
+            ProxyType::Staking => {
+                matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
+            }
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
             ),
             ProxyType::Balances => {
-                matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+                matches!(c, RuntimeCall::Balances(..))
             }
+            ProxyType::Registrar => {
+                matches!(
+                    c,
+                    RuntimeCall::Registrar(..) | RuntimeCall::DataPreservers(..)
+                )
+            }
+            ProxyType::SudoRegistrar => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(
+                        x.as_ref(),
+                        &RuntimeCall::Registrar(..) | &RuntimeCall::DataPreservers(..)
+                    )
+                }
+                _ => false,
+            },
         }
     }
 
@@ -1086,15 +1131,6 @@ impl OnRuntimeUpgrade for MaintenanceHooks {
     fn on_runtime_upgrade() -> Weight {
         AllPalletsWithSystem::on_runtime_upgrade()
     }
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        AllPalletsWithSystem::pre_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        AllPalletsWithSystem::post_upgrade(state)
-    }
 
     #[cfg(feature = "try-runtime")]
     fn try_on_runtime_upgrade(checks: bool) -> Result<Weight, TryRuntimeError> {
@@ -1132,7 +1168,6 @@ impl pallet_root_testing::Config for Runtime {}
 
 parameter_types! {
     pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
-    pub const CurrencyHoldReason: HoldReason = HoldReason::PooledStake;
     pub const InitialManualClaimShareValue: u128 = currency::MILLIDANCE;
     pub const InitialAutoCompoundingShareValue: u128 = currency::MILLIDANCE;
     pub const MinimumSelfDelegation: u128 = 10 * currency::KILODANCE;
@@ -1205,11 +1240,11 @@ impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Balance = Balance;
-    type CurrencyHoldReason = CurrencyHoldReason;
     type StakingAccount = StakingAccount;
     type InitialManualClaimShareValue = InitialManualClaimShareValue;
     type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
     type MinimumSelfDelegation = MinimumSelfDelegation;
+    type RuntimeHoldReason = RuntimeHoldReason;
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
@@ -1267,6 +1302,16 @@ impl pallet_inflation_rewards::Config for Runtime {
     type RewardsPortion = RewardsPortion;
 }
 
+impl pallet_tx_pause::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type PauseOrigin = EnsureRoot<AccountId>;
+    type UnpauseOrigin = EnsureRoot<AccountId>;
+    type WhitelistedCalls = ();
+    type MaxNameLen = ConstU32<256>;
+    type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1281,6 +1326,7 @@ construct_runtime!(
         Proxy: pallet_proxy = 6,
         Migrations: pallet_migrations = 7,
         MaintenanceMode: pallet_maintenance_mode = 8,
+        TxPause: pallet_tx_pause = 9,
 
         // Monetary stuff.
         Balances: pallet_balances = 10,
@@ -1294,6 +1340,7 @@ construct_runtime!(
         AuthorNoting: pallet_author_noting = 24,
         AuthorityAssignment: pallet_authority_assignment = 25,
         ServicesPayment: pallet_services_payment = 26,
+        DataPreservers: pallet_data_preservers = 27,
 
         // Collator support. The order of these 6 are important and shall not change.
         Invulnerables: pallet_invulnerables = 30,
@@ -1325,6 +1372,7 @@ mod benches {
         [pallet_invulnerables, Invulnerables]
         [pallet_pooled_staking, PooledStaking]
         [pallet_services_payment, ServicesPayment]
+        [pallet_data_preservers, DataPreservers]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }
@@ -1475,6 +1523,7 @@ impl_runtime_apis! {
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = xcm_config::XcmConfig;
                 type AccountIdConverter = xcm_config::LocationToAccountId;
+                type DeliveryHelper = ();
                 fn valid_destination() -> Result<MultiLocation, BenchmarkError> {
                     Ok(MultiLocation::parent())
                 }
@@ -1489,6 +1538,7 @@ impl_runtime_apis! {
             }
 
             impl pallet_xcm_benchmarks::generic::Config for Runtime {
+                type TransactAsset = Balances;
                 type RuntimeCall = RuntimeCall;
 
                 fn worst_case_response() -> (u64, Response) {
@@ -1659,7 +1709,8 @@ impl_runtime_apis! {
 
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
-            let bounded_vec = Registrar::boot_nodes(para_id);
+            // TODO: remember to write migration to move boot nodes from pallet_registrar to pallet_data_preservers
+            let bounded_vec = DataPreservers::boot_nodes(para_id);
 
             bounded_vec.into_iter().map(|x| x.into()).collect()
         }

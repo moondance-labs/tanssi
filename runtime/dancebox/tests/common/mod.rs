@@ -17,7 +17,7 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
-    dancebox_runtime::{AuthorInherent, MaxLengthTokenSymbol},
+    dancebox_runtime::{AuthorInherent, MaxBootNodeUrlLen, MaxBootNodes, MaxLengthTokenSymbol},
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -29,7 +29,7 @@ use {
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::{Get, Pair},
-    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
@@ -39,9 +39,10 @@ mod xcm;
 
 pub use dancebox_runtime::{
     AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
-    CollatorAssignment, Configuration, InflationRewards, Initializer, Invulnerables,
-    MinimumSelfDelegation, ParachainInfo, PooledStaking, Proxy, ProxyType, Registrar,
-    RewardsPortion, Runtime, RuntimeCall, RuntimeEvent, ServicesPayment, Session, System,
+    CollatorAssignment, Configuration, DataPreservers, InflationRewards, Initializer,
+    Invulnerables, MinimumSelfDelegation, ParachainInfo, PooledStaking, Proxy, ProxyType,
+    Registrar, RewardsPortion, Runtime, RuntimeCall, RuntimeEvent, ServicesPayment, Session,
+    System,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -200,6 +201,8 @@ pub struct ExtBuilder {
     balances: Vec<(AccountId, Balance)>,
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
+    // sudo key
+    sudo: Option<AccountId>,
     // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits
     para_ids: Vec<(
         u32,
@@ -221,6 +224,11 @@ impl ExtBuilder {
 
     pub fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
         self.collators = collators;
+        self
+    }
+
+    pub fn with_sudo(mut self, sudo: AccountId) -> Self {
+        self.sudo = Some(sudo);
         self
     }
 
@@ -271,8 +279,8 @@ impl ExtBuilder {
                 .para_ids
                 .iter()
                 .cloned()
-                .map(|(para_id, genesis_data, boot_nodes, _block_credits)| {
-                    (para_id.into(), genesis_data, boot_nodes)
+                .map(|(para_id, genesis_data, _boot_nodes, _block_credits)| {
+                    (para_id.into(), genesis_data)
                 })
                 .collect(),
         }
@@ -346,6 +354,10 @@ impl ExtBuilder {
                 .assimilate_storage(&mut t)
                 .unwrap();
         }
+        pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
         t
     }
 
@@ -382,7 +394,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
 }
 
 pub fn get_orchestrator_current_author() -> Option<AccountId> {
-    let slot: u64 = current_slot().into();
+    let slot: u64 = current_slot();
     let orchestrator_collators = Runtime::parachain_collators(ParachainInfo::get())?;
     let author_index = slot % orchestrator_collators.len() as u64;
     let account = orchestrator_collators.get(author_index as usize)?;
@@ -430,6 +442,16 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
         extensions: Default::default(),
         properties: Default::default(),
     }
+}
+
+pub fn dummy_boot_nodes() -> BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> {
+    vec![BoundedVec::try_from(
+        b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+            .to_vec(),
+    )
+    .unwrap()]
+    .try_into()
+    .unwrap()
 }
 
 pub fn current_slot() -> u64 {

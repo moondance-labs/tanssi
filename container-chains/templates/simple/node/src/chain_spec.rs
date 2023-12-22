@@ -41,7 +41,7 @@ pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Pu
 }
 
 /// Orcherstrator's parachain id
-const ORCHESTRATOR: ParaId = ParaId::new(1000);
+pub const ORCHESTRATOR: ParaId = ParaId::new(1000);
 
 /// The extensions for the [`ChainSpec`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
@@ -204,6 +204,7 @@ fn testnet_genesis(
         // This should initialize it to whatever we have set in the pallet
         polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
+        tx_pause: Default::default(),
     }
 }
 

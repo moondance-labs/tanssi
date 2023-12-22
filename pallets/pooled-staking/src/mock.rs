@@ -137,7 +137,8 @@ impl pallet_balances::Config for Runtime {
     type AccountStore = System;
     type FreezeIdentifier = ();
     type MaxFreezes = ();
-    type RuntimeHoldReason = HoldIdentifier;
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<5>;
     type WeightInfo = ();
 }
@@ -147,7 +148,6 @@ pub const BLOCKS_TO_WAIT: u64 = 2;
 
 parameter_types! {
     pub const StakingAccount: u64 = ACCOUNT_STAKING;
-    pub const CurrencyHoldReason: HoldIdentifier = HoldIdentifier::Staking;
     pub const InitialManualClaimShareValue: u128 = SHARE_INIT;
     pub const InitialAutoCompoundingShareValue: u128 = SHARE_INIT;
     pub const MinimumSelfDelegation: u128 = 10 * MEGA;
@@ -159,7 +159,6 @@ impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Balance = Balance;
-    type CurrencyHoldReason = CurrencyHoldReason;
     type StakingAccount = StakingAccount;
     type InitialManualClaimShareValue = InitialManualClaimShareValue;
     type InitialAutoCompoundingShareValue = InitialAutoCompoundingShareValue;
@@ -171,6 +170,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesBufferSize = ConstU32<3>;
     type EligibleCandidatesFilter = ();
     type WeightInfo = ();
+    type RuntimeHoldReason = RuntimeHoldReason;
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {
@@ -273,7 +273,7 @@ pub fn total_balance(who: &AccountId) -> Balance {
 }
 
 pub fn balance_hold(who: &AccountId) -> Balance {
-    Balances::balance_on_hold(&HoldIdentifier::Staking, who)
+    Balances::balance_on_hold(&crate::HoldReason::PooledStake.into(), who)
 }
 
 pub fn block_number() -> BlockNumberFor<Runtime> {
@@ -424,7 +424,7 @@ pub(crate) fn events() -> Vec<crate::Event<Runtime>> {
 macro_rules! assert_last_event {
     ($event:expr) => {
         match &$event {
-            e => assert_eq!(*e, crate::mock::last_event()),
+            e => assert_eq!(*e, $crate::mock::last_event()),
         }
     };
 }
@@ -435,7 +435,7 @@ macro_rules! assert_last_event {
 macro_rules! assert_eq_events {
     ($events:expr) => {
         match &$events {
-            e => similar_asserts::assert_eq!(*e, crate::mock::events()),
+            e => similar_asserts::assert_eq!(*e, $crate::mock::events()),
         }
     };
 }
@@ -459,7 +459,7 @@ macro_rules! assert_eq_events {
 #[macro_export]
 macro_rules! assert_eq_last_events {
     ($events:expr) => {
-        crate::assert_tail_eq!($events, crate::mock::events())
+        $crate::assert_tail_eq!($events, $crate::mock::events())
     };
 }
 
@@ -488,10 +488,10 @@ macro_rules! assert_event_emitted {
         match &$event {
             e => {
                 assert!(
-                    crate::mock::events().iter().find(|x| *x == e).is_some(),
+                    $crate::mock::events().iter().find(|x| *x == e).is_some(),
                     "Event {:?} was not found in events: \n {:?}",
                     e,
-                    crate::mock::events()
+                    $crate::mock::events()
                 );
             }
         }
@@ -505,10 +505,10 @@ macro_rules! assert_event_not_emitted {
         match &$event {
             e => {
                 assert!(
-                    crate::mock::events().iter().find(|x| *x == e).is_none(),
+                    $crate::mock::events().iter().find(|x| *x == e).is_none(),
                     "Event {:?} was found in events: \n {:?}",
                     e,
-                    crate::mock::events()
+                    $crate::mock::events()
                 );
             }
         }

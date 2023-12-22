@@ -145,53 +145,34 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
 }
 
 /// Consensus data provider for Container Manual Seal Aura.
-pub struct ContainerManualSealAuraConsensusDataProvider<B, C, P> {
+pub struct ContainerManualSealAuraConsensusDataProvider<B> {
     // slot duration
     slot_duration: SlotDuration,
-    /// Shared reference to keystore
-    pub keystore: KeystorePtr,
-
-    /// Shared reference to the client
-    pub client: Arc<C>,
     // Authorities from which the author should be calculated
     pub authorities: Vec<NimbusId>,
     // phantom data for required generics
-    _phantom: PhantomData<(B, C, P)>,
+    _phantom: PhantomData<B>,
 }
 
-impl<B, C, P> ContainerManualSealAuraConsensusDataProvider<B, C, P>
+impl<B> ContainerManualSealAuraConsensusDataProvider<B>
 where
     B: BlockT,
-    C: AuxStore + ProvideRuntimeApi<B> + UsageProvider<B>,
 {
     /// Creates a new instance of the [`AuraConsensusDataProvider`], requires that `client`
     /// implements [`sp_consensus_aura::AuraApi`]
-    pub fn new(
-        client: Arc<C>,
-        keystore: KeystorePtr,
-        slot_duration: SlotDuration,
-        authorities: Vec<NimbusId>,
-    ) -> Self {
+    pub fn new(slot_duration: SlotDuration, authorities: Vec<NimbusId>) -> Self {
         Self {
             slot_duration,
-            keystore,
-            client,
             authorities,
             _phantom: PhantomData,
         }
     }
 }
-impl<B, C, P> ConsensusDataProvider<B> for ContainerManualSealAuraConsensusDataProvider<B, C, P>
+impl<B> ConsensusDataProvider<B> for ContainerManualSealAuraConsensusDataProvider<B>
 where
     B: BlockT,
-    C: AuxStore
-        + HeaderBackend<B>
-        + HeaderMetadata<B, Error = sp_blockchain::Error>
-        + UsageProvider<B>
-        + ProvideRuntimeApi<B>,
-    P: Send + Sync,
 {
-    type Proof = P;
+    type Proof = ();
 
     fn create_digest(
         &self,
@@ -236,5 +217,20 @@ where
         _proof: Self::Proof,
     ) -> Result<(), Error> {
         Ok(())
+    }
+}
+
+impl<B> fc_rpc::pending::ConsensusDataProvider<B>
+    for ContainerManualSealAuraConsensusDataProvider<B>
+where
+    B: BlockT,
+{
+    fn create_digest(
+        &self,
+        _parent: &B::Header,
+        inherents: &InherentData,
+    ) -> Result<sp_runtime::Digest, sp_inherents::Error> {
+        <Self as ConsensusDataProvider<B>>::create_digest(self, _parent, inherents)
+            .map_err(|_| sp_inherents::Error::FatalErrorReported)
     }
 }
