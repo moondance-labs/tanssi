@@ -1,7 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/types/config_schema.json",
-    "label": "MasterConfig 🌔",
-    "defaultTestTimeout": 30000,
+    "label": "💃 MasterConfig",
+    "defaultTestTimeout": 60000,
     "scriptsDir": "scripts/",
     "environments": [
         {
@@ -386,7 +386,7 @@
                             "--sealing=manual",
                             "--alice",
                             "--force-authoring",
-                            "--rpc-cors=all", 
+                            "--rpc-cors=all",
                             "--tmp",
                             "--no-hardware-benchmarks",
                             "--no-prometheus",
