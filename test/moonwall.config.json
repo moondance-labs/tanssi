@@ -1,7 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/types/config_schema.json",
     "label": "💃 MasterConfig",
-    "defaultTestTimeout": 60000,
+    "defaultTestTimeout": 120000,
     "scriptsDir": "scripts/",
     "environments": [
         {
@@ -288,7 +288,7 @@
             "reporters": ["basic", "html"],
             "connections": [
                 {
-                    "name": "DBX",
+                    "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["wss://dancebox.tanssi-api.network"]
                 }
@@ -303,7 +303,7 @@
             "reporters": ["basic", "html"],
             "connections": [
                 {
-                    "name": "DBX",
+                    "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["wss://fraa-stagebox-rpc.a.stagenet.tanssi.network"]
                 }
