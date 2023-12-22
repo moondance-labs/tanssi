@@ -41,7 +41,7 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse, InsideBoth,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse, InsideBoth,
             InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
         },
         weights::{
@@ -69,6 +69,7 @@ use {
     scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
+    sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
@@ -409,6 +410,16 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
 }
 
+pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 2;
+pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
+
+type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
+    Runtime,
+    BLOCK_PROCESSING_VELOCITY,
+    UNINCLUDED_SEGMENT_CAPACITY,
+>;
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
@@ -419,6 +430,21 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type XcmpMessageHandler = ();
     type ReservedXcmpWeight = ();
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type ConsensusHook = ConsensusHook;
+}
+
+pub struct ParaSlotProvider;
+impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
+    fn get() -> (Slot, SlotDuration) {
+        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
+    }
+}
+
+impl pallet_async_backing::Config for Runtime {
+    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type GetAndVerifySlot =
+        pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
 }
 
 pub struct OwnApplySession;
@@ -1099,6 +1125,7 @@ construct_runtime!(
         InflationRewards: pallet_inflation_rewards = 35,
 
         RootTesting: pallet_root_testing = 100,
+        AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
     }
 );
 
@@ -1484,33 +1511,9 @@ impl_runtime_apis! {
     }
 }
 
-struct CheckInherents;
-
-impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
-    fn check_inherents(
-        block: &Block,
-        relay_state_proof: &cumulus_pallet_parachain_system::RelayChainStateProof,
-    ) -> sp_inherents::CheckInherentsResult {
-        let relay_chain_slot = relay_state_proof
-            .read_slot()
-            .expect("Could not read the relay chain slot from the proof");
-
-        let inherent_data =
-            cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
-                relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
-            )
-            .create_inherent_data()
-            .expect("Could not create the timestamp inherent data");
-
-        inherent_data.check_extrinsics(block)
-    }
-}
-
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>
-    CheckInherents = CheckInherents,
+    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
 }
 
 #[macro_export]

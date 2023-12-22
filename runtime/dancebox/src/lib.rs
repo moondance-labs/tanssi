@@ -37,7 +37,7 @@ pub mod weights;
 use sp_runtime::TryRuntimeError;
 
 use {
-    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberMonotonicallyIncreases},
+    cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
         relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
         BodyId, DmpMessageHandler, ParaId,
@@ -446,7 +446,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
-    type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
+    type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
     type ConsensusHook = ConsensusHook;
 }
 pub struct ParaSlotProvider;

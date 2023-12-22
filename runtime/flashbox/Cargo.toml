@@ -37,6 +37,7 @@ pallet-services-payment = { workspace = true }
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-author-inherent = { workspace = true }
+pallet-async-backing = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 
@@ -58,6 +59,7 @@ sp-api = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true }
 sp-debug-derive = { workspace = true }
 sp-inherents = { workspace = true }
@@ -130,6 +132,7 @@ std = [
 	"pallet-author-inherent/std",
 	"pallet-author-noting-runtime-api/std",
 	"pallet-author-noting/std",
+	"pallet-async-backing/std",
 	"pallet-authority-assignment/std",
 	"pallet-authority-mapping/std",
 	"pallet-balances/std",
@@ -170,6 +173,7 @@ std = [
 	"sp-consensus-aura/std",
 	"sp-consensus-babe/std",
 	"sp-consensus-beefy/std",
+	"sp-consensus-slots/std",
 	"sp-core/std",
 	"sp-debug-derive/std",
 	"sp-inherents/std",
