@@ -60,9 +60,7 @@
     },
     "dependencies": {
         "@zombienet/orchestrator": "0.0.68",
-        "cli": "link:../../moonwall/packages/cli",
         "inquirer": "9.2.12",
-        "ps-node": "0.1.6",
-        "util": "link:../../moonwall/packages/util"
+        "ps-node": "0.1.6"
     }
 }
