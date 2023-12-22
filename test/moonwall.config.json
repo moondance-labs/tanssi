@@ -422,7 +422,7 @@
             },
             "connections": [
                 {
-                    "name": "DB",
+                    "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:8000"]
                 }
