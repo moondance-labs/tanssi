@@ -77,26 +77,26 @@
         "LICENSE"
     ],
     "dependencies": {
-        "@polkadot/api": "latest",
-        "@polkadot/api-augment": "latest",
-        "@polkadot/api-base": "latest",
-        "@polkadot/api-derive": "latest",
-        "@polkadot/rpc-augment": "latest",
-        "@polkadot/rpc-core": "latest",
-        "@polkadot/rpc-provider": "latest",
-        "@polkadot/types": "latest",
-        "@polkadot/types-augment": "latest",
-        "@polkadot/types-codec": "latest",
-        "@polkadot/types-create": "latest",
-        "@polkadot/types-known": "latest",
-        "@polkadot/types-support": "latest",
+        "@polkadot/api": "^10.11.2",
+        "@polkadot/api-augment": "^10.11.2",
+        "@polkadot/api-base": "^10.11.2",
+        "@polkadot/api-derive": "^10.11.2",
+        "@polkadot/rpc-augment": "^10.11.2",
+        "@polkadot/rpc-core": "^10.11.2",
+        "@polkadot/rpc-provider": "^10.11.2",
+        "@polkadot/types": "^10.11.2",
+        "@polkadot/types-augment": "^10.11.2",
+        "@polkadot/types-codec": "^10.11.2",
+        "@polkadot/types-create": "^10.11.2",
+        "@polkadot/types-known": "^10.11.2",
+        "@polkadot/types-support": "^10.11.2",
         "chalk": "^5.3.0"
     },
     "devDependencies": {
-        "@polkadot/typegen": "latest",
+        "@polkadot/typegen": "^10.11.2",
         "prettier": "^2.8.8",
         "prettier-plugin-jsdoc": "^0.3.38",
-        "tsx": "^3.12.7",
-        "typescript": "^5.1.6"
+        "tsx": "^4.7.0",
+        "typescript": "^5.3.3"
     }
 }
