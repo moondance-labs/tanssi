@@ -1,7 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/Moonsong-Labs/moonwall/main/packages/types/config_schema.json",
-    "label": "MasterConfig 🌔",
-    "defaultTestTimeout": 30000,
+    "label": "💃 MasterConfig",
+    "defaultTestTimeout": 60000,
     "scriptsDir": "scripts/",
     "environments": [
         {
@@ -87,6 +87,7 @@
         },
         {
             "name": "zombie_tanssi",
+            "timeout": 600000,
             "testFileDir": ["suites/para"],
             "runScripts": ["build-spec.sh", "download-polkadot.sh"],
             "foundation": {
@@ -138,6 +139,7 @@
             "name": "zombie_tanssi_keep_db",
             "testFileDir": ["suites/keep-db"],
             "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -166,6 +168,7 @@
             "name": "zombie_tanssi_metrics",
             "testFileDir": ["suites/metrics"],
             "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -194,6 +197,7 @@
             "name": "zombie_tanssi_rotation",
             "testFileDir": ["suites/rotation-para"],
             "runScripts": ["build-spec.sh", "download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -237,6 +241,7 @@
             "name": "zombie_tanssi_warp_sync",
             "testFileDir": ["suites/warp-sync"],
             "runScripts": ["build-spec-warp-sync.sh", "download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
@@ -265,6 +270,7 @@
             "name": "zombie_dancebox_upgrade",
             "testFileDir": ["suites/rt-upgrade-zombienet"],
             "runScripts": ["download-polkadot.sh"],
+            "timeout": 600000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
                 "type": "zombie",
@@ -387,7 +393,7 @@
                             "--sealing=manual",
                             "--alice",
                             "--force-authoring",
-                            "--rpc-cors=all", 
+                            "--rpc-cors=all",
                             "--tmp",
                             "--no-hardware-benchmarks",
                             "--no-prometheus",

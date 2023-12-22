@@ -359,15 +359,7 @@ async function directoryExists(directoryPath) {
 
 /// Returns the /tmp/zombie-52234... path
 function getTmpZombiePath() {
-    const logFilePath = process.env.MOON_MONITORED_NODE;
-
-    if (logFilePath) {
-        const lastIndex = logFilePath.lastIndexOf("/");
-        return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
-    }
-
-    // Return null if the environment variable is not set
-    return null;
+    return process.env.MOON_ZOMBIE_DIR;
 }
 
 /// Verify that the next `numBlocks` have exactly `numAuthors` different authors
