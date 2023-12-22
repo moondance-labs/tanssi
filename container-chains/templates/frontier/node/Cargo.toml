@@ -62,6 +62,7 @@ sp-consensus = { workspace = true }
 sp-debug-derive = { workspace = true }
 
 sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true, features = [ "std" ] }
 sp-inherents = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true, features = [ "std" ] }
@@ -78,6 +79,7 @@ try-runtime-cli = { workspace = true, optional = true }
 
 # Polkadot
 polkadot-cli = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
 polkadot-primitives = { workspace = true }
 polkadot-service = { workspace = true }
 

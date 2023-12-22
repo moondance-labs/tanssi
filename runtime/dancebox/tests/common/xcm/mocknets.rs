@@ -24,7 +24,6 @@ use {
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::generic::DigestItem,
-    sp_runtime::Digest,
     staging_xcm::prelude::*,
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     staging_xcm_executor::traits::ConvertLocation,
