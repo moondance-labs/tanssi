@@ -1021,7 +1021,6 @@ pub fn start_dev_node(
                 });
 
                 timestamp += dancebox_runtime::SLOT_DURATION;
-                
                 let relay_slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
 						timestamp.into(),
 						slot_duration,
@@ -1041,7 +1040,6 @@ pub fn start_dev_node(
                             para_ids,
                             slots_per_para_block: 1,
                         };
-                    
                     let mut additional_keys = mocked_author_noting.get_key_values();
                     additional_keys.append(&mut vec![(para_head_key, para_head_data), (relay_slot_key, Slot::from(relay_slot).encode())]);
 
