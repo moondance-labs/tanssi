@@ -33,7 +33,6 @@ use {
     nimbus_primitives::NimbusId,
     node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
     parity_scale_codec::Encode,
-    polkadot_parachain_primitives::primitives::HeadData,
     sc_consensus::BasicQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
@@ -388,21 +387,7 @@ pub async fn start_dev_node(
 
                 let client_for_xcm = client.clone();
                 let authorities_for_cidp = authorities.clone();
-
-                let hash = client
-                    .hash(current_para_block.saturating_sub(1))
-                    .expect("Hash of the desired block must be present")
-                    .expect("Hash of the desired block should exist");
-
-                let para_header = client
-                    .expect_header(hash)
-                    .expect("Expected parachain header should exist")
-                    .encode();
-
-                let para_head_data = HeadData(para_header).encode();
-                let para_head_key = RelayWellKnownKeys::para_head(para_id);
                 let relay_slot_key = RelayWellKnownKeys::CURRENT_SLOT.to_vec();
-
                 let slot_duration = container_chain_template_frontier_runtime::SLOT_DURATION;
 
                 let mut timestamp: u64 = 0u64;
@@ -433,7 +418,7 @@ pub async fn start_dev_node(
                     };
 
                     let mut additional_keys = mocked_authorities_noting.get_key_values();
-                    additional_keys.append(&mut vec![(para_head_key, para_head_data), (relay_slot_key, Slot::from(relay_slot).encode())]);
+                    additional_keys.append(&mut vec![(relay_slot_key, Slot::from(relay_slot).encode())]);
 
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
@@ -451,7 +436,6 @@ pub async fn start_dev_node(
                         ),
                         raw_downward_messages: downward_xcm_receiver.drain().collect(),
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
-                        //additional_key_values: Some(mocked_authorities_noting.get_key_values()),
                         additional_key_values: Some(additional_keys),
                     };
 
