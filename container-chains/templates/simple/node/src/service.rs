@@ -29,6 +29,8 @@ use {
     node_common::service::ManualSealConfiguration,
     node_common::service::Sealing,
     node_common::service::{NodeBuilder, NodeBuilderConfig},
+    parity_scale_codec::Encode,
+    polkadot_parachain_primitives::primitives::HeadData,
     sc_consensus::BasicQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
@@ -37,8 +39,6 @@ use {
     sp_core::Pair,
     sp_core::H256,
     std::{sync::Arc, time::Duration},
-    parity_scale_codec::Encode,
-    polkadot_parachain_primitives::primitives::HeadData,
 };
 
 /// Native executor type.

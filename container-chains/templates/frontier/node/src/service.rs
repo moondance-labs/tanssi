@@ -32,6 +32,8 @@ use {
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
     nimbus_primitives::NimbusId,
     node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
+    parity_scale_codec::Encode,
+    polkadot_parachain_primitives::primitives::HeadData,
     sc_consensus::BasicQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
@@ -43,8 +45,6 @@ use {
         sync::{Arc, Mutex},
         time::Duration,
     },
-    parity_scale_codec::Encode,
-    polkadot_parachain_primitives::primitives::HeadData,
 };
 
 type ParachainExecutor = NativeElseWasmExecutor<TemplateRuntimeExecutor>;

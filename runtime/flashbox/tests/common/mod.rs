@@ -141,8 +141,7 @@ pub fn set_parachain_inherent_data() {
     relay_sproof.included_para_head = Some(HeadData(vec![1, 2, 3]));
     relay_sproof.current_slot = u64::from(current_slot() * 2).into();
 
-    let (relay_parent_storage_root, relay_chain_state) =
-        relay_sproof.into_state_root_and_proof();
+    let (relay_parent_storage_root, relay_chain_state) = relay_sproof.into_state_root_and_proof();
     let vfp = PersistedValidationData {
         relay_parent_number: 1u32,
         relay_parent_storage_root,
