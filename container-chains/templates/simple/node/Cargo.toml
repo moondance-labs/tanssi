@@ -100,6 +100,7 @@ runtime-benchmarks = [
 	"polkadot-service/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"polkadot-parachain-primitives/runtime-benchmarks"
 ]
 try-runtime = [
 	"container-chain-template-simple-runtime/try-runtime",
