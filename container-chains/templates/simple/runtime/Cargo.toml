@@ -23,8 +23,8 @@ tp-consensus = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
-pallet-author-inherent = { workspace = true }
 pallet-async-backing = { workspace = true }
+pallet-author-inherent = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
@@ -105,8 +105,8 @@ std = [
 	"frame-try-runtime/std",
 	"log/std",
 	"nimbus-primitives/std",
-	"pallet-author-inherent/std",
 	"pallet-async-backing/std",
+	"pallet-author-inherent/std",
 	"pallet-balances/std",
 	"pallet-cc-authorities-noting/std",
 	"pallet-maintenance-mode/std",
