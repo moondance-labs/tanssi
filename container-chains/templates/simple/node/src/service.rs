@@ -275,7 +275,7 @@ pub async fn start_dev_node(
 						timestamp.into(),
 						SlotDuration::from_millis(slot_duration),
                     );
-                let relay_slot = u64::from(relay_slot.clone()).saturating_mul(2);
+                let relay_slot = u64::from(*relay_slot).saturating_mul(2);
 
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
                 let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();

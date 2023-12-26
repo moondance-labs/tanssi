@@ -146,7 +146,7 @@ pub fn set_parachain_inherent_data() {
     let mut relay_sproof = RelayStateSproofBuilder::default();
     relay_sproof.para_id = 100u32.into();
     relay_sproof.included_para_head = Some(HeadData(vec![1, 2, 3]));
-    relay_sproof.current_slot = u64::from(current_slot() * 2).into();
+    relay_sproof.current_slot = (current_slot() * 2).into();
 
     let (relay_parent_storage_root, relay_chain_state) = relay_sproof.into_state_root_and_proof();
     let vfp = PersistedValidationData {
@@ -186,7 +186,7 @@ pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
 
         sproof.para_id = 100u32.into();
         sproof.included_para_head = Some(HeadData(vec![1, 2, 3]));
-        sproof.current_slot = u64::from(slot * 2).into();
+        sproof.current_slot = (slot * 2).into();
 
         sproof.into_state_root_and_proof()
     };
