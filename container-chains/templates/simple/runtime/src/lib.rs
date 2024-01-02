@@ -54,12 +54,13 @@ use {
         limits::{BlockLength, BlockWeights},
         EnsureRoot,
     },
-    nimbus_primitives::NimbusId,
+    nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
+    sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
@@ -413,9 +414,18 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ConsensusHook = ConsensusHook;
 }
 
+pub struct ParaSlotProvider;
+impl sp_core::Get<(Slot, SlotDuration)> for ParaSlotProvider {
+    fn get() -> (Slot, SlotDuration) {
+        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
+    }
+}
+
 impl pallet_async_backing::Config for Runtime {
     type AllowMultipleBlocksPerSlot = ConstBool<false>;
-    type GetAndVerifySlot = pallet_async_backing::RelaySlot;
+    type GetAndVerifySlot =
+        pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
 }
 
 impl parachain_info::Config for Runtime {}
