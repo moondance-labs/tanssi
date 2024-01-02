@@ -79,12 +79,20 @@ export type __QueryableStorageEntry<ApiType extends ApiTypes> = QueryableStorage
 
 declare module "@polkadot/api-base/types/storage" {
     interface AugmentedQueries<ApiType extends ApiTypes> {
+        asyncBacking: {
+            /**
+             * First tuple element is the highest slot that has been seen in the history of this chain. Second tuple element
+             * is the number of authored blocks so far. This is a strictly-increasing value if T::AllowMultipleBlocksPerSlot = false.
+             */
+            slotInfo: AugmentedQuery<ApiType, () => Observable<Option<ITuple<[u64, u32]>>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         authorInherent: {
             /** Author of current block. */
             author: AugmentedQuery<ApiType, () => Observable<Option<U8aFixed>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** The highest slot that has been seen in the history of this chain. This is a strictly-increasing value. */
-            highestSlotSeen: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
