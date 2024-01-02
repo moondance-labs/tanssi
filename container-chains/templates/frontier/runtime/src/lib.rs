@@ -1309,6 +1309,9 @@ impl_runtime_apis! {
 
 struct CheckInherents;
 
+// TODO: this should be removed but currently if we remove it the relay does not check anything
+// related to other inherents that are not parachain-system
+#[allow(deprecated)]
 impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
     fn check_inherents(
         block: &Block,
