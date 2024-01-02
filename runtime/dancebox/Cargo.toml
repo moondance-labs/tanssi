@@ -48,6 +48,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-balances = { workspace = true }
+pallet-identity = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -156,6 +157,7 @@ std = [
 	"pallet-authority-assignment/std",
 	"pallet-authority-mapping/std",
 	"pallet-balances/std",
+	"pallet-identity/std",
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-collator-assignment/std",
 	"pallet-configuration/std",
@@ -240,6 +242,7 @@ runtime-benchmarks = [
 	"pallet-author-inherent/runtime-benchmarks",
 	"pallet-author-noting/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
+	"pallet-identity/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
@@ -288,6 +291,7 @@ try-runtime = [
 	"pallet-authority-assignment/try-runtime",
 	"pallet-authority-mapping/try-runtime",
 	"pallet-balances/try-runtime",
+	"pallet-identity/try-runtime",
 	"pallet-collator-assignment/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",

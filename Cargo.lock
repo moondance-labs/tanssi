@@ -2940,6 +2940,7 @@ dependencies = [
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
  "pallet-data-preservers",
+ "pallet-identity",
  "pallet-im-online",
  "pallet-inflation-rewards",
  "pallet-initializer",
