@@ -1538,7 +1538,6 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
     }
 }
 
-
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
     CheckInherents = CheckInherents,
