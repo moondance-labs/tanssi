@@ -66,20 +66,6 @@ where
     }
 }
 
-/// A reason for placing a hold on funds.
-#[derive(
-    Clone,
-    parity_scale_codec::Encode,
-    parity_scale_codec::Decode,
-    PartialEq,
-    sp_core::RuntimeDebug,
-    scale_info::TypeInfo,
-)]
-pub enum OldHoldReason {
-    /// The Pooled Stake holds
-    PooledStake,
-}
-
 pub struct RegistrarBootNodesStorageValuePrefix<T>(PhantomData<T>);
 impl<T> frame_support::traits::StorageInstance for RegistrarBootNodesStorageValuePrefix<T> {
     const STORAGE_PREFIX: &'static str = "BootNodes";
