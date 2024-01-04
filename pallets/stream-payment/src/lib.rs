@@ -52,6 +52,9 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        /// Overarching event type
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+
         /// Type used to represent stream ids. Should be large enough to not overflow.
         type StreamId: AtLeast32BitUnsigned
             + Default
@@ -98,7 +101,7 @@ pub mod pallet {
         time_unit: Unit,
         asset_id: AssetId,
         rate_per_time_unit: Balance,
-        locked_funds: Balance,
+        deposit: Balance,
         last_time_updated: Balance,
     }
 
@@ -152,10 +155,30 @@ pub mod pallet {
     pub enum Error<T> {
         UnknownStreamId,
         StreamIdOverflow,
+        UnauthorizedOrigin,
         CantBeBothSourceAndTarget,
         CantFetchCurrentTime,
         TimeOverflow,
         CurrencyOverflow,
+    }
+
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        StreamOpened {
+            stream_id: T::StreamId,
+        },
+        StreamClosed {
+            stream_id: T::StreamId,
+            refunded: T::Balance,
+        },
+        StreamPayment {
+            stream_id: T::StreamId,
+            source: AccountIdOf<T>,
+            target: AccountIdOf<T>,
+            amount: T::Balance,
+            drained: bool,
+        },
     }
 
     #[pallet::composite_enum]
@@ -177,12 +200,14 @@ pub mod pallet {
             let origin = ensure_signed(origin)?;
             ensure!(origin != target, Error::<T>::CantBeBothSourceAndTarget);
 
+            // Generate a new stream id.
             let stream_id = NextStreamId::<T>::get();
             let next_stream_id = stream_id
                 .checked_add(&One::one())
                 .ok_or(Error::<T>::StreamIdOverflow)?;
             NextStreamId::<T>::set(next_stream_id);
 
+            // Freeze initial deposit.
             T::Currencies::increase_frozen(
                 asset_id.clone(),
                 &LockId::StreamPayment.into(),
@@ -190,6 +215,7 @@ pub mod pallet {
                 initial_deposit,
             )?;
 
+            // Create stream data.
             let now = T::TimeProvider::now(&time_unit).ok_or(Error::<T>::CantFetchCurrentTime)?;
             let stream = Stream {
                 source: origin.clone(),
@@ -197,23 +223,58 @@ pub mod pallet {
                 time_unit,
                 asset_id,
                 rate_per_time_unit,
-                locked_funds: initial_deposit,
+                deposit: initial_deposit,
                 last_time_updated: now,
             };
 
+            // Insert stream in storage.
             Streams::<T>::insert(stream_id, stream);
             LookupStreamsWithSource::<T>::insert(origin, stream_id, ());
             LookupStreamsWithTarget::<T>::insert(target, stream_id, ());
+
+            // Emit event.
+            Pallet::<T>::deposit_event(Event::<T>::StreamOpened { stream_id });
 
             Ok(().into())
         }
 
         #[pallet::call_index(1)]
         pub fn close_stream(
-            _origin: OriginFor<T>,
-            _stream_id: T::StreamId,
+            origin: OriginFor<T>,
+            stream_id: T::StreamId,
         ) -> DispatchResultWithPostInfo {
-            todo!()
+            let origin = ensure_signed(origin)?;
+            let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
+
+            // Only source or target can close a stream.
+            ensure!(
+                origin == stream.source || origin == stream.target,
+                Error::<T>::UnauthorizedOrigin
+            );
+
+            // Update stream before closing it to ensure fair payment.
+            Self::perform_stream_payment(stream_id, &mut stream)?;
+
+            // Unfreeze funds left in the stream.
+            T::Currencies::decrease_frozen(
+                stream.asset_id.clone(),
+                &LockId::StreamPayment.into(),
+                &stream.source,
+                stream.deposit,
+            )?;
+
+            // Remove stream from storage.
+            Streams::<T>::remove(stream_id);
+            LookupStreamsWithSource::<T>::remove(stream.source, stream_id);
+            LookupStreamsWithTarget::<T>::remove(stream.target, stream_id);
+
+            // Emit event.
+            Pallet::<T>::deposit_event(Event::<T>::StreamClosed {
+                stream_id,
+                refunded: stream.deposit,
+            });
+
+            Ok(().into())
         }
 
         #[pallet::call_index(2)]
@@ -225,10 +286,8 @@ pub mod pallet {
             let _ = ensure_signed(origin)?;
 
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
-            Self::perform_stream_payment(&mut stream)?;
+            Self::perform_stream_payment(stream_id, &mut stream)?;
             Streams::<T>::insert(stream_id, stream);
-
-            // TODO: Event here or in do_update_stream?
 
             Ok(().into())
         }
@@ -262,11 +321,15 @@ pub mod pallet {
         /// however there will be no retroactive payment for the time spent as drained.
         /// If the stream payment is used to rent a service, the target should pause the service
         /// while the stream is drained, and resume it once it is refilled.
-        fn perform_stream_payment(stream: &mut StreamOf<T>) -> DispatchResultWithPostInfo {
+        fn perform_stream_payment(
+            stream_id: T::StreamId,
+            stream: &mut StreamOf<T>,
+        ) -> DispatchResultWithPostInfo {
             let now =
                 T::TimeProvider::now(&stream.time_unit).ok_or(Error::<T>::CantFetchCurrentTime)?;
 
-            if stream.locked_funds.is_zero() {
+            // If deposit is zero the stream is fully drained and there is nothing to transfer.
+            if stream.deposit.is_zero() {
                 stream.last_time_updated = now;
                 return Ok(().into());
             }
@@ -274,6 +337,9 @@ pub mod pallet {
             let delta = now
                 .checked_sub(&stream.last_time_updated)
                 .ok_or(Error::<T>::TimeOverflow)?;
+
+            // We compute the amount due to the target according to the rate, which may be
+            // lowered if the stream deposit is lower.
             let mut payment = delta
                 .checked_mul(&stream.rate_per_time_unit)
                 .ok_or(Error::<T>::CurrencyOverflow)?;
@@ -281,14 +347,15 @@ pub mod pallet {
             // We compute the new amount of locked funds. If it underflows it
             // means that there is more to pay that what is left, in which case
             // we pay all that is left.
-            let new_locked = match stream.locked_funds.checked_sub(&payment) {
-                Some(v) => v,
+            let (new_locked, drained) = match stream.deposit.checked_sub(&payment) {
+                Some(v) => (v, false),
                 None => {
-                    payment = stream.locked_funds;
-                    Zero::zero()
+                    payment = stream.deposit;
+                    (Zero::zero(), true)
                 }
             };
 
+            // Transfer from the source to target.
             T::Currencies::decrease_frozen(
                 stream.asset_id.clone(),
                 &LockId::StreamPayment.into(),
@@ -303,10 +370,18 @@ pub mod pallet {
                 Preservation::Preserve,
             )?;
 
+            // Update stream info.
             stream.last_time_updated = now;
-            stream.locked_funds = new_locked;
+            stream.deposit = new_locked;
 
-            // TODO: Emit event here?            
+            // Emit event.
+            Pallet::<T>::deposit_event(Event::<T>::StreamPayment {
+                stream_id,
+                source: stream.source.clone(),
+                target: stream.target.clone(),
+                amount: payment,
+                drained,
+            });
 
             Ok(().into())
         }
