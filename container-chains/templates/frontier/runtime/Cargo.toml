@@ -25,6 +25,7 @@ tp-consensus = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
+pallet-async-backing = { workspace = true }
 pallet-author-inherent = { workspace = true }
 pallet-evm-precompile-balances-erc20 = { workspace = true }
 pallet-evm-precompile-batch = { workspace = true }
@@ -52,6 +53,7 @@ pallet-utility = { workspace = true }
 sp-api = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true }
 sp-debug-derive = { workspace = true }
 sp-inherents = { workspace = true }
@@ -126,6 +128,7 @@ std = [
 	"log/std",
 	"nimbus-primitives/std",
 	"num_enum/std",
+	"pallet-async-backing/std",
 	"pallet-author-inherent/std",
 	"pallet-balances/std",
 	"pallet-base-fee/std",
@@ -165,6 +168,7 @@ std = [
 	"sp-api/std",
 	"sp-block-builder/std",
 	"sp-consensus-aura/std",
+	"sp-consensus-slots/std",
 	"sp-core/std",
 	"sp-debug-derive/std",
 	"sp-inherents/std",
