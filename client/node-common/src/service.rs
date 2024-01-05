@@ -22,7 +22,9 @@ use {
     cumulus_client_consensus_common::ParachainConsensus,
     cumulus_client_service::{CollatorSybilResistance, StartFullNodeParams},
     cumulus_primitives_core::ParaId,
+    cumulus_relay_chain_inprocess_interface::build_inprocess_relay_chain,
     cumulus_relay_chain_interface::RelayChainInterface,
+    cumulus_relay_chain_minimal_node::build_minimal_relay_chain_node_with_rpc,
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
     futures::{channel::mpsc, FutureExt, Stream, StreamExt},
     jsonrpsee::RpcModule,
@@ -249,9 +251,6 @@ where
     }
 }
 
-use cumulus_relay_chain_inprocess_interface::build_inprocess_relay_chain;
-use cumulus_relay_chain_minimal_node::build_minimal_relay_chain_node_with_rpc;
-
 impl<T: NodeBuilderConfig, SNetwork, STxHandler, SImportQueueService>
     NodeBuilder<T, SNetwork, STxHandler, SImportQueueService>
 where
@@ -271,7 +270,6 @@ where
         Arc<(dyn RelayChainInterface + 'static)>,
         Option<CollatorPair>,
     )> {
-        log::info!("polkadot config {:?}", parachain_config);
         if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
             collator_options.relay_chain_mode
         {
