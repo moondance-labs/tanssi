@@ -20,9 +20,7 @@ use {
     core_extensions::TypeIdentity,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainConsensus,
-    cumulus_client_service::{
-        CollatorSybilResistance, StartFullNodeParams,
-    },
+    cumulus_client_service::{CollatorSybilResistance, StartFullNodeParams},
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE,
