@@ -160,6 +160,8 @@ pub mod pallet {
         CantFetchCurrentTime,
         TimeOverflow,
         CurrencyOverflow,
+        SourceCantDecreaseRate,
+        TargetCantIncreaseRate,
     }
 
     #[pallet::event]
@@ -178,6 +180,11 @@ pub mod pallet {
             target: AccountIdOf<T>,
             amount: T::Balance,
             drained: bool,
+        },
+        StreamRateChanged {
+            stream_id: T::StreamId,
+            old_rate: T::Balance,
+            new_rate: T::Balance,
         },
     }
 
@@ -294,20 +301,82 @@ pub mod pallet {
 
         #[pallet::call_index(3)]
         pub fn refill_stream(
-            _origin: OriginFor<T>,
-            _stream_id: T::StreamId,
-            _new_deposit: T::Balance,
+            origin: OriginFor<T>,
+            stream_id: T::StreamId,
+            new_deposit: T::Balance,
         ) -> DispatchResultWithPostInfo {
-            todo!()
+            let origin = ensure_signed(origin)?;
+            let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
+
+            // Only source can refill stream
+            ensure!(origin == stream.source, Error::<T>::UnauthorizedOrigin);
+
+            // Source will not pay for drained stream retroactively, so we perform payment with
+            // what is left first.
+            Self::perform_stream_payment(stream_id, &mut stream)?;
+
+            // Increase deposit.
+            T::Currencies::increase_frozen(
+                stream.asset_id.clone(),
+                &LockId::StreamPayment.into(),
+                &origin,
+                new_deposit,
+            )?;
+            stream.deposit = stream
+                .deposit
+                .checked_add(&new_deposit)
+                .ok_or(Error::<T>::CurrencyOverflow)?;
+
+            // Update stream info in storage.
+            Streams::<T>::insert(stream_id, stream);
+
+            Ok(().into())
         }
 
         #[pallet::call_index(4)]
         pub fn change_stream_rate(
-            _origin: OriginFor<T>,
-            _stream_id: T::StreamId,
-            _new_rate_per_time_unit: T::Balance,
+            origin: OriginFor<T>,
+            stream_id: T::StreamId,
+            new_rate_per_time_unit: T::Balance,
         ) -> DispatchResultWithPostInfo {
-            todo!()
+            let origin = ensure_signed(origin)?;
+            let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
+
+            // Only source or target can update the rate.
+            ensure!(
+                origin == stream.source || origin == stream.target,
+                Error::<T>::UnauthorizedOrigin
+            );
+
+            // Noop
+            if new_rate_per_time_unit == stream.rate_per_time_unit {
+                return Ok(().into());
+            }
+
+            // Ensure rate change is fair.
+            if origin == stream.source && new_rate_per_time_unit < stream.rate_per_time_unit {
+                return Err(Error::<T>::SourceCantDecreaseRate.into());
+            }
+
+            if origin == stream.target && new_rate_per_time_unit > stream.rate_per_time_unit {
+                return Err(Error::<T>::TargetCantIncreaseRate.into());
+            }
+
+            // Perform pending payment before changing rate.
+            Self::perform_stream_payment(stream_id, &mut stream)?;
+
+            // Emit event.
+            Pallet::<T>::deposit_event(Event::<T>::StreamRateChanged {
+                stream_id,
+                old_rate: stream.rate_per_time_unit,
+                new_rate: new_rate_per_time_unit,
+            });
+
+            // Update rate
+            stream.rate_per_time_unit = new_rate_per_time_unit;
+            Streams::<T>::insert(stream_id, stream);
+
+            Ok(().into())
         }
     }
 
