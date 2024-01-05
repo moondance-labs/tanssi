@@ -21,7 +21,7 @@ use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainConsensus,
     cumulus_client_service::{
-        build_relay_chain_interface, CollatorSybilResistance, StartFullNodeParams,
+        CollatorSybilResistance, StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
