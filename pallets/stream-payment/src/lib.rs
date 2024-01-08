@@ -16,6 +16,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+pub mod as_fungibles;
+
 use {
     frame_support::{
         pallet,
