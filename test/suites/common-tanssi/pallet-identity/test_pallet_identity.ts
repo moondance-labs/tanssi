@@ -5,7 +5,6 @@ import { KeyringPair } from "@moonwall/util";
 import { hexToString } from "viem";
 
 describeSuite({
-
     id: "CT0701",
     title: "Identity pallet test suite",
     foundationMethods: "dev",
@@ -27,24 +26,23 @@ describeSuite({
             id: "E01",
             title: "Sudo account can add registrars",
             test: async function () {
-
                 const initial_identity_registrars = await polkadotJs.query.identity.registrars();
-                
-                const tx = polkadotJs.tx.identity.addRegistrar( {
-                    Id: registrar_bob.address
+
+                const tx = polkadotJs.tx.identity.addRegistrar({
+                    Id: registrar_bob.address,
                 });
                 const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(sudo_alice);
                 await context.createBlock([signedTx]);
 
                 const identity_registrars = await polkadotJs.query.identity.registrars();
-                
+
                 // Added one registrar
                 expect(initial_identity_registrars.length + 1).to.equal(identity_registrars.length);
 
                 // Bob is included in the registrars list
-                const bob_exists = identity_registrars.toArray().filter(registrar => 
-                    registrar.toJSON().account == registrar_bob.address
-                );
+                const bob_exists = identity_registrars
+                    .toArray()
+                    .filter((registrar) => registrar.toJSON().account == registrar_bob.address);
                 expect(bob_exists.length).to.be.equal(1);
 
                 // Registrar addition shows in the events
@@ -60,17 +58,16 @@ describeSuite({
             id: "E02",
             title: "Non-Sudo account fails when adding registrars",
             test: async function () {
-
                 const initial_identity_registrars = await polkadotJs.query.identity.registrars();
-                
-                const tx = polkadotJs.tx.identity.addRegistrar( {
-                    Id: registrar_bob.address
+
+                const tx = polkadotJs.tx.identity.addRegistrar({
+                    Id: registrar_bob.address,
                 });
                 const signedTx = await tx.signAsync(general_user_charlie);
                 await context.createBlock([signedTx]);
 
                 const identity_registrars = await polkadotJs.query.identity.registrars();
-                
+
                 // No registrars added
                 expect(initial_identity_registrars.length).to.equal(identity_registrars.length);
 
@@ -87,32 +84,30 @@ describeSuite({
             id: "E03",
             title: "User sets its identity",
             test: async function () {
-
-                const tx = polkadotJs.tx.identity.setIdentity(
-                {
-                    display: { raw: "0x49742773206D652C20436861726C6965"     },
-                    web:     { raw: "0x68747470733A2F2F636861726C69652E696F" },
+                const tx = polkadotJs.tx.identity.setIdentity({
+                    display: { raw: "0x49742773206D652C20436861726C6965" },
+                    web: { raw: "0x68747470733A2F2F636861726C69652E696F" },
                 });
                 const signedTx = await tx.signAsync(general_user_charlie);
                 await context.createBlock([signedTx]);
 
                 const charlie_identity = await polkadotJs.query.identity.identityOf(general_user_charlie.address);
-                
+
                 // Display has been set
                 const charlie_display = hexToString(charlie_identity.toJSON().info.display["raw"]);
                 expect(charlie_display).to.equal("It's me, Charlie");
-                
+
                 // Web has been set
                 const charlie_web = hexToString(charlie_identity.toJSON().info.web["raw"]);
                 expect(charlie_web).to.equal("https://charlie.io");
-                
+
                 // Event triggered
                 const events = await polkadotJs.query.system.events();
                 const eventCount = events.filter((a) => {
                     return a.event.method == "IdentitySet";
                 });
                 expect(eventCount.length).to.be.equal(1);
-                
+
                 // Currency reserved as deposit from Charlie's account
                 const charlie_balance = await polkadotJs.query.system.account(general_user_charlie.address);
                 const charlie_balance_reserved = charlie_balance.toJSON().data.reserved;
@@ -120,19 +115,19 @@ describeSuite({
                 expect(charlie_balance_reserved).to.be.equal(expected_reserve);
             },
         });
-        
+
         it({
             id: "E04",
             title: "Registrar sets fee and fields",
             test: async function () {
                 await context.createBlock();
 
-                const tx1 = polkadotJs.tx.identity.addRegistrar( {
-                    Id: registrar_bob.address
+                const tx1 = polkadotJs.tx.identity.addRegistrar({
+                    Id: registrar_bob.address,
                 });
                 const signedTx1 = await polkadotJs.tx.sudo.sudo(tx1).signAsync(sudo_alice);
                 await context.createBlock([signedTx1]);
-                
+
                 const tx2 = polkadotJs.tx.identity.setFee(0, 100);
                 const signedTx2 = await tx2.signAsync(registrar_bob);
                 await context.createBlock([signedTx2]);
@@ -148,7 +143,5 @@ describeSuite({
                 expect(bob_registrar_on_chain.fields.length).to.be.equal(2);
             },
         });
-
-
     },
 });
