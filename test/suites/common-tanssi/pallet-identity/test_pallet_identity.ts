@@ -1,8 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
-import { generateKeyringPair, KeyringPair } from "@moonwall/util";
-import { jumpSessions } from "util/block";
+import { KeyringPair } from "@moonwall/util";
 import { hexToString } from "viem";
 
 describeSuite({
@@ -40,7 +39,7 @@ describeSuite({
                 const identity_registrars = await polkadotJs.query.identity.registrars();
                 
                 // Added one registrar
-                expect(initial_identity_registrars.length).to.equal(identity_registrars.length - 1);
+                expect(initial_identity_registrars.length + 1).to.equal(identity_registrars.length);
 
                 // Bob is included in the registrars list
                 const bob_exists = identity_registrars.toArray().filter(registrar => 
@@ -98,6 +97,7 @@ describeSuite({
                 await context.createBlock([signedTx]);
 
                 const charlie_identity = await polkadotJs.query.identity.identityOf(general_user_charlie.address);
+                
                 // Display has been set
                 const charlie_display = hexToString(charlie_identity.toJSON().info.display["raw"]);
                 expect(charlie_display).to.equal("It's me, Charlie");
