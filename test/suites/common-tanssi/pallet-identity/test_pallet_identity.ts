@@ -89,9 +89,6 @@ describeSuite({
             title: "User sets its identity",
             test: async function () {
 
-                // Display 0x49742773206D652C20436861726C6965
-                // Web 0x68747470733A2F2F636861726C69652E696F
-
                 const tx = polkadotJs.tx.identity.setIdentity(
                 {
                     display: { raw: "0x49742773206D652C20436861726C6965"     },
@@ -123,7 +120,34 @@ describeSuite({
                 expect(charlie_balance_reserved).to.be.equal(expected_reserve);
             },
         });
+        
+        it({
+            id: "E04",
+            title: "Registrar sets fee and fields",
+            test: async function () {
+                await context.createBlock();
 
+                const tx1 = polkadotJs.tx.identity.addRegistrar( {
+                    Id: registrar_bob.address
+                });
+                const signedTx1 = await polkadotJs.tx.sudo.sudo(tx1).signAsync(sudo_alice);
+                await context.createBlock([signedTx1]);
+                
+                const tx2 = polkadotJs.tx.identity.setFee(0, 100);
+                const signedTx2 = await tx2.signAsync(registrar_bob);
+                await context.createBlock([signedTx2]);
+
+                const tx3 = polkadotJs.tx.identity.setFields(0, 2); // 2 as fields equals Display + Web
+                const signedTx3 = await tx3.signAsync(registrar_bob);
+                await context.createBlock([signedTx3]);
+
+                const identity_registrars = await polkadotJs.query.identity.registrars();
+                const bob_registrar_on_chain = identity_registrars.toArray()[0].toJSON();
+
+                expect(bob_registrar_on_chain.fee).to.be.equal(100);
+                expect(bob_registrar_on_chain.fields.length).to.be.equal(2);
+            },
+        });
 
 
     },
