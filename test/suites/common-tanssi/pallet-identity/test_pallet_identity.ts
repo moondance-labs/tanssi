@@ -3,6 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { generateKeyringPair, KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "util/block";
+import { hexToString } from "viem";
 
 describeSuite({
 
@@ -73,6 +74,7 @@ describeSuite({
                 
                 // No registrars added
                 expect(initial_identity_registrars.length).to.equal(identity_registrars.length);
+
                 // No addition event
                 const events = await polkadotJs.query.system.events();
                 const eventCount = events.filter((a) => {
@@ -81,6 +83,48 @@ describeSuite({
                 expect(eventCount.length).to.be.equal(0);
             },
         });
+
+        it({
+            id: "E03",
+            title: "User sets its identity",
+            test: async function () {
+
+                // Display 0x49742773206D652C20436861726C6965
+                // Web 0x68747470733A2F2F636861726C69652E696F
+
+                const tx = polkadotJs.tx.identity.setIdentity(
+                {
+                    display: { raw: "0x49742773206D652C20436861726C6965"     },
+                    web:     { raw: "0x68747470733A2F2F636861726C69652E696F" },
+                });
+                const signedTx = await tx.signAsync(general_user_charlie);
+                await context.createBlock([signedTx]);
+
+                const charlie_identity = await polkadotJs.query.identity.identityOf(general_user_charlie.address);
+                // Display has been set
+                const charlie_display = hexToString(charlie_identity.toJSON().info.display["raw"]);
+                expect(charlie_display).to.equal("It's me, Charlie");
+                
+                // Web has been set
+                const charlie_web = hexToString(charlie_identity.toJSON().info.web["raw"]);
+                expect(charlie_web).to.equal("https://charlie.io");
+                
+                // Event triggered
+                const events = await polkadotJs.query.system.events();
+                const eventCount = events.filter((a) => {
+                    return a.event.method == "IdentitySet";
+                });
+                expect(eventCount.length).to.be.equal(1);
+                
+                // Currency reserved as deposit from Charlie's account
+                const charlie_balance = await polkadotJs.query.system.account(general_user_charlie.address);
+                const charlie_balance_reserved = charlie_balance.toJSON().data.reserved;
+                const expected_reserve = 12580000000000; // Basic deposit (1 item, 258 bytes)
+                expect(charlie_balance_reserved).to.be.equal(expected_reserve);
+            },
+        });
+
+
 
     },
 });
