@@ -20,6 +20,7 @@ mod foreign_sovereigns;
 mod mocknets;
 mod transact;
 mod trap;
+mod token_derivative_reception;
 
 pub use xcm_emulator::{
     assert_expected_events, bx, helpers::weight_within_threshold, Parachain as Para,
