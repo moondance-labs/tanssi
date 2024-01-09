@@ -478,6 +478,11 @@ pub mod pallet {
             config.collators_per_container
         }
 
+        fn collators_per_parathread(_session_index: T::SessionIndex) -> u32 {
+            // FIXME(parathreads)
+            1
+        }
+
         fn min_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
             let (past_and_present, _) = Pallet::<T>::pending_configs()
                 .into_iter()
