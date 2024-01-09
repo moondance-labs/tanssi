@@ -1319,6 +1319,7 @@ mod benches {
         [pallet_invulnerables, Invulnerables]
         [pallet_pooled_staking, PooledStaking]
         [pallet_services_payment, ServicesPayment]
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }

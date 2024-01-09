@@ -207,6 +207,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
+	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
