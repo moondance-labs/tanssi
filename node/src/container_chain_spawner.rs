@@ -37,7 +37,7 @@ use {
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_primitives::CollatorPair,
-    sc_cli::SyncMode,
+    sc_cli::{Database, SyncMode},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
     sp_api::{ApiExt, ProvideRuntimeApi},
@@ -220,6 +220,12 @@ impl ContainerChainSpawner {
 
             // Update CLI params
             container_chain_cli.base.para_id = Some(container_chain_para_id.into());
+            container_chain_cli
+                .base
+                .base
+                .import_params
+                .database_params
+                .database = Some(Database::ParityDb);
 
             let create_container_chain_cli_config = || {
                 let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
@@ -242,7 +248,7 @@ impl ContainerChainSpawner {
                 sc_service::error::Result::Ok((container_chain_cli_config, db_path))
             };
 
-            let (container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
+            let (_container_chain_cli_config, db_path) = create_container_chain_cli_config()?;
             let db_exists = db_path.exists();
             let db_exists_but_may_need_removal = db_exists && validator;
             if db_exists_but_may_need_removal {
@@ -272,6 +278,17 @@ impl ContainerChainSpawner {
                 &orchestrator_client,
                 container_chain_para_id,
             )?;
+            log::info!(
+                "Container chain sync mode: {:?}",
+                container_chain_cli.base.base.network_params.sync
+            );
+            let mut container_chain_cli_config = sc_cli::SubstrateCli::create_configuration(
+                &container_chain_cli,
+                &container_chain_cli,
+                tokio_handle.clone(),
+            )
+            .map_err(|err| format!("Container chain argument error: {}", err))?;
+            container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
             let (
@@ -697,7 +714,7 @@ fn open_and_maybe_delete_db(
 }
 
 // TODO: this leaves some empty folders behind, because it is called with db_path:
-//     Collator2002-01/data/containers/chains/simple_container_2002/db/full-container-2002
+//     Collator2002-01/data/containers/chains/simple_container_2002/paritydb/full-container-2002
 // but we want to delete everything under
 //     Collator2002-01/data/containers/chains/simple_container_2002
 fn delete_container_chain_db(db_path: &Path) {
@@ -866,7 +883,7 @@ mod tests {
                 chains_to_start,
                 need_to_restart,
             } = handle_update_assignment_state_change(
-                &mut *self.state.lock().unwrap(),
+                &mut self.state.lock().unwrap(),
                 self.orchestrator_para_id,
                 self.collate_on_tanssi.clone(),
                 current,

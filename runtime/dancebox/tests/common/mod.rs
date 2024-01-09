@@ -17,7 +17,7 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
-    dancebox_runtime::{AuthorInherent, MaxLengthTokenSymbol},
+    dancebox_runtime::{AuthorInherent, MaxBootNodeUrlLen, MaxBootNodes, MaxLengthTokenSymbol},
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
@@ -28,8 +28,9 @@ use {
     parity_scale_codec::Encode,
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
+    sp_consensus_slots::Slot,
     sp_core::{Get, Pair},
-    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    sp_runtime::{traits::Dispatchable, BoundedVec, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
@@ -39,9 +40,10 @@ mod xcm;
 
 pub use dancebox_runtime::{
     AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
-    CollatorAssignment, Configuration, InflationRewards, Initializer, Invulnerables,
-    MinimumSelfDelegation, ParachainInfo, PooledStaking, Proxy, ProxyType, Registrar,
-    RewardsPortion, Runtime, RuntimeCall, RuntimeEvent, ServicesPayment, Session, System,
+    CollatorAssignment, Configuration, DataPreservers, InflationRewards, Initializer,
+    Invulnerables, MinimumSelfDelegation, ParachainInfo, PooledStaking, Proxy, ProxyType,
+    Registrar, RewardsPortion, Runtime, RuntimeCall, RuntimeEvent, ServicesPayment, Session,
+    System,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -75,9 +77,7 @@ pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
     summaries
 }
 
-pub fn run_block() -> RunSummary {
-    let slot = current_slot() + 1;
-
+pub fn insert_authorities_and_slot_digests(slot: u64) {
     let authorities =
         Runtime::para_id_authorities(ParachainInfo::get()).expect("authorities should be set");
 
@@ -96,6 +96,12 @@ pub fn run_block() -> RunSummary {
         &System::parent_hash(),
         &pre_digest,
     );
+}
+
+pub fn run_block() -> RunSummary {
+    let slot = current_slot() + 1;
+
+    insert_authorities_and_slot_digests(slot);
 
     // Initialize the new block
     CollatorAssignment::on_initialize(System::block_number());
@@ -110,6 +116,11 @@ pub fn run_block() -> RunSummary {
     let current_issuance = Balances::total_issuance();
     InflationRewards::on_initialize(System::block_number());
     let new_issuance = Balances::total_issuance();
+
+    frame_support::storage::unhashed::put(
+        &frame_support::storage::storage_prefix(b"AsyncBacking", b"SlotInfo"),
+        &(Slot::from(slot), 1),
+    );
 
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");
@@ -131,8 +142,13 @@ pub fn run_block() -> RunSummary {
 /// source of randomness.
 pub fn set_parachain_inherent_data() {
     use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
-    let (relay_parent_storage_root, relay_chain_state) =
-        RelayStateSproofBuilder::default().into_state_root_and_proof();
+
+    let mut relay_sproof = RelayStateSproofBuilder::default();
+    relay_sproof.para_id = 100u32.into();
+    relay_sproof.included_para_head = Some(HeadData(vec![1, 2, 3]));
+    relay_sproof.current_slot = (current_slot() * 2).into();
+
+    let (relay_parent_storage_root, relay_chain_state) = relay_sproof.into_state_root_and_proof();
     let vfp = PersistedValidationData {
         relay_parent_number: 1u32,
         relay_parent_storage_root,
@@ -144,6 +160,7 @@ pub fn set_parachain_inherent_data() {
         downward_messages: Default::default(),
         horizontal_messages: Default::default(),
     };
+
     assert_ok!(RuntimeCall::ParachainSystem(
         cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
             data: parachain_inherent_data
@@ -158,12 +175,18 @@ pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
         cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     };
 
+    let slot = current_slot() + 1;
+
     let (relay_parent_storage_root, relay_chain_state) = {
         let mut sproof = RelayStateSproofBuilder::default();
         sproof.additional_key_values.push((
             well_known_keys::CURRENT_BLOCK_RANDOMNESS.to_vec(),
             Some(random_seed).encode(),
         ));
+
+        sproof.para_id = 100u32.into();
+        sproof.included_para_head = Some(HeadData(vec![1, 2, 3]));
+        sproof.current_slot = (slot * 2).into();
 
         sproof.into_state_root_and_proof()
     };
@@ -186,6 +209,9 @@ pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
         b"ParachainSystem",
         b"ValidationData",
     ));
+
+    insert_authorities_and_slot_digests(slot);
+
     assert_ok!(RuntimeCall::ParachainSystem(
         cumulus_pallet_parachain_system::Call::<Runtime>::set_validation_data {
             data: parachain_inherent_data
@@ -200,6 +226,8 @@ pub struct ExtBuilder {
     balances: Vec<(AccountId, Balance)>,
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
+    // sudo key
+    sudo: Option<AccountId>,
     // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits
     para_ids: Vec<(
         u32,
@@ -221,6 +249,11 @@ impl ExtBuilder {
 
     pub fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
         self.collators = collators;
+        self
+    }
+
+    pub fn with_sudo(mut self, sudo: AccountId) -> Self {
+        self.sudo = Some(sudo);
         self
     }
 
@@ -271,8 +304,8 @@ impl ExtBuilder {
                 .para_ids
                 .iter()
                 .cloned()
-                .map(|(para_id, genesis_data, boot_nodes, _block_credits)| {
-                    (para_id.into(), genesis_data, boot_nodes)
+                .map(|(para_id, genesis_data, _boot_nodes, _block_credits)| {
+                    (para_id.into(), genesis_data)
                 })
                 .collect(),
         }
@@ -346,6 +379,10 @@ impl ExtBuilder {
                 .assimilate_storage(&mut t)
                 .unwrap();
         }
+        pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
+            .assimilate_storage(&mut t)
+            .unwrap();
+
         t
     }
 
@@ -355,6 +392,10 @@ impl ExtBuilder {
 
         ext.execute_with(|| {
             System::set_block_number(1);
+            System::deposit_log(DigestItem::PreRuntime(
+                AURA_ENGINE_ID,
+                (current_slot()).encode(),
+            ));
             set_parachain_inherent_data();
         });
         ext
@@ -382,7 +423,7 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
 }
 
 pub fn get_orchestrator_current_author() -> Option<AccountId> {
-    let slot: u64 = current_slot().into();
+    let slot: u64 = current_slot();
     let orchestrator_collators = Runtime::parachain_collators(ParachainInfo::get())?;
     let author_index = slot % orchestrator_collators.len() as u64;
     let account = orchestrator_collators.get(author_index as usize)?;
@@ -432,8 +473,22 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData<MaxLengthTokenSymbol> {
     }
 }
 
+pub fn dummy_boot_nodes() -> BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> {
+    vec![BoundedVec::try_from(
+        b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+            .to_vec(),
+    )
+    .unwrap()]
+    .try_into()
+    .unwrap()
+}
+
 pub fn current_slot() -> u64 {
-    pallet_author_inherent::HighestSlotSeen::<Runtime>::get().into()
+    u64::from(
+        pallet_async_backing::SlotInfo::<Runtime>::get()
+            .unwrap_or_default()
+            .0,
+    )
 }
 
 pub fn authorities() -> Vec<NimbusId> {

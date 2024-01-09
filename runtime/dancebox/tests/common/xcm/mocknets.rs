@@ -21,6 +21,9 @@ use {
     },
     cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV8,
     frame_support::parameter_types,
+    parity_scale_codec::Encode,
+    sp_consensus_aura::AURA_ENGINE_ID,
+    sp_runtime::generic::DigestItem,
     staging_xcm::prelude::*,
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     staging_xcm_executor::traits::ConvertLocation,
@@ -76,7 +79,9 @@ decl_test_parachains! {
         .with_safe_xcm_version(3)
         .with_own_para_id(2000u32.into())
         .build_storage(),
-        on_init = (),
+        on_init = {
+            dancebox_runtime::System::deposit_log(DigestItem::PreRuntime(AURA_ENGINE_ID, 0u64.encode()));
+        },
         runtime = dancebox_runtime,
         core = {
             XcmpMessageHandler: dancebox_runtime::XcmpQueue,

@@ -164,3 +164,13 @@ pub(crate) fn events() -> Vec<pallet_services_payment::Event<Test>> {
         })
         .collect::<Vec<_>>()
 }
+
+// This function basically just builds a genesis storage key/value store according to
+// our desired mockup.
+#[cfg(feature = "runtime-benchmarks")]
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    frame_system::GenesisConfig::<Test>::default()
+        .build_storage()
+        .unwrap()
+        .into()
+}

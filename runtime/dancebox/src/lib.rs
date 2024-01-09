@@ -49,9 +49,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth, InstanceFilter,
-            OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
-            ValidatorRegistration,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
+            InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
+            OnRuntimeUpgrade, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -80,6 +80,7 @@ use {
     scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
+    sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
@@ -98,7 +99,7 @@ pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
-const LOG_TARGET: &str = "runtime::moonbeam";
+const LOG_TARGET: &str = "runtime::tanssi";
 
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
@@ -426,6 +427,16 @@ parameter_types! {
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
 
+pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 2;
+pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
+
+type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
+    Runtime,
+    BLOCK_PROCESSING_VELOCITY,
+    UNINCLUDED_SEGMENT_CAPACITY,
+>;
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
@@ -436,6 +447,20 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type ConsensusHook = ConsensusHook;
+}
+pub struct ParaSlotProvider;
+impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
+    fn get() -> (Slot, SlotDuration) {
+        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
+    }
+}
+
+impl pallet_async_backing::Config for Runtime {
+    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type GetAndVerifySlot =
+        pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
@@ -760,6 +785,16 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_data_preservers::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type SetBootNodesOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    type MaxBootNodes = MaxBootNodes;
+    type MaxBootNodeUrlLen = MaxBootNodeUrlLen;
+    type WeightInfo = pallet_data_preservers::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = Registrar;
@@ -840,8 +875,30 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
                 e,
             );
         }
+        // Remove bootnodes from pallet_data_preservers
+        DataPreservers::para_deregistered(para_id);
 
         Weight::default()
+    }
+
+    fn check_valid_for_collating(para_id: ParaId) -> DispatchResult {
+        // To be able to call mark_valid_for_collating, a container chain must have bootnodes
+        DataPreservers::check_valid_for_collating(para_id)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn benchmarks_ensure_valid_for_collating(para_id: ParaId) {
+        use sp_runtime::BoundedVec;
+        let boot_nodes: BoundedVec<BoundedVec<u8, MaxBootNodeUrlLen>, MaxBootNodes> = vec![
+            b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
+                .to_vec()
+                .try_into()
+                .unwrap(),
+        ]
+        .try_into()
+        .unwrap();
+
+        pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, boot_nodes);
     }
 }
 
@@ -904,6 +961,10 @@ pub enum ProxyType {
     CancelProxy = 4,
     /// Allow extrinsic related to Balances.
     Balances = 5,
+    /// Allow extrinsics related to Registrar
+    Registrar = 6,
+    /// Allow extrinsics related to Registrar that needs to be called through Sudo
+    SudoRegistrar = 7,
 }
 
 impl Default for ProxyType {
@@ -914,6 +975,12 @@ impl Default for ProxyType {
 
 impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
+        // Since proxy filters are respected in all dispatches of the Utility
+        // pallet, it should never need to be filtered by any proxy.
+        if let RuntimeCall::Utility(..) = c {
+            return true;
+        }
+
         match self {
             ProxyType::Any => true,
             ProxyType::NonTransfer => {
@@ -922,25 +989,37 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
                     RuntimeCall::System(..)
                         | RuntimeCall::ParachainSystem(..)
                         | RuntimeCall::Timestamp(..)
-                        | RuntimeCall::Utility(..)
                         | RuntimeCall::Proxy(..)
                         | RuntimeCall::Registrar(..)
                 )
             }
-            ProxyType::Governance => matches!(c, RuntimeCall::Utility(..)),
-            ProxyType::Staking => matches!(
-                c,
-                RuntimeCall::Session(..)
-                    | RuntimeCall::Utility(..)
-                    | RuntimeCall::PooledStaking(..)
-            ),
+            // We don't have governance yet
+            ProxyType::Governance => false,
+            ProxyType::Staking => {
+                matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
+            }
             ProxyType::CancelProxy => matches!(
                 c,
                 RuntimeCall::Proxy(pallet_proxy::Call::reject_announcement { .. })
             ),
             ProxyType::Balances => {
-                matches!(c, RuntimeCall::Balances(..) | RuntimeCall::Utility(..))
+                matches!(c, RuntimeCall::Balances(..))
             }
+            ProxyType::Registrar => {
+                matches!(
+                    c,
+                    RuntimeCall::Registrar(..) | RuntimeCall::DataPreservers(..)
+                )
+            }
+            ProxyType::SudoRegistrar => match c {
+                RuntimeCall::Sudo(pallet_sudo::Call::sudo { call: ref x }) => {
+                    matches!(
+                        x.as_ref(),
+                        &RuntimeCall::Registrar(..) | &RuntimeCall::DataPreservers(..)
+                    )
+                }
+                _ => false,
+            },
         }
     }
 
@@ -1258,6 +1337,35 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    // 1 entry, storing 258 bytes on-chain
+    pub const BasicDeposit: Balance = currency::deposit(1, 258);
+    // 1 entry, storing 53 bytes on-chain
+    pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
+    // Additional fields add 0 entries, storing 66 bytes on-chain
+    pub const FieldDeposit: Balance = currency::deposit(0, 66);
+    pub const MaxSubAccounts: u32 = 100;
+    pub const MaxAdditionalFields: u32 = 100;
+    pub const MaxRegistrars: u32 = 20;
+}
+
+impl pallet_identity::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type BasicDeposit = BasicDeposit;
+    type FieldDeposit = FieldDeposit;
+    type SubAccountDeposit = SubAccountDeposit;
+    type MaxSubAccounts = MaxSubAccounts;
+    type MaxAdditionalFields = MaxAdditionalFields;
+    type MaxRegistrars = MaxRegistrars;
+    type IdentityInformation = pallet_identity::simple::IdentityInfo<Self::MaxAdditionalFields>;
+    // Slashed balances are burnt
+    type Slashed = ();
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1278,6 +1386,9 @@ construct_runtime!(
         Balances: pallet_balances = 10,
         TransactionPayment: pallet_transaction_payment = 11,
 
+        // Other utilities
+        Identity: pallet_identity = 15,
+
         // ContainerChain management. It should go before Session for Genesis
         Registrar: pallet_registrar = 20,
         Configuration: pallet_configuration = 21,
@@ -1286,6 +1397,7 @@ construct_runtime!(
         AuthorNoting: pallet_author_noting = 24,
         AuthorityAssignment: pallet_authority_assignment = 25,
         ServicesPayment: pallet_services_payment = 26,
+        DataPreservers: pallet_data_preservers = 27,
 
         // Collator support. The order of these 6 are important and shall not change.
         Invulnerables: pallet_invulnerables = 30,
@@ -1305,6 +1417,7 @@ construct_runtime!(
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 55,
 
         RootTesting: pallet_root_testing = 100,
+        AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
     }
 );
 
@@ -1320,6 +1433,7 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_services_payment, ServicesPayment]
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_data_preservers, DataPreservers]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }
@@ -1656,7 +1770,8 @@ impl_runtime_apis! {
 
         /// Fetch boot_nodes for this para id
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>> {
-            let bounded_vec = Registrar::boot_nodes(para_id);
+            // TODO: remember to write migration to move boot nodes from pallet_registrar to pallet_data_preservers
+            let bounded_vec = DataPreservers::boot_nodes(para_id);
 
             bounded_vec.into_iter().map(|x| x.into()).collect()
         }
@@ -1758,6 +1873,9 @@ impl_runtime_apis! {
 
 struct CheckInherents;
 
+// TODO: this should be removed but currently if we remove it the relay does not check anything
+// related to other inherents that are not parachain-system
+#[allow(deprecated)]
 impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
     fn check_inherents(
         block: &Block,
@@ -1781,8 +1899,8 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
 
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>
     CheckInherents = CheckInherents,
+    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
 }
 
 #[macro_export]

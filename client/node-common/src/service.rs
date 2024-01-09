@@ -581,10 +581,6 @@ where
             self.telemetry.as_ref().map(|x| x.handle()),
         );
 
-        // // Create channels for mocked XCM messages.
-        // let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
-        // let (hrmp_xcm_sender, hrmp_xcm_receiver) = flume::bounded::<(ParaId, Vec<u8>)>(100);
-        // let xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
         let mut command_sink = None;
 
         if let Some(deadline) = soft_deadline {
@@ -619,7 +615,7 @@ where
                 Timer::interval(Duration::from_millis(millis)),
                 |_| EngineCommand::SealNewBlock {
                     create_empty: true,
-                    finalize: false,
+                    finalize: true,
                     parent_hash: None,
                     sender: None,
                 },

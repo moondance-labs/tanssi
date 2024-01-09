@@ -217,10 +217,10 @@ describeSuite({
                 // Check db has not been deleted
                 const dbPath01 =
                     getTmpZombiePath() +
-                    `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
                 const dbPath02 =
                     getTmpZombiePath() +
-                    `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.true;
@@ -255,10 +255,10 @@ describeSuite({
                 // Collator2000-01 db path exists because it was started with `--keep-db`, Collator2000-02 has deleted it
                 const dbPath01 =
                     getTmpZombiePath() +
-                    `/Collator2000-01/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
                 const dbPath02 =
                     getTmpZombiePath() +
-                    `/Collator2000-02/data/containers/chains/simple_container_2000/db/full-container-2000`;
+                    `/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.false;
@@ -359,15 +359,7 @@ async function directoryExists(directoryPath) {
 
 /// Returns the /tmp/zombie-52234... path
 function getTmpZombiePath() {
-    const logFilePath = process.env.MOON_MONITORED_NODE;
-
-    if (logFilePath) {
-        const lastIndex = logFilePath.lastIndexOf("/");
-        return lastIndex !== -1 ? logFilePath.substring(0, lastIndex) : null;
-    }
-
-    // Return null if the environment variable is not set
-    return null;
+    return process.env.MOON_ZOMBIE_DIR;
 }
 
 /// Verify that the next `numBlocks` have exactly `numAuthors` different authors
