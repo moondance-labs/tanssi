@@ -60,7 +60,7 @@
                     {
                         "name": "frontier-template",
                         "binPath": "../target/release/container-chain-template-frontier-node",
-                        "options": ["--dev", "--sealing=manual", "--para-id=2000"],
+                        "options": ["--dev", "--sealing=manual"],
                         "newRpcBehaviour": true
                     }
                 ]
@@ -78,7 +78,7 @@
                     {
                         "name": "simple-template",
                         "binPath": "../target/release/container-chain-template-simple-node",
-                        "options": ["--dev", "--sealing=manual", "--para-id=2000"],
+                        "options": ["--dev", "--sealing=manual"],
                         "newRpcBehaviour": true,
                         "disableDefaultEthProviders": true
                     }
