@@ -1089,6 +1089,35 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    // 1 entry, storing 258 bytes on-chain
+    pub const BasicDeposit: Balance = currency::deposit(1, 258);
+    // 1 entry, storing 53 bytes on-chain
+    pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
+    // Additional fields add 0 entries, storing 66 bytes on-chain
+    pub const FieldDeposit: Balance = currency::deposit(0, 66);
+    pub const MaxSubAccounts: u32 = 100;
+    pub const MaxAdditionalFields: u32 = 100;
+    pub const MaxRegistrars: u32 = 20;
+}
+
+impl pallet_identity::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type BasicDeposit = BasicDeposit;
+    type FieldDeposit = FieldDeposit;
+    type SubAccountDeposit = SubAccountDeposit;
+    type MaxSubAccounts = MaxSubAccounts;
+    type MaxAdditionalFields = MaxAdditionalFields;
+    type MaxRegistrars = MaxRegistrars;
+    type IdentityInformation = pallet_identity::simple::IdentityInfo<Self::MaxAdditionalFields>;
+    // Slashed balances are burnt
+    type Slashed = ();
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1108,6 +1137,9 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
         TransactionPayment: pallet_transaction_payment = 11,
+
+        // Other utilities
+        Identity: pallet_identity = 15,
 
         // ContainerChain management. It should go before Session for Genesis
         Registrar: pallet_registrar = 20,
