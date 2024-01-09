@@ -2820,6 +2820,7 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "nimbus-primitives",
+ "pallet-asset-rate",
  "pallet-assets",
  "pallet-async-backing",
  "pallet-author-inherent",

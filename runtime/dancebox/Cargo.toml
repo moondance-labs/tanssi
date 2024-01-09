@@ -50,6 +50,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-assets = { workspace = true }
+pallet-asset-rate = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-root-testing = { workspace = true }
@@ -162,6 +163,7 @@ std = [
 	"pallet-authority-assignment/std",
 	"pallet-authority-mapping/std",
 	"pallet-assets/std",
+	"pallet-asset-rate/std",
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-collator-assignment/std",

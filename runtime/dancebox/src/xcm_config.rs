@@ -291,6 +291,16 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
 }
 
+impl pallet_asset_rate::Config for Runtime {
+    type CreateOrigin = EnsureRoot<AccountId>;
+    type RemoveOrigin = EnsureRoot<AccountId>;
+    type UpdateOrigin = EnsureRoot<AccountId>;
+    type Currency = Balances;
+    type AssetKind = MultiLocation;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
+}
+
 use crate::ForeignAssets;
 use staging_xcm_builder::FungiblesAdapter;
 use staging_xcm_builder::NoChecking;
