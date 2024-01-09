@@ -258,11 +258,7 @@ parameter_types! {
     pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }
 
-pub type AssetId = u32;
-/// Assets managed by some foreign location. Note: we do not declare a `ForeignAssetsCall` type, as
-/// this type is used in proxy definitions. We assume that a foreign location would not want to set
-/// an individual, local account as a proxy for the issuance of their assets. This issuance should
-/// be managed by the foreign location's governance.
+pub type AssetId = u16;
 pub type ForeignAssetsInstance = pallet_assets::Instance1;
 impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
