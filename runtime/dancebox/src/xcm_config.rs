@@ -310,6 +310,8 @@ impl pallet_asset_rate::Config for Runtime {
     type AssetKind = AssetId;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = ();
 }
 
 use crate::ForeignAssets;

@@ -49,8 +49,8 @@ frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
-pallet-assets = { workspace = true }
 pallet-asset-rate = { workspace = true }
+pallet-assets = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-root-testing = { workspace = true }
@@ -157,20 +157,20 @@ std = [
 	"frame-try-runtime/std",
 	"log/std",
 	"nimbus-primitives/std",
+	"pallet-asset-rate/std",
+	"pallet-assets/std",
 	"pallet-async-backing/std",
 	"pallet-author-inherent/std",
 	"pallet-author-noting-runtime-api/std",
 	"pallet-author-noting/std",
 	"pallet-authority-assignment/std",
 	"pallet-authority-mapping/std",
-	"pallet-assets/std",
-	"pallet-asset-rate/std",
 	"pallet-balances/std",
 	"pallet-collator-assignment-runtime-api/std",
 	"pallet-collator-assignment/std",
 	"pallet-configuration/std",
-	"pallet-foreign-asset-creator/std",
 	"pallet-data-preservers/std",
+	"pallet-foreign-asset-creator/std",
 	"pallet-identity/std",
 	"pallet-im-online/std",
 	"pallet-inflation-rewards/std",
@@ -256,8 +256,8 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
-	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
+	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
 	"pallet-im-online/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
