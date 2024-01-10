@@ -30,6 +30,7 @@ use {
     xcm_emulator::Chain,
 };
 
+#[allow(unused_assignments)]
 #[test]
 fn receive_tokens_from_the_relay_to_tanssi() {
     // XcmPallet reserve transfer arguments
@@ -117,10 +118,163 @@ fn receive_tokens_from_the_relay_to_tanssi() {
         // Assert empty receiver received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
-                1,
+                westend_token_asset_id,
                 &DanceboxReceiver::get(),
             ),
             amount_to_send - native_balance
+        );
+    });
+}
+
+#[test]
+fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
+    // XcmPallet reserve transfer arguments
+    let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
+
+    let dancebox_dest: VersionedMultiLocation = MultiLocation {
+        parents: 0,
+        interior: X1(Parachain(2000u32)),
+    }
+    .into();
+
+    let dancebox_beneficiary: VersionedMultiLocation = MultiLocation {
+        parents: 0,
+        interior: X1(AccountId32 {
+            network: None,
+            id: DanceboxReceiver::get().into(),
+        }),
+    }
+    .into();
+
+    let amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
+
+    let assets: MultiAssets = (Here, amount_to_send).into();
+    let fee_asset_item = 0;
+    let westend_token_asset_id = 1u16;
+
+    // Register the asset first
+    Dancebox::execute_with(|| {
+        let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
+
+        assert_ok!(
+            <Dancebox as DanceboxPallet>::ForeignAssetsCreator::create_foreign_asset(
+                root_origin.clone(),
+                MultiLocation::parent(),
+                westend_token_asset_id,
+                DanceboxReceiver::get(),
+                true,
+                1
+            )
+        );
+        // we register the asset but we never rate it
+    });
+
+    // Send XCM message from Westend
+    Westend::execute_with(|| {
+        assert_ok!(
+            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+                alice_origin,
+                bx!(dancebox_dest),
+                bx!(dancebox_beneficiary),
+                bx!(assets.into()),
+                fee_asset_item,
+                WeightLimit::Unlimited,
+            )
+        );
+    });
+    // We should have received the tokens
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::DmpQueue(
+                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
+                        outcome, ..
+                    }) => {
+                    outcome: {
+                        outcome.clone().ensure_complete().is_err()
+                    },
+                },
+            ]
+        );
+        type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+
+        // Assert receiver should not have received funds
+        assert_eq!(
+            <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
+                westend_token_asset_id,
+                &DanceboxReceiver::get(),
+            ),
+            0
+        );
+    });
+}
+
+#[test]
+fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
+    // XcmPallet reserve transfer arguments
+    let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
+
+    let dancebox_dest: VersionedMultiLocation = MultiLocation {
+        parents: 0,
+        interior: X1(Parachain(2000u32)),
+    }
+    .into();
+
+    let dancebox_beneficiary: VersionedMultiLocation = MultiLocation {
+        parents: 0,
+        interior: X1(AccountId32 {
+            network: None,
+            id: DanceboxReceiver::get().into(),
+        }),
+    }
+    .into();
+
+    let amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
+
+    let assets: MultiAssets = (Here, amount_to_send).into();
+    let fee_asset_item = 0;
+    let westend_token_asset_id = 1u16;
+
+    // Send XCM message from Westend
+    Westend::execute_with(|| {
+        assert_ok!(
+            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+                alice_origin,
+                bx!(dancebox_dest),
+                bx!(dancebox_beneficiary),
+                bx!(assets.into()),
+                fee_asset_item,
+                WeightLimit::Unlimited,
+            )
+        );
+    });
+    // We should have received the tokens
+    Dancebox::execute_with(|| {
+        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancebox,
+            vec![
+                RuntimeEvent::DmpQueue(
+                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
+                        outcome, ..
+                    }) => {
+                    outcome: {
+                        outcome.clone().ensure_complete().is_err()
+                    },
+                },
+            ]
+        );
+        type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+
+        // Assert receiver should not have received funds
+        assert_eq!(
+            <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
+                westend_token_asset_id,
+                &DanceboxReceiver::get(),
+            ),
+            0
         );
     });
 }
