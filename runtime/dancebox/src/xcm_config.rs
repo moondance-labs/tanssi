@@ -171,14 +171,24 @@ impl staging_xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = ();
+    type IsReserve = Everything;
     type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;
     type Weigher = XcmWeigher;
     // Local token trader only
     // TODO: update once we have a way to do fees
-    type Trader = UsingComponents<WeightToFee, SelfReserve, AccountId, Balances, ()>;
+    type Trader = (
+        UsingComponents<WeightToFee, SelfReserve, AccountId, Balances, ()>,
+        cumulus_primitives_utility::TakeFirstAssetTrader<
+            AccountId,
+            AssetRateAsMultiplier,
+            // Use this currency when it is a fungible asset matching the given location or name:
+            (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, JustTry>,),
+            ForeignAssets,
+            (),
+        >,
+    );
     type ResponseHandler = PolkadotXcm;
     type AssetTrap = PolkadotXcm;
     type AssetClaims = PolkadotXcm;
@@ -296,12 +306,13 @@ impl pallet_asset_rate::Config for Runtime {
     type RemoveOrigin = EnsureRoot<AccountId>;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type Currency = Balances;
-    type AssetKind = MultiLocation;
+    type AssetKind = AssetId;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
 }
 
 use crate::ForeignAssets;
+use sp_runtime::FixedPointNumber;
 use staging_xcm_builder::FungiblesAdapter;
 use staging_xcm_builder::NoChecking;
 use staging_xcm_executor::traits::JustTry;
@@ -321,3 +332,25 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
     // The account to use for tracking teleports.
     CheckingAccount,
 >;
+
+/// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
+pub type AssetRateAsMultiplier =
+    parachains_common::xcm_config::AssetFeeAsExistentialDepositMultiplier<
+        Runtime,
+        WeightToFee,
+        CustomConverter,
+        ForeignAssetsInstance,
+    >;
+
+pub struct CustomConverter;
+impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, Balance>
+    for CustomConverter
+{
+    type Error = ();
+    fn to_asset_balance(balance: Balance, asset_id: AssetId) -> Result<Balance, Self::Error> {
+        let rate = pallet_asset_rate::ConversionRateToNative::<Runtime>::get(asset_id).ok_or(())?;
+        Ok(sp_runtime::FixedU128::from_u32(1)
+            .div(rate)
+            .saturating_mul_int(balance))
+    }
+}
