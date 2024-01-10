@@ -171,6 +171,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
+    // TODO: modify this!
     type IsReserve = Everything;
     type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
