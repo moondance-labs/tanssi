@@ -17,8 +17,7 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxPallet, DanceboxReceiver,
-            Westend, WestendPallet, WestendSender,
+            Dancebox, DanceboxPallet, DanceboxReceiver, Westend, WestendPallet, WestendSender,
         },
         *,
     },
