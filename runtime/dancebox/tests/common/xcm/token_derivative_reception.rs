@@ -99,6 +99,7 @@ fn receive_tokens_from_the_relay_to_tanssi() {
     // We should have received the tokens
     Dancebox::execute_with(|| {
         type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        let mut outcome_weight = Weight::default();
         assert_expected_events!(
             Dancebox,
             vec![
@@ -106,17 +107,25 @@ fn receive_tokens_from_the_relay_to_tanssi() {
                     cumulus_pallet_dmp_queue::Event::ExecutedDownward {
                         outcome, ..
                     }) => {
-                    outcome: outcome.clone().ensure_complete().is_ok(),
+                    outcome: {
+                        outcome_weight = outcome.clone().weight_used();
+                        outcome.clone().ensure_complete().is_ok()
+                    },
                 },
             ]
         );
         type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+
+        // We should have charged an amount of tokens that is identical to the weight spent
+        let native_balance = dancebox_runtime::WeightToFee::weight_to_fee(&outcome_weight);
+
         // Assert empty receiver received funds
-        assert!(
+        assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
                 1,
                 &DanceboxReceiver::get(),
-            ) > 0
+            ),
+            amount_to_send - native_balance
         );
     });
 }
