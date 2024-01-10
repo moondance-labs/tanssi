@@ -269,6 +269,24 @@ parameter_types! {
     pub CheckingAccount: AccountId = PolkadotXcm::check_account();
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+/// Simple conversion of `u32` into an `AssetId` for use in benchmarking.
+pub struct ForeignAssetBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pallet_assets::BenchmarkHelper<AssetId> for ForeignAssetBenchmarkHelper {
+    fn create_asset_id_parameter(id: u32) -> AssetId {
+        id.try_into()
+            .expect("number too large to create benchmarks")
+    }
+}
+#[cfg(feature = "runtime-benchmarks")]
+impl pallet_asset_rate::AssetKindFactory<AssetId> for ForeignAssetBenchmarkHelper {
+    fn create_asset_kind(id: u32) -> AssetId {
+        id.try_into()
+            .expect("number too large to create benchmarks")
+    }
+}
+
 pub type AssetId = u16;
 pub type ForeignAssetsInstance = pallet_assets::Instance1;
 impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
@@ -291,7 +309,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
     type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = ();
+    type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
 impl pallet_foreign_asset_creator::Config for Runtime {
@@ -313,7 +331,7 @@ impl pallet_asset_rate::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = ();
+    type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
 use crate::ForeignAssets;
