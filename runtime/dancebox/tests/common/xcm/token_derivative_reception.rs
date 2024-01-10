@@ -17,21 +17,17 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxEmptyReceiver, DanceboxPallet, DanceboxReceiver, DanceboxSender,
-            EthereumEmptyReceiver, EthereumSender, FrontierTemplate, FrontierTemplatePallet,
+            Dancebox, DanceboxPallet, DanceboxReceiver,
             Westend, WestendPallet, WestendSender,
         },
         *,
     },
-    container_chain_template_frontier_runtime::UNIT as FRONTIER_DEV,
-    dancebox_runtime::UNIT as DANCE,
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
-    staging_xcm_executor::traits::ConvertLocation,
+    staging_xcm::{latest::prelude::*, VersionedMultiLocation},
     xcm_emulator::Chain,
 };
 
