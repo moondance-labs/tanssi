@@ -364,7 +364,6 @@ pub type AssetRateAsMultiplier =
         ForeignAssetsInstance,
     >;
 
-
 // TODO: move to https://github.com/paritytech/polkadot-sdk/pull/2903 once its merged
 pub struct CustomConverter;
 impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, Balance>
