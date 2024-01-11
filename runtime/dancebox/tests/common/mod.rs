@@ -39,7 +39,7 @@ use {
 mod xcm;
 
 pub use dancebox_runtime::{
-    AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
+    AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, AssetRate, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
     InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation, ParachainInfo,
     PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime, RuntimeCall, RuntimeEvent,

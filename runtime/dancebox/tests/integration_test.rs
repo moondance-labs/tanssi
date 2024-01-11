@@ -4852,3 +4852,75 @@ fn test_sudo_can_register_foreign_assets_and_manager_change_paremeters() {
             assert_eq!(<ForeignAssets as frame_support::traits::fungibles::Inspect<AccountId>>::balance(1, &AccountId::from(BOB)),  1000);
         });
 }
+
+#[test]
+fn test_assets_cannot_be_created_from_signed_origins() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // We try to register the asset with Alice as origin
+            // Any other person cannot do this
+            assert_noop!(
+                ForeignAssetsCreator::create_foreign_asset(
+                    origin_of(ALICE.into()),
+                    MultiLocation::parent(),
+                    1,
+                    AccountId::from(ALICE),
+                    true,
+                    1
+                ),
+                BadOrigin
+            );
+
+            assert_noop!(
+                ForeignAssets::create(origin_of(ALICE.into()), 1, AccountId::from(ALICE).into(), 1),
+                BadOrigin
+            );
+        });
+}
+
+#[test]
+fn test_asset_rate_can_be_set_from_sudo_but_not_from_signed() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // We try to register the asset with Alice as origin
+            // Any other person cannot do this
+            assert_noop!(
+                AssetRate::create(
+                    origin_of(ALICE.into()),
+                    1,
+                    1
+                ),
+                BadOrigin
+            );
+        });
+}
