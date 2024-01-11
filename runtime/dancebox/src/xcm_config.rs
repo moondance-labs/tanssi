@@ -171,8 +171,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    // TODO: modify this!
-    type IsReserve = Everything;
+    type IsReserve = NativeAssetReserve;
     type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;
@@ -375,5 +374,63 @@ impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, B
         Ok(sp_runtime::FixedU128::from_u32(1)
             .div(rate)
             .saturating_mul_int(balance))
+    }
+}
+
+pub struct NativeAssetReserve;
+impl frame_support::traits::ContainsPair<MultiAsset, MultiLocation> for NativeAssetReserve {
+    fn contains(asset: &MultiAsset, origin: &MultiLocation) -> bool {
+        log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
+        let reserve = if let Concrete(location) = &asset.id {
+            if location.parents == 0 && !matches!(location.first_interior(), Some(Parachain(_))) {
+                Some(MultiLocation::here())
+            } else {
+                location.chain_part()
+            }
+        } else {
+            None
+        };
+
+        if let Some(ref reserve) = reserve {
+            if reserve == origin {
+                return true;
+            }
+        }
+        false
+    }
+}
+
+pub trait Parse {
+    /// Returns the "chain" location part. It could be parent, sibling
+    /// parachain, or child parachain.
+    fn chain_part(&self) -> Option<MultiLocation>;
+    /// Returns "non-chain" location part.
+    fn non_chain_part(&self) -> Option<MultiLocation>;
+}
+
+impl Parse for MultiLocation {
+    fn chain_part(&self) -> Option<MultiLocation> {
+        match (self.parents, self.first_interior()) {
+            // sibling parachain
+            (1, Some(Parachain(id))) => Some(MultiLocation::new(1, X1(Parachain(*id)))),
+            // parent
+            (1, _) => Some(MultiLocation::parent()),
+            // children parachain
+            (0, Some(Parachain(id))) => Some(MultiLocation::new(0, X1(Parachain(*id)))),
+            _ => None,
+        }
+    }
+
+    fn non_chain_part(&self) -> Option<MultiLocation> {
+        let mut junctions = *self.interior();
+        while matches!(junctions.first(), Some(Parachain(_))) {
+            let _ = junctions.take_first();
+        }
+
+        if junctions != Here {
+            Some(MultiLocation::new(0, junctions))
+        } else {
+            None
+        }
     }
 }
