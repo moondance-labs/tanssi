@@ -105,10 +105,6 @@ fn receive_tokens_from_the_container_to_tanssi() {
     });
     // We should have received the tokens
     Dancebox::execute_with(|| {
-        println!(
-            "events are {:?}",
-            <Dancebox as DanceboxPallet>::System::events()
-        );
         type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
         let mut outcome_weight = Weight::default();
         assert_expected_events!(
@@ -120,8 +116,8 @@ fn receive_tokens_from_the_container_to_tanssi() {
                     ..
                 }) => {
                     weight: {
-                        outcome_weight = weight.clone();
-                        weight.clone().all_gte(Weight::from_parts(0, 0))
+                        outcome_weight = *weight;
+                        weight.all_gte(Weight::from_parts(0, 0))
                     },
                 },
             ]
