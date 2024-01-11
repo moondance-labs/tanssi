@@ -364,6 +364,8 @@ pub type AssetRateAsMultiplier =
         ForeignAssetsInstance,
     >;
 
+
+// TODO: move to https://github.com/paritytech/polkadot-sdk/pull/2903 once its merged
 pub struct CustomConverter;
 impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, Balance>
     for CustomConverter
@@ -377,6 +379,7 @@ impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, B
     }
 }
 
+// TODO: this should probably move to somewhere in the polkadot-sdk repo
 pub struct NativeAssetReserve;
 impl frame_support::traits::ContainsPair<MultiAsset, MultiLocation> for NativeAssetReserve {
     fn contains(asset: &MultiAsset, origin: &MultiLocation) -> bool {

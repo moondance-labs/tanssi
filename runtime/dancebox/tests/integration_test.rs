@@ -4850,7 +4850,5 @@ fn test_sudo_can_register_foreign_assets_and_manager_change_paremeters() {
             assert_ok!(ForeignAssets::mint(origin_of(ALICE.into()), 1, AccountId::from(BOB).into(), 1000));
             assert_eq!(<ForeignAssets as frame_support::traits::fungibles::Inspect<AccountId>>::total_issuance(1),  1000);
             assert_eq!(<ForeignAssets as frame_support::traits::fungibles::Inspect<AccountId>>::balance(1, &AccountId::from(BOB)),  1000);
-
-
         });
 }
