@@ -54,8 +54,8 @@ use {
         Saturating,
     },
     sp_std::{
-        collections::btree_map::BTreeMap, collections::btree_set::BTreeSet, fmt::Debug, prelude::*,
-        vec,
+        cmp, collections::btree_map::BTreeMap, collections::btree_set::BTreeSet, fmt::Debug,
+        prelude::*, vec,
     },
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
@@ -195,13 +195,13 @@ pub mod pallet {
                 para_id: T::SelfParaId::get(),
                 min_collators: T::HostConfiguration::min_collators_for_orchestrator(
                     target_session_index,
-                ) as usize,
+                ),
                 max_collators: T::HostConfiguration::max_collators_for_orchestrator(
                     target_session_index,
-                ) as usize,
+                ),
             }];
             let collators_per_container =
-                T::HostConfiguration::collators_per_container(target_session_index) as usize;
+                T::HostConfiguration::collators_per_container(target_session_index);
             for para_id in &container_chain_ids {
                 container_chains.push(ContainerChain {
                     para_id: *para_id,
@@ -210,7 +210,7 @@ pub mod pallet {
                 });
             }
             let collators_per_parathread =
-                T::HostConfiguration::collators_per_parathread(target_session_index) as usize;
+                T::HostConfiguration::collators_per_parathread(target_session_index);
             for para_id in &parathreads {
                 container_chains.push(ContainerChain {
                     para_id: *para_id,
@@ -314,118 +314,31 @@ pub mod pallet {
             mut old_assigned: AssignedCollators<T::AccountId>,
         ) -> AssignedCollators<T::AccountId> {
             let all_para_ids: Vec<ParaId> = container_chains.iter().map(|cc| cc.para_id).collect();
-            /*
-            // Segregate collators into old and new. Collators from chains that were just deregistered will be
-            // considered new.
-            // Use total number of collators to estimate which chains will be assigned collators. The rest of chains
-            // will have their collators removed. Note, take into account variable `min_collators`: if the chains
-            // require [5, 2, 2, 1, 1] and we have 5+2+1 collators, we want to assign [5, 2, 0, 1, 0].
-            if num_collators < required_num_collators {
-                // Delete excess container chains (will be filled after the algorithm is done for UI purposes)
-            }
-            if num_collators > required_num_collators {
-                // Mutate the min_collators of each chain in order, increasing it up to max_collators for that chain
-            }
-            // For each chain, first reassign the old from this chain, then pick new collators up to the limit.
-            for cc in &container_chains {
-                new_assigned.fill(cc, old_assigned.get(cc.para_id).chain(new_collators));
-            }
-             */
-            let collators_set = BTreeSet::from_iter(&collators);
+            let collators_set = BTreeSet::from_iter(collators.iter().cloned());
+            let chains_with_collators =
+                Self::select_chains_with_collators(collators.len() as u32, &container_chains);
+            let chains_with_collators_set: BTreeSet<ParaId> = chains_with_collators
+                .iter()
+                .map(|(para_id, _num_collators)| *para_id)
+                .collect();
             // The rest of this function mostly treats orchestrator chain as another container chain, so move it into
             // `old_assigned.container_chains`
             let old_orchestrator_assigned = core::mem::take(&mut old_assigned.orchestrator_chain);
             old_assigned
                 .container_chains
                 .insert(T::SelfParaId::get(), old_orchestrator_assigned);
-            old_assigned.remove_container_chains_not_in_list(&all_para_ids);
             let mut old_assigned = old_assigned.container_chains;
-
-            // old_assigned.remove_collators_not_in_set
-            for (_id, cs) in old_assigned.iter_mut() {
-                cs.retain(|c| collators_set.contains(c));
-            }
-
-            // The collators min and max may have changed, but we will keep collators in old_assigned for now
-
-            // At this point we have:
-            // * collators, collators_set: list of all collators assigned or not
-            // * old_assigned: subset of the collators that were assigned to some para id in the previous session
-            // * container_chains: para ids that need collators for this session, and may or may not have them in the
-            // previous session
-
-            // Let's count how many container chains we can support with the current number of collators
-            let mut available_collators = collators.len();
-            // Edge case: num collators less than min orchestrator collators: fill as much as we can
-            assert_eq!(container_chains[0].para_id, T::SelfParaId::get());
-            let min_orchestrator_collators = container_chains[0].min_collators;
-            if available_collators < min_orchestrator_collators {
-                available_collators = 0;
-            } else {
-                available_collators -= min_orchestrator_collators;
-            }
-
-            let mut container_chains_without_collators = BTreeSet::new();
-            // Skipping orchestrator chain because it was handled above
-            for cc in container_chains.iter().skip(1) {
-                if available_collators >= cc.min_collators {
-                    available_collators -= cc.min_collators;
-                } else {
-                    container_chains_without_collators.insert(cc.para_id);
-                    // Do not break here because we want to push all the remaining para_ids
-                }
-            }
-            // We remove container_chains_without_collators from old_assigned
-            for para_id in container_chains_without_collators.iter() {
-                old_assigned.remove(para_id);
-            }
-            let container_chains_with_collators: Vec<_> = container_chains
-                .iter()
-                .filter(|cc| !container_chains_without_collators.contains(&cc.para_id))
-                .collect();
-
-            // At this point we have:
-            // * collators, collators_set: list of all collators assigned or not
-            // * old_assigned: subset of the collators that were assigned to some para id in the previous session, and
-            // will likely be assigned to that same para id in this session (except if the min/max changed)
-            // * container_chains_with_collators: para ids that need collators for this session, and may or may not have
-            // had them in the previous session
-            // * container_chains_without_collators: para ids that will have 0 collators this session
-            let mut required_collators_min = 0;
-            for cc in &container_chains_with_collators {
-                required_collators_min += cc.min_collators;
-            }
+            Self::retain_valid_old_assigned(
+                &mut old_assigned,
+                chains_with_collators_set,
+                collators_set,
+            );
 
             // Ensure the first `min_orchestrator_collators` of orchestrator chain are invulnerables
             Self::prioritize_invulnerables(&collators, &container_chains, &mut old_assigned);
 
-            let new_assigned_chains = {
-                // Edge case: num collators less than min orchestrator collators: fill as much as we can
-                assert_eq!(container_chains[0].para_id, T::SelfParaId::get());
-                let min_orchestrator_collators = container_chains[0].min_collators;
-
-                if collators.len() < min_orchestrator_collators {
-                    let orch_min = vec![(container_chains[0].para_id, collators.len() as u32)];
-
-                    Self::assign_fill(collators, orch_min, old_assigned)
-                } else {
-                    // Set a variable number of collators, some chains at max and some chains at min
-                    let mut required_collators_remainder = collators.len() - required_collators_min;
-                    let mut container_chains_variable = vec![];
-                    for cc in &container_chains_with_collators {
-                        let mut num = cc.min_collators;
-                        while required_collators_remainder > 0 && num < cc.max_collators {
-                            // Move 1 collator from remainder to this chain
-                            required_collators_remainder -= 1;
-                            num += 1;
-                        }
-                        container_chains_variable.push((cc.para_id, num as u32))
-                    }
-
-                    Self::assign_fill(collators, container_chains_variable, old_assigned)
-                }
-            };
-
+            let new_assigned_chains =
+                Self::assign_full(collators, chains_with_collators, old_assigned);
             let mut new_assigned = AssignedCollators::default();
             new_assigned.container_chains = new_assigned_chains;
 
@@ -445,18 +358,114 @@ pub mod pallet {
             new_assigned
         }
 
-        /// Ensure orchestrator chain has min_orchestrator invulnerables
+        /// Removes invalid entries from `old_assigned`:
+        ///
+        /// * para ids not in `chains_with_collators`
+        /// * collators not in `collators`
+        fn retain_valid_old_assigned(
+            old_assigned: &mut BTreeMap<ParaId, Vec<T::AccountId>>,
+            chains_with_collators: BTreeSet<ParaId>,
+            collators: BTreeSet<T::AccountId>,
+        ) {
+            // old_assigned.remove_container_chains_not_in_set
+            old_assigned.retain(|id, _cs| chains_with_collators.contains(id));
+            // old_assigned.remove_collators_not_in_set
+            for (_id, cs) in old_assigned.iter_mut() {
+                cs.retain(|c| collators.contains(c));
+            }
+        }
+
+        /// Select which container chains will be assigned collators and how many collators, but do not specify which
+        /// collator goes to which chain.
+        ///
+        /// Each chain has a min and max number of collators. If the number of collators is not enough to reach the min,
+        /// no collators are assigned to that chain.
+        ///
+        /// If the available number of collators is:
+        /// * lower than the min of the first chain: we assign all the collators to the first chain. This is the
+        /// orchestrator chain and we always want it to have collators.
+        /// * lower than the sum of all the min: we cannot assign collators to all the chains. So remove chains until
+        /// we can. The order is important, the first chains will be assigned collators and the last ones will not.
+        /// * lower than the sum of all the max: we can assign the min value to all the chains, and have some leftover.
+        /// We use the same order to decide where this extra collators will go, by filling the max of the first chain,
+        /// then the max of the second chain, and so on.
+        /// * greater than the sum of all the max: all the chains will be assigned their max number of collators.
+        ///
+        /// # Returns
+        ///
+        /// A list of `(para_id, num_collators)`.
+        pub fn select_chains_with_collators(
+            num_collators: u32,
+            container_chains: &[ContainerChain],
+        ) -> Vec<(ParaId, u32)> {
+            // Let's count how many container chains we can support with the current number of collators
+            let mut available_collators = num_collators;
+            // Handle orchestrator chain in a special way, we always want to assign collators to it, even if we don't
+            // reach the min.
+            assert_eq!(container_chains[0].para_id, T::SelfParaId::get());
+            let min_orchestrator_collators = container_chains[0].min_collators;
+            available_collators = available_collators.saturating_sub(min_orchestrator_collators);
+
+            let mut container_chains_with_collators = vec![container_chains[0]];
+            // Skipping orchestrator chain because it was handled above
+            for cc in container_chains.iter().skip(1) {
+                if available_collators >= cc.min_collators {
+                    available_collators -= cc.min_collators;
+                    container_chains_with_collators.push(*cc);
+                } else {
+                    // Do not break here because we want to push all the remaining para_ids
+                }
+            }
+
+            let mut required_collators_min = 0;
+            for cc in &container_chains_with_collators {
+                required_collators_min += cc.min_collators;
+            }
+
+            if num_collators < min_orchestrator_collators {
+                // Edge case: num collators less than min orchestrator collators: fill as much as we can
+                vec![(container_chains[0].para_id, num_collators)]
+            } else {
+                // Set a variable number of collators, some chains at max and some chains at min
+                let mut required_collators_remainder = num_collators - required_collators_min;
+                let mut container_chains_variable = vec![];
+                for cc in &container_chains_with_collators {
+                    let extra = cmp::min(
+                        required_collators_remainder,
+                        cc.max_collators.saturating_sub(cc.min_collators),
+                    );
+                    let num = cc.min_collators + extra;
+                    required_collators_remainder -= extra;
+                    container_chains_variable.push((cc.para_id, num));
+                }
+
+                container_chains_variable
+            }
+        }
+
+        /// Ensure orchestrator chain has `min_orchestrator` invulnerables. If that's not possible, it tries to add as
+        /// many invulnerables as possible.
+        ///
         /// Get invulnerables from:
         /// * old_assigned in orchestrator
         /// * new collators
         /// * old_assigned elsewhere
-        fn prioritize_invulnerables(
+        ///
+        /// In that order.
+        ///
+        /// Mutates `old_assigned` because invulnerables will be inserted there, and if invulnerables were already
+        /// assigned to some other chain, they will be removed from that other chain as well.
+        ///
+        /// # Returns
+        ///
+        /// The number of invulnerables, capped to `min_collators`.
+        pub fn prioritize_invulnerables(
             collators: &[T::AccountId],
             container_chains: &[ContainerChain],
             old_assigned: &mut BTreeMap<ParaId, Vec<T::AccountId>>,
-        ) {
+        ) -> usize {
             // TODO: clean this up, maybe change remove_invulnerables trait into something more ergonomic
-            let min_orchestrator_collators = container_chains[0].min_collators;
+            let min_orchestrator_collators = container_chains[0].min_collators as usize;
             let invulnerables = T::RemoveInvulnerables::remove_invulnerables(
                 &mut old_assigned.get(&T::SelfParaId::get()).unwrap().clone(),
                 min_orchestrator_collators,
@@ -465,68 +474,75 @@ pub mod pallet {
                 old_assigned.get_mut(&T::SelfParaId::get()).unwrap(),
                 &invulnerables,
             );
-            if invulnerables.len() < min_orchestrator_collators {
-                // Not enough invulnerables currently assigned, get rest from new_collators
-                let mut new_collators = collators.to_vec();
-                for (_id, cs) in old_assigned.iter() {
-                    new_collators.retain(|c| !cs.contains(c));
-                }
-                let num_missing_invulnerables = min_orchestrator_collators - invulnerables.len();
-                let missing_invulnerables = T::RemoveInvulnerables::remove_invulnerables(
-                    &mut new_collators,
-                    num_missing_invulnerables,
-                );
-                let missing_invulnerables_len = missing_invulnerables.len();
-                for invulnerable in missing_invulnerables.into_iter().rev() {
-                    let orch_collators = old_assigned.get_mut(&T::SelfParaId::get()).unwrap();
-                    orch_collators.insert(invulnerables.len(), invulnerable);
-                }
-
-                if missing_invulnerables_len < num_missing_invulnerables {
-                    // Still not enough invulnerables, try to get an invulnerable that is currently assigned somewhere else
-
-                    let num_missing_invulnerables =
-                        num_missing_invulnerables - missing_invulnerables_len;
-                    let mut collators = collators.to_vec();
-                    let orch_collators_set = BTreeSet::from_iter(
-                        old_assigned
-                            .get(&T::SelfParaId::get())
-                            .unwrap()
-                            .iter()
-                            .cloned(),
-                    );
-                    collators.retain(|c| {
-                        // Remove collators already assigned to this chain
-                        !orch_collators_set.contains(c)
-                    });
-                    let reassigned_invulnerables = T::RemoveInvulnerables::remove_invulnerables(
-                        &mut collators,
-                        num_missing_invulnerables,
-                    );
-
-                    if reassigned_invulnerables.is_empty() {
-                        // If at this point we still do not have enough invulnerables, it means that there are no invulnerables, so no problem
-                    } else {
-                        let reassigned_invulnerables_set =
-                            BTreeSet::from_iter(reassigned_invulnerables.iter().cloned());
-
-                        // In this case we must delete the old assignment of the invulnerables
-                        // old_assigned.remove_collators_in_set
-                        for (_id, cs) in old_assigned.iter_mut() {
-                            cs.retain(|c| !reassigned_invulnerables_set.contains(c));
-                        }
-
-                        for invulnerable in reassigned_invulnerables.into_iter().rev() {
-                            let orch_collators =
-                                old_assigned.get_mut(&T::SelfParaId::get()).unwrap();
-                            orch_collators.insert(
-                                invulnerables.len() + missing_invulnerables_len,
-                                invulnerable,
-                            );
-                        }
-                    }
-                }
+            if invulnerables.len() >= min_orchestrator_collators {
+                // We already had invulnerables, we just moved them to the front of the list if they weren't already
+                return min_orchestrator_collators;
             }
+
+            // Not enough invulnerables currently assigned, get rest from new_collators
+            let mut new_collators = collators.to_vec();
+            for (_id, cs) in old_assigned.iter() {
+                new_collators.retain(|c| !cs.contains(c));
+            }
+            let num_missing_invulnerables = min_orchestrator_collators - invulnerables.len();
+            let missing_invulnerables = T::RemoveInvulnerables::remove_invulnerables(
+                &mut new_collators,
+                num_missing_invulnerables,
+            );
+            let missing_invulnerables_len = missing_invulnerables.len();
+            for invulnerable in missing_invulnerables.into_iter().rev() {
+                let orch_collators = old_assigned.get_mut(&T::SelfParaId::get()).unwrap();
+                orch_collators.insert(invulnerables.len(), invulnerable);
+            }
+
+            if missing_invulnerables_len >= num_missing_invulnerables {
+                // Got invulnerables from new_collators, and maybe some were already assigned
+                return min_orchestrator_collators;
+            }
+
+            // Still not enough invulnerables, try to get an invulnerable that is currently assigned somewhere else
+            let num_missing_invulnerables = num_missing_invulnerables - missing_invulnerables_len;
+            let mut collators = collators.to_vec();
+            let orch_collators_set = BTreeSet::from_iter(
+                old_assigned
+                    .get(&T::SelfParaId::get())
+                    .unwrap()
+                    .iter()
+                    .cloned(),
+            );
+            collators.retain(|c| {
+                // Remove collators already assigned to this chain
+                !orch_collators_set.contains(c)
+            });
+            let reassigned_invulnerables = T::RemoveInvulnerables::remove_invulnerables(
+                &mut collators,
+                num_missing_invulnerables,
+            );
+
+            if reassigned_invulnerables.is_empty() {
+                // If at this point we still do not have enough invulnerables, it means that there are no
+                // invulnerables, so no problem, but return the number of invulnerables
+                return invulnerables.len() + missing_invulnerables_len;
+            }
+
+            let reassigned_invulnerables_set =
+                BTreeSet::from_iter(reassigned_invulnerables.iter().cloned());
+
+            // In this case we must delete the old assignment of the invulnerables
+            // old_assigned.remove_collators_in_set
+            for (_id, cs) in old_assigned.iter_mut() {
+                cs.retain(|c| !reassigned_invulnerables_set.contains(c));
+            }
+
+            for invulnerable in reassigned_invulnerables.into_iter().rev() {
+                let orch_collators = old_assigned.get_mut(&T::SelfParaId::get()).unwrap();
+                orch_collators.insert(
+                    invulnerables.len() + missing_invulnerables_len,
+                    invulnerable,
+                );
+            }
+
+            invulnerables.len() + missing_invulnerables_len + reassigned_invulnerables_set.len()
         }
 
         /// Assign collators assuming that the number of collators is greater than or equal to the required.
@@ -541,10 +557,14 @@ pub mod pallet {
         /// * `container_chains` `num_collators` can be 0. In that case an empty vec is returned for that para id.
         /// * `old_assigned` must not have duplicate collators.
         ///
+        /// # Returns
+        ///
+        /// The collator assigment, a map from `ParaId` to `Vec<T::AccountId>`.
+        ///
         /// # Panics
         ///
         /// This function panics if the number of collators is not enough to fill all the container chains.
-        fn assign_fill(
+        pub fn assign_full(
             collators: Vec<T::AccountId>,
             container_chains: Vec<(ParaId, u32)>,
             mut old_assigned: BTreeMap<ParaId, Vec<T::AccountId>>,
@@ -554,12 +574,12 @@ pub mod pallet {
                 required_collators += num_collators;
             }
 
-            // This check is required to ensure priority: if the number of collators was less than the required, it is
-            // possible that the chain with least priority would be assigned collators (because they are in
-            // old_assigned), while some chains with more priority would have no collators.
+            // This invariant is necessary to ensure priority: if the number of collators is less than required, it is
+            // possible that the chain with the least priority could be assigned collators (since they are in
+            // old_assigned), while some chains with higher priority might have no collators.
             assert!(
                 collators.len() >= required_collators as usize,
-                "assign_fill: not enough collators: {}, required {}, chains: {:?}",
+                "assign_full: not enough collators: {}, required {}, chains: {:?}",
                 collators.len(),
                 required_collators,
                 container_chains
@@ -571,21 +591,9 @@ pub mod pallet {
                     .iter()
                     .map(|(para_id, _num_collators)| *para_id),
             );
-            let mut para_ids_to_remove = vec![];
-            for (para_id, _para_id_collators) in old_assigned.iter() {
-                if !para_ids_set.contains(para_id) {
-                    para_ids_to_remove.push(*para_id);
-                }
-            }
-            for para_id in para_ids_to_remove {
-                old_assigned.remove(&para_id);
-            }
+            let collators_set = BTreeSet::from_iter(collators.iter().cloned());
 
-            // Remove old_assigned collators not in list
-            let collators_set = BTreeSet::from_iter(&collators);
-            for (_para_id, para_id_collators) in old_assigned.iter_mut() {
-                para_id_collators.retain(|x| collators_set.contains(x));
-            }
+            Self::retain_valid_old_assigned(&mut old_assigned, para_ids_set, collators_set);
 
             // Truncate num collators to required
             for (para_id, num_collators) in container_chains.iter() {
@@ -702,17 +710,22 @@ pub mod pallet {
     }
 }
 
-// Ensure that invulnerables are always the first in the list
-fn insert_invulnerables<T>(oo: &mut Vec<T>, invulnerables: &[T])
+/// Insert invulenrables ensuring that they are always the first in the list.
+/// The order of both lists is preserved.
+/// `assigned` may already contain the invulnerables, in that case they are only moved to the front.
+///
+/// Invulnerables need to be the first of the list because we may truncate the list of collators if the number of
+/// collators changes, and in that case we want invulnerables to stay assigned there.
+fn insert_invulnerables<T>(assigned: &mut Vec<T>, invulnerables: &[T])
 where
     T: PartialEq + Clone,
 {
-    oo.retain(|item| !invulnerables.contains(item));
+    assigned.retain(|item| !invulnerables.contains(item));
 
-    let mut new_oo = invulnerables.to_vec();
-    new_oo.extend(oo.iter().cloned());
+    let mut new_assigned = invulnerables.to_vec();
+    new_assigned.extend(assigned.iter().cloned());
 
-    *oo = new_oo;
+    *assigned = new_assigned;
 }
 
 pub struct RotateCollatorsEveryNSessions<Period>(PhantomData<Period>);
@@ -748,9 +761,10 @@ impl<BlockNumber> GetRandomnessForNextBlock<BlockNumber> for () {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub struct ContainerChain {
     pub para_id: ParaId,
-    pub min_collators: usize,
+    pub min_collators: u32,
     // This will only be filled if all the other min have been reached
-    pub max_collators: usize,
+    pub max_collators: u32,
 }
