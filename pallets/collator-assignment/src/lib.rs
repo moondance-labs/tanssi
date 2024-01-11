@@ -334,7 +334,7 @@ pub mod pallet {
             let collators_set = BTreeSet::from_iter(&collators);
             // The rest of this function mostly treats orchestrator chain as another container chain, so move it into
             // `old_assigned.container_chains`
-            let old_orchestrator_assigned = std::mem::take(&mut old_assigned.orchestrator_chain);
+            let old_orchestrator_assigned = core::mem::take(&mut old_assigned.orchestrator_chain);
             old_assigned
                 .container_chains
                 .insert(T::SelfParaId::get(), old_orchestrator_assigned);
