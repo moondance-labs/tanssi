@@ -30,7 +30,7 @@ fn invulnerable_priority_0_collators() {
         min_collators: 2,
         max_collators: 5,
     }];
-    let mut old_assigned = BTreeMap::from_iter(vec![(1000.into(), vec![])]);
+    let mut old_assigned = BTreeMap::new();
 
     let num_invulnerables = Assignment::<Test>::prioritize_invulnerables(
         &collators,
@@ -87,7 +87,7 @@ fn invulnerable_priority_1_invulnerable_not_assigned() {
         min_collators: 2,
         max_collators: 5,
     }];
-    let mut old_assigned = BTreeMap::from_iter(vec![(1000.into(), vec![])]);
+    let mut old_assigned = BTreeMap::new();
 
     let num_invulnerables = Assignment::<Test>::prioritize_invulnerables(
         &collators,

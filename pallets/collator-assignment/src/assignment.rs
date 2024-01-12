@@ -181,11 +181,15 @@ where
     ) -> Vec<T::AccountId> {
         // TODO: clean this up, maybe change remove_invulnerables trait into something more ergonomic
         let min_orchestrator_collators = container_chains[0].min_collators as usize;
-        let invulnerables = T::RemoveInvulnerables::remove_invulnerables(
-            &mut old_assigned.get(&T::SelfParaId::get()).unwrap().clone(),
+        assert_eq!(container_chains[0].para_id, T::SelfParaId::get());
+        let invulnerables_already_assigned = T::RemoveInvulnerables::remove_invulnerables(
+            &mut old_assigned
+                .get(&T::SelfParaId::get())
+                .cloned()
+                .unwrap_or_default(),
             min_orchestrator_collators,
         );
-        let mut new_invulnerables = invulnerables;
+        let mut new_invulnerables = invulnerables_already_assigned;
         if new_invulnerables.len() >= min_orchestrator_collators {
             // We already had invulnerables, we will just move them to the front of the list if they weren't already
             return new_invulnerables;
@@ -197,11 +201,11 @@ where
             new_collators.retain(|c| !cs.contains(c));
         }
         let num_missing_invulnerables = min_orchestrator_collators - new_invulnerables.len();
-        let missing_invulnerables = T::RemoveInvulnerables::remove_invulnerables(
+        let invulnerables_not_assigned = T::RemoveInvulnerables::remove_invulnerables(
             &mut new_collators,
             num_missing_invulnerables,
         );
-        new_invulnerables.extend(missing_invulnerables);
+        new_invulnerables.extend(invulnerables_not_assigned);
 
         if new_invulnerables.len() >= min_orchestrator_collators {
             // Got invulnerables from new_collators, and maybe some were already assigned
@@ -216,20 +220,19 @@ where
             // Remove collators already selected
             !new_invulnerables_set.contains(c)
         });
-        let reassigned_invulnerables =
+        let invulnerables_assigned_elsewhere =
             T::RemoveInvulnerables::remove_invulnerables(&mut collators, num_missing_invulnerables);
 
-        if reassigned_invulnerables.is_empty() {
+        if invulnerables_assigned_elsewhere.is_empty() {
             // If at this point we still do not have enough invulnerables, it means that there are no
             // enough invulnerables, so no problem, but return the invulnerables
             return new_invulnerables;
         }
 
-        let reassigned_invulnerables_set =
-            BTreeSet::from_iter(reassigned_invulnerables.iter().cloned());
-        new_invulnerables.extend(reassigned_invulnerables);
+        new_invulnerables.extend(invulnerables_assigned_elsewhere.iter().cloned());
 
         // In this case we must delete the old assignment of the invulnerables
+        let reassigned_invulnerables_set = BTreeSet::from_iter(invulnerables_assigned_elsewhere);
         // old_assigned.remove_collators_in_set
         for (_id, cs) in old_assigned.iter_mut() {
             cs.retain(|c| !reassigned_invulnerables_set.contains(c));
@@ -258,12 +261,11 @@ where
     ///
     /// # Returns
     ///
-    /// The number of invulnerables, capped to `min_collators`.
+    /// The number of invulnerables assigned to the orchestrator chain, capped to `min_collators`.
     ///
     /// # Panics
     ///
     /// * If `container_chains` is empty, or if the first element of `container_chains` does not have `para_id == SelfParaId::get()`.
-    /// * If `old_assigned` does not have an entry for `SelfParaId::get()`.
     pub fn prioritize_invulnerables(
         collators: &[T::AccountId],
         container_chains: &[ContainerChain],
@@ -271,10 +273,13 @@ where
     ) -> usize {
         let new_invulnerables =
             Self::remove_invulnerables(collators, container_chains, old_assigned);
-        Self::insert_invulnerables(
-            old_assigned.get_mut(&T::SelfParaId::get()).unwrap(),
-            &new_invulnerables,
-        );
+
+        if !new_invulnerables.is_empty() {
+            Self::insert_invulnerables(
+                old_assigned.entry(T::SelfParaId::get()).or_default(),
+                &new_invulnerables,
+            );
+        }
 
         new_invulnerables.len()
     }
@@ -319,14 +324,13 @@ where
             container_chains
         );
 
-        // Remove para_ids not in list
+        // Remove invalid collators and para ids from `old_assigned`
         let para_ids_set = BTreeSet::from_iter(
             container_chains
                 .iter()
                 .map(|(para_id, _num_collators)| *para_id),
         );
         let collators_set = BTreeSet::from_iter(collators.iter().cloned());
-
         Self::retain_valid_old_assigned(&mut old_assigned, para_ids_set, collators_set);
 
         // Truncate num collators to required
@@ -335,17 +339,14 @@ where
             entry.truncate(*num_collators as usize);
         }
 
-        // Remove already assigned from `collators`
-        let mut new_collators = collators;
-        for (_para_id, para_id_collators) in old_assigned.iter() {
-            for collator in para_id_collators {
-                let idx = new_collators
-                    .iter()
-                    .position(|x| x == collator)
-                    .expect("duplicate collator in old_assigned");
-                new_collators.remove(idx);
-            }
-        }
+        let assigned_collators: BTreeSet<T::AccountId> = old_assigned
+            .iter()
+            .flat_map(|(_para_id, para_collators)| para_collators.iter().cloned())
+            .collect();
+        let new_collators = collators.into_iter().filter(|x| {
+            // Keep collators not already assigned
+            !assigned_collators.contains(x)
+        });
 
         let mut next_collator = new_collators.into_iter();
 
