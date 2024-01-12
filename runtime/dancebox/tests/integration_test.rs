@@ -4914,13 +4914,6 @@ fn test_asset_rate_can_be_set_from_sudo_but_not_from_signed() {
         .execute_with(|| {
             // We try to register the asset with Alice as origin
             // Any other person cannot do this
-            assert_noop!(
-                AssetRate::create(
-                    origin_of(ALICE.into()),
-                    1,
-                    1
-                ),
-                BadOrigin
-            );
+            assert_noop!(AssetRate::create(origin_of(ALICE.into()), 1, 1), BadOrigin);
         });
 }
