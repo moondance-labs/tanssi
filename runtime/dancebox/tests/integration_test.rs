@@ -49,7 +49,7 @@ use {
     sp_core::Get,
     sp_runtime::{
         traits::{BadOrigin, BlakeTwo256, OpaqueKeys},
-        DigestItem,
+        DigestItem, FixedU128,
     },
     sp_std::vec,
     staging_xcm::latest::prelude::*,
@@ -4912,8 +4912,22 @@ fn test_asset_rate_can_be_set_from_sudo_but_not_from_signed() {
         .with_config(default_config())
         .build()
         .execute_with(|| {
-            // We try to register the asset with Alice as origin
-            // Any other person cannot do this
-            assert_noop!(AssetRate::create(origin_of(ALICE.into()), 1, 1), BadOrigin);
+            // We try to set the rate from non-sudo
+            assert_noop!(
+                AssetRate::create(origin_of(ALICE.into()), Box::new(1), FixedU128::from_u32(1)),
+                BadOrigin
+            );
+
+            // We try to set the rate from sudo
+            assert_ok!(AssetRate::create(
+                root_origin(),
+                Box::new(1),
+                FixedU128::from_u32(1)
+            ));
+
+            assert_eq!(
+                pallet_asset_rate::ConversionRateToNative::<Runtime>::get(1),
+                Some(FixedU128::from_u32(1))
+            );
         });
 }
