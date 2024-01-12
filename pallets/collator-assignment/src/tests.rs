@@ -14,10 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use dp_collator_assignment::AssignedCollators;
 use {
     crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
     std::collections::BTreeMap,
 };
+
+mod assign_full;
+mod prioritize_invulnerables;
+mod select_chains;
 
 fn assigned_collators() -> BTreeMap<u64, u32> {
     let assigned_collators = CollatorContainerChain::<Test>::get();
@@ -1159,6 +1164,7 @@ fn assign_collators_remove_from_orchestator_when_all_assigned() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 2;
 
@@ -1200,5 +1206,39 @@ fn assign_collators_remove_from_orchestator_when_all_assigned() {
         let assignment = BTreeMap::from_iter(vec![(3, 999), (4, 999)]);
 
         assert_eq!(assigned_collators(), assignment,);
+    });
+}
+
+#[test]
+fn collator_assignment_includes_empty_chains() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 2;
+
+            m.collators = vec![1, 2];
+            m.container_chains = vec![2000, 2001, 2002];
+            m.parathreads = vec![3000, 3001, 3002]
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        let assigned_collators = CollatorContainerChain::<Test>::get();
+        let expected = AssignedCollators {
+            orchestrator_chain: vec![1, 2],
+            container_chains: BTreeMap::from_iter(vec![
+                (2000.into(), vec![]),
+                (2001.into(), vec![]),
+                (2002.into(), vec![]),
+                (3000.into(), vec![]),
+                (3001.into(), vec![]),
+                (3002.into(), vec![]),
+            ]),
+        };
+        assert_eq!(assigned_collators, expected);
     });
 }

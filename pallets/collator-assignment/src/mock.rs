@@ -127,7 +127,7 @@ impl mock_data::Config for Test {}
 pub struct HostConfigurationGetter;
 
 parameter_types! {
-    pub const ParachainId: ParaId = ParaId::new(200);
+    pub const ParachainId: ParaId = ParaId::new(1000);
 }
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
