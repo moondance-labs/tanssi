@@ -123,62 +123,6 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
-        identity: {
-            /** A name was cleared, and the given balance returned. */
-            IdentityCleared: AugmentedEvent<
-                ApiType,
-                [who: AccountId32, deposit: u128],
-                { who: AccountId32; deposit: u128 }
-            >;
-            /** A name was removed and the given balance slashed. */
-            IdentityKilled: AugmentedEvent<
-                ApiType,
-                [who: AccountId32, deposit: u128],
-                { who: AccountId32; deposit: u128 }
-            >;
-            /** A name was set or reset (which will remove all judgements). */
-            IdentitySet: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
-            /** A judgement was given by a registrar. */
-            JudgementGiven: AugmentedEvent<
-                ApiType,
-                [target: AccountId32, registrarIndex: u32],
-                { target: AccountId32; registrarIndex: u32 }
-            >;
-            /** A judgement was asked from a registrar. */
-            JudgementRequested: AugmentedEvent<
-                ApiType,
-                [who: AccountId32, registrarIndex: u32],
-                { who: AccountId32; registrarIndex: u32 }
-            >;
-            /** A judgement request was retracted. */
-            JudgementUnrequested: AugmentedEvent<
-                ApiType,
-                [who: AccountId32, registrarIndex: u32],
-                { who: AccountId32; registrarIndex: u32 }
-            >;
-            /** A registrar was added. */
-            RegistrarAdded: AugmentedEvent<ApiType, [registrarIndex: u32], { registrarIndex: u32 }>;
-            /** A sub-identity was added to an identity and the deposit paid. */
-            SubIdentityAdded: AugmentedEvent<
-                ApiType,
-                [sub: AccountId32, main: AccountId32, deposit: u128],
-                { sub: AccountId32; main: AccountId32; deposit: u128 }
-            >;
-            /** A sub-identity was removed from an identity and the deposit freed. */
-            SubIdentityRemoved: AugmentedEvent<
-                ApiType,
-                [sub: AccountId32, main: AccountId32, deposit: u128],
-                { sub: AccountId32; main: AccountId32; deposit: u128 }
-            >;
-            /** A sub-identity was cleared, and the given deposit repatriated from the main identity account to the sub-identity account. */
-            SubIdentityRevoked: AugmentedEvent<
-                ApiType,
-                [sub: AccountId32, main: AccountId32, deposit: u128],
-                { sub: AccountId32; main: AccountId32; deposit: u128 }
-            >;
-            /** Generic event */
-            [key: string]: AugmentedEvent<ApiType>;
-        };
         inflationRewards: {
             /** Rewarding container author */
             RewardedContainer: AugmentedEvent<

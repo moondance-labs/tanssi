@@ -72,15 +72,6 @@ import type {
     PalletDataPreserversCall,
     PalletDataPreserversError,
     PalletDataPreserversEvent,
-    PalletIdentityBitFlags,
-    PalletIdentityCall,
-    PalletIdentityError,
-    PalletIdentityEvent,
-    PalletIdentityJudgement,
-    PalletIdentityRegistrarInfo,
-    PalletIdentityRegistration,
-    PalletIdentitySimpleIdentityField,
-    PalletIdentitySimpleIdentityInfo,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -223,15 +214,6 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversCall: PalletDataPreserversCall;
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
-        PalletIdentityBitFlags: PalletIdentityBitFlags;
-        PalletIdentityCall: PalletIdentityCall;
-        PalletIdentityError: PalletIdentityError;
-        PalletIdentityEvent: PalletIdentityEvent;
-        PalletIdentityJudgement: PalletIdentityJudgement;
-        PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
-        PalletIdentityRegistration: PalletIdentityRegistration;
-        PalletIdentitySimpleIdentityField: PalletIdentitySimpleIdentityField;
-        PalletIdentitySimpleIdentityInfo: PalletIdentitySimpleIdentityInfo;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
