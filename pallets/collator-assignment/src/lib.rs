@@ -43,9 +43,10 @@
 
 pub use pallet::*;
 use {
-    crate::assignment::Assignment,
-    crate::assignment::ContainerChain,
-    crate::weights::WeightInfo,
+    crate::{
+        assignment::{Assignment, ContainerChain},
+        weights::WeightInfo,
+    },
     dp_collator_assignment::AssignedCollators,
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::BlockNumberFor,

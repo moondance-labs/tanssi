@@ -1,3 +1,19 @@
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 use {
     crate::{assignment::Assignment, tests::Test},
     sp_std::collections::btree_map::BTreeMap,
@@ -5,6 +21,7 @@ use {
 
 #[test]
 fn assign_full_old_assigned_priority() {
+    // Collators in old_assigned will be selected before other collators
     let collators = vec![1, 2, 3, 4, 5];
     let container_chains = vec![(1000.into(), 5)];
     let old_assigned = BTreeMap::from_iter(vec![(1000.into(), vec![3, 4])]);
@@ -16,6 +33,7 @@ fn assign_full_old_assigned_priority() {
 
 #[test]
 fn assign_full_invalid_old_assigned_collators_removed() {
+    // If the collators in old_assigned are no longer collators, they are not assigned
     let collators = vec![1, 2, 3, 4, 5];
     let container_chains = vec![(1000.into(), 5)];
     let old_assigned = BTreeMap::from_iter(vec![(1000.into(), vec![20, 21])]);
