@@ -55,10 +55,7 @@ use {
         traits::{AtLeast32BitUnsigned, One, Zero},
         Saturating,
     },
-    sp_std::{
-        cmp, collections::btree_map::BTreeMap, collections::btree_set::BTreeSet, fmt::Debug,
-        prelude::*, vec,
-    },
+    sp_std::{fmt::Debug, prelude::*, vec},
     tp_traits::{
         GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
         RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,

@@ -1,6 +1,7 @@
-use crate::assignment::Assignment;
-use crate::assignment::ContainerChain;
-use crate::tests::Test;
+use crate::{
+    assignment::{Assignment, ContainerChain},
+    tests::Test,
+};
 
 #[test]
 fn select_chains_not_enough_to_reach_min_container() {

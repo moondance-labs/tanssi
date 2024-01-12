@@ -181,7 +181,7 @@ where
         );
         new_invulnerables.extend(missing_invulnerables);
 
-        if new_invulnerables.len() >= num_missing_invulnerables {
+        if new_invulnerables.len() >= min_orchestrator_collators {
             // Got invulnerables from new_collators, and maybe some were already assigned
             return new_invulnerables;
         }
@@ -189,7 +189,7 @@ where
         // Still not enough invulnerables, try to get an invulnerable that is currently assigned somewhere else
         let num_missing_invulnerables = min_orchestrator_collators - new_invulnerables.len();
         let mut collators = collators.to_vec();
-        let mut new_invulnerables_set = BTreeSet::from_iter(new_invulnerables.iter().cloned());
+        let new_invulnerables_set = BTreeSet::from_iter(new_invulnerables.iter().cloned());
         collators.retain(|c| {
             // Remove collators already selected
             !new_invulnerables_set.contains(c)
@@ -229,9 +229,19 @@ where
     /// Mutates `old_assigned` because invulnerables will be inserted there, and if invulnerables were already
     /// assigned to some other chain, they will be removed from that other chain as well.
     ///
+    /// # Params
+    ///
+    /// * `old_assigned` must be a subset of `collators`
+    /// * `old_assigned` must not have duplicate collators.
+    ///
     /// # Returns
     ///
     /// The number of invulnerables, capped to `min_collators`.
+    ///
+    /// # Panics
+    ///
+    /// * If `container_chains` is empty, or if the first element of `container_chains` does not have `para_id == SelfParaId::get()`.
+    /// * If `old_assigned` does not have an entry for `SelfParaId::get()`.
     pub fn prioritize_invulnerables(
         collators: &[T::AccountId],
         container_chains: &[ContainerChain],
