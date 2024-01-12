@@ -69,7 +69,7 @@ describeSuite({
                                     X3: [{ Parachain: 1000 }, { PalletInstance: 50 }, { GeneralIndex: 0n }],
                                 },
                             },
-                            fungible: 10000000000000n,
+                            fungible: transferredBalance,
                         },
                     ],
                     weight_limit: {
