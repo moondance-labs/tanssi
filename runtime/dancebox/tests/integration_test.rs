@@ -4931,3 +4931,35 @@ fn test_asset_rate_can_be_set_from_sudo_but_not_from_signed() {
             );
         });
 }
+
+#[test]
+fn test_division_by_0() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // We try to set 0 rate to make sure we dont overflow
+            assert_ok!(AssetRate::create(
+                root_origin(),
+                Box::new(1),
+                FixedU128::from_u32(0)
+            ));
+
+            use frame_support::traits::tokens::ConversionToAssetBalance;
+            let balance = dancebox_runtime::xcm_config::CustomConverter::to_asset_balance(1, 1);
+            assert!(balance.is_err());
+        });
+}

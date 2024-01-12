@@ -334,7 +334,7 @@ impl pallet_asset_rate::Config for Runtime {
 }
 
 use crate::ForeignAssets;
-use sp_runtime::FixedPointNumber;
+use sp_runtime::{traits::CheckedDiv, FixedPointNumber};
 use staging_xcm_builder::FungiblesAdapter;
 use staging_xcm_builder::NoChecking;
 use staging_xcm_executor::traits::JustTry;
@@ -373,7 +373,8 @@ impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, B
     fn to_asset_balance(balance: Balance, asset_id: AssetId) -> Result<Balance, Self::Error> {
         let rate = pallet_asset_rate::ConversionRateToNative::<Runtime>::get(asset_id).ok_or(())?;
         Ok(sp_runtime::FixedU128::from_u32(1)
-            .div(rate)
+            .checked_div(&rate)
+            .ok_or(())?
             .saturating_mul_int(balance))
     }
 }
