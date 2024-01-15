@@ -343,12 +343,10 @@ where
             .iter()
             .flat_map(|(_para_id, para_collators)| para_collators.iter().cloned())
             .collect();
-        let new_collators = collators.into_iter().filter(|x| {
+        let mut new_collators = collators.into_iter().filter(|x| {
             // Keep collators not already assigned
             !assigned_collators.contains(x)
         });
-
-        let mut next_collator = new_collators.into_iter();
 
         // Fill missing collators
         for (para_id, num_collators) in container_chains.iter() {
@@ -356,7 +354,7 @@ where
 
             while cs.len() < *num_collators as usize {
                 // unwrap is safe because we checked that `collators.len() >= required_collators`
-                let nc = next_collator.next().unwrap();
+                let nc = new_collators.next().unwrap();
                 cs.push(nc);
             }
         }

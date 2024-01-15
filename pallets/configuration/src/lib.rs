@@ -479,7 +479,10 @@ pub mod pallet {
         }
 
         fn collators_per_parathread(_session_index: T::SessionIndex) -> u32 {
-            // FIXME(parathreads)
+            // FIXME(parathreads): add this to config struct
+            // TODO: for now we only support 1 collator per parathread because using Aura for consensus conflicts with
+            // the idea of being able to create blocks every n slots: if there are 2 collators and we create blocks
+            // every 2 slots, 1 collator will create all the blocks.
             1
         }
 
