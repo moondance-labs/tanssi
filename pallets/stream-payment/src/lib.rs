@@ -16,17 +16,17 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-pub mod as_fungibles;
+
+
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 use {
     frame_support::{
         pallet,
         pallet_prelude::*,
         storage::types::{StorageDoubleMap, StorageMap},
-        traits::{
-            fungibles::{self, Mutate as _, MutateFreeze as _},
-            tokens::{Balance, Preservation},
-        },
+        traits::tokens::Balance,
         Blake2_128Concat,
     },
     frame_system::pallet_prelude::*,
@@ -36,11 +36,32 @@ use {
     sp_std::{fmt::Debug, marker::PhantomData},
 };
 
+pub use pallet::*;
+
 /// Type able to provide the current time for given unit.
 /// For each unit the returned number should monotonically increase and not
 /// overflow.
 pub trait TimeProvider<Unit, Number> {
     fn now(unit: &Unit) -> Option<Number>;
+}
+
+/// Interactions the pallet needs with assets.
+pub trait Assets<AccountId, AssetId, Balance> {
+    /// Transfer assets deposited by an account to another account.
+    /// Those assets should not be considered deposited in the target account.
+    fn transfer_deposit(
+        asset_id: AssetId,
+        from: &AccountId,
+        to: &AccountId,
+        amount: Balance,
+    ) -> DispatchResult;
+
+    /// Increase the deposit for an account and asset id. Should fail if account doesn't have
+    /// enough of that asset. Funds should be safe and not slashable.
+    fn increase_deposit(asset_id: AssetId, account: &AccountId, amount: Balance) -> DispatchResult;
+
+    /// Decrease the deposit for an account and asset id. Should fail on underflow.
+    fn decrease_deposit(asset_id: AssetId, account: &AccountId, amount: Balance) -> DispatchResult;
 }
 
 #[pallet(dev_mode)]
@@ -67,30 +88,27 @@ pub mod pallet {
             + TypeInfo
             + MaxEncodedLen;
 
-        /// Represents which units of time can be used. Designed to be an enum
-        /// with a variant for each kind of time source/scale supported.
-        type TimeUnit: Debug + Clone + FullCodec + TypeInfo + MaxEncodedLen + Eq;
-
         /// The balance type, which is also the type representing time (as this
         /// pallet will do math with both time and balances to compute how
         /// much should be paid).
         type Balance: Balance;
 
-        /// LockId type used by `Currencies`.
-        type LockId: From<LockId>;
+        /// Type representing an asset id, a identifier allowing distinguishing assets.
+        type AssetId: Debug + Clone + FullCodec + TypeInfo + MaxEncodedLen + PartialEq + Eq;
 
-        /// The currencies type, supporting multiple currencies.
-        type Currencies: fungibles::Inspect<Self::AccountId, Balance = Self::Balance>
-            + fungibles::InspectFreeze<Self::AccountId, Id = Self::LockId>
-            + fungibles::Mutate<Self::AccountId>
-            + fungibles::MutateFreeze<Self::AccountId>;
+        /// Provide interaction with assets.
+        type Assets: Assets<Self::AccountId, Self::AssetId, Self::Balance>;
+
+        /// Represents which units of time can be used. Designed to be an enum
+        /// with a variant for each kind of time source/scale supported.
+        type TimeUnit: Debug + Clone + FullCodec + TypeInfo + MaxEncodedLen + Eq;
 
         /// Provide the current time in given unit.
         type TimeProvider: TimeProvider<Self::TimeUnit, Self::Balance>;
     }
 
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-    type AssetIdOf<T> = <<T as Config>::Currencies as fungibles::Inspect<AccountIdOf<T>>>::AssetId;
+    type AssetIdOf<T> = <T as Config>::AssetId;
 
     /// A stream payment from source to target.
     /// Stores the last time the stream was updated, which allows to compute
@@ -98,13 +116,13 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
     pub struct Stream<AccountId, Unit, AssetId, Balance> {
-        source: AccountId,
-        target: AccountId,
-        time_unit: Unit,
-        asset_id: AssetId,
-        rate_per_time_unit: Balance,
-        deposit: Balance,
-        last_time_updated: Balance,
+        pub source: AccountId,
+        pub target: AccountId,
+        pub time_unit: Unit,
+        pub asset_id: AssetId,
+        pub rate_per_time_unit: Balance,
+        pub deposit: Balance,
+        pub last_time_updated: Balance,
     }
 
     pub type StreamOf<T> =
@@ -190,8 +208,9 @@ pub mod pallet {
         },
     }
 
+    /// Freeze reason to use if needed.
     #[pallet::composite_enum]
-    pub enum LockId {
+    pub enum FreezeReason {
         StreamPayment,
     }
 
@@ -217,12 +236,7 @@ pub mod pallet {
             NextStreamId::<T>::set(next_stream_id);
 
             // Freeze initial deposit.
-            T::Currencies::increase_frozen(
-                asset_id.clone(),
-                &LockId::StreamPayment.into(),
-                &origin,
-                initial_deposit,
-            )?;
+            T::Assets::increase_deposit(asset_id.clone(), &origin, initial_deposit)?;
 
             // Create stream data.
             let now = T::TimeProvider::now(&time_unit).ok_or(Error::<T>::CantFetchCurrentTime)?;
@@ -265,12 +279,7 @@ pub mod pallet {
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
             // Unfreeze funds left in the stream.
-            T::Currencies::decrease_frozen(
-                stream.asset_id.clone(),
-                &LockId::StreamPayment.into(),
-                &stream.source,
-                stream.deposit,
-            )?;
+            T::Assets::decrease_deposit(stream.asset_id.clone(), &stream.source, stream.deposit)?;
 
             // Remove stream from storage.
             Streams::<T>::remove(stream_id);
@@ -318,12 +327,7 @@ pub mod pallet {
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
             // Increase deposit.
-            T::Currencies::increase_frozen(
-                stream.asset_id.clone(),
-                &LockId::StreamPayment.into(),
-                &origin,
-                new_deposit,
-            )?;
+            T::Assets::increase_deposit(stream.asset_id.clone(), &origin, new_deposit)?;
             stream.deposit = stream
                 .deposit
                 .checked_add(&new_deposit)
@@ -399,6 +403,10 @@ pub mod pallet {
             let now =
                 T::TimeProvider::now(&stream.time_unit).ok_or(Error::<T>::CantFetchCurrentTime)?;
 
+            if now == stream.last_time_updated {
+                return Ok(().into());
+            }
+
             // If deposit is zero the stream is fully drained and there is nothing to transfer.
             if stream.deposit.is_zero() {
                 stream.last_time_updated = now;
@@ -427,18 +435,11 @@ pub mod pallet {
             };
 
             // Transfer from the source to target.
-            T::Currencies::decrease_frozen(
-                stream.asset_id.clone(),
-                &LockId::StreamPayment.into(),
-                &stream.source,
-                payment,
-            )?;
-            T::Currencies::transfer(
+            T::Assets::transfer_deposit(
                 stream.asset_id.clone(),
                 &stream.source,
                 &stream.target,
                 payment,
-                Preservation::Preserve,
             )?;
 
             // Update stream info.

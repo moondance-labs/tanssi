@@ -32,3 +32,24 @@ num-traits = { workspace = true }
 pallet-balances = { workspace = true, features = [ "std" ] }
 similar-asserts = { workspace = true }
 sp-io = { workspace = true, features = [ "std" ] }
+
+[features]
+default = [ "std" ]
+std = [
+	"dp-core/std",
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"log/std",
+	"pallet-balances/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"serde",
+	"serde?/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-std/std",
+	"tp-maths/std",
+	"tp-traits/std",
+]
