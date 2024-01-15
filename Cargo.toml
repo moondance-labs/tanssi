@@ -167,6 +167,7 @@ try-runtime-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", bran
 # Polkadot (wasm)
 pallet-xcm = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-xcm-benchmarks = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
+polkadot-node-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 polkadot-parachain-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 polkadot-runtime-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 polkadot-runtime-parachains = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
@@ -198,6 +199,7 @@ cumulus-client-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", b
 cumulus-client-collator = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 cumulus-client-consensus-aura = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 cumulus-client-consensus-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
+cumulus-client-consensus-proposer = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 cumulus-client-network = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 cumulus-client-pov-recovery = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 cumulus-client-service = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }

@@ -16,6 +16,8 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use sc_basic_authorship::ProposerFactory;
+
 #[allow(deprecated)]
 use {
     crate::{
@@ -23,11 +25,13 @@ use {
         container_chain_spawner::{CcSpawnMsg, ContainerChainSpawner},
     },
     cumulus_client_cli::CollatorOptions,
+    cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_aura::SlotProportion,
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
         ParachainConsensus,
     },
+    cumulus_client_consensus_proposer::Proposer,
     cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
     cumulus_client_service::prepare_node_config,
     cumulus_primitives_core::{
@@ -37,8 +41,8 @@ use {
     cumulus_primitives_parachain_inherent::{
         MockValidationDataInherentDataProvider, MockXcmConfig,
     },
-    cumulus_relay_chain_interface::RelayChainInterface,
-    dancebox_runtime::{opaque::Block, RuntimeApi},
+    cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
+    dancebox_runtime::{opaque::{Block, Hash}, RuntimeApi},
     dc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
@@ -634,6 +638,190 @@ fn build_manual_seal_import_queue(
         &task_manager.spawn_essential_handle(),
         config.prometheus_registry(),
     ))
+}
+
+fn start_consensus_container(
+    client: Arc<ParachainClient>,
+    orchestrator_client: Arc<ParachainClient>,
+    block_import: ParachainBlockImport,
+    prometheus_registry: Option<&Registry>,
+    telemetry: Option<TelemetryHandle>,
+    task_manager: &TaskManager,
+    relay_chain_interface: Arc<dyn RelayChainInterface>,
+    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
+    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
+    sync_oracle: Arc<SyncingService<Block>>,
+    keystore: KeystorePtr,
+    force_authoring: bool,
+    relay_chain_slot_duration: Duration,
+    para_id: ParaId,
+    orchestrator_para_id: ParaId,
+    collator_key: CollatorPair,
+	overseer_handle: OverseerHandle,
+	announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
+) -> Result<(), sc_service::Error> {
+    use tc_consensus::collators::basic::{
+        self as basic_tanssi_aura, Params as BasicTanssiAuraParams
+    };
+    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)?;
+
+    let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
+        task_manager.spawn_handle(),
+        client.clone(),
+        transaction_pool,
+        prometheus_registry,
+        telemetry.clone(),
+    );
+
+    let proposer = Proposer::new(proposer_factory);
+
+	let collator_service = CollatorService::new(
+		client.clone(),
+		Arc::new(task_manager.spawn_handle()),
+		announce_block,
+		client.clone(),
+	);
+
+    let params = BasicTanssiAuraParams {
+        create_inherent_data_providers: move |_, ()| async move { Ok(()) },
+        get_authorities_from_orchestrator: || -> Result<(), _> { Ok::<(), OrchestratorChainError>(()) },
+		block_import,
+		para_client: client,
+		relay_client: relay_chain_interface,
+		sync_oracle,
+		keystore,
+		collator_key,
+		para_id,
+		overseer_handle,
+		slot_duration,
+		relay_chain_slot_duration,
+		proposer,
+		collator_service,
+		// Very limited proposal time.
+		authoring_duration: Duration::from_millis(500),
+		collation_request_receiver: None,
+    };
+
+    let fut =
+    basic_tanssi_aura::run::<Block, _, _, _, _, _, _, _, _,_>(
+        params,
+    );
+    
+    task_manager.spawn_essential_handle().spawn("tanssi-aura", None, fut);
+
+    Ok(())
+
+    // old
+   /*  let relay_chain_interace_for_orch = relay_chain_interface.clone();
+    let orchestrator_client_for_cidp = orchestrator_client;
+
+    let params = tc_consensus::BuildOrchestratorAuraConsensusParams {
+        proposer_factory,
+        create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
+            let relay_chain_interface = relay_chain_interface.clone();
+            let orchestrator_chain_interface = orchestrator_chain_interface.clone();
+
+            async move {
+                let parachain_inherent =
+                    cumulus_primitives_parachain_inherent::ParachainInherentData::create_at(
+                        relay_parent,
+                        &relay_chain_interface,
+                        &validation_data,
+                        para_id,
+                    )
+                    .await;
+
+                let authorities_noting_inherent =
+                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at(
+                        relay_parent,
+                        &relay_chain_interface,
+                        &orchestrator_chain_interface,
+                        orchestrator_para_id,
+                    )
+                    .await;
+
+                let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+
+                let slot =
+						sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+							*timestamp,
+							slot_duration,
+						);
+
+                let parachain_inherent = parachain_inherent.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to create parachain inherent",
+                    )
+                })?;
+
+                let authorities_noting_inherent = authorities_noting_inherent.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to create authoritiesnoting inherent",
+                    )
+                })?;
+
+                Ok((
+                    slot,
+                    timestamp,
+                    parachain_inherent,
+                    authorities_noting_inherent,
+                ))
+            }
+        },
+        get_authorities_from_orchestrator: move |_block_hash, (relay_parent, _validation_data)| {
+            let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
+            let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
+
+            async move {
+                let latest_header =
+                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+                        relay_parent,
+                        &relay_chain_interace_for_orch,
+                        orchestrator_para_id,
+                    )
+                    .await;
+
+                let latest_header = latest_header.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to fetch latest header",
+                    )
+                })?;
+
+                let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                    orchestrator_client_for_cidp.as_ref(),
+                    &latest_header.hash(),
+                    para_id,
+                );
+
+                let aux_data = authorities.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to fetch authorities with error",
+                    )
+                })?;
+
+                log::info!(
+                    "Authorities {:?} found for header {:?}",
+                    aux_data,
+                    latest_header
+                );
+
+                Ok(aux_data)
+            }
+        },
+        block_import,
+        para_client: client,
+        backoff_authoring_blocks: Option::<()>::None,
+        sync_oracle,
+        keystore,
+        force_authoring,
+        slot_duration,
+        // We got around 500ms for proposing
+        block_proposal_slot_portion: SlotProportion::new(1f32 / 24f32),
+        // And a maximum of 750ms if slots are skipped
+        max_block_proposal_slot_portion: Some(SlotProportion::new(1f32 / 16f32)),
+        telemetry,
+    };
+ */
 }
 
 fn build_consensus_container(
