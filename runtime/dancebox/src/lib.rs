@@ -189,7 +189,10 @@ impl WeightToFeePolynomial for WeightToFee {
 pub mod opaque {
     use {
         super::*,
-        sp_runtime::{generic, traits::{BlakeTwo256, Hash as HashT}},
+        sp_runtime::{
+            generic,
+            traits::{BlakeTwo256, Hash as HashT},
+        },
     };
 
     pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
@@ -200,7 +203,7 @@ pub mod opaque {
     /// Opaque block identifier type.
     pub type BlockId = generic::BlockId<Block>;
     /// Opaque block hash type.
-	pub type Hash = <BlakeTwo256 as HashT>::Output;
+    pub type Hash = <BlakeTwo256 as HashT>::Output;
 }
 
 impl_opaque_keys! {

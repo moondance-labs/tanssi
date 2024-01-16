@@ -436,6 +436,7 @@ where
         }
     }
 
+    // TODO: Where to put these info in the refactor?
     fn pre_digest_data(&self, slot: Slot, claim: &Self::Claim) -> Vec<sp_runtime::DigestItem> {
         vec![
             <DigestItem as CompatibleDigestItem<P::Signature>>::aura_pre_digest(slot),
