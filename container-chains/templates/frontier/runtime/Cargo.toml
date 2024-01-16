@@ -217,6 +217,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
+	"tp-consensus/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 ]
 

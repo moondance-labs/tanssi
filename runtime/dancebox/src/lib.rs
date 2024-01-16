@@ -374,6 +374,12 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
 
         expected_author == author
     }
+    #[cfg(feature = "runtime-benchmarks")]
+	fn get_authors(_slot: &u32) -> Vec<NimbusId> {
+		AuthorityAssignment::collator_container_chain(Session::current_index())
+            .expect("authorities should be set")
+            .orchestrator_chain
+	}
 }
 
 impl pallet_author_inherent::Config for Runtime {
@@ -1423,6 +1429,7 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [pallet_author_inherent, AuthorInherent]
         [pallet_author_noting, AuthorNoting]
         [pallet_collator_assignment, CollatorAssignment]
         [pallet_configuration, Configuration]

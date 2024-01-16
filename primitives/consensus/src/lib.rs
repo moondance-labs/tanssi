@@ -22,9 +22,11 @@ mod mock;
 use {
     cumulus_primitives_core::ParaId,
     frame_support::traits::Get,
+    nimbus_primitives::NimbusSignature,
     parity_scale_codec::Codec,
-    sp_runtime::traits::Zero,
+    sp_runtime::{DigestItem, traits::Zero},
     sp_std::{marker::PhantomData, vec::Vec},
+    sp_consensus_aura::digests::CompatibleDigestItem
 };
 
 sp_api::decl_runtime_apis! {
@@ -74,7 +76,7 @@ impl nimbus_primitives::AccountLookup<nimbus_primitives::NimbusId> for NimbusLoo
 pub struct AuraDigestSlotBeacon<ContainerRuntime>(PhantomData<ContainerRuntime>);
 impl<ContainerRuntime> nimbus_primitives::SlotBeacon for AuraDigestSlotBeacon<ContainerRuntime>
 where
-    ContainerRuntime: frame_system::Config,
+    ContainerRuntime: frame_system::Config
 {
     fn slot() -> u32 {
         use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
@@ -89,6 +91,12 @@ where
         let slot: u64 = slot.into();
         slot as u32
     }
+    #[cfg(feature = "runtime-benchmarks")]
+	fn set_slot(slot: u32) {
+        let aura_digest_item =
+        <DigestItem as CompatibleDigestItem<NimbusSignature>>::aura_pre_digest((slot as u64).into());
+        frame_system::Pallet::<ContainerRuntime>::deposit_log(aura_digest_item);
+	}
 }
 
 #[cfg(test)]
