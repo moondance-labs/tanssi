@@ -177,6 +177,7 @@ std = [
 	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
+	"pallet-relay-storage-roots/std",
 	"pallet-root-testing/std",
 	"pallet-services-payment/std",
 	"pallet-session/std",
@@ -226,7 +227,6 @@ std = [
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
 	"xcm-primitives/std",
-	"pallet-relay-storage-roots/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -260,6 +260,7 @@ runtime-benchmarks = [
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
+	"pallet-relay-storage-roots/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
@@ -278,7 +279,6 @@ runtime-benchmarks = [
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
-	"pallet-relay-storage-roots/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -312,6 +312,7 @@ try-runtime = [
 	"pallet-pooled-staking/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",
+	"pallet-relay-storage-roots/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
@@ -328,7 +329,6 @@ try-runtime = [
 	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
 	"westend-runtime/try-runtime",
-	"pallet-relay-storage-roots/try-runtime"
 ]
 
 fast-runtime = []

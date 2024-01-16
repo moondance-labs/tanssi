@@ -3975,6 +3975,7 @@ dependencies = [
  "pallet-proxy",
  "pallet-registrar",
  "pallet-registrar-runtime-api",
+ "pallet-relay-storage-roots",
  "pallet-root-testing",
  "pallet-services-payment",
  "pallet-session",
