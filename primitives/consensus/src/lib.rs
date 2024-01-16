@@ -81,12 +81,13 @@ where
     fn slot() -> u32 {
         use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
 
-        let digests = frame_system::Pallet::<ContainerRuntime>::digest();
+        let slot_from_digest = frame_system::Pallet::<ContainerRuntime>::digest()
+            .convert_first(|item: &DigestItem| item.pre_runtime_try_to::<Slot>(&AURA_ENGINE_ID));
 
-        let slot = digests
-            .convert_first(|item| item.pre_runtime_try_to::<Slot>(&AURA_ENGINE_ID))
-            //.unwrap_or_default();
-            .expect("slot digest should exist");
+        #[cfg(not(feature = "runtime-benchmarks"))]
+        let slot = slot_from_digest.expect("slot digest should exist");
+        #[cfg(feature = "runtime-benchmarks")]
+        let slot = slot_from_digest.unwrap_or_default();
 
         let slot: u64 = slot.into();
         slot as u32
