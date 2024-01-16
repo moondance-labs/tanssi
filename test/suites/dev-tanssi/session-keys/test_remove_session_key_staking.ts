@@ -6,7 +6,7 @@ import { jumpSessions } from "../../../util/block";
 import { DANCE, STAKING_ACCOUNT } from "util/constants";
 
 describeSuite({
-    id: "DT0304",
+    id: "DT0202",
     title: "Removing session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

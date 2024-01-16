@@ -20,6 +20,7 @@ async function main() {
 
     // Copy empty files for CommonJS modules
     copyFileSync("./src/index.cjs", `${buildPath}/index.cjs`);
+    copyFileSync("./src/index.cjs", `${buildPath}/flashbox/index.cjs`);
     console.log(`Done postbuild`);
 }
 

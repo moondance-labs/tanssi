@@ -49,9 +49,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
-            ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse, InsideBoth,
-            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
-            ValidatorRegistration,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
+            InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
+            OnRuntimeUpgrade, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -80,6 +80,7 @@ use {
     scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
+    sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
@@ -98,7 +99,7 @@ pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
-const LOG_TARGET: &str = "runtime::moonbeam";
+const LOG_TARGET: &str = "runtime::tanssi";
 
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
@@ -426,6 +427,16 @@ parameter_types! {
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
 }
 
+pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
+pub const UNINCLUDED_SEGMENT_CAPACITY: u32 = 2;
+pub const BLOCK_PROCESSING_VELOCITY: u32 = 1;
+
+type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensusHook<
+    Runtime,
+    BLOCK_PROCESSING_VELOCITY,
+    UNINCLUDED_SEGMENT_CAPACITY,
+>;
+
 impl cumulus_pallet_parachain_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
@@ -436,6 +447,20 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberStrictlyIncreases;
+    type ConsensusHook = ConsensusHook;
+}
+pub struct ParaSlotProvider;
+impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
+    fn get() -> (Slot, SlotDuration) {
+        let slot = <Runtime as pallet_author_inherent::Config>::SlotBeacon::slot() as u64;
+        (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
+    }
+}
+
+impl pallet_async_backing::Config for Runtime {
+    type AllowMultipleBlocksPerSlot = ConstBool<false>;
+    type GetAndVerifySlot =
+        pallet_async_backing::ParaSlot<RELAY_CHAIN_SLOT_DURATION_MILLIS, ParaSlotProvider>;
 }
 
 /// Only callable after `set_validation_data` is called which forms this proof the same way
@@ -1322,6 +1347,35 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    // 1 entry, storing 258 bytes on-chain
+    pub const BasicDeposit: Balance = currency::deposit(1, 258);
+    // 1 entry, storing 53 bytes on-chain
+    pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
+    // Additional fields add 0 entries, storing 66 bytes on-chain
+    pub const FieldDeposit: Balance = currency::deposit(0, 66);
+    pub const MaxSubAccounts: u32 = 100;
+    pub const MaxAdditionalFields: u32 = 100;
+    pub const MaxRegistrars: u32 = 20;
+}
+
+impl pallet_identity::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type BasicDeposit = BasicDeposit;
+    type FieldDeposit = FieldDeposit;
+    type SubAccountDeposit = SubAccountDeposit;
+    type MaxSubAccounts = MaxSubAccounts;
+    type MaxAdditionalFields = MaxAdditionalFields;
+    type MaxRegistrars = MaxRegistrars;
+    type IdentityInformation = pallet_identity::simple::IdentityInfo<Self::MaxAdditionalFields>;
+    // Slashed balances are burnt
+    type Slashed = ();
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1341,6 +1395,9 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
         TransactionPayment: pallet_transaction_payment = 11,
+
+        // Other utilities
+        Identity: pallet_identity = 15,
 
         // ContainerChain management. It should go before Session for Genesis
         Registrar: pallet_registrar = 20,
@@ -1371,6 +1428,7 @@ construct_runtime!(
         RelayStorageRoots: pallet_relay_storage_roots = 60,
 
         RootTesting: pallet_root_testing = 100,
+        AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
     }
 );
 
@@ -1826,6 +1884,9 @@ impl_runtime_apis! {
 
 struct CheckInherents;
 
+// TODO: this should be removed but currently if we remove it the relay does not check anything
+// related to other inherents that are not parachain-system
+#[allow(deprecated)]
 impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
     fn check_inherents(
         block: &Block,
@@ -1849,8 +1910,8 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
 
 cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
-    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>
     CheckInherents = CheckInherents,
+    BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
 }
 
 #[macro_export]

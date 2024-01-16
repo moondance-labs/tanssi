@@ -38,6 +38,7 @@ pallet-services-payment = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
+pallet-async-backing = { workspace = true }
 pallet-author-inherent = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
@@ -49,6 +50,7 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-balances = { workspace = true }
+pallet-identity = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -61,6 +63,7 @@ sp-api = { workspace = true }
 sp-application-crypto = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true }
 sp-debug-derive = { workspace = true }
 sp-inherents = { workspace = true }
@@ -151,6 +154,7 @@ std = [
 	"frame-try-runtime/std",
 	"log/std",
 	"nimbus-primitives/std",
+	"pallet-async-backing/std",
 	"pallet-author-inherent/std",
 	"pallet-author-noting-runtime-api/std",
 	"pallet-author-noting/std",
@@ -161,6 +165,7 @@ std = [
 	"pallet-collator-assignment/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
+	"pallet-identity/std",
 	"pallet-im-online/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
@@ -199,6 +204,7 @@ std = [
 	"sp-consensus-aura/std",
 	"sp-consensus-babe/std",
 	"sp-consensus-beefy/std",
+	"sp-consensus-slots/std",
 	"sp-core/std",
 	"sp-debug-derive/std",
 	"sp-inherents/std",
@@ -245,6 +251,7 @@ runtime-benchmarks = [
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
+	"pallet-identity/runtime-benchmarks",
 	"pallet-im-online/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
@@ -294,6 +301,7 @@ try-runtime = [
 	"pallet-collator-assignment/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
+	"pallet-identity/try-runtime",
 	"pallet-im-online/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",

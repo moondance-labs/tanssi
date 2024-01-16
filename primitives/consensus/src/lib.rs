@@ -83,6 +83,7 @@ where
 
         let slot = digests
             .convert_first(|item| item.pre_runtime_try_to::<Slot>(&AURA_ENGINE_ID))
+            //.unwrap_or_default();
             .expect("slot digest should exist");
 
         let slot: u64 = slot.into();
