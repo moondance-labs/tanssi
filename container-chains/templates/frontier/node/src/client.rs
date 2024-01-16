@@ -24,16 +24,9 @@ use container_chain_template_frontier_runtime::{opaque::Block, AccountId, Index}
 
 use crate::eth::EthCompatRuntimeApiCollection;
 
-/// Only enable the benchmarking host functions when we actually want to benchmark.
-#[cfg(feature = "runtime-benchmarks")]
-pub type HostFunctions = frame_benchmarking::benchmarking::HostFunctions;
-/// Otherwise we use empty host functions for ext host functions.
-#[cfg(not(feature = "runtime-benchmarks"))]
-pub type HostFunctions = ();
-
 pub struct TemplateRuntimeExecutor;
 impl NativeExecutionDispatch for TemplateRuntimeExecutor {
-    type ExtendHostFunctions = HostFunctions;
+    type ExtendHostFunctions = frame_benchmarking::benchmarking::HostFunctions;
 
     fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
         container_chain_template_frontier_runtime::api::dispatch(method, data)

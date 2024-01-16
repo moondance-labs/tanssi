@@ -797,6 +797,8 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type AuthorityId = NimbusId;
     type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = pallet_cc_authorities_noting::benchmarks::NimbusIdBenchmarkHelper;
 }
 
 // To match ethereum expectations

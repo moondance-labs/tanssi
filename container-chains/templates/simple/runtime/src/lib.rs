@@ -675,6 +675,8 @@ impl pallet_cc_authorities_noting::Config for Runtime {
     type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type AuthorityId = NimbusId;
     type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = pallet_cc_authorities_noting::benchmarks::NimbusIdBenchmarkHelper;
 }
 
 impl pallet_author_inherent::Config for Runtime {
@@ -732,6 +734,16 @@ construct_runtime!(
 
     }
 );
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benches {
+    frame_benchmarking::define_benchmarks!(
+        [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [pallet_cc_authorities_noting, AuthoritiesNoting]
+        [pallet_author_inherent, AuthorInherent]
+    );
+}
+
 
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
@@ -831,35 +843,24 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{list_benchmark, BenchmarkList, Benchmarking};
+            use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
-            use frame_system_benchmarking::Pallet as SystemBench;
-            use pallet_cc_authorities_noting::Pallet as PalletAuthoritiesNotingBench;
 
             let mut list = Vec::<BenchmarkList>::new();
-
-            list_benchmark!(list, extra, frame_system, SystemBench::<Runtime>);
-            list_benchmark!(
-                list,
-                extra,
-                pallet_cc_authorities_noting,
-                PalletAuthoritiesNotingBench::<Runtime>
-            );
+            list_benchmarks!(list, extra);
 
             let storage_info = AllPalletsWithSystem::storage_info();
-
             (list, storage_info)
         }
 
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{add_benchmark, BenchmarkBatch, Benchmarking};
+            use frame_benchmarking::{BenchmarkBatch, Benchmarking};
             use sp_core::storage::TrackedStorageKey;
 
-            use frame_system_benchmarking::Pallet as SystemBench;
             impl frame_system_benchmarking::Config for Runtime {}
-            use pallet_cc_authorities_noting::Pallet as PalletAuthoritiesNotingBench;
+            use frame_benchmarking::BenchmarkError;
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -891,16 +892,8 @@ impl_runtime_apis! {
             let mut batches = Vec::<BenchmarkBatch>::new();
             let params = (&config, &whitelist);
 
-            add_benchmark!(params, batches, frame_system, SystemBench::<Runtime>);
-            add_benchmark!(
-                params,
-                batches,
-                pallet_cc_authorities_noting,
-                PalletAuthoritiesNotingBench::<Runtime>
-            );
-            if batches.is_empty() {
-                return Err("Benchmark not found for this pallet.".into());
-            }
+            add_benchmarks!(params, batches);
+
             Ok(batches)
         }
     }
