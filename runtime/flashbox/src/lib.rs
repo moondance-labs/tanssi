@@ -1188,7 +1188,6 @@ mod benches {
         [pallet_invulnerables, Invulnerables]
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
-        [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_relay_storage_roots, RelayStorageRoots]
     );
 }
