@@ -375,11 +375,11 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
         expected_author == author
     }
     #[cfg(feature = "runtime-benchmarks")]
-	fn get_authors(_slot: &u32) -> Vec<NimbusId> {
-		AuthorityAssignment::collator_container_chain(Session::current_index())
+    fn get_authors(_slot: &u32) -> Vec<NimbusId> {
+        AuthorityAssignment::collator_container_chain(Session::current_index())
             .expect("authorities should be set")
             .orchestrator_chain
-	}
+    }
 }
 
 impl pallet_author_inherent::Config for Runtime {
@@ -1438,6 +1438,7 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
+        [pallet_timestamp, Timestamp]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }

@@ -739,11 +739,11 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
-        [pallet_cc_authorities_noting, AuthoritiesNoting]
         [pallet_author_inherent, AuthorInherent]
+        [pallet_cc_authorities_noting, AuthoritiesNoting]
+        [pallet_timestamp, Timestamp]
     );
 }
-
 
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
@@ -860,7 +860,6 @@ impl_runtime_apis! {
             use sp_core::storage::TrackedStorageKey;
 
             impl frame_system_benchmarking::Config for Runtime {}
-            use frame_benchmarking::BenchmarkError;
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -885,6 +884,11 @@ impl_runtime_apis! {
                     .into(),
                 // The transactional storage limit.
                 hex_literal::hex!("3a7472616e73616374696f6e5f6c6576656c3a")
+                    .to_vec()
+                    .into(),
+
+                // ParachainInfo ParachainId
+                hex_literal::hex!(  "0d715f2646c8f85767b5d2764bb2782604a74d81251e398fd8a0a4d55023bb3f")
                     .to_vec()
                     .into(),
             ];
