@@ -44,7 +44,7 @@
 pub use pallet::*;
 use {
     crate::{
-        assignment::{Assignment, ContainerChain},
+        assignment::{Assignment, ChainNumCollators},
         weights::WeightInfo,
     },
     dp_collator_assignment::AssignedCollators,
@@ -187,12 +187,7 @@ pub mod pallet {
 
             // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
-            // Initialize list of container chains as `[orchestrator, container1, container2, parathread1, parathread2]`.
-            // The order means priority: the first chain in the list will be the first one to get assigned collators.
-            // Chains will not be assigned less than `min_collators`, except the orchestrator chain.
-            // First all chains will be assigned `min_collators`, and then the first one will be assigned up to `max`,
-            // then the second one, and so on.
-            let mut container_chains = vec![ContainerChain {
+            let orchestrator_chain = ChainNumCollators {
                 para_id: T::SelfParaId::get(),
                 min_collators: T::HostConfiguration::min_collators_for_orchestrator(
                     target_session_index,
@@ -200,11 +195,17 @@ pub mod pallet {
                 max_collators: T::HostConfiguration::max_collators_for_orchestrator(
                     target_session_index,
                 ),
-            }];
+            };
+            // Initialize list of chains as `[container1, container2, parathread1, parathread2]`.
+            // The order means priority: the first chain in the list will be the first one to get assigned collators.
+            // Chains will not be assigned less than `min_collators`, except the orchestrator chain.
+            // First all chains will be assigned `min_collators`, and then the first one will be assigned up to `max`,
+            // then the second one, and so on.
+            let mut chains = vec![];
             let collators_per_container =
                 T::HostConfiguration::collators_per_container(target_session_index);
             for para_id in &container_chain_ids {
-                container_chains.push(ContainerChain {
+                chains.push(ChainNumCollators {
                     para_id: *para_id,
                     min_collators: collators_per_container,
                     max_collators: collators_per_container,
@@ -213,7 +214,7 @@ pub mod pallet {
             let collators_per_parathread =
                 T::HostConfiguration::collators_per_parathread(target_session_index);
             for para_id in &parathreads {
-                container_chains.push(ContainerChain {
+                chains.push(ChainNumCollators {
                     para_id: *para_id,
                     min_collators: collators_per_parathread,
                     max_collators: collators_per_parathread,
@@ -235,7 +236,11 @@ pub mod pallet {
                         target_session: target_session_index,
                     });
 
-                    Assignment::<T>::assign_collators_rotate_all(collators, container_chains)
+                    Assignment::<T>::assign_collators_rotate_all(
+                        collators,
+                        orchestrator_chain,
+                        chains,
+                    )
                 } else {
                     log::info!(
                         "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
@@ -251,7 +256,8 @@ pub mod pallet {
 
                     Assignment::<T>::assign_collators_always_keep_old(
                         collators,
-                        container_chains,
+                        orchestrator_chain,
+                        chains,
                         old_assigned.clone(),
                     )
                 };

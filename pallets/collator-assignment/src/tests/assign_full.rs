@@ -69,3 +69,14 @@ fn assign_full_truncates_collators() {
     let expected = BTreeMap::from_iter(vec![(1000.into(), vec![1, 2]), (2000.into(), vec![6, 7])]);
     assert_eq!(new_assigned, expected);
 }
+
+#[test]
+#[should_panic = "assign_full: not enough collators: 2"]
+fn assign_full_old_assigned_panics_if_not_enough_collators() {
+    // Need 4 collators, only have 2, and all 2 were assigned to the second chain. If the function did not panic, we
+    // would have 0 collators assigned to the first chain, which is supposed to have priority.
+    let collators = vec![1, 2];
+    let container_chains = vec![(1000.into(), 2), (2000.into(), 2)];
+    let old_assigned = BTreeMap::from_iter(vec![(2000.into(), vec![1, 2])]);
+    let _new_assigned = Assignment::<Test>::assign_full(collators, container_chains, old_assigned);
+}
