@@ -22,18 +22,13 @@ mod mock;
 use {
     cumulus_primitives_core::ParaId,
     frame_support::traits::Get,
-    
     parity_scale_codec::Codec,
     sp_runtime::{traits::Zero, DigestItem},
     sp_std::{marker::PhantomData, vec::Vec},
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use {
-    nimbus_primitives::NimbusSignature,
-    sp_consensus_aura::digests::CompatibleDigestItem
-};
-
+use {nimbus_primitives::NimbusSignature, sp_consensus_aura::digests::CompatibleDigestItem};
 
 sp_api::decl_runtime_apis! {
     /// API necessary for block authorship with Tanssi.
