@@ -73,6 +73,7 @@ pallet-evm-precompile-call-permit = { git = "https://github.com/moondance-labs/m
 pallet-evm-precompile-xcm-utils = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.3.0", default-features = false }
+pallet-relay-storage-roots = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 
 # Substrate (wasm)
