@@ -127,6 +127,8 @@ where
         vec![
             Box::new(migrate_services_payment),
             Box::new(migrate_boot_nodes),
+            // TODO: copy config migration from dancebox
+            // Box::new(migrate_config2),
         ]
     }
 }

@@ -46,7 +46,7 @@ use {
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
     serde::{Deserialize, Serialize},
-    sp_runtime::{traits::AtLeast32BitUnsigned, RuntimeAppPublic, Saturating},
+    sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, RuntimeAppPublic, Saturating},
     sp_std::prelude::*,
     tp_traits::GetSessionIndex,
 };
@@ -71,6 +71,14 @@ pub struct HostConfiguration {
     pub collators_per_container: u32,
     // If this value is 0 means that there is no rotation
     pub full_rotation_period: u32,
+    // Like collators_per_container but for parathreads
+    pub collators_per_parathread: u32,
+    // TODO: use a less confusing name? this is for when we support assigning 1 collator to more than 1 parathread at
+    // the same time, how many parathreads.
+    pub parathreads_per_collator: u32,
+    // % of collators that we expect to be assigned to container chains. Affects fees.
+    // TODO: I guess container chains and parathreads will be counted together
+    pub target_container_chain_fullness: Perbill,
 }
 
 impl Default for HostConfiguration {
@@ -82,6 +90,9 @@ impl Default for HostConfiguration {
             max_orchestrator_collators: 5u32,
             collators_per_container: 2u32,
             full_rotation_period: 24u32,
+            collators_per_parathread: 1,
+            parathreads_per_collator: 1,
+            target_container_chain_fullness: Perbill::from_percent(80),
         }
     }
 }
@@ -95,6 +106,8 @@ pub enum InconsistentError {
     MinOrchestratorCollatorsTooLow,
     /// `max_collators` must be at least 1
     MaxCollatorsTooLow,
+    /// Tried to modify an unimplemented parameter
+    UnimplementedParameter,
 }
 
 impl HostConfiguration {
@@ -112,6 +125,9 @@ impl HostConfiguration {
         }
         if self.max_orchestrator_collators < self.min_orchestrator_collators {
             return Err(InconsistentError::MaxCollatorsLowerThanMinCollators);
+        }
+        if self.collators_per_parathread != 1 || self.parathreads_per_collator != 1 {
+            return Err(InconsistentError::UnimplementedParameter);
         }
         Ok(())
     }
