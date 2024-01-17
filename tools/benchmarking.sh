@@ -16,6 +16,13 @@ else
     BINARY="${BINARY}"
 fi
 
+if [[ -z "${OUTPUT_PATH}" ]]; then
+    mkdir -p tmp
+    OUTPUT_PATH="tmp"
+else
+    OUTPUT_PATH="${OUTPUT_PATH}"
+fi
+
 STEPS=50
 REPEAT=20
 
@@ -53,25 +60,49 @@ function choose_and_bench {
 }
 
 function bench {
-    OUTPUT=${4:-weights.rs}
+    OUTPUT="${OUTPUT_PATH}/${1}.rs"
     echo "benchmarking '${1}::${2}' --check=${3}, writing results to '${OUTPUT}'"
-
-    echo "${OUTPUT}"
     # Check enabled
     if [[ "${3}" -eq 1 ]]; then
         STEPS=16
         REPEAT=1
     fi
-    WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
-        --execution=wasm \
-        --wasm-execution=compiled \
-        --pallet "${1}" \
-        --extrinsic "${2}" \
-        --steps "${STEPS}" \
-        --repeat "${REPEAT}" \
-        --template=./benchmarking/frame-weight-template.hbs \
-        --json-file raw.json \
-        --output "${OUTPUT}"
+    echo "${1}"
+    if [[ ${1} == "*" ]] ; then
+        # Load all pallet names in an array.
+        ALL_PALLETS=($(
+        $BINARY benchmark pallet --list --chain=dev |\
+            tail -n+2 |\
+            cut -d',' -f1 |\
+            sort |\
+            uniq
+        ))
+        echo "[+] Benchmarking ${#ALL_PALLETS[@]} pallets"
+        for PALLET in "${ALL_PALLETS[@]}"; do
+            OUTPUT="${OUTPUT_PATH}/$PALLET.rs"
+            WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
+            --execution=wasm \
+            --wasm-execution=compiled \
+            --pallet "$PALLET" \
+            --extrinsic "*" \
+            --steps "${STEPS}" \
+            --repeat "${REPEAT}" \
+            --template=./benchmarking/frame-weight-template.hbs \
+            --json-file raw.json \
+            --output "${OUTPUT}"
+        done
+    else
+        WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
+            --execution=wasm \
+            --wasm-execution=compiled \
+            --pallet "${1}" \
+            --extrinsic "${2}" \
+            --steps "${STEPS}" \
+            --repeat "${REPEAT}" \
+            --template=./benchmarking/frame-weight-template.hbs \
+            --json-file raw.json \
+            --output "${OUTPUT}"
+    fi
 }
 
 if [[ "${@}" =~ "--help" ]]; then
