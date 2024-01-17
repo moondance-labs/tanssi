@@ -16,6 +16,8 @@
 
 #![cfg(test)]
 
+use pallet_balances::Instance1;
+
 use {
     common::*,
     cumulus_primitives_core::ParaId,
@@ -47,9 +49,10 @@ use {
     sp_core::Get,
     sp_runtime::{
         traits::{BadOrigin, BlakeTwo256, OpaqueKeys},
-        DigestItem,
+        DigestItem, FixedU128,
     },
     sp_std::vec,
+    staging_xcm::latest::prelude::*,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
 };
@@ -4803,5 +4806,160 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             )
             .unwrap_or_default();
             assert_eq!(credits, credits_before_2nd_register);
+        });
+}
+
+#[test]
+fn test_sudo_can_register_foreign_assets_and_manager_change_paremeters() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+
+            // We register the asset with Alice as manager
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(root_origin(), MultiLocation::parent(), 1, AccountId::from(ALICE), true, 1), ());
+            assert_eq!(ForeignAssetsCreator::foreign_asset_for_id(1), Some(MultiLocation::parent()));
+            assert_eq!(ForeignAssetsCreator::asset_id_for_foreign(MultiLocation::parent()), Some(1));
+
+            // Alice now can change parameters like metadata from the asset
+            assert_ok!(ForeignAssets::set_metadata(origin_of(ALICE.into()), 1, b"xcDot".to_vec(), b"xcDot".to_vec(), 12));
+            assert_eq!(<ForeignAssets as frame_support::traits::fungibles::metadata::Inspect<AccountId>>::name(1),  b"xcDot".to_vec());
+            assert_eq!(<ForeignAssets as frame_support::traits::fungibles::metadata::Inspect<AccountId>>::symbol(1),  b"xcDot".to_vec());
+            assert_eq!(<ForeignAssets as frame_support::traits::fungibles::metadata::Inspect<AccountId>>::decimals(1),  12);
+
+            // Any other person cannot do this
+            assert_noop!(
+                ForeignAssets::set_metadata(origin_of(BOB.into()), 1, b"dummy".to_vec(), b"dummy".to_vec(), 12),
+                pallet_assets::Error::<Runtime, Instance1>::NoPermission
+            );
+
+            // Alice now can mint
+            assert_ok!(ForeignAssets::mint(origin_of(ALICE.into()), 1, AccountId::from(BOB).into(), 1000));
+            assert_eq!(<ForeignAssets as frame_support::traits::fungibles::Inspect<AccountId>>::total_issuance(1),  1000);
+            assert_eq!(<ForeignAssets as frame_support::traits::fungibles::Inspect<AccountId>>::balance(1, &AccountId::from(BOB)),  1000);
+        });
+}
+
+#[test]
+fn test_assets_cannot_be_created_from_signed_origins() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // We try to register the asset with Alice as origin
+            // Any other person cannot do this
+            assert_noop!(
+                ForeignAssetsCreator::create_foreign_asset(
+                    origin_of(ALICE.into()),
+                    MultiLocation::parent(),
+                    1,
+                    AccountId::from(ALICE),
+                    true,
+                    1
+                ),
+                BadOrigin
+            );
+
+            assert_noop!(
+                ForeignAssets::create(origin_of(ALICE.into()), 1, AccountId::from(ALICE).into(), 1),
+                BadOrigin
+            );
+        });
+}
+
+#[test]
+fn test_asset_rate_can_be_set_from_sudo_but_not_from_signed() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // We try to set the rate from non-sudo
+            assert_noop!(
+                AssetRate::create(origin_of(ALICE.into()), Box::new(1), FixedU128::from_u32(1)),
+                BadOrigin
+            );
+
+            // We try to set the rate from sudo
+            assert_ok!(AssetRate::create(
+                root_origin(),
+                Box::new(1),
+                FixedU128::from_u32(1)
+            ));
+
+            assert_eq!(
+                pallet_asset_rate::ConversionRateToNative::<Runtime>::get(1),
+                Some(FixedU128::from_u32(1))
+            );
+        });
+}
+
+#[test]
+fn test_division_by_0() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // We try to set 0 rate to make sure we dont overflow
+            assert_ok!(AssetRate::create(
+                root_origin(),
+                Box::new(1),
+                FixedU128::from_u32(0)
+            ));
+
+            use frame_support::traits::tokens::ConversionToAssetBalance;
+            let balance = dancebox_runtime::xcm_config::CustomConverter::to_asset_balance(1, 1);
+            assert!(balance.is_err());
         });
 }

@@ -2820,6 +2820,8 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "nimbus-primitives",
+ "pallet-asset-rate",
+ "pallet-assets",
  "pallet-async-backing",
  "pallet-author-inherent",
  "pallet-author-noting",
@@ -2831,6 +2833,7 @@ dependencies = [
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
  "pallet-data-preservers",
+ "pallet-foreign-asset-creator",
  "pallet-identity",
  "pallet-im-online",
  "pallet-inflation-rewards",
@@ -2857,6 +2860,7 @@ dependencies = [
  "pallet-xcm",
  "pallet-xcm-benchmarks",
  "parachain-info",
+ "parachains-common",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
@@ -8013,6 +8017,25 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-foreign-asset-creator"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-v1.3.0#3cc7df4ec15b8a8099923cdfa474b93d6c58e4ac"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-arithmetic",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
 ]
 
 [[package]]

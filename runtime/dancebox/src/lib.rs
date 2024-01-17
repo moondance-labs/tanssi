@@ -1423,6 +1423,9 @@ construct_runtime!(
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 53,
+        ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 54,
+        ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 55,
+        AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 56,
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
@@ -1443,6 +1446,7 @@ mod benches {
         [pallet_invulnerables, Invulnerables]
         [pallet_pooled_staking, PooledStaking]
         [pallet_services_payment, ServicesPayment]
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_data_preservers, DataPreservers]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_relay_storage_roots, RelayStorageRoots]
