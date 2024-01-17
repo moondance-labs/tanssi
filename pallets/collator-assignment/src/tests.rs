@@ -496,27 +496,26 @@ fn assign_collators_after_decrease_num_collators() {
         assert_eq!(assigned_collators(), BTreeMap::new(),);
         run_to_block(11);
 
-        assert_eq!(
-            assigned_collators(),
-            BTreeMap::from_iter(vec![
-                (1, 1000),
-                (2, 1000),
-                (3, 1000),
-                (4, 1000),
-                (5, 1000),
-                (6, 1001),
-                (7, 1001),
-                (8, 1002),
-                (9, 1002),
-            ]),
-        );
+        let initial_assignment = BTreeMap::from_iter(vec![
+            (1, 1000),
+            (2, 1000),
+            (3, 1000),
+            (4, 1000),
+            (5, 1000),
+            (6, 1001),
+            (7, 1001),
+            (8, 1002),
+            (9, 1002),
+        ]);
+        assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
             m.collators = vec![];
         });
 
         run_to_block(21);
-        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![]));
+        // There are no collators but that would brick the chain, so we keep the old assignment
+        assert_eq!(assigned_collators(), initial_assignment);
     });
 }
 

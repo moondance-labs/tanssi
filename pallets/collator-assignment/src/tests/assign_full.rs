@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::assignment::AssignmentError;
 use {
     crate::{assignment::Assignment, tests::Test},
     sp_std::collections::btree_map::BTreeMap,
@@ -26,7 +27,8 @@ fn assign_full_old_assigned_priority() {
     let container_chains = vec![(1000.into(), 5)];
     let old_assigned = BTreeMap::from_iter(vec![(1000.into(), vec![3, 4])]);
 
-    let new_assigned = Assignment::<Test>::assign_full(collators, container_chains, old_assigned);
+    let new_assigned =
+        Assignment::<Test>::assign_full(collators, container_chains, old_assigned).unwrap();
     let expected = BTreeMap::from_iter(vec![(1000.into(), vec![3, 4, 1, 2, 5])]);
     assert_eq!(new_assigned, expected);
 }
@@ -38,7 +40,8 @@ fn assign_full_invalid_old_assigned_collators_removed() {
     let container_chains = vec![(1000.into(), 5)];
     let old_assigned = BTreeMap::from_iter(vec![(1000.into(), vec![20, 21])]);
 
-    let new_assigned = Assignment::<Test>::assign_full(collators, container_chains, old_assigned);
+    let new_assigned =
+        Assignment::<Test>::assign_full(collators, container_chains, old_assigned).unwrap();
     let expected = BTreeMap::from_iter(vec![(1000.into(), vec![1, 2, 3, 4, 5])]);
     assert_eq!(new_assigned, expected);
 }
@@ -50,7 +53,8 @@ fn assign_full_invalid_chains_removed() {
     let container_chains = vec![(1000.into(), 5)];
     let old_assigned = BTreeMap::from_iter(vec![(1001.into(), vec![1, 2, 3, 4, 5])]);
 
-    let new_assigned = Assignment::<Test>::assign_full(collators, container_chains, old_assigned);
+    let new_assigned =
+        Assignment::<Test>::assign_full(collators, container_chains, old_assigned).unwrap();
     let expected = BTreeMap::from_iter(vec![(1000.into(), vec![1, 2, 3, 4, 5])]);
     assert_eq!(new_assigned, expected);
 }
@@ -65,18 +69,22 @@ fn assign_full_truncates_collators() {
         (2000.into(), vec![6, 7, 8, 9, 10]),
     ]);
 
-    let new_assigned = Assignment::<Test>::assign_full(collators, container_chains, old_assigned);
+    let new_assigned =
+        Assignment::<Test>::assign_full(collators, container_chains, old_assigned).unwrap();
     let expected = BTreeMap::from_iter(vec![(1000.into(), vec![1, 2]), (2000.into(), vec![6, 7])]);
     assert_eq!(new_assigned, expected);
 }
 
 #[test]
-#[should_panic = "assign_full: not enough collators: 2"]
-fn assign_full_old_assigned_panics_if_not_enough_collators() {
+fn assign_full_old_assigned_error_if_not_enough_collators() {
     // Need 4 collators, only have 2, and all 2 were assigned to the second chain. If the function did not panic, we
     // would have 0 collators assigned to the first chain, which is supposed to have priority.
     let collators = vec![1, 2];
     let container_chains = vec![(1000.into(), 2), (2000.into(), 2)];
     let old_assigned = BTreeMap::from_iter(vec![(2000.into(), vec![1, 2])]);
-    let _new_assigned = Assignment::<Test>::assign_full(collators, container_chains, old_assigned);
+    let new_assigned = Assignment::<Test>::assign_full(collators, container_chains, old_assigned);
+    assert_eq!(
+        new_assigned.unwrap_err(),
+        AssignmentError::NotEnoughCollators
+    );
 }

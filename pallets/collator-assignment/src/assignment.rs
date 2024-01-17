@@ -20,7 +20,7 @@ use {
         cmp,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
         marker::PhantomData,
-        vec,
+        mem, vec,
         vec::Vec,
     },
     tp_traits::{ParaId, RemoveInvulnerables as RemoveInvulnerablesT},
@@ -39,7 +39,7 @@ where
         collators: Vec<T::AccountId>,
         orchestrator_chain: ChainNumCollators,
         chains: Vec<ChainNumCollators>,
-    ) -> AssignedCollators<T::AccountId> {
+    ) -> Result<AssignedCollators<T::AccountId>, AssignmentError> {
         // This is just the "always_keep_old" algorithm but with an empty "old"
         let old_assigned = Default::default();
 
@@ -58,14 +58,18 @@ where
         orchestrator_chain: ChainNumCollators,
         mut chains: Vec<ChainNumCollators>,
         mut old_assigned: AssignedCollators<T::AccountId>,
-    ) -> AssignedCollators<T::AccountId> {
+    ) -> Result<AssignedCollators<T::AccountId>, AssignmentError> {
+        if collators.is_empty() {
+            return Err(AssignmentError::ZeroCollators);
+        }
         // The rest of this function mostly treats orchestrator chain as another container chain, so move it into
         // `old_assigned.container_chains`
-        let old_orchestrator_assigned = core::mem::take(&mut old_assigned.orchestrator_chain);
+        let old_orchestrator_assigned = mem::take(&mut old_assigned.orchestrator_chain);
         old_assigned
             .container_chains
             .insert(orchestrator_chain.para_id, old_orchestrator_assigned);
         let mut old_assigned = old_assigned.container_chains;
+        // Orchestrator chain must be the first one in the list because it always has priority
         chains.insert(0, orchestrator_chain);
         let all_para_ids: Vec<ParaId> = chains.iter().map(|cc| cc.para_id).collect();
         let collators_set = BTreeSet::from_iter(collators.iter().cloned());
@@ -84,7 +88,8 @@ where
         // Ensure the first `min_orchestrator_collators` of orchestrator chain are invulnerables
         Self::prioritize_invulnerables(&collators, orchestrator_chain, &mut old_assigned);
 
-        let new_assigned_chains = Self::assign_full(collators, chains_with_collators, old_assigned);
+        let new_assigned_chains =
+            Self::assign_full(collators, chains_with_collators, old_assigned)?;
         let mut new_assigned = AssignedCollators::default();
         new_assigned.container_chains = new_assigned_chains;
 
@@ -99,9 +104,13 @@ where
             .container_chains
             .remove(&orchestrator_chain.para_id)
             .unwrap();
+        // Sanity check to avoid bricking orchestrator chain
+        if orchestrator_assigned.is_empty() {
+            return Err(AssignmentError::EmptyOrchestrator);
+        }
         new_assigned.orchestrator_chain = orchestrator_assigned;
 
-        new_assigned
+        Ok(new_assigned)
     }
 
     /// Select which container chains will be assigned collators and how many collators, but do not specify which
@@ -132,6 +141,10 @@ where
         num_collators: u32,
         chains: &[ChainNumCollators],
     ) -> Vec<(ParaId, u32)> {
+        if chains.is_empty() {
+            // Avoid panic if chains is empty
+            return vec![];
+        }
         // Let's count how many container chains we can support with the current number of collators
         let mut available_collators = num_collators;
         // Handle orchestrator chain in a special way, we always want to assign collators to it, even if we don't
@@ -145,8 +158,11 @@ where
             if available_collators >= cc.min_collators {
                 available_collators -= cc.min_collators;
                 container_chains_with_collators.push(*cc);
-            } else {
-                // Do not break here because we want to push all the remaining para_ids
+            } else if available_collators == 0 {
+                // Do not break if there are still some available collators. Even if they were not enough to reach the
+                // `min` of this chain, it is possible that one of the chains with less priority has a lower `min`, so
+                // that chain should be assigned collators.
+                break;
             }
         }
 
@@ -159,10 +175,12 @@ where
             // Edge case: num collators less than min orchestrator collators: fill as much as we can
             vec![(chains[0].para_id, num_collators)]
         } else {
-            // Set a variable number of collators, some chains at max and some chains at min
+            // After assigning the min to all the chains we have this remainder. The remainder will be assigned until
+            // all the chains reach the max value.
             let mut required_collators_remainder = num_collators - required_collators_min;
             let mut container_chains_variable = vec![];
             for cc in &container_chains_with_collators {
+                // Each chain will have `min + extra` collators, where extra is capped so `min + extra <= max`.
                 let extra = cmp::min(
                     required_collators_remainder,
                     cc.max_collators.saturating_sub(cc.min_collators),
@@ -301,33 +319,28 @@ where
     ///
     /// The collator assigment, a map from `ParaId` to `Vec<T>`.
     ///
-    /// # Panics
-    ///
-    /// This function panics if the number of collators is not enough to fill all the chains, or if the required number
+    /// Or an error if the number of collators is not enough to fill all the chains, or if the required number
     /// of collators overflows a `u32`.
     pub fn assign_full(
         collators: Vec<T::AccountId>,
         chains: Vec<(ParaId, u32)>,
         mut old_assigned: BTreeMap<ParaId, Vec<T::AccountId>>,
-    ) -> BTreeMap<ParaId, Vec<T::AccountId>> {
-        // Count number of required collators, will be None on overflow
-        let mut required_collators = Some(0u32);
+    ) -> Result<BTreeMap<ParaId, Vec<T::AccountId>>, AssignmentError> {
+        let mut required_collators = 0usize;
         for (_para_id, num_collators) in chains.iter() {
-            required_collators = required_collators.and_then(|x| x.checked_add(*num_collators));
+            let num_collators =
+                usize::try_from(*num_collators).map_err(|_| AssignmentError::NotEnoughCollators)?;
+            required_collators = required_collators
+                .checked_add(num_collators)
+                .ok_or(AssignmentError::NotEnoughCollators)?;
         }
 
-        // This invariant is necessary to ensure priority: if the number of collators is less than required, it is
+        // This check is necessary to ensure priority: if the number of collators is less than required, it is
         // possible that the chain with the least priority could be assigned collators (since they are in
         // old_assigned), while some chains with higher priority might have no collators.
-        assert!(
-            required_collators
-                .and_then(|x| Some(collators.len() >= usize::try_from(x).ok()?))
-                .unwrap_or(false),
-            "assign_full: not enough collators: {}, required {:?}, chains: {:?}",
-            collators.len(),
-            required_collators,
-            chains
-        );
+        if collators.len() < required_collators {
+            return Err(AssignmentError::NotEnoughCollators);
+        }
         // We checked that the sum of all `num_collators` fits in `usize`, so we can safely use `as usize`.
 
         // Remove invalid collators and para ids from `old_assigned`
@@ -356,13 +369,15 @@ where
             let cs = old_assigned.entry(*para_id).or_default();
 
             while cs.len() < *num_collators as usize {
-                // unwrap is safe because we checked that `collators.len() >= required_collators`
-                let nc = new_collators.next().unwrap();
+                // This error should never happen because we checked that `collators.len() >= required_collators`
+                let nc = new_collators
+                    .next()
+                    .ok_or(AssignmentError::NotEnoughCollators)?;
                 cs.push(nc);
             }
         }
 
-        old_assigned
+        Ok(old_assigned)
     }
 
     /// Insert invulnerables ensuring that they are always the first in the list.
@@ -375,7 +390,7 @@ where
         assigned.retain(|item| !invulnerables.contains(item));
 
         let mut new_assigned = invulnerables.to_vec();
-        new_assigned.extend(assigned.iter().cloned());
+        new_assigned.extend(mem::take(assigned));
 
         *assigned = new_assigned;
     }
@@ -398,9 +413,21 @@ where
     }
 }
 
+/// Errors than can happen during collator assignment
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AssignmentError {
+    /// An empty list of collators was passed to `assign_collators_always_keep_old`
+    ZeroCollators,
+    /// The required number of collators for `assign_full` is greater than the provided number of collators.
+    /// Also includes possible overflows in number of collators.
+    NotEnoughCollators,
+    /// No collators were assigned to orchestrator chain
+    EmptyOrchestrator,
+}
+
 /// A `ParaId` and a range of collators that need to be assigned to it.
 /// This can be a container chain, a parathread, or the orchestrator chain.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ChainNumCollators {
     pub para_id: ParaId,
     pub min_collators: u32,

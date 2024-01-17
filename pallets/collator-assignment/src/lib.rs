@@ -181,6 +181,8 @@ pub mod pallet {
             if random_seed != [0; 32] {
                 let mut rng: ChaCha20Rng = SeedableRng::from_seed(random_seed);
                 collators.shuffle(&mut rng);
+                // TODO: in the future, instead of shuffling the list of para ids, we need to use the priority fee to
+                // determine priority
                 container_chain_ids.shuffle(&mut rng);
                 parathreads.shuffle(&mut rng);
             }
@@ -261,6 +263,18 @@ pub mod pallet {
                         old_assigned.clone(),
                     )
                 };
+
+            let new_assigned = match new_assigned {
+                Ok(x) => x,
+                Err(e) => {
+                    log::error!(
+                        "Error in collator assignment, will keep previous assignment. {:?}",
+                        e
+                    );
+
+                    old_assigned.clone()
+                }
+            };
 
             let mut pending = PendingCollatorContainerChain::<T>::get();
             let old_assigned_changed = old_assigned != new_assigned;
