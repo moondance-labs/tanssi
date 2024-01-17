@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
 
-# This script can be used for running moonbeam's benchmarks.
+# This script can be used for running tanssi's benchmarks.
 #
-# The moonbeam binary is required to be compiled with --features=runtime-benchmarks
+# The tamsso binary is required to be compiled with --features=runtime-benchmarks
 # in release mode.
 
 set -e
 
-BINARY="./target/production/tanssi-node"
+# By default we use the tanssi-node release binary
+# However we can use any binary by running the benchmark tool with
+# BINARY=./target/release/container-chain-template-simple-node ./tools/benchmarking.sh
+if [[ -z "${BINARY}" ]]; then
+    BINARY="./target/release/tanssi-node"
+else
+    BINARY="${BINARY}"
+fi
+
 STEPS=50
 REPEAT=20
 
@@ -48,12 +56,12 @@ function bench {
     OUTPUT=${4:-weights.rs}
     echo "benchmarking '${1}::${2}' --check=${3}, writing results to '${OUTPUT}'"
 
+    echo "${OUTPUT}"
     # Check enabled
     if [[ "${3}" -eq 1 ]]; then
         STEPS=16
         REPEAT=1
     fi
-
     WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
         --execution=wasm \
         --wasm-execution=compiled \
