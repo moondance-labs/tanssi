@@ -1429,16 +1429,24 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
-        [pallet_author_inherent, AuthorInherent]
-        [pallet_author_noting, AuthorNoting]
-        [pallet_collator_assignment, CollatorAssignment]
-        [pallet_configuration, Configuration]
+        [pallet_timestamp, Timestamp]
+        [pallet_sudo, Sudo]
+        [pallet_proxy, Proxy]
+        [pallet_utility, Utility]
+        [pallet_tx_pause, TxPause]
+        [pallet_balances, Balances]
+        [pallet_identity, Identity]
         [pallet_registrar, Registrar]
-        [pallet_invulnerables, Invulnerables]
-        [pallet_pooled_staking, PooledStaking]
+        [pallet_configuration, Configuration]
+        [pallet_collator_assignment, CollatorAssignment]
+        [pallet_author_noting, AuthorNoting]
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
-        [pallet_timestamp, Timestamp]
+        [pallet_invulnerables, Invulnerables]
+        [pallet_author_inherent, AuthorInherent]
+        [pallet_pooled_staking, PooledStaking]
+        [cumulus_pallet_xcmp_queue, XcmpQueue]
+        [pallet_xcm, PolkadotXcm]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }
@@ -1578,13 +1586,12 @@ impl_runtime_apis! {
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking};
+            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
 
             impl frame_system_benchmarking::Config for Runtime {}
 
             use staging_xcm::latest::prelude::*;
-            use frame_benchmarking::BenchmarkError;
 
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = xcm_config::XcmConfig;
