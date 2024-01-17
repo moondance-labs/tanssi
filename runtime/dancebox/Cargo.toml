@@ -33,6 +33,7 @@ pallet-pooled-staking = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+pallet-relay-storage-roots = { workspace = true }
 pallet-services-payment = { workspace = true }
 
 # Moonkit
@@ -183,6 +184,7 @@ std = [
 	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
+	"pallet-relay-storage-roots/std",
 	"pallet-root-testing/std",
 	"pallet-services-payment/std",
 	"pallet-session/std",
@@ -269,6 +271,7 @@ runtime-benchmarks = [
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
+	"pallet-relay-storage-roots/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
@@ -327,6 +330,7 @@ try-runtime = [
 	"pallet-pooled-staking/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",
+	"pallet-relay-storage-roots/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",

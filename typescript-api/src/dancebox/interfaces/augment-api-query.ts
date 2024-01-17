@@ -895,6 +895,20 @@ declare module "@polkadot/api-base/types/storage" {
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        relayStorageRoots: {
+            /** Map of relay block number to relay storage root */
+            relayStorageRoot: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<H256>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** List of all the keys in `RelayStorageRoot`. Used to remove the oldest key without having to iterate over all of them. */
+            relayStorageRootKeys: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         servicesPayment: {
             blockProductionCredits: AugmentedQuery<
                 ApiType,

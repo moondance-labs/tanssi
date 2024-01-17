@@ -4645,7 +4645,7 @@ declare module "@polkadot/types/lookup" {
         readonly type: "UnknownAssetKind" | "AlreadyExists";
     }
 
-    /** @name SpRuntimeMultiSignature (451) */
+    /** @name SpRuntimeMultiSignature (452) */
     interface SpRuntimeMultiSignature extends Enum {
         readonly isEd25519: boolean;
         readonly asEd25519: SpCoreEd25519Signature;
@@ -4656,36 +4656,36 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Ed25519" | "Sr25519" | "Ecdsa";
     }
 
-    /** @name SpCoreEd25519Signature (452) */
+    /** @name SpCoreEd25519Signature (453) */
     interface SpCoreEd25519Signature extends U8aFixed {}
 
-    /** @name SpCoreSr25519Signature (454) */
+    /** @name SpCoreSr25519Signature (455) */
     interface SpCoreSr25519Signature extends U8aFixed {}
 
-    /** @name SpCoreEcdsaSignature (455) */
+    /** @name SpCoreEcdsaSignature (456) */
     interface SpCoreEcdsaSignature extends U8aFixed {}
 
-    /** @name FrameSystemExtensionsCheckNonZeroSender (458) */
+    /** @name FrameSystemExtensionsCheckNonZeroSender (459) */
     type FrameSystemExtensionsCheckNonZeroSender = Null;
 
-    /** @name FrameSystemExtensionsCheckSpecVersion (459) */
+    /** @name FrameSystemExtensionsCheckSpecVersion (460) */
     type FrameSystemExtensionsCheckSpecVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckTxVersion (460) */
+    /** @name FrameSystemExtensionsCheckTxVersion (461) */
     type FrameSystemExtensionsCheckTxVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckGenesis (461) */
+    /** @name FrameSystemExtensionsCheckGenesis (462) */
     type FrameSystemExtensionsCheckGenesis = Null;
 
-    /** @name FrameSystemExtensionsCheckNonce (464) */
+    /** @name FrameSystemExtensionsCheckNonce (465) */
     interface FrameSystemExtensionsCheckNonce extends Compact<u32> {}
 
-    /** @name FrameSystemExtensionsCheckWeight (465) */
+    /** @name FrameSystemExtensionsCheckWeight (466) */
     type FrameSystemExtensionsCheckWeight = Null;
 
-    /** @name PalletTransactionPaymentChargeTransactionPayment (466) */
+    /** @name PalletTransactionPaymentChargeTransactionPayment (467) */
     interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
 
-    /** @name DanceboxRuntimeRuntime (467) */
+    /** @name DanceboxRuntimeRuntime (468) */
     type DanceboxRuntimeRuntime = Null;
 } // declare module
