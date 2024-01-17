@@ -1489,7 +1489,7 @@ export default {
         paraIds: "Vec<u32>",
         rewardsPerChain: "u128",
     },
-    /** Lookup294: sp_runtime::MultiSignature */
+    /** Lookup295: sp_runtime::MultiSignature */
     SpRuntimeMultiSignature: {
         _enum: {
             Ed25519: "SpCoreEd25519Signature",
@@ -1497,26 +1497,26 @@ export default {
             Ecdsa: "SpCoreEcdsaSignature",
         },
     },
-    /** Lookup295: sp_core::ed25519::Signature */
+    /** Lookup296: sp_core::ed25519::Signature */
     SpCoreEd25519Signature: "[u8;64]",
-    /** Lookup297: sp_core::sr25519::Signature */
+    /** Lookup298: sp_core::sr25519::Signature */
     SpCoreSr25519Signature: "[u8;64]",
-    /** Lookup298: sp_core::ecdsa::Signature */
+    /** Lookup299: sp_core::ecdsa::Signature */
     SpCoreEcdsaSignature: "[u8;65]",
-    /** Lookup301: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
+    /** Lookup302: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T> */
     FrameSystemExtensionsCheckNonZeroSender: "Null",
-    /** Lookup302: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
+    /** Lookup303: frame_system::extensions::check_spec_version::CheckSpecVersion<T> */
     FrameSystemExtensionsCheckSpecVersion: "Null",
-    /** Lookup303: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
+    /** Lookup304: frame_system::extensions::check_tx_version::CheckTxVersion<T> */
     FrameSystemExtensionsCheckTxVersion: "Null",
-    /** Lookup304: frame_system::extensions::check_genesis::CheckGenesis<T> */
+    /** Lookup305: frame_system::extensions::check_genesis::CheckGenesis<T> */
     FrameSystemExtensionsCheckGenesis: "Null",
-    /** Lookup307: frame_system::extensions::check_nonce::CheckNonce<T> */
+    /** Lookup308: frame_system::extensions::check_nonce::CheckNonce<T> */
     FrameSystemExtensionsCheckNonce: "Compact<u32>",
-    /** Lookup308: frame_system::extensions::check_weight::CheckWeight<T> */
+    /** Lookup309: frame_system::extensions::check_weight::CheckWeight<T> */
     FrameSystemExtensionsCheckWeight: "Null",
-    /** Lookup309: pallet_transaction_payment::ChargeTransactionPayment<T> */
+    /** Lookup310: pallet_transaction_payment::ChargeTransactionPayment<T> */
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-    /** Lookup310: flashbox_runtime::Runtime */
+    /** Lookup311: flashbox_runtime::Runtime */
     FlashboxRuntimeRuntime: "Null",
 };

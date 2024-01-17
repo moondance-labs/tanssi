@@ -108,6 +108,16 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        relayStorageRoots: {
+            /**
+             * Limit the number of relay storage roots that will be stored. This limit applies to the number of items, not to
+             * their age. Decreasing the value of `MaxStorageRoots` is a breaking change and needs a migration to clean the
+             * `RelayStorageRoots` mapping.
+             */
+            maxStorageRoots: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         system: {
             /** Maximum number of block number to block hash mappings to keep (oldest pruned first). */
             blockHashCount: u32 & AugmentedConst<ApiType>;
