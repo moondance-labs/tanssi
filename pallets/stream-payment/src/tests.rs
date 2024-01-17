@@ -19,7 +19,7 @@ use {
         assert_event_emitted,
         mock::{
             roll_to, Balances, ExtBuilder, Runtime, RuntimeOrigin, StreamPayment,
-            StreamPaymentAssetId, TimeUnit, ALICE, BOB, CHARLIE, DEFAULT_BALANCE, MEGA,
+            StreamPaymentAssetId, TimeUnit, ALICE, BOB, CHARLIE, DEFAULT_BALANCE, KILO, MEGA,
         },
         Error, Event, FreezeReason, LookupStreamsWithSource, LookupStreamsWithTarget, NextStreamId,
         Stream, Streams,
@@ -380,6 +380,16 @@ mod refill_stream {
     use super::*;
 
     #[test]
+    fn cannot_refill_unknown_stream() {
+        ExtBuilder::default().build().execute_with(|| {
+            assert_err!(
+                StreamPayment::refill_stream(RuntimeOrigin::signed(ALICE), 0, 500),
+                Error::<Runtime>::UnknownStreamId
+            );
+        })
+    }
+
+    #[test]
     fn third_party_cannot_refill() {
         ExtBuilder::default().build().execute_with(|| {
             let rate = 100;
@@ -419,6 +429,343 @@ mod refill_stream {
             assert_err!(
                 StreamPayment::refill_stream(RuntimeOrigin::signed(BOB), 0, initial_deposit),
                 Error::<Runtime>::UnauthorizedOrigin
+            );
+        })
+    }
+
+    #[test]
+    fn source_can_refill_without_payment() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 100;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                TimeUnit::BlockNumber,
+                StreamPaymentAssetId::Native,
+                rate,
+                initial_deposit
+            ));
+
+            assert_ok!(StreamPayment::refill_stream(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                initial_deposit
+            ));
+
+            assert_event_emitted!(Event::<Runtime>::StreamRefilled {
+                stream_id: 0,
+                increase: initial_deposit,
+                new_deposit: 2 * initial_deposit
+            });
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                2 * initial_deposit
+            );
+        })
+    }
+
+    #[test]
+    fn source_can_refill_with_payment() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 100;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                TimeUnit::BlockNumber,
+                StreamPaymentAssetId::Native,
+                rate,
+                initial_deposit
+            ));
+
+            let delta = roll_to(10) as u128;
+            let payment = delta * rate;
+
+            assert_ok!(StreamPayment::refill_stream(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                initial_deposit
+            ));
+
+            assert_event_emitted!(Event::<Runtime>::StreamPayment {
+                stream_id: 0,
+                source: ALICE,
+                target: BOB,
+                amount: payment,
+                drained: false
+            });
+            assert_event_emitted!(Event::<Runtime>::StreamRefilled {
+                stream_id: 0,
+                increase: initial_deposit,
+                new_deposit: 2 * initial_deposit - payment
+            });
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                2 * initial_deposit - payment
+            );
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
+        })
+    }
+
+    #[test]
+    fn source_can_refill_with_payment_not_retroactive() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 100 * KILO;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                TimeUnit::BlockNumber,
+                StreamPaymentAssetId::Native,
+                rate,
+                initial_deposit
+            ));
+
+            let delta = roll_to(15) as u128;
+            let payment = delta * rate;
+            assert!(payment > initial_deposit);
+
+            let new_deposit = 500 * KILO;
+
+            assert_ok!(StreamPayment::refill_stream(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                new_deposit
+            ));
+
+            assert_event_emitted!(Event::<Runtime>::StreamPayment {
+                stream_id: 0,
+                source: ALICE,
+                target: BOB,
+                amount: initial_deposit,
+                drained: true
+            });
+            assert_event_emitted!(Event::<Runtime>::StreamRefilled {
+                stream_id: 0,
+                increase: new_deposit,
+                new_deposit: new_deposit
+            });
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                new_deposit
+            );
+
+            assert_eq!(
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                Balances::free_balance(BOB),
+                DEFAULT_BALANCE + initial_deposit
+            );
+        })
+    }
+}
+
+mod change_stream_rate {
+    use super::*;
+
+    #[test]
+    fn cannot_change_rate_of_unknown_stream() {
+        ExtBuilder::default().build().execute_with(|| {
+            assert_err!(
+                StreamPayment::change_stream_rate(RuntimeOrigin::signed(ALICE), 0, 500),
+                Error::<Runtime>::UnknownStreamId
+            );
+        })
+    }
+
+    #[test]
+    fn third_party_cannot_change_rate() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 100;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                TimeUnit::BlockNumber,
+                StreamPaymentAssetId::Native,
+                rate,
+                initial_deposit
+            ));
+
+            assert_err!(
+                StreamPayment::change_stream_rate(RuntimeOrigin::signed(CHARLIE), 0, rate),
+                Error::<Runtime>::UnauthorizedOrigin
+            );
+        })
+    }
+
+    #[test]
+    fn source_must_increase_rate() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 100;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                TimeUnit::BlockNumber,
+                StreamPaymentAssetId::Native,
+                rate,
+                initial_deposit
+            ));
+
+            assert_err!(
+                StreamPayment::change_stream_rate(RuntimeOrigin::signed(ALICE), 0, rate - 1),
+                Error::<Runtime>::SourceCantDecreaseRate
+            );
+        })
+    }
+
+    #[test]
+    fn target_must_decrease_rate() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 100;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                TimeUnit::BlockNumber,
+                StreamPaymentAssetId::Native,
+                rate,
+                initial_deposit
+            ));
+
+            assert_err!(
+                StreamPayment::change_stream_rate(RuntimeOrigin::signed(BOB), 0, rate + 1),
+                Error::<Runtime>::TargetCantIncreaseRate
+            );
+        })
+    }
+
+    #[test]
+    fn source_can_increase_rate() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 100;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                TimeUnit::BlockNumber,
+                StreamPaymentAssetId::Native,
+                rate,
+                initial_deposit
+            ));
+
+            let delta = roll_to(10) as u128;
+            let payment = delta * rate;
+
+            assert_ok!(StreamPayment::change_stream_rate(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                rate * 2
+            ),);
+
+            assert_event_emitted!(Event::<Runtime>::StreamPayment {
+                stream_id: 0,
+                source: ALICE,
+                target: BOB,
+                amount: payment,
+                drained: false
+            });
+            assert_event_emitted!(Event::<Runtime>::StreamRateChanged {
+                stream_id: 0,
+                old_rate: rate,
+                new_rate: rate * 2
+            });
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                initial_deposit - payment
+            );
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
+
+            assert_eq!(
+                Streams::<Runtime>::get(0),
+                Some(Stream {
+                    source: ALICE,
+                    target: BOB,
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate_per_time_unit: rate * 2,
+                    deposit: initial_deposit - payment,
+                    last_time_updated: 10
+                })
+            );
+        })
+    }
+
+    #[test]
+    fn target_can_decrease_rate() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 100;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                TimeUnit::BlockNumber,
+                StreamPaymentAssetId::Native,
+                rate,
+                initial_deposit
+            ));
+
+            let delta = roll_to(10) as u128;
+            let payment = delta * rate;
+
+            assert_ok!(StreamPayment::change_stream_rate(
+                RuntimeOrigin::signed(BOB),
+                0,
+                rate / 2
+            ),);
+
+            assert_event_emitted!(Event::<Runtime>::StreamPayment {
+                stream_id: 0,
+                source: ALICE,
+                target: BOB,
+                amount: payment,
+                drained: false
+            });
+            assert_event_emitted!(Event::<Runtime>::StreamRateChanged {
+                stream_id: 0,
+                old_rate: rate,
+                new_rate: rate / 2
+            });
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                initial_deposit - payment
+            );
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
+
+            assert_eq!(
+                Streams::<Runtime>::get(0),
+                Some(Stream {
+                    source: ALICE,
+                    target: BOB,
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate_per_time_unit: rate / 2,
+                    deposit: initial_deposit - payment,
+                    last_time_updated: 10
+                })
             );
         })
     }

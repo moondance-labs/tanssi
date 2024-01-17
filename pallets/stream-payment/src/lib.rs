@@ -205,6 +205,11 @@ pub mod pallet {
             amount: T::Balance,
             drained: bool,
         },
+        StreamRefilled {
+            stream_id: T::StreamId,
+            increase: T::Balance,
+            new_deposit: T::Balance,
+        },
         StreamRateChanged {
             stream_id: T::StreamId,
             old_rate: T::Balance,
@@ -318,7 +323,7 @@ pub mod pallet {
         pub fn refill_stream(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
-            new_deposit: T::Balance,
+            increase: T::Balance,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
@@ -331,11 +336,18 @@ pub mod pallet {
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
             // Increase deposit.
-            T::Assets::increase_deposit(stream.asset_id.clone(), &origin, new_deposit)?;
+            T::Assets::increase_deposit(stream.asset_id.clone(), &origin, increase)?;
             stream.deposit = stream
                 .deposit
-                .checked_add(&new_deposit)
+                .checked_add(&increase)
                 .ok_or(Error::<T>::CurrencyOverflow)?;
+
+            // Emit event.
+            Pallet::<T>::deposit_event(Event::<T>::StreamRefilled {
+                stream_id,
+                increase,
+                new_deposit: stream.deposit,
+            });
 
             // Update stream info in storage.
             Streams::<T>::insert(stream_id, stream);
