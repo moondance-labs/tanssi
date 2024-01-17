@@ -16,6 +16,13 @@ else
     BINARY="${BINARY}"
 fi
 
+if [[ -z "${CHAIN}" ]]; then
+    mkdir -p tmp
+    CHAIN="dev"
+else
+    CHAIN="${CHAIN}"
+fi
+
 if [[ -z "${OUTPUT_PATH}" ]]; then
     mkdir -p tmp
     OUTPUT_PATH="tmp"
@@ -47,7 +54,7 @@ function help {
 }
 
 function choose_and_bench {
-    readarray -t options < <(${BINARY} benchmark pallet --list | sed 1d)
+    readarray -t options < <(${BINARY} benchmark pallet  --chain=${CHAIN} --list | sed 1d)
     options+=('EXIT')
 
     select opt in "${options[@]}"; do
@@ -71,7 +78,7 @@ function bench {
     if [[ ${1} == "*" ]] ; then
         # Load all pallet names in an array.
         ALL_PALLETS=($(
-        $BINARY benchmark pallet --list --chain=dev |\
+        $BINARY benchmark pallet --list --chain="${CHAIN}" |\
             tail -n+2 |\
             cut -d',' -f1 |\
             sort |\
@@ -85,6 +92,7 @@ function bench {
             --wasm-execution=compiled \
             --pallet "$PALLET" \
             --extrinsic "*" \
+            --chain="${CHAIN}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
             --template=./benchmarking/frame-weight-template.hbs \
@@ -97,6 +105,7 @@ function bench {
             --wasm-execution=compiled \
             --pallet "${1}" \
             --extrinsic "${2}" \
+            --chain="${CHAIN}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
             --template=./benchmarking/frame-weight-template.hbs \

@@ -964,6 +964,24 @@ construct_runtime!(
     }
 );
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benches {
+    frame_benchmarking::define_benchmarks!(
+        [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [pallet_timestamp, Timestamp]
+        [pallet_sudo, Sudo]
+        [pallet_proxy, Proxy]
+        [pallet_utility, Utility]
+        [pallet_tx_pause, TxPause]
+        [pallet_balances, Balances]
+        [pallet_cc_authorities_noting, AuthoritiesNoting]
+        [pallet_author_inherent, AuthorInherent]
+        [cumulus_pallet_xcmp_queue, XcmpQueue]
+        [pallet_xcm, PolkadotXcm]
+        [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+    );
+}
+
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
         fn version() -> RuntimeVersion {
@@ -1107,6 +1125,144 @@ impl_runtime_apis! {
     impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
         fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
             ParachainSystem::collect_collation_info(header)
+        }
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    impl frame_benchmarking::Benchmark<Block> for Runtime {
+        fn benchmark_metadata(
+            extra: bool,
+        ) -> (
+            Vec<frame_benchmarking::BenchmarkList>,
+            Vec<frame_support::traits::StorageInfo>,
+        ) {
+            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_support::traits::StorageInfoTrait;
+
+            let mut list = Vec::<BenchmarkList>::new();
+            list_benchmarks!(list, extra);
+
+            let storage_info = AllPalletsWithSystem::storage_info();
+            (list, storage_info)
+        }
+
+        fn dispatch_benchmark(
+            config: frame_benchmarking::BenchmarkConfig,
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
+            use sp_core::storage::TrackedStorageKey;
+            use staging_xcm::latest::prelude::*;
+            impl frame_system_benchmarking::Config for Runtime {
+                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                    ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
+                    Ok(())
+                }
+
+                fn verify_set_code() {
+                    System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
+                }
+            }
+
+            impl pallet_xcm_benchmarks::Config for Runtime {
+                type XcmConfig = xcm_config::XcmConfig;
+                type AccountIdConverter = xcm_config::LocationToAccountId;
+                type DeliveryHelper = ();
+                fn valid_destination() -> Result<MultiLocation, BenchmarkError> {
+                    Ok(MultiLocation::parent())
+                }
+                fn worst_case_holding(_depositable_count: u32) -> MultiAssets {
+                    // We only care for native asset until we support others
+                    // TODO: refactor this case once other assets are supported
+                    vec![MultiAsset{
+                        id: Concrete(MultiLocation::here()),
+                        fun: Fungible(u128::MAX),
+                    }].into()
+                }
+            }
+
+            impl pallet_xcm_benchmarks::generic::Config for Runtime {
+                type TransactAsset = Balances;
+                type RuntimeCall = RuntimeCall;
+
+                fn worst_case_response() -> (u64, Response) {
+                    (0u64, Response::Version(Default::default()))
+                }
+
+                fn worst_case_asset_exchange() -> Result<(MultiAssets, MultiAssets), BenchmarkError> {
+                    Err(BenchmarkError::Skip)
+                }
+
+                fn universal_alias() -> Result<(MultiLocation, Junction), BenchmarkError> {
+                    Err(BenchmarkError::Skip)
+                }
+
+                fn transact_origin_and_runtime_call() -> Result<(MultiLocation, RuntimeCall), BenchmarkError> {
+                    Ok((MultiLocation::parent(), frame_system::Call::remark_with_event { remark: vec![] }.into()))
+                }
+
+                fn subscribe_origin() -> Result<MultiLocation, BenchmarkError> {
+                    Ok(MultiLocation::parent())
+                }
+
+                fn claimable_asset() -> Result<(MultiLocation, MultiLocation, MultiAssets), BenchmarkError> {
+                    let origin = MultiLocation::parent();
+                    let assets: MultiAssets = (Concrete(MultiLocation::parent()), 1_000u128).into();
+                    let ticket = MultiLocation { parents: 0, interior: Here };
+                    Ok((origin, ticket, assets))
+                }
+
+                fn unlockable_asset() -> Result<(MultiLocation, MultiLocation, MultiAsset), BenchmarkError> {
+                    Err(BenchmarkError::Skip)
+                }
+
+                fn export_message_origin_and_destination(
+                ) -> Result<(MultiLocation, NetworkId, InteriorMultiLocation), BenchmarkError> {
+                    Err(BenchmarkError::Skip)
+                }
+
+                fn alias_origin() -> Result<(MultiLocation, MultiLocation), BenchmarkError> {
+                    Err(BenchmarkError::Skip)
+                }
+            }
+
+            let whitelist: Vec<TrackedStorageKey> = vec![
+                // Block Number
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac")
+                    .to_vec()
+                    .into(),
+                // Total Issuance
+                hex_literal::hex!("c2261276cc9d1f8598ea4b6a74b15c2f57c875e4cff74148e4628f264b974c80")
+                    .to_vec()
+                    .into(),
+                // Execution Phase
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef7ff553b5a9862a516939d82b3d3d8661a")
+                    .to_vec()
+                    .into(),
+                // Event Count
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef70a98fdbe9ce6c55837576c60c7af3850")
+                    .to_vec()
+                    .into(),
+                // System Events
+                hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
+                    .to_vec()
+                    .into(),
+                // The transactional storage limit.
+                hex_literal::hex!("3a7472616e73616374696f6e5f6c6576656c3a")
+                    .to_vec()
+                    .into(),
+
+                // ParachainInfo ParachainId
+                hex_literal::hex!(  "0d715f2646c8f85767b5d2764bb2782604a74d81251e398fd8a0a4d55023bb3f")
+                    .to_vec()
+                    .into(),
+            ];
+
+            let mut batches = Vec::<BenchmarkBatch>::new();
+            let params = (&config, &whitelist);
+
+            add_benchmarks!(params, batches);
+
+            Ok(batches)
         }
     }
 
