@@ -62,7 +62,6 @@ sp-version = { workspace = true }
 
 # Polkadot
 pallet-xcm = { workspace = true }
-pallet-xcm-benchmarks = { workspace = true, optional = true }
 polkadot-parachain-primitives = { workspace = true }
 polkadot-runtime-common = { workspace = true }
 staging-xcm = { workspace = true }
@@ -123,7 +122,6 @@ std = [
 	"pallet-tx-pause/std",
 	"pallet-utility/std",
 	"pallet-xcm/std",
-	"pallet-xcm-benchmarks?/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain-primitives/std",
@@ -177,7 +175,6 @@ runtime-benchmarks = [
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
-	"pallet-xcm-benchmarks/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",

@@ -7,7 +7,7 @@
 
 set -e
 
-BINARY="./target/release/container-chain-template-simple-node"
+BINARY="./target/production/tanssi-node"
 STEPS=50
 REPEAT=20
 
