@@ -1020,6 +1020,16 @@ impl pallet_maintenance_mode::Config for Runtime {
     type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
+parameter_types! {
+    pub const MaxStorageRoots: u32 = 10; // 1 minute of relay blocks
+}
+
+impl pallet_relay_storage_roots::Config for Runtime {
+    type RelaychainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    type MaxStorageRoots = MaxStorageRoots;
+    type WeightInfo = ();
+}
+
 impl pallet_root_testing::Config for Runtime {}
 
 parameter_types! {
@@ -1161,6 +1171,9 @@ construct_runtime!(
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
 
+        // More system support stuff
+        RelayStorageRoots: pallet_relay_storage_roots = 60,
+
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
     }
@@ -1177,6 +1190,7 @@ mod benches {
         [pallet_invulnerables, Invulnerables]
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
+        [pallet_relay_storage_roots, RelayStorageRoots]
     );
 }
 

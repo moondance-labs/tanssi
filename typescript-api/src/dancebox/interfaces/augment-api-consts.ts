@@ -41,6 +41,28 @@ declare module "@polkadot/api-base/types/consts" {
             /** Generic const */
             [key: string]: Codec;
         };
+        foreignAssets: {
+            /** The amount of funds that must be reserved when creating a new approval. */
+            approvalDeposit: u128 & AugmentedConst<ApiType>;
+            /** The amount of funds that must be reserved for a non-provider asset account to be maintained. */
+            assetAccountDeposit: u128 & AugmentedConst<ApiType>;
+            /** The basic amount of funds that must be reserved for an asset. */
+            assetDeposit: u128 & AugmentedConst<ApiType>;
+            /** The basic amount of funds that must be reserved when adding metadata to your asset. */
+            metadataDepositBase: u128 & AugmentedConst<ApiType>;
+            /** The additional funds that must be reserved for the number of bytes you store in your metadata. */
+            metadataDepositPerByte: u128 & AugmentedConst<ApiType>;
+            /**
+             * Max number of items to destroy per `destroy_accounts` and `destroy_approvals` call.
+             *
+             * Must be configured to result in a weight that makes each call fit in a block.
+             */
+            removeItemsLimit: u32 & AugmentedConst<ApiType>;
+            /** The maximum length of a name or symbol stored on-chain. */
+            stringLimit: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
         identity: {
             /** The amount held on deposit for a registered identity */
             basicDeposit: u128 & AugmentedConst<ApiType>;
@@ -105,6 +127,16 @@ declare module "@polkadot/api-base/types/consts" {
             /** Max length of para id list */
             maxLengthParaIds: u32 & AugmentedConst<ApiType>;
             sessionDelay: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        relayStorageRoots: {
+            /**
+             * Limit the number of relay storage roots that will be stored. This limit applies to the number of items, not to
+             * their age. Decreasing the value of `MaxStorageRoots` is a breaking change and needs a migration to clean the
+             * `RelayStorageRoots` mapping.
+             */
+            maxStorageRoots: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };

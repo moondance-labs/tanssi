@@ -39,11 +39,11 @@ use {
 mod xcm;
 
 pub use dancebox_runtime::{
-    AccountId, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
-    CollatorAssignment, Configuration, DataPreservers, InflationRewards, Initializer,
-    Invulnerables, MinimumSelfDelegation, ParachainInfo, PooledStaking, Proxy, ProxyType,
-    Registrar, RewardsPortion, Runtime, RuntimeCall, RuntimeEvent, ServicesPayment, Session,
-    System,
+    AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
+    CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
+    InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation, ParachainInfo,
+    PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime, RuntimeCall, RuntimeEvent,
+    ServicesPayment, Session, System,
 };
 
 pub fn session_to_block(n: u32) -> u32 {
