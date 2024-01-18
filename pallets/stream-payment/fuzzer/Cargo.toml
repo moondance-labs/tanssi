@@ -1,0 +1,44 @@
+[package]
+name = "pallet-stream-payment-fuzzer"
+authors = { workspace = true }
+description = "Fuzzer for stream payment pallet"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[dependencies]
+# Fuzzing
+arbitrary = { workspace = true }
+honggfuzz = { workspace = true }
+# Parent
+pallet-stream-payment = { workspace = true, features = ["std"] }
+# Parent deps
+log = { workspace = true }
+serde = { workspace = true, optional = true }
+dp-core = { workspace = true }
+tp-maths = { workspace = true }
+tp-traits = { workspace = true }
+frame-benchmarking = { workspace = true, optional = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+num-traits = { workspace = true }
+pallet-balances = { workspace = true, features = [ "std" ] }
+similar-asserts = { workspace = true }
+sp-io = { workspace = true, features = [ "std" ] }
+
+[features]
+# Define dummy feature to avoid building these binaries by default
+fuzzing = []
+
+[[bin]]
+name = "no_panics"
+path = "src/no_panics.rs"
+#required-features = [ "fuzzing" ]

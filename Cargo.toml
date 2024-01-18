@@ -7,6 +7,7 @@ members = [
 	"pallets/*",
 	"pallets/collator-assignment/rpc/runtime-api",
 	"pallets/registrar/rpc/runtime-api",
+	"pallets/stream-payment/fuzzer",
 	"primitives/*",
 	"runtime/dancebox",
 	"runtime/flashbox",
@@ -35,6 +36,7 @@ pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = fa
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 pallet-services-payment = { path = "pallets/services-payment", default-features = false }
+pallet-stream-payment = { path = "pallets/stream-payment", default-features = false }
 
 container-chain-template-frontier-runtime = { path = "container-chains/templates/frontier/runtime", default-features = false }
 container-chain-template-simple-runtime = { path = "container-chains/templates/simple/runtime", default-features = false }
@@ -264,6 +266,10 @@ thiserror = { version = "1.0.40" }
 tokio = { version = "1.32.0", default-features = false }
 tracing = { version = "0.1.37", default-features = false }
 url = "2.2.2"
+
+# Fuzzing
+arbitrary = { version = "1.3.2", features = [ "derive" ] }
+honggfuzz = "0.5.55"
 
 [patch.crates-io]
 jsonrpsee = { git = "https://github.com/moondance-labs/jsonrpsee", branch = "tanssi-polkadot-v1.1.0" }
