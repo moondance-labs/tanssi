@@ -17,7 +17,6 @@ else
 fi
 
 if [[ -z "${CHAIN}" ]]; then
-    mkdir -p tmp
     CHAIN="dev"
 else
     CHAIN="${CHAIN}"
