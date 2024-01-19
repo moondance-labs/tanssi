@@ -2,7 +2,7 @@
 
 # This script can be used for running tanssi's benchmarks.
 #
-# The tamsso binary is required to be compiled with --features=runtime-benchmarks
+# The tanssi binary is required to be compiled with --features=runtime-benchmarks
 # in release mode.
 
 set -e
