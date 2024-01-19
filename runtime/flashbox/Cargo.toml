@@ -231,6 +231,7 @@ runtime-benchmarks = [
 	"polkadot-runtime-common/runtime-benchmarks",
 	"polkadot-runtime-parachains/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"tp-consensus/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 ]
 

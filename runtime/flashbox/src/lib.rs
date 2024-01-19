@@ -1181,13 +1181,21 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
-        [pallet_author_noting, AuthorNoting]
-        [pallet_collator_assignment, CollatorAssignment]
-        [pallet_configuration, Configuration]
+        [pallet_timestamp, Timestamp]
+        [pallet_sudo, Sudo]
+        [pallet_proxy, Proxy]
+        [pallet_utility, Utility]
+        [pallet_tx_pause, TxPause]
+        [pallet_balances, Balances]
+        [pallet_identity, Identity]
         [pallet_registrar, Registrar]
-        [pallet_invulnerables, Invulnerables]
+        [pallet_configuration, Configuration]
+        [pallet_collator_assignment, CollatorAssignment]
+        [pallet_author_noting, AuthorNoting]
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
+        [pallet_invulnerables, Invulnerables]
+        [pallet_author_inherent, AuthorInherent]
         [pallet_relay_storage_roots, RelayStorageRoots]
     );
 }
@@ -1327,10 +1335,19 @@ impl_runtime_apis! {
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking};
+            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
 
-            impl frame_system_benchmarking::Config for Runtime {}
+            impl frame_system_benchmarking::Config for Runtime {
+                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                    ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
+                    Ok(())
+                }
+
+                fn verify_set_code() {
+                    System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
+                }
+            }
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number

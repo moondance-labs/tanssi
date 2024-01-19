@@ -374,6 +374,12 @@ impl nimbus_primitives::CanAuthor<NimbusId> for CanAuthor {
 
         expected_author == author
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn get_authors(_slot: &u32) -> Vec<NimbusId> {
+        AuthorityAssignment::collator_container_chain(Session::current_index())
+            .expect("authorities should be set")
+            .orchestrator_chain
+    }
 }
 
 impl pallet_author_inherent::Config for Runtime {
@@ -1439,15 +1445,25 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
-        [pallet_author_noting, AuthorNoting]
-        [pallet_collator_assignment, CollatorAssignment]
-        [pallet_configuration, Configuration]
+        [pallet_timestamp, Timestamp]
+        [pallet_sudo, Sudo]
+        [pallet_proxy, Proxy]
+        [pallet_utility, Utility]
+        [pallet_tx_pause, TxPause]
+        [pallet_balances, Balances]
+        [pallet_identity, Identity]
         [pallet_registrar, Registrar]
-        [pallet_invulnerables, Invulnerables]
-        [pallet_pooled_staking, PooledStaking]
+        [pallet_configuration, Configuration]
+        [pallet_collator_assignment, CollatorAssignment]
+        [pallet_author_noting, AuthorNoting]
         [pallet_services_payment, ServicesPayment]
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_data_preservers, DataPreservers]
+        [pallet_invulnerables, Invulnerables]
+        [pallet_author_inherent, AuthorInherent]
+        [pallet_pooled_staking, PooledStaking]
+        [cumulus_pallet_xcmp_queue, XcmpQueue]
+        [pallet_xcm, PolkadotXcm]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_relay_storage_roots, RelayStorageRoots]
     );
@@ -1588,13 +1604,21 @@ impl_runtime_apis! {
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking};
+            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
 
-            impl frame_system_benchmarking::Config for Runtime {}
+            impl frame_system_benchmarking::Config for Runtime {
+                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                    ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
+                    Ok(())
+                }
+
+                fn verify_set_code() {
+                    System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
+                }
+            }
 
             use staging_xcm::latest::prelude::*;
-            use frame_benchmarking::BenchmarkError;
 
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = xcm_config::XcmConfig;
