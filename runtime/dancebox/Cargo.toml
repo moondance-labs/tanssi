@@ -33,12 +33,14 @@ pallet-pooled-staking = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
+pallet-relay-storage-roots = { workspace = true }
 pallet-services-payment = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
 pallet-async-backing = { workspace = true }
 pallet-author-inherent = { workspace = true }
+pallet-foreign-asset-creator = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
@@ -48,6 +50,8 @@ frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
+pallet-asset-rate = { workspace = true }
+pallet-assets = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-root-testing = { workspace = true }
@@ -98,6 +102,7 @@ cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
 pallet-invulnerables = { workspace = true }
 parachain-info = { workspace = true }
+parachains-common = { workspace = true }
 
 # Benchmarking
 frame-benchmarking = { workspace = true, optional = true }
@@ -153,6 +158,8 @@ std = [
 	"frame-try-runtime/std",
 	"log/std",
 	"nimbus-primitives/std",
+	"pallet-asset-rate/std",
+	"pallet-assets/std",
 	"pallet-async-backing/std",
 	"pallet-author-inherent/std",
 	"pallet-author-noting-runtime-api/std",
@@ -164,6 +171,7 @@ std = [
 	"pallet-collator-assignment/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
+	"pallet-foreign-asset-creator/std",
 	"pallet-identity/std",
 	"pallet-im-online/std",
 	"pallet-inflation-rewards/std",
@@ -176,6 +184,7 @@ std = [
 	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
+	"pallet-relay-storage-roots/std",
 	"pallet-root-testing/std",
 	"pallet-services-payment/std",
 	"pallet-session/std",
@@ -189,6 +198,7 @@ std = [
 	"pallet-xcm-benchmarks?/std",
 	"pallet-xcm/std",
 	"parachain-info/std",
+	"parachains-common/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
@@ -243,12 +253,15 @@ runtime-benchmarks = [
 	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
+	"pallet-asset-rate/runtime-benchmarks",
+	"pallet-assets/runtime-benchmarks",
 	"pallet-author-inherent/runtime-benchmarks",
 	"pallet-author-noting/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
+	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
 	"pallet-im-online/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
@@ -258,6 +271,7 @@ runtime-benchmarks = [
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
+	"pallet-relay-storage-roots/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
@@ -266,6 +280,7 @@ runtime-benchmarks = [
 	"pallet-utility/runtime-benchmarks",
 	"pallet-xcm-benchmarks/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
+	"parachains-common/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
 	"polkadot-runtime-parachains/runtime-benchmarks",
@@ -273,6 +288,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
+	"tp-consensus/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
@@ -290,6 +306,10 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
+	"pallet-asset-rate/try-runtime",
+	"pallet-asset-rate/try-runtime",
+	"pallet-assets/try-runtime",
+	"pallet-assets/try-runtime",
 	"pallet-author-inherent/try-runtime",
 	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
@@ -298,6 +318,8 @@ try-runtime = [
 	"pallet-collator-assignment/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
+	"pallet-foreign-asset-creator/try-runtime",
+	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-identity/try-runtime",
 	"pallet-im-online/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
@@ -309,6 +331,7 @@ try-runtime = [
 	"pallet-pooled-staking/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",
+	"pallet-relay-storage-roots/try-runtime",
 	"pallet-root-testing/try-runtime",
 	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",

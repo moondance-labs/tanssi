@@ -94,6 +94,9 @@ decl_test_parachains! {
             Balances: dancebox_runtime::Balances,
             ParachainSystem: dancebox_runtime::ParachainSystem,
             PolkadotXcm: dancebox_runtime::PolkadotXcm,
+            ForeignAssets:  dancebox_runtime::ForeignAssets,
+            AssetRate:  dancebox_runtime::AssetRate,
+            ForeignAssetsCreator: dancebox_runtime::ForeignAssetsCreator,
         }
     },
     pub struct FrontierTemplate {

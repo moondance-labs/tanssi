@@ -46,7 +46,7 @@ use {
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
     serde::{Deserialize, Serialize},
-    sp_runtime::{traits::AtLeast32BitUnsigned, RuntimeAppPublic, Saturating},
+    sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, RuntimeAppPublic, Saturating},
     sp_std::prelude::*,
     tp_traits::GetSessionIndex,
 };
@@ -65,12 +65,23 @@ const LOG_TARGET: &str = "pallet_configuration";
     Deserialize,
 )]
 pub struct HostConfiguration {
+    /// Maximum number of collators, in total, including orchestrator and containers
     pub max_collators: u32,
+    /// Minimum number of collators to be assigned to orchestrator chain
     pub min_orchestrator_collators: u32,
+    /// Maximum number of collators to be assigned to orchestrator chain after all the container chains have been
+    /// assigned collators.
     pub max_orchestrator_collators: u32,
+    /// How many collators to assign to one container chain
     pub collators_per_container: u32,
-    // If this value is 0 means that there is no rotation
+    /// If this value is 0 means that there is no rotation
     pub full_rotation_period: u32,
+    /// How many collators to assign to one parathread
+    pub collators_per_parathread: u32,
+    /// How many parathreads can be assigned to one collator
+    pub parathreads_per_collator: u32,
+    /// Ratio of collators that we expect to be assigned to container chains. Affects fees.
+    pub target_container_chain_fullness: Perbill,
 }
 
 impl Default for HostConfiguration {
@@ -78,10 +89,12 @@ impl Default for HostConfiguration {
         Self {
             max_collators: 100u32,
             min_orchestrator_collators: 2u32,
-            // TODO: for zombienet testing
             max_orchestrator_collators: 5u32,
             collators_per_container: 2u32,
             full_rotation_period: 24u32,
+            collators_per_parathread: 1,
+            parathreads_per_collator: 1,
+            target_container_chain_fullness: Perbill::from_percent(80),
         }
     }
 }
@@ -95,6 +108,8 @@ pub enum InconsistentError {
     MinOrchestratorCollatorsTooLow,
     /// `max_collators` must be at least 1
     MaxCollatorsTooLow,
+    /// Tried to modify an unimplemented parameter
+    UnimplementedParameter,
 }
 
 impl HostConfiguration {
@@ -112,6 +127,9 @@ impl HostConfiguration {
         }
         if self.max_orchestrator_collators < self.min_orchestrator_collators {
             return Err(InconsistentError::MaxCollatorsLowerThanMinCollators);
+        }
+        if self.collators_per_parathread != 1 || self.parathreads_per_collator != 1 {
+            return Err(InconsistentError::UnimplementedParameter);
         }
         Ok(())
     }
@@ -270,6 +288,45 @@ pub mod pallet {
             ensure_root(origin)?;
             Self::schedule_config_update(|config| {
                 config.full_rotation_period = new;
+            })
+        }
+
+        #[pallet::call_index(5)]
+        #[pallet::weight((
+        T::WeightInfo::set_config_with_u32(),
+        DispatchClass::Operational,
+        ))]
+        pub fn set_collators_per_parathread(origin: OriginFor<T>, new: u32) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::schedule_config_update(|config| {
+                config.collators_per_parathread = new;
+            })
+        }
+
+        #[pallet::call_index(6)]
+        #[pallet::weight((
+        T::WeightInfo::set_config_with_u32(),
+        DispatchClass::Operational,
+        ))]
+        pub fn set_parathreads_per_collator(origin: OriginFor<T>, new: u32) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::schedule_config_update(|config| {
+                config.parathreads_per_collator = new;
+            })
+        }
+
+        #[pallet::call_index(7)]
+        #[pallet::weight((
+        T::WeightInfo::set_config_with_u32(),
+        DispatchClass::Operational,
+        ))]
+        pub fn set_target_container_chain_fullness(
+            origin: OriginFor<T>,
+            new: Perbill,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            Self::schedule_config_update(|config| {
+                config.target_container_chain_fullness = new;
             })
         }
 

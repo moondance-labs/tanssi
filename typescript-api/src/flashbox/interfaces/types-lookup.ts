@@ -1519,6 +1519,18 @@ declare module "@polkadot/types/lookup" {
         readonly asSetFullRotationPeriod: {
             readonly new_: u32;
         } & Struct;
+        readonly isSetCollatorsPerParathread: boolean;
+        readonly asSetCollatorsPerParathread: {
+            readonly new_: u32;
+        } & Struct;
+        readonly isSetParathreadsPerCollator: boolean;
+        readonly asSetParathreadsPerCollator: {
+            readonly new_: u32;
+        } & Struct;
+        readonly isSetTargetContainerChainFullness: boolean;
+        readonly asSetTargetContainerChainFullness: {
+            readonly new_: Perbill;
+        } & Struct;
         readonly isSetBypassConsistencyCheck: boolean;
         readonly asSetBypassConsistencyCheck: {
             readonly new_: bool;
@@ -1529,13 +1541,16 @@ declare module "@polkadot/types/lookup" {
             | "SetMaxOrchestratorCollators"
             | "SetCollatorsPerContainer"
             | "SetFullRotationPeriod"
+            | "SetCollatorsPerParathread"
+            | "SetParathreadsPerCollator"
+            | "SetTargetContainerChainFullness"
             | "SetBypassConsistencyCheck";
     }
 
-    /** @name PalletCollatorAssignmentCall (195) */
+    /** @name PalletCollatorAssignmentCall (196) */
     type PalletCollatorAssignmentCall = Null;
 
-    /** @name PalletAuthorNotingCall (196) */
+    /** @name PalletAuthorNotingCall (197) */
     interface PalletAuthorNotingCall extends Enum {
         readonly isSetLatestAuthorData: boolean;
         readonly asSetLatestAuthorData: {
@@ -1554,15 +1569,15 @@ declare module "@polkadot/types/lookup" {
         readonly type: "SetLatestAuthorData" | "SetAuthor" | "KillAuthorData";
     }
 
-    /** @name TpAuthorNotingInherentOwnParachainInherentData (197) */
+    /** @name TpAuthorNotingInherentOwnParachainInherentData (198) */
     interface TpAuthorNotingInherentOwnParachainInherentData extends Struct {
         readonly relayStorageProof: SpTrieStorageProof;
     }
 
-    /** @name PalletAuthorityAssignmentCall (198) */
+    /** @name PalletAuthorityAssignmentCall (199) */
     type PalletAuthorityAssignmentCall = Null;
 
-    /** @name PalletServicesPaymentCall (199) */
+    /** @name PalletServicesPaymentCall (200) */
     interface PalletServicesPaymentCall extends Enum {
         readonly isPurchaseCredits: boolean;
         readonly asPurchaseCredits: {
@@ -1583,7 +1598,7 @@ declare module "@polkadot/types/lookup" {
         readonly type: "PurchaseCredits" | "SetCredits" | "SetGivenFreeCredits";
     }
 
-    /** @name PalletDataPreserversCall (201) */
+    /** @name PalletDataPreserversCall (202) */
     interface PalletDataPreserversCall extends Enum {
         readonly isSetBootNodes: boolean;
         readonly asSetBootNodes: {
@@ -1593,7 +1608,7 @@ declare module "@polkadot/types/lookup" {
         readonly type: "SetBootNodes";
     }
 
-    /** @name PalletInvulnerablesCall (205) */
+    /** @name PalletInvulnerablesCall (206) */
     interface PalletInvulnerablesCall extends Enum {
         readonly isSetInvulnerables: boolean;
         readonly asSetInvulnerables: {
@@ -1610,7 +1625,7 @@ declare module "@polkadot/types/lookup" {
         readonly type: "SetInvulnerables" | "AddInvulnerable" | "RemoveInvulnerable";
     }
 
-    /** @name PalletSessionCall (206) */
+    /** @name PalletSessionCall (207) */
     interface PalletSessionCall extends Enum {
         readonly isSetKeys: boolean;
         readonly asSetKeys: {
@@ -1621,24 +1636,24 @@ declare module "@polkadot/types/lookup" {
         readonly type: "SetKeys" | "PurgeKeys";
     }
 
-    /** @name FlashboxRuntimeSessionKeys (207) */
+    /** @name FlashboxRuntimeSessionKeys (208) */
     interface FlashboxRuntimeSessionKeys extends Struct {
         readonly nimbus: NimbusPrimitivesNimbusCryptoPublic;
     }
 
-    /** @name NimbusPrimitivesNimbusCryptoPublic (208) */
+    /** @name NimbusPrimitivesNimbusCryptoPublic (209) */
     interface NimbusPrimitivesNimbusCryptoPublic extends SpCoreSr25519Public {}
 
-    /** @name SpCoreSr25519Public (209) */
+    /** @name SpCoreSr25519Public (210) */
     interface SpCoreSr25519Public extends U8aFixed {}
 
-    /** @name PalletAuthorInherentCall (210) */
+    /** @name PalletAuthorInherentCall (211) */
     interface PalletAuthorInherentCall extends Enum {
         readonly isKickOffAuthorshipValidation: boolean;
         readonly type: "KickOffAuthorshipValidation";
     }
 
-    /** @name PalletRootTestingCall (211) */
+    /** @name PalletRootTestingCall (212) */
     interface PalletRootTestingCall extends Enum {
         readonly isFillBlock: boolean;
         readonly asFillBlock: {
@@ -1872,6 +1887,9 @@ declare module "@polkadot/types/lookup" {
         readonly maxOrchestratorCollators: u32;
         readonly collatorsPerContainer: u32;
         readonly fullRotationPeriod: u32;
+        readonly collatorsPerParathread: u32;
+        readonly parathreadsPerCollator: u32;
+        readonly targetContainerChainFullness: Perbill;
     }
 
     /** @name PalletConfigurationError (263) */
@@ -1966,7 +1984,7 @@ declare module "@polkadot/types/lookup" {
         readonly rewardsPerChain: u128;
     }
 
-    /** @name SpRuntimeMultiSignature (294) */
+    /** @name SpRuntimeMultiSignature (295) */
     interface SpRuntimeMultiSignature extends Enum {
         readonly isEd25519: boolean;
         readonly asEd25519: SpCoreEd25519Signature;
@@ -1977,36 +1995,36 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Ed25519" | "Sr25519" | "Ecdsa";
     }
 
-    /** @name SpCoreEd25519Signature (295) */
+    /** @name SpCoreEd25519Signature (296) */
     interface SpCoreEd25519Signature extends U8aFixed {}
 
-    /** @name SpCoreSr25519Signature (297) */
+    /** @name SpCoreSr25519Signature (298) */
     interface SpCoreSr25519Signature extends U8aFixed {}
 
-    /** @name SpCoreEcdsaSignature (298) */
+    /** @name SpCoreEcdsaSignature (299) */
     interface SpCoreEcdsaSignature extends U8aFixed {}
 
-    /** @name FrameSystemExtensionsCheckNonZeroSender (301) */
+    /** @name FrameSystemExtensionsCheckNonZeroSender (302) */
     type FrameSystemExtensionsCheckNonZeroSender = Null;
 
-    /** @name FrameSystemExtensionsCheckSpecVersion (302) */
+    /** @name FrameSystemExtensionsCheckSpecVersion (303) */
     type FrameSystemExtensionsCheckSpecVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckTxVersion (303) */
+    /** @name FrameSystemExtensionsCheckTxVersion (304) */
     type FrameSystemExtensionsCheckTxVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckGenesis (304) */
+    /** @name FrameSystemExtensionsCheckGenesis (305) */
     type FrameSystemExtensionsCheckGenesis = Null;
 
-    /** @name FrameSystemExtensionsCheckNonce (307) */
+    /** @name FrameSystemExtensionsCheckNonce (308) */
     interface FrameSystemExtensionsCheckNonce extends Compact<u32> {}
 
-    /** @name FrameSystemExtensionsCheckWeight (308) */
+    /** @name FrameSystemExtensionsCheckWeight (309) */
     type FrameSystemExtensionsCheckWeight = Null;
 
-    /** @name PalletTransactionPaymentChargeTransactionPayment (309) */
+    /** @name PalletTransactionPaymentChargeTransactionPayment (310) */
     interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
 
-    /** @name FlashboxRuntimeRuntime (310) */
+    /** @name FlashboxRuntimeRuntime (311) */
     type FlashboxRuntimeRuntime = Null;
 } // declare module
