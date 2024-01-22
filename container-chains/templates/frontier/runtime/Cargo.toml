@@ -22,6 +22,7 @@ smallvec = { workspace = true }
 ccp-xcm = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tp-consensus = { workspace = true }
+tp-construct-tanssi-runtime = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
