@@ -25,7 +25,7 @@ use {
     },
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
-    sp_core::H256,
+    sp_core::{Get, H256},
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
@@ -111,9 +111,13 @@ pub struct Mocks {
     pub min_orchestrator_chain_collators: u32,
     pub max_orchestrator_chain_collators: u32,
     pub collators_per_container: u32,
+    pub collators_per_parathread: u32,
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
+    pub parathreads: Vec<u32>,
     pub random_seed: [u8; 32],
+    // None means 5
+    pub full_rotation_period: Option<u32>,
 }
 
 impl mock_data::Config for Test {}
@@ -123,7 +127,7 @@ impl mock_data::Config for Test {}
 pub struct HostConfigurationGetter;
 
 parameter_types! {
-    pub const ParachainId: ParaId = ParaId::new(200);
+    pub const ParachainId: ParaId = ParaId::new(1000);
 }
 
 impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfigurationGetter {
@@ -137,6 +141,10 @@ impl pallet_collator_assignment::GetHostConfiguration<u32> for HostConfiguration
 
     fn collators_per_container(_session_index: u32) -> u32 {
         MockData::mock().collators_per_container
+    }
+
+    fn collators_per_parathread(_session_index: u32) -> u32 {
+        MockData::mock().collators_per_parathread
     }
 }
 
@@ -154,6 +162,15 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
     fn session_container_chains(_session_index: u32) -> Vec<ParaId> {
         MockData::mock()
             .container_chains
+            .iter()
+            .cloned()
+            .map(ParaId::from)
+            .collect()
+    }
+
+    fn session_parathreads(_session_index: u32) -> Vec<ParaId> {
+        MockData::mock()
+            .parathreads
             .iter()
             .cloned()
             .map(ParaId::from)
@@ -184,13 +201,22 @@ parameter_types! {
     pub const CollatorRotationSessionPeriod: u32 = 5;
 }
 
+pub struct MockCollatorRotationSessionPeriod;
+
+impl Get<u32> for MockCollatorRotationSessionPeriod {
+    fn get() -> u32 {
+        MockData::mock().full_rotation_period.unwrap_or(5)
+    }
+}
+
 impl pallet_collator_assignment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type SessionIndex = u32;
     type HostConfiguration = HostConfigurationGetter;
     type ContainerChains = ContainerChainsGetter;
     type SelfParaId = ParachainId;
-    type ShouldRotateAllCollators = RotateCollatorsEveryNSessions<CollatorRotationSessionPeriod>;
+    type ShouldRotateAllCollators =
+        RotateCollatorsEveryNSessions<MockCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;

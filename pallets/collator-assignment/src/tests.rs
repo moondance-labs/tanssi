@@ -14,10 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use dp_collator_assignment::AssignedCollators;
 use {
     crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
     std::collections::BTreeMap,
 };
+
+mod assign_full;
+mod prioritize_invulnerables;
+mod select_chains;
 
 fn assigned_collators() -> BTreeMap<u64, u32> {
     let assigned_collators = CollatorContainerChain::<Test>::get();
@@ -31,7 +36,7 @@ fn assigned_collators() -> BTreeMap<u64, u32> {
     }
 
     for collator in assigned_collators.orchestrator_chain {
-        h.insert(collator, 999);
+        h.insert(collator, 1000);
     }
 
     h
@@ -44,6 +49,7 @@ fn assign_initial_collators() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
@@ -60,11 +66,11 @@ fn assign_initial_collators() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -81,6 +87,7 @@ fn assign_collators_after_one_leaves_container() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
@@ -97,11 +104,11 @@ fn assign_collators_after_one_leaves_container() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -120,11 +127,11 @@ fn assign_collators_after_one_leaves_container() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 //(6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -143,6 +150,7 @@ fn assign_collators_after_one_leaves_orchestrator_chain() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
@@ -156,11 +164,11 @@ fn assign_collators_after_one_leaves_orchestrator_chain() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -177,17 +185,17 @@ fn assign_collators_after_one_leaves_orchestrator_chain() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                //(4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                //(4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
                 (9, 1002),
                 // 10 is assigned in place of 4
-                (10, 999),
+                (10, 1000),
             ]),
         );
     });
@@ -200,6 +208,7 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
@@ -212,11 +221,11 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -235,18 +244,18 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
                 (9, 1002),
-                (10, 999),
-                (11, 999),
-                (12, 999),
+                (10, 1000),
+                (11, 1000),
+                (12, 1000),
             ]),
         );
     });
@@ -259,6 +268,7 @@ fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
@@ -271,11 +281,11 @@ fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -303,6 +313,7 @@ fn assign_collators_if_config_collators_per_container_increases() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
@@ -316,11 +327,11 @@ fn assign_collators_if_config_collators_per_container_increases() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -338,11 +349,11 @@ fn assign_collators_if_config_collators_per_container_increases() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -363,6 +374,7 @@ fn assign_collators_if_container_chain_is_removed() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
@@ -375,11 +387,11 @@ fn assign_collators_if_container_chain_is_removed() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -397,11 +409,11 @@ fn assign_collators_if_container_chain_is_removed() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
             ]),
@@ -416,6 +428,7 @@ fn assign_collators_if_container_chain_is_added() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
@@ -428,11 +441,11 @@ fn assign_collators_if_container_chain_is_added() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -450,11 +463,11 @@ fn assign_collators_if_container_chain_is_added() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -473,6 +486,7 @@ fn assign_collators_after_decrease_num_collators() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 5;
             m.max_orchestrator_chain_collators = 5;
 
@@ -482,27 +496,26 @@ fn assign_collators_after_decrease_num_collators() {
         assert_eq!(assigned_collators(), BTreeMap::new(),);
         run_to_block(11);
 
-        assert_eq!(
-            assigned_collators(),
-            BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
-                (6, 1001),
-                (7, 1001),
-                (8, 1002),
-                (9, 1002),
-            ]),
-        );
+        let initial_assignment = BTreeMap::from_iter(vec![
+            (1, 1000),
+            (2, 1000),
+            (3, 1000),
+            (4, 1000),
+            (5, 1000),
+            (6, 1001),
+            (7, 1001),
+            (8, 1002),
+            (9, 1002),
+        ]);
+        assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
             m.collators = vec![];
         });
 
         run_to_block(21);
-        assert_eq!(assigned_collators(), BTreeMap::from_iter(vec![]));
+        // There are no collators but that would brick the chain, so we keep the old assignment
+        assert_eq!(assigned_collators(), initial_assignment);
     });
 }
 
@@ -513,6 +526,7 @@ fn assign_collators_stay_constant_if_new_collators_can_take_new_chains() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -524,7 +538,7 @@ fn assign_collators_stay_constant_if_new_collators_can_take_new_chains() {
 
         assert_eq!(
             assigned_collators(),
-            BTreeMap::from_iter(vec![(1, 999), (2, 999), (3, 999), (4, 999), (5, 999),]),
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 1000), (4, 1000), (5, 1000),]),
         );
 
         MockData::mutate(|m| {
@@ -535,11 +549,11 @@ fn assign_collators_stay_constant_if_new_collators_can_take_new_chains() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 999),
-                (4, 999),
-                (5, 999),
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
                 (6, 1001),
                 (7, 1001),
                 (8, 1002),
@@ -556,6 +570,7 @@ fn assign_collators_move_extra_container_chain_to_orchestrator_chain_if_not_enou
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -567,7 +582,7 @@ fn assign_collators_move_extra_container_chain_to_orchestrator_chain_if_not_enou
 
         assert_eq!(
             assigned_collators(),
-            BTreeMap::from_iter(vec![(1, 999), (2, 999), (3, 999), (4, 999),]),
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 1000), (4, 1000),]),
         );
 
         MockData::mutate(|m| {
@@ -578,7 +593,7 @@ fn assign_collators_move_extra_container_chain_to_orchestrator_chain_if_not_enou
 
         assert_eq!(
             assigned_collators(),
-            BTreeMap::from_iter(vec![(1, 999), (2, 999), (5, 1001), (3, 1001), (4, 999),]),
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 1000), (4, 1001), (5, 1001),]),
         );
     });
 }
@@ -590,6 +605,7 @@ fn assign_collators_reorganize_container_chains_if_not_enough_collators() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -602,8 +618,8 @@ fn assign_collators_reorganize_container_chains_if_not_enough_collators() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
+                (1, 1000),
+                (2, 1000),
                 (3, 1001),
                 (4, 1001),
                 (5, 1002),
@@ -627,13 +643,13 @@ fn assign_collators_reorganize_container_chains_if_not_enough_collators() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 1005),
-                (5, 1004),
-                (7, 999),
-                (9, 1004),
-                (11, 1005)
+                (1, 1000),
+                (2, 1000),
+                (3, 1001),
+                (5, 1002),
+                (7, 1000),
+                (9, 1001),
+                (11, 1002)
             ]),
         );
     });
@@ -646,6 +662,7 @@ fn assign_collators_set_zero_per_container() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -658,18 +675,18 @@ fn assign_collators_set_zero_per_container() {
         assert_eq!(
             assigned_collators(),
             BTreeMap::from_iter(vec![
-                (1, 999),
-                (2, 999),
-                (3, 1001),
-                (4, 1001),
-                (5, 1002),
-                (6, 1002),
-                (7, 1003),
-                (8, 1003),
-                (9, 1004),
-                (10, 1004),
-                (11, 999),
-                (12, 999)
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1001),
+                (6, 1001),
+                (7, 1002),
+                (8, 1002),
+                (9, 1003),
+                (10, 1003),
+                (11, 1004),
+                (12, 1004),
             ]),
         );
 
@@ -682,7 +699,7 @@ fn assign_collators_set_zero_per_container() {
         // There are 5 collators in total: 0x4 container chains, plus 5 in the orchestrator chain
         assert_eq!(
             assigned_collators(),
-            BTreeMap::from_iter(vec![(1, 999), (2, 999), (3, 999), (11, 999), (12, 999),]),
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 1000), (4, 1000), (5, 1000),]),
         );
     });
 }
@@ -694,6 +711,7 @@ fn assign_collators_rotation() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -704,18 +722,18 @@ fn assign_collators_rotation() {
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
-            (1, 999),
-            (2, 999),
-            (3, 1001),
-            (4, 1001),
-            (5, 1002),
-            (6, 1002),
-            (7, 1003),
-            (8, 1003),
-            (9, 1004),
-            (10, 1004),
-            (11, 999),
-            (12, 999),
+            (1, 1000),
+            (2, 1000),
+            (3, 1000),
+            (4, 1000),
+            (5, 1001),
+            (6, 1001),
+            (7, 1002),
+            (8, 1002),
+            (9, 1003),
+            (10, 1003),
+            (11, 1004),
+            (12, 1004),
         ]);
 
         assert_eq!(assigned_collators(), initial_assignment,);
@@ -743,18 +761,18 @@ fn assign_collators_rotation() {
 
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         let shuffled_assignment = BTreeMap::from_iter(vec![
-            (1, 1004),
-            (2, 999),
-            (3, 999),
-            (4, 1003),
-            (5, 1001),
-            (6, 1001),
-            (7, 999),
-            (8, 1002),
-            (9, 999),
-            (10, 1003),
-            (11, 1004),
-            (12, 1002),
+            (1, 1000),
+            (2, 1002),
+            (3, 1000),
+            (4, 1004),
+            (5, 1003),
+            (6, 1003),
+            (7, 1000),
+            (8, 1001),
+            (9, 1002),
+            (10, 1004),
+            (11, 1000),
+            (12, 1001),
         ]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
@@ -768,6 +786,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -779,7 +798,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
         run_to_block(11);
 
         let initial_assignment =
-            BTreeMap::from_iter(vec![(1, 999), (2, 999), (3, 1001), (4, 1001)]);
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 1001), (4, 1001)]);
 
         assert_eq!(assigned_collators(), initial_assignment,);
 
@@ -793,7 +812,46 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 999), (2, 1002), (3, 999), (4, 1002)]);
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1002), (3, 1000), (4, 1002)]);
+
+        assert_eq!(assigned_collators(), shuffled_assignment,);
+    });
+}
+
+#[test]
+fn assign_collators_rotation_parathreads_are_shuffled() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            // 4 collators so we can only assign to one parathread
+            m.collators = vec![1, 2, 3, 4];
+            m.parathreads = vec![5001, 5002];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        let initial_assignment =
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 5001), (4, 5001)]);
+
+        assert_eq!(assigned_collators(), initial_assignment,);
+
+        MockData::mutate(|m| {
+            // Seed chosen manually to see the case where parathread 5002 is given priority
+            m.random_seed = [2; 32];
+        });
+
+        run_to_block(26);
+
+        // Random assignment depends on the seed, shouldn't change unless the algorithm changes
+        // Test that container chains are shuffled because 1001 does not have priority
+        let shuffled_assignment =
+            BTreeMap::from_iter(vec![(1, 1000), (2, 5002), (3, 1000), (4, 5002)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -806,6 +864,7 @@ fn assign_collators_rotation_collators_are_shuffled() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -817,15 +876,15 @@ fn assign_collators_rotation_collators_are_shuffled() {
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
-            (1, 999),
-            (2, 999),
-            (3, 1001),
-            (4, 1001),
-            (5, 1002),
-            (6, 1002),
-            (7, 999),
-            (8, 999),
-            (9, 999),
+            (1, 1000),
+            (2, 1000),
+            (3, 1000),
+            (4, 1000),
+            (5, 1000),
+            (6, 1001),
+            (7, 1001),
+            (8, 1002),
+            (9, 1002),
         ]);
 
         assert_eq!(assigned_collators(), initial_assignment,);
@@ -840,15 +899,15 @@ fn assign_collators_rotation_collators_are_shuffled() {
         // Test that collators are shuffled because collator 10 should be the last one to be assigned,
         // and here it is present
         let shuffled_assignment = BTreeMap::from_iter(vec![
-            (1, 999),
-            (3, 1001),
-            (4, 1001),
-            (5, 1002),
-            (6, 999),
-            (7, 999),
-            (8, 999),
-            (9, 1002),
-            (10, 999),
+            (1, 1000),
+            (3, 1000),
+            (4, 1000),
+            (5, 1001),
+            (6, 1002),
+            (7, 1000),
+            (8, 1001),
+            (9, 1000),
+            (10, 1002),
         ]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
@@ -862,6 +921,7 @@ fn assign_collators_invulnerables_priority_orchestrator() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -874,18 +934,97 @@ fn assign_collators_invulnerables_priority_orchestrator() {
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
-            (100, 999),
-            (1, 999),
-            (2, 1001),
-            (3, 1001),
-            (4, 1002),
-            (5, 1002),
-            (6, 999),
-            (7, 999),
-            (8, 999),
+            (100, 1000),
+            (1, 1000),
+            (2, 1000),
+            (3, 1000),
+            (4, 1000),
+            (5, 1001),
+            (6, 1001),
+            (7, 1002),
+            (8, 1002),
         ]);
 
         assert_eq!(assigned_collators(), initial_assignment,);
+    });
+}
+
+#[test]
+fn assign_collators_invulnerables_priority_orchestrator_reassigned() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+            // Disable rotation because this test is long
+            m.full_rotation_period = Some(0);
+
+            // 10 collators but we only need 9, so 1 collator will not be assigned
+            // ids >= 100 are invulnerables so 2 of them will always be assigned to the orchestrator
+            m.collators = vec![1, 2, 3, 4, 5, 100, 101, 102, 103, 104];
+            m.container_chains = vec![1001, 1002];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        let initial_assignment = BTreeMap::from_iter(vec![
+            (100, 1000),
+            (101, 1000),
+            (1, 1000),
+            (2, 1000),
+            (3, 1000),
+            (4, 1001),
+            (5, 1001),
+            (102, 1002),
+            (103, 1002),
+        ]);
+
+        assert_eq!(assigned_collators(), initial_assignment,);
+
+        MockData::mutate(|m| {
+            // Remove invulnerable from orchestrator, the unassigned invulnerable will take its place
+            m.collators = vec![1, 2, 3, 4, 5, 101, 102, 103, 104];
+        });
+
+        run_to_block(21);
+
+        let assignment = BTreeMap::from_iter(vec![
+            (104, 1000),
+            (101, 1000),
+            (1, 1000),
+            (2, 1000),
+            (3, 1000),
+            (4, 1001),
+            (5, 1001),
+            (102, 1002),
+            (103, 1002),
+        ]);
+
+        assert_eq!(assigned_collators(), assignment,);
+
+        MockData::mutate(|m| {
+            // Remove another invulnerable from orchestrator, there are no unassigned invulnerables so the ones in a
+            // container chain will move from the container chain to the orchestrator
+            m.collators = vec![1, 2, 3, 4, 5, 102, 103, 104];
+        });
+
+        run_to_block(31);
+
+        let assignment = BTreeMap::from_iter(vec![
+            (104, 1000),
+            (102, 1000),
+            (1, 1000),
+            (2, 1000),
+            (3, 1002),
+            (4, 1001),
+            (5, 1001),
+            (103, 1002),
+        ]);
+
+        assert_eq!(assigned_collators(), assignment,);
     });
 }
 
@@ -896,6 +1035,7 @@ fn assign_collators_all_invulnerables() {
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -907,15 +1047,15 @@ fn assign_collators_all_invulnerables() {
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
-            (101, 999),
-            (102, 999),
-            (103, 1001),
-            (104, 1001),
-            (105, 1002),
-            (106, 1002),
-            (107, 999),
-            (108, 999),
-            (109, 999),
+            (101, 1000),
+            (102, 1000),
+            (103, 1000),
+            (104, 1000),
+            (105, 1000),
+            (106, 1001),
+            (107, 1001),
+            (108, 1002),
+            (109, 1002),
         ]);
 
         assert_eq!(assigned_collators(), initial_assignment,);
@@ -924,12 +1064,13 @@ fn assign_collators_all_invulnerables() {
 
 #[test]
 fn rotation_events() {
-    // Ensure that the NewPendingAssignment is correct
+    // Ensure that the NewPendingAssignment event is correct
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
         MockData::mutate(|m| {
             m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
             m.min_orchestrator_chain_collators = 2;
             m.max_orchestrator_chain_collators = 5;
 
@@ -1012,5 +1153,91 @@ fn rotation_events() {
                 }
             }
         }
+    });
+}
+
+#[test]
+fn assign_collators_remove_from_orchestator_when_all_assigned() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 2;
+
+            m.collators = vec![1, 2];
+            m.container_chains = vec![1001];
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        let initial_assignment = BTreeMap::from_iter(vec![(1, 1000), (2, 1000)]);
+
+        assert_eq!(assigned_collators(), initial_assignment,);
+
+        MockData::mutate(|m| {
+            m.collators = vec![1, 2, 3, 4];
+        });
+
+        run_to_block(26);
+
+        let assignment = BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 1001), (4, 1001)]);
+        assert_eq!(assigned_collators(), assignment,);
+
+        MockData::mutate(|m| {
+            m.collators = vec![1, 3, 4];
+        });
+
+        run_to_block(36);
+
+        let assignment = BTreeMap::from_iter(vec![(1, 1000), (3, 1000)]);
+
+        assert_eq!(assigned_collators(), assignment,);
+
+        MockData::mutate(|m| {
+            m.collators = vec![3, 4];
+        });
+
+        run_to_block(46);
+
+        let assignment = BTreeMap::from_iter(vec![(3, 1000), (4, 1000)]);
+
+        assert_eq!(assigned_collators(), assignment,);
+    });
+}
+
+#[test]
+fn collator_assignment_includes_empty_chains() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 2;
+
+            m.collators = vec![1, 2];
+            m.container_chains = vec![2000, 2001, 2002];
+            m.parathreads = vec![3000, 3001, 3002]
+        });
+        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        run_to_block(11);
+
+        let assigned_collators = CollatorContainerChain::<Test>::get();
+        let expected = AssignedCollators {
+            orchestrator_chain: vec![1, 2],
+            container_chains: BTreeMap::from_iter(vec![
+                (2000.into(), vec![]),
+                (2001.into(), vec![]),
+                (2002.into(), vec![]),
+                (3000.into(), vec![]),
+                (3001.into(), vec![]),
+                (3002.into(), vec![]),
+            ]),
+        };
+        assert_eq!(assigned_collators, expected);
     });
 }
