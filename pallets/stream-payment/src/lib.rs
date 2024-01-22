@@ -120,17 +120,74 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
     pub struct Stream<AccountId, Unit, AssetId, Balance> {
+        /// Payer, source of the stream.
         pub source: AccountId,
+        /// Payee, target of the stream.
         pub target: AccountId,
-        pub time_unit: Unit,
-        pub asset_id: AssetId,
-        pub rate_per_time_unit: Balance,
+        /// Steam config (time unit, asset id, rate)
+        pub config: StreamConfig<Unit, AssetId, Balance>,
+        /// How much is deposited to fund this stream.
         pub deposit: Balance,
+        /// Last time the stream was updated in `config.time_unit`.
         pub last_time_updated: Balance,
+        /// Nonce for requests. This prevents a request to make a first request
+        /// then change it to another request to frontrun the other party
+        /// accepting.
+        pub request_nonce: u32,
+        /// A pending change request if any.
+        pub pending_request: Option<ChangeRequest<Unit, AssetId, Balance>>,
+    }
+
+    /// Stream configuration.
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    pub struct StreamConfig<Unit, AssetId, Balance> {
+        /// Unit in which time is measured using a `TimeProvider`.
+        pub time_unit: Unit,
+        /// Asset used for payment.
+        pub asset_id: AssetId,
+        /// Amount of asset / unit.
+        pub rate: Balance,
+    }
+
+    /// Origin of a change request.
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    pub enum ChangeRequester {
+        Source,
+        Target,
+    }
+
+    /// Kind of change requested.
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    pub enum ChangeKind<Time> {
+        /// The requested change is a suggestion, and the other party doesn't
+        /// need to accept it.
+        Suggestion,
+        /// The requested change is mandatory, and the other party must either
+        /// accept the change or close the stream. Reaching the deadline will
+        /// close the stream too.
+        Mandatory { deadline: Time },
+    }
+
+    /// A request to change a stream config.
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    pub struct ChangeRequest<Unit, AssetId, Balance> {
+        origin: ChangeRequester,
+        kind: ChangeKind<Balance>,
+        new_config: StreamConfig<Unit, AssetId, Balance>,
     }
 
     pub type StreamOf<T> =
         Stream<AccountIdOf<T>, <T as Config>::TimeUnit, AssetIdOf<T>, <T as Config>::Balance>;
+
+    pub type StreamConfigOf<T> =
+        StreamConfig<<T as Config>::TimeUnit, AssetIdOf<T>, <T as Config>::Balance>;
+
+    pub type ChangeRequestOf<T> =
+        ChangeRequest<<T as Config>::TimeUnit, AssetIdOf<T>, <T as Config>::Balance>;
 
     /// Store the next available stream id.
     #[pallet::storage]
@@ -229,9 +286,7 @@ pub mod pallet {
         pub fn open_stream(
             origin: OriginFor<T>,
             target: AccountIdOf<T>,
-            time_unit: T::TimeUnit,
-            asset_id: AssetIdOf<T>,
-            rate_per_time_unit: T::Balance,
+            config: StreamConfigOf<T>,
             initial_deposit: T::Balance,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
@@ -245,18 +300,19 @@ pub mod pallet {
             NextStreamId::<T>::set(next_stream_id);
 
             // Freeze initial deposit.
-            T::Assets::increase_deposit(asset_id.clone(), &origin, initial_deposit)?;
+            T::Assets::increase_deposit(config.asset_id.clone(), &origin, initial_deposit)?;
 
             // Create stream data.
-            let now = T::TimeProvider::now(&time_unit).ok_or(Error::<T>::CantFetchCurrentTime)?;
+            let now =
+                T::TimeProvider::now(&config.time_unit).ok_or(Error::<T>::CantFetchCurrentTime)?;
             let stream = Stream {
                 source: origin.clone(),
                 target: target.clone(),
-                time_unit,
-                asset_id,
-                rate_per_time_unit,
+                config,
                 deposit: initial_deposit,
                 last_time_updated: now,
+                request_nonce: 0,
+                pending_request: None,
             };
 
             // Insert stream in storage.
@@ -288,7 +344,11 @@ pub mod pallet {
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
             // Unfreeze funds left in the stream.
-            T::Assets::decrease_deposit(stream.asset_id.clone(), &stream.source, stream.deposit)?;
+            T::Assets::decrease_deposit(
+                stream.config.asset_id.clone(),
+                &stream.source,
+                stream.deposit,
+            )?;
 
             // Remove stream from storage.
             Streams::<T>::remove(stream_id);
@@ -336,7 +396,7 @@ pub mod pallet {
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
             // Increase deposit.
-            T::Assets::increase_deposit(stream.asset_id.clone(), &origin, increase)?;
+            T::Assets::increase_deposit(stream.config.asset_id.clone(), &origin, increase)?;
             stream.deposit = stream
                 .deposit
                 .checked_add(&increase)
@@ -371,16 +431,16 @@ pub mod pallet {
             );
 
             // Noop
-            if new_rate_per_time_unit == stream.rate_per_time_unit {
+            if new_rate_per_time_unit == stream.config.rate {
                 return Ok(().into());
             }
 
             // Ensure rate change is fair.
-            if origin == stream.source && new_rate_per_time_unit < stream.rate_per_time_unit {
+            if origin == stream.source && new_rate_per_time_unit < stream.config.rate {
                 return Err(Error::<T>::SourceCantDecreaseRate.into());
             }
 
-            if origin == stream.target && new_rate_per_time_unit > stream.rate_per_time_unit {
+            if origin == stream.target && new_rate_per_time_unit > stream.config.rate {
                 return Err(Error::<T>::TargetCantIncreaseRate.into());
             }
 
@@ -390,12 +450,12 @@ pub mod pallet {
             // Emit event.
             Pallet::<T>::deposit_event(Event::<T>::StreamRateChanged {
                 stream_id,
-                old_rate: stream.rate_per_time_unit,
+                old_rate: stream.config.rate,
                 new_rate: new_rate_per_time_unit,
             });
 
             // Update rate
-            stream.rate_per_time_unit = new_rate_per_time_unit;
+            stream.config.rate = new_rate_per_time_unit;
             Streams::<T>::insert(stream_id, stream);
 
             Ok(().into())
@@ -416,8 +476,8 @@ pub mod pallet {
             stream_id: T::StreamId,
             stream: &mut StreamOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let now =
-                T::TimeProvider::now(&stream.time_unit).ok_or(Error::<T>::CantFetchCurrentTime)?;
+            let now = T::TimeProvider::now(&stream.config.time_unit)
+                .ok_or(Error::<T>::CantFetchCurrentTime)?;
 
             if now == stream.last_time_updated {
                 return Ok(().into());
@@ -436,7 +496,7 @@ pub mod pallet {
             // We compute the amount due to the target according to the rate, which may be
             // lowered if the stream deposit is lower.
             let mut payment = delta
-                .checked_mul(&stream.rate_per_time_unit)
+                .checked_mul(&stream.config.rate)
                 .ok_or(Error::<T>::CurrencyOverflow)?;
 
             // We compute the new amount of locked funds. If it underflows it
@@ -452,7 +512,7 @@ pub mod pallet {
 
             // Transfer from the source to target.
             T::Assets::transfer_deposit(
-                stream.asset_id.clone(),
+                stream.config.asset_id.clone(),
                 &stream.source,
                 &stream.target,
                 payment,

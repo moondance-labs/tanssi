@@ -22,7 +22,7 @@ use {
             StreamPaymentAssetId, TimeUnit, ALICE, BOB, CHARLIE, DEFAULT_BALANCE, KILO, MEGA,
         },
         Error, Event, FreezeReason, LookupStreamsWithSource, LookupStreamsWithTarget, NextStreamId,
-        Stream, Streams,
+        Stream, StreamConfig, Streams,
     },
     frame_support::{assert_err, assert_ok, traits::fungible::InspectFreeze},
     sp_runtime::TokenError,
@@ -39,9 +39,11 @@ mod open_stream {
                 StreamPayment::open_stream(
                     RuntimeOrigin::signed(ALICE),
                     ALICE,
-                    TimeUnit::BlockNumber,
-                    StreamPaymentAssetId::Native,
-                    100,
+                    StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: 100,
+                    },
                     0
                 ),
                 Error::<Runtime>::CantBeBothSourceAndTarget
@@ -58,9 +60,11 @@ mod open_stream {
                 StreamPayment::open_stream(
                     RuntimeOrigin::signed(ALICE),
                     BOB,
-                    TimeUnit::BlockNumber,
-                    StreamPaymentAssetId::Native,
-                    100,
+                    StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: 100,
+                    },
                     0
                 ),
                 Error::<Runtime>::StreamIdOverflow
@@ -78,9 +82,11 @@ mod open_stream {
                     StreamPayment::open_stream(
                         RuntimeOrigin::signed(ALICE),
                         BOB,
-                        TimeUnit::BlockNumber,
-                        StreamPaymentAssetId::Native,
-                        100,
+                        StreamConfig {
+                            time_unit: TimeUnit::BlockNumber,
+                            asset_id: StreamPaymentAssetId::Native,
+                            rate: 100,
+                        },
                         1_000_001
                     ),
                     TokenError::FundsUnavailable,
@@ -95,9 +101,11 @@ mod open_stream {
                 StreamPayment::open_stream(
                     RuntimeOrigin::signed(ALICE),
                     BOB,
-                    TimeUnit::Never,
-                    StreamPaymentAssetId::Native,
-                    100,
+                    StreamConfig {
+                        time_unit: TimeUnit::Never,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: 100,
+                    },
                     1 * MEGA
                 ),
                 Error::<Runtime>::CantFetchCurrentTime,
@@ -113,9 +121,11 @@ mod open_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                100,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: 100,
+                },
                 1 * MEGA
             ));
 
@@ -171,9 +181,11 @@ mod update_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: rate,
+                },
                 initial_deposit
             ));
 
@@ -205,11 +217,15 @@ mod update_stream {
                 Some(Stream {
                     source: ALICE,
                     target: BOB,
-                    time_unit: TimeUnit::BlockNumber,
-                    asset_id: StreamPaymentAssetId::Native,
-                    rate_per_time_unit: rate,
+                    config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: rate,
+                    },
                     deposit: deposit_left,
-                    last_time_updated: 10
+                    last_time_updated: 10,
+                    request_nonce: 0,
+                    pending_request: None,
                 })
             );
 
@@ -246,9 +262,11 @@ mod close_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: rate,
+                },
                 initial_deposit
             ));
 
@@ -274,9 +292,11 @@ mod close_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: rate,
+                },
                 initial_deposit
             ));
 
@@ -304,9 +324,11 @@ mod close_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: rate,
+                },
                 initial_deposit
             ));
 
@@ -334,9 +356,11 @@ mod close_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -398,9 +422,11 @@ mod refill_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -420,9 +446,11 @@ mod refill_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -442,9 +470,11 @@ mod refill_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -476,9 +506,11 @@ mod refill_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -523,9 +555,11 @@ mod refill_stream {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -593,9 +627,11 @@ mod change_stream_rate {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -615,9 +651,11 @@ mod change_stream_rate {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -637,9 +675,11 @@ mod change_stream_rate {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -659,9 +699,12 @@ mod change_stream_rate {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -700,11 +743,16 @@ mod change_stream_rate {
                 Some(Stream {
                     source: ALICE,
                     target: BOB,
-                    time_unit: TimeUnit::BlockNumber,
-                    asset_id: StreamPaymentAssetId::Native,
-                    rate_per_time_unit: rate * 2,
+                    config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: rate * 2,
+                    },
+
                     deposit: initial_deposit - payment,
-                    last_time_updated: 10
+                    last_time_updated: 10,
+                    request_nonce: 0,
+                    pending_request: None,
                 })
             );
         })
@@ -719,9 +767,11 @@ mod change_stream_rate {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                TimeUnit::BlockNumber,
-                StreamPaymentAssetId::Native,
-                rate,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
                 initial_deposit
             ));
 
@@ -760,11 +810,15 @@ mod change_stream_rate {
                 Some(Stream {
                     source: ALICE,
                     target: BOB,
-                    time_unit: TimeUnit::BlockNumber,
-                    asset_id: StreamPaymentAssetId::Native,
-                    rate_per_time_unit: rate / 2,
+                    config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: rate / 2,
+                    },
                     deposit: initial_deposit - payment,
-                    last_time_updated: 10
+                    last_time_updated: 10,
+                    request_nonce: 0,
+                    pending_request: None,
                 })
             );
         })
