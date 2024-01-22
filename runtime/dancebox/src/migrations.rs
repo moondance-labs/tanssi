@@ -585,7 +585,8 @@ where
         let migrate_services_payment =
             MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
         let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
-        let migrate_config2 = MigrateConfigurationParathreads::<Runtime>(Default::default());
+        let migrate_config_parathread_params =
+            MigrateConfigurationParathreads::<Runtime>(Default::default());
 
         let migrate_hold_reason_runtime_enum =
             MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
@@ -603,7 +604,7 @@ where
             Box::new(migrate_services_payment),
             Box::new(migrate_hold_reason_runtime_enum),
             Box::new(migrate_boot_nodes),
-            Box::new(migrate_config2),
+            Box::new(migrate_config_parathread_params),
         ]
     }
 }
