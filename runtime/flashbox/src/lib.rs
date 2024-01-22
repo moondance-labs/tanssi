@@ -92,6 +92,8 @@ pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
+const LOG_TARGET: &str = "runtime::tanssi";
+
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// A Block signed with a Justification

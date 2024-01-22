@@ -1132,9 +1132,24 @@ export default {
                 },
                 new_: "u32",
             },
-            __Unused5: "Null",
-            __Unused6: "Null",
-            __Unused7: "Null",
+            set_collators_per_parathread: {
+                _alias: {
+                    new_: "new",
+                },
+                new_: "u32",
+            },
+            set_parathreads_per_collator: {
+                _alias: {
+                    new_: "new",
+                },
+                new_: "u32",
+            },
+            set_target_container_chain_fullness: {
+                _alias: {
+                    new_: "new",
+                },
+                new_: "Perbill",
+            },
             __Unused8: "Null",
             __Unused9: "Null",
             __Unused10: "Null",
@@ -1179,9 +1194,9 @@ export default {
             },
         },
     },
-    /** Lookup195: pallet_collator_assignment::pallet::Call<T> */
+    /** Lookup196: pallet_collator_assignment::pallet::Call<T> */
     PalletCollatorAssignmentCall: "Null",
-    /** Lookup196: pallet_author_noting::pallet::Call<T> */
+    /** Lookup197: pallet_author_noting::pallet::Call<T> */
     PalletAuthorNotingCall: {
         _enum: {
             set_latest_author_data: {
@@ -1197,13 +1212,13 @@ export default {
             },
         },
     },
-    /** Lookup197: tp_author_noting_inherent::OwnParachainInherentData */
+    /** Lookup198: tp_author_noting_inherent::OwnParachainInherentData */
     TpAuthorNotingInherentOwnParachainInherentData: {
         relayStorageProof: "SpTrieStorageProof",
     },
-    /** Lookup198: pallet_authority_assignment::pallet::Call<T> */
+    /** Lookup199: pallet_authority_assignment::pallet::Call<T> */
     PalletAuthorityAssignmentCall: "Null",
-    /** Lookup199: pallet_services_payment::pallet::Call<T> */
+    /** Lookup200: pallet_services_payment::pallet::Call<T> */
     PalletServicesPaymentCall: {
         _enum: {
             purchase_credits: {
@@ -1221,7 +1236,7 @@ export default {
             },
         },
     },
-    /** Lookup201: pallet_data_preservers::pallet::Call<T> */
+    /** Lookup202: pallet_data_preservers::pallet::Call<T> */
     PalletDataPreserversCall: {
         _enum: {
             set_boot_nodes: {
@@ -1230,7 +1245,7 @@ export default {
             },
         },
     },
-    /** Lookup205: pallet_invulnerables::pallet::Call<T> */
+    /** Lookup206: pallet_invulnerables::pallet::Call<T> */
     PalletInvulnerablesCall: {
         _enum: {
             set_invulnerables: {
@@ -1247,7 +1262,7 @@ export default {
             },
         },
     },
-    /** Lookup206: pallet_session::pallet::Call<T> */
+    /** Lookup207: pallet_session::pallet::Call<T> */
     PalletSessionCall: {
         _enum: {
             set_keys: {
@@ -1260,19 +1275,19 @@ export default {
             purge_keys: "Null",
         },
     },
-    /** Lookup207: flashbox_runtime::SessionKeys */
+    /** Lookup208: flashbox_runtime::SessionKeys */
     FlashboxRuntimeSessionKeys: {
         nimbus: "NimbusPrimitivesNimbusCryptoPublic",
     },
-    /** Lookup208: nimbus_primitives::nimbus_crypto::Public */
+    /** Lookup209: nimbus_primitives::nimbus_crypto::Public */
     NimbusPrimitivesNimbusCryptoPublic: "SpCoreSr25519Public",
-    /** Lookup209: sp_core::sr25519::Public */
+    /** Lookup210: sp_core::sr25519::Public */
     SpCoreSr25519Public: "[u8;32]",
-    /** Lookup210: pallet_author_inherent::pallet::Call<T> */
+    /** Lookup211: pallet_author_inherent::pallet::Call<T> */
     PalletAuthorInherentCall: {
         _enum: ["kick_off_authorship_validation"],
     },
-    /** Lookup211: pallet_root_testing::pallet::Call<T> */
+    /** Lookup212: pallet_root_testing::pallet::Call<T> */
     PalletRootTestingCall: {
         _enum: {
             fill_block: {
@@ -1430,6 +1445,9 @@ export default {
         maxOrchestratorCollators: "u32",
         collatorsPerContainer: "u32",
         fullRotationPeriod: "u32",
+        collatorsPerParathread: "u32",
+        parathreadsPerCollator: "u32",
+        targetContainerChainFullness: "Perbill",
     },
     /** Lookup263: pallet_configuration::pallet::Error<T> */
     PalletConfigurationError: {

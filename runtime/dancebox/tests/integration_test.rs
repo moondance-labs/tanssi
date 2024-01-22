@@ -23,9 +23,8 @@ use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
         migrations::{
-            CollatorSelectionInvulnerablesValue, MigrateBootNodes,
-            MigrateConfigurationFullRotationPeriod, MigrateInvulnerables,
-            MigrateServicesPaymentAddCredits,
+            CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
+            MigrateInvulnerables, MigrateServicesPaymentAddCredits,
         },
         BlockProductionCost, RewardsCollatorCommission,
     },
@@ -110,6 +109,7 @@ fn default_config() -> pallet_configuration::HostConfiguration {
         max_orchestrator_collators: 2,
         collators_per_container: 2,
         full_rotation_period: 24,
+        ..Default::default()
     }
 }
 
@@ -619,6 +619,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             max_orchestrator_collators: 5,
             collators_per_container: 2,
             full_rotation_period: 24,
+            ..Default::default()
         })
         .build()
         .execute_with(|| {
@@ -3737,6 +3738,7 @@ fn test_pallet_session_limits_num_validators() {
             max_orchestrator_collators: 2,
             collators_per_container: 2,
             full_rotation_period: 24,
+            ..Default::default()
         })
         .build()
         .execute_with(|| {
@@ -3825,6 +3827,7 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             max_orchestrator_collators: 2,
             collators_per_container: 2,
             full_rotation_period: 24,
+            ..Default::default()
         })
         .build()
         .execute_with(|| {
@@ -4044,6 +4047,7 @@ fn test_reward_to_staking_candidate() {
             max_orchestrator_collators: 2,
             collators_per_container: 2,
             full_rotation_period: 24,
+            ..Default::default()
         })
         .build()
         .execute_with(|| {
@@ -4158,6 +4162,7 @@ fn test_reward_to_invulnerable() {
             max_orchestrator_collators: 2,
             collators_per_container: 2,
             full_rotation_period: 24,
+            ..Default::default()
         })
         .build()
         .execute_with(|| {
@@ -4255,6 +4260,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             max_orchestrator_collators: 2,
             collators_per_container: 2,
             full_rotation_period: 24,
+            ..Default::default()
         })
         .build()
         .execute_with(|| {
@@ -4314,11 +4320,11 @@ fn test_migration_config_full_rotation_period() {
                 &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
 
             // Modify active config
-            frame_support::storage::unhashed::put_raw(CONFIGURATION_ACTIVE_CONFIG_KEY, &hex_literal::hex!("63000000020000000500000002000000"));
+            frame_support::storage::unhashed::put_raw(CONFIGURATION_ACTIVE_CONFIG_KEY, &hex_literal::hex!("6300000002000000050000000200000000000000"));
             // Modify pending configs
-            frame_support::storage::unhashed::put_raw(CONFIGURATION_PENDING_CONFIGS_KEY, &hex_literal::hex!("08b108000063000000020000000500000002000000b208000064000000020000000500000002000000"));
+            frame_support::storage::unhashed::put_raw(CONFIGURATION_PENDING_CONFIGS_KEY, &hex_literal::hex!("08b10800006300000002000000050000000200000000000000b20800006400000002000000050000000200000000000000"));
 
-            let migration = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
+            let migration = MigrateConfigurationParathreads::<Runtime>(Default::default());
             migration.migrate(Default::default());
 
             let expected_active = pallet_configuration::HostConfiguration {
@@ -4327,11 +4333,33 @@ fn test_migration_config_full_rotation_period() {
                 max_orchestrator_collators: 5,
                 collators_per_container: 2,
                 full_rotation_period: 0,
+                ..Default::default()
             };
             assert_eq!(Configuration::config(), expected_active);
 
             let expected_pending = vec![
-                (2225, pallet_configuration::HostConfiguration { max_collators: 99, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 0 }), (2226, pallet_configuration::HostConfiguration { max_collators: 100, min_orchestrator_collators: 2, max_orchestrator_collators: 5, collators_per_container: 2, full_rotation_period: 0 })
+                (
+                    2225,
+                    pallet_configuration::HostConfiguration {
+                        max_collators: 99,
+                        min_orchestrator_collators: 2,
+                        max_orchestrator_collators: 5,
+                        collators_per_container: 2,
+                        full_rotation_period: 0,
+                        ..Default::default()
+                    },
+                ),
+                (
+                    2226,
+                    pallet_configuration::HostConfiguration {
+                        max_collators: 100,
+                        min_orchestrator_collators: 2,
+                        max_orchestrator_collators: 5,
+                        collators_per_container: 2,
+                        full_rotation_period: 0,
+                        ..Default::default()
+                    },
+                ),
             ];
             assert_eq!(Configuration::pending_configs(), expected_pending);
         });

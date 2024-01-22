@@ -202,6 +202,11 @@ declare module "@polkadot/api-base/types/submittable" {
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
             >;
+            /** See [`Pallet::set_collators_per_parathread`]. */
+            setCollatorsPerParathread: AugmentedSubmittable<
+                (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
             /** See [`Pallet::set_full_rotation_period`]. */
             setFullRotationPeriod: AugmentedSubmittable<
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -221,6 +226,16 @@ declare module "@polkadot/api-base/types/submittable" {
             setMinOrchestratorCollators: AugmentedSubmittable<
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
+            >;
+            /** See [`Pallet::set_parathreads_per_collator`]. */
+            setParathreadsPerCollator: AugmentedSubmittable<
+                (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /** See [`Pallet::set_target_container_chain_fullness`]. */
+            setTargetContainerChainFullness: AugmentedSubmittable<
+                (updated: Perbill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Perbill]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
