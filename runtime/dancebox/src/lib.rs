@@ -722,7 +722,7 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
                 .unwrap_or_default();
 
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
-            let regular_credits = Balances::free_balance(pallet_services_payment::Pallet::<Runtime>::parachain_tank(para_id.clone()))
+            let regular_credits = Balances::free_balance(pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id))
                 .saturating_div(block_production_costs);
 
             (free_credits as u128).saturating_add(regular_credits) >= credits_for_2_sessions.into()
