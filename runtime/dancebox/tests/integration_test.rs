@@ -558,8 +558,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                100_000,
-                None,
+                BlockProductionCost::block_cost(&(1001.into())).0 * 1000
             ));
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
@@ -578,8 +577,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1002.into(),
-                100_000,
-                None,
+                BlockProductionCost::block_cost(&(1002.into())).0 * 1000
             ));
 
             // Assignment should happen after 2 sessions
@@ -653,8 +651,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                100_000,
-                None,
+                BlockProductionCost::block_cost(&(1001.into())).0 * 1000
             ));
 
             // Assignment should happen after 2 sessions
@@ -783,11 +780,10 @@ fn test_paras_registered_but_not_enough_credits() {
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase 1 credit less that what is needed
             let credits_1001 = dancebox_runtime::Period::get() * 2 - 1;
-            assert_ok!(ServicesPayment::purchase_credits(
-                origin_of(ALICE.into()),
+            assert_ok!(ServicesPayment::set_credits(
+                root_origin(),
                 1001.into(),
-                credits_1001,
-                None,
+                credits_1001
             ));
 
             // Assignment should happen after 2 sessions
@@ -800,11 +796,10 @@ fn test_paras_registered_but_not_enough_credits() {
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
 
             // Now purchase the missing block credit
-            assert_ok!(ServicesPayment::purchase_credits(
-                origin_of(ALICE.into()),
+            assert_ok!(ServicesPayment::set_credits(
+                root_origin(),
                 1001.into(),
-                1,
-                None,
+                credits_1001 + 1
             ));
 
             run_to_session(4u32);
@@ -865,11 +860,10 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase only enough credits for 1 session
             let credits_1001 = dancebox_runtime::Period::get() * 2;
-            assert_ok!(ServicesPayment::purchase_credits(
-                origin_of(ALICE.into()),
+            assert_ok!(ServicesPayment::set_credits(
+                root_origin(),
                 1001.into(),
-                credits_1001,
-                None,
+                credits_1001
             ));
 
             // Assignment should happen after 2 sessions
@@ -4638,23 +4632,26 @@ fn test_can_buy_credits_before_registering_para() {
 
             // Try to buy the maximum amount of credits
             let balance_before = System::account(AccountId::from(ALICE)).data.free;
+
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                u32::MAX,
-                None,
+                BlockProductionCost::block_cost(&(1001.into())).0 * (u32::MAX as u128)
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
-            // But only up to MaxCreditsStored have actually been purchased
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
-            )
-            .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get());
+            // Now parachain tank should have this amount
+            let balance_tank = System::account(ServicesPayment::parachain_tank(1001.into()))
+                .data
+                .free;
 
-            let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
-                * u128::from(dancebox_runtime::MaxCreditsStored::get());
+            assert_eq!(
+                balance_tank,
+                BlockProductionCost::block_cost(&(1001.into())).0 * (u32::MAX as u128)
+            );
+
+            let expected_cost =
+                BlockProductionCost::block_cost(&(1001.into())).0 * (u32::MAX as u128);
             assert_eq!(balance_before - balance_after, expected_cost);
         });
 }
@@ -4717,16 +4714,21 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                dancebox_runtime::MaxCreditsStored::get() - 1,
-                None,
+                BlockProductionCost::block_cost(&(1001.into())).0
+                    * (dancebox_runtime::MaxCreditsStored::get() - 1) as u128
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
-            )
-            .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get() - 1);
+            // Now parachain tank should have this amount
+            let balance_tank = System::account(ServicesPayment::parachain_tank(1001.into()))
+                .data
+                .free;
+
+            assert_eq!(
+                balance_tank,
+                BlockProductionCost::block_cost(&(1001.into())).0
+                    * (dancebox_runtime::MaxCreditsStored::get() - 1) as u128
+            );
 
             let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
                 * u128::from(dancebox_runtime::MaxCreditsStored::get() - 1);

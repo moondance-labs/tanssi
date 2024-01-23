@@ -73,7 +73,7 @@ use {
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::{ChargeForBlockCredit, ProvideBlockProductionCost},
+    pallet_services_payment::ProvideBlockProductionCost,
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     polkadot_runtime_common::BlockHashCount,
@@ -240,7 +240,6 @@ pub const DAYS: BlockNumber = HOURS * 24;
 pub const UNIT: Balance = 1_000_000_000_000;
 pub const MILLIUNIT: Balance = 1_000_000_000;
 pub const MICROUNIT: Balance = 1_000_000;
-
 /// The existential deposit. Set to 1/10 of the Connected Relay Chain.
 pub const EXISTENTIAL_DEPOSIT: Balance = MILLIUNIT;
 
@@ -719,10 +718,14 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
         let credits_for_2_sessions = 2 * blocks_per_session;
         para_ids.retain(|para_id| {
             // Check if the container chain has enough credits for producing blocks for 2 sessions
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+            let free_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
-            credits >= credits_for_2_sessions
+            let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
+            let regular_credits = Balances::free_balance(pallet_services_payment::Pallet::<Runtime>::parachain_tank(para_id.clone()))
+                .saturating_div(block_production_costs);
+
+            (free_credits as u128).saturating_add(regular_credits) >= credits_for_2_sessions.into()
         });
     }
 
@@ -781,7 +784,7 @@ parameter_types! {
 impl pallet_services_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
-    type OnChargeForBlockCredit = ChargeForBlockCredit<Runtime>;
+    type OnChargeForBlock = ();
     /// Currency type for fee payment
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block
