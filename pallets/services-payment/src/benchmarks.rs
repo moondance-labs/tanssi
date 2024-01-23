@@ -18,13 +18,14 @@
 
 //! Benchmarking
 use {
-    crate::{BalanceOf, BlockNumberFor, Call, Config, Pallet},
+    crate::{BalanceOf, BlockNumberFor, Call, Config, Pallet, ProvideBlockProductionCost},
     frame_benchmarking::{account, v2::*},
     frame_support::{
         assert_ok,
         traits::{Currency, Get},
     },
     frame_system::RawOrigin,
+    sp_runtime::Saturating,
     sp_std::prelude::*,
 };
 
@@ -57,9 +58,9 @@ mod benchmarks {
 
     #[benchmark]
     fn purchase_credits() {
-        let caller = create_funded_user::<T>("caller", 1, 1000);
         let para_id = 1001u32.into();
-        let credits = T::MaxCreditsStored::get();
+        let payment: BalanceOf<T> = T::ProvideBlockProductionCost::block_cost(&para_id).0.saturating_mul(1000u32.into());
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
 
         // Before call: 0 credits
         assert_eq!(
@@ -71,28 +72,25 @@ mod benchmarks {
         Pallet::<T>::purchase_credits(
             RawOrigin::Signed(caller),
             para_id,
-            credits,
-            Some(u32::MAX.into()),
+            payment,
         );
 
         // verification code
         assert_eq!(
-            crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
-            credits
+            <T::Currency>::total_balance(&crate::Pallet::<T>::parachain_tank(para_id)),
+            payment
         );
     }
 
     #[benchmark]
     fn set_credits() {
-        let caller = create_funded_user::<T>("caller", 1, 1000);
         let para_id = 1001u32.into();
         let credits = T::MaxCreditsStored::get();
 
-        assert_ok!(Pallet::<T>::purchase_credits(
-            RawOrigin::Signed(caller).into(),
+        assert_ok!(Pallet::<T>::set_credits(
+            RawOrigin::Root.into(),
             para_id,
             credits,
-            Some(u32::MAX.into()),
         ));
 
         // Before call: 1000 credits

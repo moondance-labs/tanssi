@@ -34,9 +34,8 @@ use {
     frame_support::{
         pallet_prelude::*,
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything, OnUnbalanced},
+        traits::{ConstU32, ConstU64, Everything},
     },
-    pallet_balances::NegativeImbalance,
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
@@ -164,14 +163,4 @@ pub(crate) fn events() -> Vec<pallet_services_payment::Event<Test>> {
             }
         })
         .collect::<Vec<_>>()
-}
-
-// This function basically just builds a genesis storage key/value store according to
-// our desired mockup.
-#[cfg(feature = "runtime-benchmarks")]
-pub fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::<Test>::default()
-        .build_storage()
-        .unwrap()
-        .into()
 }
