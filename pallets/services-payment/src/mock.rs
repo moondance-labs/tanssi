@@ -29,12 +29,12 @@
 //! to that containerChain, by simply assigning the slot position.
 
 use {
-    crate::{self as pallet_services_payment, OnChargeForBlock, ProvideBlockProductionCost},
+    crate::{self as pallet_services_payment, ProvideBlockProductionCost},
     cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::*,
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything},
+        traits::{ConstU32, ConstU64, Everything, OnUnbalanced},
     },
     pallet_balances::NegativeImbalance,
     sp_core::H256,
@@ -108,16 +108,9 @@ parameter_types! {
     pub const MaxCreditsStored: u64 = 5;
 }
 
-pub struct BurnOnChargeForBlock;
-impl OnChargeForBlock<Test, NegativeImbalance<Test>> for BurnOnChargeForBlock {
-    fn on_charge_for_block(imbalance: NegativeImbalance<Test>) {
-        drop(imbalance);
-    }
-}
-
 impl pallet_services_payment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeForBlock = BurnOnChargeForBlock;
+    type OnChargeForBlock = ();
     type Currency = Balances;
     type ProvideBlockProductionCost = BlockProductionCost<Test>;
     type MaxCreditsStored = MaxCreditsStored;

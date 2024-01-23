@@ -41,7 +41,7 @@ use {
     frame_support::{
         pallet_prelude::*,
         sp_runtime::{traits::Zero, Saturating},
-        traits::{tokens::ExistenceRequirement, Currency, WithdrawReasons},
+        traits::{tokens::ExistenceRequirement, Currency, OnUnbalanced, WithdrawReasons},
     },
     frame_system::pallet_prelude::*,
     scale_info::prelude::vec::Vec,
@@ -70,7 +70,7 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// Handler for fees
-        type OnChargeForBlock: OnChargeForBlock<Self, NegativeImbalanceOf<Self>>;
+        type OnChargeForBlock: OnUnbalanced<NegativeImbalanceOf<Self>>;
         /// Currency type for fee payment
         type Currency: Currency<Self::AccountId>;
         /// Provider of a block cost which can adjust from block to block
@@ -274,10 +274,6 @@ pub type NegativeImbalanceOf<T> =
     <CurrencyOf<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 /// Handler for fee charging. This will be invoked when fees need to be deducted from the fee
 /// account for a given paraId.
-use frame_support::traits::{tokens::imbalance::Imbalance, TryDrop};
-pub trait OnChargeForBlock<T: Config, Imbalance: TryDrop> {
-    fn on_charge_for_block(imbalance: Imbalance);
-}
 
 /// Returns the cost for a given block credit at the current time. This can be a complex operation,
 /// so it also returns the weight it consumes. (TODO: or just rely on benchmarking)
@@ -313,9 +309,10 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                     e
                 ),
                 Ok(imbalance) => {
-                    T::OnChargeForBlock::on_charge_for_block(imbalance);
+                    T::OnChargeForBlock::on_unbalanced(imbalance);
                 }
             }
+            total_weight.saturating_add(weight);
         }
 
         total_weight
