@@ -75,8 +75,6 @@ pub mod pallet {
         type Currency: Currency<Self::AccountId>;
         /// Provider of a block cost which can adjust from block to block
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
-        /// Provider of a session cost which can adjust from session to session
-        type SessionAssignmentCost: SessionAssignmentCost<Self>;
 
         /// The maximum number of credits that can be accumulated
         type MaxCreditsStored: Get<BlockNumberFor<Self>>;
@@ -270,8 +268,7 @@ pub mod pallet {
 pub type BalanceOf<T> =
     <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
-pub type CurrencyOf<T> =
-    <T as Config>::Currency;
+pub type CurrencyOf<T> = <T as Config>::Currency;
 /// Type alias to conveniently refer to the `Currency::NegativeImbalance` associated type.
 pub type NegativeImbalanceOf<T> =
     <CurrencyOf<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
@@ -279,7 +276,7 @@ pub type NegativeImbalanceOf<T> =
 /// account for a given paraId.
 use frame_support::traits::{tokens::imbalance::Imbalance, TryDrop};
 pub trait OnChargeForBlock<T: Config, Imbalance: TryDrop> {
-    fn on_charge_for_block(imbalance: Imbalance) -> Result<(), Error<T>>;
+    fn on_charge_for_block(imbalance: Imbalance);
 }
 
 /// Returns the cost for a given block credit at the current time. This can be a complex operation,
@@ -302,20 +299,24 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     ) -> Weight {
         let total_weight = T::DbWeight::get().reads_writes(1, 1);
 
-        if let Err(e) = Pallet::<T>::burn_credit_for_para(&para_id) {
+        if Pallet::<T>::burn_credit_for_para(&para_id).is_err() {
             let (amount_to_charge, weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
-            let imbalance = T::Currency::withdraw(
+            match T::Currency::withdraw(
                 &Self::parachain_tank(para_id),
                 amount_to_charge,
                 WithdrawReasons::FEE,
                 ExistenceRequirement::AllowDeath,
-            )
-            .unwrap();
-    
-            T::OnChargeForBlock::on_charge_for_block(imbalance).unwrap();
+            ) {
+                Err(e) => log::warn!(
+                    "Failed to withdraw credits for container chain {}: {:?}",
+                    u32::from(para_id),
+                    e
+                ),
+                Ok(imbalance) => {
+                    T::OnChargeForBlock::on_charge_for_block(imbalance);
+                }
+            }
         }
-
-        
 
         total_weight
     }
