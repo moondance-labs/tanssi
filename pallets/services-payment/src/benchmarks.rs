@@ -59,7 +59,9 @@ mod benchmarks {
     #[benchmark]
     fn purchase_credits() {
         let para_id = 1001u32.into();
-        let payment: BalanceOf<T> = T::ProvideBlockProductionCost::block_cost(&para_id).0.saturating_mul(1000u32.into());
+        let payment: BalanceOf<T> = T::ProvideBlockProductionCost::block_cost(&para_id)
+            .0
+            .saturating_mul(1000u32.into());
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
 
         // Before call: 0 credits
@@ -69,11 +71,7 @@ mod benchmarks {
         );
 
         #[extrinsic_call]
-        Pallet::<T>::purchase_credits(
-            RawOrigin::Signed(caller),
-            para_id,
-            payment,
-        );
+        Pallet::<T>::purchase_credits(RawOrigin::Signed(caller), para_id, payment);
 
         // verification code
         assert_eq!(

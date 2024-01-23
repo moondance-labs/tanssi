@@ -204,7 +204,7 @@ fn credits_should_be_substracted_from_tank_if_no_free_credits() {
                 1000u128
             );
 
-            PaymentServices::on_container_author_noted((&1).into(), 1, 1.into());
+            PaymentServices::on_container_author_noted(&1, 1, 1.into());
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
@@ -231,7 +231,7 @@ fn credits_should_be_substracted_from_tank_even_if_it_involves_death() {
                 100u128
             );
 
-            PaymentServices::on_container_author_noted((&1).into(), 1, 1.into());
+            PaymentServices::on_container_author_noted(&1, 1, 1.into());
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
@@ -258,7 +258,7 @@ fn not_having_enough_tokens_in_tank_should_not_error() {
                 1u128
             );
 
-            PaymentServices::on_container_author_noted((&1).into(), 1, 1.into());
+            PaymentServices::on_container_author_noted(&1, 1, 1.into());
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
