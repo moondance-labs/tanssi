@@ -20,7 +20,6 @@ use {
     common::*,
     cumulus_primitives_core::ParaId,
     dp_core::well_known_keys,
-    flashbox_runtime::BlockProductionCost,
     frame_support::{assert_noop, assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting::ContainerChainBlockInfo,
@@ -29,7 +28,6 @@ use {
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
-    pallet_services_payment::ProvideBlockProductionCost,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
@@ -544,8 +542,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                100_000,
-                None,
+                block_credits_to_required_balance(1000, 1001.into())
             ));
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
@@ -564,8 +561,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1002.into(),
-                100_000,
-                None,
+                block_credits_to_required_balance(1000, 1002.into())
             ));
 
             // Assignment should happen after 2 sessions
@@ -639,8 +635,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                100_000,
-                None,
+                block_credits_to_required_balance(1000, 1001.into())
             ));
 
             // Assignment should happen after 2 sessions
@@ -769,11 +764,10 @@ fn test_paras_registered_but_not_enough_credits() {
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase 1 credit less that what is needed
             let credits_1001 = flashbox_runtime::Period::get() * 2 - 1;
-            assert_ok!(ServicesPayment::purchase_credits(
-                origin_of(ALICE.into()),
+            assert_ok!(ServicesPayment::set_credits(
+                root_origin(),
                 1001.into(),
-                credits_1001,
-                None,
+                credits_1001
             ));
 
             // Assignment should happen after 2 sessions
@@ -786,11 +780,10 @@ fn test_paras_registered_but_not_enough_credits() {
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
 
             // Now purchase the missing block credit
-            assert_ok!(ServicesPayment::purchase_credits(
-                origin_of(ALICE.into()),
+            assert_ok!(ServicesPayment::set_credits(
+                root_origin(),
                 1001.into(),
-                1,
-                None,
+                credits_1001 + 1
             ));
 
             run_to_session(4u32);
@@ -851,11 +844,10 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
             // Purchase only enough credits for 1 session
             let credits_1001 = flashbox_runtime::Period::get() * 2;
-            assert_ok!(ServicesPayment::purchase_credits(
-                origin_of(ALICE.into()),
+            assert_ok!(ServicesPayment::set_credits(
+                root_origin(),
                 1001.into(),
-                credits_1001,
-                None,
+                credits_1001
             ));
 
             // Assignment should happen after 2 sessions
@@ -2506,20 +2498,21 @@ fn test_can_buy_credits_before_registering_para() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                u32::MAX,
-                None,
+                block_credits_to_required_balance(u32::MAX, 1001.into())
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
-            // But only up to MaxCreditsStored have actually been purchased
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
-            )
-            .unwrap_or_default();
-            assert_eq!(credits, flashbox_runtime::MaxCreditsStored::get());
+            // Now parachain tank should have this amount
+            let balance_tank = System::account(ServicesPayment::parachain_tank(1001.into()))
+                .data
+                .free;
 
-            let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
-                * u128::from(flashbox_runtime::MaxCreditsStored::get());
+            assert_eq!(
+                balance_tank,
+                block_credits_to_required_balance(u32::MAX, 1001.into())
+            );
+
+            let expected_cost = block_credits_to_required_balance(u32::MAX, 1001.into());
             assert_eq!(balance_before - balance_after, expected_cost);
         });
 }
@@ -2582,19 +2575,30 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                flashbox_runtime::MaxCreditsStored::get() - 1,
-                None,
+                block_credits_to_required_balance(
+                    flashbox_runtime::MaxCreditsStored::get() - 1,
+                    1001.into()
+                )
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
-                &ParaId::from(1001),
-            )
-            .unwrap_or_default();
-            assert_eq!(credits, flashbox_runtime::MaxCreditsStored::get() - 1);
+            // Now parachain tank should have this amount
+            let balance_tank = System::account(ServicesPayment::parachain_tank(1001.into()))
+                .data
+                .free;
 
-            let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
-                * u128::from(flashbox_runtime::MaxCreditsStored::get() - 1);
+            assert_eq!(
+                balance_tank,
+                block_credits_to_required_balance(
+                    flashbox_runtime::MaxCreditsStored::get() - 1,
+                    1001.into()
+                )
+            );
+
+            let expected_cost = block_credits_to_required_balance(
+                flashbox_runtime::MaxCreditsStored::get() - 1,
+                1001.into(),
+            );
             assert_eq!(balance_before - balance_after, expected_cost);
 
             // Now register para
@@ -2613,7 +2617,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 1001.into()
             ));
 
-            // We received 1 free credit, because we cannot have more than MaxCreditsStored
+            // We received aññ free credits, because we cannot have more than MaxCreditsStored
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
             )

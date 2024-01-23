@@ -280,9 +280,6 @@ pub type NegativeImbalanceOf<T> =
 pub trait ProvideBlockProductionCost<T: Config> {
     fn block_cost(para_id: &ParaId) -> (BalanceOf<T>, Weight);
 }
-pub trait SessionAssignmentCost<T: Config> {
-    fn session_assingment_cost(para_id: &ParaId) -> (BalanceOf<T>, Weight);
-}
 
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     // This hook is called when pallet_author_noting sees that the block number of a container chain has increased.

@@ -558,7 +558,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                BlockProductionCost::block_cost(&(1001.into())).0 * 1000
+                block_credits_to_required_balance(1000, 1001.into())
             ));
             assert_ok!(Registrar::register(
                 origin_of(ALICE.into()),
@@ -577,7 +577,7 @@ fn test_authors_paras_inserted_a_posteriori() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1002.into(),
-                BlockProductionCost::block_cost(&(1002.into())).0 * 1000
+                block_credits_to_required_balance(1000, 1002.into())
             ));
 
             // Assignment should happen after 2 sessions
@@ -651,7 +651,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                BlockProductionCost::block_cost(&(1001.into())).0 * 1000
+                block_credits_to_required_balance(1000, 1001.into())
             ));
 
             // Assignment should happen after 2 sessions
@@ -4636,7 +4636,7 @@ fn test_can_buy_credits_before_registering_para() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                BlockProductionCost::block_cost(&(1001.into())).0 * (u32::MAX as u128)
+                block_credits_to_required_balance(u32::MAX, 1001.into())
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
@@ -4647,11 +4647,10 @@ fn test_can_buy_credits_before_registering_para() {
 
             assert_eq!(
                 balance_tank,
-                BlockProductionCost::block_cost(&(1001.into())).0 * (u32::MAX as u128)
+                block_credits_to_required_balance(u32::MAX, 1001.into())
             );
 
-            let expected_cost =
-                BlockProductionCost::block_cost(&(1001.into())).0 * (u32::MAX as u128);
+            let expected_cost = block_credits_to_required_balance(u32::MAX, 1001.into());
             assert_eq!(balance_before - balance_after, expected_cost);
         });
 }
@@ -4714,8 +4713,10 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                BlockProductionCost::block_cost(&(1001.into())).0
-                    * (dancebox_runtime::MaxCreditsStored::get() - 1) as u128
+                block_credits_to_required_balance(
+                    dancebox_runtime::MaxCreditsStored::get() - 1,
+                    1001.into()
+                )
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
@@ -4726,12 +4727,16 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
 
             assert_eq!(
                 balance_tank,
-                BlockProductionCost::block_cost(&(1001.into())).0
-                    * (dancebox_runtime::MaxCreditsStored::get() - 1) as u128
+                block_credits_to_required_balance(
+                    dancebox_runtime::MaxCreditsStored::get() - 1,
+                    1001.into()
+                )
             );
 
-            let expected_cost = BlockProductionCost::<Runtime>::block_cost(&ParaId::from(1001)).0
-                * u128::from(dancebox_runtime::MaxCreditsStored::get() - 1);
+            let expected_cost = block_credits_to_required_balance(
+                dancebox_runtime::MaxCreditsStored::get() - 1,
+                1001.into(),
+            );
             assert_eq!(balance_before - balance_after, expected_cost);
 
             // Now register para
@@ -4750,7 +4755,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 1001.into()
             ));
 
-            // We received 1 free credit, because we cannot have more than MaxCreditsStored
+            // We received aññ free credits, because we cannot have more than MaxCreditsStored
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
             )
