@@ -831,13 +831,13 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
 
             // 4 collators so we can only assign to one parathread
             m.collators = vec![1, 2, 3, 4];
-            m.parathreads = vec![5001, 5002];
+            m.parathreads = vec![3001, 3002];
         });
         assert_eq!(assigned_collators(), BTreeMap::new(),);
         run_to_block(11);
 
         let initial_assignment =
-            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 5001), (4, 5001)]);
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 3001), (4, 3001)]);
 
         assert_eq!(assigned_collators(), initial_assignment,);
 
@@ -851,7 +851,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 1000), (2, 5002), (3, 1000), (4, 5002)]);
+            BTreeMap::from_iter(vec![(1, 1000), (2, 3002), (3, 1000), (4, 3002)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });

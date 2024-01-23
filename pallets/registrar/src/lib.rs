@@ -47,15 +47,20 @@ use {
         DefaultNoBound, LOG_TARGET,
     },
     frame_system::pallet_prelude::*,
+    parity_scale_codec::{Decode, Encode},
     sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
     sp_std::prelude::*,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
-    tp_traits::{GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId},
+    tp_traits::{
+        GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
+        ParathreadParams as ParathreadParamsTy, SlotDuration,
+    },
 };
 
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
+    use tp_traits::SessionContainerChains;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -192,6 +197,13 @@ pub mod pallet {
         Vec<(T::SessionIndex, BoundedVec<ParaId, T::MaxLengthParaIds>)>,
         ValueQuery,
     >;
+
+    #[pallet::storage]
+    #[pallet::getter(fn parathread_params)]
+    pub type ParathreadParams<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, ParathreadParamsTy, OptionQuery>;
+
+    // TODO: PendingParathreadParams?
 
     pub type DepositBalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -581,6 +593,80 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// Register parathread
+        // TODO: weight
+        #[pallet::call_index(6)]
+        #[pallet::weight(T::WeightInfo::register(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
+        pub fn register_parathread(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            slot_duration: SlotDuration,
+            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+        ) -> DispatchResult {
+            // TODO: refactor register and register_parathread, extract common path to `do_register`.
+            // TODO: store parathreads in a separate storage item? Or migrate from `Vec<ParaId>` to a struct with 2 vecs?
+            let account = ensure_signed(origin)?;
+            let deposit = T::DepositAmount::get();
+
+            // Verify we can reserve
+            T::Currency::can_reserve(&account, deposit)
+                .then_some(true)
+                .ok_or(Error::<T>::NotSufficientDeposit)?;
+
+            // Check if the para id is already registered by looking at the genesis data
+            if ParaGenesisData::<T>::contains_key(para_id) {
+                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
+            }
+
+            // Insert para id into PendingVerification
+            let mut pending_verification = PendingVerification::<T>::get();
+            match pending_verification.binary_search(&para_id) {
+                // This Ok is unreachable
+                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                Err(index) => {
+                    pending_verification
+                        .try_insert(index, para_id)
+                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                }
+            }
+
+            // The actual registration takes place 2 sessions after the call to
+            // `mark_valid_for_collating`, but the genesis data is inserted now.
+            // This is because collators should be able to start syncing the new container chain
+            // before the first block is mined. However, we could store the genesis data in a
+            // different key, like PendingParaGenesisData.
+            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
+            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
+            // won't detect that the size is too big until after iterating over all of them, so the
+            // limit in that case would be the transaction size.
+            let genesis_data_size = genesis_data.encoded_size();
+            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
+                return Err(Error::<T>::GenesisDataTooBig.into());
+            }
+
+            // Reserve the deposit, we verified we can do this
+            T::Currency::reserve(&account, deposit)?;
+
+            // Update DepositInfo
+            RegistrarDeposit::<T>::insert(
+                para_id,
+                DepositInfo {
+                    creator: account,
+                    deposit,
+                },
+            );
+            ParaGenesisData::<T>::insert(para_id, genesis_data);
+            PendingVerification::<T>::put(pending_verification);
+
+            // Insert parathread params
+            let params = ParathreadParamsTy { slot_duration };
+            ParathreadParams::<T>::insert(para_id, params);
+
+            Self::deposit_event(Event::ParaIdRegistered { para_id });
+
+            Ok(())
+        }
     }
 
     pub struct SessionChangeOutcome<T: Config> {
@@ -891,7 +977,7 @@ pub mod pallet {
     }
 
     impl<T: Config> GetSessionContainerChains<T::SessionIndex> for Pallet<T> {
-        fn session_container_chains(session_index: T::SessionIndex) -> Vec<ParaId> {
+        fn session_container_chains(session_index: T::SessionIndex) -> SessionContainerChains {
             let (past_and_present, _) = Pallet::<T>::pending_registered_para_ids()
                 .into_iter()
                 .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
@@ -902,12 +988,22 @@ pub mod pallet {
                 Pallet::<T>::registered_para_ids()
             };
 
-            paras.into_iter().collect()
-        }
+            let mut parachains = vec![];
+            let mut parathreads = vec![];
 
-        fn session_parathreads(_session_index: T::SessionIndex) -> Vec<ParaId> {
-            // FIXME(parathreads)
-            vec![]
+            for para_id in paras {
+                // TODO: sweet O(n) db reads
+                if let Some(parathread_params) = ParathreadParams::<T>::get(&para_id) {
+                    parathreads.push((para_id, parathread_params));
+                } else {
+                    parachains.push(para_id);
+                }
+            }
+
+            SessionContainerChains {
+                parachains,
+                parathreads,
+            }
         }
 
         #[cfg(feature = "runtime-benchmarks")]

@@ -15191,6 +15191,8 @@ dependencies = [
  "cumulus-primitives-core",
  "frame-support",
  "impl-trait-for-tuples",
+ "parity-scale-codec",
+ "scale-info",
  "sp-std",
 ]
 

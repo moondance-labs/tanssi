@@ -30,7 +30,10 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
-    tp_traits::{ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits},
+    tp_traits::{
+        ParaId, ParathreadParams, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        SessionContainerChains,
+    },
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -159,22 +162,32 @@ impl GetCollators<u64, u32> for CollatorsGetter {
 pub struct ContainerChainsGetter;
 
 impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
-    fn session_container_chains(_session_index: u32) -> Vec<ParaId> {
-        MockData::mock()
+    fn session_container_chains(_session_index: u32) -> SessionContainerChains {
+        let parachains = MockData::mock()
             .container_chains
             .iter()
             .cloned()
-            .map(ParaId::from)
-            .collect()
-    }
+            .map(|para_id| ParaId::from(para_id))
+            .collect();
 
-    fn session_parathreads(_session_index: u32) -> Vec<ParaId> {
-        MockData::mock()
+        let parathreads = MockData::mock()
             .parathreads
             .iter()
             .cloned()
-            .map(ParaId::from)
-            .collect()
+            .map(|para_id| {
+                (
+                    ParaId::from(para_id),
+                    ParathreadParams {
+                        slot_duration: Default::default(),
+                    },
+                )
+            })
+            .collect();
+
+        SessionContainerChains {
+            parachains,
+            parathreads,
+        }
     }
 
     #[cfg(feature = "runtime-benchmarks")]

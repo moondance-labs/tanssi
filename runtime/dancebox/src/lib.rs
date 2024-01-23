@@ -1799,7 +1799,12 @@ impl_runtime_apis! {
                 Session::current_index()
             };
 
-            Registrar::session_container_chains(session_index).to_vec()
+            let container_chains = Registrar::session_container_chains(session_index);
+            let mut para_ids = vec![];
+            para_ids.extend(container_chains.parachains);
+            para_ids.extend(container_chains.parathreads.into_iter().map(|(para_id, _)| para_id));
+
+            para_ids
         }
 
         /// Fetch genesis data for this para id

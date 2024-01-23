@@ -166,14 +166,21 @@ pub mod pallet {
             let session_delay = T::SessionIndex::one();
             let target_session_index = current_session_index.saturating_add(session_delay);
             // We get the containerChains that we will have at the target session
-            let mut container_chain_ids =
+            let container_chains =
                 T::ContainerChains::session_container_chains(target_session_index);
-            let mut parathreads = T::ContainerChains::session_parathreads(target_session_index);
-            let num_total_registered_paras = container_chain_ids.len() as u32;
+            let num_total_registered_paras =
+                (container_chains.parachains.len() + container_chains.parathreads.len()) as u32;
+            let mut container_chain_ids = container_chains.parachains;
+            let mut parathreads: Vec<_> = container_chains
+                .parathreads
+                .into_iter()
+                .map(|(para_id, _)| para_id)
+                .collect();
             // Remove the containerChains that do not have enough credits for block production
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
                 &mut container_chain_ids,
             );
+            T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(&mut parathreads);
 
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
             // of container chains.

@@ -25,7 +25,7 @@ pub use cumulus_primitives_core::{
 };
 use {
     frame_support::{
-        pallet_prelude::{DispatchResultWithPostInfo, Get, Weight},
+        pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, Weight},
         BoundedVec,
     },
     sp_std::vec::Vec,
@@ -72,11 +72,42 @@ pub trait GetCurrentContainerChains {
     fn set_current_container_chains(container_chains: &[ParaId]);
 }
 
+/// How often should a parathread collator propose blocks.
+#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
+pub struct SlotDuration {
+    /// The parathread will produce at most 1 block every x slots. min=10 means that collators can produce 1 block
+    /// every `x >= 10` slots, but they are not enforced to. However they cannot produce a block after less than 10
+    /// slots, it will be invalid.
+    // TODO: invalid how, slashing collator? Not paying block reward?
+    min: u32,
+    /// The parathread will produce at least 1 block every x slots. max=10 means that collators are forced to
+    /// produce 1 block every `x <= 10` slots. They can produce a block sooner than that if the `min` allows it, but
+    /// waiting more than 10 slots will be invalid.
+    // TODO: invalid how, slashing collator? Not paying block reward?
+    max: u32,
+}
+
+impl Default for SlotDuration {
+    fn default() -> Self {
+        Self { min: 1, max: 1 }
+    }
+}
+
+#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
+pub struct ParathreadParams {
+    pub slot_duration: SlotDuration,
+}
+
+#[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
+pub struct SessionContainerChains {
+    pub parachains: Vec<ParaId>,
+    pub parathreads: Vec<(ParaId, ParathreadParams)>,
+}
+
 /// Get the list of container chains parachain ids at given
 /// session index.
 pub trait GetSessionContainerChains<SessionIndex> {
-    fn session_container_chains(session_index: SessionIndex) -> Vec<ParaId>;
-    fn session_parathreads(session_index: SessionIndex) -> Vec<ParaId>;
+    fn session_container_chains(session_index: SessionIndex) -> SessionContainerChains;
     #[cfg(feature = "runtime-benchmarks")]
     fn set_session_container_chains(session_index: SessionIndex, container_chains: &[ParaId]);
 }

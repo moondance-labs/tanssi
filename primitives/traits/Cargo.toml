@@ -10,6 +10,8 @@ version = "0.1.0"
 frame-support = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
 sp-std = { workspace = true }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
