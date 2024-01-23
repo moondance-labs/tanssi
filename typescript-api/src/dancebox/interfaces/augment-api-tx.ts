@@ -1541,10 +1541,9 @@ declare module "@polkadot/api-base/types/submittable" {
             purchaseCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    credits: u32 | AnyNumber | Uint8Array,
-                    maxPricePerCredit: Option<u128> | null | Uint8Array | u128 | AnyNumber
+                    credit: u128 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, u32, Option<u128>]
+                [u32, u128]
             >;
             /** See [`Pallet::set_credits`]. */
             setCredits: AugmentedSubmittable<
