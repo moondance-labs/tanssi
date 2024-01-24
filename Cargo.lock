@@ -7633,6 +7633,8 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "tp-traits",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

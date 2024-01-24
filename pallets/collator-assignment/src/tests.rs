@@ -24,24 +24,6 @@ mod assign_full;
 mod prioritize_invulnerables;
 mod select_chains;
 
-fn assigned_collators() -> BTreeMap<u64, u32> {
-    let assigned_collators = CollatorContainerChain::<Test>::get();
-
-    let mut h = BTreeMap::new();
-
-    for (para_id, collators) in assigned_collators.container_chains.iter() {
-        for collator in collators.iter() {
-            h.insert(*collator, u32::from(*para_id));
-        }
-    }
-
-    for collator in assigned_collators.orchestrator_chain {
-        h.insert(collator, 1000);
-    }
-
-    h
-}
-
 #[test]
 fn assign_initial_collators() {
     new_test_ext().execute_with(|| {
@@ -57,10 +39,10 @@ fn assign_initial_collators() {
             m.container_chains = vec![1001, 1002]
         });
 
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(6);
 
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -95,10 +77,10 @@ fn assign_collators_after_one_leaves_container() {
             m.container_chains = vec![1001, 1002]
         });
 
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(6);
 
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -158,7 +140,7 @@ fn assign_collators_after_one_leaves_orchestrator_chain() {
             m.container_chains = vec![1001, 1002]
         });
 
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -215,7 +197,7 @@ fn assign_collators_if_config_orchestrator_chain_collators_increases() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -275,7 +257,7 @@ fn assign_collators_if_config_orchestrator_chain_collators_decreases() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -321,7 +303,7 @@ fn assign_collators_if_config_collators_per_container_increases() {
             m.container_chains = vec![1001, 1002]
         });
 
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -381,7 +363,7 @@ fn assign_collators_if_container_chain_is_removed() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -435,7 +417,7 @@ fn assign_collators_if_container_chain_is_added() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -493,7 +475,7 @@ fn assign_collators_after_decrease_num_collators() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![1001, 1002]
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
@@ -513,7 +495,15 @@ fn assign_collators_after_decrease_num_collators() {
             m.collators = vec![];
         });
 
-        run_to_block(21);
+        // Disable logs in this test because it will print:
+        //   Error in collator assignment, will keep previous assignment. ZeroCollators
+        // But only if this test runs after:
+        //   test mock::__construct_runtime_integrity_test::runtime_integrity_tests ... ok
+        // Because that test enables logging
+        silence_logs(|| {
+            run_to_block(21);
+        });
+
         // There are no collators but that would brick the chain, so we keep the old assignment
         assert_eq!(assigned_collators(), initial_assignment);
     });
@@ -533,7 +523,7 @@ fn assign_collators_stay_constant_if_new_collators_can_take_new_chains() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
             m.container_chains = vec![];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -577,7 +567,7 @@ fn assign_collators_move_extra_container_chain_to_orchestrator_chain_if_not_enou
             m.collators = vec![1, 2, 3, 4];
             m.container_chains = vec![];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -612,7 +602,7 @@ fn assign_collators_reorganize_container_chains_if_not_enough_collators() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             m.container_chains = vec![1001, 1002, 1003, 1004, 1005];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -669,7 +659,7 @@ fn assign_collators_set_zero_per_container() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             m.container_chains = vec![1001, 1002, 1003, 1004];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         assert_eq!(
@@ -718,7 +708,7 @@ fn assign_collators_rotation() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             m.container_chains = vec![1001, 1002, 1003, 1004];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
@@ -794,7 +784,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
             m.collators = vec![1, 2, 3, 4];
             m.container_chains = vec![1001, 1002];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment =
@@ -833,7 +823,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
             m.collators = vec![1, 2, 3, 4];
             m.parathreads = vec![5001, 5002];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment =
@@ -872,7 +862,7 @@ fn assign_collators_rotation_collators_are_shuffled() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
             m.container_chains = vec![1001, 1002];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
@@ -930,7 +920,7 @@ fn assign_collators_invulnerables_priority_orchestrator() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100];
             m.container_chains = vec![1001, 1002];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
@@ -967,7 +957,7 @@ fn assign_collators_invulnerables_priority_orchestrator_reassigned() {
             m.collators = vec![1, 2, 3, 4, 5, 100, 101, 102, 103, 104];
             m.container_chains = vec![1001, 1002];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
@@ -1043,7 +1033,7 @@ fn assign_collators_all_invulnerables() {
             m.collators = vec![101, 102, 103, 104, 105, 106, 107, 108, 109, 110];
             m.container_chains = vec![1001, 1002];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![
@@ -1077,7 +1067,7 @@ fn rotation_events() {
             m.collators = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
             m.container_chains = vec![1001, 1002, 1003, 1004];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
 
         // Block 1 should emit event, random seed was not set
         System::assert_last_event(
@@ -1170,7 +1160,7 @@ fn assign_collators_remove_from_orchestator_when_all_assigned() {
             m.collators = vec![1, 2];
             m.container_chains = vec![1001];
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment = BTreeMap::from_iter(vec![(1, 1000), (2, 1000)]);
@@ -1223,7 +1213,7 @@ fn collator_assignment_includes_empty_chains() {
             m.container_chains = vec![2000, 2001, 2002];
             m.parathreads = vec![3000, 3001, 3002]
         });
-        assert_eq!(assigned_collators(), BTreeMap::new(),);
+        assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let assigned_collators = CollatorContainerChain::<Test>::get();
