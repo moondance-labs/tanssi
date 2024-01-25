@@ -42,7 +42,6 @@ use {
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
-    pallet_services_payment::ProvideBlockProductionCost,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
