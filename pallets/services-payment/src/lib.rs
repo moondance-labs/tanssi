@@ -316,7 +316,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 impl<T: Config> Pallet<T> {
     /// Derive a derivative account ID from the paraId.
     pub fn parachain_tank(para_id: ParaId) -> T::AccountId {
-        let entropy = code..using_encoded(blake2_256);
+        let entropy = (b"modlpy/serpayment", para_id).using_encoded(blake2_256);
         Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
             .expect("infinite length input; no invalid inputs for type; qed")
     }
