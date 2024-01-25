@@ -184,12 +184,12 @@ mod update_stream {
                 StreamConfig {
                     time_unit: TimeUnit::BlockNumber,
                     asset_id: StreamPaymentAssetId::Native,
-                    rate: rate,
+                    rate,
                 },
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(&ALICE), DEFAULT_BALANCE);
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
                 Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
                 initial_deposit
@@ -220,10 +220,277 @@ mod update_stream {
                     config: StreamConfig {
                         time_unit: TimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
-                        rate: rate,
+                        rate,
                     },
                     deposit: deposit_left,
                     last_time_updated: 10,
+                    request_nonce: 0,
+                    pending_request: None,
+                })
+            );
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                deposit_left
+            );
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
+        })
+    }
+
+    #[test]
+    fn update_stream_works_with_zero_rate() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 0;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
+                initial_deposit
+            ));
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                initial_deposit
+            );
+
+            roll_to(10) as u128;
+            let payment = 0;
+            let deposit_left = initial_deposit;
+
+            assert_ok!(StreamPayment::update_stream(
+                // Anyone can dispatch an update.
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+
+            // No event for payment of 0.
+            assert_event_not_emitted!(Event::<Runtime>::StreamPayment {
+                stream_id: 0,
+                source: ALICE,
+                target: BOB,
+                amount: payment,
+                drained: false
+            });
+            assert_eq!(
+                Streams::<Runtime>::get(0),
+                Some(Stream {
+                    source: ALICE,
+                    target: BOB,
+                    config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate,
+                    },
+                    deposit: deposit_left,
+                    // Time is updated correctly, which will prevent any issue
+                    // when changing rate.
+                    last_time_updated: 10,
+                    request_nonce: 0,
+                    pending_request: None,
+                })
+            );
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                deposit_left
+            );
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
+        })
+    }
+
+    #[test]
+    fn update_stream_works_with_max_rate() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = u128::MAX;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
+                initial_deposit
+            ));
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                initial_deposit
+            );
+
+            roll_to(10) as u128;
+            let payment = initial_deposit;
+            let deposit_left = 0;
+
+            assert_ok!(StreamPayment::update_stream(
+                // Anyone can dispatch an update.
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+
+            assert_event_emitted!(Event::<Runtime>::StreamPayment {
+                stream_id: 0,
+                source: ALICE,
+                target: BOB,
+                amount: payment,
+                drained: true
+            });
+            assert_eq!(
+                Streams::<Runtime>::get(0),
+                Some(Stream {
+                    source: ALICE,
+                    target: BOB,
+                    config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate,
+                    },
+                    deposit: deposit_left,
+                    last_time_updated: 10,
+                    request_nonce: 0,
+                    pending_request: None,
+                })
+            );
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                deposit_left
+            );
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
+        })
+    }
+
+    #[test]
+    fn update_stream_works_with_overflow() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = u128::MAX / 10;
+            let initial_deposit = 1 * MEGA;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
+                initial_deposit
+            ));
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                initial_deposit
+            );
+
+            roll_to(20) as u128;
+            let payment = initial_deposit;
+            let deposit_left = 0;
+
+            assert_ok!(StreamPayment::update_stream(
+                // Anyone can dispatch an update.
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+
+            assert_event_emitted!(Event::<Runtime>::StreamPayment {
+                stream_id: 0,
+                source: ALICE,
+                target: BOB,
+                amount: payment,
+                drained: true
+            });
+            assert_eq!(
+                Streams::<Runtime>::get(0),
+                Some(Stream {
+                    source: ALICE,
+                    target: BOB,
+                    config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate,
+                    },
+                    deposit: deposit_left,
+                    last_time_updated: 20,
+                    request_nonce: 0,
+                    pending_request: None,
+                })
+            );
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                deposit_left
+            );
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
+        })
+    }
+
+    #[test]
+    fn update_stream_works_alt_unit() {
+        ExtBuilder::default().build().execute_with(|| {
+            let initial_deposit = 1 * MEGA;
+            let config = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                asset_id: StreamPaymentAssetId::Native,
+                rate: 100,
+            };
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                config,
+                initial_deposit
+            ));
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                initial_deposit
+            );
+
+            let delta = roll_to(10) as u128;
+            let payment = delta * config.rate * 12; // 12 sec per block
+            let deposit_left = initial_deposit - payment;
+
+            assert_ok!(StreamPayment::update_stream(
+                // Anyone can dispatch an update.
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+
+            assert_event_emitted!(Event::<Runtime>::StreamPayment {
+                stream_id: 0,
+                source: ALICE,
+                target: BOB,
+                amount: payment,
+                drained: false
+            });
+            assert_eq!(
+                Streams::<Runtime>::get(0),
+                Some(Stream {
+                    source: ALICE,
+                    target: BOB,
+                    config,
+                    deposit: deposit_left,
+                    last_time_updated: 120,
                     request_nonce: 0,
                     pending_request: None,
                 })
@@ -251,12 +518,12 @@ mod update_stream {
                 StreamConfig {
                     time_unit: TimeUnit::Decreasing,
                     asset_id: StreamPaymentAssetId::Native,
-                    rate: rate,
+                    rate,
                 },
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(&ALICE), DEFAULT_BALANCE);
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
                 Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
                 initial_deposit
@@ -297,12 +564,12 @@ mod close_stream {
                 StreamConfig {
                     time_unit: TimeUnit::BlockNumber,
                     asset_id: StreamPaymentAssetId::Native,
-                    rate: rate,
+                    rate,
                 },
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(&ALICE), DEFAULT_BALANCE);
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
                 Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
                 initial_deposit
@@ -327,12 +594,12 @@ mod close_stream {
                 StreamConfig {
                     time_unit: TimeUnit::BlockNumber,
                     asset_id: StreamPaymentAssetId::Native,
-                    rate: rate,
+                    rate,
                 },
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(&ALICE), DEFAULT_BALANCE);
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
                 Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
                 initial_deposit
@@ -359,12 +626,12 @@ mod close_stream {
                 StreamConfig {
                     time_unit: TimeUnit::BlockNumber,
                     asset_id: StreamPaymentAssetId::Native,
-                    rate: rate,
+                    rate,
                 },
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(&ALICE), DEFAULT_BALANCE);
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
                 Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
                 initial_deposit
@@ -396,7 +663,7 @@ mod close_stream {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(&ALICE), DEFAULT_BALANCE);
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
                 Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
                 initial_deposit
@@ -617,7 +884,7 @@ mod refill_stream {
             assert_event_emitted!(Event::<Runtime>::StreamRefilled {
                 stream_id: 0,
                 increase: new_deposit,
-                new_deposit: new_deposit
+                new_deposit
             });
 
             assert_eq!(
@@ -673,7 +940,7 @@ mod request_change {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                config.clone(),
+                config,
                 initial_deposit
             ));
 
@@ -699,14 +966,14 @@ mod request_change {
             };
             let new_config = StreamConfig {
                 rate: 101,
-                ..config.clone()
+                ..config
             };
             let initial_deposit = 1 * MEGA;
 
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                config.clone(),
+                config,
                 initial_deposit
             ));
 
@@ -714,7 +981,7 @@ mod request_change {
                 RuntimeOrigin::signed(ALICE),
                 0,
                 ChangeKind::Suggestion,
-                new_config.clone()
+                new_config
             ),);
 
             assert_event_emitted!(Event::<Runtime>::StreamConfigChanged {
@@ -738,7 +1005,7 @@ mod request_change {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                config.clone(),
+                config,
                 initial_deposit
             ));
 
@@ -746,12 +1013,12 @@ mod request_change {
                 RuntimeOrigin::signed(ALICE),
                 0,
                 ChangeKind::Suggestion,
-                config.clone(),
+                config,
             ),);
 
             assert_event_not_emitted!(Event::<Runtime>::StreamConfigChanged {
                 stream_id: 0,
-                old_config: config.clone(),
+                old_config: config,
                 new_config: config
             });
         })
@@ -765,16 +1032,13 @@ mod request_change {
                 asset_id: StreamPaymentAssetId::Native,
                 rate: 100,
             };
-            let new_config = StreamConfig {
-                rate: 99,
-                ..config.clone()
-            };
+            let new_config = StreamConfig { rate: 99, ..config };
             let initial_deposit = 1 * MEGA;
 
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                config.clone(),
+                config,
                 initial_deposit
             ));
 
@@ -782,7 +1046,7 @@ mod request_change {
                 RuntimeOrigin::signed(BOB),
                 0,
                 ChangeKind::Suggestion,
-                new_config.clone()
+                new_config
             ),);
 
             assert_event_emitted!(Event::<Runtime>::StreamConfigChanged {
@@ -808,14 +1072,14 @@ mod request_change {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                config.clone(),
+                config,
                 initial_deposit
             ));
 
             // Target requets a change.
             let change1 = StreamConfig {
                 rate: 101,
-                ..config.clone()
+                ..config
             };
             assert_ok!(StreamPayment::request_change(
                 RuntimeOrigin::signed(BOB),
@@ -843,7 +1107,7 @@ mod request_change {
             // Target requets a new change that moves the deadline.
             let change1 = StreamConfig {
                 rate: 102,
-                ..config.clone()
+                ..config
             };
             assert_ok!(StreamPayment::request_change(
                 RuntimeOrigin::signed(BOB),
@@ -881,41 +1145,41 @@ mod request_change {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                config.clone(),
+                config,
                 initial_deposit
             ));
 
             // Target requests a change.
             let change1 = StreamConfig {
                 rate: 101,
-                ..config.clone()
+                ..config
             };
 
             assert_ok!(StreamPayment::request_change(
                 RuntimeOrigin::signed(BOB),
                 0,
                 ChangeKind::Suggestion,
-                change1.clone(),
+                change1,
             ));
 
             assert_event_emitted!(Event::<Runtime>::StreamConfigChangeRequested {
                 stream_id: 0,
                 request_nonce: 1,
-                old_config: config.clone(),
-                new_config: change1.clone(),
+                old_config: config,
+                new_config: change1,
             });
 
             // Source override the request
             let change2 = StreamConfig {
                 time_unit: TimeUnit::Timestamp,
-                ..config.clone()
+                ..config
             };
 
             assert_ok!(StreamPayment::request_change(
                 RuntimeOrigin::signed(ALICE),
                 0,
                 ChangeKind::Suggestion,
-                change2.clone(),
+                change2,
             ));
 
             assert_event_emitted!(Event::<Runtime>::StreamConfigChangeRequested {
@@ -942,41 +1206,38 @@ mod request_change {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                config.clone(),
+                config,
                 initial_deposit
             ));
 
             // Source requests a change.
-            let change1 = StreamConfig {
-                rate: 99,
-                ..config.clone()
-            };
+            let change1 = StreamConfig { rate: 99, ..config };
 
             assert_ok!(StreamPayment::request_change(
                 RuntimeOrigin::signed(ALICE),
                 0,
                 ChangeKind::Suggestion,
-                change1.clone(),
+                change1,
             ));
 
             assert_event_emitted!(Event::<Runtime>::StreamConfigChangeRequested {
                 stream_id: 0,
                 request_nonce: 1,
-                old_config: config.clone(),
-                new_config: change1.clone(),
+                old_config: config,
+                new_config: change1,
             });
 
             // Target override the request
             let change2 = StreamConfig {
                 time_unit: TimeUnit::Timestamp,
-                ..config.clone()
+                ..config
             };
 
             assert_ok!(StreamPayment::request_change(
                 RuntimeOrigin::signed(BOB),
                 0,
                 ChangeKind::Suggestion,
-                change2.clone(),
+                change2,
             ));
 
             assert_event_emitted!(Event::<Runtime>::StreamConfigChangeRequested {
@@ -1003,34 +1264,34 @@ mod request_change {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                config.clone(),
+                config,
                 initial_deposit
             ));
 
             // Target requests a change.
             let change1 = StreamConfig {
                 rate: 101,
-                ..config.clone()
+                ..config
             };
 
             assert_ok!(StreamPayment::request_change(
                 RuntimeOrigin::signed(BOB),
                 0,
                 ChangeKind::Mandatory { deadline: 10 },
-                change1.clone(),
+                change1,
             ));
 
             assert_event_emitted!(Event::<Runtime>::StreamConfigChangeRequested {
                 stream_id: 0,
                 request_nonce: 1,
-                old_config: config.clone(),
-                new_config: change1.clone(),
+                old_config: config,
+                new_config: change1,
             });
 
             // Source tries to override the request
             let change2 = StreamConfig {
                 time_unit: TimeUnit::Timestamp,
-                ..config.clone()
+                ..config
             };
 
             assert_err!(
@@ -1038,7 +1299,7 @@ mod request_change {
                     RuntimeOrigin::signed(ALICE),
                     0,
                     ChangeKind::Suggestion,
-                    change2.clone(),
+                    change2,
                 ),
                 Error::<Runtime>::CantOverrideMandatoryChange
             );
@@ -1067,34 +1328,31 @@ mod request_change {
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                config.clone(),
+                config,
                 initial_deposit
             ));
 
             // Source requests a change.
-            let change1 = StreamConfig {
-                rate: 99,
-                ..config.clone()
-            };
+            let change1 = StreamConfig { rate: 99, ..config };
 
             assert_ok!(StreamPayment::request_change(
                 RuntimeOrigin::signed(ALICE),
                 0,
                 ChangeKind::Mandatory { deadline: 10 },
-                change1.clone(),
+                change1,
             ));
 
             assert_event_emitted!(Event::<Runtime>::StreamConfigChangeRequested {
                 stream_id: 0,
                 request_nonce: 1,
-                old_config: config.clone(),
-                new_config: change1.clone(),
+                old_config: config,
+                new_config: change1,
             });
 
             // Target tries to override the request
             let change2 = StreamConfig {
                 time_unit: TimeUnit::Timestamp,
-                ..config.clone()
+                ..config
             };
 
             assert_err!(
@@ -1102,7 +1360,7 @@ mod request_change {
                     RuntimeOrigin::signed(BOB),
                     0,
                     ChangeKind::Suggestion,
-                    change2.clone(),
+                    change2,
                 ),
                 Error::<Runtime>::CantOverrideMandatoryChange
             );

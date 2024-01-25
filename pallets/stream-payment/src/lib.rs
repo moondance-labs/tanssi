@@ -89,7 +89,7 @@ use {
     frame_system::pallet_prelude::*,
     parity_scale_codec::{FullCodec, MaxEncodedLen},
     scale_info::TypeInfo,
-    sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedMul, CheckedSub, One, Zero},
+    sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, One, Saturating, Zero},
     sp_std::{fmt::Debug, marker::PhantomData},
 };
 
@@ -471,7 +471,7 @@ pub mod pallet {
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
 
             let requester = stream
-                .account_to_party(origin.clone())
+                .account_to_party(origin)
                 .ok_or(Error::<T>::UnauthorizedOrigin)?;
 
             if stream.config == new_config {
@@ -528,7 +528,7 @@ pub mod pallet {
 
             stream.request_nonce = stream.request_nonce.wrapping_add(1);
             stream.pending_request = Some(ChangeRequest {
-                requester: requester,
+                requester,
                 kind,
                 new_config: new_config.clone(),
             });
@@ -538,7 +538,7 @@ pub mod pallet {
                 stream_id,
                 request_nonce: stream.request_nonce,
                 old_config: stream.config.clone(),
-                new_config: new_config,
+                new_config,
             });
 
             // Update storage.
@@ -557,7 +557,7 @@ pub mod pallet {
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
 
             let accepter = stream
-                .account_to_party(origin.clone())
+                .account_to_party(origin)
                 .ok_or(Error::<T>::UnauthorizedOrigin)?;
 
             let Some(request) = stream.pending_request.take() else {
@@ -676,9 +676,10 @@ pub mod pallet {
 
             // We compute the amount due to the target according to the rate, which may be
             // lowered if the stream deposit is lower.
-            let mut payment = delta
-                .checked_mul(&stream.config.rate)
-                .ok_or(Error::<T>::CurrencyOverflow)?;
+            // Saturating is fine as it'll be clamped to the source deposit. It is also safer as
+            // considering it an error can make a stream un-updatable if too much time has passed
+            // without updates.
+            let mut payment = delta.saturating_mul(stream.config.rate);
 
             // We compute the new amount of locked funds. If it underflows it
             // means that there is more to pay that what is left, in which case
@@ -690,6 +691,10 @@ pub mod pallet {
                     (Zero::zero(), true)
                 }
             };
+
+            if payment.is_zero() {
+                return Ok(().into());
+            }
 
             // Transfer from the source to target.
             T::Assets::transfer_deposit(

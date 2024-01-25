@@ -123,7 +123,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
         to: &AccountId,
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
-        Self::decrease_deposit(asset_id.clone(), from, amount)?;
+        Self::decrease_deposit(asset_id, from, amount)?;
         match asset_id {
             StreamPaymentAssetId::Native => {
                 Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
@@ -163,7 +163,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     }
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
 pub enum TimeUnit {
     BlockNumber,
     Timestamp,
@@ -174,11 +174,11 @@ pub enum TimeUnit {
 pub struct TimeProvider;
 impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     fn now(unit: &TimeUnit) -> Option<Balance> {
-        match unit {
-            &TimeUnit::BlockNumber => Some(System::block_number().into()),
-            &TimeUnit::Timestamp => Some((System::block_number() * 12).into()),
-            &TimeUnit::Never => None,
-            &TimeUnit::Decreasing => Some((u64::MAX - System::block_number()).into()),
+        match *unit {
+            TimeUnit::BlockNumber => Some(System::block_number().into()),
+            TimeUnit::Timestamp => Some((System::block_number() * 12).into()),
+            TimeUnit::Never => None,
+            TimeUnit::Decreasing => Some((u64::MAX - System::block_number()).into()),
         }
     }
 }
