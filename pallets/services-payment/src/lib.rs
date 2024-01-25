@@ -290,10 +290,8 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         _block_number: BlockNumber,
         para_id: ParaId,
     ) -> Weight {
-        let total_weight = T::DbWeight::get().reads_writes(1, 1);
-
         if Pallet::<T>::burn_credit_for_para(&para_id).is_err() {
-            let (amount_to_charge, weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
+            let (amount_to_charge, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
             match T::Currency::withdraw(
                 &Self::parachain_tank(para_id),
                 amount_to_charge,
@@ -309,17 +307,16 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                     T::OnChargeForBlock::on_unbalanced(imbalance);
                 }
             }
-            total_weight.saturating_add(weight);
         }
 
-        total_weight
+        T::WeightInfo::on_container_author_noted()
     }
 }
 
 impl<T: Config> Pallet<T> {
     /// Derive a derivative account ID from the paraId.
     pub fn parachain_tank(para_id: ParaId) -> T::AccountId {
-        let entropy = (b"modlpy/serpayment", para_id).using_encoded(blake2_256);
+        let entropy = code..using_encoded(blake2_256);
         Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
             .expect("infinite length input; no invalid inputs for type; qed")
     }

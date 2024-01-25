@@ -27,6 +27,7 @@ use {
     frame_system::RawOrigin,
     sp_runtime::Saturating,
     sp_std::prelude::*,
+    tp_traits::AuthorNotingHook,
 };
 
 // Build genesis storage according to the mock runtime.
@@ -119,6 +120,29 @@ mod benchmarks {
 
         // After call: given free credits
         assert!(crate::GivenFreeCredits::<T>::get(&para_id).is_some());
+    }
+
+    #[benchmark]
+    fn on_container_author_noted() {
+        let para_id = 1001u32;
+        let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
+        let max_credit_stored = T::MaxCreditsStored::get();
+        let balance_to_purchase = block_cost.saturating_mul(max_credit_stored.into());
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+        let existential_deposit = <T::Currency>::minimum_balance();
+        assert_ok!(Pallet::<T>::purchase_credits(
+            RawOrigin::Signed(caller.clone()).into(),
+            para_id.into(),
+            balance_to_purchase + existential_deposit
+        ));
+        #[block]
+        {
+            <Pallet<T> as AuthorNotingHook<T::AccountId>>::on_container_author_noted(
+                &caller,
+                0,
+                para_id.into(),
+            );
+        }
     }
 
     impl_benchmark_test_suite!(Pallet, crate::benchmarks::new_test_ext(), crate::mock::Test);
