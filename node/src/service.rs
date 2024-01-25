@@ -33,7 +33,7 @@ use {
     },
     cumulus_client_consensus_proposer::Proposer,
     cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
-    cumulus_client_service::prepare_node_config,
+    cumulus_client_service::{prepare_node_config, start_relay_chain_tasks, StartRelayChainTasksParams, DARecoveryProfile},
     cumulus_primitives_core::{
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair, Hash as PHash},
         ParaId,
@@ -311,6 +311,30 @@ async fn start_node_impl(
     let sync_keystore = node_builder.keystore_container.keystore();
     let mut collate_on_tanssi = None;
 
+    let announce_block = {
+        let sync_service = node_builder.network.sync_service.clone();
+        Arc::new(move |hash, data| sync_service.announce_block(hash, data))
+    };
+
+    let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
+
+    start_relay_chain_tasks(StartRelayChainTasksParams {
+		client: node_builder.client.clone(),
+		announce_block: announce_block.clone(),
+		para_id,
+		relay_chain_interface: relay_chain_interface.clone(),
+		task_manager: &mut node_builder.task_manager,
+		da_recovery_profile: if validator {
+			DARecoveryProfile::Collator
+		} else {
+			DARecoveryProfile::FullNode
+		},
+		import_queue: import_queue_service,
+		relay_chain_slot_duration,
+		recovery_handle: Box::new(overseer_handle.clone()),
+		sync_service: node_builder.network.sync_service.clone(),
+	})?;
+
     let node_builder = if validator {
         let collator_key = collator_key
             .clone()
@@ -330,7 +354,7 @@ async fn start_node_impl(
 
         let parachain_consensus = build_consensus_orchestrator(
             node_builder.client.clone(),
-            block_import,
+            block_import.clone(),
             node_builder.prometheus_registry.as_ref(),
             node_builder.telemetry.as_ref().map(|t| t.handle()),
             &node_builder.task_manager,
@@ -349,6 +373,24 @@ async fn start_node_impl(
             parachain_consensus.clone(),
         );
 
+        start_consensus_orchestrator(
+            node_builder.client.clone(),
+            block_import,
+            node_builder.prometheus_registry.as_ref(),
+            node_builder.telemetry.as_ref().map(|t| t.handle()),
+            &node_builder.task_manager,
+            relay_chain_interface.clone(),
+            node_builder.transaction_pool.clone(),
+            node_builder.network.sync_service.clone(),
+            node_builder.keystore_container.keystore(),
+            force_authoring,
+            relay_chain_slot_duration,
+            para_id,
+            collator_key.clone(),
+            overseer_handle.clone(),
+            announce_block,
+        )?;
+
         // TODO: change for async backing
         collate_on_tanssi = Some(move || async move {
             #[allow(deprecated)]
@@ -356,20 +398,22 @@ async fn start_node_impl(
         });
 
         node_builder
-            .start_collator(
+/*             .start_collator(
                 para_id,
                 relay_chain_interface.clone(),
                 relay_chain_slot_duration,
                 parachain_consensus,
                 collator_key,
             )
-            .await?
+            .await? */
+
+        
     } else {
-        node_builder.start_full_node(
+        node_builder/* .start_full_node(
             para_id,
             relay_chain_interface.clone(),
             relay_chain_slot_duration,
-        )?
+        )? */
     };
 
     node_builder.network.start_network.start_network();
@@ -685,9 +729,13 @@ fn start_consensus_container(
         client.clone(),
     );
 
+    let relay_chain_interace_for_cidp = relay_chain_interface.clone();
+    let relay_chain_interace_for_orch = relay_chain_interface.clone();
+    let orchestrator_client_for_cidp = orchestrator_client;
+
     let params = BasicTanssiAuraParams {
         create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
-            let relay_chain_interface = relay_chain_interface.clone();
+            let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let orchestrator_chain_interface = orchestrator_chain_interface.clone();
 
             async move {
@@ -767,6 +815,7 @@ fn start_consensus_container(
         para_id,
         overseer_handle,
         slot_duration,
+        force_authoring,
         relay_chain_slot_duration,
         proposer,
         collator_service,
@@ -780,27 +829,27 @@ fn start_consensus_container(
     // TODO: what name shall we put here?
     task_manager
         .spawn_essential_handle()
-        .spawn("tanssi-aura", None, fut);
+        .spawn("tanssi-aura-container", None, fut);
 
     Ok(())
 }
 
 fn start_consensus_orchestrator(
     client: Arc<ParachainClient>,
-    orchestrator_client: Arc<ParachainClient>,
+    //orchestrator_client: Arc<ParachainClient>,
     block_import: ParachainBlockImport,
     prometheus_registry: Option<&Registry>,
     telemetry: Option<TelemetryHandle>,
     task_manager: &TaskManager,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
+    //orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
     force_authoring: bool,
     relay_chain_slot_duration: Duration,
     para_id: ParaId,
-    orchestrator_para_id: ParaId,
+    //orchestrator_para_id: ParaId,
     collator_key: CollatorPair,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
@@ -808,7 +857,7 @@ fn start_consensus_orchestrator(
     use tc_consensus::collators::basic::{
         self as basic_tanssi_aura, Params as BasicTanssiAuraParams,
     };
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)?;
+    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
         task_manager.spawn_handle(),
@@ -827,12 +876,13 @@ fn start_consensus_orchestrator(
         client.clone(),
     );
 
-    let relay_chain_interace_for_orch = relay_chain_interface.clone();
-    let orchestrator_client_for_cidp = orchestrator_client;
+    let relay_chain_interace_for_cidp = relay_chain_interface.clone();
+    let client_set_aside_for_cidp = client.clone();
+    let client_set_aside_for_orch = client.clone();
 
     let params = BasicTanssiAuraParams {
-        create_inherent_data_providers: move |block_hash, (relay_parent, validation_data)| {
-            let relay_chain_interface = relay_chain_interface.clone();
+        create_inherent_data_providers: move |block_hash, (relay_parent, _validation_data)| {
+            let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
             async move {
                 let para_ids = client_set_aside_for_cidp
@@ -900,6 +950,7 @@ fn start_consensus_orchestrator(
         overseer_handle,
         slot_duration,
         relay_chain_slot_duration,
+        force_authoring,
         proposer,
         collator_service,
         // Very limited proposal time.

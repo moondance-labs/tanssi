@@ -20,7 +20,7 @@ use cumulus_client_collator::{
 };
 use cumulus_client_consensus_common::ParachainBlockImportMarker;
 use cumulus_client_consensus_proposer::ProposerInterface;
-use cumulus_primitives_core::{relay_chain::BlockId as RBlockId, CollectCollationInfo};
+use cumulus_primitives_core::{relay_chain::{BlockId as RBlockId, Hash as PHash}, CollectCollationInfo, PersistedValidationData};
 use cumulus_relay_chain_interface::RelayChainInterface;
 use parity_scale_codec::{Codec, Decode};
 
@@ -31,6 +31,7 @@ use polkadot_primitives::{CollatorPair, Id as ParaId};
 use futures::{channel::mpsc::Receiver, prelude::*};
 use sc_client_api::{backend::AuxStore, BlockBackend, BlockOf};
 use sc_consensus::BlockImport;
+use sc_consensus_slots::InherentDataProviderExt;
 use sp_api::ProvideRuntimeApi;
 use sp_application_crypto::AppPublic;
 use sp_blockchain::HeaderBackend;
@@ -42,7 +43,8 @@ use sp_keystore::KeystorePtr;
 use sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member};
 use std::{convert::TryFrom, sync::Arc, time::Duration};
 
-use cumulus_client_consensus_aura::collator as collator_util;
+use crate::collators as collator_util;
+use crate::{consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator, AuthorityId};
 
 /// Parameters for [`run`].
 pub struct Params<BI, CIDP, Client, RClient, SO, Proposer, CS, GOH> {
@@ -61,6 +63,7 @@ pub struct Params<BI, CIDP, Client, RClient, SO, Proposer, CS, GOH> {
     pub proposer: Proposer,
     pub collator_service: CS,
     pub authoring_duration: Duration,
+    pub force_authoring: bool,
     pub collation_request_receiver: Option<Receiver<CollationRequest>>,
 }
 
@@ -81,8 +84,8 @@ where
     //TODO: re-check and analyze what to add here.
     //Client::Api: TanssiAuthorityAssignmentApi<Block, P::Public> + CollectCollationInfo<Block>,
     RClient: RelayChainInterface + Send + Clone + 'static,
-    CIDP: CreateInherentDataProviders<Block, ()> + Send + 'static,
-    CIDP::InherentDataProviders: Send,
+    CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)> + Send + 'static + Clone,
+    CIDP::InherentDataProviders: Send + InherentDataProviderExt,
     BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
     SO: SyncOracle + Send + Sync + Clone + 'static,
     Proposer: ProposerInterface<Block> + Send + Sync + 'static,
@@ -90,7 +93,7 @@ where
     P: Pair,
     P::Public: AppPublic + Member + Codec,
     P::Signature: TryFrom<Vec<u8>> + Member + Codec,
-    GOH: 'static + Sync + Send,
+    GOH: RetrieveAuthoritiesFromOrchestrator<Block,(PHash, PersistedValidationData),Vec<AuthorityId<P>>,> + 'static + Sync + Send,
 {
     async move {
         let mut collation_requests = match params.collation_request_receiver {
@@ -107,7 +110,8 @@ where
 
         let mut collator = {
             let params = collator_util::Params {
-                create_inherent_data_providers: params.create_inherent_data_providers,
+                create_inherent_data_providers: params.create_inherent_data_providers.clone(),
+                //get_authorities_from_orchestrator: params.get_authorities_from_orchestrator,
                 block_import: params.block_import,
                 relay_client: params.relay_client.clone(),
                 keystore: params.keystore.clone(),
@@ -147,7 +151,7 @@ where
 
             if !collator
                 .collator_service()
-                .check_block_status(parent_hash, &parent_header)
+                .check_block_status(parent_hash.clone(), &parent_header)
             {
                 continue;
             }
@@ -162,20 +166,52 @@ where
                 Ok(Some(h)) => h,
             };
 
-            let claim = match collator_util::claim_slot::<_, _, P>(
-                &*params.para_client,
-                parent_hash,
-                &relay_parent_header,
-                params.slot_duration,
-                params.relay_chain_slot_duration,
+            let authorities = match params
+                .get_authorities_from_orchestrator
+                .retrieve_authorities_from_orchestrator(
+                    parent_hash,
+                    (relay_parent_header.hash(), validation_data.clone()),
+                )
+                .await
+                {
+                    Err(e) => reject_with_error!(e),
+                    Ok(h) => h,
+                };
+            
+            let inherent_providers = match params.create_inherent_data_providers
+                .create_inherent_data_providers(parent_hash.clone(), (*request.relay_parent(), validation_data.clone()))
+                .await
+                {
+                    Err(e) => reject_with_error!(e),
+                    Ok(h) => h,
+                };
+
+            let claim = match collator_util::tanssi_claim_slot::<P>(
+                //&*params.para_client,
+                authorities,
+                // TODO: check if this is the correct slot to pass here
+                inherent_providers.slot(),
+                //parent_hash,
+                //&relay_parent_header,
+                //params.slot_duration,
+                //params.relay_chain_slot_duration,
+                params.force_authoring,
                 &params.keystore,
             )
             .await
             {
-                Ok(None) => continue,
-                Ok(Some(c)) => c,
                 Err(e) => reject_with_error!(e),
+                Ok(h) => h,
             };
+/*             .map_err(|e| {
+                tracing::error!(
+                    target: LOG_TARGET,
+                    error = ?e,
+                    "Failed to get orch head.",
+                )
+            })
+            .ok()?; */
+
 
             let (parachain_inherent_data, other_inherent_data) = try_request!(
                 collator
@@ -183,7 +219,7 @@ where
                         *request.relay_parent(),
                         &validation_data,
                         parent_hash,
-                        claim.timestamp(),
+                        None,
                     )
                     .await
             );
@@ -192,7 +228,7 @@ where
                 collator
                     .collate(
                         &parent_header,
-                        &claim,
+                        &mut claim.expect("Slot claim should exist"),
                         None,
                         (parachain_inherent_data, other_inherent_data),
                         params.authoring_duration,

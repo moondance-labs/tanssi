@@ -42,8 +42,8 @@ use sc_consensus_aura::standalone as aura_internal;
 use sp_api::ProvideRuntimeApi;
 use sp_application_crypto::{AppCrypto, AppPublic};
 use sp_consensus::BlockOrigin;
-use sp_consensus_aura::{AuraApi, Slot, SlotDuration};
-use sp_core::crypto::{ByteArray, Pair};
+use sp_consensus_aura::{AuraApi, Slot, SlotDuration, digests::CompatibleDigestItem};
+use sp_core::crypto::{ByteArray, Pair, Public};
 use sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider};
 use sp_keystore::{Keystore, KeystorePtr};
 use sp_runtime::{
@@ -55,10 +55,10 @@ use sp_timestamp::Timestamp;
 use std::{convert::TryFrom, error::Error, time::Duration};
 
 /// Parameters for instantiating a [`Collator`].
-pub struct Params<BI, CIDP, RClient, Proposer, CS, GOH> {
+pub struct Params<BI, CIDP, RClient, Proposer, CS, /*GOH*/> {
     /// A builder for inherent data builders.
     pub create_inherent_data_providers: CIDP,
-    pub get_authorities_from_orchestrator: GOH,
+    //pub get_authorities_from_orchestrator: GOH,
     /// The block import handle.
     pub block_import: BI,
     /// An interface to the relay-chain client.
@@ -76,9 +76,9 @@ pub struct Params<BI, CIDP, RClient, Proposer, CS, GOH> {
 
 /// A utility struct for writing collation logic that makes use of Aura entirely
 /// or in part. See module docs for more details.
-pub struct Collator<Block, P, BI, CIDP, RClient, Proposer, CS, GOH> {
+pub struct Collator<Block, P, BI, CIDP, RClient, Proposer, CS, /*GOH*/> {
     create_inherent_data_providers: CIDP,
-    get_authorities_from_orchestrator: GOH,
+    //get_authorities_from_orchestrator: GOH,
     block_import: BI,
     relay_client: RClient,
     keystore: KeystorePtr,
@@ -88,17 +88,17 @@ pub struct Collator<Block, P, BI, CIDP, RClient, Proposer, CS, GOH> {
     _marker: std::marker::PhantomData<(Block, Box<dyn Fn(P) + Send + Sync + 'static>)>,
 }
 
-impl<Block, P, BI, CIDP, RClient, Proposer, CS, GOH>
-    Collator<Block, P, BI, CIDP, RClient, Proposer, CS, GOH>
+impl<Block, P, BI, CIDP, RClient, Proposer, CS, /*GOH*/>
+    Collator<Block, P, BI, CIDP, RClient, Proposer, CS, /*GOH*/>
 where
     Block: BlockT,
     RClient: RelayChainInterface,
     CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)> + 'static,
-    GOH: RetrieveAuthoritiesFromOrchestrator<
+/*     GOH: RetrieveAuthoritiesFromOrchestrator<
         Block,
         (PHash, PersistedValidationData),
         Vec<AuthorityId<P>>,
-    >,
+    >, */
     BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
     Proposer: ProposerInterface<Block>,
     CS: CollatorServiceInterface<Block>,
@@ -107,10 +107,10 @@ where
     P::Signature: TryFrom<Vec<u8>> + Member + Codec,
 {
     /// Instantiate a new instance of the `Aura` manager.
-    pub fn new(params: Params<BI, CIDP, RClient, Proposer, CS, GOH>) -> Self {
+    pub fn new(params: Params<BI, CIDP, RClient, Proposer, CS, /*GOH*/>) -> Self {
         Collator {
             create_inherent_data_providers: params.create_inherent_data_providers,
-            get_authorities_from_orchestrator: params.get_authorities_from_orchestrator,
+            //get_authorities_from_orchestrator: params.get_authorities_from_orchestrator,
             block_import: params.block_import,
             relay_client: params.relay_client,
             keystore: params.keystore,
@@ -169,7 +169,7 @@ where
     pub async fn collate(
         &mut self,
         parent_header: &Block::Header,
-        slot_claim: &SlotClaim<P::Public>,
+        slot_claim: &mut SlotClaim<P::Public>,
         additional_pre_digest: impl Into<Option<Vec<DigestItem>>>,
         inherent_data: (ParachainInherentData, InherentData),
         proposal_duration: Duration,
@@ -177,7 +177,7 @@ where
     ) -> Result<(Collation, ParachainBlockData<Block>, Block::Hash), Box<dyn Error + Send + 'static>>
     {
         let mut digest = additional_pre_digest.into().unwrap_or_default();
-        digest.push(slot_claim.pre_digest.clone());
+        digest.append(&mut slot_claim.pre_digest);
 
         let proposal = self
             .proposer
@@ -254,28 +254,44 @@ where
     }
 }
 
+fn pre_digest_data<P: Pair>(slot: Slot, claim: P::Public) -> Vec<sp_runtime::DigestItem> 
+where
+    P::Public: Codec,
+    P::Signature: Codec,
+{
+    vec![
+        <DigestItem as CompatibleDigestItem<P::Signature>>::aura_pre_digest(slot),
+        // We inject the nimbus digest as well. Crutial to be able to verify signatures
+        <DigestItem as NimbusCompatibleDigestItem>::nimbus_pre_digest(
+            // TODO remove this unwrap through trait reqs
+            nimbus_primitives::NimbusId::from_slice(claim.as_ref()).unwrap(),
+        ),
+    ]
+}
+
 /// A claim on an Aura slot.
 pub struct SlotClaim<Pub> {
     author_pub: Pub,
-    pre_digest: DigestItem,
-    timestamp: Timestamp,
+    pre_digest: Vec<DigestItem>,
+    //timestamp: Timestamp,
 }
 
-impl<Pub> SlotClaim<Pub> {
+impl<Pub: Clone> SlotClaim<Pub> {
     /// Create a slot-claim from the given author public key, slot, and timestamp.
     ///
     /// This does not check whether the author actually owns the slot or the timestamp
     /// falls within the slot.
-    pub fn unchecked<P>(author_pub: Pub, slot: Slot, timestamp: Timestamp) -> Self
+    pub fn unchecked<P>(author_pub: Pub, slot: Slot, /*timestamp: Timestamp*/) -> Self
     where
         P: Pair<Public = Pub>,
         P::Public: Codec,
         P::Signature: Codec,
     {
         SlotClaim {
-            author_pub,
-            timestamp,
-            pre_digest: aura_internal::pre_digest::<P>(slot),
+            author_pub: author_pub.clone(),
+            //timestamp,
+            //pre_digest: aura_internal::pre_digest::<P>(slot),
+            pre_digest: pre_digest_data::<P>(slot, author_pub),
         }
     }
 
@@ -285,39 +301,44 @@ impl<Pub> SlotClaim<Pub> {
     }
 
     /// Get the Aura pre-digest for this slot.
-    pub fn pre_digest(&self) -> &DigestItem {
+    pub fn pre_digest(&self) -> &Vec<DigestItem> {
         &self.pre_digest
     }
 
-    /// Get the timestamp corresponding to the relay-chain slot this claim was
-    /// generated against.
-    pub fn timestamp(&self) -> Timestamp {
+    // TODO: do we need this timestamp?
+    // Get the timestamp corresponding to the relay-chain slot this claim was
+    // generated against.
+/*     pub fn timestamp(&self) -> Timestamp {
         self.timestamp
-    }
+    } */
 }
 
 /// Attempt to claim a slot derived from the given relay-parent header's slot.
-pub async fn claim_slot<B, C, P>(
-    client: &C,
-    parent_hash: B::Hash,
-    relay_parent_header: &PHeader,
-    slot_duration: SlotDuration,
-    relay_chain_slot_duration: Duration,
+pub async fn tanssi_claim_slot<P>(
+    //client: &C,
+    authorities: Vec<AuthorityId<P>>,
+    //parent_header: &PHeader,
+    slot: Slot,
+    //parent_hash: B::Hash,
+    force_authoring: bool,
+    //relay_parent_header: &PHeader,
+    //slot_duration: SlotDuration,
+    //relay_chain_slot_duration: Duration,
     keystore: &KeystorePtr,
 ) -> Result<Option<SlotClaim<P::Public>>, Box<dyn Error>>
 where
-    B: BlockT,
-    C: ProvideRuntimeApi<B> + Send + Sync + 'static,
-    C::Api: AuraApi<B, P::Public>,
+    //B: BlockT,
+    //C: ProvideRuntimeApi<B> + Send + Sync + 'static,
+    //C::Api: AuraApi<B, P::Public>,
     P: Pair,
     P::Public: Codec,
     P::Signature: Codec,
 {
     // load authorities
-    let authorities = client
+/*     let authorities = client
         .runtime_api()
         .authorities(parent_hash)
-        .map_err(Box::new)?;
+        .map_err(Box::new)?; */
 
     /* 	let authorities_v2 = crate::authorities::<B, C, P>(
         client_set_aside_for_orch.as_ref(),
@@ -326,7 +347,7 @@ where
     ); */
 
     // Determine the current slot and timestamp based on the relay-parent's.
-    let (slot_now, timestamp) = match consensus_common::relay_slot_and_timestamp(
+/*     let (slot_now, timestamp) = match consensus_common::relay_slot_and_timestamp(
         relay_parent_header,
         relay_chain_slot_duration,
     ) {
@@ -344,11 +365,11 @@ where
             (our_slot, t)
         }
         None => return Ok(None),
-    };
+    }; */
 
     // Try to claim the slot locally.
     let author_pub = {
-        let res = aura_internal::claim_slot::<P>(slot_now, &authorities, keystore).await;
+        let res = claim_slot_inner::<P>(slot, &authorities, keystore, force_authoring).await;
         match res {
             Some(p) => p,
             None => return Ok(None),
@@ -356,8 +377,41 @@ where
     };
 
     Ok(Some(SlotClaim::unchecked::<P>(
-        author_pub, slot_now, timestamp,
+        author_pub, slot, /*timestamp,*/
     )))
+}
+
+/// Attempt to claim a slot using a keystore.
+///
+/// This returns `None` if the slot author is not locally controlled, and `Some` if it is,
+/// with the public key of the slot author.
+pub async fn claim_slot_inner<P: Pair>(
+	slot: Slot,
+	authorities: &Vec<AuthorityId<P>>,
+	keystore: &KeystorePtr,
+    force_authoring: bool,
+) -> Option<P::Public> {
+    let expected_author = crate::slot_author::<P>(slot, authorities.as_slice());
+    // if not running with force-authoring, just do the usual slot check
+    if !force_authoring {
+        expected_author.and_then(|p| {
+            if keystore.has_keys(&[(p.to_raw_vec(), NIMBUS_KEY_ID)]) {
+                Some(p.clone())
+            } else {
+                None
+            }
+        })
+    }
+    // if running with force-authoring, as long as you are in the authority set,
+    // propose
+    else {
+        authorities
+            .iter()
+            .find(|key| {
+                keystore.has_keys(&[(key.to_raw_vec(), NIMBUS_KEY_ID)])
+            })
+            .cloned()
+    }
 }
 
 /// Seal a block with a signature in the header.
@@ -423,6 +477,7 @@ where
     Ok(block_import_params)
 }
 
+/* /// TODO: remove
 /// Seal a block with a signature in the header.
 pub fn seal<B: BlockT, P>(
     pre_sealed: B,
@@ -462,4 +517,4 @@ where
     );
 
     Ok(block_import_params)
-}
+} */
