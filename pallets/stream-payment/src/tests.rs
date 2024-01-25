@@ -262,7 +262,7 @@ mod update_stream {
                 initial_deposit
             );
 
-            roll_to(10) as u128;
+            roll_to(10);
             let payment = 0;
             let deposit_left = initial_deposit;
 
@@ -332,7 +332,7 @@ mod update_stream {
                 initial_deposit
             );
 
-            roll_to(10) as u128;
+            roll_to(10);
             let payment = initial_deposit;
             let deposit_left = 0;
 
@@ -399,7 +399,7 @@ mod update_stream {
                 initial_deposit
             );
 
-            roll_to(20) as u128;
+            roll_to(20);
             let payment = initial_deposit;
             let deposit_left = 0;
 
@@ -428,6 +428,73 @@ mod update_stream {
                     },
                     deposit: deposit_left,
                     last_time_updated: 20,
+                    request_nonce: 0,
+                    pending_request: None,
+                })
+            );
+
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                deposit_left
+            );
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
+        })
+    }
+
+    #[test]
+    fn payment_matching_deposit_is_considered_drained() {
+        ExtBuilder::default().build().execute_with(|| {
+            let rate = 100;
+            let initial_deposit = 9 * rate;
+
+            assert_ok!(StreamPayment::open_stream(
+                RuntimeOrigin::signed(ALICE),
+                BOB,
+                StreamConfig {
+                    time_unit: TimeUnit::BlockNumber,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate,
+                },
+                initial_deposit
+            ));
+
+            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
+            assert_eq!(
+                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                initial_deposit
+            );
+
+            roll_to(10);
+            let payment = initial_deposit;
+            let deposit_left = 0;
+
+            assert_ok!(StreamPayment::update_stream(
+                // Anyone can dispatch an update.
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+
+            assert_event_emitted!(Event::<Runtime>::StreamPayment {
+                stream_id: 0,
+                source: ALICE,
+                target: BOB,
+                amount: payment,
+                drained: true
+            });
+            assert_eq!(
+                Streams::<Runtime>::get(0),
+                Some(Stream {
+                    source: ALICE,
+                    target: BOB,
+                    config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate,
+                    },
+                    deposit: deposit_left,
+                    last_time_updated: 10,
                     request_nonce: 0,
                     pending_request: None,
                 })

@@ -685,6 +685,7 @@ pub mod pallet {
             // means that there is more to pay that what is left, in which case
             // we pay all that is left.
             let (new_locked, drained) = match stream.deposit.checked_sub(&payment) {
+                Some(v) if v.is_zero() => (v, true),
                 Some(v) => (v, false),
                 None => {
                     payment = stream.deposit;
