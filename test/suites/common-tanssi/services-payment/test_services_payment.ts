@@ -203,7 +203,7 @@ describeSuite({
                     await polkadotJs.query.system.account(randomAccount.address)
                 ).data.free.toBigInt();
                 expect(balanceAfter).toBeLessThan(balanceBefore);
-              
+
                 const balanceTank = (await polkadotJs.query.system.account(paraIdTank(paraId))).data.free.toBigInt();
                 expect(balanceTank).toBe(requiredBalance);
 
@@ -227,7 +227,9 @@ describeSuite({
                 expect(containerBlockNum3, "container chain 2000 did not create a block").toBeLessThan(
                     containerBlockNum4
                 );
-                const balanceTankAfter = (await polkadotJs.query.system.account(paraIdTank(paraId))).data.free.toBigInt();
+                const balanceTankAfter = (
+                    await polkadotJs.query.system.account(paraIdTank(paraId))
+                ).data.free.toBigInt();
                 expect(balanceTank, "container chain 2000 created a block without burning any credits").toBeGreaterThan(
                     balanceTankAfter
                 );
