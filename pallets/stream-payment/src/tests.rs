@@ -175,17 +175,17 @@ mod update_stream {
     #[test]
     fn update_stream_works() {
         ExtBuilder::default().build().execute_with(|| {
-            let rate = 100;
             let initial_deposit = 1 * MEGA;
+            let config = StreamConfig {
+                time_unit: TimeUnit::BlockNumber,
+                asset_id: StreamPaymentAssetId::Native,
+                rate: 100,
+            };
 
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                StreamConfig {
-                    time_unit: TimeUnit::BlockNumber,
-                    asset_id: StreamPaymentAssetId::Native,
-                    rate,
-                },
+                config,
                 initial_deposit
             ));
 
@@ -196,7 +196,7 @@ mod update_stream {
             );
 
             let delta = roll_to(10) as u128;
-            let payment = delta * rate;
+            let payment = delta * config.rate;
             let deposit_left = initial_deposit - payment;
 
             assert_ok!(StreamPayment::update_stream(
@@ -217,11 +217,7 @@ mod update_stream {
                 Some(Stream {
                     source: ALICE,
                     target: BOB,
-                    config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
-                        asset_id: StreamPaymentAssetId::Native,
-                        rate,
-                    },
+                    config,
                     deposit: deposit_left,
                     last_time_updated: 10,
                     request_nonce: 0,
@@ -242,17 +238,17 @@ mod update_stream {
     #[test]
     fn update_stream_works_with_zero_rate() {
         ExtBuilder::default().build().execute_with(|| {
-            let rate = 0;
             let initial_deposit = 1 * MEGA;
+            let config = StreamConfig {
+                time_unit: TimeUnit::BlockNumber,
+                asset_id: StreamPaymentAssetId::Native,
+                rate: 0,
+            };
 
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                StreamConfig {
-                    time_unit: TimeUnit::BlockNumber,
-                    asset_id: StreamPaymentAssetId::Native,
-                    rate,
-                },
+                config,
                 initial_deposit
             ));
 
@@ -285,11 +281,7 @@ mod update_stream {
                 Some(Stream {
                     source: ALICE,
                     target: BOB,
-                    config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
-                        asset_id: StreamPaymentAssetId::Native,
-                        rate,
-                    },
+                    config,
                     deposit: deposit_left,
                     // Time is updated correctly, which will prevent any issue
                     // when changing rate.
@@ -312,17 +304,17 @@ mod update_stream {
     #[test]
     fn update_stream_works_with_max_rate() {
         ExtBuilder::default().build().execute_with(|| {
-            let rate = u128::MAX;
             let initial_deposit = 1 * MEGA;
+            let config = StreamConfig {
+                time_unit: TimeUnit::BlockNumber,
+                asset_id: StreamPaymentAssetId::Native,
+                rate: u128::MAX,
+            };
 
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                StreamConfig {
-                    time_unit: TimeUnit::BlockNumber,
-                    asset_id: StreamPaymentAssetId::Native,
-                    rate,
-                },
+                config,
                 initial_deposit
             ));
 
@@ -354,11 +346,7 @@ mod update_stream {
                 Some(Stream {
                     source: ALICE,
                     target: BOB,
-                    config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
-                        asset_id: StreamPaymentAssetId::Native,
-                        rate,
-                    },
+                    config,
                     deposit: deposit_left,
                     last_time_updated: 10,
                     request_nonce: 0,
@@ -379,17 +367,17 @@ mod update_stream {
     #[test]
     fn update_stream_works_with_overflow() {
         ExtBuilder::default().build().execute_with(|| {
-            let rate = u128::MAX / 10;
             let initial_deposit = 1 * MEGA;
+            let config = StreamConfig {
+                time_unit: TimeUnit::BlockNumber,
+                asset_id: StreamPaymentAssetId::Native,
+                rate: u128::MAX / 10,
+            };
 
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                StreamConfig {
-                    time_unit: TimeUnit::BlockNumber,
-                    asset_id: StreamPaymentAssetId::Native,
-                    rate,
-                },
+                config,
                 initial_deposit
             ));
 
@@ -421,11 +409,7 @@ mod update_stream {
                 Some(Stream {
                     source: ALICE,
                     target: BOB,
-                    config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
-                        asset_id: StreamPaymentAssetId::Native,
-                        rate,
-                    },
+                    config,
                     deposit: deposit_left,
                     last_time_updated: 20,
                     request_nonce: 0,
@@ -446,17 +430,17 @@ mod update_stream {
     #[test]
     fn payment_matching_deposit_is_considered_drained() {
         ExtBuilder::default().build().execute_with(|| {
-            let rate = 100;
-            let initial_deposit = 9 * rate;
+            let config = StreamConfig {
+                time_unit: TimeUnit::BlockNumber,
+                asset_id: StreamPaymentAssetId::Native,
+                rate: 100,
+            };
+            let initial_deposit = 9 * config.rate;            
 
             assert_ok!(StreamPayment::open_stream(
                 RuntimeOrigin::signed(ALICE),
                 BOB,
-                StreamConfig {
-                    time_unit: TimeUnit::BlockNumber,
-                    asset_id: StreamPaymentAssetId::Native,
-                    rate,
-                },
+                config,
                 initial_deposit
             ));
 
@@ -488,11 +472,7 @@ mod update_stream {
                 Some(Stream {
                     source: ALICE,
                     target: BOB,
-                    config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
-                        asset_id: StreamPaymentAssetId::Native,
-                        rate,
-                    },
+                    config,
                     deposit: deposit_left,
                     last_time_updated: 10,
                     request_nonce: 0,
