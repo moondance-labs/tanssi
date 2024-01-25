@@ -2760,7 +2760,7 @@ fn test_ed_plus_two_sessions_purchase_works() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                credits_1001 as u128
+                credits_1001
             ));
 
             // Assignment should happen after 2 sessions
@@ -2857,7 +2857,7 @@ fn test_ed_plus_two_sessions_minus_1_purchase_fails() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                credits_1001 as u128
+                credits_1001
             ));
 
             // Assignment should happen after 2 sessions
@@ -2929,7 +2929,7 @@ fn test_credits_with_purchase_can_be_combined() {
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
-                credits_1001 as u128
+                credits_1001
             ));
 
             // Assignment should happen after 2 sessions
