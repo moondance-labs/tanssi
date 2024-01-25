@@ -3,8 +3,8 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { generateKeyringPair, KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "util/block";
-import { bnToU8a, stringToU8a } from "@polkadot/util";
-import { blake2AsU8a } from "@polkadot/util-crypto";
+import { paraIdTank } from "util/payment";
+
 describeSuite({
     id: "CT0601",
     title: "Services payment test suite",
@@ -203,14 +203,8 @@ describeSuite({
                     await polkadotJs.query.system.account(randomAccount.address)
                 ).data.free.toBigInt();
                 expect(balanceAfter).toBeLessThan(balanceBefore);
-                // Tank account is b"para" + encode(parahain ID) + trailling zeros
-                const seedBytes = stringToU8a("modlpy/serpayment");
-                const paraIdBytes = bnToU8a(paraId, { bitLength: 32 });
-                const combinedBytes = new Uint8Array(seedBytes.length + paraIdBytes.length);
-                combinedBytes.set(seedBytes);
-                combinedBytes.set(paraIdBytes, seedBytes.length);
-                const para_tank = blake2AsU8a(combinedBytes, 256);
-                const balanceTank = (await polkadotJs.query.system.account(para_tank)).data.free.toBigInt();
+              
+                const balanceTank = (await polkadotJs.query.system.account(paraIdTank(paraId))).data.free.toBigInt();
                 expect(balanceTank).toBe(requiredBalance);
 
                 // Check that after 2 sessions, container chain 2000 has collators and is producing blocks
@@ -233,7 +227,7 @@ describeSuite({
                 expect(containerBlockNum3, "container chain 2000 did not create a block").toBeLessThan(
                     containerBlockNum4
                 );
-                const balanceTankAfter = (await polkadotJs.query.system.account(para_tank)).data.free.toBigInt();
+                const balanceTankAfter = (await polkadotJs.query.system.account(paraIdTank(paraId))).data.free.toBigInt();
                 expect(balanceTank, "container chain 2000 created a block without burning any credits").toBeGreaterThan(
                     balanceTankAfter
                 );

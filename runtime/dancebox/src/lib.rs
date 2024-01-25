@@ -48,7 +48,7 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            fungible::{Balanced, Credit},
+            fungible::{Balanced, Credit, Inspect},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
             OnRuntimeUpgrade, ValidatorRegistration,
@@ -85,7 +85,7 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Hash as HashT,
+            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Hash as HashT, Zero,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
@@ -721,11 +721,17 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
             let free_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
+            let remaining_credits = credits_for_2_sessions.saturating_sub(free_credits);
+            // Return if we can survive with free credits
+            if remaining_credits.is_zero() {
+                return true
+            }
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
-            let regular_credits = Balances::free_balance(pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id))
-                .saturating_div(block_production_costs);
-
-            (free_credits as u128).saturating_add(regular_credits) >= credits_for_2_sessions.into()
+            // let's check if we can withdraw
+            let remaining_to_pay = (remaining_credits as u128).saturating_mul(block_production_costs);
+            // This should take into account whether we tank goes below ED
+            // The true refers to keepAlive
+            Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), remaining_to_pay).into_result(true).is_ok()
         });
     }
 
