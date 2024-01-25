@@ -235,6 +235,8 @@ pub mod pallet {
         ParaIdPaused { para_id: ParaId },
         /// A para id has been unpaused.
         ParaIdUnpaused { para_id: ParaId },
+        /// Parathread params changed
+        ParathreadParamsChanged { para_id: ParaId },
     }
 
     #[pallet::error]
@@ -257,6 +259,8 @@ pub mod pallet {
         ParaIdNotInPendingVerification,
         /// Tried to register a ParaId with an account that did not have enough balance for the deposit
         NotSufficientDeposit,
+        /// Tried to change parathread params for a para id that is not a registered parathread
+        NotAParathread,
     }
 
     #[pallet::hooks]
@@ -664,6 +668,34 @@ pub mod pallet {
             ParathreadParams::<T>::insert(para_id, params);
 
             Self::deposit_event(Event::ParaIdRegistered { para_id });
+
+            Ok(())
+        }
+
+        /// Change parathread params
+        // TODO: weight
+        #[pallet::call_index(7)]
+        #[pallet::weight(T::WeightInfo::register(0u32, T::MaxLengthParaIds::get(), 0u32))]
+        pub fn set_parathread_params(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            slot_duration: SlotDuration,
+        ) -> DispatchResult {
+            T::RegistrarOrigin::ensure_origin(origin)?;
+
+            // Check that the para id is a parathread by reading the old params
+            let mut params = match ParathreadParams::<T>::get(para_id) {
+                Some(x) => x,
+                None => {
+                    return Err(Error::<T>::NotAParathread.into());
+                }
+            };
+
+            params.slot_duration = slot_duration;
+
+            ParathreadParams::<T>::insert(para_id, params);
+
+            Self::deposit_event(Event::ParathreadParamsChanged { para_id });
 
             Ok(())
         }
