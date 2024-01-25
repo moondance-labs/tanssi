@@ -26,7 +26,9 @@ mod tests;
 use serde::{Deserialize, Serialize};
 
 use {
+    core::cmp::min,
     frame_support::{
+        dispatch::DispatchErrorWithPostInfo,
         pallet,
         pallet_prelude::*,
         storage::types::{StorageDoubleMap, StorageMap},
@@ -114,6 +116,8 @@ pub mod pallet {
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
     type AssetIdOf<T> = <T as Config>::AssetId;
 
+    pub type RequestNonce = u32;
+
     /// A stream payment from source to target.
     /// Stores the last time the stream was updated, which allows to compute
     /// elapsed time and perform payment.
@@ -133,14 +137,24 @@ pub mod pallet {
         /// Nonce for requests. This prevents a request to make a first request
         /// then change it to another request to frontrun the other party
         /// accepting.
-        pub request_nonce: u32,
+        pub request_nonce: RequestNonce,
         /// A pending change request if any.
         pub pending_request: Option<ChangeRequest<Unit, AssetId, Balance>>,
     }
 
+    impl<AccountId: PartialEq, Unit, AssetId, Balance> Stream<AccountId, Unit, AssetId, Balance> {
+        pub fn account_to_party(&self, account: AccountId) -> Option<Party> {
+            match account {
+                a if a == self.source => Some(Party::Source),
+                a if a == self.target => Some(Party::Target),
+                _ => None,
+            }
+        }
+    }
+
     /// Stream configuration.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
     pub struct StreamConfig<Unit, AssetId, Balance> {
         /// Unit in which time is measured using a `TimeProvider`.
         pub time_unit: Unit,
@@ -153,7 +167,7 @@ pub mod pallet {
     /// Origin of a change request.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
-    pub enum ChangeRequester {
+    pub enum Party {
         Source,
         Target,
     }
@@ -175,7 +189,7 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
     pub struct ChangeRequest<Unit, AssetId, Balance> {
-        origin: ChangeRequester,
+        requester: Party,
         kind: ChangeKind<Balance>,
         new_config: StreamConfig<Unit, AssetId, Balance>,
     }
@@ -239,10 +253,14 @@ pub mod pallet {
         UnauthorizedOrigin,
         CantBeBothSourceAndTarget,
         CantFetchCurrentTime,
-        TimeOverflow,
+        TimeMustBeIncreasing,
         CurrencyOverflow,
         SourceCantDecreaseRate,
         TargetCantIncreaseRate,
+        CantOverrideMandatoryChange,
+        NoPendingRequest,
+        CantAcceptOwnRequest,
+        WrongRequestNonce,
     }
 
     #[pallet::event]
@@ -267,10 +285,16 @@ pub mod pallet {
             increase: T::Balance,
             new_deposit: T::Balance,
         },
-        StreamRateChanged {
+        StreamConfigChanged {
             stream_id: T::StreamId,
-            old_rate: T::Balance,
-            new_rate: T::Balance,
+            old_config: StreamConfigOf<T>,
+            new_config: StreamConfigOf<T>,
+        },
+        StreamConfigChangeRequested {
+            stream_id: T::StreamId,
+            request_nonce: RequestNonce,
+            old_config: StreamConfigOf<T>,
+            new_config: StreamConfigOf<T>,
         },
     }
 
@@ -290,38 +314,8 @@ pub mod pallet {
             initial_deposit: T::Balance,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
-            ensure!(origin != target, Error::<T>::CantBeBothSourceAndTarget);
 
-            // Generate a new stream id.
-            let stream_id = NextStreamId::<T>::get();
-            let next_stream_id = stream_id
-                .checked_add(&One::one())
-                .ok_or(Error::<T>::StreamIdOverflow)?;
-            NextStreamId::<T>::set(next_stream_id);
-
-            // Freeze initial deposit.
-            T::Assets::increase_deposit(config.asset_id.clone(), &origin, initial_deposit)?;
-
-            // Create stream data.
-            let now =
-                T::TimeProvider::now(&config.time_unit).ok_or(Error::<T>::CantFetchCurrentTime)?;
-            let stream = Stream {
-                source: origin.clone(),
-                target: target.clone(),
-                config,
-                deposit: initial_deposit,
-                last_time_updated: now,
-                request_nonce: 0,
-                pending_request: None,
-            };
-
-            // Insert stream in storage.
-            Streams::<T>::insert(stream_id, stream);
-            LookupStreamsWithSource::<T>::insert(origin, stream_id, ());
-            LookupStreamsWithTarget::<T>::insert(target, stream_id, ());
-
-            // Emit event.
-            Pallet::<T>::deposit_event(Event::<T>::StreamOpened { stream_id });
+            let _stream_id = Self::open_stream_returns_id(origin, target, config, initial_deposit)?;
 
             Ok(().into())
         }
@@ -416,53 +410,171 @@ pub mod pallet {
         }
 
         #[pallet::call_index(4)]
-        pub fn change_stream_rate(
+        pub fn request_change(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
-            new_rate_per_time_unit: T::Balance,
+            kind: ChangeKind<T::Balance>,
+            new_config: StreamConfigOf<T>,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
 
-            // Only source or target can update the rate.
-            ensure!(
-                origin == stream.source || origin == stream.target,
-                Error::<T>::UnauthorizedOrigin
-            );
+            let requester = stream
+                .account_to_party(origin.clone())
+                .ok_or(Error::<T>::UnauthorizedOrigin)?;
 
-            // Noop
-            if new_rate_per_time_unit == stream.config.rate {
+            if stream.config == new_config {
                 return Ok(().into());
             }
 
-            // Ensure rate change is fair.
-            if origin == stream.source && new_rate_per_time_unit < stream.config.rate {
-                return Err(Error::<T>::SourceCantDecreaseRate.into());
+            // If asset id and time unit are the same, we allow to make the change
+            // immediatly if the origin is at a disadvantage.
+            'immediate: {
+                if new_config.time_unit != stream.config.time_unit
+                    || new_config.asset_id != stream.config.asset_id
+                {
+                    break 'immediate;
+                }
+
+                if requester == Party::Source && new_config.rate < stream.config.rate {
+                    break 'immediate;
+                }
+
+                if requester == Party::Target && new_config.rate > stream.config.rate {
+                    break 'immediate;
+                }
+
+                // Perform pending payment before changing config.
+                Self::perform_stream_payment(stream_id, &mut stream)?;
+
+                // Emit event.
+                Pallet::<T>::deposit_event(Event::<T>::StreamConfigChanged {
+                    stream_id,
+                    old_config: stream.config.clone(),
+                    new_config: new_config.clone(),
+                });
+
+                // Update storage.
+                stream.config = new_config.clone();
+                Streams::<T>::insert(stream_id, stream);
+
+                return Ok(().into());
             }
 
-            if origin == stream.target && new_rate_per_time_unit > stream.config.rate {
-                return Err(Error::<T>::TargetCantIncreaseRate.into());
+            // If there is already a mandatory change request, only the origin
+            // of this request can change it.
+            if let Some(ChangeRequest {
+                kind: ChangeKind::Mandatory { .. },
+                requester: pending_requester,
+                ..
+            }) = &stream.pending_request
+            {
+                ensure!(
+                    &requester == pending_requester,
+                    Error::<T>::CantOverrideMandatoryChange
+                );
             }
 
-            // Perform pending payment before changing rate.
-            Self::perform_stream_payment(stream_id, &mut stream)?;
-
-            // Emit event.
-            Pallet::<T>::deposit_event(Event::<T>::StreamRateChanged {
-                stream_id,
-                old_rate: stream.config.rate,
-                new_rate: new_rate_per_time_unit,
+            stream.request_nonce = stream.request_nonce.wrapping_add(1);
+            stream.pending_request = Some(ChangeRequest {
+                requester: requester,
+                kind,
+                new_config: new_config.clone(),
             });
 
-            // Update rate
-            stream.config.rate = new_rate_per_time_unit;
+            // Emit event.
+            Pallet::<T>::deposit_event(Event::<T>::StreamConfigChangeRequested {
+                stream_id,
+                request_nonce: stream.request_nonce,
+                old_config: stream.config.clone(),
+                new_config: new_config,
+            });
+
+            // Update storage.
             Streams::<T>::insert(stream_id, stream);
 
             Ok(().into())
         }
+
+        #[pallet::call_index(5)]
+        pub fn accept_requested_change(
+            origin: OriginFor<T>,
+            stream_id: T::StreamId,
+            request_nonce: RequestNonce,
+        ) -> DispatchResultWithPostInfo {
+            let origin = ensure_signed(origin)?;
+            let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
+
+            let accepter = stream
+                .account_to_party(origin.clone())
+                .ok_or(Error::<T>::UnauthorizedOrigin)?;
+
+            let Some(request) = stream.pending_request.take() else {
+                return Err(Error::<T>::NoPendingRequest.into());
+            };
+
+            ensure!(
+                request_nonce == stream.request_nonce,
+                Error::<T>::WrongRequestNonce
+            );
+            ensure!(
+                accepter != request.requester,
+                Error::<T>::CantAcceptOwnRequest
+            );
+
+            // Perform pending payment before changing config.
+            Self::perform_stream_payment(stream_id, &mut stream)?;
+
+            todo!()
+        }
     }
 
     impl<T: Config> Pallet<T> {
+        /// Try to open a stream and returns its id.
+        /// Prefers calling this function from other pallets instead of `open_stream` as the
+        /// latter can't return the id.
+        pub fn open_stream_returns_id(
+            origin: AccountIdOf<T>,
+            target: AccountIdOf<T>,
+            config: StreamConfigOf<T>,
+            initial_deposit: T::Balance,
+        ) -> Result<T::StreamId, DispatchErrorWithPostInfo> {
+            ensure!(origin != target, Error::<T>::CantBeBothSourceAndTarget);
+
+            // Generate a new stream id.
+            let stream_id = NextStreamId::<T>::get();
+            let next_stream_id = stream_id
+                .checked_add(&One::one())
+                .ok_or(Error::<T>::StreamIdOverflow)?;
+            NextStreamId::<T>::set(next_stream_id);
+
+            // Freeze initial deposit.
+            T::Assets::increase_deposit(config.asset_id.clone(), &origin, initial_deposit)?;
+
+            // Create stream data.
+            let now =
+                T::TimeProvider::now(&config.time_unit).ok_or(Error::<T>::CantFetchCurrentTime)?;
+            let stream = Stream {
+                source: origin.clone(),
+                target: target.clone(),
+                config,
+                deposit: initial_deposit,
+                last_time_updated: now,
+                request_nonce: 0,
+                pending_request: None,
+            };
+
+            // Insert stream in storage.
+            Streams::<T>::insert(stream_id, stream);
+            LookupStreamsWithSource::<T>::insert(origin, stream_id, ());
+            LookupStreamsWithTarget::<T>::insert(target, stream_id, ());
+
+            // Emit event.
+            Pallet::<T>::deposit_event(Event::<T>::StreamOpened { stream_id });
+
+            Ok(stream_id)
+        }
+
         /// Behavior:
         /// A stream payment consist of a locked deposit, a rate per unit of time and the
         /// last time the stream was updated. When updating the stream, **at most**
@@ -476,22 +588,40 @@ pub mod pallet {
             stream_id: T::StreamId,
             stream: &mut StreamOf<T>,
         ) -> DispatchResultWithPostInfo {
-            let now = T::TimeProvider::now(&stream.config.time_unit)
+            let mut now = T::TimeProvider::now(&stream.config.time_unit)
                 .ok_or(Error::<T>::CantFetchCurrentTime)?;
 
-            if now == stream.last_time_updated {
+            // We want to uupdate `stream.last_time_updated` to `now` as soon
+            // as possible to avoid forgetting to do it. We copy the old value
+            // for payment computation.
+            let last_time_updated = stream.last_time_updated;
+            stream.last_time_updated = now;
+
+            // Take into account mandatory change request deadline. Note that
+            // while it'll perform payment up to deadline,
+            // `stream.last_time_updated` is still the "real now" to avoid
+            // retroactive payment in case the deadline changes.
+            if let Some(ChangeRequest {
+                kind: ChangeKind::Mandatory { deadline },
+                ..
+            }) = &stream.pending_request
+            {
+                now = min(now, *deadline);
+            }
+
+            // Dont perform payment
+            if now == last_time_updated {
                 return Ok(().into());
             }
 
             // If deposit is zero the stream is fully drained and there is nothing to transfer.
             if stream.deposit.is_zero() {
-                stream.last_time_updated = now;
                 return Ok(().into());
             }
 
             let delta = now
-                .checked_sub(&stream.last_time_updated)
-                .ok_or(Error::<T>::TimeOverflow)?;
+                .checked_sub(&last_time_updated)
+                .ok_or(Error::<T>::TimeMustBeIncreasing)?;
 
             // We compute the amount due to the target according to the rate, which may be
             // lowered if the stream deposit is lower.
@@ -519,7 +649,6 @@ pub mod pallet {
             )?;
 
             // Update stream info.
-            stream.last_time_updated = now;
             stream.deposit = new_locked;
 
             // Emit event.

@@ -107,7 +107,7 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = ();
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
 pub enum StreamPaymentAssetId {
     Native,
     Dummy,
@@ -168,6 +168,7 @@ pub enum TimeUnit {
     BlockNumber,
     Timestamp,
     Never,
+    Decreasing,
 }
 
 pub struct TimeProvider;
@@ -175,8 +176,9 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     fn now(unit: &TimeUnit) -> Option<Balance> {
         match unit {
             &TimeUnit::BlockNumber => Some(System::block_number().into()),
-            &TimeUnit::Timestamp => todo!(),
+            &TimeUnit::Timestamp => Some((System::block_number() * 12).into()),
             &TimeUnit::Never => None,
+            &TimeUnit::Decreasing => Some((u64::MAX - System::block_number()).into()),
         }
     }
 }
@@ -345,7 +347,7 @@ macro_rules! assert_event_emitted {
             e => {
                 assert!(
                     $crate::mock::events().iter().find(|x| *x == e).is_some(),
-                    "Event {:?} was not found in events: \n {:?}",
+                    "Event {:#?} was not found in events: \n {:#?}",
                     e,
                     $crate::mock::events()
                 );
@@ -362,7 +364,7 @@ macro_rules! assert_event_not_emitted {
             e => {
                 assert!(
                     $crate::mock::events().iter().find(|x| *x == e).is_none(),
-                    "Event {:?} was found in events: \n {:?}",
+                    "Event {:#?} was found in events: \n {:#?}",
                     e,
                     $crate::mock::events()
                 );
