@@ -30,6 +30,7 @@ substrate-prometheus-endpoint = { workspace = true }
 
 # Own
 tp-consensus = { workspace = true, features = [ "std" ] }
+pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
 
 # Cumulus dependencies
 cumulus-client-collator = { workspace = true }

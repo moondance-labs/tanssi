@@ -36,3 +36,19 @@ sp_api::decl_runtime_apis! {
         fn boot_nodes(para_id: ParaId) -> Vec<Vec<u8>>;
     }
 }
+
+sp_api::decl_runtime_apis! {
+    pub trait OnDemandBlockProductionApi<ParaId, Slot> where
+        ParaId: parity_scale_codec::Codec,
+        Slot: parity_scale_codec::Codec,
+    {
+        /// Inclusive range of slots during which collators can propose the next block.
+        ///
+        /// # Returns
+        ///
+        /// Range `Some((start, end))`, where the condition for the slot to be valid is
+        /// `(slot - parent_slot) >= start && (slot - parent_slot) <= end`.
+        /// `None` if the `para_id` is not a parathread.
+        fn next_slot_range_inclusive(para_id: ParaId) -> Option<(Slot, Slot)>;
+    }
+}

@@ -74,7 +74,10 @@ use {
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, pin::Pin, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
-    tc_consensus::collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
+    tc_consensus::{
+        collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
+        OrchestratorAuraWorkerAuxData,
+    },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
 
@@ -764,7 +767,7 @@ async fn start_consensus_container(
                     para_id,
                 );
 
-                let aux_data = authorities.ok_or_else(|| {
+                let authorities = authorities.ok_or_else(|| {
                     Box::<dyn std::error::Error + Send + Sync>::from(
                         "Failed to fetch authorities with error",
                     )
@@ -772,9 +775,21 @@ async fn start_consensus_container(
 
                 log::info!(
                     "Authorities {:?} found for header {:?}",
-                    aux_data,
+                    authorities,
                     latest_header
                 );
+
+                let next_slot_range_inclusive =
+                    tc_consensus::slot_range::<Block, ParachainClient, NimbusPair>(
+                        orchestrator_client_for_cidp.as_ref(),
+                        &latest_header.hash(),
+                        para_id,
+                    );
+
+                let aux_data = OrchestratorAuraWorkerAuxData {
+                    authorities,
+                    next_slot_range_inclusive,
+                };
 
                 Ok(aux_data)
             }
@@ -887,7 +902,7 @@ fn start_consensus_orchestrator(
                         para_id,
                     );
 
-                    let aux_data = authorities.ok_or_else(|| {
+                    let authorities = authorities.ok_or_else(|| {
                         Box::<dyn std::error::Error + Send + Sync>::from(
                             "Failed to fetch authorities with error",
                         )
@@ -895,9 +910,14 @@ fn start_consensus_orchestrator(
 
                     log::info!(
                         "Authorities {:?} found for header {:?}",
-                        aux_data,
+                        authorities,
                         block_hash
                     );
+
+                    let aux_data = OrchestratorAuraWorkerAuxData {
+                        authorities,
+                        next_slot_range_inclusive: None,
+                    };
 
                     Ok(aux_data)
                 }

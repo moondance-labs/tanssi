@@ -204,6 +204,8 @@ pub mod opaque {
     pub type BlockId = generic::BlockId<Block>;
     /// Opaque block hash type.
     pub type Hash = <BlakeTwo256 as HashT>::Output;
+    /// Opaque signature type.
+    pub use super::Signature;
 }
 
 impl_opaque_keys! {
@@ -1829,6 +1831,22 @@ impl_runtime_apis! {
 
             bounded_vec.into_iter().map(|x| x.into()).collect()
         }
+    }
+
+    impl pallet_registrar_runtime_api::OnDemandBlockProductionApi<Block, ParaId, Slot> for Runtime {
+        /// Inclusive range of slots during which collators can propose the next block.
+        ///
+        /// # Returns
+        ///
+        /// Range `Some((start, end))`, where the condition for the slot to be valid is
+        /// `(slot - parent_slot) >= start && (slot - parent_slot) <= end`.
+        /// `None` if the `para_id` is not a parathread.
+        fn next_slot_range_inclusive(para_id: ParaId) -> Option<(Slot, Slot)> {
+            Registrar::parathread_params(para_id).map(|params| {
+                (Slot::from(params.slot_frequency.min as u64), Slot::from(params.slot_frequency.max as u64))
+            })
+        }
+
     }
 
     impl pallet_author_noting_runtime_api::AuthorNotingApi<Block, AccountId, BlockNumber, ParaId> for Runtime
