@@ -48,6 +48,7 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 	"tp-traits/std",
+	"tracing/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
