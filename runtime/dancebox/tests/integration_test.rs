@@ -26,7 +26,7 @@ use {
             CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
             MigrateInvulnerables, MigrateServicesPaymentAddCredits,
         },
-        BlockProductionCost, RewardsCollatorCommission,
+        RewardsCollatorCommission,
     },
     dp_core::well_known_keys,
     frame_support::{assert_noop, assert_ok, BoundedVec},
