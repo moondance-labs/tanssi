@@ -42,7 +42,7 @@ yargs(hideBin(process.argv))
         async (argv) => {
             const api = await getApiFor(argv);
             const keyring = new Keyring({ type: "sr25519" });
-            let arr = new Uint8Array(argv.length)
+            let arr = new Uint8Array(argv.length);
             for (let i = 0; i < arr.length; i++) {
                 arr[i] = Math.floor(Math.random() * 256);
             }
@@ -50,11 +50,14 @@ yargs(hideBin(process.argv))
             try {
                 const privKey = argv["account-priv-key"];
                 const account = keyring.addFromUri(privKey);
+                let nonce = (await api.rpc.system.accountNextIndex(account.address)).toNumber();
+
                 for (let i = 0; i < argv.iterations; i++) {
                     const tx = api.tx.sudo.sudo(
                         api.tx.system.setStorage([[numberToHex(i+1), u8aToHex(arr)]])
                     );
-                    await tx.signAndSend(account);
+                    await tx.signAndSend(account, {nonce: nonce});
+                    nonce = nonce +1;
                     await delay(argv.sleep)
                   }
             } finally {
