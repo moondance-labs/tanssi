@@ -239,7 +239,10 @@ describeSuite({
                 const chainSpec2002 = JSON.parse(spec2002);
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
                 const tx1 = paraApi.tx.registrar.register(2002, containerChainGenesisData);
-                const tx2 = paraApi.tx.servicesPayment.purchaseCredits(2002, 100000, null);
+                const purchasedCredits =100000n;
+                const requiredBalance = purchasedCredits * 1_000_000n;
+
+                const tx2 = paraApi.tx.servicesPayment.purchaseCredits(2002, requiredBalance);
                 const tx12 = paraApi.tx.utility.batchAll([tx1, tx2]);
                 await signAndSendAndInclude(tx12, alice);
                 const bootNodes = [
