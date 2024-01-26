@@ -44,7 +44,7 @@ yargs(hideBin(process.argv))
             const keyring = new Keyring({ type: "sr25519" });
             let arr = new Uint8Array(argv.length)
             for (let i = 0; i < arr.length; i++) {
-                arr[i] = 0x01
+                arr[i] = Math.floor(Math.random() * 256);
             }
             console.log(arr)
             try {
