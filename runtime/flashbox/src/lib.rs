@@ -750,18 +750,10 @@ impl RegistrarHooks for FlashboxRegistrarHooks {
                 e,
             );
         }
-        // Remove all credits from pallet_services_payment
-        if let Err(e) = ServicesPayment::set_credits(RuntimeOrigin::root(), para_id, 0) {
-            log::warn!(
-                "Failed to set_credits to 0 after para id {} deregistered: {:?}",
-                u32::from(para_id),
-                e,
-            );
-        }
         // Remove bootnodes from pallet_data_preservers
         DataPreservers::para_deregistered(para_id);
 
-        ServicesPayment::on_deregister(para_id);
+        ServicesPayment::para_deregistered(para_id);
 
         Weight::default()
     }

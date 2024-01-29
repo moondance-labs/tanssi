@@ -322,7 +322,7 @@ impl<T: Config> Pallet<T> {
     }
 
     /// Hook to perform things on deregister
-    pub fn on_deregister(para_id: ParaId) {
+    pub fn para_deregistered(para_id: ParaId) {
         // Drain the para-id account from tokens
         let parachain_tank_balance = T::Currency::total_balance(&Self::parachain_tank(para_id));
         if !parachain_tank_balance.is_zero() {
@@ -336,5 +336,8 @@ impl<T: Config> Pallet<T> {
                 drop(imbalance);
             }
         }
+
+        // Clean credits
+        BlockProductionCredits::<T>::remove(para_id);
     }
 }
