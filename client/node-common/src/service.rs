@@ -21,7 +21,7 @@ use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainConsensus,
     cumulus_client_service::{
-        build_relay_chain_interface, CollatorSybilResistance, StartFullNodeParams,
+        CollatorSybilResistance, StartFullNodeParams,
     },
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
@@ -251,6 +251,9 @@ where
     }
 }
 
+use cumulus_relay_chain_inprocess_interface::build_inprocess_relay_chain;
+use cumulus_relay_chain_minimal_node::build_minimal_relay_chain_node_with_rpc;
+
 impl<T: NodeBuilderConfig, SNetwork, STxHandler, SImportQueueService>
     NodeBuilder<T, SNetwork, STxHandler, SImportQueueService>
 where
@@ -270,16 +273,27 @@ where
         Arc<(dyn RelayChainInterface + 'static)>,
         Option<CollatorPair>,
     )> {
-        build_relay_chain_interface(
-            polkadot_config,
-            parachain_config,
-            self.telemetry_worker_handle.clone(),
-            &mut self.task_manager,
-            collator_options.clone(),
-            self.hwbench.clone(),
-        )
-        .await
-        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))
+        log::info!("polkadot config {:?}", parachain_config);
+        if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
+            collator_options.relay_chain_mode
+        {
+            build_minimal_relay_chain_node_with_rpc(
+                polkadot_config,
+                &mut self.task_manager,
+                rpc_target_urls,
+            )
+            .await
+            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))
+        } else {
+            build_inprocess_relay_chain(
+                polkadot_config,
+                parachain_config,
+                self.telemetry_worker_handle.clone(),
+                &mut self.task_manager,
+                self.hwbench.clone(),
+            )
+            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))
+        }
     }
 
     /// Given an import queue, calls `cumulus_client_service::build_network` and
