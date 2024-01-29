@@ -16,8 +16,8 @@
 
 use {
     crate::{
-        self as pallet_collator_assignment, GetRandomnessForNextBlock,
-        RotateCollatorsEveryNSessions,
+        self as pallet_collator_assignment, pallet::CollatorContainerChain,
+        GetRandomnessForNextBlock, RotateCollatorsEveryNSessions,
     },
     frame_support::{
         parameter_types,
@@ -30,10 +30,12 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
+    sp_std::collections::btree_map::BTreeMap,
     tp_traits::{
         ParaId, ParathreadParams, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
         SessionContainerChains,
     },
+    tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -238,10 +240,20 @@ impl pallet_collator_assignment::Config for Test {
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
-    system::GenesisConfig::<Test>::default()
+    let mut ext: sp_io::TestExternalities = system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap()
-        .into()
+        .into();
+
+    ext.execute_with(|| {
+        MockData::mutate(|mocks| {
+            // Initialize collators with 1 collator to avoid error `ZeroCollators` in session 0
+            mocks.collators = vec![100];
+            mocks.min_orchestrator_chain_collators = 1;
+        })
+    });
+
+    ext
 }
 
 pub trait GetCollators<AccountId, SessionIndex> {
@@ -302,4 +314,38 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsAbove5000 {
             assert!(*para_id > ParaId::from(5000), "{}", para_id);
         }
     }
+}
+
+/// Returns a map of collator to assigned para id
+pub fn assigned_collators() -> BTreeMap<u64, u32> {
+    let assigned_collators = CollatorContainerChain::<Test>::get();
+
+    let mut h = BTreeMap::new();
+
+    for (para_id, collators) in assigned_collators.container_chains.iter() {
+        for collator in collators.iter() {
+            h.insert(*collator, u32::from(*para_id));
+        }
+    }
+
+    for collator in assigned_collators.orchestrator_chain {
+        h.insert(collator, 1000);
+    }
+
+    h
+}
+
+/// Returns the default assignment for session 0 used in tests. Collator 100 is assigned to the orchestrator chain.
+pub fn initial_collators() -> BTreeMap<u64, u32> {
+    BTreeMap::from_iter(vec![(100, 1000)])
+}
+
+/// Executes code without printing any logs. Can be used in tests where we expect logs to be printed, to avoid clogging
+/// up stderr. Only affects the current thread, if `f` spawns any threads or if logs come from another thread, they will
+/// not be silenced.
+pub fn silence_logs<F: FnOnce() -> R, R>(f: F) -> R {
+    let no_logging_layer = tracing_subscriber::filter::LevelFilter::OFF;
+    let no_logging_subscriber = FmtSubscriber::builder().finish().with(no_logging_layer);
+
+    tracing::subscriber::with_default(no_logging_subscriber, f)
 }
