@@ -761,6 +761,8 @@ impl RegistrarHooks for FlashboxRegistrarHooks {
         // Remove bootnodes from pallet_data_preservers
         DataPreservers::para_deregistered(para_id);
 
+        ServicesPayment::on_deregister(para_id);
+
         Weight::default()
     }
 

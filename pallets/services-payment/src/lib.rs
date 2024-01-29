@@ -320,4 +320,21 @@ impl<T: Config> Pallet<T> {
         Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
             .expect("infinite length input; no invalid inputs for type; qed")
     }
+
+    /// Hook to perform things on deregister
+    pub fn on_deregister(para_id: ParaId) {
+        // Drain the para-id account from tokens
+        let parachain_tank_balance = T::Currency::total_balance(&Self::parachain_tank(para_id));
+        if !parachain_tank_balance.is_zero() {
+            if let Ok(imbalance) = T::Currency::withdraw(
+                &Self::parachain_tank(para_id),
+                parachain_tank_balance,
+                WithdrawReasons::FEE,
+                ExistenceRequirement::AllowDeath,
+            ) {
+                // Burn for now, we might be able to pass something to do with this
+                drop(imbalance);
+            }
+        }
+    }
 }
