@@ -203,7 +203,17 @@ pub mod pallet {
     pub type ParathreadParams<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, ParathreadParamsTy, OptionQuery>;
 
-    // TODO: PendingParathreadParams?
+    // TODO: possible bug: schedule_params_change, deregister, register new, old params change is applied to new
+    #[pallet::storage]
+    #[pallet::getter(fn pending_parathread_params)]
+    pub type PendingParathreadParams<T: Config> = StorageValue<
+        _,
+        Vec<(
+            T::SessionIndex,
+            BoundedVec<(ParaId, ParathreadParamsTy), T::MaxLengthParaIds>,
+        )>,
+        ValueQuery,
+    >;
 
     pub type DepositBalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
@@ -683,19 +693,13 @@ pub mod pallet {
         ) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
-            // Check that the para id is a parathread by reading the old params
-            let mut params = match ParathreadParams::<T>::get(para_id) {
-                Some(x) => x,
-                None => {
-                    return Err(Error::<T>::NotAParathread.into());
-                }
-            };
+            Self::schedule_parathread_params_change(para_id, |params| {
+                params.slot_duration = slot_duration;
 
-            params.slot_duration = slot_duration;
+                Self::deposit_event(Event::ParathreadParamsChanged { para_id });
 
-            ParathreadParams::<T>::insert(para_id, params);
-
-            Self::deposit_event(Event::ParathreadParamsChanged { para_id });
+                Ok(())
+            })?;
 
             Ok(())
         }
@@ -849,6 +853,68 @@ pub mod pallet {
             Ok(())
         }
 
+        fn schedule_parathread_params_change(
+            para_id: ParaId,
+            updater: impl FnOnce(&mut ParathreadParamsTy) -> DispatchResult,
+        ) -> DispatchResult {
+            // Check that the para id is a parathread by reading the old params
+            let params = match ParathreadParams::<T>::get(para_id) {
+                Some(x) => x,
+                None => {
+                    return Err(Error::<T>::NotAParathread.into());
+                }
+            };
+
+            let mut pending_params = PendingParathreadParams::<T>::get();
+            // First, we need to decide what we should use as the base params.
+            let mut base_params = pending_params
+                .last()
+                .and_then(|(_, para_id_params)| {
+                    match para_id_params
+                        .binary_search_by_key(&para_id, |(para_id, _params)| *para_id)
+                    {
+                        Ok(idx) => {
+                            let (_para_id, params) = &para_id_params[idx];
+                            Some(params.clone())
+                        }
+                        Err(_idx) => None,
+                    }
+                })
+                .unwrap_or(params);
+
+            updater(&mut base_params)?;
+            let new_params = base_params;
+
+            let scheduled_session = Self::scheduled_session();
+
+            if let Some(&mut (_, ref mut para_id_params)) = pending_params
+                .iter_mut()
+                .find(|&&mut (apply_at_session, _)| apply_at_session >= scheduled_session)
+            {
+                match para_id_params.binary_search_by_key(&para_id, |(para_id, _params)| *para_id) {
+                    Ok(idx) => {
+                        let (_para_id, params) = &mut para_id_params[idx];
+                        *params = new_params;
+                    }
+                    Err(idx) => {
+                        para_id_params
+                            .try_insert(idx, (para_id, new_params))
+                            .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                    }
+                }
+            } else {
+                // We are scheduling a new parathread params change for the scheduled session.
+                pending_params.push((
+                    scheduled_session,
+                    BoundedVec::truncate_from(vec![(para_id, new_params)]),
+                ));
+            }
+
+            <PendingParathreadParams<T>>::put(pending_params);
+
+            Ok(())
+        }
+
         /// Return the session index that should be used for any future scheduled changes.
         fn scheduled_session() -> T::SessionIndex {
             T::CurrentSessionIndex::session_index().saturating_add(T::SessionDelay::get())
@@ -937,6 +1003,32 @@ pub mod pallet {
 
                 if !past_and_present.is_empty() {
                     <PendingToRemove<T>>::put(future);
+                }
+            }
+
+            let pending_parathread_params = <PendingParathreadParams<T>>::get();
+            if !pending_parathread_params.is_empty() {
+                let (mut past_and_present, future) = pending_parathread_params
+                    .into_iter()
+                    .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
+                        apply_at_session <= *session_index
+                    });
+
+                if past_and_present.len() > 1 {
+                    // This should never happen since we schedule parachain changes only into the future
+                    // sessions and this handler called for each session change.
+                    log::error!(
+                        target: LOG_TARGET,
+                        "Skipping applying parathread params changes scheduled sessions in the past",
+                    );
+                }
+
+                let new_params = past_and_present.pop().map(|(_, params)| params);
+                if let Some(ref new_params) = new_params {
+                    for (para_id, params) in new_params {
+                        <ParathreadParams<T>>::insert(para_id, params);
+                    }
+                    <PendingParathreadParams<T>>::put(future);
                 }
             }
 
