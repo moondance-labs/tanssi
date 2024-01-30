@@ -180,7 +180,7 @@ impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
                 (
                     ParaId::from(para_id),
                     ParathreadParams {
-                        slot_duration: Default::default(),
+                        slot_frequency: Default::default(),
                     },
                 )
             })

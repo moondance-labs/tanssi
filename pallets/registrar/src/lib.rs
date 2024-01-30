@@ -49,11 +49,11 @@ use {
     frame_system::pallet_prelude::*,
     parity_scale_codec::{Decode, Encode},
     sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
-    sp_std::prelude::*,
+    sp_std::{collections::btree_set::BTreeSet, prelude::*},
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{
         GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
-        ParathreadParams as ParathreadParamsTy, SlotDuration,
+        ParathreadParams as ParathreadParamsTy, SlotFrequency,
     },
 };
 
@@ -203,7 +203,6 @@ pub mod pallet {
     pub type ParathreadParams<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, ParathreadParamsTy, OptionQuery>;
 
-    // TODO: possible bug: schedule_params_change, deregister, register new, old params change is applied to new
     #[pallet::storage]
     #[pallet::getter(fn pending_parathread_params)]
     pub type PendingParathreadParams<T: Config> = StorageValue<
@@ -615,11 +614,10 @@ pub mod pallet {
         pub fn register_parathread(
             origin: OriginFor<T>,
             para_id: ParaId,
-            slot_duration: SlotDuration,
+            slot_frequency: SlotFrequency,
             genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
         ) -> DispatchResult {
             // TODO: refactor register and register_parathread, extract common path to `do_register`.
-            // TODO: store parathreads in a separate storage item? Or migrate from `Vec<ParaId>` to a struct with 2 vecs?
             let account = ensure_signed(origin)?;
             let deposit = T::DepositAmount::get();
 
@@ -674,7 +672,7 @@ pub mod pallet {
             PendingVerification::<T>::put(pending_verification);
 
             // Insert parathread params
-            let params = ParathreadParamsTy { slot_duration };
+            let params = ParathreadParamsTy { slot_frequency };
             ParathreadParams::<T>::insert(para_id, params);
 
             Self::deposit_event(Event::ParaIdRegistered { para_id });
@@ -689,12 +687,12 @@ pub mod pallet {
         pub fn set_parathread_params(
             origin: OriginFor<T>,
             para_id: ParaId,
-            slot_duration: SlotDuration,
+            slot_frequency: SlotFrequency,
         ) -> DispatchResult {
             T::RegistrarOrigin::ensure_origin(origin)?;
 
             Self::schedule_parathread_params_change(para_id, |params| {
-                params.slot_duration = slot_duration;
+                params.slot_frequency = slot_frequency;
 
                 Self::deposit_event(Event::ParathreadParamsChanged { para_id });
 
@@ -985,27 +983,6 @@ pub mod pallet {
                 }
             }
 
-            let pending_to_remove = <PendingToRemove<T>>::get();
-            if !pending_to_remove.is_empty() {
-                let (past_and_present, future) =
-                    pending_to_remove.into_iter().partition::<Vec<_>, _>(
-                        |&(apply_at_session, _)| apply_at_session <= *session_index,
-                    );
-
-                // Unlike `PendingParaIds`, this cannot skip items because we must cleanup all parachains.
-                // But this will only happen if `initializer_on_new_session` is not called for a big range of
-                // sessions, and many parachains are deregistered in the meantime.
-                for (_, new_paras) in &past_and_present {
-                    for para_id in new_paras {
-                        Self::cleanup_deregistered_para_id(*para_id);
-                    }
-                }
-
-                if !past_and_present.is_empty() {
-                    <PendingToRemove<T>>::put(future);
-                }
-            }
-
             let pending_parathread_params = <PendingParathreadParams<T>>::get();
             if !pending_parathread_params.is_empty() {
                 let (mut past_and_present, future) = pending_parathread_params
@@ -1032,6 +1009,38 @@ pub mod pallet {
                 }
             }
 
+            let pending_to_remove = <PendingToRemove<T>>::get();
+            if !pending_to_remove.is_empty() {
+                let (past_and_present, future) =
+                    pending_to_remove.into_iter().partition::<Vec<_>, _>(
+                        |&(apply_at_session, _)| apply_at_session <= *session_index,
+                    );
+
+                if !past_and_present.is_empty() {
+                    // Unlike `PendingParaIds`, this cannot skip items because we must cleanup all parachains.
+                    // But this will only happen if `initializer_on_new_session` is not called for a big range of
+                    // sessions, and many parachains are deregistered in the meantime.
+                    let mut removed_para_ids = BTreeSet::new();
+                    for (_, new_paras) in &past_and_present {
+                        for para_id in new_paras {
+                            Self::cleanup_deregistered_para_id(*para_id);
+                            removed_para_ids.insert(*para_id);
+                        }
+                    }
+
+                    // Also need to remove PendingParams to avoid setting params for a para id that does not exist
+                    let mut pending_parathread_params = <PendingParathreadParams<T>>::get();
+                    for (_, new_params) in &mut pending_parathread_params {
+                        new_params.retain(|(para_id, _params)| {
+                            // Retain para ids that are not in the list of removed para ids
+                            !removed_para_ids.contains(para_id)
+                        });
+                    }
+                    <PendingParathreadParams<T>>::put(pending_parathread_params);
+                    <PendingToRemove<T>>::put(future);
+                }
+            }
+
             SessionChangeOutcome {
                 prev_paras,
                 new_paras,
@@ -1042,6 +1051,7 @@ pub mod pallet {
         /// and execute para_deregistered hook to clean up other pallets as well
         fn cleanup_deregistered_para_id(para_id: ParaId) {
             ParaGenesisData::<T>::remove(para_id);
+            ParathreadParams::<T>::remove(para_id);
             // Get asset creator and deposit amount
             // Deposit may not exist, for example if the para id was registered on genesis
             if let Some(asset_info) = RegistrarDeposit::<T>::take(para_id) {

@@ -74,20 +74,20 @@ pub trait GetCurrentContainerChains {
 
 /// How often should a parathread collator propose blocks.
 #[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
-pub struct SlotDuration {
+pub struct SlotFrequency {
     /// The parathread will produce at most 1 block every x slots. min=10 means that collators can produce 1 block
     /// every `x >= 10` slots, but they are not enforced to. However they cannot produce a block after less than 10
     /// slots, it will be invalid.
     // TODO: invalid how, slashing collator? Not paying block reward?
-    min: u32,
+    pub min: u32,
     /// The parathread will produce at least 1 block every x slots. max=10 means that collators are forced to
     /// produce 1 block every `x <= 10` slots. They can produce a block sooner than that if the `min` allows it, but
     /// waiting more than 10 slots will be invalid.
     // TODO: invalid how, slashing collator? Not paying block reward?
-    max: u32,
+    pub max: u32,
 }
 
-impl Default for SlotDuration {
+impl Default for SlotFrequency {
     fn default() -> Self {
         Self { min: 1, max: 1 }
     }
@@ -95,7 +95,7 @@ impl Default for SlotDuration {
 
 #[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
 pub struct ParathreadParams {
-    pub slot_duration: SlotDuration,
+    pub slot_frequency: SlotFrequency,
 }
 
 #[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]

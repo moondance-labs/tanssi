@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use tp_traits::SlotFrequency;
 use {
     crate::{mock::*, Error, Event},
     frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo, BoundedVec},
@@ -1171,6 +1172,78 @@ fn deposit_removed_after_2_sessions_if_marked_as_valid() {
         run_to_session(2);
         assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_none());
         assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_none());
+    });
+}
+
+#[test]
+fn parathread_register_change_params_deregister() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_ok!(ParaRegistrar::register_parathread(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            SlotFrequency { min: 1, max: 1 },
+            empty_genesis_data()
+        ));
+        assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_ok!(ParaRegistrar::set_parathread_params(
+            RuntimeOrigin::root(),
+            ParaId::from(42),
+            SlotFrequency { min: 2, max: 2 }
+        ));
+
+        // Deregister parathread while parathread params are pending
+        assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into()));
+        assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_some());
+        assert!(ParaRegistrar::parathread_params(ParaId::from(42)).is_some());
+
+        // Params removed after 2 sessions
+        run_to_session(2);
+        assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_none());
+        assert!(ParaRegistrar::parathread_params(ParaId::from(42)).is_none());
+    });
+}
+
+#[test]
+fn parathread_register_deregister_change_params() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_ok!(ParaRegistrar::register_parathread(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            SlotFrequency { min: 1, max: 1 },
+            empty_genesis_data()
+        ));
+        assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+
+        // Deregister parathread while parathread params are pending
+        assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into()));
+        assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_some());
+        assert!(ParaRegistrar::parathread_params(ParaId::from(42)).is_some());
+
+        run_to_session(1);
+        assert_ok!(ParaRegistrar::set_parathread_params(
+            RuntimeOrigin::root(),
+            ParaId::from(42),
+            SlotFrequency { min: 2, max: 2 }
+        ));
+
+        // Params removed after 2 sessions
+        run_to_session(2);
+        assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_none());
+        assert!(ParaRegistrar::parathread_params(ParaId::from(42)).is_none());
+
+        // Params not updated after 3 sessions
+        run_to_session(3);
+        assert!(ParaRegistrar::parathread_params(ParaId::from(42)).is_none());
     });
 }
 
