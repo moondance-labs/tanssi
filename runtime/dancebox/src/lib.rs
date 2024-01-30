@@ -721,11 +721,13 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
             let free_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
-            let remaining_credits = credits_for_2_sessions.saturating_sub(free_credits);
             // Return if we can survive with free credits
-            if remaining_credits.is_zero() {
+            if free_credits >= credits_for_2_sessions {
                 return true
             }
+
+            let remaining_credits = credits_for_2_sessions.saturating_sub(free_credits);
+
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
             // let's check if we can withdraw
             let remaining_to_pay = (remaining_credits as u128).saturating_mul(block_production_costs);
