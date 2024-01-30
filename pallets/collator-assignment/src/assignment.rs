@@ -20,8 +20,8 @@ use {
         cmp,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
         marker::PhantomData,
-        mem, vec,
-        vec::Vec,
+        mem,
+        vec::{self, Vec},
     },
     tp_traits::{ParaId, RemoveInvulnerables as RemoveInvulnerablesT},
 };
