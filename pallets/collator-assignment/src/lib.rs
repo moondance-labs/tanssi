@@ -180,6 +180,8 @@ pub mod pallet {
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(
                 &mut container_chain_ids,
             );
+            // TODO: parathreads should be treated a bit differently, they don't need to have the same amount of credits
+            // as paratherads because they will not be producing blocks on every slot.
             T::RemoveParaIdsWithNoCredits::remove_para_ids_with_no_credits(&mut parathreads);
 
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
