@@ -47,7 +47,7 @@ use {
     scale_info::prelude::vec::Vec,
     sp_io::hashing::blake2_256,
     sp_runtime::traits::TrailingZeroInput,
-    tp_traits::{AuthorNotingHook, BlockNumber},
+    tp_traits::{AuthorNotingHook, BlockNumber, CollatorAssignmentHook},
 };
 
 #[cfg(any(test, feature = "runtime-benchmarks"))]
@@ -71,10 +71,16 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// Handler for fees
         type OnChargeForBlock: OnUnbalanced<NegativeImbalanceOf<Self>>;
+
+        /// Handler for fees
+        type OnChargeForCollatorAssignment: OnUnbalanced<NegativeImbalanceOf<Self>>;
+
         /// Currency type for fee payment
         type Currency: Currency<Self::AccountId>;
         /// Provider of a block cost which can adjust from block to block
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
+        /// Provider of a block cost which can adjust from block to block
+        type ProvideCollatorAssignmentCost: ProvideCollatorAssignmentCost<Self>;
 
         /// The maximum number of credits that can be accumulated
         type MaxCreditsStored: Get<BlockNumberFor<Self>>;
@@ -281,6 +287,12 @@ pub trait ProvideBlockProductionCost<T: Config> {
     fn block_cost(para_id: &ParaId) -> (BalanceOf<T>, Weight);
 }
 
+/// Returns the cost for a given block credit at the current time. This can be a complex operation,
+/// so it also returns the weight it consumes. (TODO: or just rely on benchmarking)
+pub trait ProvideCollatorAssignmentCost<T: Config> {
+    fn collator_assignment_cost(para_id: &ParaId) -> (BalanceOf<T>, Weight);
+}
+
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     // This hook is called when pallet_author_noting sees that the block number of a container chain has increased.
     // Currently we always charge 1 credit, even if a container chain produced more that 1 block in between tanssi
@@ -310,6 +322,29 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         }
 
         T::WeightInfo::on_container_author_noted()
+    }
+}
+
+impl<T: Config> CollatorAssignmentHook for Pallet<T> {
+    fn on_collators_assigned(para_id: ParaId) -> Weight {
+        let (amount_to_charge, _weight) =
+            T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+        match T::Currency::withdraw(
+            &Self::parachain_tank(para_id),
+            amount_to_charge,
+            WithdrawReasons::FEE,
+            ExistenceRequirement::AllowDeath,
+        ) {
+            Err(e) => log::warn!(
+                "Failed to withdraw credits for container chain {}: {:?}",
+                u32::from(para_id),
+                e
+            ),
+            Ok(imbalance) => {
+                T::OnChargeForCollatorAssignment::on_unbalanced(imbalance);
+            }
+        }
+        Weight::from_parts(0, 0)
     }
 }
 
