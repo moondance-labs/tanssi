@@ -118,7 +118,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     for StreamPaymentAssets
 {
     fn transfer_deposit(
-        asset_id: StreamPaymentAssetId,
+        asset_id: &StreamPaymentAssetId,
         from: &AccountId,
         to: &AccountId,
         amount: Balance,
@@ -133,7 +133,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     }
 
     fn increase_deposit(
-        asset_id: StreamPaymentAssetId,
+        asset_id: &StreamPaymentAssetId,
         account: &AccountId,
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
@@ -148,7 +148,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     }
 
     fn decrease_deposit(
-        asset_id: StreamPaymentAssetId,
+        asset_id: &StreamPaymentAssetId,
         account: &AccountId,
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
@@ -159,6 +159,30 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
                 amount,
             ),
             StreamPaymentAssetId::Dummy => Ok(()),
+        }
+    }
+
+    /// Benchmarks: should return the asset id which has the worst performance when interacting
+    /// with it.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_asset_id() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should return the another asset id which has the worst performance when interacting
+    /// with it afther `bench_asset_id`. This is to benchmark the worst case when changing config
+    /// from one asset to another.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_asset_id2() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should set the balance for the asset id returned by `bench_asset_id`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::set_balance(account, amount),
+            StreamPaymentAssetId::Dummy => (),
         }
     }
 }
@@ -181,6 +205,19 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
             TimeUnit::Decreasing => Some((u64::MAX - System::block_number()).into()),
         }
     }
+
+    /// Benchmarks: should return the time unit which has the worst performance calling
+    /// `TimeProvider::now(unit)` with.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_time_unit() -> TimeUnit {
+        TimeUnit::Timestamp
+    }
+
+    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_now(instant: Balance) {
+        Timestamp::set_timestamp(instant as u64)
+    }
 }
 
 impl pallet_stream_payment::Config for Runtime {
@@ -191,6 +228,7 @@ impl pallet_stream_payment::Config for Runtime {
     type AssetId = StreamPaymentAssetId;
     type Assets = StreamPaymentAssets;
     type TimeProvider = TimeProvider;
+    type WeightInfo = ();
 }
 
 pub(crate) struct ExtBuilder {

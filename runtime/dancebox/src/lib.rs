@@ -48,7 +48,8 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            fungible::{Balanced, Credit},
+            fungible::{Balanced, Credit, Mutate, MutateFreeze},
+            tokens::Preservation,
             ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse, InsideBoth,
             InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
             ValidatorRegistration,
@@ -80,7 +81,9 @@ use {
     scale_info::TypeInfo,
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
+    sp_core::{
+        crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata, RuntimeDebug,
+    },
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
@@ -398,8 +401,8 @@ impl pallet_balances::Config for Runtime {
     type AccountStore = System;
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
-    type FreezeIdentifier = [u8; 8];
-    type MaxFreezes = ConstU32<0>;
+    type FreezeIdentifier = RuntimeFreezeReason;
+    type MaxFreezes = ConstU32<1>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
     type MaxHolds = ConstU32<1>;
@@ -1312,6 +1315,125 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+pub enum StreamPaymentAssetId {
+    Native,
+}
+
+pub struct StreamPaymentAssets;
+impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
+    for StreamPaymentAssets
+{
+    fn transfer_deposit(
+        asset_id: &StreamPaymentAssetId,
+        from: &AccountId,
+        to: &AccountId,
+        amount: Balance,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        match asset_id {
+            StreamPaymentAssetId::Native => {
+                // Since we use freezes we need to unfreeze the deposit before
+                // transfering it. Other assets may not require that.
+                Self::decrease_deposit(asset_id, from, amount)?;
+                Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
+            }
+        }
+    }
+
+    fn increase_deposit(
+        asset_id: &StreamPaymentAssetId,
+        account: &AccountId,
+        amount: Balance,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::increase_frozen(
+                &pallet_stream_payment::FreezeReason::StreamPayment.into(),
+                account,
+                amount,
+            ),
+        }
+    }
+
+    fn decrease_deposit(
+        asset_id: &StreamPaymentAssetId,
+        account: &AccountId,
+        amount: Balance,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::decrease_frozen(
+                &pallet_stream_payment::FreezeReason::StreamPayment.into(),
+                account,
+                amount,
+            ),
+        }
+    }
+
+    /// Benchmarks: should return the asset id which has the worst performance when interacting
+    /// with it.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_asset_id() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should return the another asset id which has the worst performance when interacting
+    /// with it afther `bench_asset_id`. This is to benchmark the worst case when changing config
+    /// from one asset to another.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_asset_id2() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should set the balance for the asset id returned by `bench_asset_id`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
+        // only one asset id
+        let StreamPaymentAssetId::Native = asset_id;
+
+        Balances::set_balance(account, amount);
+    }
+}
+
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+pub enum TimeUnit {
+    BlockNumber,
+    Timestamp,
+    // TODO: Container chains/relay block number.
+}
+
+pub struct TimeProvider;
+impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
+    fn now(unit: &TimeUnit) -> Option<Balance> {
+        match *unit {
+            TimeUnit::BlockNumber => Some(System::block_number().into()),
+            TimeUnit::Timestamp => Some(Timestamp::now().into()),
+        }
+    }
+
+    /// Benchmarks: should return the time unit which has the worst performance calling
+    /// `TimeProvider::now(unit)` with.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_time_unit() -> TimeUnit {
+        TimeUnit::Timestamp
+    }
+
+    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_now(instant: Balance) {
+        Timestamp::set_timestamp(instant as u64)
+    }
+}
+
+impl pallet_stream_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type StreamId = u64;
+    type TimeUnit = TimeUnit;
+    type Balance = Balance;
+    type AssetId = StreamPaymentAssetId;
+    type Assets = StreamPaymentAssets;
+    type TimeProvider = TimeProvider;
+    type WeightInfo = ();
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1331,6 +1453,7 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
         TransactionPayment: pallet_transaction_payment = 11,
+        StreamPayment: pallet_stream_payment = 12,
 
         // ContainerChain management. It should go before Session for Genesis
         Registrar: pallet_registrar = 20,
@@ -1351,7 +1474,7 @@ construct_runtime!(
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
 
-        //XCM
+        // XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 52,
@@ -1374,6 +1497,7 @@ mod benches {
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+        [pallet_stream_payment, StreamPayment]
     );
 }
 

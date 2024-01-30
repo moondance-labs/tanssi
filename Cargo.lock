@@ -2955,6 +2955,7 @@ dependencies = [
  "pallet-services-payment",
  "pallet-session",
  "pallet-staking",
+ "pallet-stream-payment",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -8958,6 +8959,7 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+ "tap",
  "tp-maths",
  "tp-traits",
 ]

@@ -73,6 +73,11 @@ mod mock;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+pub mod weights;
+
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -100,6 +105,15 @@ pub use pallet::*;
 /// overflow.
 pub trait TimeProvider<Unit, Number> {
     fn now(unit: &Unit) -> Option<Number>;
+
+    /// Benchmarks: should return the time unit which has the worst performance calling
+    /// `TimeProvider::now(unit)` with.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_time_unit() -> Unit;
+
+    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_now(instant: Number);
 }
 
 /// Interactions the pallet needs with assets.
@@ -120,6 +134,23 @@ pub trait Assets<AccountId, AssetId, Balance> {
 
     /// Decrease the deposit for an account and asset id. Should fail on underflow.
     fn decrease_deposit(asset_id: &AssetId, account: &AccountId, amount: Balance)
+        -> DispatchResult;
+
+    /// Benchmarks: should return the asset id which has the worst performance when interacting
+    /// with it.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_asset_id() -> AssetId;
+
+    /// Benchmarks: should return the another asset id which has the worst performance when interacting
+    /// with it afther `bench_asset_id`. This is to benchmark the worst case when changing config
+    /// from one asset to another. If there is only one asset id it is fine to return it in both
+    /// `bench_asset_id` and `bench_asset_id2`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_asset_id2() -> AssetId;
+
+    /// Benchmarks: should set the balance.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_balance(asset_id: &AssetId, account: &AccountId, amount: Balance);
 }
 
 #[pallet(dev_mode)]
@@ -163,6 +194,8 @@ pub mod pallet {
 
         /// Provide the current time in given unit.
         type TimeProvider: TimeProvider<Self::TimeUnit, Self::Balance>;
+
+        type WeightInfo;
     }
 
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
