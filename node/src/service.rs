@@ -66,7 +66,7 @@ use {
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
-    sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
+    sc_service::{Configuration, TFullBackend, TFullClient, SpawnTaskHandle, SpawnEssentialTaskHandle, TaskManager},
     sc_telemetry::TelemetryHandle,
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
@@ -76,7 +76,9 @@ use {
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, pin::Pin, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
-    tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
+    tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus, collators::basic::{
+        self as basic_tanssi_aura, Params as BasicTanssiAuraParams,
+    }},
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
 
@@ -335,7 +337,7 @@ async fn start_node_impl(
 		sync_service: node_builder.network.sync_service.clone(),
 	})?;
 
-    let node_builder = if validator {
+    if validator {
         let collator_key = collator_key
             .clone()
             .expect("Command line arguments do not allow this. qed");
@@ -352,7 +354,7 @@ async fn start_node_impl(
             );
         }
 
-        let parachain_consensus = build_consensus_orchestrator(
+/*         let parachain_consensus = build_consensus_orchestrator(
             node_builder.client.clone(),
             block_import.clone(),
             node_builder.prometheus_registry.as_ref(),
@@ -371,18 +373,60 @@ async fn start_node_impl(
             overseer_handle.clone(),
             collator_key.clone(),
             parachain_consensus.clone(),
-        );
+        ); */
+
+        // TODO: refactor and build something similar to params_generator inside node builder.
+        // Params for collate_on_tanssi closure
+        let spawn_handle = node_builder.task_manager.spawn_handle().clone();
+        let spawn_essential = node_builder.task_manager.spawn_essential_handle().clone();
+        let keystore_clone = node_builder.keystore_container.keystore().clone();
+        let telemetry_handle = node_builder.telemetry.as_ref().map(|t| t.handle()).clone();
+        let block_import_clone = block_import.clone();
+        let client_clone = node_builder.client.clone();
+        let prometheus_registry = node_builder.prometheus_registry.clone();
+        let relay_interface = relay_chain_interface.clone();
+        let tx_pool = node_builder.transaction_pool.clone();
+        let sync_service = node_builder.network.sync_service.clone();
+        let collator_key_clone = collator_key.clone();
+        let para_id_clone = para_id.clone();
+        let overseer = overseer_handle.clone();
+        let announce_block_clone = announce_block.clone();
+        
+        // TODO: change for async backing
+         collate_on_tanssi = Some(move || async move {
+            //#[allow(deprecated)]
+            //cumulus_client_collator::start_collator(params_generator()).await;
+            start_consensus_orchestrator(
+                client_clone,
+                block_import_clone,
+                prometheus_registry,
+                telemetry_handle.clone(),
+                spawn_handle,
+                spawn_essential,
+                relay_interface,
+                tx_pool,
+                sync_service,
+                keystore_clone.clone(),
+                force_authoring,
+                relay_chain_slot_duration,
+                para_id_clone,
+                collator_key_clone,
+                overseer,
+                announce_block_clone,
+            ).expect("Start consensus should succeed");
+        });
 
         start_consensus_orchestrator(
             node_builder.client.clone(),
-            block_import,
-            node_builder.prometheus_registry.as_ref(),
-            node_builder.telemetry.as_ref().map(|t| t.handle()),
-            &node_builder.task_manager,
+            block_import.clone(),
+            node_builder.prometheus_registry.clone(),
+            node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
+            node_builder.task_manager.spawn_handle().clone(),
+            node_builder.task_manager.spawn_essential_handle().clone(),
             relay_chain_interface.clone(),
             node_builder.transaction_pool.clone(),
             node_builder.network.sync_service.clone(),
-            node_builder.keystore_container.keystore(),
+            node_builder.keystore_container.keystore().clone(),
             force_authoring,
             relay_chain_slot_duration,
             para_id,
@@ -390,31 +434,7 @@ async fn start_node_impl(
             overseer_handle.clone(),
             announce_block,
         )?;
-
-        // TODO: change for async backing
-        collate_on_tanssi = Some(move || async move {
-            #[allow(deprecated)]
-            cumulus_client_collator::start_collator(params_generator()).await;
-        });
-
-        node_builder
-/*             .start_collator(
-                para_id,
-                relay_chain_interface.clone(),
-                relay_chain_slot_duration,
-                parachain_consensus,
-                collator_key,
-            )
-            .await? */
-
-        
-    } else {
-        node_builder/* .start_full_node(
-            para_id,
-            relay_chain_interface.clone(),
-            relay_chain_slot_duration,
-        )? */
-    };
+    }
 
     node_builder.network.start_network.start_network();
 
@@ -707,9 +727,7 @@ fn start_consensus_container(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) -> Result<(), sc_service::Error> {
-    use tc_consensus::collators::basic::{
-        self as basic_tanssi_aura, Params as BasicTanssiAuraParams,
-    };
+
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)?;
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
@@ -838,9 +856,11 @@ fn start_consensus_orchestrator(
     client: Arc<ParachainClient>,
     //orchestrator_client: Arc<ParachainClient>,
     block_import: ParachainBlockImport,
-    prometheus_registry: Option<&Registry>,
+    prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
-    task_manager: &TaskManager,
+    //task_manager: &TaskManager,
+    spawner: SpawnTaskHandle,
+    spawner_essential: SpawnEssentialTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     //orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
@@ -854,16 +874,17 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) -> Result<(), sc_service::Error> {
-    use tc_consensus::collators::basic::{
-        self as basic_tanssi_aura, Params as BasicTanssiAuraParams,
-    };
+
+    //impl Future<Output = ()> + Send + 'static
+
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
-        task_manager.spawn_handle(),
+        spawner.clone(),
+        //task_manager.spawn_handle(),
         client.clone(),
         transaction_pool,
-        prometheus_registry,
+        prometheus_registry.as_ref(),
         telemetry.clone(),
     );
 
@@ -871,7 +892,8 @@ fn start_consensus_orchestrator(
 
     let collator_service = CollatorService::new(
         client.clone(),
-        Arc::new(task_manager.spawn_handle()),
+        Arc::new(spawner.clone()),
+        //Arc::new(task_manager.spawn_handle()),
         announce_block,
         client.clone(),
     );
@@ -961,9 +983,7 @@ fn start_consensus_orchestrator(
     let fut = basic_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _>(params);
 
     // TODO: what name shall we put here?
-    task_manager
-        .spawn_essential_handle()
-        .spawn("tanssi-aura", None, fut);
+    spawner_essential.spawn("tanssi-aura", None, fut);
 
     Ok(())
 }
