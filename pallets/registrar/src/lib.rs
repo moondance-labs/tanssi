@@ -50,7 +50,10 @@ use {
     sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
     sp_std::prelude::*,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
-    tp_traits::{GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId},
+    tp_traits::{
+        CollatorAssignmentHook, GetCurrentContainerChains, GetSessionContainerChains,
+        GetSessionIndex, ParaId,
+    },
 };
 
 #[frame_support::pallet]
@@ -140,6 +143,8 @@ pub mod pallet {
         type DepositAmount: Get<<Self::Currency as Currency<Self::AccountId>>::Balance>;
 
         type RegistrarHooks: RegistrarHooks;
+
+        type CollatorAssignmentHook: CollatorAssignmentHook;
 
         type WeightInfo: WeightInfo;
     }
@@ -822,6 +827,12 @@ pub mod pallet {
                 }
             }
 
+            // Call hook for newly assigned registered chains
+            if let Some(ref new_paras) = new_paras {
+                new_paras.iter().for_each(|para_id| {
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                });
+            }
             SessionChangeOutcome {
                 prev_paras,
                 new_paras,

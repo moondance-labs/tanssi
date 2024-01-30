@@ -120,6 +120,7 @@ impl pallet_registrar::Config for Test {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = Mock;
+    type CollatorAssignmentHook = ();
     type WeightInfo = ();
 }
 
