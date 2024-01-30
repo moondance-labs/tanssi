@@ -32,6 +32,7 @@ num-traits = { workspace = true }
 pallet-balances = { workspace = true, features = [ "std" ] }
 similar-asserts = { workspace = true }
 sp-io = { workspace = true, features = [ "std" ] }
+tap = { workspace = true }
 
 [features]
 default = [ "std" ]
