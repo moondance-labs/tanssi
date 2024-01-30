@@ -22,18 +22,20 @@ use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_service::prepare_node_config,
-    cumulus_primitives_core::ParaId,
+    cumulus_primitives_core::{relay_chain::well_known_keys as RelayWellKnownKeys, ParaId},
     cumulus_primitives_parachain_inherent::MockValidationDataInherentDataProvider,
     cumulus_primitives_parachain_inherent::MockXcmConfig,
     nimbus_primitives::NimbusId,
     node_common::service::ManualSealConfiguration,
     node_common::service::Sealing,
     node_common::service::{NodeBuilder, NodeBuilderConfig},
+    parity_scale_codec::Encode,
+    polkadot_parachain_primitives::primitives::HeadData,
     sc_consensus::BasicQueue,
     sc_executor::NativeElseWasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
     sp_blockchain::HeaderBackend,
-    sp_consensus_aura::SlotDuration,
+    sp_consensus_slots::{Slot, SlotDuration},
     sp_core::Pair,
     sp_core::H256,
     std::{sync::Arc, time::Duration},
@@ -243,8 +245,35 @@ pub async fn start_dev_node(
                     .expect("Header lookup should succeed")
                     .expect("Header passed in as parent should be present in backend.");
 
+                let hash = client
+                    .hash(current_para_block.saturating_sub(1))
+                    .expect("Hash of the desired block must be present")
+                    .expect("Hash of the desired block should exist");
+
+                let para_header = client
+                    .expect_header(hash)
+                    .expect("Expected parachain header should exist")
+                    .encode();
+
+                let para_head_data: Vec<u8> = HeadData(para_header).encode();
                 let client_for_xcm = client.clone();
                 let authorities_for_cidp = authorities.clone();
+                let para_head_key = RelayWellKnownKeys::para_head(para_id);
+                let relay_slot_key = RelayWellKnownKeys::CURRENT_SLOT.to_vec();
+                let slot_duration = container_chain_template_simple_runtime::SLOT_DURATION;
+
+                let mut timestamp: u64 = 0u64;
+                TIMESTAMP.with(|x| {
+                    timestamp = x.clone().take();
+                });
+
+                timestamp += slot_duration;
+
+                let relay_slot = sp_consensus_aura::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+						timestamp.into(),
+						SlotDuration::from_millis(slot_duration),
+                    );
+                let relay_slot = u64::from(*relay_slot).saturating_mul(2);
 
                 let downward_xcm_receiver = downward_xcm_receiver.clone();
                 let hrmp_xcm_receiver = hrmp_xcm_receiver.clone();
@@ -259,6 +288,9 @@ pub async fn start_dev_node(
                             container_para_id: para_id,
                             authorities: authorities_for_cidp
                     };
+
+                    let mut additional_keys = mocked_authorities_noting.get_key_values();
+                    additional_keys.append(&mut vec![(para_head_key, para_head_data), (relay_slot_key, Slot::from(relay_slot).encode())]);
 
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
@@ -276,7 +308,7 @@ pub async fn start_dev_node(
                         ),
                         raw_downward_messages: downward_xcm_receiver.drain().collect(),
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
-                        additional_key_values: Some(mocked_authorities_noting.get_key_values()),
+                        additional_key_values: Some(additional_keys),
                     };
 
                     Ok((time, mocked_parachain, mocked_authorities_noting))

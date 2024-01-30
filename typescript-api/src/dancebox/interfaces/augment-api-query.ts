@@ -6,6 +6,7 @@
 import "@polkadot/api-base/types/storage";
 
 import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from "@polkadot/api-base/types";
+import type { Data } from "@polkadot/types";
 import type {
     BTreeMap,
     Bytes,
@@ -42,12 +43,18 @@ import type {
     FrameSystemLastRuntimeUpgradeInfo,
     FrameSystemPhase,
     NimbusPrimitivesNimbusCryptoPublic,
+    PalletAssetsApproval,
+    PalletAssetsAssetAccount,
+    PalletAssetsAssetDetails,
+    PalletAssetsAssetMetadata,
     PalletAuthorNotingContainerChainBlockInfo,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesIdAmount,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
+    PalletIdentityRegistrarInfo,
+    PalletIdentityRegistration,
     PalletInflationRewardsChainsToRewardValue,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingPendingOperationKey,
@@ -68,6 +75,7 @@ import type {
     SpRuntimeDigest,
     SpTrieStorageProof,
     SpWeightsWeightV2Weight,
+    StagingXcmV3MultiLocation,
     TpContainerChainGenesisDataContainerChainGenesisData,
     XcmVersionedAssetId,
     XcmVersionedMultiLocation,
@@ -79,12 +87,35 @@ export type __QueryableStorageEntry<ApiType extends ApiTypes> = QueryableStorage
 
 declare module "@polkadot/api-base/types/storage" {
     interface AugmentedQueries<ApiType extends ApiTypes> {
+        assetRate: {
+            /**
+             * Maps an asset to its fixed point representation in the native balance.
+             *
+             * E.g. `native_amount = asset_amount * ConversionRateToNative::<T>::get(asset_kind)`
+             */
+            conversionRateToNative: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<Option<u128>>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        asyncBacking: {
+            /**
+             * First tuple element is the highest slot that has been seen in the history of this chain. Second tuple element
+             * is the number of authored blocks so far. This is a strictly-increasing value if T::AllowMultipleBlocksPerSlot = false.
+             */
+            slotInfo: AugmentedQuery<ApiType, () => Observable<Option<ITuple<[u64, u32]>>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         authorInherent: {
             /** Author of current block. */
             author: AugmentedQuery<ApiType, () => Observable<Option<U8aFixed>>, []> &
                 QueryableStorageEntry<ApiType, []>;
-            /** The highest slot that has been seen in the history of this chain. This is a strictly-increasing value. */
-            highestSlotSeen: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -285,6 +316,121 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        foreignAssets: {
+            /** The holdings of a specific account for a specific asset. */
+            account: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: u16 | AnyNumber | Uint8Array,
+                    arg2: AccountId32 | string | Uint8Array
+                ) => Observable<Option<PalletAssetsAssetAccount>>,
+                [u16, AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [u16, AccountId32]>;
+            /**
+             * Approved balance transfers. First balance is the amount approved for transfer. Second is the amount of
+             * `T::Currency` reserved for storing this. First key is the asset ID, second key is the owner and third key is
+             * the delegate.
+             */
+            approvals: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: u16 | AnyNumber | Uint8Array,
+                    arg2: AccountId32 | string | Uint8Array,
+                    arg3: AccountId32 | string | Uint8Array
+                ) => Observable<Option<PalletAssetsApproval>>,
+                [u16, AccountId32, AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [u16, AccountId32, AccountId32]>;
+            /** Details of an asset. */
+            asset: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<Option<PalletAssetsAssetDetails>>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /** Metadata of an asset. */
+            metadata: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<PalletAssetsAssetMetadata>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        foreignAssetsCreator: {
+            /**
+             * Mapping from an asset id to a Foreign asset type. This is mostly used when receiving transaction specifying an
+             * asset directly, like transferring an asset from this chain to another.
+             */
+            assetIdToForeignAsset: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<Option<StagingXcmV3MultiLocation>>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /**
+             * Reverse mapping of AssetIdToForeignAsset. Mapping from a foreign asset to an asset id. This is mostly used when
+             * receiving a multilocation XCM message to retrieve the corresponding asset in which tokens should me minted.
+             */
+            foreignAssetToAssetId: AugmentedQuery<
+                ApiType,
+                (
+                    arg: StagingXcmV3MultiLocation | { parents?: any; interior?: any } | string | Uint8Array
+                ) => Observable<Option<u16>>,
+                [StagingXcmV3MultiLocation]
+            > &
+                QueryableStorageEntry<ApiType, [StagingXcmV3MultiLocation]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        identity: {
+            /**
+             * Information that is pertinent to identify the entity behind an account.
+             *
+             * TWOX-NOTE: OK ― `AccountId` is a secure hash.
+             */
+            identityOf: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletIdentityRegistration>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * The set of registrars. Not expected to get very big as can only be added through a special origin (likely a
+             * council motion).
+             *
+             * The index into this can be cast to `RegistrarIndex` to get a valid value.
+             */
+            registrars: AugmentedQuery<ApiType, () => Observable<Vec<Option<PalletIdentityRegistrarInfo>>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Alternative "sub" identities of this account.
+             *
+             * The first item is the deposit, the second is a vector of the accounts.
+             *
+             * TWOX-NOTE: OK ― `AccountId` is a secure hash.
+             */
+            subsOf: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<ITuple<[u128, Vec<AccountId32>]>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * The super-identity of an alternative "sub" identity together with its name, within that context. If the account
+             * is not some other account's sub-identity, then just `None`.
+             */
+            superOf: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<ITuple<[AccountId32, Data]>>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -746,6 +892,20 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        relayStorageRoots: {
+            /** Map of relay block number to relay storage root */
+            relayStorageRoot: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<H256>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** List of all the keys in `RelayStorageRoot`. Used to remove the oldest key without having to iterate over all of them. */
+            relayStorageRootKeys: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

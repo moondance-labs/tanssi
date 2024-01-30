@@ -238,8 +238,8 @@ jobs:
             - name: Save runtime wasm
               run: |
                   mkdir -p runtimes
-                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.wasm runtimes/;
-                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm runtimes/;
+                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm runtimes/;
+                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm runtimes/;
                   cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
                   cp $CARGO_TARGET_DIR/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
             - name: Upload runtimes
@@ -665,6 +665,7 @@ jobs:
             { chain: "stagenet_dancebox", runtime: "dancebox" },
             { chain: "flashbox", runtime: "flashbox" },
             { chain: "dancebox", runtime: "dancebox" },
+            { chain: "frontier_template", runtime: "container-chain-template-frontier" },
           ]
       env:
         GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}

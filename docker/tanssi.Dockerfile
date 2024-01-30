@@ -4,7 +4,7 @@
 
 FROM docker.io/library/ubuntu:20.04 AS builder
 
-RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+RUN apt-get update && apt-get install -y ca-certificates lsof && update-ca-certificates
 
 FROM debian:bookworm-slim
 LABEL maintainer "gorka@moondancelabs.com"

@@ -76,6 +76,7 @@ pub trait GetCurrentContainerChains {
 /// session index.
 pub trait GetSessionContainerChains<SessionIndex> {
     fn session_container_chains(session_index: SessionIndex) -> Vec<ParaId>;
+    fn session_parathreads(session_index: SessionIndex) -> Vec<ParaId>;
     #[cfg(feature = "runtime-benchmarks")]
     fn set_session_container_chains(session_index: SessionIndex, container_chains: &[ParaId]);
 }
@@ -93,6 +94,7 @@ pub trait GetHostConfiguration<SessionIndex> {
     fn min_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn max_collators_for_orchestrator(session_index: SessionIndex) -> u32;
     fn collators_per_container(session_index: SessionIndex) -> u32;
+    fn collators_per_parathread(session_index: SessionIndex) -> u32;
 }
 
 /// Returns current session index.

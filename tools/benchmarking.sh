@@ -1,13 +1,34 @@
 #!/usr/bin/env bash
 
-# This script can be used for running moonbeam's benchmarks.
+# This script can be used for running tanssi's benchmarks.
 #
-# The moonbeam binary is required to be compiled with --features=runtime-benchmarks
+# The tanssi binary is required to be compiled with --features=runtime-benchmarks
 # in release mode.
 
 set -e
 
-BINARY="./target/production/tanssi-node"
+# By default we use the tanssi-node release binary
+# However we can use any binary by running the benchmark tool with
+# BINARY=./target/release/container-chain-template-simple-node ./tools/benchmarking.sh
+if [[ -z "${BINARY}" ]]; then
+    BINARY="./target/release/tanssi-node"
+else
+    BINARY="${BINARY}"
+fi
+
+if [[ -z "${CHAIN}" ]]; then
+    CHAIN="dev"
+else
+    CHAIN="${CHAIN}"
+fi
+
+if [[ -z "${OUTPUT_PATH}" ]]; then
+    mkdir -p tmp
+    OUTPUT_PATH="tmp"
+else
+    OUTPUT_PATH="${OUTPUT_PATH}"
+fi
+
 STEPS=50
 REPEAT=20
 
@@ -32,7 +53,7 @@ function help {
 }
 
 function choose_and_bench {
-    readarray -t options < <(${BINARY} benchmark pallet --list | sed 1d)
+    readarray -t options < <(${BINARY} benchmark pallet  --chain=${CHAIN} --list | sed 1d)
     options+=('EXIT')
 
     select opt in "${options[@]}"; do
@@ -45,25 +66,51 @@ function choose_and_bench {
 }
 
 function bench {
-    OUTPUT=${4:-weights.rs}
+    OUTPUT="${OUTPUT_PATH}/${1}.rs"
     echo "benchmarking '${1}::${2}' --check=${3}, writing results to '${OUTPUT}'"
-
     # Check enabled
     if [[ "${3}" -eq 1 ]]; then
         STEPS=16
         REPEAT=1
     fi
-
-    WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
-        --execution=wasm \
-        --wasm-execution=compiled \
-        --pallet "${1}" \
-        --extrinsic "${2}" \
-        --steps "${STEPS}" \
-        --repeat "${REPEAT}" \
-        --template=./benchmarking/frame-weight-template.hbs \
-        --json-file raw.json \
-        --output "${OUTPUT}"
+    echo "${1}"
+    if [[ ${1} == "*" ]] ; then
+        # Load all pallet names in an array.
+        ALL_PALLETS=($(
+        $BINARY benchmark pallet --list --chain="${CHAIN}" |\
+            tail -n+2 |\
+            cut -d',' -f1 |\
+            sort |\
+            uniq
+        ))
+        echo "[+] Benchmarking ${#ALL_PALLETS[@]} pallets"
+        for PALLET in "${ALL_PALLETS[@]}"; do
+            OUTPUT="${OUTPUT_PATH}/$PALLET.rs"
+            WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
+            --execution=wasm \
+            --wasm-execution=compiled \
+            --pallet "$PALLET" \
+            --extrinsic "*" \
+            --chain="${CHAIN}" \
+            --steps "${STEPS}" \
+            --repeat "${REPEAT}" \
+            --template=./benchmarking/frame-weight-template.hbs \
+            --json-file raw.json \
+            --output "${OUTPUT}"
+        done
+    else
+        WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
+            --execution=wasm \
+            --wasm-execution=compiled \
+            --pallet "${1}" \
+            --extrinsic "${2}" \
+            --chain="${CHAIN}" \
+            --steps "${STEPS}" \
+            --repeat "${REPEAT}" \
+            --template=./benchmarking/frame-weight-template.hbs \
+            --json-file raw.json \
+            --output "${OUTPUT}"
+    fi
 }
 
 if [[ "${@}" =~ "--help" ]]; then

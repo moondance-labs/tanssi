@@ -11,6 +11,14 @@ export type __AugmentedError<ApiType extends ApiTypes> = AugmentedError<ApiType>
 
 declare module "@polkadot/api-base/types/errors" {
     interface AugmentedErrors<ApiType extends ApiTypes> {
+        assetRate: {
+            /** The given asset ID already has an assigned conversion rate and cannot be re-created. */
+            AlreadyExists: AugmentedError<ApiType>;
+            /** The given asset ID is unknown. */
+            UnknownAssetKind: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         authorInherent: {
             /** Author already set in block. */
             AuthorAlreadySet: AugmentedError<ApiType>;
@@ -78,6 +86,103 @@ declare module "@polkadot/api-base/types/errors" {
             OverLimit: AugmentedError<ApiType>;
             /** The message index given is unknown. */
             Unknown: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
+        foreignAssets: {
+            /** The asset-account already exists. */
+            AlreadyExists: AugmentedError<ApiType>;
+            /** The asset is not live, and likely being destroyed. */
+            AssetNotLive: AugmentedError<ApiType>;
+            /** Invalid metadata given. */
+            BadMetadata: AugmentedError<ApiType>;
+            /** Invalid witness data given. */
+            BadWitness: AugmentedError<ApiType>;
+            /** Account balance must be greater than or equal to the transfer amount. */
+            BalanceLow: AugmentedError<ApiType>;
+            /** Callback action resulted in error */
+            CallbackFailed: AugmentedError<ApiType>;
+            /** The origin account is frozen. */
+            Frozen: AugmentedError<ApiType>;
+            /** The asset status is not the expected status. */
+            IncorrectStatus: AugmentedError<ApiType>;
+            /** The asset ID is already taken. */
+            InUse: AugmentedError<ApiType>;
+            /**
+             * The asset is a live asset and is actively being used. Usually emit for operations such as `start_destroy` which
+             * require the asset to be in a destroying state.
+             */
+            LiveAsset: AugmentedError<ApiType>;
+            /** Minimum balance should be non-zero. */
+            MinBalanceZero: AugmentedError<ApiType>;
+            /** The account to alter does not exist. */
+            NoAccount: AugmentedError<ApiType>;
+            /** The asset-account doesn't have an associated deposit. */
+            NoDeposit: AugmentedError<ApiType>;
+            /** The signing account has no permission to do the operation. */
+            NoPermission: AugmentedError<ApiType>;
+            /** The asset should be frozen before the given operation. */
+            NotFrozen: AugmentedError<ApiType>;
+            /** No approval exists that would allow the transfer. */
+            Unapproved: AugmentedError<ApiType>;
+            /**
+             * Unable to increment the consumer reference counters on the account. Either no provider reference exists to
+             * allow a non-zero balance of a non-self-sufficient asset, or one fewer then the maximum number of consumers has
+             * been reached.
+             */
+            UnavailableConsumer: AugmentedError<ApiType>;
+            /** The given asset ID is unknown. */
+            Unknown: AugmentedError<ApiType>;
+            /** The operation would result in funds being burned. */
+            WouldBurn: AugmentedError<ApiType>;
+            /** The source account would not survive the transfer and it needs to stay alive. */
+            WouldDie: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
+        foreignAssetsCreator: {
+            AssetAlreadyExists: AugmentedError<ApiType>;
+            AssetDoesNotExist: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
+        identity: {
+            /** Account ID is already named. */
+            AlreadyClaimed: AugmentedError<ApiType>;
+            /** Empty index. */
+            EmptyIndex: AugmentedError<ApiType>;
+            /** Fee is changed. */
+            FeeChanged: AugmentedError<ApiType>;
+            /** The index is invalid. */
+            InvalidIndex: AugmentedError<ApiType>;
+            /** Invalid judgement. */
+            InvalidJudgement: AugmentedError<ApiType>;
+            /** The target is invalid. */
+            InvalidTarget: AugmentedError<ApiType>;
+            /** The provided judgement was for a different identity. */
+            JudgementForDifferentIdentity: AugmentedError<ApiType>;
+            /** Judgement given. */
+            JudgementGiven: AugmentedError<ApiType>;
+            /** Error that occurs when there is an issue paying for judgement. */
+            JudgementPaymentFailed: AugmentedError<ApiType>;
+            /** No identity found. */
+            NoIdentity: AugmentedError<ApiType>;
+            /** Account isn't found. */
+            NotFound: AugmentedError<ApiType>;
+            /** Account isn't named. */
+            NotNamed: AugmentedError<ApiType>;
+            /** Sub-account isn't owned by sender. */
+            NotOwned: AugmentedError<ApiType>;
+            /** Sender is not a sub-account. */
+            NotSub: AugmentedError<ApiType>;
+            /** Sticky judgement. */
+            StickyJudgement: AugmentedError<ApiType>;
+            /** Too many additional fields. */
+            TooManyFields: AugmentedError<ApiType>;
+            /** Maximum amount of registrars reached. Cannot add any more. */
+            TooManyRegistrars: AugmentedError<ApiType>;
+            /** Too many subs-accounts. */
+            TooManySubAccounts: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };

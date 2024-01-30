@@ -51,15 +51,16 @@ jobs:
         id: prepare
         run: |
           dancebox='{"runtime_name": "dancebox","runtime_path" : "./runtime/dancebox/src/lib.rs"}'
+          flashbox='{"runtime_name": "flashbox","runtime_path" : "./runtime/flashbox/src/lib.rs"}'
           frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./container-chains/templates/frontier/runtime/src/lib.rs"}'
           simple_template='{"runtime_name": "simple-template","runtime_path" : "./container-chains/templates/simple/runtime/src/lib.rs"}'
 
           if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
-            echo "matrix_tests=[$dancebox]" >> $GITHUB_OUTPUT
+            echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix_tests=[$simple_template, $frontier_template]" >> $GITHUB_OUTPUT
           else
-            echo "matrix_tests=[$dancebox, $simple_template, $frontier_template]" >> $GITHUB_OUTPUT
+            echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template]" >> $GITHUB_OUTPUT
           fi
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]

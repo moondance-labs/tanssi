@@ -65,6 +65,19 @@ import type {
     FrameSystemLimitsWeightsPerClass,
     FrameSystemPhase,
     NimbusPrimitivesNimbusCryptoPublic,
+    PalletAssetRateCall,
+    PalletAssetRateError,
+    PalletAssetRateEvent,
+    PalletAssetsAccountStatus,
+    PalletAssetsApproval,
+    PalletAssetsAssetAccount,
+    PalletAssetsAssetDetails,
+    PalletAssetsAssetMetadata,
+    PalletAssetsAssetStatus,
+    PalletAssetsCall,
+    PalletAssetsError,
+    PalletAssetsEvent,
+    PalletAssetsExistenceReason,
     PalletAuthorInherentCall,
     PalletAuthorInherentError,
     PalletAuthorNotingCall,
@@ -88,6 +101,18 @@ import type {
     PalletDataPreserversCall,
     PalletDataPreserversError,
     PalletDataPreserversEvent,
+    PalletForeignAssetCreatorCall,
+    PalletForeignAssetCreatorError,
+    PalletForeignAssetCreatorEvent,
+    PalletIdentityBitFlags,
+    PalletIdentityCall,
+    PalletIdentityError,
+    PalletIdentityEvent,
+    PalletIdentityJudgement,
+    PalletIdentityRegistrarInfo,
+    PalletIdentityRegistration,
+    PalletIdentitySimpleIdentityField,
+    PalletIdentitySimpleIdentityInfo,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -291,6 +316,19 @@ declare module "@polkadot/types/types/registry" {
         FrameSystemLimitsWeightsPerClass: FrameSystemLimitsWeightsPerClass;
         FrameSystemPhase: FrameSystemPhase;
         NimbusPrimitivesNimbusCryptoPublic: NimbusPrimitivesNimbusCryptoPublic;
+        PalletAssetRateCall: PalletAssetRateCall;
+        PalletAssetRateError: PalletAssetRateError;
+        PalletAssetRateEvent: PalletAssetRateEvent;
+        PalletAssetsAccountStatus: PalletAssetsAccountStatus;
+        PalletAssetsApproval: PalletAssetsApproval;
+        PalletAssetsAssetAccount: PalletAssetsAssetAccount;
+        PalletAssetsAssetDetails: PalletAssetsAssetDetails;
+        PalletAssetsAssetMetadata: PalletAssetsAssetMetadata;
+        PalletAssetsAssetStatus: PalletAssetsAssetStatus;
+        PalletAssetsCall: PalletAssetsCall;
+        PalletAssetsError: PalletAssetsError;
+        PalletAssetsEvent: PalletAssetsEvent;
+        PalletAssetsExistenceReason: PalletAssetsExistenceReason;
         PalletAuthorInherentCall: PalletAuthorInherentCall;
         PalletAuthorInherentError: PalletAuthorInherentError;
         PalletAuthorNotingCall: PalletAuthorNotingCall;
@@ -314,6 +352,18 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversCall: PalletDataPreserversCall;
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
+        PalletForeignAssetCreatorCall: PalletForeignAssetCreatorCall;
+        PalletForeignAssetCreatorError: PalletForeignAssetCreatorError;
+        PalletForeignAssetCreatorEvent: PalletForeignAssetCreatorEvent;
+        PalletIdentityBitFlags: PalletIdentityBitFlags;
+        PalletIdentityCall: PalletIdentityCall;
+        PalletIdentityError: PalletIdentityError;
+        PalletIdentityEvent: PalletIdentityEvent;
+        PalletIdentityJudgement: PalletIdentityJudgement;
+        PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
+        PalletIdentityRegistration: PalletIdentityRegistration;
+        PalletIdentitySimpleIdentityField: PalletIdentitySimpleIdentityField;
+        PalletIdentitySimpleIdentityInfo: PalletIdentitySimpleIdentityInfo;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
