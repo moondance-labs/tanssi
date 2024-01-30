@@ -107,7 +107,7 @@ pub trait Assets<AccountId, AssetId, Balance> {
     /// Transfer assets deposited by an account to another account.
     /// Those assets should not be considered deposited in the target account.
     fn transfer_deposit(
-        asset_id: AssetId,
+        asset_id: &AssetId,
         from: &AccountId,
         to: &AccountId,
         amount: Balance,
@@ -115,10 +115,11 @@ pub trait Assets<AccountId, AssetId, Balance> {
 
     /// Increase the deposit for an account and asset id. Should fail if account doesn't have
     /// enough of that asset. Funds should be safe and not slashable.
-    fn increase_deposit(asset_id: AssetId, account: &AccountId, amount: Balance) -> DispatchResult;
+    fn increase_deposit(asset_id: &AssetId, account: &AccountId, amount: Balance)
+        -> DispatchResult;
 
     /// Decrease the deposit for an account and asset id. Should fail on underflow.
-    fn decrease_deposit(asset_id: AssetId, account: &AccountId, amount: Balance) -> DispatchResult;
+    fn decrease_deposit(asset_id: &AssetId, account: &AccountId, amount: Balance)
 }
 
 #[pallet(dev_mode)]
@@ -236,6 +237,15 @@ pub mod pallet {
         Mandatory { deadline: Time },
     }
 
+    /// Describe how the deposit should change.
+    #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+    #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
+    pub enum DepositChange<Balance> {
+        Increase(Balance),
+        Decrease(Balance),
+        Absolute(Balance),
+    }
+
     /// A request to change a stream config.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo)]
@@ -312,6 +322,7 @@ pub mod pallet {
         NoPendingRequest,
         CantAcceptOwnRequest,
         WrongRequestNonce,
+        CantDecreaseDepositWhenChangingAsset,
     }
 
     #[pallet::event]
@@ -331,9 +342,8 @@ pub mod pallet {
             amount: T::Balance,
             drained: bool,
         },
-        StreamRefilled {
+        StreamDepositChanged {
             stream_id: T::StreamId,
-            increase: T::Balance,
             new_deposit: T::Balance,
         },
         StreamConfigChanged {
@@ -357,6 +367,8 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        /// Create a payment stream from the origin to the target with provided config
+        /// and initial deposit (in the asset defined in the config).
         #[pallet::call_index(0)]
         pub fn open_stream(
             origin: OriginFor<T>,
@@ -371,6 +383,8 @@ pub mod pallet {
             Ok(().into())
         }
 
+        /// Close a given stream in which the origin is involved. It performs the pending payment
+        /// before closing the stream.
         #[pallet::call_index(1)]
         pub fn close_stream(
             origin: OriginFor<T>,
@@ -389,11 +403,7 @@ pub mod pallet {
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
             // Unfreeze funds left in the stream.
-            T::Assets::decrease_deposit(
-                stream.config.asset_id.clone(),
-                &stream.source,
-                stream.deposit,
-            )?;
+            T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, stream.deposit)?;
 
             // Remove stream from storage.
             Streams::<T>::remove(stream_id);
@@ -409,8 +419,9 @@ pub mod pallet {
             Ok(().into())
         }
 
+        /// Perform the pending payment of a stream. Anyone can call this.
         #[pallet::call_index(2)]
-        pub fn update_stream(
+        pub fn perform_payment(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
         ) -> DispatchResultWithPostInfo {
@@ -424,33 +435,30 @@ pub mod pallet {
             Ok(().into())
         }
 
+        /// Change the deposit backing a stream. Can only be called by the source of the existing
+        /// stream. The change will be applied AFTER the pending payment has been performed.
         #[pallet::call_index(3)]
-        pub fn refill_stream(
+        pub fn change_deposit(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
-            increase: T::Balance,
+            change: DepositChange<T::Balance>,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
 
-            // Only source can refill stream
+            // Only source can change stream deposit.
             ensure!(origin == stream.source, Error::<T>::UnauthorizedOrigin);
 
             // Source will not pay for drained stream retroactively, so we perform payment with
             // what is left first.
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
-            // Increase deposit.
-            T::Assets::increase_deposit(stream.config.asset_id.clone(), &origin, increase)?;
-            stream.deposit = stream
-                .deposit
-                .checked_add(&increase)
-                .ok_or(Error::<T>::CurrencyOverflow)?;
+            // Update deposit.
+            Self::apply_deposit_change(&mut stream, change)?;
 
             // Emit event.
-            Pallet::<T>::deposit_event(Event::<T>::StreamRefilled {
+            Pallet::<T>::deposit_event(Event::<T>::StreamDepositChanged {
                 stream_id,
-                increase,
                 new_deposit: stream.deposit,
             });
 
@@ -552,6 +560,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             stream_id: T::StreamId,
             request_nonce: RequestNonce,
+            change: DepositChange<T::Balance>,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
@@ -576,7 +585,47 @@ pub mod pallet {
             // Perform pending payment before changing config.
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
-            todo!()
+            // Apply change.
+            match (
+                stream.config.asset_id == request.new_config.asset_id,
+                change,
+            ) {
+                (true, change) => {
+                    Self::apply_deposit_change(&mut stream, change)?;
+                }
+                (false, DepositChange::Absolute(amount) | DepositChange::Increase(amount)) => {
+                    // Release deposit in old asset.
+                    T::Assets::decrease_deposit(
+                        &stream.config.asset_id,
+                        &stream.source,
+                        stream.deposit,
+                    )?;
+
+                    // Make deposit in new asset.
+                    T::Assets::increase_deposit(
+                        &request.new_config.asset_id,
+                        &stream.source,
+                        amount,
+                    )?;
+                    stream.deposit = amount;
+                }
+                (false, DepositChange::Decrease(_)) => {
+                    Err(Error::<T>::CantDecreaseDepositWhenChangingAsset)?
+                }
+            }
+
+            // Event
+            Pallet::<T>::deposit_event(Event::<T>::StreamConfigChanged {
+                stream_id,
+                old_config: stream.config,
+                new_config: request.new_config.clone(),
+            });
+
+            // Update config in storage.
+            stream.config = request.new_config;
+            Streams::<T>::insert(stream_id, stream);
+
+            Ok(().into())
         }
     }
 
@@ -600,7 +649,7 @@ pub mod pallet {
             NextStreamId::<T>::set(next_stream_id);
 
             // Freeze initial deposit.
-            T::Assets::increase_deposit(config.asset_id.clone(), &origin, initial_deposit)?;
+            T::Assets::increase_deposit(&config.asset_id, &origin, initial_deposit)?;
 
             // Create stream data.
             let now =
@@ -638,7 +687,7 @@ pub mod pallet {
         fn perform_stream_payment(
             stream_id: T::StreamId,
             stream: &mut StreamOf<T>,
-        ) -> DispatchResultWithPostInfo {
+        ) -> Result<T::Balance, DispatchErrorWithPostInfo> {
             let mut now = T::TimeProvider::now(&stream.config.time_unit)
                 .ok_or(Error::<T>::CantFetchCurrentTime)?;
 
@@ -662,12 +711,12 @@ pub mod pallet {
 
             // Dont perform payment
             if now == last_time_updated {
-                return Ok(().into());
+                return Ok(0u32.into());
             }
 
             // If deposit is zero the stream is fully drained and there is nothing to transfer.
             if stream.deposit.is_zero() {
-                return Ok(().into());
+                return Ok(0u32.into());
             }
 
             let delta = now
@@ -694,12 +743,12 @@ pub mod pallet {
             };
 
             if payment.is_zero() {
-                return Ok(().into());
+                return Ok(0u32.into());
             }
 
             // Transfer from the source to target.
             T::Assets::transfer_deposit(
-                stream.config.asset_id.clone(),
+                &stream.config.asset_id,
                 &stream.source,
                 &stream.target,
                 payment,
@@ -716,6 +765,46 @@ pub mod pallet {
                 amount: payment,
                 drained,
             });
+
+            Ok(payment)
+        }
+
+        fn apply_deposit_change(
+            stream: &mut StreamOf<T>,
+            change: DepositChange<T::Balance>,
+        ) -> DispatchResultWithPostInfo {
+            match change {
+                DepositChange::Absolute(amount) => {
+                    if let Some(increase) = amount.checked_sub(&stream.deposit) {
+                        T::Assets::increase_deposit(
+                            &stream.config.asset_id,
+                            &stream.source,
+                            increase,
+                        )?;
+                    } else if let Some(decrease) = stream.deposit.checked_sub(&amount) {
+                        T::Assets::decrease_deposit(
+                            &stream.config.asset_id,
+                            &stream.source,
+                            decrease,
+                        )?;
+                    }
+                    stream.deposit = amount;
+                }
+                DepositChange::Increase(increase) => {
+                    stream.deposit = stream
+                        .deposit
+                        .checked_add(&increase)
+                        .ok_or(Error::<T>::CurrencyOverflow)?;
+                    T::Assets::increase_deposit(&stream.config.asset_id, &stream.source, increase)?;
+                }
+                DepositChange::Decrease(decrease) => {
+                    stream.deposit = stream
+                        .deposit
+                        .checked_sub(&decrease)
+                        .ok_or(Error::<T>::CurrencyOverflow)?;
+                    T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, decrease)?;
+                }
+            }
 
             Ok(().into())
         }
