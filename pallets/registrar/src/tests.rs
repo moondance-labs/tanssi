@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use tp_traits::SlotFrequency;
 use {
     crate::{mock::*, Error, Event},
     frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo, BoundedVec},
@@ -22,7 +21,7 @@ use {
     sp_core::Get,
     sp_runtime::DispatchError,
     tp_container_chain_genesis_data::ContainerChainGenesisData,
-    tp_traits::ParaId,
+    tp_traits::{ParaId, SlotFrequency},
 };
 
 const ALICE: u64 = 1;

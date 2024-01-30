@@ -608,9 +608,8 @@ pub mod pallet {
         }
 
         /// Register parathread
-        // TODO: weight
         #[pallet::call_index(6)]
-        #[pallet::weight(T::WeightInfo::register(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
+        #[pallet::weight(T::WeightInfo::register_parathread(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
         pub fn register_parathread(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -681,9 +680,8 @@ pub mod pallet {
         }
 
         /// Change parathread params
-        // TODO: weight
         #[pallet::call_index(7)]
-        #[pallet::weight(T::WeightInfo::register(0u32, T::MaxLengthParaIds::get(), 0u32))]
+        #[pallet::weight(T::WeightInfo::set_parathread_params(T::MaxLengthParaIds::get()))]
         pub fn set_parathread_params(
             origin: OriginFor<T>,
             para_id: ParaId,

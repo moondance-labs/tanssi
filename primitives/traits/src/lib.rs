@@ -72,18 +72,18 @@ pub trait GetCurrentContainerChains {
     fn set_current_container_chains(container_chains: &[ParaId]);
 }
 
-/// How often should a parathread collator propose blocks.
+/// How often should a parathread collator propose blocks. The units are "1 out of n slots", where the slot time is the
+/// tanssi slot time, 12 seconds by default.
+// TODO: this is currently ignored
 #[derive(Clone, Debug, Encode, Decode, scale_info::TypeInfo, PartialEq, Eq)]
 pub struct SlotFrequency {
     /// The parathread will produce at most 1 block every x slots. min=10 means that collators can produce 1 block
-    /// every `x >= 10` slots, but they are not enforced to. However they cannot produce a block after less than 10
-    /// slots, it will be invalid.
-    // TODO: invalid how, slashing collator? Not paying block reward?
+    /// every `x >= 10` slots, but they are not enforced to. If collators produce a block after less than 10
+    /// slots, they will not be rewarded by tanssi.
     pub min: u32,
     /// The parathread will produce at least 1 block every x slots. max=10 means that collators are forced to
-    /// produce 1 block every `x <= 10` slots. They can produce a block sooner than that if the `min` allows it, but
-    /// waiting more than 10 slots will be invalid.
-    // TODO: invalid how, slashing collator? Not paying block reward?
+    /// produce 1 block every `x <= 10` slots. Collators can produce a block sooner than that if the `min` allows it, but
+    /// waiting more than 10 slots will make them lose the block reward.
     pub max: u32,
 }
 

@@ -409,20 +409,22 @@ mod benchmarks {
             Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
         }
 
-        // Twice the deposit just in case
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", (y - 1).into(), T::DepositAmount::get());
-        Pallet::<T>::register_parathread(
-            RawOrigin::Signed(caller.clone()).into(),
-            (y - 1).into(),
-            slot_frequency,
-            storage.clone(),
-        )
-        .unwrap();
-        T::RegistrarHooks::benchmarks_ensure_valid_for_collating((y - 1).into());
-        Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), (y - 1).into()).unwrap();
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register_parathread(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                slot_frequency.clone(),
+                storage.clone(),
+            )
+            .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
+        }
 
-        let mut new_slot_frequency = SlotFrequency { min: 2, max: 2 };
+        let new_slot_frequency = SlotFrequency { min: 2, max: 2 };
 
         #[extrinsic_call]
         Pallet::<T>::set_parathread_params(
@@ -434,7 +436,7 @@ mod benchmarks {
         // Start a new session
         Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
 
-        // Check y-1 is in Paused
+        // Check y-1 has new slot frequency
         assert_eq!(
             Pallet::<T>::parathread_params(&ParaId::from(y - 1)).map(|x| x.slot_frequency),
             Some(new_slot_frequency)
