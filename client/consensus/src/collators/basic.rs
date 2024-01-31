@@ -20,7 +20,10 @@ use cumulus_client_collator::{
 };
 use cumulus_client_consensus_common::ParachainBlockImportMarker;
 use cumulus_client_consensus_proposer::ProposerInterface;
-use cumulus_primitives_core::{relay_chain::{BlockId as RBlockId, Hash as PHash}, CollectCollationInfo, PersistedValidationData};
+use cumulus_primitives_core::{
+    relay_chain::{BlockId as RBlockId, Hash as PHash},
+    CollectCollationInfo, PersistedValidationData,
+};
 use cumulus_relay_chain_interface::RelayChainInterface;
 use parity_scale_codec::{Codec, Decode};
 
@@ -84,7 +87,10 @@ where
     //TODO: re-check and analyze what to add here.
     //Client::Api: TanssiAuthorityAssignmentApi<Block, P::Public> + CollectCollationInfo<Block>,
     RClient: RelayChainInterface + Send + Clone + 'static,
-    CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)> + Send + 'static + Clone,
+    CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)>
+        + Send
+        + 'static
+        + Clone,
     CIDP::InherentDataProviders: Send + InherentDataProviderExt,
     BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
     SO: SyncOracle + Send + Sync + Clone + 'static,
@@ -93,7 +99,14 @@ where
     P: Pair,
     P::Public: AppPublic + Member + Codec,
     P::Signature: TryFrom<Vec<u8>> + Member + Codec,
-    GOH: RetrieveAuthoritiesFromOrchestrator<Block,(PHash, PersistedValidationData),Vec<AuthorityId<P>>,> + 'static + Sync + Send,
+    GOH: RetrieveAuthoritiesFromOrchestrator<
+            Block,
+            (PHash, PersistedValidationData),
+            Vec<AuthorityId<P>>,
+        >
+        + 'static
+        + Sync
+        + Send,
 {
     async move {
         let mut collation_requests = match params.collation_request_receiver {
@@ -173,18 +186,22 @@ where
                     (relay_parent_header.hash(), validation_data.clone()),
                 )
                 .await
-                {
-                    Err(e) => reject_with_error!(e),
-                    Ok(h) => h,
-                };
-            
-            let inherent_providers = match params.create_inherent_data_providers
-                .create_inherent_data_providers(parent_hash.clone(), (*request.relay_parent(), validation_data.clone()))
+            {
+                Err(e) => reject_with_error!(e),
+                Ok(h) => h,
+            };
+
+            let inherent_providers = match params
+                .create_inherent_data_providers
+                .create_inherent_data_providers(
+                    parent_hash.clone(),
+                    (*request.relay_parent(), validation_data.clone()),
+                )
                 .await
-                {
-                    Err(e) => reject_with_error!(e),
-                    Ok(h) => h,
-                };
+            {
+                Err(e) => reject_with_error!(e),
+                Ok(h) => h,
+            };
 
             let claim = match collator_util::tanssi_claim_slot::<P>(
                 //&*params.para_client,
@@ -203,7 +220,7 @@ where
                 Err(e) => reject_with_error!(e),
                 Ok(h) => h,
             };
-/*             .map_err(|e| {
+            /*             .map_err(|e| {
                 tracing::error!(
                     target: LOG_TARGET,
                     error = ?e,
@@ -211,7 +228,6 @@ where
                 )
             })
             .ok()?; */
-
 
             let (parachain_inherent_data, other_inherent_data) = try_request!(
                 collator

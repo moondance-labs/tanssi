@@ -33,7 +33,9 @@ use {
     },
     cumulus_client_consensus_proposer::Proposer,
     cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
-    cumulus_client_service::{prepare_node_config, start_relay_chain_tasks, StartRelayChainTasksParams, DARecoveryProfile},
+    cumulus_client_service::{
+        prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
+    },
     cumulus_primitives_core::{
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair, Hash as PHash},
         ParaId,
@@ -66,7 +68,10 @@ use {
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
-    sc_service::{Configuration, TFullBackend, TFullClient, SpawnTaskHandle, SpawnEssentialTaskHandle, TaskManager},
+    sc_service::{
+        Configuration, SpawnEssentialTaskHandle, SpawnTaskHandle, TFullBackend, TFullClient,
+        TaskManager,
+    },
     sc_telemetry::TelemetryHandle,
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
@@ -76,9 +81,10 @@ use {
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, pin::Pin, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
-    tc_consensus::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus, collators::basic::{
-        self as basic_tanssi_aura, Params as BasicTanssiAuraParams,
-    }},
+    tc_consensus::{
+        collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
+        BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus,
+    },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
 
@@ -321,21 +327,21 @@ async fn start_node_impl(
     let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
 
     start_relay_chain_tasks(StartRelayChainTasksParams {
-		client: node_builder.client.clone(),
-		announce_block: announce_block.clone(),
-		para_id,
-		relay_chain_interface: relay_chain_interface.clone(),
-		task_manager: &mut node_builder.task_manager,
-		da_recovery_profile: if validator {
-			DARecoveryProfile::Collator
-		} else {
-			DARecoveryProfile::FullNode
-		},
-		import_queue: import_queue_service,
-		relay_chain_slot_duration,
-		recovery_handle: Box::new(overseer_handle.clone()),
-		sync_service: node_builder.network.sync_service.clone(),
-	})?;
+        client: node_builder.client.clone(),
+        announce_block: announce_block.clone(),
+        para_id,
+        relay_chain_interface: relay_chain_interface.clone(),
+        task_manager: &mut node_builder.task_manager,
+        da_recovery_profile: if validator {
+            DARecoveryProfile::Collator
+        } else {
+            DARecoveryProfile::FullNode
+        },
+        import_queue: import_queue_service,
+        relay_chain_slot_duration,
+        recovery_handle: Box::new(overseer_handle.clone()),
+        sync_service: node_builder.network.sync_service.clone(),
+    })?;
 
     if validator {
         let collator_key = collator_key
@@ -354,7 +360,7 @@ async fn start_node_impl(
             );
         }
 
-/*         let parachain_consensus = build_consensus_orchestrator(
+        /*         let parachain_consensus = build_consensus_orchestrator(
             node_builder.client.clone(),
             block_import.clone(),
             node_builder.prometheus_registry.as_ref(),
@@ -391,9 +397,9 @@ async fn start_node_impl(
         let para_id_clone = para_id.clone();
         let overseer = overseer_handle.clone();
         let announce_block_clone = announce_block.clone();
-        
+
         // TODO: change for async backing
-         collate_on_tanssi = Some(move || async move {
+        collate_on_tanssi = Some(move || async move {
             //#[allow(deprecated)]
             //cumulus_client_collator::start_collator(params_generator()).await;
             start_consensus_orchestrator(
@@ -413,7 +419,8 @@ async fn start_node_impl(
                 collator_key_clone,
                 overseer,
                 announce_block_clone,
-            ).expect("Start consensus should succeed");
+            )
+            .expect("Start consensus should succeed");
         });
 
         start_consensus_orchestrator(
@@ -727,7 +734,6 @@ fn start_consensus_container(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) -> Result<(), sc_service::Error> {
-
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)?;
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
@@ -874,7 +880,6 @@ fn start_consensus_orchestrator(
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) -> Result<(), sc_service::Error> {
-
     //impl Future<Output = ()> + Send + 'static
 
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
