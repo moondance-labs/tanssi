@@ -5,7 +5,6 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { chainSpecToContainerChainGenesisData } from "../util/genesis_data";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
-import {stringToHex} from "@polkadot/util";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 yargs(hideBin(process.argv))
@@ -43,11 +42,7 @@ yargs(hideBin(process.argv))
 
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
                 const txs = [];
-                const slotDuration = api.createType("PalletRegistrarSlotDuration", {
-                    min: 1,
-                    max: 1,
-                });
-                const tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, slotDuration, containerChainGenesisData);
+                const tx1 = api.tx.registrar.register(rawSpec.para_id, containerChainGenesisData);
                 txs.push(tx1);
                 if (rawSpec.bootNodes?.length) {
                     const tx2 = api.tx.dataPreservers.setBootNodes(rawSpec.para_id, rawSpec.bootNodes);
