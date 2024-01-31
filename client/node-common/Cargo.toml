@@ -34,6 +34,7 @@ sc-cli = { workspace = true }
 sc-client-api = { workspace = true }
 sc-consensus = { workspace = true }
 sc-consensus-manual-seal = { workspace = true }
+sc-consensus-slots = { workspace = true }
 sc-executor = { workspace = true }
 sc-network = { workspace = true }
 sc-network-common = { workspace = true }
@@ -54,7 +55,6 @@ sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }
 sp-consensus-aura = { workspace = true }
-sc-consensus-slots = { workspace = true }
 sp-core = { workspace = true, features = [ "std" ] }
 sp-inherents = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true, features = [ "std" ] }
