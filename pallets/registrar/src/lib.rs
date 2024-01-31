@@ -905,6 +905,11 @@ pub mod pallet {
             paras.into_iter().collect()
         }
 
+        fn session_parathreads(_session_index: T::SessionIndex) -> Vec<ParaId> {
+            // FIXME(parathreads)
+            vec![]
+        }
+
         #[cfg(feature = "runtime-benchmarks")]
         fn set_session_container_chains(
             _session_index: T::SessionIndex,

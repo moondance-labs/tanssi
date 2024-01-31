@@ -92,6 +92,8 @@ pub use {
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
 
+const LOG_TARGET: &str = "runtime::tanssi";
+
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
 /// A Block signed with a Justification
@@ -203,7 +205,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("flashbox"),
     impl_name: create_runtime_str!("flashbox"),
     authoring_version: 1,
-    spec_version: 400,
+    spec_version: 500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1018,6 +1020,16 @@ impl pallet_maintenance_mode::Config for Runtime {
     type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
+parameter_types! {
+    pub const MaxStorageRoots: u32 = 10; // 1 minute of relay blocks
+}
+
+impl pallet_relay_storage_roots::Config for Runtime {
+    type RelaychainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+    type MaxStorageRoots = MaxStorageRoots;
+    type WeightInfo = ();
+}
+
 impl pallet_root_testing::Config for Runtime {}
 
 parameter_types! {
@@ -1159,6 +1171,9 @@ construct_runtime!(
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
 
+        // More system support stuff
+        RelayStorageRoots: pallet_relay_storage_roots = 60,
+
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
     }
@@ -1168,13 +1183,22 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
-        [pallet_author_noting, AuthorNoting]
-        [pallet_collator_assignment, CollatorAssignment]
-        [pallet_configuration, Configuration]
+        [pallet_timestamp, Timestamp]
+        [pallet_sudo, Sudo]
+        [pallet_proxy, Proxy]
+        [pallet_utility, Utility]
+        [pallet_tx_pause, TxPause]
+        [pallet_balances, Balances]
+        [pallet_identity, Identity]
         [pallet_registrar, Registrar]
-        [pallet_invulnerables, Invulnerables]
+        [pallet_configuration, Configuration]
+        [pallet_collator_assignment, CollatorAssignment]
+        [pallet_author_noting, AuthorNoting]
         [pallet_services_payment, ServicesPayment]
         [pallet_data_preservers, DataPreservers]
+        [pallet_invulnerables, Invulnerables]
+        [pallet_author_inherent, AuthorInherent]
+        [pallet_relay_storage_roots, RelayStorageRoots]
     );
 }
 
@@ -1313,10 +1337,19 @@ impl_runtime_apis! {
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking};
+            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
 
-            impl frame_system_benchmarking::Config for Runtime {}
+            impl frame_system_benchmarking::Config for Runtime {
+                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                    ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
+                    Ok(())
+                }
+
+                fn verify_set_code() {
+                    System::assert_last_event(cumulus_pallet_parachain_system::Event::<Runtime>::ValidationFunctionStored.into());
+                }
+            }
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number

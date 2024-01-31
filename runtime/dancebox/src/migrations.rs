@@ -46,11 +46,12 @@ use {
     sp_core::RuntimeDebug,
     scale_info::TypeInfo,
 )]
-struct HostConfigurationV0 {
+struct HostConfigurationV1 {
     pub max_collators: u32,
     pub min_orchestrator_collators: u32,
     pub max_orchestrator_collators: u32,
     pub collators_per_container: u32,
+    pub full_rotation_period: u32,
 }
 
 pub struct CollatorSelectionStorageValuePrefix;
@@ -229,13 +230,13 @@ where
     }
 }
 
-pub struct MigrateConfigurationFullRotationPeriod<T>(pub PhantomData<T>);
-impl<T> Migration for MigrateConfigurationFullRotationPeriod<T>
+pub struct MigrateConfigurationParathreads<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateConfigurationParathreads<T>
 where
     T: pallet_configuration::Config,
 {
     fn friendly_name(&self) -> &str {
-        "TM_MigrateConfigurationFullRotationPeriod"
+        "TM_MigrateConfigurationParathreads"
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
@@ -245,9 +246,10 @@ where
             &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
         const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
             &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
+        let default_config = HostConfiguration::default();
 
         // Modify active config
-        let old_config: HostConfigurationV0 =
+        let old_config: HostConfigurationV1 =
             frame_support::storage::unhashed::get(CONFIGURATION_ACTIVE_CONFIG_KEY)
                 .expect("configuration.activeConfig should have value");
         let new_config = HostConfiguration {
@@ -255,12 +257,15 @@ where
             min_orchestrator_collators: old_config.min_orchestrator_collators,
             max_orchestrator_collators: old_config.max_orchestrator_collators,
             collators_per_container: old_config.collators_per_container,
-            full_rotation_period: 0,
+            full_rotation_period: old_config.full_rotation_period,
+            collators_per_parathread: default_config.collators_per_parathread,
+            parathreads_per_collator: default_config.parathreads_per_collator,
+            target_container_chain_fullness: default_config.target_container_chain_fullness,
         };
         frame_support::storage::unhashed::put(CONFIGURATION_ACTIVE_CONFIG_KEY, &new_config);
 
         // Modify pending configs, if any
-        let old_pending_configs: Vec<(u32, HostConfigurationV0)> =
+        let old_pending_configs: Vec<(u32, HostConfigurationV1)> =
             frame_support::storage::unhashed::get(CONFIGURATION_PENDING_CONFIGS_KEY)
                 .unwrap_or_default();
         let mut new_pending_configs: Vec<(u32, HostConfiguration)> = vec![];
@@ -271,7 +276,10 @@ where
                 min_orchestrator_collators: old_config.min_orchestrator_collators,
                 max_orchestrator_collators: old_config.max_orchestrator_collators,
                 collators_per_container: old_config.collators_per_container,
-                full_rotation_period: 0,
+                full_rotation_period: old_config.full_rotation_period,
+                collators_per_parathread: default_config.collators_per_parathread,
+                parathreads_per_collator: default_config.parathreads_per_collator,
+                target_container_chain_fullness: default_config.target_container_chain_fullness,
             };
             new_pending_configs.push((session_index, new_config));
         }
@@ -295,7 +303,7 @@ where
         let old_config_bytes =
             frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
                 .expect("configuration.activeConfig should have value");
-        assert_eq!(old_config_bytes.len(), 16);
+        assert_eq!(old_config_bytes.len(), 20);
 
         use parity_scale_codec::Encode;
         Ok((old_config_bytes).encode())
@@ -307,8 +315,20 @@ where
         &self,
         _number_of_invulnerables: Vec<u8>,
     ) -> Result<(), sp_runtime::DispatchError> {
-        let new_period = crate::Configuration::config().full_rotation_period;
-        assert_eq!(new_period, 24);
+        let new_config = crate::Configuration::config();
+        let default_config = HostConfiguration::default();
+        assert_eq!(
+            new_config.collators_per_parathread,
+            default_config.collators_per_parathread
+        );
+        assert_eq!(
+            new_config.parathreads_per_collator,
+            default_config.collators_per_parathread
+        );
+        assert_eq!(
+            new_config.target_container_chain_fullness,
+            default_config.target_container_chain_fullness
+        );
 
         Ok(())
     }
@@ -565,6 +585,8 @@ where
         let migrate_services_payment =
             MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
         let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        let migrate_config_parathread_params =
+            MigrateConfigurationParathreads::<Runtime>(Default::default());
 
         let migrate_hold_reason_runtime_enum =
             MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
@@ -582,6 +604,7 @@ where
             Box::new(migrate_services_payment),
             Box::new(migrate_hold_reason_runtime_enum),
             Box::new(migrate_boot_nodes),
+            Box::new(migrate_config_parathread_params),
         ]
     }
 }

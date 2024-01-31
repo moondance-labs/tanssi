@@ -1643,9 +1643,11 @@ dependencies = [
  "fp-evm",
  "fp-rpc",
  "fp-self-contained",
+ "frame-benchmarking",
  "frame-executive",
  "frame-support",
  "frame-system",
+ "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "frame-try-runtime",
  "hex-literal 0.3.4",
@@ -1680,6 +1682,7 @@ dependencies = [
  "pallet-tx-pause",
  "pallet-utility",
  "pallet-xcm",
+ "pallet-xcm-benchmarks",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
@@ -1821,6 +1824,7 @@ dependencies = [
  "pallet-tx-pause",
  "pallet-utility",
  "pallet-xcm",
+ "pallet-xcm-benchmarks",
  "parachain-info",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
@@ -2820,6 +2824,8 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "nimbus-primitives",
+ "pallet-asset-rate",
+ "pallet-assets",
  "pallet-async-backing",
  "pallet-author-inherent",
  "pallet-author-noting",
@@ -2831,6 +2837,7 @@ dependencies = [
  "pallet-collator-assignment-runtime-api",
  "pallet-configuration",
  "pallet-data-preservers",
+ "pallet-foreign-asset-creator",
  "pallet-identity",
  "pallet-im-online",
  "pallet-inflation-rewards",
@@ -2843,6 +2850,7 @@ dependencies = [
  "pallet-proxy",
  "pallet-registrar",
  "pallet-registrar-runtime-api",
+ "pallet-relay-storage-roots",
  "pallet-root-testing",
  "pallet-services-payment",
  "pallet-session",
@@ -2856,6 +2864,7 @@ dependencies = [
  "pallet-xcm",
  "pallet-xcm-benchmarks",
  "parachain-info",
+ "parachains-common",
  "parity-scale-codec",
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
@@ -3974,6 +3983,7 @@ dependencies = [
  "pallet-proxy",
  "pallet-registrar",
  "pallet-registrar-runtime-api",
+ "pallet-relay-storage-roots",
  "pallet-root-testing",
  "pallet-services-payment",
  "pallet-session",
@@ -7626,6 +7636,8 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "tp-traits",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -8014,6 +8026,25 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-foreign-asset-creator"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=agustin-client-async-backing#cd873f110d04862b84f28e933903334c6202c159"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-arithmetic",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
 ]
 
 [[package]]
@@ -8519,6 +8550,29 @@ dependencies = [
  "scale-info",
  "sp-api",
  "tp-container-chain-genesis-data",
+]
+
+[[package]]
+name = "pallet-relay-storage-roots"
+version = "0.1.0"
+source = "git+https://github.com/moondance-labs/moonkit?branch=agustin-client-async-backing#cd873f110d04862b84f28e933903334c6202c159"
+dependencies = [
+ "cumulus-pallet-parachain-system",
+ "cumulus-primitives-core",
+ "environmental",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "hex",
+ "log",
+ "nimbus-primitives",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]
