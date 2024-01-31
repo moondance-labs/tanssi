@@ -1198,7 +1198,10 @@ fn parathread_register_change_params_deregister() {
         // Deregister parathread while parathread params are pending
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into()));
         assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_some());
-        assert!(ParaRegistrar::parathread_params(ParaId::from(42)).is_some());
+        assert_eq!(
+            ParaRegistrar::parathread_params(ParaId::from(42)),
+            Some(SlotFrequency { min: 1, max: 1 })
+        );
 
         // Params removed after 2 sessions
         run_to_session(2);

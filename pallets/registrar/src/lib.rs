@@ -389,58 +389,7 @@ pub mod pallet {
             genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            let deposit = T::DepositAmount::get();
-
-            // Verify we can reserve
-            T::Currency::can_reserve(&account, deposit)
-                .then_some(true)
-                .ok_or(Error::<T>::NotSufficientDeposit)?;
-
-            // Check if the para id is already registered by looking at the genesis data
-            if ParaGenesisData::<T>::contains_key(para_id) {
-                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
-            }
-
-            // Insert para id into PendingVerification
-            let mut pending_verification = PendingVerification::<T>::get();
-            match pending_verification.binary_search(&para_id) {
-                // This Ok is unreachable
-                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                Err(index) => {
-                    pending_verification
-                        .try_insert(index, para_id)
-                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
-                }
-            }
-
-            // The actual registration takes place 2 sessions after the call to
-            // `mark_valid_for_collating`, but the genesis data is inserted now.
-            // This is because collators should be able to start syncing the new container chain
-            // before the first block is mined. However, we could store the genesis data in a
-            // different key, like PendingParaGenesisData.
-            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
-            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
-            // won't detect that the size is too big until after iterating over all of them, so the
-            // limit in that case would be the transaction size.
-            let genesis_data_size = genesis_data.encoded_size();
-            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
-                return Err(Error::<T>::GenesisDataTooBig.into());
-            }
-
-            // Reserve the deposit, we verified we can do this
-            T::Currency::reserve(&account, deposit)?;
-
-            // Update DepositInfo
-            RegistrarDeposit::<T>::insert(
-                para_id,
-                DepositInfo {
-                    creator: account,
-                    deposit,
-                },
-            );
-            ParaGenesisData::<T>::insert(para_id, genesis_data);
-            PendingVerification::<T>::put(pending_verification);
-
+            Self::do_register(account, para_id, genesis_data)?;
             Self::deposit_event(Event::ParaIdRegistered { para_id });
 
             Ok(())
@@ -616,64 +565,11 @@ pub mod pallet {
             slot_frequency: SlotFrequency,
             genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
         ) -> DispatchResult {
-            // TODO: refactor register and register_parathread, extract common path to `do_register`.
             let account = ensure_signed(origin)?;
-            let deposit = T::DepositAmount::get();
-
-            // Verify we can reserve
-            T::Currency::can_reserve(&account, deposit)
-                .then_some(true)
-                .ok_or(Error::<T>::NotSufficientDeposit)?;
-
-            // Check if the para id is already registered by looking at the genesis data
-            if ParaGenesisData::<T>::contains_key(para_id) {
-                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
-            }
-
-            // Insert para id into PendingVerification
-            let mut pending_verification = PendingVerification::<T>::get();
-            match pending_verification.binary_search(&para_id) {
-                // This Ok is unreachable
-                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                Err(index) => {
-                    pending_verification
-                        .try_insert(index, para_id)
-                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
-                }
-            }
-
-            // The actual registration takes place 2 sessions after the call to
-            // `mark_valid_for_collating`, but the genesis data is inserted now.
-            // This is because collators should be able to start syncing the new container chain
-            // before the first block is mined. However, we could store the genesis data in a
-            // different key, like PendingParaGenesisData.
-            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
-            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
-            // won't detect that the size is too big until after iterating over all of them, so the
-            // limit in that case would be the transaction size.
-            let genesis_data_size = genesis_data.encoded_size();
-            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
-                return Err(Error::<T>::GenesisDataTooBig.into());
-            }
-
-            // Reserve the deposit, we verified we can do this
-            T::Currency::reserve(&account, deposit)?;
-
-            // Update DepositInfo
-            RegistrarDeposit::<T>::insert(
-                para_id,
-                DepositInfo {
-                    creator: account,
-                    deposit,
-                },
-            );
-            ParaGenesisData::<T>::insert(para_id, genesis_data);
-            PendingVerification::<T>::put(pending_verification);
-
+            Self::do_register(account, para_id, genesis_data)?;
             // Insert parathread params
             let params = ParathreadParamsTy { slot_frequency };
             ParathreadParams::<T>::insert(para_id, params);
-
             Self::deposit_event(Event::ParaIdRegistered { para_id });
 
             Ok(())
@@ -758,6 +654,66 @@ pub mod pallet {
             T::Currency::issue(new_balance);
 
             Ok(deposit_info.creator)
+        }
+
+        fn do_register(
+            account: T::AccountId,
+            para_id: ParaId,
+            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+        ) -> DispatchResult {
+            let deposit = T::DepositAmount::get();
+
+            // Verify we can reserve
+            T::Currency::can_reserve(&account, deposit)
+                .then_some(true)
+                .ok_or(Error::<T>::NotSufficientDeposit)?;
+
+            // Check if the para id is already registered by looking at the genesis data
+            if ParaGenesisData::<T>::contains_key(para_id) {
+                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
+            }
+
+            // Insert para id into PendingVerification
+            let mut pending_verification = PendingVerification::<T>::get();
+            match pending_verification.binary_search(&para_id) {
+                // This Ok is unreachable
+                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                Err(index) => {
+                    pending_verification
+                        .try_insert(index, para_id)
+                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                }
+            }
+
+            // The actual registration takes place 2 sessions after the call to
+            // `mark_valid_for_collating`, but the genesis data is inserted now.
+            // This is because collators should be able to start syncing the new container chain
+            // before the first block is mined. However, we could store the genesis data in a
+            // different key, like PendingParaGenesisData.
+            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
+            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
+            // won't detect that the size is too big until after iterating over all of them, so the
+            // limit in that case would be the transaction size.
+            let genesis_data_size = genesis_data.encoded_size();
+            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
+                return Err(Error::<T>::GenesisDataTooBig.into());
+            }
+
+            // Reserve the deposit, we verified we can do this
+            T::Currency::reserve(&account, deposit)?;
+
+            // Update DepositInfo
+            RegistrarDeposit::<T>::insert(
+                para_id,
+                DepositInfo {
+                    creator: account,
+                    deposit,
+                },
+            );
+            ParaGenesisData::<T>::insert(para_id, genesis_data);
+            PendingVerification::<T>::put(pending_verification);
+
+            Ok(())
         }
 
         fn schedule_parachain_change(
