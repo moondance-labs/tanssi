@@ -264,6 +264,7 @@ where
 }
 
 /// A claim on an Aura slot.
+#[derive(Debug)]
 pub struct SlotClaim<Pub> {
     author_pub: Pub,
     pre_digest: Vec<DigestItem>,
@@ -325,7 +326,7 @@ where
     //C: ProvideRuntimeApi<B> + Send + Sync + 'static,
     //C::Api: AuraApi<B, P::Public>,
     P: Pair,
-    P::Public: Codec,
+    P::Public: Codec + std::fmt::Debug,
     P::Signature: Codec,
 {
     // load authorities
@@ -361,6 +362,8 @@ where
         None => return Ok(None),
     }; */
 
+    log::error!("Slot is {:?}", slot);
+    log::error!("Authorities is {:?}", authorities);
     // Try to claim the slot locally.
     let author_pub = {
         let res = claim_slot_inner::<P>(slot, &authorities, keystore, force_authoring).await;
@@ -384,8 +387,17 @@ pub async fn claim_slot_inner<P: Pair>(
     authorities: &Vec<AuthorityId<P>>,
     keystore: &KeystorePtr,
     force_authoring: bool,
-) -> Option<P::Public> {
+) -> Option<P::Public>
+where
+    //B: BlockT,
+    //C: ProvideRuntimeApi<B> + Send + Sync + 'static,
+    //C::Api: AuraApi<B, P::Public>,
+    P: Pair,
+    P::Public: Codec + std::fmt::Debug,
+    P::Signature: Codec
+{
     let expected_author = crate::slot_author::<P>(slot, authorities.as_slice());
+    log::error!("expected author is {:?}", expected_author);
     // if not running with force-authoring, just do the usual slot check
     if !force_authoring {
         expected_author.and_then(|p| {

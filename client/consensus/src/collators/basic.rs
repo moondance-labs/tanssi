@@ -202,7 +202,7 @@ where
                 Ok(h) => h,
             };
 
-            let claim = match collator_util::tanssi_claim_slot::<P>(
+            let mut claim = match collator_util::tanssi_claim_slot::<P>(
                 //&*params.para_client,
                 authorities,
                 // TODO: check if this is the correct slot to pass here
@@ -216,9 +216,11 @@ where
             )
             .await
             {
+                Ok(None) => continue,
                 Err(e) => reject_with_error!(e),
-                Ok(h) => h,
+                Ok(Some(h)) => h,
             };
+            log::error!("claim is {:?}", claim);
             /*             .map_err(|e| {
                 tracing::error!(
                     target: LOG_TARGET,
@@ -243,7 +245,7 @@ where
                 collator
                     .collate(
                         &parent_header,
-                        &mut claim.expect("Slot claim should exist"),
+                        &mut claim,
                         None,
                         (parachain_inherent_data, other_inherent_data),
                         params.authoring_duration,
