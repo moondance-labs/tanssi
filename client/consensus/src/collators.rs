@@ -32,9 +32,7 @@ use polkadot_primitives::Id as ParaId;
 
 use crate::AuthorityId;
 use futures::prelude::*;
-use nimbus_primitives::{
-    CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID,
-};
+use nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID};
 use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};
 use sp_application_crypto::{AppCrypto, AppPublic};
 use sp_consensus::BlockOrigin;
