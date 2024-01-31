@@ -18,9 +18,7 @@ pub mod basic;
 pub mod lookahead;
 
 use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
-use cumulus_client_consensus_common::{
-    self as consensus_common, ParachainBlockImportMarker, ParachainCandidate,
-};
+use cumulus_client_consensus_common::{ParachainBlockImportMarker, ParachainCandidate};
 use cumulus_client_consensus_proposer::ProposerInterface;
 use cumulus_primitives_core::{
     relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
@@ -30,20 +28,18 @@ use cumulus_relay_chain_interface::RelayChainInterface;
 use parity_scale_codec::{Codec, Encode};
 
 use polkadot_node_primitives::{Collation, MaybeCompressedPoV};
-use polkadot_primitives::{Header as PHeader, Id as ParaId};
+use polkadot_primitives::Id as ParaId;
 
-use crate::{consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator, AuthorityId};
+use crate::AuthorityId;
 use futures::prelude::*;
 use nimbus_primitives::{
-    CompatibleDigestItem as NimbusCompatibleDigestItem, NimbusPair, NIMBUS_KEY_ID,
+    CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID,
 };
 use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};
-use sc_consensus_aura::standalone as aura_internal;
-use sp_api::ProvideRuntimeApi;
 use sp_application_crypto::{AppCrypto, AppPublic};
 use sp_consensus::BlockOrigin;
-use sp_consensus_aura::{digests::CompatibleDigestItem, AuraApi, Slot, SlotDuration};
-use sp_core::crypto::{ByteArray, Pair, Public};
+use sp_consensus_aura::{digests::CompatibleDigestItem, Slot};
+use sp_core::crypto::{ByteArray, Pair};
 use sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider};
 use sp_keystore::{Keystore, KeystorePtr};
 use sp_runtime::{
@@ -127,7 +123,7 @@ where
         relay_parent: PHash,
         validation_data: &PersistedValidationData,
         parent_hash: Block::Hash,
-        timestamp: impl Into<Option<Timestamp>>,
+        _timestamp: impl Into<Option<Timestamp>>,
     ) -> Result<(ParachainInherentData, InherentData), Box<dyn Error + Send + Sync + 'static>> {
         let paras_inherent_data = ParachainInherentData::create_at(
             relay_parent,

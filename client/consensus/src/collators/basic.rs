@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use crate::*;
 use cumulus_client_collator::{
     relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
 };
@@ -22,7 +21,7 @@ use cumulus_client_consensus_common::ParachainBlockImportMarker;
 use cumulus_client_consensus_proposer::ProposerInterface;
 use cumulus_primitives_core::{
     relay_chain::{BlockId as RBlockId, Hash as PHash},
-    CollectCollationInfo, PersistedValidationData,
+    PersistedValidationData,
 };
 use cumulus_relay_chain_interface::RelayChainInterface;
 use parity_scale_codec::{Codec, Decode};
@@ -39,7 +38,7 @@ use sp_api::ProvideRuntimeApi;
 use sp_application_crypto::AppPublic;
 use sp_blockchain::HeaderBackend;
 use sp_consensus::SyncOracle;
-use sp_consensus_aura::{AuraApi, SlotDuration};
+use sp_consensus_aura::SlotDuration;
 use sp_core::crypto::Pair;
 use sp_inherents::CreateInherentDataProviders;
 use sp_keystore::KeystorePtr;
@@ -164,7 +163,7 @@ where
 
             if !collator
                 .collator_service()
-                .check_block_status(parent_hash.clone(), &parent_header)
+                .check_block_status(parent_hash, &parent_header)
             {
                 continue;
             }
@@ -194,7 +193,7 @@ where
             let inherent_providers = match params
                 .create_inherent_data_providers
                 .create_inherent_data_providers(
-                    parent_hash.clone(),
+                    parent_hash,
                     (*request.relay_parent(), validation_data.clone()),
                 )
                 .await

@@ -16,8 +16,6 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use sc_basic_authorship::ProposerFactory;
-
 #[allow(deprecated)]
 use {
     crate::{
@@ -394,7 +392,7 @@ async fn start_node_impl(
         let tx_pool = node_builder.transaction_pool.clone();
         let sync_service = node_builder.network.sync_service.clone();
         let collator_key_clone = collator_key.clone();
-        let para_id_clone = para_id.clone();
+        let para_id_clone = para_id;
         let overseer = overseer_handle.clone();
         let announce_block_clone = announce_block.clone();
 
@@ -714,6 +712,8 @@ fn build_manual_seal_import_queue(
     ))
 }
 
+// TODO: remove and use
+#[allow(unused)]
 fn start_consensus_container(
     client: Arc<ParachainClient>,
     orchestrator_client: Arc<ParachainClient>,
@@ -758,7 +758,7 @@ fn start_consensus_container(
     let orchestrator_client_for_cidp = orchestrator_client;
 
     let params = BasicTanssiAuraParams {
-        create_inherent_data_providers: move |_block_hash, (relay_parent, validation_data)| {
+        create_inherent_data_providers: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let orchestrator_chain_interface = orchestrator_chain_interface.clone();
 
@@ -1140,6 +1140,8 @@ fn build_consensus_container(
     >(params))
 }
 
+// TODO: remove
+#[allow(unused)]
 fn build_consensus_orchestrator(
     client: Arc<ParachainClient>,
     block_import: ParachainBlockImport,
