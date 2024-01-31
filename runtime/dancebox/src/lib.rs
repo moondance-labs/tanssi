@@ -48,8 +48,8 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            fungible::{Balanced, Credit, Mutate, MutateFreeze},
-            tokens::Preservation,
+            fungible::{Balanced, Credit, InspectHold, Mutate, MutateHold},
+            tokens::{Precision, Preservation},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
             OnRuntimeUpgrade, ValidatorRegistration,
@@ -409,10 +409,10 @@ impl pallet_balances::Config for Runtime {
     type MaxReserves = ConstU32<50>;
     type ReserveIdentifier = [u8; 8];
     type FreezeIdentifier = RuntimeFreezeReason;
-    type MaxFreezes = ConstU32<1>;
+    type MaxFreezes = ConstU32<10>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
-    type MaxHolds = ConstU32<1>;
+    type MaxHolds = ConstU32<10>;
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1373,8 +1373,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     ) -> frame_support::pallet_prelude::DispatchResult {
         match asset_id {
             StreamPaymentAssetId::Native => {
-                // Since we use freezes we need to unfreeze the deposit before
-                // transfering it. Other assets may not require that.
+                // We remove the hold before transfering.
                 Self::decrease_deposit(asset_id, from, amount)?;
                 Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
             }
@@ -1387,8 +1386,8 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
         match asset_id {
-            StreamPaymentAssetId::Native => Balances::increase_frozen(
-                &pallet_stream_payment::FreezeReason::StreamPayment.into(),
+            StreamPaymentAssetId::Native => Balances::hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
                 account,
                 amount,
             ),
@@ -1401,10 +1400,21 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
         match asset_id {
-            StreamPaymentAssetId::Native => Balances::decrease_frozen(
-                &pallet_stream_payment::FreezeReason::StreamPayment.into(),
+            StreamPaymentAssetId::Native => Balances::release(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
                 account,
                 amount,
+                Precision::Exact,
+            )
+            .map(|_| ()),
+        }
+    }
+
+    fn get_deposit(asset_id: &StreamPaymentAssetId, account: &AccountId) -> Balance {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::balance_on_hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
+                account,
             ),
         }
     }
@@ -1454,6 +1464,8 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     /// `TimeProvider::now(unit)` with.
     #[cfg(feature = "runtime-benchmarks")]
     fn bench_time_unit() -> TimeUnit {
+        // Both BlockNumber and Timestamp cost the same (1 db read), but overriding timestamp
+        // doesn't work well in benches, while block number works fine.
         TimeUnit::BlockNumber
     }
 

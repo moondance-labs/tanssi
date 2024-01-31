@@ -20,8 +20,8 @@ use {
         parameter_types,
         traits::{
             tokens::{
-                fungible::{Mutate, MutateFreeze},
-                Preservation,
+                fungible::{InspectHold, Mutate, MutateHold},
+                Precision, Preservation,
             },
             Everything, OnFinalize, OnInitialize,
         },
@@ -110,7 +110,6 @@ impl pallet_balances::Config for Runtime {
 #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
 pub enum StreamPaymentAssetId {
     Native,
-    Dummy,
 }
 
 pub struct StreamPaymentAssets;
@@ -128,7 +127,6 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
             StreamPaymentAssetId::Native => {
                 Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
             }
-            StreamPaymentAssetId::Dummy => Ok(()),
         }
     }
 
@@ -138,12 +136,11 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
         match asset_id {
-            StreamPaymentAssetId::Native => Balances::increase_frozen(
-                &pallet_stream_payment::FreezeReason::StreamPayment.into(),
+            StreamPaymentAssetId::Native => Balances::hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
                 account,
                 amount,
             ),
-            StreamPaymentAssetId::Dummy => Ok(()),
         }
     }
 
@@ -153,12 +150,22 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
         match asset_id {
-            StreamPaymentAssetId::Native => Balances::decrease_frozen(
-                &pallet_stream_payment::FreezeReason::StreamPayment.into(),
+            StreamPaymentAssetId::Native => Balances::release(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
                 account,
                 amount,
+                Precision::Exact,
+            )
+            .map(|_| ()),
+        }
+    }
+
+    fn get_deposit(asset_id: &StreamPaymentAssetId, account: &AccountId) -> Balance {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::balance_on_hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
+                account,
             ),
-            StreamPaymentAssetId::Dummy => Ok(()),
         }
     }
 

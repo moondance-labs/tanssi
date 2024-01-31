@@ -136,6 +136,9 @@ pub trait Assets<AccountId, AssetId, Balance> {
     fn decrease_deposit(asset_id: &AssetId, account: &AccountId, amount: Balance)
         -> DispatchResult;
 
+    /// Return the deposit for given asset and account.
+    fn get_deposit(asset_id: &AssetId, account: &AccountId) -> Balance;
+
     /// Benchmarks: should return the asset id which has the worst performance when interacting
     /// with it.
     #[cfg(feature = "runtime-benchmarks")]
@@ -395,6 +398,12 @@ pub mod pallet {
     /// Freeze reason to use if needed.
     #[pallet::composite_enum]
     pub enum FreezeReason {
+        StreamPayment,
+    }
+
+    /// Hold reason to use if needed.
+    #[pallet::composite_enum]
+    pub enum HoldReason {
         StreamPayment,
     }
 

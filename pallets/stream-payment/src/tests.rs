@@ -19,9 +19,10 @@ use {
         assert_event_emitted, assert_event_not_emitted,
         mock::{
             roll_to, Balances, ExtBuilder, Runtime, RuntimeOrigin, StreamPayment,
-            StreamPaymentAssetId, TimeUnit, ALICE, BOB, CHARLIE, DEFAULT_BALANCE, KILO, MEGA,
+            StreamPaymentAssetId, StreamPaymentAssets, TimeUnit, ALICE, BOB, CHARLIE,
+            DEFAULT_BALANCE, KILO, MEGA,
         },
-        ChangeKind, DepositChange, Error, Event, FreezeReason, LookupStreamsWithSource,
+        Assets, ChangeKind, DepositChange, Error, Event, FreezeReason, LookupStreamsWithSource,
         LookupStreamsWithTarget, NextStreamId, Stream, StreamConfig, Streams,
     },
     frame_support::{assert_err, assert_ok, traits::fungible::InspectFreeze},
@@ -151,11 +152,11 @@ mod open_stream {
             );
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 1 * MEGA
             );
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &BOB),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &BOB),
                 0
             );
         })
@@ -242,15 +243,15 @@ mod open_stream {
             assert_eq!(lookup_target(CHARLIE), &[1]);
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 (1 + 2 + 1) * MEGA
             );
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &BOB),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &BOB),
                 3 * MEGA
             );
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &CHARLIE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &CHARLIE),
                 0
             );
         })
@@ -287,9 +288,12 @@ mod perform_payment {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -324,11 +328,14 @@ mod perform_payment {
             );
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 deposit_left
             );
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
             assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
         })
     }
@@ -350,9 +357,12 @@ mod perform_payment {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -390,11 +400,14 @@ mod perform_payment {
             );
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 deposit_left
             );
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
             assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
         })
     }
@@ -416,9 +429,12 @@ mod perform_payment {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -453,11 +469,14 @@ mod perform_payment {
             );
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 deposit_left
             );
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
             assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
         })
     }
@@ -479,9 +498,12 @@ mod perform_payment {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -516,11 +538,14 @@ mod perform_payment {
             );
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 deposit_left
             );
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
             assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
         })
     }
@@ -542,9 +567,12 @@ mod perform_payment {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -579,11 +607,14 @@ mod perform_payment {
             );
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 deposit_left
             );
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
             assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
         })
     }
@@ -605,9 +636,12 @@ mod perform_payment {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -642,11 +676,14 @@ mod perform_payment {
             );
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 deposit_left
             );
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
             assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
         })
     }
@@ -668,9 +705,12 @@ mod perform_payment {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -714,9 +754,12 @@ mod close_stream {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -744,9 +787,12 @@ mod close_stream {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -776,9 +822,12 @@ mod close_stream {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -808,9 +857,12 @@ mod close_stream {
                 initial_deposit
             ));
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE);
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit
+            );
+            assert_eq!(
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit
             );
 
@@ -834,7 +886,7 @@ mod close_stream {
             assert_eq!(Streams::<Runtime>::get(0), None);
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 0
             );
 
@@ -946,7 +998,7 @@ mod change_deposit {
             });
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 2 * initial_deposit
             );
         })
@@ -992,11 +1044,14 @@ mod change_deposit {
             });
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 initial_deposit - payment - decrease
             );
 
-            assert_eq!(Balances::free_balance(ALICE), DEFAULT_BALANCE - payment);
+            assert_eq!(
+                Balances::free_balance(ALICE),
+                DEFAULT_BALANCE - initial_deposit + decrease
+            );
             assert_eq!(Balances::free_balance(BOB), DEFAULT_BALANCE + payment);
         })
     }
@@ -1043,13 +1098,13 @@ mod change_deposit {
             });
 
             assert_eq!(
-                Balances::balance_frozen(&FreezeReason::StreamPayment.into(), &ALICE),
+                StreamPaymentAssets::get_deposit(&StreamPaymentAssetId::Native, &ALICE),
                 increase
             );
 
             assert_eq!(
                 Balances::free_balance(ALICE),
-                DEFAULT_BALANCE - initial_deposit
+                DEFAULT_BALANCE - initial_deposit - increase
             );
             assert_eq!(
                 Balances::free_balance(BOB),
