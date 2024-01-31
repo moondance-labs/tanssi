@@ -1199,7 +1199,7 @@ fn parathread_register_change_params_deregister() {
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into()));
         assert!(ParaRegistrar::para_genesis_data(ParaId::from(42)).is_some());
         assert_eq!(
-            ParaRegistrar::parathread_params(ParaId::from(42)),
+            ParaRegistrar::parathread_params(ParaId::from(42)).map(|x| x.slot_frequency),
             Some(SlotFrequency { min: 1, max: 1 })
         );
 
