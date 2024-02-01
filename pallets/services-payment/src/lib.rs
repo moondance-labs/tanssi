@@ -111,7 +111,7 @@ pub mod pallet {
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn collator_commission)]
+    #[pallet::getter(fn free_block_production_credits)]
     pub type BlockProductionCredits<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, BlockNumberFor<T>, OptionQuery>;
 
