@@ -33,7 +33,7 @@ use {
     cumulus_primitives_core::ParaId,
     frame_support::{assert_err, assert_ok, traits::fungible::Inspect},
     sp_runtime::DispatchError,
-    tp_traits::AuthorNotingHook,
+    tp_traits::{AuthorNotingHook, CollatorAssignmentHook},
 };
 
 const ALICE: u64 = 1;
@@ -232,6 +232,13 @@ fn credits_should_not_be_substracted_from_tank_if_it_involves_death() {
             );
 
             PaymentServices::on_container_author_noted(&1, 1, 1.into());
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
+                100u128
+            );
+
+            PaymentServices::on_collators_assigned(1.into());
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
