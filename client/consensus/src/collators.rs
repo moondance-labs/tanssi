@@ -394,7 +394,7 @@ where
     //C::Api: AuraApi<B, P::Public>,
     P: Pair,
     P::Public: Codec + std::fmt::Debug,
-    P::Signature: Codec
+    P::Signature: Codec,
 {
     let expected_author = crate::slot_author::<P>(slot, authorities.as_slice());
     log::error!("expected author is {:?}", expected_author);
