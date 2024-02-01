@@ -24,10 +24,8 @@ use {
     },
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
-    cumulus_client_consensus_aura::SlotProportion,
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
-        ParachainConsensus,
     },
     cumulus_client_consensus_proposer::Proposer,
     cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
@@ -76,10 +74,7 @@ use {
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{future::Future, pin::Pin, sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
-    tc_consensus::{
-        collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
-        BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus,
-    },
+    tc_consensus::collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
 
