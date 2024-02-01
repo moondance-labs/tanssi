@@ -245,7 +245,9 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Burn a credit for the given para. Deducts one credit if possible, errors otherwise.
-        pub fn burn_free_credit_for_para(para_id: &ParaId) -> DispatchResultWithPostInfo {
+        pub fn burn_block_production_free_credit_for_para(
+            para_id: &ParaId,
+        ) -> DispatchResultWithPostInfo {
             let existing_credits =
                 BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
 
@@ -266,7 +268,7 @@ pub mod pallet {
         }
 
         /// Burn a credit for the given para. Deducts one credit if possible, errors otherwise.
-        pub fn burn_collator_assignment_credit_for_para(
+        pub fn burn_collator_assignment_free_credit_for_para(
             para_id: &ParaId,
         ) -> DispatchResultWithPostInfo {
             let existing_credits = CollatorAssignmentCredits::<T>::get(para_id).unwrap_or(0u32);
@@ -388,7 +390,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         _block_number: BlockNumber,
         para_id: ParaId,
     ) -> Weight {
-        if Pallet::<T>::burn_free_credit_for_para(&para_id).is_err() {
+        if Pallet::<T>::burn_block_production_free_credit_for_para(&para_id).is_err() {
             let (amount_to_charge, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
             match T::Currency::withdraw(
                 &Self::parachain_tank(para_id),
@@ -413,21 +415,23 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
 
 impl<T: Config> CollatorAssignmentHook for Pallet<T> {
     fn on_collators_assigned(para_id: ParaId) -> Weight {
-        let (amount_to_charge, _weight) =
-            T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
-        match T::Currency::withdraw(
-            &Self::parachain_tank(para_id),
-            amount_to_charge,
-            WithdrawReasons::FEE,
-            ExistenceRequirement::KeepAlive,
-        ) {
-            Err(e) => log::warn!(
-                "Failed to withdraw credits for container chain {}: {:?}",
-                u32::from(para_id),
-                e
-            ),
-            Ok(imbalance) => {
-                T::OnChargeForCollatorAssignment::on_unbalanced(imbalance);
+        if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
+            let (amount_to_charge, _weight) =
+                T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+            match T::Currency::withdraw(
+                &Self::parachain_tank(para_id),
+                amount_to_charge,
+                WithdrawReasons::FEE,
+                ExistenceRequirement::KeepAlive,
+            ) {
+                Err(e) => log::warn!(
+                    "Failed to withdraw credits for container chain {}: {:?}",
+                    u32::from(para_id),
+                    e
+                ),
+                Ok(imbalance) => {
+                    T::OnChargeForCollatorAssignment::on_unbalanced(imbalance);
+                }
             }
         }
         Weight::from_parts(0, 0)
