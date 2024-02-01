@@ -296,7 +296,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                 &Self::parachain_tank(para_id),
                 amount_to_charge,
                 WithdrawReasons::FEE,
-                ExistenceRequirement::AllowDeath,
+                ExistenceRequirement::KeepAlive,
             ) {
                 Err(e) => log::warn!(
                     "Failed to withdraw credits for container chain {}: {:?}",
