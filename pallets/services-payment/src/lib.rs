@@ -195,7 +195,7 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         /// Burn a credit for the given para. Deducts one credit if possible, errors otherwise.
-        pub fn burn_credit_for_para(para_id: &ParaId) -> DispatchResultWithPostInfo {
+        pub fn burn_free_credit_for_para(para_id: &ParaId) -> DispatchResultWithPostInfo {
             let existing_credits =
                 BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
 
@@ -290,7 +290,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         _block_number: BlockNumber,
         para_id: ParaId,
     ) -> Weight {
-        if Pallet::<T>::burn_credit_for_para(&para_id).is_err() {
+        if Pallet::<T>::burn_free_credit_for_para(&para_id).is_err() {
             let (amount_to_charge, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
             match T::Currency::withdraw(
                 &Self::parachain_tank(para_id),
