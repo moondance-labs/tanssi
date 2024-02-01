@@ -214,7 +214,7 @@ fn credits_should_be_substracted_from_tank_if_no_free_credits() {
 }
 
 #[test]
-fn credits_should_be_substracted_from_tank_even_if_it_involves_death() {
+fn credits_should_not_be_substracted_from_tank_if_it_involves_death() {
     ExtBuilder::default()
         .with_balances([(ALICE, 2_000)].into())
         .build()
@@ -235,7 +235,7 @@ fn credits_should_be_substracted_from_tank_even_if_it_involves_death() {
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
-                0u128
+                100u128
             );
         });
 }
