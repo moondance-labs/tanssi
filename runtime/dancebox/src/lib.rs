@@ -786,19 +786,26 @@ impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
 
 parameter_types! {
     // 60 days worth of blocks
-    pub const MaxCreditsStored: BlockNumber = 60 * DAYS;
+    pub const MaxBlockProductionCreditsStored: BlockNumber = 60 * DAYS;
+    // 60 days worth of blocks
+    pub const MaxCollatorAssignmentCreditsStored: u32 = MaxBlockProductionCreditsStored::get()/Period::get();
 }
 
 impl pallet_services_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
     type OnChargeForBlock = ();
+    type OnChargeForCollatorAssignment = ();
     /// Currency type for fee payment
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block
     type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
-    /// The maximum number of credits that can be accumulated
-    type MaxCreditsStored = MaxCreditsStored;
+    /// Provider of a block cost which can adjust from block to block
+    type ProvideCollatorAssignmentCost = ();
+    /// The maximum number of block credits that can be accumulated
+    type MaxBlockProductionCreditsStored = MaxBlockProductionCreditsStored;
+    /// The maximum number of session credits that can be accumulated
+    type MaxCollatorAssignmentCreditsStored = MaxCollatorAssignmentCreditsStored;
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
 
@@ -931,6 +938,7 @@ impl pallet_registrar::Config for Runtime {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = DanceboxRegistrarHooks;
+    type CollatorAssignmentHook = ServicesPayment;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 
