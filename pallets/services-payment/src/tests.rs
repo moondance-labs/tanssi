@@ -84,7 +84,7 @@ fn purchase_credits_fails_with_insufficient_balance() {
 fn burn_credit_fails_with_no_credits() {
     ExtBuilder::default().build().execute_with(|| {
         assert_err!(
-            PaymentServices::burn_credit_for_para(&1u32.into()),
+            PaymentServices::burn_free_credit_for_para(&1u32.into()),
             pallet_services_payment::Error::<Test>::InsufficientCredits,
         );
     });
@@ -105,12 +105,12 @@ fn burn_credit_works() {
 
             // should succeed and burn one
             assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(1u64));
-            assert_ok!(PaymentServices::burn_credit_for_para(&para_id));
+            assert_ok!(PaymentServices::burn_free_credit_for_para(&para_id));
             assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(0u64));
 
             // now should fail
             assert_err!(
-                PaymentServices::burn_credit_for_para(&para_id),
+                PaymentServices::burn_free_credit_for_para(&para_id),
                 pallet_services_payment::Error::<Test>::InsufficientCredits,
             );
         });
@@ -132,7 +132,7 @@ fn burn_credit_fails_for_wrong_para() {
             // fails for wrong para
             let wrong_para_id = 2.into();
             assert_err!(
-                PaymentServices::burn_credit_for_para(&wrong_para_id),
+                PaymentServices::burn_free_credit_for_para(&wrong_para_id),
                 pallet_services_payment::Error::<Test>::InsufficientCredits,
             );
         });
@@ -214,7 +214,7 @@ fn credits_should_be_substracted_from_tank_if_no_free_credits() {
 }
 
 #[test]
-fn credits_should_be_substracted_from_tank_even_if_it_involves_death() {
+fn credits_should_not_be_substracted_from_tank_if_it_involves_death() {
     ExtBuilder::default()
         .with_balances([(ALICE, 2_000)].into())
         .build()
@@ -235,7 +235,7 @@ fn credits_should_be_substracted_from_tank_even_if_it_involves_death() {
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
-                0u128
+                100u128
             );
         });
 }
