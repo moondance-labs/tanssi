@@ -106,7 +106,8 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-    pub const MaxCreditsStored: u64 = 5;
+    pub const MaxBlockProductionCreditsStored: u64 = 5;
+    pub const MaxCollatorAssignmentCreditsStored: u32 = 5;
 }
 
 impl pallet_services_payment::Config for Test {
@@ -116,7 +117,8 @@ impl pallet_services_payment::Config for Test {
     type Currency = Balances;
     type ProvideBlockProductionCost = BlockProductionCost<Test>;
     type ProvideCollatorAssignmentCost = CollatorAssignmentProductionCost<Test>;
-    type MaxCreditsStored = MaxCreditsStored;
+    type MaxBlockProductionCreditsStored = MaxBlockProductionCreditsStored;
+    type MaxCollatorAssignmentCreditsStored = MaxCollatorAssignmentCreditsStored;
     type WeightInfo = ();
 }
 

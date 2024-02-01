@@ -82,8 +82,11 @@ pub mod pallet {
         /// Provider of a block cost which can adjust from block to block
         type ProvideCollatorAssignmentCost: ProvideCollatorAssignmentCost<Self>;
 
-        /// The maximum number of credits that can be accumulated
-        type MaxCreditsStored: Get<BlockNumberFor<Self>>;
+        /// The maximum number of block production credits that can be accumulated
+        type MaxBlockProductionCreditsStored: Get<BlockNumberFor<Self>>;
+
+        /// The maximum number of collator assigment production credits that can be accumulated
+        type MaxCollatorAssignmentCreditsStored: Get<u32>;
 
         type WeightInfo: WeightInfo;
     }
@@ -110,16 +113,25 @@ pub mod pallet {
             para_id: ParaId,
             credits_remaining: BlockNumberFor<T>,
         },
-        CreditsSet {
+        BlockProductionCreditsSet {
             para_id: ParaId,
             credits: BlockNumberFor<T>,
+        },
+        CollatorAssignmentCreditsSet {
+            para_id: ParaId,
+            credits: u32,
         },
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn collator_commission)]
+    #[pallet::getter(fn free_block_production_credits)]
     pub type BlockProductionCredits<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, BlockNumberFor<T>, OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn free_collator_assignment_credits)]
+    pub type CollatorAssignmentCredits<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, u32, OptionQuery>;
 
     /// List of para ids that have already been given free credits
     #[pallet::storage]
@@ -160,20 +172,23 @@ pub mod pallet {
         /// Can only be called by root.
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::set_credits())]
-        pub fn set_credits(
+        pub fn set_block_production_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
-            credits: BlockNumberFor<T>,
+            free_block_credits: BlockNumberFor<T>,
         ) -> DispatchResultWithPostInfo {
             ensure_root(origin)?;
 
-            if credits.is_zero() {
+            if free_block_credits.is_zero() {
                 BlockProductionCredits::<T>::remove(para_id);
             } else {
-                BlockProductionCredits::<T>::insert(para_id, credits);
+                BlockProductionCredits::<T>::insert(para_id, free_block_credits);
             }
 
-            Self::deposit_event(Event::<T>::CreditsSet { para_id, credits });
+            Self::deposit_event(Event::<T>::BlockProductionCreditsSet {
+                para_id,
+                credits: free_block_credits,
+            });
 
             Ok(().into())
         }
@@ -194,6 +209,31 @@ pub mod pallet {
             } else {
                 GivenFreeCredits::<T>::remove(para_id);
             }
+
+            Ok(().into())
+        }
+
+        /// Set the number of block production credits for this para_id without paying for them.
+        /// Can only be called by root.
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_credits())]
+        pub fn set_collator_assignment_credits(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            free_collator_assignment_credits: u32,
+        ) -> DispatchResultWithPostInfo {
+            ensure_root(origin)?;
+
+            if free_collator_assignment_credits.is_zero() {
+                CollatorAssignmentCredits::<T>::remove(para_id);
+            } else {
+                CollatorAssignmentCredits::<T>::insert(para_id, free_collator_assignment_credits);
+            }
+
+            Self::deposit_event(Event::<T>::CollatorAssignmentCreditsSet {
+                para_id,
+                credits: free_collator_assignment_credits,
+            });
 
             Ok(().into())
         }
@@ -227,15 +267,32 @@ pub mod pallet {
                 return Weight::default();
             }
             // Set number of credits to MaxCreditsStored
-            let existing_credits =
+            let block_production_existing_credits =
                 BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
-            let updated_credits = T::MaxCreditsStored::get();
+            let block_production_updated_credits = T::MaxBlockProductionCreditsStored::get();
             // Do not update credits if for some reason this para id had more
-            if existing_credits < updated_credits {
-                BlockProductionCredits::<T>::insert(para_id, updated_credits);
-                Self::deposit_event(Event::<T>::CreditsSet {
+            if block_production_existing_credits < block_production_updated_credits {
+                BlockProductionCredits::<T>::insert(para_id, block_production_updated_credits);
+                Self::deposit_event(Event::<T>::BlockProductionCreditsSet {
                     para_id: *para_id,
-                    credits: updated_credits,
+                    credits: block_production_updated_credits,
+                });
+            }
+
+            // Set number of credits to MaxCreditsStored
+            let collator_assignment_existing_credits =
+                CollatorAssignmentCredits::<T>::get(para_id).unwrap_or(0u32);
+            let collator_assignment_updated_credits = T::MaxCollatorAssignmentCreditsStored::get();
+
+            // Do not update credits if for some reason this para id had more
+            if collator_assignment_existing_credits < collator_assignment_updated_credits {
+                CollatorAssignmentCredits::<T>::insert(
+                    para_id,
+                    collator_assignment_updated_credits,
+                );
+                Self::deposit_event(Event::<T>::CollatorAssignmentCreditsSet {
+                    para_id: *para_id,
+                    credits: collator_assignment_updated_credits,
                 });
             }
 

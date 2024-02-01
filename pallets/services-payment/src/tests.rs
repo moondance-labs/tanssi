@@ -97,7 +97,7 @@ fn burn_credit_works() {
         .build()
         .execute_with(|| {
             let para_id = 1.into();
-            assert_ok!(PaymentServices::set_credits(
+            assert_ok!(PaymentServices::set_block_production_credits(
                 RuntimeOrigin::root(),
                 para_id,
                 1u64,
@@ -123,7 +123,7 @@ fn burn_credit_fails_for_wrong_para() {
         .build()
         .execute_with(|| {
             let para_id = 1.into();
-            assert_ok!(PaymentServices::set_credits(
+            assert_ok!(PaymentServices::set_block_production_credits(
                 RuntimeOrigin::root(),
                 para_id,
                 1u64,
@@ -139,44 +139,48 @@ fn burn_credit_fails_for_wrong_para() {
 }
 
 #[test]
-fn set_credits_bad_origin() {
+fn set_block_production_credits_bad_origin() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
             assert_err!(
-                PaymentServices::set_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1u64,),
+                PaymentServices::set_block_production_credits(
+                    RuntimeOrigin::signed(ALICE),
+                    1.into(),
+                    1u64,
+                ),
                 DispatchError::BadOrigin
             )
         });
 }
 
 #[test]
-fn set_credits_above_max_works() {
+fn set_block_production_credits_above_max_works() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
-            assert_ok!(PaymentServices::set_credits(
+            assert_ok!(PaymentServices::set_block_production_credits(
                 RuntimeOrigin::root(),
                 1.into(),
-                MaxCreditsStored::get() * 2,
+                MaxBlockProductionCreditsStored::get() * 2,
             ));
 
             assert_eq!(
                 <BlockProductionCredits<Test>>::get(ParaId::from(1)),
-                Some(MaxCreditsStored::get() * 2)
+                Some(MaxBlockProductionCreditsStored::get() * 2)
             );
         });
 }
 
 #[test]
-fn set_credits_to_zero_kills_storage() {
+fn set_block_production_credits_to_zero_kills_storage() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
-            assert_ok!(PaymentServices::set_credits(
+            assert_ok!(PaymentServices::set_block_production_credits(
                 RuntimeOrigin::root(),
                 1.into(),
                 0u64,
