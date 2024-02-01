@@ -1175,6 +1175,66 @@ fn deposit_removed_after_2_sessions_if_marked_as_valid() {
 }
 
 #[test]
+fn parathread_change_params_after_two_sessions() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_ok!(ParaRegistrar::register_parathread(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            SlotFrequency { min: 1, max: 1 },
+            empty_genesis_data()
+        ));
+        assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_ok!(ParaRegistrar::set_parathread_params(
+            RuntimeOrigin::root(),
+            ParaId::from(42),
+            SlotFrequency { min: 2, max: 2 }
+        ));
+        // Params are not updated immediately
+        assert_eq!(
+            ParaRegistrar::parathread_params(ParaId::from(42)).map(|x| x.slot_frequency),
+            Some(SlotFrequency { min: 1, max: 1 })
+        );
+
+        // Params are updated after 2 sessions
+        run_to_session(2);
+        assert_eq!(
+            ParaRegistrar::parathread_params(ParaId::from(42)).map(|x| x.slot_frequency),
+            Some(SlotFrequency { min: 2, max: 2 })
+        );
+    });
+}
+
+#[test]
+fn parathread_params_cannot_be_set_for_parachains() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data()
+        ));
+        assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
+        assert_ok!(ParaRegistrar::mark_valid_for_collating(
+            RuntimeOrigin::root(),
+            42.into(),
+        ));
+        assert_noop!(
+            ParaRegistrar::set_parathread_params(
+                RuntimeOrigin::root(),
+                ParaId::from(42),
+                SlotFrequency { min: 2, max: 2 }
+            ),
+            Error::<Test>::NotAParathread
+        );
+    });
+}
+
+#[test]
 fn parathread_register_change_params_deregister() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
