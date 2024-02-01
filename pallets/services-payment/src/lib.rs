@@ -109,9 +109,13 @@ pub mod pallet {
             payer: T::AccountId,
             credit: BalanceOf<T>,
         },
-        CreditBurned {
+        BlockProductionCreditBurned {
             para_id: ParaId,
             credits_remaining: BlockNumberFor<T>,
+        },
+        CollatorAssignmentCreditBurned {
+            para_id: ParaId,
+            credits_remaining: u32,
         },
         BlockProductionCreditsSet {
             para_id: ParaId,
@@ -253,7 +257,29 @@ pub mod pallet {
             let updated_credits = existing_credits.saturating_sub(1u32.into());
             BlockProductionCredits::<T>::insert(para_id, updated_credits);
 
-            Self::deposit_event(Event::<T>::CreditBurned {
+            Self::deposit_event(Event::<T>::BlockProductionCreditBurned {
+                para_id: *para_id,
+                credits_remaining: updated_credits,
+            });
+
+            Ok(().into())
+        }
+
+        /// Burn a credit for the given para. Deducts one credit if possible, errors otherwise.
+        pub fn burn_collator_assignment_credit_for_para(
+            para_id: &ParaId,
+        ) -> DispatchResultWithPostInfo {
+            let existing_credits = CollatorAssignmentCredits::<T>::get(para_id).unwrap_or(0u32);
+
+            ensure!(
+                existing_credits >= 1u32.into(),
+                Error::<T>::InsufficientCredits,
+            );
+
+            let updated_credits = existing_credits.saturating_sub(1u32.into());
+            CollatorAssignmentCredits::<T>::insert(para_id, updated_credits);
+
+            Self::deposit_event(Event::<T>::CollatorAssignmentCreditBurned {
                 para_id: *para_id,
                 credits_remaining: updated_credits,
             });
@@ -306,7 +332,7 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        pub para_id_credits: Vec<(ParaId, BlockNumberFor<T>)>,
+        pub para_id_credits: Vec<(ParaId, BlockNumberFor<T>, u32)>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {
@@ -320,8 +346,11 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            for (para_id, credits) in &self.para_id_credits {
-                BlockProductionCredits::<T>::insert(para_id, credits);
+            for (para_id, block_production_credits, collator_assignment_credits) in
+                &self.para_id_credits
+            {
+                BlockProductionCredits::<T>::insert(para_id, block_production_credits);
+                CollatorAssignmentCredits::<T>::insert(para_id, collator_assignment_credits);
             }
         }
     }
@@ -431,5 +460,6 @@ impl<T: Config> Pallet<T> {
 
         // Clean credits
         BlockProductionCredits::<T>::remove(para_id);
+        CollatorAssignmentCredits::<T>::remove(para_id);
     }
 }
