@@ -83,8 +83,6 @@ where
         + Send
         + Sync
         + 'static,
-    //TODO: re-check and analyze what to add here.
-    //Client::Api: TanssiAuthorityAssignmentApi<Block, P::Public> + CollectCollationInfo<Block>,
     RClient: RelayChainInterface + Send + Clone + 'static,
     CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)>
         + Send
@@ -123,7 +121,6 @@ where
         let mut collator = {
             let params = collator_util::Params {
                 create_inherent_data_providers: params.create_inherent_data_providers.clone(),
-                //get_authorities_from_orchestrator: params.get_authorities_from_orchestrator,
                 block_import: params.block_import,
                 relay_client: params.relay_client.clone(),
                 keystore: params.keystore.clone(),
@@ -203,32 +200,15 @@ where
             };
 
             let mut claim = match collator_util::tanssi_claim_slot::<P>(
-                //&*params.para_client,
                 authorities,
-                // TODO: check if this is the correct slot to pass here
                 inherent_providers.slot(),
-                //parent_hash,
-                //&relay_parent_header,
-                //params.slot_duration,
-                //params.relay_chain_slot_duration,
                 params.force_authoring,
                 &params.keystore,
-            )
-            .await
-            {
+            ) {
                 Ok(None) => continue,
                 Err(e) => reject_with_error!(e),
                 Ok(Some(h)) => h,
             };
-            log::error!("claim is {:?}", claim);
-            /*             .map_err(|e| {
-                tracing::error!(
-                    target: LOG_TARGET,
-                    error = ?e,
-                    "Failed to get orch head.",
-                )
-            })
-            .ok()?; */
 
             let (parachain_inherent_data, other_inherent_data) = try_request!(
                 collator

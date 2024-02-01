@@ -360,7 +360,7 @@ async fn start_node_impl(
         let overseer = overseer_handle.clone();
 
         collate_on_tanssi = Some(move || async move {
-            let _ = start_consensus_orchestrator(
+            start_consensus_orchestrator(
                 node_client,
                 block_import.clone(),
                 node_builder.prometheus_registry.clone(),
@@ -660,6 +660,8 @@ fn build_manual_seal_import_queue(
     ))
 }
 
+// TODO: this function does not need to be async
+#[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 async fn start_consensus_container(
     client: Arc<ParachainClient>,
     orchestrator_client: Arc<ParachainClient>,
@@ -681,7 +683,7 @@ async fn start_consensus_container(
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
 ) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*orchestrator_client)
-        .expect("Slot duration should exist");
+        .expect("start_consensus_container: slot duration should exist");
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
         spawner.clone(),
@@ -796,8 +798,6 @@ async fn start_consensus_container(
     };
 
     let fut = basic_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _>(params);
-
-    // TODO: what name shall we put here?
     spawner.spawn("tanssi-aura-container", None, fut);
 }
 
@@ -817,8 +817,9 @@ fn start_consensus_orchestrator(
     collator_key: CollatorPair,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
-) -> Result<(), sc_service::Error> {
-    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)?;
+) {
+    let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
+        .expect("start_consensus_orchestrator: slot duration should exist");
 
     let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
         spawner.clone(),
@@ -920,11 +921,7 @@ fn start_consensus_orchestrator(
     };
 
     let fut = basic_tanssi_aura::run::<Block, NimbusPair, _, _, _, _, _, _, _, _>(params);
-
-    // TODO: what name shall we put here?
     spawner.spawn("tanssi-aura", None, fut);
-
-    Ok(())
 }
 
 /// Start a parachain node.

@@ -52,7 +52,6 @@ use std::{convert::TryFrom, error::Error, time::Duration};
 pub struct Params<BI, CIDP, RClient, Proposer, CS /*GOH*/> {
     /// A builder for inherent data builders.
     pub create_inherent_data_providers: CIDP,
-    //pub get_authorities_from_orchestrator: GOH,
     /// The block import handle.
     pub block_import: BI,
     /// An interface to the relay-chain client.
@@ -72,7 +71,6 @@ pub struct Params<BI, CIDP, RClient, Proposer, CS /*GOH*/> {
 /// or in part. See module docs for more details.
 pub struct Collator<Block, P, BI, CIDP, RClient, Proposer, CS /*GOH*/> {
     create_inherent_data_providers: CIDP,
-    //get_authorities_from_orchestrator: GOH,
     block_import: BI,
     relay_client: RClient,
     keystore: KeystorePtr,
@@ -88,11 +86,6 @@ where
     Block: BlockT,
     RClient: RelayChainInterface,
     CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)> + 'static,
-    /*     GOH: RetrieveAuthoritiesFromOrchestrator<
-        Block,
-        (PHash, PersistedValidationData),
-        Vec<AuthorityId<P>>,
-    >, */
     BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
     Proposer: ProposerInterface<Block>,
     CS: CollatorServiceInterface<Block>,
@@ -104,7 +97,6 @@ where
     pub fn new(params: Params<BI, CIDP, RClient, Proposer, CS /*GOH*/>) -> Self {
         Collator {
             create_inherent_data_providers: params.create_inherent_data_providers,
-            //get_authorities_from_orchestrator: params.get_authorities_from_orchestrator,
             block_import: params.block_import,
             relay_client: params.relay_client,
             keystore: params.keystore,
@@ -263,20 +255,14 @@ where
     ]
 }
 
-/// A claim on an Aura slot.
 #[derive(Debug)]
 pub struct SlotClaim<Pub> {
     author_pub: Pub,
     pre_digest: Vec<DigestItem>,
-    //timestamp: Timestamp,
 }
 
 impl<Pub: Clone> SlotClaim<Pub> {
-    /// Create a slot-claim from the given author public key, slot, and timestamp.
-    ///
-    /// This does not check whether the author actually owns the slot or the timestamp
-    /// falls within the slot.
-    pub fn unchecked<P>(author_pub: Pub, slot: Slot /*timestamp: Timestamp*/) -> Self
+    pub fn unchecked<P>(author_pub: Pub, slot: Slot) -> Self
     where
         P: Pair<Public = Pub>,
         P::Public: Codec,
@@ -284,8 +270,6 @@ impl<Pub: Clone> SlotClaim<Pub> {
     {
         SlotClaim {
             author_pub: author_pub.clone(),
-            //timestamp,
-            //pre_digest: aura_internal::pre_digest::<P>(slot),
             pre_digest: pre_digest_data::<P>(slot, author_pub),
         }
     }
@@ -295,109 +279,48 @@ impl<Pub: Clone> SlotClaim<Pub> {
         &self.author_pub
     }
 
-    /// Get the Aura pre-digest for this slot.
+    /// Get the pre-digest.
     pub fn pre_digest(&self) -> &Vec<DigestItem> {
         &self.pre_digest
     }
-
-    // TODO: do we need this timestamp?
-    // Get the timestamp corresponding to the relay-chain slot this claim was
-    // generated against.
-    /*     pub fn timestamp(&self) -> Timestamp {
-        self.timestamp
-    } */
 }
 
-/// Attempt to claim a slot derived from the given relay-parent header's slot.
-pub async fn tanssi_claim_slot<P>(
-    //client: &C,
+/// Attempt to claim a slot locally.
+pub fn tanssi_claim_slot<P>(
     authorities: Vec<AuthorityId<P>>,
-    //parent_header: &PHeader,
     slot: Slot,
-    //parent_hash: B::Hash,
     force_authoring: bool,
-    //relay_parent_header: &PHeader,
-    //slot_duration: SlotDuration,
-    //relay_chain_slot_duration: Duration,
     keystore: &KeystorePtr,
 ) -> Result<Option<SlotClaim<P::Public>>, Box<dyn Error>>
 where
-    //B: BlockT,
-    //C: ProvideRuntimeApi<B> + Send + Sync + 'static,
-    //C::Api: AuraApi<B, P::Public>,
     P: Pair,
     P::Public: Codec + std::fmt::Debug,
     P::Signature: Codec,
 {
-    // load authorities
-    /*     let authorities = client
-    .runtime_api()
-    .authorities(parent_hash)
-    .map_err(Box::new)?; */
-
-    /* 	let authorities_v2 = crate::authorities::<B, C, P>(
-        client_set_aside_for_orch.as_ref(),
-        &block_hash,
-        para_id,
-    ); */
-
-    // Determine the current slot and timestamp based on the relay-parent's.
-    /*      let (slot_now, timestamp) = match consensus_common::relay_slot_and_timestamp(
-        relay_parent_header,
-        relay_chain_slot_duration,
-    ) {
-        Some((r_s, t)) => {
-            let our_slot = Slot::from_timestamp(t, slot_duration);
-            tracing::debug!(
-                target: crate::LOG_TARGET,
-                relay_slot = ?r_s,
-                para_slot = ?our_slot,
-                timestamp = ?t,
-                ?slot_duration,
-                ?relay_chain_slot_duration,
-                "Adjusted relay-chain slot to parachain slot"
-            );
-            (our_slot, t)
-        }
-        None => return Ok(None),
-    }; */
-
-    log::error!("Slot is {:?}", slot);
-    log::error!("Authorities is {:?}", authorities);
-    // Try to claim the slot locally.
     let author_pub = {
-        let res = claim_slot_inner::<P>(slot, &authorities, keystore, force_authoring).await;
+        let res = claim_slot_inner::<P>(slot, &authorities, keystore, force_authoring);
         match res {
             Some(p) => p,
             None => return Ok(None),
         }
     };
 
-    Ok(Some(SlotClaim::unchecked::<P>(
-        author_pub, slot, /*timestamp,*/
-    )))
+    Ok(Some(SlotClaim::unchecked::<P>(author_pub, slot)))
 }
 
 /// Attempt to claim a slot using a keystore.
-///
-/// This returns `None` if the slot author is not locally controlled, and `Some` if it is,
-/// with the public key of the slot author.
-pub async fn claim_slot_inner<P: Pair>(
+pub fn claim_slot_inner<P: Pair>(
     slot: Slot,
     authorities: &Vec<AuthorityId<P>>,
     keystore: &KeystorePtr,
     force_authoring: bool,
 ) -> Option<P::Public>
 where
-    //B: BlockT,
-    //C: ProvideRuntimeApi<B> + Send + Sync + 'static,
-    //C::Api: AuraApi<B, P::Public>,
     P: Pair,
     P::Public: Codec + std::fmt::Debug,
     P::Signature: Codec,
 {
     let expected_author = crate::slot_author::<P>(slot, authorities.as_slice());
-    log::error!("expected author is {:?}", expected_author);
     // if not running with force-authoring, just do the usual slot check
     if !force_authoring {
         expected_author.and_then(|p| {
@@ -419,7 +342,6 @@ where
 }
 
 /// Seal a block with a signature in the header.
-/// TODO: Re-check and rename
 pub fn seal_tanssi<B: BlockT, P>(
     pre_sealed: B,
     storage_changes: StorageChanges<HashingFor<B>>,
@@ -480,45 +402,3 @@ where
 
     Ok(block_import_params)
 }
-
-/* /// TODO: remove
-/// Seal a block with a signature in the header.
-pub fn seal<B: BlockT, P>(
-    pre_sealed: B,
-    storage_changes: StorageChanges<HashingFor<B>>,
-    author_pub: &P::Public,
-    keystore: &KeystorePtr,
-) -> Result<BlockImportParams<B>, Box<dyn Error + Send + Sync + 'static>>
-where
-    P: Pair,
-    P::Signature: Codec + TryFrom<Vec<u8>>,
-    P::Public: AppPublic,
-{
-    let (pre_header, body) = pre_sealed.deconstruct();
-    let pre_hash = pre_header.hash();
-    let block_number = *pre_header.number();
-
-    // seal the block.
-    let block_import_params = {
-        let seal_digest =
-            aura_internal::seal::<_, P>(&pre_hash, &author_pub, keystore).map_err(Box::new)?;
-        let mut block_import_params = BlockImportParams::new(BlockOrigin::Own, pre_header);
-        block_import_params.post_digests.push(seal_digest);
-        block_import_params.body = Some(body.clone());
-        block_import_params.state_action =
-            StateAction::ApplyChanges(sc_consensus::StorageChanges::Changes(storage_changes));
-        block_import_params.fork_choice = Some(ForkChoiceStrategy::LongestChain);
-        block_import_params
-    };
-    let post_hash = block_import_params.post_hash();
-
-    tracing::info!(
-        target: crate::LOG_TARGET,
-        "🔖 Pre-sealed block for proposal at {}. Hash now {:?}, previously {:?}.",
-        block_number,
-        post_hash,
-        pre_hash,
-    );
-
-    Ok(block_import_params)
-} */
