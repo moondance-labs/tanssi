@@ -289,6 +289,7 @@ pub mod pallet {
         requester: Party,
         kind: ChangeKind<Balance>,
         new_config: StreamConfig<Unit, AssetId, Balance>,
+        deposit_change: Option<DepositChange<Balance>>,
     }
 
     pub type StreamOf<T> =
@@ -357,8 +358,10 @@ pub mod pallet {
         CantOverrideMandatoryChange,
         NoPendingRequest,
         CantAcceptOwnRequest,
+        CanOnlyCancelOwnRequest,
         WrongRequestNonce,
-        CantDecreaseDepositWhenChangingAsset,
+        ChangingAssetRequiresAbsoluteDepositChange,
+        TargetCantChangeDeposit,
     }
 
     #[pallet::event]
@@ -378,14 +381,11 @@ pub mod pallet {
             amount: T::Balance,
             drained: bool,
         },
-        StreamDepositChanged {
-            stream_id: T::StreamId,
-            new_deposit: T::Balance,
-        },
         StreamConfigChanged {
             stream_id: T::StreamId,
             old_config: StreamConfigOf<T>,
             new_config: StreamConfigOf<T>,
+            deposit_change: Option<DepositChange<T::Balance>>,
         },
         StreamConfigChangeRequested {
             stream_id: T::StreamId,
@@ -477,45 +477,22 @@ pub mod pallet {
             Ok(().into())
         }
 
-        /// Change the deposit backing a stream. Can only be called by the source of the existing
-        /// stream. The change will be applied AFTER the pending payment has been performed.
+        /// Requests a change to a stream config or deposit.
+        ///
+        /// If the new config don't change the time unit and asset id, the change will be applied
+        /// immediately if it is at the desadvantage of the caller. Otherwise, the request is stored
+        /// in the stream and will have to be approved by the other party.
+        ///
+        /// This call accepts a deposit change, which can only be provided by the source of the
+        /// stream. An absolute change is required when changing asset id, as the current deposit
+        /// will be released and a new deposit is required in the new asset.
         #[pallet::call_index(3)]
-        pub fn change_deposit(
-            origin: OriginFor<T>,
-            stream_id: T::StreamId,
-            change: DepositChange<T::Balance>,
-        ) -> DispatchResultWithPostInfo {
-            let origin = ensure_signed(origin)?;
-            let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
-
-            // Only source can change stream deposit.
-            ensure!(origin == stream.source, Error::<T>::UnauthorizedOrigin);
-
-            // Source will not pay for drained stream retroactively, so we perform payment with
-            // what is left first.
-            Self::perform_stream_payment(stream_id, &mut stream)?;
-
-            // Update deposit.
-            Self::apply_deposit_change(&mut stream, change)?;
-
-            // Emit event.
-            Pallet::<T>::deposit_event(Event::<T>::StreamDepositChanged {
-                stream_id,
-                new_deposit: stream.deposit,
-            });
-
-            // Update stream info in storage.
-            Streams::<T>::insert(stream_id, stream);
-
-            Ok(().into())
-        }
-
-        #[pallet::call_index(4)]
         pub fn request_change(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
             kind: ChangeKind<T::Balance>,
             new_config: StreamConfigOf<T>,
+            deposit_change: Option<DepositChange<T::Balance>>,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
@@ -524,12 +501,18 @@ pub mod pallet {
                 .account_to_party(origin)
                 .ok_or(Error::<T>::UnauthorizedOrigin)?;
 
-            if stream.config == new_config {
+            ensure!(
+                requester == Party::Source || deposit_change.is_none(),
+                Error::<T>::TargetCantChangeDeposit
+            );
+
+            if stream.config == new_config && deposit_change.is_none() {
                 return Ok(().into());
             }
 
             // If asset id and time unit are the same, we allow to make the change
             // immediatly if the origin is at a disadvantage.
+            // We allow this event if there is already a pending request.
             'immediate: {
                 if new_config.time_unit != stream.config.time_unit
                     || new_config.asset_id != stream.config.asset_id
@@ -548,11 +531,17 @@ pub mod pallet {
                 // Perform pending payment before changing config.
                 Self::perform_stream_payment(stream_id, &mut stream)?;
 
+                // We apply the requested deposit change.
+                if let Some(change) = deposit_change {
+                    Self::apply_deposit_change(&mut stream, change)?;
+                }
+
                 // Emit event.
                 Pallet::<T>::deposit_event(Event::<T>::StreamConfigChanged {
                     stream_id,
                     old_config: stream.config.clone(),
                     new_config: new_config.clone(),
+                    deposit_change
                 });
 
                 // Update storage.
@@ -560,6 +549,14 @@ pub mod pallet {
                 Streams::<T>::insert(stream_id, stream);
 
                 return Ok(().into());
+            }
+
+            // If the source is requesting a change of asset, they must provide an absolute change.
+            if requester == Party::Source
+                && new_config.asset_id != stream.config.asset_id
+                && !matches!(deposit_change, Some(DepositChange::Absolute(_)))
+            {
+                Err(Error::<T>::ChangingAssetRequiresAbsoluteDepositChange)?;
             }
 
             // If there is already a mandatory change request, only the origin
@@ -581,6 +578,7 @@ pub mod pallet {
                 requester,
                 kind,
                 new_config: new_config.clone(),
+                deposit_change,
             });
 
             // Emit event.
@@ -597,12 +595,15 @@ pub mod pallet {
             Ok(().into())
         }
 
-        #[pallet::call_index(5)]
+        /// Accepts a change requested before by the other party. Takes a nonce to prevent
+        /// frontrunning attacks. If the target made a request, the source is able to change their
+        /// deposit. 
+        #[pallet::call_index(4)]
         pub fn accept_requested_change(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
             request_nonce: RequestNonce,
-            change: DepositChange<T::Balance>,
+            deposit_change: Option<DepositChange<T::Balance>>,
         ) -> DispatchResultWithPostInfo {
             let origin = ensure_signed(origin)?;
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
@@ -624,18 +625,28 @@ pub mod pallet {
                 Error::<T>::CantAcceptOwnRequest
             );
 
+            ensure!(
+                accepter == Party::Source || deposit_change.is_none(),
+                Error::<T>::TargetCantChangeDeposit
+            );
+
             // Perform pending payment before changing config.
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
             // Apply change.
+            let deposit_change = deposit_change.or(request.deposit_change);
             match (
                 stream.config.asset_id == request.new_config.asset_id,
-                change,
+                deposit_change,
             ) {
-                (true, change) => {
+                // Same asset and a change, we apply it like in `change_deposit` call.
+                (true, Some(change)) => {
                     Self::apply_deposit_change(&mut stream, change)?;
                 }
-                (false, DepositChange::Absolute(amount) | DepositChange::Increase(amount)) => {
+                // Same asset and no change, no problem.
+                (true, None) => (),
+                // Change in asset with absolute new amount
+                (false, Some(DepositChange::Absolute(amount))) => {
                     // Release deposit in old asset.
                     T::Assets::decrease_deposit(
                         &stream.config.asset_id,
@@ -651,9 +662,9 @@ pub mod pallet {
                     )?;
                     stream.deposit = amount;
                 }
-                (false, DepositChange::Decrease(_)) => {
-                    Err(Error::<T>::CantDecreaseDepositWhenChangingAsset)?
-                }
+                // It doesn't make sense to change asset while not providing an absolute new
+                // amount.
+                (false, _) => Err(Error::<T>::ChangingAssetRequiresAbsoluteDepositChange)?,
             }
 
             // Event
@@ -661,10 +672,39 @@ pub mod pallet {
                 stream_id,
                 old_config: stream.config,
                 new_config: request.new_config.clone(),
+                deposit_change
             });
 
             // Update config in storage.
             stream.config = request.new_config;
+            Streams::<T>::insert(stream_id, stream);
+
+            Ok(().into())
+        }
+
+        #[pallet::call_index(5)]
+        pub fn cancel_change_request(
+            origin: OriginFor<T>,
+            stream_id: T::StreamId,
+        ) -> DispatchResultWithPostInfo {
+            let origin = ensure_signed(origin)?;
+            let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
+
+            let accepter = stream
+                .account_to_party(origin)
+                .ok_or(Error::<T>::UnauthorizedOrigin)?;
+
+            let Some(request) = stream.pending_request.take() else {
+                return Err(Error::<T>::NoPendingRequest.into());
+            };
+
+            ensure!(
+                accepter == request.requester,
+                Error::<T>::CanOnlyCancelOwnRequest
+            );
+
+            // Update storage.
+            // Pending request is removed by calling `.take()`.
             Streams::<T>::insert(stream_id, stream);
 
             Ok(().into())
