@@ -15,7 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod basic;
-pub mod lookahead;
 
 use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
 use cumulus_client_consensus_common::{ParachainBlockImportMarker, ParachainCandidate};
@@ -49,7 +48,7 @@ use sp_timestamp::Timestamp;
 use std::{convert::TryFrom, error::Error, time::Duration};
 
 /// Parameters for instantiating a [`Collator`].
-pub struct Params<BI, CIDP, RClient, Proposer, CS /*GOH*/> {
+pub struct Params<BI, CIDP, RClient, Proposer, CS> {
     /// A builder for inherent data builders.
     pub create_inherent_data_providers: CIDP,
     /// The block import handle.
@@ -67,9 +66,9 @@ pub struct Params<BI, CIDP, RClient, Proposer, CS /*GOH*/> {
     pub collator_service: CS,
 }
 
-/// A utility struct for writing collation logic that makes use of Aura entirely
-/// or in part. See module docs for more details.
-pub struct Collator<Block, P, BI, CIDP, RClient, Proposer, CS /*GOH*/> {
+/// A utility struct for writing collation logic that makes use of
+/// Tanssi Aura entirely or in part.
+pub struct Collator<Block, P, BI, CIDP, RClient, Proposer, CS> {
     create_inherent_data_providers: CIDP,
     block_import: BI,
     relay_client: RClient,
@@ -80,8 +79,7 @@ pub struct Collator<Block, P, BI, CIDP, RClient, Proposer, CS /*GOH*/> {
     _marker: std::marker::PhantomData<(Block, Box<dyn Fn(P) + Send + Sync + 'static>)>,
 }
 
-impl<Block, P, BI, CIDP, RClient, Proposer, CS /*GOH*/>
-    Collator<Block, P, BI, CIDP, RClient, Proposer, CS /*GOH*/>
+impl<Block, P, BI, CIDP, RClient, Proposer, CS> Collator<Block, P, BI, CIDP, RClient, Proposer, CS>
 where
     Block: BlockT,
     RClient: RelayChainInterface,
@@ -93,8 +91,8 @@ where
     P::Public: AppPublic + Member,
     P::Signature: TryFrom<Vec<u8>> + Member + Codec,
 {
-    /// Instantiate a new instance of the `Aura` manager.
-    pub fn new(params: Params<BI, CIDP, RClient, Proposer, CS /*GOH*/>) -> Self {
+    /// Instantiate a new instance of the `Tanssi Aura` manager.
+    pub fn new(params: Params<BI, CIDP, RClient, Proposer, CS>) -> Self {
         Collator {
             create_inherent_data_providers: params.create_inherent_data_providers,
             block_import: params.block_import,
@@ -107,7 +105,7 @@ where
         }
     }
 
-    /// Explicitly creates the inherent data for parachain block authoring
+    /// Explicitly creates the inherent data for parachain block authoring.
     pub async fn create_inherent_data(
         &self,
         relay_parent: PHash,
@@ -149,7 +147,7 @@ where
     /// Provide the slot to build at as well as any other necessary pre-digest logs,
     /// the inherent data, and the proposal duration and PoV size limits.
     ///
-    /// The Aura pre-digest should not be explicitly provided and is set internally.
+    /// The Tanssi Aura pre-digest is set internally.
     ///
     /// This does not announce the collation to the parachain network or the relay chain.
     pub async fn collate(

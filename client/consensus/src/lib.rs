@@ -28,10 +28,7 @@ mod manual_seal;
 #[cfg(test)]
 mod tests;
 
-pub use {
-    consensus_orchestrator::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
-    sc_consensus_aura::CompatibilityMode,
-};
+pub use sc_consensus_aura::CompatibilityMode;
 
 pub use {
     cumulus_primitives_core::ParaId,
