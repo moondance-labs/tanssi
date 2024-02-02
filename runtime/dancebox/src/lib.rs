@@ -49,6 +49,7 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
+            tokens::{PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
             OnRuntimeUpgrade, ValidatorRegistration,
@@ -85,7 +86,7 @@ use {
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
-            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Hash as HashT,
+            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Hash as HashT, IdentityLookup
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
@@ -1382,6 +1383,42 @@ impl pallet_identity::Config for Runtime {
     type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+	pub const TreasuryId: PalletId = PalletId(*b"tns/tsry");
+    pub const ProposalBond: Permill = Permill::from_percent(5);
+	pub TreasuryAccount: AccountId = Treasury::account_id();
+}
+
+impl pallet_treasury::Config for Runtime {
+	type PalletId = TreasuryId;
+	type Currency = Balances;
+
+	type ApproveOrigin = EnsureRoot<AccountId>;
+	type RejectOrigin = EnsureRoot<AccountId>;
+	type RuntimeEvent = RuntimeEvent;
+	// If spending proposal rejected, transfer proposer bond to treasury
+	type OnSlash = Treasury;
+	type ProposalBond = ProposalBond;
+	type ProposalBondMinimum = ConstU128<{ 1 * currency::DANCE * currency::SUPPLY_FACTOR }>;
+	type SpendPeriod = ConstU32<{ 6 * DAYS }>;
+	type Burn = ();
+	type BurnDestination = ();
+	type MaxApprovals = ConstU32<100>;
+	type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+	type SpendFunds = ();
+	type ProposalBondMaximum = ();
+	type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Same as Polkadot
+	type AssetKind = ();
+	type Beneficiary = AccountId;
+	type BeneficiaryLookup = IdentityLookup<AccountId>;
+	type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
+	type BalanceConverter = UnityAssetBalanceConversion;
+	type PayoutPeriod = ConstU32<0>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarkHelper = BenchmarkHelper;
+}
+
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1423,6 +1460,9 @@ construct_runtime!(
         PooledStaking: pallet_pooled_staking = 34,
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
+
+        // Treasury stuff.
+        Treasury: pallet_treasury::{Pallet, Storage, Config<T>, Event<T>, Call} = 40,
 
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
