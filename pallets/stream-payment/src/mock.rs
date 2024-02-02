@@ -388,7 +388,7 @@ macro_rules! assert_tail_eq {
 #[macro_export]
 macro_rules! assert_event_emitted {
     ($event:expr) => {
-        match &$event {
+        match &$event.into() {
             e => {
                 assert!(
                     $crate::mock::events().iter().find(|x| *x == e).is_some(),
@@ -405,7 +405,7 @@ macro_rules! assert_event_emitted {
 #[macro_export]
 macro_rules! assert_event_not_emitted {
     ($event:expr) => {
-        match &$event {
+        match &$event.into() {
             e => {
                 assert!(
                     $crate::mock::events().iter().find(|x| *x == e).is_none(),

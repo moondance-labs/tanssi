@@ -260,6 +260,15 @@ pub mod pallet {
         Target,
     }
 
+    impl Party {
+        pub fn inverse(self) -> Self {
+            match self {
+                Party::Source => Party::Target,
+                Party::Target => Party::Source,
+            }
+        }
+    }
+
     /// Kind of change requested.
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
@@ -381,17 +390,18 @@ pub mod pallet {
             amount: T::Balance,
             drained: bool,
         },
+        StreamConfigChangeRequested {
+            stream_id: T::StreamId,
+            request_nonce: RequestNonce,
+            requester: Party,
+            old_config: StreamConfigOf<T>,
+            new_config: StreamConfigOf<T>,
+        },
         StreamConfigChanged {
             stream_id: T::StreamId,
             old_config: StreamConfigOf<T>,
             new_config: StreamConfigOf<T>,
             deposit_change: Option<DepositChange<T::Balance>>,
-        },
-        StreamConfigChangeRequested {
-            stream_id: T::StreamId,
-            request_nonce: RequestNonce,
-            old_config: StreamConfigOf<T>,
-            new_config: StreamConfigOf<T>,
         },
     }
 
@@ -541,7 +551,7 @@ pub mod pallet {
                     stream_id,
                     old_config: stream.config.clone(),
                     new_config: new_config.clone(),
-                    deposit_change
+                    deposit_change,
                 });
 
                 // Update storage.
@@ -585,6 +595,7 @@ pub mod pallet {
             Pallet::<T>::deposit_event(Event::<T>::StreamConfigChangeRequested {
                 stream_id,
                 request_nonce: stream.request_nonce,
+                requester,
                 old_config: stream.config.clone(),
                 new_config,
             });
@@ -597,7 +608,7 @@ pub mod pallet {
 
         /// Accepts a change requested before by the other party. Takes a nonce to prevent
         /// frontrunning attacks. If the target made a request, the source is able to change their
-        /// deposit. 
+        /// deposit.
         #[pallet::call_index(4)]
         pub fn accept_requested_change(
             origin: OriginFor<T>,
@@ -672,7 +683,7 @@ pub mod pallet {
                 stream_id,
                 old_config: stream.config,
                 new_config: request.new_config.clone(),
-                deposit_change
+                deposit_change,
             });
 
             // Update config in storage.
