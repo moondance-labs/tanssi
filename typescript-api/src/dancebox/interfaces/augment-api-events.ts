@@ -30,6 +30,17 @@ export type __AugmentedEvent<ApiType extends ApiTypes> = AugmentedEvent<ApiType>
 
 declare module "@polkadot/api-base/types/events" {
     interface AugmentedEvents<ApiType extends ApiTypes> {
+        assetRate: {
+            AssetRateCreated: AugmentedEvent<ApiType, [assetKind: u16, rate: u128], { assetKind: u16; rate: u128 }>;
+            AssetRateRemoved: AugmentedEvent<ApiType, [assetKind: u16], { assetKind: u16 }>;
+            AssetRateUpdated: AugmentedEvent<
+                ApiType,
+                [assetKind: u16, old: u128, new_: u128],
+                { assetKind: u16; old: u128; new_: u128 }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         authorNoting: {
             /** Latest author changed */
             LatestAuthorChanged: AugmentedEvent<
@@ -192,6 +203,202 @@ declare module "@polkadot/api-base/types/events" {
                     remainingWeight: SpWeightsWeightV2Weight;
                     requiredWeight: SpWeightsWeightV2Weight;
                 }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        foreignAssets: {
+            /** Accounts were destroyed for given asset. */
+            AccountsDestroyed: AugmentedEvent<
+                ApiType,
+                [assetId: u16, accountsDestroyed: u32, accountsRemaining: u32],
+                { assetId: u16; accountsDestroyed: u32; accountsRemaining: u32 }
+            >;
+            /** An approval for account `delegate` was cancelled by `owner`. */
+            ApprovalCancelled: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32, delegate: AccountId32],
+                { assetId: u16; owner: AccountId32; delegate: AccountId32 }
+            >;
+            /** Approvals were destroyed for given asset. */
+            ApprovalsDestroyed: AugmentedEvent<
+                ApiType,
+                [assetId: u16, approvalsDestroyed: u32, approvalsRemaining: u32],
+                { assetId: u16; approvalsDestroyed: u32; approvalsRemaining: u32 }
+            >;
+            /** (Additional) funds have been approved for transfer to a destination account. */
+            ApprovedTransfer: AugmentedEvent<
+                ApiType,
+                [assetId: u16, source: AccountId32, delegate: AccountId32, amount: u128],
+                { assetId: u16; source: AccountId32; delegate: AccountId32; amount: u128 }
+            >;
+            /** Some asset `asset_id` was frozen. */
+            AssetFrozen: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /** The min_balance of an asset has been updated by the asset owner. */
+            AssetMinBalanceChanged: AugmentedEvent<
+                ApiType,
+                [assetId: u16, newMinBalance: u128],
+                { assetId: u16; newMinBalance: u128 }
+            >;
+            /** An asset has had its attributes changed by the `Force` origin. */
+            AssetStatusChanged: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /** Some asset `asset_id` was thawed. */
+            AssetThawed: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /** Some account `who` was blocked. */
+            Blocked: AugmentedEvent<ApiType, [assetId: u16, who: AccountId32], { assetId: u16; who: AccountId32 }>;
+            /** Some assets were destroyed. */
+            Burned: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32, balance: u128],
+                { assetId: u16; owner: AccountId32; balance: u128 }
+            >;
+            /** Some asset class was created. */
+            Created: AugmentedEvent<
+                ApiType,
+                [assetId: u16, creator: AccountId32, owner: AccountId32],
+                { assetId: u16; creator: AccountId32; owner: AccountId32 }
+            >;
+            /** An asset class was destroyed. */
+            Destroyed: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /** An asset class is in the process of being destroyed. */
+            DestructionStarted: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /** Some asset class was force-created. */
+            ForceCreated: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32],
+                { assetId: u16; owner: AccountId32 }
+            >;
+            /** Some account `who` was frozen. */
+            Frozen: AugmentedEvent<ApiType, [assetId: u16, who: AccountId32], { assetId: u16; who: AccountId32 }>;
+            /** Some assets were issued. */
+            Issued: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32, amount: u128],
+                { assetId: u16; owner: AccountId32; amount: u128 }
+            >;
+            /** Metadata has been cleared for an asset. */
+            MetadataCleared: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /** New metadata has been set for an asset. */
+            MetadataSet: AugmentedEvent<
+                ApiType,
+                [assetId: u16, name: Bytes, symbol_: Bytes, decimals: u8, isFrozen: bool],
+                { assetId: u16; name: Bytes; symbol: Bytes; decimals: u8; isFrozen: bool }
+            >;
+            /** The owner changed. */
+            OwnerChanged: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32],
+                { assetId: u16; owner: AccountId32 }
+            >;
+            /** The management team changed. */
+            TeamChanged: AugmentedEvent<
+                ApiType,
+                [assetId: u16, issuer: AccountId32, admin: AccountId32, freezer: AccountId32],
+                { assetId: u16; issuer: AccountId32; admin: AccountId32; freezer: AccountId32 }
+            >;
+            /** Some account `who` was thawed. */
+            Thawed: AugmentedEvent<ApiType, [assetId: u16, who: AccountId32], { assetId: u16; who: AccountId32 }>;
+            /** Some account `who` was created with a deposit from `depositor`. */
+            Touched: AugmentedEvent<
+                ApiType,
+                [assetId: u16, who: AccountId32, depositor: AccountId32],
+                { assetId: u16; who: AccountId32; depositor: AccountId32 }
+            >;
+            /** Some assets were transferred. */
+            Transferred: AugmentedEvent<
+                ApiType,
+                [assetId: u16, from: AccountId32, to: AccountId32, amount: u128],
+                { assetId: u16; from: AccountId32; to: AccountId32; amount: u128 }
+            >;
+            /** An `amount` was transferred in its entirety from `owner` to `destination` by the approved `delegate`. */
+            TransferredApproved: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32, delegate: AccountId32, destination: AccountId32, amount: u128],
+                { assetId: u16; owner: AccountId32; delegate: AccountId32; destination: AccountId32; amount: u128 }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        foreignAssetsCreator: {
+            /** New asset with the asset manager is registered */
+            ForeignAssetCreated: AugmentedEvent<
+                ApiType,
+                [assetId: u16, foreignAsset: StagingXcmV3MultiLocation],
+                { assetId: u16; foreignAsset: StagingXcmV3MultiLocation }
+            >;
+            /** Removed all information related to an assetId and destroyed asset */
+            ForeignAssetDestroyed: AugmentedEvent<
+                ApiType,
+                [assetId: u16, foreignAsset: StagingXcmV3MultiLocation],
+                { assetId: u16; foreignAsset: StagingXcmV3MultiLocation }
+            >;
+            /** Removed all information related to an assetId */
+            ForeignAssetRemoved: AugmentedEvent<
+                ApiType,
+                [assetId: u16, foreignAsset: StagingXcmV3MultiLocation],
+                { assetId: u16; foreignAsset: StagingXcmV3MultiLocation }
+            >;
+            /** Changed the xcm type mapping for a given asset id */
+            ForeignAssetTypeChanged: AugmentedEvent<
+                ApiType,
+                [assetId: u16, newForeignAsset: StagingXcmV3MultiLocation],
+                { assetId: u16; newForeignAsset: StagingXcmV3MultiLocation }
+            >;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        identity: {
+            /** A name was cleared, and the given balance returned. */
+            IdentityCleared: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, deposit: u128],
+                { who: AccountId32; deposit: u128 }
+            >;
+            /** A name was removed and the given balance slashed. */
+            IdentityKilled: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, deposit: u128],
+                { who: AccountId32; deposit: u128 }
+            >;
+            /** A name was set or reset (which will remove all judgements). */
+            IdentitySet: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
+            /** A judgement was given by a registrar. */
+            JudgementGiven: AugmentedEvent<
+                ApiType,
+                [target: AccountId32, registrarIndex: u32],
+                { target: AccountId32; registrarIndex: u32 }
+            >;
+            /** A judgement was asked from a registrar. */
+            JudgementRequested: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, registrarIndex: u32],
+                { who: AccountId32; registrarIndex: u32 }
+            >;
+            /** A judgement request was retracted. */
+            JudgementUnrequested: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, registrarIndex: u32],
+                { who: AccountId32; registrarIndex: u32 }
+            >;
+            /** A registrar was added. */
+            RegistrarAdded: AugmentedEvent<ApiType, [registrarIndex: u32], { registrarIndex: u32 }>;
+            /** A sub-identity was added to an identity and the deposit paid. */
+            SubIdentityAdded: AugmentedEvent<
+                ApiType,
+                [sub: AccountId32, main: AccountId32, deposit: u128],
+                { sub: AccountId32; main: AccountId32; deposit: u128 }
+            >;
+            /** A sub-identity was removed from an identity and the deposit freed. */
+            SubIdentityRemoved: AugmentedEvent<
+                ApiType,
+                [sub: AccountId32, main: AccountId32, deposit: u128],
+                { sub: AccountId32; main: AccountId32; deposit: u128 }
+            >;
+            /** A sub-identity was cleared, and the given deposit repatriated from the main identity account to the sub-identity account. */
+            SubIdentityRevoked: AugmentedEvent<
+                ApiType,
+                [sub: AccountId32, main: AccountId32, deposit: u128],
+                { sub: AccountId32; main: AccountId32; deposit: u128 }
             >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;

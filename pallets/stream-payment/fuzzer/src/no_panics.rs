@@ -162,6 +162,7 @@ fn fuzz_main(data: &[u8]) {
     ExtBuilder::default().with_balances(
         (0u64..(NUM_ORIGINS as u64)).map(|origin| (origin, 1 * DEFAULT_BALANCE)).collect()
     ).build().execute_with(|| {
+        let initial_issuance = pallet_balances::TotalIssuance::<Runtime>::get();
         for (maybe_lapse, origin, extrinsic) in extrinsics {
             if let ExtrOrPseudo::Pseudo(pseudo) = &extrinsic {
                 continue;
@@ -182,6 +183,9 @@ fn fuzz_main(data: &[u8]) {
             #[cfg(not(fuzzing))]
             println!("    result:     {:?}", _res);
         }
+        let final_issuance = pallet_balances::TotalIssuance::<Runtime>::get();
+
+        assert_eq!(initial_issuance, final_issuance);
     })
 }
 

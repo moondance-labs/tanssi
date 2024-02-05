@@ -19,8 +19,8 @@ use {
         parameter_types,
         traits::{
             tokens::{
-                fungible::{Mutate, MutateFreeze},
-                Preservation,
+                fungible::{InspectHold, Mutate, MutateHold},
+                Precision, Preservation,
             },
             Everything, OnFinalize, OnInitialize,
         },
@@ -106,7 +106,7 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = ();
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
 pub enum StreamPaymentAssetId {
     Native,
     Dummy,
@@ -117,12 +117,12 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
 for StreamPaymentAssets
 {
     fn transfer_deposit(
-        asset_id: StreamPaymentAssetId,
+        asset_id: &StreamPaymentAssetId,
         from: &AccountId,
         to: &AccountId,
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
-        Self::decrease_deposit(asset_id.clone(), from, amount)?;
+        Self::decrease_deposit(asset_id, from, amount)?;
         match asset_id {
             StreamPaymentAssetId::Native => {
                 Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
@@ -132,13 +132,13 @@ for StreamPaymentAssets
     }
 
     fn increase_deposit(
-        asset_id: StreamPaymentAssetId,
+        asset_id: &StreamPaymentAssetId,
         account: &AccountId,
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
         match asset_id {
-            StreamPaymentAssetId::Native => Balances::increase_frozen(
-                &pallet_stream_payment::FreezeReason::StreamPayment.into(),
+            StreamPaymentAssetId::Native => Balances::hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
                 account,
                 amount,
             ),
@@ -147,36 +147,87 @@ for StreamPaymentAssets
     }
 
     fn decrease_deposit(
-        asset_id: StreamPaymentAssetId,
+        asset_id: &StreamPaymentAssetId,
         account: &AccountId,
         amount: Balance,
     ) -> frame_support::pallet_prelude::DispatchResult {
         match asset_id {
-            StreamPaymentAssetId::Native => Balances::decrease_frozen(
-                &pallet_stream_payment::FreezeReason::StreamPayment.into(),
+            StreamPaymentAssetId::Native => Balances::release(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
                 account,
                 amount,
-            ),
+                Precision::Exact,
+            )
+                .map(|_| ()),
             StreamPaymentAssetId::Dummy => Ok(()),
+        }
+    }
+
+    fn get_deposit(asset_id: &StreamPaymentAssetId, account: &AccountId) -> Balance {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::balance_on_hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
+                account,
+            ),
+            StreamPaymentAssetId::Dummy => 0,
+        }
+    }
+
+    /// Benchmarks: should return the asset id which has the worst performance when interacting
+    /// with it.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_asset_id() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should return the another asset id which has the worst performance when interacting
+    /// with it afther `bench_asset_id`. This is to benchmark the worst case when changing config
+    /// from one asset to another.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_asset_id2() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should set the balance for the asset id returned by `bench_asset_id`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::set_balance(account, amount),
+            StreamPaymentAssetId::Dummy => (),
         }
     }
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
 pub enum TimeUnit {
     BlockNumber,
     Timestamp,
     Never,
+    Decreasing,
 }
 
 pub struct TimeProvider;
 impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     fn now(unit: &TimeUnit) -> Option<Balance> {
-        match unit {
-            &TimeUnit::BlockNumber => Some(System::block_number().into()),
-            &TimeUnit::Timestamp => Some(System::block_number().into()),
-            &TimeUnit::Never => None,
+        match *unit {
+            TimeUnit::BlockNumber => Some(System::block_number().into()),
+            TimeUnit::Timestamp => Some((System::block_number() * 12).into()),
+            TimeUnit::Never => None,
+            TimeUnit::Decreasing => Some((u64::MAX - System::block_number()).into()),
         }
+    }
+
+    /// Benchmarks: should return the time unit which has the worst performance calling
+    /// `TimeProvider::now(unit)` with.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_time_unit() -> TimeUnit {
+        TimeUnit::Timestamp
+    }
+
+    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_now(instant: Balance) {
+        Timestamp::set_timestamp(instant as u64)
     }
 }
 
@@ -188,6 +239,7 @@ impl pallet_stream_payment::Config for Runtime {
     type AssetId = StreamPaymentAssetId;
     type Assets = StreamPaymentAssets;
     type TimeProvider = TimeProvider;
+    type WeightInfo = ();
 }
 
 pub(crate) struct ExtBuilder {
@@ -349,11 +401,11 @@ macro_rules! assert_tail_eq {
 #[macro_export]
 macro_rules! assert_event_emitted {
     ($event:expr) => {
-        match &$event {
+        match &$event.into() {
             e => {
                 assert!(
                     $crate::mock::events().iter().find(|x| *x == e).is_some(),
-                    "Event {:?} was not found in events: \n {:?}",
+                    "Event {:#?} was not found in events: \n {:#?}",
                     e,
                     $crate::mock::events()
                 );
@@ -366,11 +418,11 @@ macro_rules! assert_event_emitted {
 #[macro_export]
 macro_rules! assert_event_not_emitted {
     ($event:expr) => {
-        match &$event {
+        match &$event.into() {
             e => {
                 assert!(
                     $crate::mock::events().iter().find(|x| *x == e).is_none(),
-                    "Event {:?} was found in events: \n {:?}",
+                    "Event {:#?} was found in events: \n {:#?}",
                     e,
                     $crate::mock::events()
                 );

@@ -95,6 +95,7 @@ fn default_config() -> pallet_configuration::HostConfiguration {
         max_orchestrator_collators: 2,
         collators_per_container: 2,
         full_rotation_period: 0,
+        ..Default::default()
     }
 }
 
@@ -604,6 +605,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             max_orchestrator_collators: 5,
             collators_per_container: 2,
             full_rotation_period: 0,
+            ..Default::default()
         })
         .build()
         .execute_with(|| {
@@ -1281,12 +1283,9 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             run_to_session(4u32);
             assert_eq!(
                 Runtime::parachain_collators(100.into()),
-                Some(vec![ALICE.into()])
+                Some(vec![ALICE.into(), CHARLIE.into()])
             );
-            assert_eq!(
-                Runtime::parachain_collators(1001.into()),
-                Some(vec![CHARLIE.into(), DAVE.into()])
-            );
+            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(BOB.into()),
                 None
@@ -2378,6 +2377,7 @@ fn test_reward_to_invulnerable() {
             max_orchestrator_collators: 2,
             collators_per_container: 2,
             full_rotation_period: 0,
+            ..Default::default()
         })
         .build()
         .execute_with(|| {
@@ -2438,6 +2438,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             max_orchestrator_collators: 2,
             collators_per_container: 2,
             full_rotation_period: 0,
+            ..Default::default()
         })
         .build()
         .execute_with(|| {
