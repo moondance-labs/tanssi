@@ -4637,11 +4637,6 @@ fn test_can_buy_credits_before_registering_para() {
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
             // Now parachain tank should have this amount
-            println!("encoded {:?}", (b"modlpy/serpayment", 2000u32).encode());
-            println!(
-                "parachain tank address {:?}",
-                ServicesPayment::parachain_tank(2000.into())
-            );
             let balance_tank = System::account(ServicesPayment::parachain_tank(1001.into()))
                 .data
                 .free;
@@ -5256,7 +5251,7 @@ fn test_credits_with_purchase_can_be_combined() {
                 root_origin(),
                 1001.into()
             ));
-            // Need to reset credits to 0 because now parachains are given free credits on register
+            // Set 1 session of free credits and purchase 1 session of credits
             assert_ok!(ServicesPayment::set_credits(
                 root_origin(),
                 1001.into(),
