@@ -319,9 +319,5 @@ fn not_having_enough_tokens_in_tank_should_not_error() {
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
                 1u128
             );
-            println!(
-                "address is {:?}",
-                crate::Pallet::<Test>::parachain_tank(2000.into())
-            )
         });
 }

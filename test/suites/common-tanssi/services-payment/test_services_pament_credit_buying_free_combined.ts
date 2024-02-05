@@ -56,7 +56,7 @@ describeSuite({
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2000, purchasedCredits);
                 await context.createBlock([await tx.signAsync(alice)]);
 
-                // Check that after 2 sessions, container chain 2000 has collators and is producing blocks
+                // Check that after 2 sessions, container chain 2000 has 0 collators and is not producing blocks
                 await jumpSessions(context, 2);
 
                 const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();

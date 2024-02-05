@@ -47,18 +47,20 @@ use {
         DefaultNoBound, LOG_TARGET,
     },
     frame_system::pallet_prelude::*,
+    parity_scale_codec::{Decode, Encode},
     sp_runtime::{traits::AtLeast32BitUnsigned, Saturating},
-    sp_std::prelude::*,
+    sp_std::{collections::btree_set::BTreeSet, prelude::*},
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{
-        CollatorAssignmentHook, GetCurrentContainerChains, GetSessionContainerChains,
-        GetSessionIndex, ParaId,
+        CollatorAssignmentHook, GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
+        ParathreadParams as ParathreadParamsTy, SlotFrequency,
     },
 };
 
 #[frame_support::pallet]
 pub mod pallet {
     use super::*;
+    use tp_traits::SessionContainerChains;
 
     #[pallet::pallet]
     #[pallet::without_storage_info]
@@ -198,6 +200,22 @@ pub mod pallet {
         ValueQuery,
     >;
 
+    #[pallet::storage]
+    #[pallet::getter(fn parathread_params)]
+    pub type ParathreadParams<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, ParathreadParamsTy, OptionQuery>;
+
+    #[pallet::storage]
+    #[pallet::getter(fn pending_parathread_params)]
+    pub type PendingParathreadParams<T: Config> = StorageValue<
+        _,
+        Vec<(
+            T::SessionIndex,
+            BoundedVec<(ParaId, ParathreadParamsTy), T::MaxLengthParaIds>,
+        )>,
+        ValueQuery,
+    >;
+
     pub type DepositBalanceOf<T> =
         <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
@@ -228,6 +246,8 @@ pub mod pallet {
         ParaIdPaused { para_id: ParaId },
         /// A para id has been unpaused.
         ParaIdUnpaused { para_id: ParaId },
+        /// Parathread params changed
+        ParathreadParamsChanged { para_id: ParaId },
     }
 
     #[pallet::error]
@@ -250,6 +270,8 @@ pub mod pallet {
         ParaIdNotInPendingVerification,
         /// Tried to register a ParaId with an account that did not have enough balance for the deposit
         NotSufficientDeposit,
+        /// Tried to change parathread params for a para id that is not a registered parathread
+        NotAParathread,
     }
 
     #[pallet::hooks]
@@ -369,58 +391,7 @@ pub mod pallet {
             genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
         ) -> DispatchResult {
             let account = ensure_signed(origin)?;
-            let deposit = T::DepositAmount::get();
-
-            // Verify we can reserve
-            T::Currency::can_reserve(&account, deposit)
-                .then_some(true)
-                .ok_or(Error::<T>::NotSufficientDeposit)?;
-
-            // Check if the para id is already registered by looking at the genesis data
-            if ParaGenesisData::<T>::contains_key(para_id) {
-                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
-            }
-
-            // Insert para id into PendingVerification
-            let mut pending_verification = PendingVerification::<T>::get();
-            match pending_verification.binary_search(&para_id) {
-                // This Ok is unreachable
-                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
-                Err(index) => {
-                    pending_verification
-                        .try_insert(index, para_id)
-                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
-                }
-            }
-
-            // The actual registration takes place 2 sessions after the call to
-            // `mark_valid_for_collating`, but the genesis data is inserted now.
-            // This is because collators should be able to start syncing the new container chain
-            // before the first block is mined. However, we could store the genesis data in a
-            // different key, like PendingParaGenesisData.
-            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
-            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
-            // won't detect that the size is too big until after iterating over all of them, so the
-            // limit in that case would be the transaction size.
-            let genesis_data_size = genesis_data.encoded_size();
-            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
-                return Err(Error::<T>::GenesisDataTooBig.into());
-            }
-
-            // Reserve the deposit, we verified we can do this
-            T::Currency::reserve(&account, deposit)?;
-
-            // Update DepositInfo
-            RegistrarDeposit::<T>::insert(
-                para_id,
-                DepositInfo {
-                    creator: account,
-                    deposit,
-                },
-            );
-            ParaGenesisData::<T>::insert(para_id, genesis_data);
-            PendingVerification::<T>::put(pending_verification);
-
+            Self::do_register(account, para_id, genesis_data)?;
             Self::deposit_event(Event::ParaIdRegistered { para_id });
 
             Ok(())
@@ -586,6 +557,46 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// Register parathread
+        #[pallet::call_index(6)]
+        #[pallet::weight(T::WeightInfo::register_parathread(genesis_data.encoded_size() as u32, T::MaxLengthParaIds::get(), genesis_data.storage.len() as u32))]
+        pub fn register_parathread(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            slot_frequency: SlotFrequency,
+            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+        ) -> DispatchResult {
+            let account = ensure_signed(origin)?;
+            Self::do_register(account, para_id, genesis_data)?;
+            // Insert parathread params
+            let params = ParathreadParamsTy { slot_frequency };
+            ParathreadParams::<T>::insert(para_id, params);
+            Self::deposit_event(Event::ParaIdRegistered { para_id });
+
+            Ok(())
+        }
+
+        /// Change parathread params
+        #[pallet::call_index(7)]
+        #[pallet::weight(T::WeightInfo::set_parathread_params(T::MaxLengthParaIds::get()))]
+        pub fn set_parathread_params(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            slot_frequency: SlotFrequency,
+        ) -> DispatchResult {
+            T::RegistrarOrigin::ensure_origin(origin)?;
+
+            Self::schedule_parathread_params_change(para_id, |params| {
+                params.slot_frequency = slot_frequency;
+
+                Self::deposit_event(Event::ParathreadParamsChanged { para_id });
+
+                Ok(())
+            })?;
+
+            Ok(())
+        }
     }
 
     pub struct SessionChangeOutcome<T: Config> {
@@ -645,6 +656,66 @@ pub mod pallet {
             T::Currency::issue(new_balance);
 
             Ok(deposit_info.creator)
+        }
+
+        fn do_register(
+            account: T::AccountId,
+            para_id: ParaId,
+            genesis_data: ContainerChainGenesisData<T::MaxLengthTokenSymbol>,
+        ) -> DispatchResult {
+            let deposit = T::DepositAmount::get();
+
+            // Verify we can reserve
+            T::Currency::can_reserve(&account, deposit)
+                .then_some(true)
+                .ok_or(Error::<T>::NotSufficientDeposit)?;
+
+            // Check if the para id is already registered by looking at the genesis data
+            if ParaGenesisData::<T>::contains_key(para_id) {
+                return Err(Error::<T>::ParaIdAlreadyRegistered.into());
+            }
+
+            // Insert para id into PendingVerification
+            let mut pending_verification = PendingVerification::<T>::get();
+            match pending_verification.binary_search(&para_id) {
+                // This Ok is unreachable
+                Ok(_) => return Err(Error::<T>::ParaIdAlreadyRegistered.into()),
+                Err(index) => {
+                    pending_verification
+                        .try_insert(index, para_id)
+                        .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                }
+            }
+
+            // The actual registration takes place 2 sessions after the call to
+            // `mark_valid_for_collating`, but the genesis data is inserted now.
+            // This is because collators should be able to start syncing the new container chain
+            // before the first block is mined. However, we could store the genesis data in a
+            // different key, like PendingParaGenesisData.
+            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
+            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
+            // won't detect that the size is too big until after iterating over all of them, so the
+            // limit in that case would be the transaction size.
+            let genesis_data_size = genesis_data.encoded_size();
+            if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
+                return Err(Error::<T>::GenesisDataTooBig.into());
+            }
+
+            // Reserve the deposit, we verified we can do this
+            T::Currency::reserve(&account, deposit)?;
+
+            // Update DepositInfo
+            RegistrarDeposit::<T>::insert(
+                para_id,
+                DepositInfo {
+                    creator: account,
+                    deposit,
+                },
+            );
+            ParaGenesisData::<T>::insert(para_id, genesis_data);
+            PendingVerification::<T>::put(pending_verification);
+
+            Ok(())
         }
 
         fn schedule_parachain_change(
@@ -736,6 +807,68 @@ pub mod pallet {
             Ok(())
         }
 
+        fn schedule_parathread_params_change(
+            para_id: ParaId,
+            updater: impl FnOnce(&mut ParathreadParamsTy) -> DispatchResult,
+        ) -> DispatchResult {
+            // Check that the para id is a parathread by reading the old params
+            let params = match ParathreadParams::<T>::get(para_id) {
+                Some(x) => x,
+                None => {
+                    return Err(Error::<T>::NotAParathread.into());
+                }
+            };
+
+            let mut pending_params = PendingParathreadParams::<T>::get();
+            // First, we need to decide what we should use as the base params.
+            let mut base_params = pending_params
+                .last()
+                .and_then(|(_, para_id_params)| {
+                    match para_id_params
+                        .binary_search_by_key(&para_id, |(para_id, _params)| *para_id)
+                    {
+                        Ok(idx) => {
+                            let (_para_id, params) = &para_id_params[idx];
+                            Some(params.clone())
+                        }
+                        Err(_idx) => None,
+                    }
+                })
+                .unwrap_or(params);
+
+            updater(&mut base_params)?;
+            let new_params = base_params;
+
+            let scheduled_session = Self::scheduled_session();
+
+            if let Some(&mut (_, ref mut para_id_params)) = pending_params
+                .iter_mut()
+                .find(|&&mut (apply_at_session, _)| apply_at_session >= scheduled_session)
+            {
+                match para_id_params.binary_search_by_key(&para_id, |(para_id, _params)| *para_id) {
+                    Ok(idx) => {
+                        let (_para_id, params) = &mut para_id_params[idx];
+                        *params = new_params;
+                    }
+                    Err(idx) => {
+                        para_id_params
+                            .try_insert(idx, (para_id, new_params))
+                            .map_err(|_e| Error::<T>::ParaIdListFull)?;
+                    }
+                }
+            } else {
+                // We are scheduling a new parathread params change for the scheduled session.
+                pending_params.push((
+                    scheduled_session,
+                    BoundedVec::truncate_from(vec![(para_id, new_params)]),
+                ));
+            }
+
+            <PendingParathreadParams<T>>::put(pending_params);
+
+            Ok(())
+        }
+
         /// Return the session index that should be used for any future scheduled changes.
         fn scheduled_session() -> T::SessionIndex {
             T::CurrentSessionIndex::session_index().saturating_add(T::SessionDelay::get())
@@ -806,6 +939,32 @@ pub mod pallet {
                 }
             }
 
+            let pending_parathread_params = <PendingParathreadParams<T>>::get();
+            if !pending_parathread_params.is_empty() {
+                let (mut past_and_present, future) = pending_parathread_params
+                    .into_iter()
+                    .partition::<Vec<_>, _>(|&(apply_at_session, _)| {
+                        apply_at_session <= *session_index
+                    });
+
+                if past_and_present.len() > 1 {
+                    // This should never happen since we schedule parachain changes only into the future
+                    // sessions and this handler called for each session change.
+                    log::error!(
+                        target: LOG_TARGET,
+                        "Skipping applying parathread params changes scheduled sessions in the past",
+                    );
+                }
+
+                let new_params = past_and_present.pop().map(|(_, params)| params);
+                if let Some(ref new_params) = new_params {
+                    for (para_id, params) in new_params {
+                        <ParathreadParams<T>>::insert(para_id, params);
+                    }
+                    <PendingParathreadParams<T>>::put(future);
+                }
+            }
+
             let pending_to_remove = <PendingToRemove<T>>::get();
             if !pending_to_remove.is_empty() {
                 let (past_and_present, future) =
@@ -813,16 +972,27 @@ pub mod pallet {
                         |&(apply_at_session, _)| apply_at_session <= *session_index,
                     );
 
-                // Unlike `PendingParaIds`, this cannot skip items because we must cleanup all parachains.
-                // But this will only happen if `initializer_on_new_session` is not called for a big range of
-                // sessions, and many parachains are deregistered in the meantime.
-                for (_, new_paras) in &past_and_present {
-                    for para_id in new_paras {
-                        Self::cleanup_deregistered_para_id(*para_id);
-                    }
-                }
-
                 if !past_and_present.is_empty() {
+                    // Unlike `PendingParaIds`, this cannot skip items because we must cleanup all parachains.
+                    // But this will only happen if `initializer_on_new_session` is not called for a big range of
+                    // sessions, and many parachains are deregistered in the meantime.
+                    let mut removed_para_ids = BTreeSet::new();
+                    for (_, new_paras) in &past_and_present {
+                        for para_id in new_paras {
+                            Self::cleanup_deregistered_para_id(*para_id);
+                            removed_para_ids.insert(*para_id);
+                        }
+                    }
+
+                    // Also need to remove PendingParams to avoid setting params for a para id that does not exist
+                    let mut pending_parathread_params = <PendingParathreadParams<T>>::get();
+                    for (_, new_params) in &mut pending_parathread_params {
+                        new_params.retain(|(para_id, _params)| {
+                            // Retain para ids that are not in the list of removed para ids
+                            !removed_para_ids.contains(para_id)
+                        });
+                    }
+                    <PendingParathreadParams<T>>::put(pending_parathread_params);
                     <PendingToRemove<T>>::put(future);
                 }
             }
@@ -843,6 +1013,7 @@ pub mod pallet {
         /// and execute para_deregistered hook to clean up other pallets as well
         fn cleanup_deregistered_para_id(para_id: ParaId) {
             ParaGenesisData::<T>::remove(para_id);
+            ParathreadParams::<T>::remove(para_id);
             // Get asset creator and deposit amount
             // Deposit may not exist, for example if the para id was registered on genesis
             if let Some(asset_info) = RegistrarDeposit::<T>::take(para_id) {
@@ -902,7 +1073,7 @@ pub mod pallet {
     }
 
     impl<T: Config> GetSessionContainerChains<T::SessionIndex> for Pallet<T> {
-        fn session_container_chains(session_index: T::SessionIndex) -> Vec<ParaId> {
+        fn session_container_chains(session_index: T::SessionIndex) -> SessionContainerChains {
             let (past_and_present, _) = Pallet::<T>::pending_registered_para_ids()
                 .into_iter()
                 .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
@@ -913,7 +1084,22 @@ pub mod pallet {
                 Pallet::<T>::registered_para_ids()
             };
 
-            paras.into_iter().collect()
+            let mut parachains = vec![];
+            let mut parathreads = vec![];
+
+            for para_id in paras {
+                // TODO: sweet O(n) db reads
+                if let Some(parathread_params) = ParathreadParams::<T>::get(&para_id) {
+                    parathreads.push((para_id, parathread_params));
+                } else {
+                    parachains.push(para_id);
+                }
+            }
+
+            SessionContainerChains {
+                parachains,
+                parathreads,
+            }
         }
 
         #[cfg(feature = "runtime-benchmarks")]

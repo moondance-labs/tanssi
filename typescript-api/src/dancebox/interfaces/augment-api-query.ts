@@ -77,6 +77,7 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV3MultiLocation,
     TpContainerChainGenesisDataContainerChainGenesisData,
+    TpTraitsParathreadParams,
     XcmVersionedAssetId,
     XcmVersionedMultiLocation,
 } from "@polkadot/types/lookup";
@@ -871,8 +872,20 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            parathreadParams: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<TpTraitsParathreadParams>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             paused: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> & QueryableStorageEntry<ApiType, []>;
             pendingParaIds: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, Vec<u32>]>>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            pendingParathreadParams: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<ITuple<[u32, Vec<ITuple<[u32, TpTraitsParathreadParams]>>]>>>,
+                []
+            > &
                 QueryableStorageEntry<ApiType, []>;
             pendingPaused: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, Vec<u32>]>>>, []> &
                 QueryableStorageEntry<ApiType, []>;

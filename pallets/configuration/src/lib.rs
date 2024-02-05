@@ -74,9 +74,12 @@ pub struct HostConfiguration {
     pub max_orchestrator_collators: u32,
     /// How many collators to assign to one container chain
     pub collators_per_container: u32,
-    /// If this value is 0 means that there is no rotation
+    /// Rotate all collators once every n sessions. If this value is 0 means that there is no rotation
     pub full_rotation_period: u32,
     /// How many collators to assign to one parathread
+    // TODO: for now we only support 1 collator per parathread because using Aura for consensus conflicts with
+    // the idea of being able to create blocks every n slots: if there are 2 collators and we create blocks
+    // every 2 slots, 1 collator will create all the blocks.
     pub collators_per_parathread: u32,
     /// How many parathreads can be assigned to one collator
     pub parathreads_per_collator: u32,
@@ -128,7 +131,7 @@ impl HostConfiguration {
         if self.max_orchestrator_collators < self.min_orchestrator_collators {
             return Err(InconsistentError::MaxCollatorsLowerThanMinCollators);
         }
-        if self.collators_per_parathread != 1 || self.parathreads_per_collator != 1 {
+        if self.parathreads_per_collator != 1 {
             return Err(InconsistentError::UnimplementedParameter);
         }
         Ok(())
@@ -533,6 +536,19 @@ pub mod pallet {
                 Pallet::<T>::config()
             };
             config.collators_per_container
+        }
+
+        fn collators_per_parathread(session_index: T::SessionIndex) -> u32 {
+            let (past_and_present, _) = Pallet::<T>::pending_configs()
+                .into_iter()
+                .partition::<Vec<_>, _>(|&(apply_at_session, _)| apply_at_session <= session_index);
+
+            let config = if let Some(last) = past_and_present.last() {
+                last.1.clone()
+            } else {
+                Pallet::<T>::config()
+            };
+            config.collators_per_parathread
         }
 
         fn min_collators_for_orchestrator(session_index: T::SessionIndex) -> u32 {
