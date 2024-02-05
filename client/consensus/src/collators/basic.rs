@@ -69,7 +69,7 @@ pub struct Params<BI, CIDP, Client, RClient, SO, Proposer, CS, GOH> {
     pub collation_request_receiver: Option<Receiver<CollationRequest>>,
 }
 
-/// Run bare Aura consensus as a relay-chain-driven collator.
+/// Run tanssi Aura consensus as a relay-chain-driven collator.
 pub fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
     params: Params<BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>,
 ) -> impl Future<Output = ()> + Send + 'static
@@ -158,6 +158,7 @@ where
 
             let parent_hash = parent_header.hash();
 
+            // Check whether we can build upon this block
             if !collator
                 .collator_service()
                 .check_block_status(parent_hash, &parent_header)
@@ -175,6 +176,7 @@ where
                 Ok(Some(h)) => h,
             };
 
+            // Retrieve authorities that are able to produce the block
             let authorities = match params
                 .get_authorities_from_orchestrator
                 .retrieve_authorities_from_orchestrator(
