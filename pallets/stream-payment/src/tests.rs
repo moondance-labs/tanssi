@@ -20,7 +20,7 @@ use {
         mock::{
             roll_to, AccountId, Balance, Balances, ExtBuilder, Runtime, RuntimeOrigin,
             StreamPayment, StreamPaymentAssetId, StreamPaymentAssets, TimeUnit, ALICE, BOB,
-            CHARLIE, DEFAULT_BALANCE, KILO, MEGA,
+            CHARLIE, DEFAULT_BALANCE, MEGA,
         },
         ArithmeticError, Assets, ChangeKind, DepositChange, DispatchResultWithPostInfo, Event,
         LookupStreamsWithSource, LookupStreamsWithTarget, NextStreamId, Party, Stream,
@@ -206,7 +206,8 @@ mod open_stream {
         ExtBuilder::default().build().execute_with(|| {
             assert!(Streams::<Runtime>::get(0).is_none());
 
-            assert_ok!(OpenStream::default().call());
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
 
             assert_event_emitted!(Event::<Runtime>::StreamOpened { stream_id: 0 });
 
@@ -228,8 +229,17 @@ mod open_stream {
                 &[0]
             );
 
-            assert_eq!(get_deposit(ALICE), 1 * MEGA);
+            assert_eq!(get_deposit(ALICE), open_stream.deposit);
             assert_eq!(get_deposit(BOB), 0);
+
+            assert_eq!(
+                Streams::<Runtime>::get(0),
+                Some(Stream {
+                    deposit: open_stream.deposit,
+                    last_time_updated: 1, // tests starts in block 1
+                    ..default_stream()
+                })
+            );
         })
     }
 
@@ -238,7 +248,7 @@ mod open_stream {
         ExtBuilder::default().build().execute_with(|| {
             assert!(Streams::<Runtime>::get(0).is_none());
 
-            for s in [
+            let open_streams = [
                 OpenStream {
                     from: ALICE,
                     to: BOB,
@@ -279,19 +289,31 @@ mod open_stream {
                         ..default_config()
                     },
                 },
-            ] {
+            ];
+
+            for s in &open_streams {
                 assert_ok!(s.call());
             }
 
-            assert_event_emitted!(Event::<Runtime>::StreamOpened { stream_id: 0 });
-            assert_event_emitted!(Event::<Runtime>::StreamOpened { stream_id: 1 });
-            assert_event_emitted!(Event::<Runtime>::StreamOpened { stream_id: 2 });
-            assert_event_emitted!(Event::<Runtime>::StreamOpened { stream_id: 3 });
-
-            assert!(Streams::<Runtime>::get(0).is_some());
-            assert!(Streams::<Runtime>::get(1).is_some());
-            assert!(Streams::<Runtime>::get(2).is_some());
-            assert!(Streams::<Runtime>::get(3).is_some());
+            for (i, s) in open_streams.iter().enumerate() {
+                assert_event_emitted!(Event::<Runtime>::StreamOpened { stream_id: i as u64 });
+                assert_eq!(
+                    Streams::<Runtime>::get(i as u64),
+                    Some(Stream {
+                        source: s.from,
+                        target: s.to,
+                        deposit: s.deposit,
+                        config: s.config,
+                        // Tests are run on 1st block with timestamp 12.
+                        last_time_updated: match s.config.time_unit {
+                            TimeUnit::BlockNumber => 1,
+                            TimeUnit::Timestamp => 12,
+                            _ => unreachable!("not used in test"),
+                        },
+                        ..default_stream()
+                    })
+                )
+            }
             assert!(Streams::<Runtime>::get(4).is_none());
 
             let lookup_source = |account| {
