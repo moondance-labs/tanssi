@@ -212,6 +212,8 @@ import type {
     TpContainerChainGenesisDataContainerChainGenesisDataItem,
     TpContainerChainGenesisDataProperties,
     TpContainerChainGenesisDataTokenMetadata,
+    TpTraitsParathreadParams,
+    TpTraitsSlotFrequency,
     XcmDoubleEncoded,
     XcmV2BodyId,
     XcmV2BodyPart,
@@ -470,6 +472,8 @@ declare module "@polkadot/types/types/registry" {
         TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
         TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
         TpContainerChainGenesisDataTokenMetadata: TpContainerChainGenesisDataTokenMetadata;
+        TpTraitsParathreadParams: TpTraitsParathreadParams;
+        TpTraitsSlotFrequency: TpTraitsSlotFrequency;
         XcmDoubleEncoded: XcmDoubleEncoded;
         XcmV2BodyId: XcmV2BodyId;
         XcmV2BodyPart: XcmV2BodyPart;

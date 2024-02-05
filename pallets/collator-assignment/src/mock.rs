@@ -31,7 +31,10 @@ use {
         BuildStorage,
     },
     sp_std::collections::btree_map::BTreeMap,
-    tp_traits::{ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits},
+    tp_traits::{
+        ParaId, ParathreadParams, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        SessionContainerChains,
+    },
     tracing_subscriber::{layer::SubscriberExt, FmtSubscriber},
 };
 
@@ -161,22 +164,32 @@ impl GetCollators<u64, u32> for CollatorsGetter {
 pub struct ContainerChainsGetter;
 
 impl tp_traits::GetSessionContainerChains<u32> for ContainerChainsGetter {
-    fn session_container_chains(_session_index: u32) -> Vec<ParaId> {
-        MockData::mock()
+    fn session_container_chains(_session_index: u32) -> SessionContainerChains {
+        let parachains = MockData::mock()
             .container_chains
             .iter()
             .cloned()
-            .map(ParaId::from)
-            .collect()
-    }
+            .map(|para_id| ParaId::from(para_id))
+            .collect();
 
-    fn session_parathreads(_session_index: u32) -> Vec<ParaId> {
-        MockData::mock()
+        let parathreads = MockData::mock()
             .parathreads
             .iter()
             .cloned()
-            .map(ParaId::from)
-            .collect()
+            .map(|para_id| {
+                (
+                    ParaId::from(para_id),
+                    ParathreadParams {
+                        slot_frequency: Default::default(),
+                    },
+                )
+            })
+            .collect();
+
+        SessionContainerChains {
+            parachains,
+            parathreads,
+        }
     }
 
     #[cfg(feature = "runtime-benchmarks")]

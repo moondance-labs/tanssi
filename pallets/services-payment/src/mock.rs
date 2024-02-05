@@ -29,7 +29,7 @@
 //! to that containerChain, by simply assigning the slot position.
 
 use {
-    crate::{self as pallet_services_payment, ChargeForBlockCredit, ProvideBlockProductionCost},
+    crate::{self as pallet_services_payment, ProvideBlockProductionCost},
     cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::*,
@@ -109,7 +109,7 @@ parameter_types! {
 
 impl pallet_services_payment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeForBlockCredit = ChargeForBlockCredit<Test>;
+    type OnChargeForBlock = ();
     type Currency = Balances;
     type ProvideBlockProductionCost = BlockProductionCost<Test>;
     type MaxCreditsStored = MaxCreditsStored;
@@ -163,14 +163,4 @@ pub(crate) fn events() -> Vec<pallet_services_payment::Event<Test>> {
             }
         })
         .collect::<Vec<_>>()
-}
-
-// This function basically just builds a genesis storage key/value store according to
-// our desired mockup.
-#[cfg(feature = "runtime-benchmarks")]
-pub fn new_test_ext() -> sp_io::TestExternalities {
-    frame_system::GenesisConfig::<Test>::default()
-        .build_storage()
-        .unwrap()
-        .into()
 }

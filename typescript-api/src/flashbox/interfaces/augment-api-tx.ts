@@ -26,6 +26,7 @@ import type {
     SpWeightsWeightV2Weight,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
+    TpTraitsSlotFrequency,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedSubmittable = AugmentedSubmittable<() => unknown>;
@@ -797,6 +798,27 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, TpContainerChainGenesisDataContainerChainGenesisData]
             >;
+            /** See [`Pallet::register_parathread`]. */
+            registerParathread: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    slotFrequency: TpTraitsSlotFrequency | { min?: any; max?: any } | string | Uint8Array,
+                    genesisData:
+                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, TpTraitsSlotFrequency, TpContainerChainGenesisDataContainerChainGenesisData]
+            >;
+            /** See [`Pallet::set_parathread_params`]. */
+            setParathreadParams: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    slotFrequency: TpTraitsSlotFrequency | { min?: any; max?: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, TpTraitsSlotFrequency]
+            >;
             /** See [`Pallet::unpause_container_chain`]. */
             unpauseContainerChain: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -819,10 +841,9 @@ declare module "@polkadot/api-base/types/submittable" {
             purchaseCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    credits: u32 | AnyNumber | Uint8Array,
-                    maxPricePerCredit: Option<u128> | null | Uint8Array | u128 | AnyNumber
+                    credit: u128 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, u32, Option<u128>]
+                [u32, u128]
             >;
             /** See [`Pallet::set_credits`]. */
             setCredits: AugmentedSubmittable<

@@ -160,6 +160,8 @@ import type {
     TpContainerChainGenesisDataContainerChainGenesisDataItem,
     TpContainerChainGenesisDataProperties,
     TpContainerChainGenesisDataTokenMetadata,
+    TpTraitsParathreadParams,
+    TpTraitsSlotFrequency,
 } from "@polkadot/types/lookup";
 
 declare module "@polkadot/types/types/registry" {
@@ -318,5 +320,7 @@ declare module "@polkadot/types/types/registry" {
         TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;
         TpContainerChainGenesisDataProperties: TpContainerChainGenesisDataProperties;
         TpContainerChainGenesisDataTokenMetadata: TpContainerChainGenesisDataTokenMetadata;
+        TpTraitsParathreadParams: TpTraitsParathreadParams;
+        TpTraitsSlotFrequency: TpTraitsSlotFrequency;
     } // InterfaceTypes
 } // declare module
