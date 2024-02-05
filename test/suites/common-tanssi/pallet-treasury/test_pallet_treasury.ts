@@ -31,27 +31,26 @@ describeSuite({
             id: "E01",
             title: "20% of fees & tips go for treasury account",
             test: async function () {
-
                 // Gets the initial pot deposit value
                 const initial_pot = await polkadotJs.query.system.account(treasury_address);
                 const initial_free_pot = initial_pot.data.free.toBigInt();
-                
+
                 // Executes a tx adding an additional tip
                 const tx = polkadotJs.tx.balances.transferAllowDeath(user_charlie.address, 200_000);
-                const signedTx = await tx.signAsync(user_dave, { tip: 100_000 } );
+                const signedTx = await tx.signAsync(user_dave, { tip: 100_000 });
                 await context.createBlock([signedTx]);
                 const events = await polkadotJs.query.system.events();
                 const fee = extractFeeAuthor(events, user_dave.address).amount.toBigInt();
-                
+
                 // Gets the new pot deposit value
                 const new_pot = await polkadotJs.query.system.account(treasury_address);
                 const new_free_pot = new_pot.data.free.toBigInt();
 
                 // Division operation rounding
-                const rounding = (fee % 5n > 0  ? 1n : 0n );
-                
+                const rounding = fee % 5n > 0 ? 1n : 0n;
+
                 // Treasury pot should increase by 20% of the paid fee & tip
-                expect(new_free_pot).to.be.equal(initial_free_pot + (fee / 5n) + rounding);
+                expect(new_free_pot).to.be.equal(initial_free_pot + fee / 5n + rounding);
             },
         });
 
@@ -59,21 +58,22 @@ describeSuite({
             id: "E02",
             title: "Create proposal locks minimum bond from proposer",
             test: async function () {
-
                 // Gets the initial reserved amount from the proposer
                 const proposer_initial_balance = await polkadotJs.query.system.account(user_charlie.address);
                 const proposer_initial_reserved_balance = proposer_initial_balance.data.reserved.toBigInt();
-                
+
                 // minimum configured bond > 5% of the proposal
                 const tx = polkadotJs.tx.treasury.proposeSpend(1, user_dave.address);
                 const signedTx = await tx.signAsync(user_charlie);
                 await context.createBlock([signedTx]);
-                
+
                 const proposer_new_balance = await polkadotJs.query.system.account(user_charlie.address);
                 const proposer_new_reserved_balance = proposer_new_balance.data.reserved.toBigInt();
 
                 // reserved value should be the minimum bond
-                expect(proposer_new_reserved_balance).to.be.equal(proposer_initial_reserved_balance + 1_000_000_000_000n * 100n);
+                expect(proposer_new_reserved_balance).to.be.equal(
+                    proposer_initial_reserved_balance + 1_000_000_000_000n * 100n
+                );
             },
         });
 
@@ -81,22 +81,23 @@ describeSuite({
             id: "E03",
             title: "Create proposal locks 5% of the proposal from proposer's account",
             test: async function () {
-
                 // Gets the initial reserved amount from the proposer
                 const proposer_initial_balance = await polkadotJs.query.system.account(user_dave.address);
                 const proposer_initial_reserved_balance = proposer_initial_balance.data.reserved.toBigInt();
-                
+
                 // minimum configured bond > 5% of the proposal
-                const proposal_value = 1_000_000_000_000_000_000n;   
+                const proposal_value = 1_000_000_000_000_000_000n;
                 const tx = polkadotJs.tx.treasury.proposeSpend(proposal_value, user_charlie.address);
                 const signedTx = await tx.signAsync(user_dave);
                 await context.createBlock([signedTx]);
-                
+
                 const proposer_new_balance = await polkadotJs.query.system.account(user_dave.address);
                 const proposer_new_reserved_balance = proposer_new_balance.data.reserved.toBigInt();
 
                 // reserved value should be 5% from the total amount requested in the proposal
-                expect(proposer_new_reserved_balance).to.be.equal(proposer_initial_reserved_balance + (proposal_value * 5n / 100n));
+                expect(proposer_new_reserved_balance).to.be.equal(
+                    proposer_initial_reserved_balance + (proposal_value * 5n) / 100n
+                );
             },
         });
 
@@ -104,13 +105,12 @@ describeSuite({
             id: "E04",
             title: "Bond goes to treasury upon proposal rejection",
             test: async function () {
-
                 // Gets the initial pot deposit value
                 const initial_pot = await polkadotJs.query.system.account(treasury_address);
                 const initial_free_pot = initial_pot.data.free.toBigInt();
 
                 // Creates a proposal
-                const proposal_value = 1_000_000_000_000_000_000n;   
+                const proposal_value = 1_000_000_000_000_000_000n;
                 const tx = polkadotJs.tx.treasury.proposeSpend(proposal_value, user_dave.address);
                 const signedTx = await tx.signAsync(user_bob);
                 await context.createBlock([signedTx]);
@@ -133,12 +133,11 @@ describeSuite({
             id: "E05",
             title: "Proposal is approved",
             test: async function () {
-
                 // initial approvals count
                 const initial_approvals_count = await context.polkadotJs().query.treasury.approvals();
 
                 // Creates a proposal
-                const proposal_value = 100n;   
+                const proposal_value = 100n;
                 const tx = polkadotJs.tx.treasury.proposeSpend(proposal_value, user_dave.address);
                 const signedTx = await tx.signAsync(user_bob);
                 await context.createBlock([signedTx]);
@@ -160,12 +159,11 @@ describeSuite({
             id: "E06",
             title: "Non root can not approve proposals",
             test: async function () {
-
                 // initial approvals count
                 const initial_approvals_count = await context.polkadotJs().query.treasury.approvals();
 
                 // Creates a proposal
-                const proposal_value = 100n;   
+                const proposal_value = 100n;
                 const tx = polkadotJs.tx.treasury.proposeSpend(proposal_value, user_dave.address);
                 const signedTx = await tx.signAsync(user_bob);
                 await context.createBlock([signedTx]);
@@ -184,5 +182,3 @@ describeSuite({
         });
     },
 });
-
-
