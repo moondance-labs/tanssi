@@ -1,8 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
-import { KeyringPair, generateKeyringPair } from "@moonwall/util";
-import { hexToString } from "viem";
+import { KeyringPair } from "@moonwall/util";
 import { extractFeeAuthor } from "util/block";
 
 describeSuite({
