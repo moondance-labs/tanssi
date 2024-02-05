@@ -125,7 +125,7 @@ describeSuite({
                 const new_free_pot = new_pot.data.free.toBigInt();
 
                 // Pot value should be >= the initial value + reserved proposal bond
-                expect(new_free_pot).toBeGreaterThan(initial_free_pot + proposal_value * 5n / 100n);
+                expect(new_free_pot).toBeGreaterThan(initial_free_pot + (proposal_value * 5n) / 100n);
             },
         });
 

@@ -194,7 +194,7 @@ describeSuite({
 
                 const totalSupplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
 
-                expect(totalSupplyAfter - totalSupplyBefore).to.equal(issuance - fee * 4n / 5n);
+                expect(totalSupplyAfter - totalSupplyBefore).to.equal(issuance - (fee * 4n) / 5n);
             },
         });
 
