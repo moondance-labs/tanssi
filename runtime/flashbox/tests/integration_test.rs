@@ -3263,3 +3263,95 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             );
         });
 }
+
+#[test]
+fn test_block_credits_and_collator_assignation_credits_through_tank() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            // Assert current slot gets updated
+            assert_eq!(current_slot(), 1u64);
+            assert!(current_author() == AccountId::from(BOB));
+
+            // Alice and Bob collate in our chain
+            let alice_id = get_aura_id_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
+
+            assert_eq!(authorities(), vec![alice_id, bob_id]);
+
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
+
+            // We make all free credits 0
+            assert_ok!(ServicesPayment::set_collator_assignment_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
+            assert_ok!(ServicesPayment::set_block_production_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
+
+            // We buy 2 sessions through tank
+            let collator_assignation_credits =
+                collator_assignment_credits_to_required_balance(2, 1001.into());
+            let block_production_credits =
+                block_credits_to_required_balance(flashbox_runtime::Period::get() * 2, 1001.into());
+
+            // Fill the tank
+            assert_ok!(ServicesPayment::purchase_credits(
+                origin_of(ALICE.into()),
+                1001.into(),
+                collator_assignation_credits
+                    + block_production_credits
+                    + flashbox_runtime::EXISTENTIAL_DEPOSIT
+            ));
+
+            // Assignment should happen after 2 sessions
+            run_to_session(1u32);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert!(assignment.container_chains.is_empty());
+            run_to_session(2u32);
+            // Charlie and Dave should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&1001u32.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+
+            // After this it should not be assigned anymore, since credits are not payable
+            run_to_session(4u32);
+            // Nobody should be assigned to para 1001
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+        });
+}
