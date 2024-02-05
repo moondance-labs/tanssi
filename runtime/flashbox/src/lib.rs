@@ -42,7 +42,7 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            fungible::{Balanced, Credit},
+            fungible::{Balanced, Credit, Inspect},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
             OnRuntimeUpgrade,
@@ -65,7 +65,7 @@ use {
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::{ChargeForBlockCredit, ProvideBlockProductionCost},
+    pallet_services_payment::ProvideBlockProductionCost,
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     polkadot_runtime_common::BlockHashCount,
@@ -579,10 +579,22 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
         let credits_for_2_sessions = 2 * blocks_per_session;
         para_ids.retain(|para_id| {
             // Check if the container chain has enough credits for producing blocks for 2 sessions
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+            let free_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
-            credits >= credits_for_2_sessions
+            // Return if we can survive with free credits
+            if free_credits >= credits_for_2_sessions {
+                return true
+            }
+
+            let remaining_credits = credits_for_2_sessions.saturating_sub(free_credits);
+
+            let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
+            // let's check if we can withdraw
+            let remaining_to_pay = (remaining_credits as u128).saturating_mul(block_production_costs);
+            // This should take into account whether we tank goes below ED
+            // The true refers to keepAlive
+            Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), remaining_to_pay).into_result(true).is_ok()
         });
     }
 
@@ -648,7 +660,7 @@ parameter_types! {
 impl pallet_services_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
-    type OnChargeForBlockCredit = ChargeForBlockCredit<Runtime>;
+    type OnChargeForBlock = ();
     /// Currency type for fee payment
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block
@@ -740,16 +752,10 @@ impl RegistrarHooks for FlashboxRegistrarHooks {
                 e,
             );
         }
-        // Remove all credits from pallet_services_payment
-        if let Err(e) = ServicesPayment::set_credits(RuntimeOrigin::root(), para_id, 0) {
-            log::warn!(
-                "Failed to set_credits to 0 after para id {} deregistered: {:?}",
-                u32::from(para_id),
-                e,
-            );
-        }
         // Remove bootnodes from pallet_data_preservers
         DataPreservers::para_deregistered(para_id);
+
+        ServicesPayment::para_deregistered(para_id);
 
         Weight::default()
     }

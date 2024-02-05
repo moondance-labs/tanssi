@@ -3,6 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { generateKeyringPair, KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "util/block";
+import { paraIdTank } from "util/payment";
 
 describeSuite({
     id: "CT0601",
@@ -192,18 +193,19 @@ describeSuite({
                 const balanceBefore = (
                     await polkadotJs.query.system.account(randomAccount.address)
                 ).data.free.toBigInt();
-                const credits1 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
-                const purchasedCredits = 100n * blocksPerSession;
+                const purchasedCredits = 1000n * blocksPerSession;
 
-                const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId, purchasedCredits, null);
+                const requiredBalance = purchasedCredits * 1_000_000n;
+                const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId, requiredBalance);
                 await context.createBlock([await tx.signAsync(randomAccount)]);
 
                 const balanceAfter = (
                     await polkadotJs.query.system.account(randomAccount.address)
                 ).data.free.toBigInt();
                 expect(balanceAfter).toBeLessThan(balanceBefore);
-                const credits2 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
-                expect(BigInt(credits2)).toBe(BigInt(credits1) + purchasedCredits);
+
+                const balanceTank = (await polkadotJs.query.system.account(paraIdTank(paraId))).data.free.toBigInt();
+                expect(balanceTank).toBe(requiredBalance);
 
                 // Check that after 2 sessions, container chain 2000 has collators and is producing blocks
                 await jumpSessions(context, 2);
@@ -213,20 +215,23 @@ describeSuite({
                     collators.toJSON().containerChains[paraId].length,
                     `Container chain ${paraId} has 0 collators`
                 ).toBeGreaterThan(0);
+                expect(balanceTank).toBe(requiredBalance);
 
                 // Create a block, the block number should increase, and the number of credits should decrease
-                const credits3 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
                 const containerBlockNum3 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
                     .blockNumber;
                 await context.createBlock();
-                const credits4 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
+
                 const containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
                     .blockNumber;
                 expect(containerBlockNum3, "container chain 2000 did not create a block").toBeLessThan(
                     containerBlockNum4
                 );
-                expect(credits3, "container chain 2000 created a block without burning any credits").toBeGreaterThan(
-                    credits4
+                const balanceTankAfter = (
+                    await polkadotJs.query.system.account(paraIdTank(paraId))
+                ).data.free.toBigInt();
+                expect(balanceTank, "container chain 2000 created a block without burning any credits").toBeGreaterThan(
+                    balanceTankAfter
                 );
             },
         });
