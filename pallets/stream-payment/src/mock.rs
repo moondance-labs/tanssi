@@ -110,6 +110,7 @@ impl pallet_balances::Config for Runtime {
 #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
 pub enum StreamPaymentAssetId {
     Native,
+    Dummy,
 }
 
 pub struct StreamPaymentAssets;
@@ -127,6 +128,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
             StreamPaymentAssetId::Native => {
                 Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
             }
+            StreamPaymentAssetId::Dummy => Ok(()),
         }
     }
 
@@ -141,6 +143,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
                 account,
                 amount,
             ),
+            StreamPaymentAssetId::Dummy => Ok(()),
         }
     }
 
@@ -157,6 +160,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
                 Precision::Exact,
             )
             .map(|_| ()),
+            StreamPaymentAssetId::Dummy => Ok(()),
         }
     }
 
@@ -166,6 +170,7 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
                 &pallet_stream_payment::HoldReason::StreamPayment.into(),
                 account,
             ),
+            StreamPaymentAssetId::Dummy => 0,
         }
     }
 

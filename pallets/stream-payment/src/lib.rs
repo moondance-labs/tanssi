@@ -94,7 +94,10 @@ use {
     frame_system::pallet_prelude::*,
     parity_scale_codec::{FullCodec, MaxEncodedLen},
     scale_info::TypeInfo,
-    sp_runtime::traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, One, Saturating, Zero},
+    sp_runtime::{
+        traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, One, Saturating, Zero},
+        ArithmeticError,
+    },
     sp_std::{fmt::Debug, marker::PhantomData},
 };
 
@@ -361,7 +364,6 @@ pub mod pallet {
         CantBeBothSourceAndTarget,
         CantFetchCurrentTime,
         TimeMustBeIncreasing,
-        CurrencyOverflow,
         SourceCantDecreaseRate,
         TargetCantIncreaseRate,
         CantOverrideMandatoryChange,
@@ -784,7 +786,7 @@ pub mod pallet {
             let mut now = T::TimeProvider::now(&stream.config.time_unit)
                 .ok_or(Error::<T>::CantFetchCurrentTime)?;
 
-            // We want to uupdate `stream.last_time_updated` to `now` as soon
+            // We want to update `stream.last_time_updated` to `now` as soon
             // as possible to avoid forgetting to do it. We copy the old value
             // for payment computation.
             let last_time_updated = stream.last_time_updated;
@@ -887,14 +889,14 @@ pub mod pallet {
                     stream.deposit = stream
                         .deposit
                         .checked_add(&increase)
-                        .ok_or(Error::<T>::CurrencyOverflow)?;
+                        .ok_or(ArithmeticError::Overflow)?;
                     T::Assets::increase_deposit(&stream.config.asset_id, &stream.source, increase)?;
                 }
                 DepositChange::Decrease(decrease) => {
                     stream.deposit = stream
                         .deposit
                         .checked_sub(&decrease)
-                        .ok_or(Error::<T>::CurrencyOverflow)?;
+                        .ok_or(ArithmeticError::Underflow)?;
                     T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, decrease)?;
                 }
             }

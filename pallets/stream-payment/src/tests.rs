@@ -22,7 +22,7 @@ use {
             StreamPayment, StreamPaymentAssetId, StreamPaymentAssets, TimeUnit, ALICE, BOB,
             CHARLIE, DEFAULT_BALANCE, KILO, MEGA,
         },
-        Assets, ChangeKind, DepositChange, DispatchResultWithPostInfo, Event,
+        ArithmeticError, Assets, ChangeKind, DepositChange, DispatchResultWithPostInfo, Event,
         LookupStreamsWithSource, LookupStreamsWithTarget, NextStreamId, Party, Stream,
         StreamConfig, StreamConfigOf, StreamOf, Streams,
     },
@@ -746,7 +746,7 @@ mod request_change {
     }
 
     #[test]
-    fn third_party_cannot_change_rate() {
+    fn third_party_cannot_request_change() {
         ExtBuilder::default().build().execute_with(|| {
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
@@ -761,6 +761,48 @@ mod request_change {
                 ),
                 Error::UnauthorizedOrigin
             );
+        })
+    }
+
+    #[test]
+    fn target_cant_change_deposit() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(BOB),
+                    0,
+                    ChangeKind::Suggestion,
+                    open_stream.config,
+                    Some(DepositChange::Absolute(100)),
+                ),
+                Error::TargetCantChangeDeposit
+            );
+        })
+    }
+
+    #[test]
+    fn request_same_config_is_noop() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                open_stream.config,
+                None,
+            ));
+
+            assert_event_not_emitted!(Event::<Runtime>::StreamConfigChanged {
+                stream_id: 0,
+                old_config: open_stream.config,
+                new_config: open_stream.config,
+                deposit_change: None,
+            });
         })
     }
 
@@ -793,29 +835,6 @@ mod request_change {
     }
 
     #[test]
-    fn request_same_config_is_noop() {
-        ExtBuilder::default().build().execute_with(|| {
-            let open_stream = OpenStream::default();
-            assert_ok!(open_stream.call());
-
-            assert_ok!(StreamPayment::request_change(
-                RuntimeOrigin::signed(ALICE),
-                0,
-                ChangeKind::Suggestion,
-                open_stream.config,
-                None,
-            ));
-
-            assert_event_not_emitted!(Event::<Runtime>::StreamConfigChanged {
-                stream_id: 0,
-                old_config: open_stream.config,
-                new_config: open_stream.config,
-                deposit_change: None,
-            });
-        })
-    }
-
-    #[test]
     fn target_can_immediately_decrease_rate() {
         ExtBuilder::default().build().execute_with(|| {
             let open_stream = OpenStream::default();
@@ -839,6 +858,141 @@ mod request_change {
                 new_config,
                 deposit_change: None,
             });
+        })
+    }
+
+    fn source_can_immediately_change_deposit(change: DepositChange<Balance>) {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                open_stream.config,
+                Some(change),
+            ));
+
+            assert_event_emitted!(Event::<Runtime>::StreamConfigChanged {
+                stream_id: 0,
+                old_config: open_stream.config,
+                new_config: open_stream.config,
+                deposit_change: Some(change),
+            });
+
+            assert_balance_change!(-, ALICE, match change {
+                DepositChange::Absolute(amount) => amount,
+                DepositChange::Increase(amount) => open_stream.deposit + amount,
+                DepositChange::Decrease(amount) => open_stream.deposit - amount,
+            });
+        })
+    }
+
+    #[test]
+    fn source_can_immediately_change_deposit_absolute() {
+        source_can_immediately_change_deposit(DepositChange::Absolute(100))
+    }
+
+    #[test]
+    fn source_can_immediately_increase_deposit() {
+        source_can_immediately_change_deposit(DepositChange::Increase(100))
+    }
+
+    #[test]
+    fn source_can_immediately_decrease_deposit() {
+        source_can_immediately_change_deposit(DepositChange::Decrease(100))
+    }
+
+    #[test]
+    fn immediate_deposit_change_underflow() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    ChangeKind::Suggestion,
+                    open_stream.config,
+                    Some(DepositChange::Decrease(open_stream.deposit + 1)),
+                ),
+                ArithmeticError::Underflow
+            );
+        })
+    }
+
+    #[test]
+    fn immediate_deposit_change_overflow() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    ChangeKind::Suggestion,
+                    open_stream.config,
+                    Some(DepositChange::Increase(u128::MAX - open_stream.deposit + 1)),
+                ),
+                ArithmeticError::Overflow
+            );
+        })
+    }
+
+    #[test]
+    fn change_of_asset_requires_absolute_deposit_change() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let new_config = StreamConfig {
+                asset_id: StreamPaymentAssetId::Dummy,
+                ..open_stream.config
+            };
+
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    ChangeKind::Suggestion,
+                    new_config,
+                    None,
+                ),
+                Error::ChangingAssetRequiresAbsoluteDepositChange,
+            );
+
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    ChangeKind::Suggestion,
+                    new_config,
+                    Some(DepositChange::Increase(5)),
+                ),
+                Error::ChangingAssetRequiresAbsoluteDepositChange,
+            );
+
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    ChangeKind::Suggestion,
+                    new_config,
+                    Some(DepositChange::Decrease(5)),
+                ),
+                Error::ChangingAssetRequiresAbsoluteDepositChange,
+            );
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                new_config,
+                Some(DepositChange::Absolute(5)),
+            ));
         })
     }
 
@@ -874,7 +1028,7 @@ mod request_change {
                 ..default()
             });
 
-            // Target requets a new change that moves the deadline.
+            // Target requets a new change that moves the deadline in the future.
             let change1 = StreamConfig {
                 rate: 102,
                 ..open_stream.config
