@@ -172,11 +172,12 @@ pub struct ExtBuilder {
     collators: Vec<(AccountId, Balance)>,
     // sudo key
     sudo: Option<AccountId>,
-    // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits
+    // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits, session_credits
     para_ids: Vec<(
         u32,
         ContainerChainGenesisData<MaxLengthTokenSymbol>,
         Vec<Vec<u8>>,
+        u32,
         u32,
     )>,
     // configuration to apply
@@ -206,6 +207,7 @@ impl ExtBuilder {
             u32,
             ContainerChainGenesisData<MaxLengthTokenSymbol>,
             Vec<Vec<u8>>,
+            u32,
             u32,
         )>,
     ) -> Self {
@@ -237,9 +239,11 @@ impl ExtBuilder {
                 .para_ids
                 .iter()
                 .cloned()
-                .map(|(para_id, genesis_data, _boot_nodes, _block_credits)| {
-                    (para_id.into(), genesis_data)
-                })
+                .map(
+                    |(para_id, genesis_data, _boot_nodes, _block_credits, _session_credits)| {
+                        (para_id.into(), genesis_data)
+                    },
+                )
                 .collect(),
         }
         .assimilate_storage(&mut t)
@@ -249,9 +253,11 @@ impl ExtBuilder {
             para_id_credits: self
                 .para_ids
                 .into_iter()
-                .map(|(para_id, _genesis_data, _boot_nodes, block_credits)| {
-                    (para_id.into(), block_credits)
-                })
+                .map(
+                    |(para_id, _genesis_data, _boot_nodes, block_credits, session_credits)| {
+                        (para_id.into(), block_credits, session_credits)
+                    },
+                )
                 .collect(),
         }
         .assimilate_storage(&mut t)

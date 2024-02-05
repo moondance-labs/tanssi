@@ -747,7 +747,6 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
         let block_credits = 20 * blocks_per_session;
         let session_credits = 20;
 
-
         for para_id in para_ids {
             assert_ok!(ServicesPayment::set_block_production_credits(
                 RuntimeOrigin::root(),
@@ -784,7 +783,6 @@ impl pallet_authority_assignment::Config for Runtime {
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * currency::MICRODANCE;
 pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * currency::MICRODANCE;
-
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {

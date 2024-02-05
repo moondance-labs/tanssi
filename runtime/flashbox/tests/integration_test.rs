@@ -75,8 +75,8 @@ fn genesis_para_registrar() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -107,8 +107,8 @@ fn genesis_para_registrar_deregister() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -156,8 +156,8 @@ fn genesis_para_registrar_runtime_api() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -207,8 +207,8 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, genesis_data_1001.clone(), vec![], u32::MAX),
-            (1002, genesis_data_1002.clone(), vec![], u32::MAX),
+            (1001, genesis_data_1001.clone(), vec![], u32::MAX, u32::MAX),
+            (1002, genesis_data_1002.clone(), vec![], u32::MAX, u32::MAX),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -285,8 +285,8 @@ fn test_author_collation_aura() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -320,8 +320,8 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -392,8 +392,8 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -703,7 +703,11 @@ fn test_paras_registered_but_zero_credits() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
@@ -762,10 +766,14 @@ fn test_paras_registered_but_not_enough_credits() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
             // Purchase 1 credit less that what is needed
             let credits_1001 = flashbox_runtime::Period::get() * 2 - 1;
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
                 credits_1001
@@ -781,7 +789,7 @@ fn test_paras_registered_but_not_enough_credits() {
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
 
             // Now purchase the missing block credit
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
                 credits_1001 + 1
@@ -842,10 +850,14 @@ fn test_paras_registered_but_only_credits_for_1_session() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
             // Purchase only enough credits for 1 session
             let credits_1001 = flashbox_runtime::Period::get() * 2;
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
                 credits_1001
@@ -927,8 +939,8 @@ fn test_parachains_deregister_collators_re_assigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -990,8 +1002,8 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1057,8 +1069,8 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1144,8 +1156,8 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1305,8 +1317,8 @@ fn test_consensus_runtime_api() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1400,8 +1412,8 @@ fn test_consensus_runtime_api_session_changes() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1516,8 +1528,8 @@ fn test_consensus_runtime_api_next_session() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -1728,8 +1740,8 @@ fn test_author_noting_not_self_para() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -1786,8 +1798,8 @@ fn test_author_noting_set_author_and_kill_author_data() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -1831,8 +1843,8 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -1872,8 +1884,8 @@ fn test_author_noting_runtime_api() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .build()
         .execute_with(|| {
@@ -1942,8 +1954,8 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2027,8 +2039,8 @@ fn test_session_keys_with_authority_assignment() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(default_config())
         .build()
@@ -2361,8 +2373,8 @@ fn test_reward_to_invulnerable() {
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -2422,8 +2434,8 @@ fn test_reward_to_invulnerable_with_key_change() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -2568,13 +2580,13 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
         .execute_with(|| {
             run_to_block(2);
 
-            // Try to buy (MaxCreditsStored - 1) credits
+            // Try to buy (MaxBlockProductionCreditsStored - 1) credits
             let balance_before = System::account(AccountId::from(ALICE)).data.free;
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
                 block_credits_to_required_balance(
-                    flashbox_runtime::MaxCreditsStored::get() - 1,
+                    flashbox_runtime::MaxBlockProductionCreditsStored::get() - 1,
                     1001.into()
                 )
             ));
@@ -2588,13 +2600,13 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_eq!(
                 balance_tank,
                 block_credits_to_required_balance(
-                    flashbox_runtime::MaxCreditsStored::get() - 1,
+                    flashbox_runtime::MaxBlockProductionCreditsStored::get() - 1,
                     1001.into()
                 )
             );
 
             let expected_cost = block_credits_to_required_balance(
-                flashbox_runtime::MaxCreditsStored::get() - 1,
+                flashbox_runtime::MaxBlockProductionCreditsStored::get() - 1,
                 1001.into(),
             );
             assert_eq!(balance_before - balance_after, expected_cost);
@@ -2615,12 +2627,15 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 1001.into()
             ));
 
-            // We received aññ free credits, because we cannot have more than MaxCreditsStored
+            // We received aññ free credits, because we cannot have more than MaxBlockProductionCreditsStored
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(credits, flashbox_runtime::MaxCreditsStored::get());
+            assert_eq!(
+                credits,
+                flashbox_runtime::MaxBlockProductionCreditsStored::get()
+            );
         });
 }
 
@@ -2665,7 +2680,10 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(credits, flashbox_runtime::MaxCreditsStored::get());
+            assert_eq!(
+                credits,
+                flashbox_runtime::MaxBlockProductionCreditsStored::get()
+            );
             // Deregister after 1 session
             run_to_session(1);
             assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
@@ -2678,7 +2696,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             // We spent some credits because this container chain had collators for 1 session
             assert_ne!(
                 credits_before_2nd_register,
-                flashbox_runtime::MaxCreditsStored::get()
+                flashbox_runtime::MaxBlockProductionCreditsStored::get()
             );
             // Register again
             assert_ok!(Registrar::register(
@@ -2796,7 +2814,11 @@ fn test_ed_plus_two_sessions_purchase_works() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
             let credits_1001 =
                 block_credits_to_required_balance(flashbox_runtime::Period::get() * 2, 1001.into())
                     + flashbox_runtime::EXISTENTIAL_DEPOSIT;
@@ -2892,7 +2914,11 @@ fn test_ed_plus_two_sessions_minus_1_purchase_fails() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
             let credits_1001 =
                 block_credits_to_required_balance(flashbox_runtime::Period::get() * 2, 1001.into())
                     + flashbox_runtime::EXISTENTIAL_DEPOSIT
@@ -2961,7 +2987,7 @@ fn test_credits_with_purchase_can_be_combined() {
                 1001.into()
             ));
             // Set 1 session of free credits and purchase 1 session of credits
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
                 flashbox_runtime::Period::get()

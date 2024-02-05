@@ -52,8 +52,8 @@ use {
     sp_std::{collections::btree_set::BTreeSet, prelude::*},
     tp_container_chain_genesis_data::ContainerChainGenesisData,
     tp_traits::{
-        CollatorAssignmentHook, GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
-        ParathreadParams as ParathreadParamsTy, SlotFrequency,
+        CollatorAssignmentHook, GetCurrentContainerChains, GetSessionContainerChains,
+        GetSessionIndex, ParaId, ParathreadParams as ParathreadParamsTy, SlotFrequency,
     },
 };
 
