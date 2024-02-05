@@ -128,6 +128,60 @@ describeSuite({
                 expect(new_free_pot).toBeGreaterThan(initial_free_pot + proposal_value * 5n / 100n);
             },
         });
+
+        it({
+            id: "E05",
+            title: "Proposal is approved",
+            test: async function () {
+
+                // initial approvals count
+                const initial_approvals_count = await context.polkadotJs().query.treasury.approvals();
+
+                // Creates a proposal
+                const proposal_value = 100n;   
+                const tx = polkadotJs.tx.treasury.proposeSpend(proposal_value, user_dave.address);
+                const signedTx = await tx.signAsync(user_bob);
+                await context.createBlock([signedTx]);
+
+                // Proposal is approved
+                const tx_approval = polkadotJs.tx.treasury.approveProposal(3);
+                const signedTx_approval = await polkadotJs.tx.sudo.sudo(tx_approval).signAsync(sudo_alice);
+                await context.createBlock([signedTx_approval]);
+
+                // New approvals count
+                const new_approvals_count = await context.polkadotJs().query.treasury.approvals();
+
+                // There should be 1 new approval
+                expect(new_approvals_count.length).to.be.equal(initial_approvals_count.length + 1);
+            },
+        });
+
+        it({
+            id: "E06",
+            title: "Non root can not approve proposals",
+            test: async function () {
+
+                // initial approvals count
+                const initial_approvals_count = await context.polkadotJs().query.treasury.approvals();
+
+                // Creates a proposal
+                const proposal_value = 100n;   
+                const tx = polkadotJs.tx.treasury.proposeSpend(proposal_value, user_dave.address);
+                const signedTx = await tx.signAsync(user_bob);
+                await context.createBlock([signedTx]);
+
+                // Proposal is approved
+                const tx_approval = polkadotJs.tx.treasury.approveProposal(4);
+                const signedTx_approval = await tx_approval.signAsync(user_charlie);
+                await context.createBlock([signedTx_approval]);
+
+                // New approvals count
+                const new_approvals_count = await context.polkadotJs().query.treasury.approvals();
+
+                // There should be no new approvals
+                expect(new_approvals_count.length).to.be.equal(initial_approvals_count.length);
+            },
+        });
     },
 });
 
