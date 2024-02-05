@@ -273,10 +273,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             let existing_credits = CollatorAssignmentCredits::<T>::get(para_id).unwrap_or(0u32);
 
-            ensure!(
-                existing_credits >= 1u32,
-                Error::<T>::InsufficientCredits,
-            );
+            ensure!(existing_credits >= 1u32, Error::<T>::InsufficientCredits,);
 
             let updated_credits = existing_credits.saturating_sub(1u32);
             CollatorAssignmentCredits::<T>::insert(para_id, updated_credits);
