@@ -425,16 +425,19 @@ where
     // this seems to be called for substrate-based transactions
 	fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance<R>>) {
 		if let Some(fees) = fees_then_tips.next() {
-			// for fees, 80% are burned, 20% to the treasury
-			let (_, to_treasury) = fees.ration(80, 20);
-			// Balances pallet automatically burns dropped Negative Imbalances by decreasing
-			// total_supply accordingly
+
+            // 80% is burned, 20% goes to the treasury
+            // Same policy applies for tips as well
+            let burn_percentage = 80;
+            let treasury_percentage = 20;
+			
+			let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
+			// Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
 			<pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(to_treasury);
 
 			// handle tip if there is one
 			if let Some(tip) = fees_then_tips.next() {
-				// for now we use the same burn/treasury strategy used for regular fees
-				let (_, to_treasury) = tip.ration(80, 20);
+				let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
 				<pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(to_treasury);
 			}
 		}
@@ -443,9 +446,11 @@ where
     // this is called from pallet_evm for Ethereum-based transactions
 	// (technically, it calls on_unbalanced, which calls this when non-zero)
 	fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
-		// Balances pallet automatically burns dropped Negative Imbalances by decreasing
-		// total_supply accordingly
-		let (_, to_treasury) = amount.ration(80, 20);
+        // 80% is burned, 20% goes to the treasury
+        let burn_percentage = 80;
+        let treasury_percentage = 20;
+
+		let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
 		<pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(to_treasury);
 	}
 }
@@ -457,7 +462,7 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // This will burn 80% of the fees and deposit the remainder into the treasury
+    // This will burn 80% from fees & tips and deposit the remainder into the treasury
     type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
@@ -1432,7 +1437,7 @@ impl pallet_treasury::Config for Runtime {
 	type ApproveOrigin = EnsureRoot<AccountId>;
 	type RejectOrigin = EnsureRoot<AccountId>;
 	type RuntimeEvent = RuntimeEvent;
-	// If spending proposal rejected, transfer proposer bond to treasury
+	// If proposal gets rejected, bond goes to treasury
 	type OnSlash = Treasury;
 	type ProposalBond = ProposalBond;
 	type ProposalBondMinimum = ConstU128<{ 1 * currency::DANCE * currency::SUPPLY_FACTOR }>;
