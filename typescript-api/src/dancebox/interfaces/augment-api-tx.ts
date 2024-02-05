@@ -31,6 +31,7 @@ import type {
     StagingXcmV3MultiLocation,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
+    TpTraitsSlotFrequency,
     XcmV3WeightLimit,
     XcmVersionedMultiAssets,
     XcmVersionedMultiLocation,
@@ -1518,6 +1519,27 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, TpContainerChainGenesisDataContainerChainGenesisData]
+            >;
+            /** See [`Pallet::register_parathread`]. */
+            registerParathread: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    slotFrequency: TpTraitsSlotFrequency | { min?: any; max?: any } | string | Uint8Array,
+                    genesisData:
+                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, TpTraitsSlotFrequency, TpContainerChainGenesisDataContainerChainGenesisData]
+            >;
+            /** See [`Pallet::set_parathread_params`]. */
+            setParathreadParams: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    slotFrequency: TpTraitsSlotFrequency | { min?: any; max?: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, TpTraitsSlotFrequency]
             >;
             /** See [`Pallet::unpause_container_chain`]. */
             unpauseContainerChain: AugmentedSubmittable<

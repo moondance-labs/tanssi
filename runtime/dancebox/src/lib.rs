@@ -212,7 +212,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancebox"),
     impl_name: create_runtime_str!("dancebox"),
     authoring_version: 1,
-    spec_version: 400,
+    spec_version: 500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1804,7 +1804,12 @@ impl_runtime_apis! {
                 Session::current_index()
             };
 
-            Registrar::session_container_chains(session_index).to_vec()
+            let container_chains = Registrar::session_container_chains(session_index);
+            let mut para_ids = vec![];
+            para_ids.extend(container_chains.parachains);
+            para_ids.extend(container_chains.parathreads.into_iter().map(|(para_id, _)| para_id));
+
+            para_ids
         }
 
         /// Fetch genesis data for this para id
