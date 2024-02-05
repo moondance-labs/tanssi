@@ -577,22 +577,31 @@ pub struct RemoveParaIdsWithNoCreditsImpl;
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
         let blocks_per_session = Period::get();
-        let credits_for_2_sessions = 2 * blocks_per_session;
+        let block_credits_for_2_sessions = 2 * blocks_per_session;
         para_ids.retain(|para_id| {
             // Check if the container chain has enough credits for producing blocks for 2 sessions
-            let free_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+            let free_block_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+                .unwrap_or_default();
+
+            // Check if the container chain has enough credits for 2 session assignments
+            let free_session_credits = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
             // Return if we can survive with free credits
-            if free_credits >= credits_for_2_sessions {
+            if free_block_credits >= block_credits_for_2_sessions && free_session_credits >= 2 {
                 return true
             }
 
-            let remaining_credits = credits_for_2_sessions.saturating_sub(free_credits);
+            let remaining_block_credits = block_credits_for_2_sessions.saturating_sub(free_block_credits);
+            let remaining_session_credits = 2u32.saturating_sub(free_session_credits);
 
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
+            let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(para_id);
             // let's check if we can withdraw
-            let remaining_to_pay = (remaining_credits as u128).saturating_mul(block_production_costs);
+            let remaining_block_credits_to_pay = (remaining_block_credits as u128).saturating_mul(block_production_costs);
+            let remaining_session_credits_to_pay = (remaining_session_credits as u128).saturating_mul(collator_assignment_costs);
+            let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay);
+
             // This should take into account whether we tank goes below ED
             // The true refers to keepAlive
             Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), remaining_to_pay).into_result(true).is_ok()
