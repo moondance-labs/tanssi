@@ -58,8 +58,9 @@ use {
     },
     sp_std::{fmt::Debug, prelude::*, vec},
     tp_traits::{
-        CollatorAssignmentHook, GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
-        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
+        CollatorAssignmentHook, GetContainerChainAuthor, GetHostConfiguration,
+        GetSessionContainerChains, ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        ShouldRotateAllCollators, Slot,
     },
 };
 
