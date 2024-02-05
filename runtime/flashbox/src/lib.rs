@@ -43,9 +43,10 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit},
+            tokens::{PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
-            OnRuntimeUpgrade,
+            OnRuntimeUpgrade, OnUnbalanced
         },
         weights::{
             constants::{
@@ -76,7 +77,7 @@ use {
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
-        traits::{AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT},
+        traits::{ AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, IdentityLookup },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
@@ -86,6 +87,7 @@ use {
         GetSessionContainerChains, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
         ShouldRotateAllCollators,
     },
+    pallet_balances::NegativeImbalance,
 };
 pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
