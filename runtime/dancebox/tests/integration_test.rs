@@ -16,8 +16,6 @@
 
 #![cfg(test)]
 
-use pallet_balances::Instance1;
-
 use {
     common::*,
     cumulus_primitives_core::ParaId,
@@ -33,6 +31,7 @@ use {
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting::ContainerChainBlockInfo,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
+    pallet_balances::Instance1,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_migrations::Migration,
     pallet_pooled_staking::{
@@ -54,6 +53,7 @@ use {
     staging_xcm::latest::prelude::*,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
+    tp_traits::SlotFrequency,
 };
 
 mod common;
@@ -4986,5 +4986,52 @@ fn test_division_by_0() {
             use frame_support::traits::tokens::ConversionToAssetBalance;
             let balance = dancebox_runtime::xcm_config::CustomConverter::to_asset_balance(1, 1);
             assert!(balance.is_err());
+        });
+}
+
+#[test]
+fn test_register_parathread() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            // Register
+            assert_ok!(Registrar::register_parathread(
+                origin_of(ALICE.into()),
+                3001.into(),
+                SlotFrequency { min: 1, max: 1 },
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                3001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                3001.into()
+            ));
+
+            run_to_session(2);
+            let assignment = CollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&ParaId::from(3001)],
+                vec![CHARLIE.into()]
+            );
         });
 }

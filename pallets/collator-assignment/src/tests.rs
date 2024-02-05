@@ -821,18 +821,18 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
 
             // 4 collators so we can only assign to one parathread
             m.collators = vec![1, 2, 3, 4];
-            m.parathreads = vec![5001, 5002];
+            m.parathreads = vec![3001, 3002];
         });
         assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
         let initial_assignment =
-            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 5001), (4, 5001)]);
+            BTreeMap::from_iter(vec![(1, 1000), (2, 1000), (3, 3001), (4, 3001)]);
 
         assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
-            // Seed chosen manually to see the case where parathread 5002 is given priority
+            // Seed chosen manually to see the case where parathread 3002 is given priority
             m.random_seed = [2; 32];
         });
 
@@ -841,7 +841,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 1000), (2, 5002), (3, 1000), (4, 5002)]);
+            BTreeMap::from_iter(vec![(1, 1000), (2, 3002), (3, 1000), (4, 3002)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -1227,6 +1227,60 @@ fn collator_assignment_includes_empty_chains() {
                 (3001.into(), vec![]),
                 (3002.into(), vec![]),
             ]),
+        };
+        assert_eq!(assigned_collators, expected);
+    });
+}
+
+#[test]
+fn collator_assignment_remove_parachains_without_credits() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7];
+            m.container_chains = vec![2000, 5001, 5002];
+            m.parathreads = vec![]
+        });
+        assert_eq!(assigned_collators(), initial_collators(),);
+        run_to_block(11);
+
+        let assigned_collators = CollatorContainerChain::<Test>::get();
+        let expected = AssignedCollators {
+            orchestrator_chain: vec![1, 2, 3, 4, 5],
+            container_chains: BTreeMap::from_iter(vec![(2000.into(), vec![6, 7])]),
+        };
+        assert_eq!(assigned_collators, expected);
+    });
+}
+
+#[test]
+fn collator_assignment_remove_parathreads_without_credits() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        MockData::mutate(|m| {
+            m.collators_per_container = 2;
+            m.collators_per_parathread = 2;
+            m.min_orchestrator_chain_collators = 2;
+            m.max_orchestrator_chain_collators = 5;
+
+            m.collators = vec![1, 2, 3, 4, 5, 6, 7];
+            m.container_chains = vec![];
+            m.parathreads = vec![3000, 5001, 5002]
+        });
+        assert_eq!(assigned_collators(), initial_collators(),);
+        run_to_block(11);
+
+        let assigned_collators = CollatorContainerChain::<Test>::get();
+        let expected = AssignedCollators {
+            orchestrator_chain: vec![1, 2, 3, 4, 5],
+            container_chains: BTreeMap::from_iter(vec![(3000.into(), vec![6, 7])]),
         };
         assert_eq!(assigned_collators, expected);
     });

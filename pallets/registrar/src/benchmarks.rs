@@ -25,7 +25,7 @@ use {
     sp_core::Get,
     sp_std::{vec, vec::Vec},
     tp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
-    tp_traits::ParaId,
+    tp_traits::{ParaId, SlotFrequency},
 };
 
 /// Create a funded user.
@@ -353,6 +353,94 @@ mod benchmarks {
         assert!(!Pallet::<T>::paused().contains(&ParaId::from(1000)));
         // Check 1000 is in registered_para_ids
         assert!(Pallet::<T>::registered_para_ids().contains(&ParaId::from(1000)));
+    }
+
+    #[benchmark]
+    fn register_parathread(x: Linear<5, 3_000_000>, y: Linear<1, 50>, z: Linear<1, 10>) {
+        let mut data = vec![];
+        // Number of keys
+        for _i in 1..z {
+            data.push((b"code".to_vec(), vec![1; (x / z) as usize]).into())
+        }
+
+        let slot_frequency = SlotFrequency::default();
+        let storage = new_genesis_data(data);
+
+        for i in 1..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register_parathread(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                slot_frequency.clone(),
+                storage.clone(),
+            )
+            .unwrap();
+        }
+
+        // We should have registered y-1
+        assert_eq!(Pallet::<T>::pending_verification().len(), (y - 1) as usize);
+
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+
+        #[extrinsic_call]
+        Pallet::<T>::register_parathread(
+            RawOrigin::Signed(caller),
+            Default::default(),
+            slot_frequency,
+            storage,
+        );
+
+        // verification code
+        assert_eq!(Pallet::<T>::pending_verification().len(), y as usize);
+        assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
+    }
+
+    #[benchmark]
+    fn set_parathread_params(y: Linear<1, 50>) {
+        let storage = vec![(vec![1; 4], vec![1; 3_000_000usize]).into()];
+        let storage = new_genesis_data(storage);
+        let slot_frequency = SlotFrequency::default();
+
+        // Deregister all the existing chains to avoid conflicts with the new ones
+        for para_id in Pallet::<T>::registered_para_ids() {
+            Pallet::<T>::deregister(RawOrigin::Root.into(), para_id).unwrap();
+        }
+
+        for i in 0..y {
+            // Twice the deposit just in case
+            let (caller, _deposit_amount) =
+                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            Pallet::<T>::register_parathread(
+                RawOrigin::Signed(caller.clone()).into(),
+                i.into(),
+                slot_frequency.clone(),
+                storage.clone(),
+            )
+            .unwrap();
+            T::RegistrarHooks::benchmarks_ensure_valid_for_collating(i.into());
+            Pallet::<T>::mark_valid_for_collating(RawOrigin::Root.into(), i.into()).unwrap();
+        }
+
+        let new_slot_frequency = SlotFrequency { min: 2, max: 2 };
+
+        #[extrinsic_call]
+        Pallet::<T>::set_parathread_params(
+            RawOrigin::Root,
+            (y - 1).into(),
+            new_slot_frequency.clone(),
+        );
+
+        // Start a new session
+        Pallet::<T>::initializer_on_new_session(&T::SessionDelay::get());
+
+        // Check y-1 has new slot frequency
+        assert_eq!(
+            Pallet::<T>::parathread_params(&ParaId::from(y - 1)).map(|x| x.slot_frequency),
+            Some(new_slot_frequency)
+        );
     }
 
     impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
