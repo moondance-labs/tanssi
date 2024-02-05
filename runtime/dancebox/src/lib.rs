@@ -1457,6 +1457,7 @@ impl pallet_treasury::Config for Runtime {
     type Beneficiary = AccountId;
     type BeneficiaryLookup = IdentityLookup<AccountId>;
     type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
+    // TODO: implement pallet-asset-rate to allow the treasury to spend other assets
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<0>;
     #[cfg(feature = "runtime-benchmarks")]
