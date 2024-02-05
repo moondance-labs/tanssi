@@ -717,7 +717,7 @@ fn test_paras_registered_but_zero_credits() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(root_origin(), 1001.into(), 0));
 
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
@@ -776,10 +776,10 @@ fn test_paras_registered_but_not_enough_credits() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(root_origin(), 1001.into(), 0));
             // Purchase 1 credit less that what is needed
             let credits_1001 = dancebox_runtime::Period::get() * 2 - 1;
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
                 credits_1001
@@ -795,7 +795,7 @@ fn test_paras_registered_but_not_enough_credits() {
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
 
             // Now purchase the missing block credit
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
                 credits_1001 + 1
@@ -856,10 +856,10 @@ fn test_paras_registered_but_only_credits_for_1_session() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(root_origin(), 1001.into(), 0));
             // Purchase only enough credits for 1 session
             let credits_1001 = dancebox_runtime::Period::get() * 2;
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
                 credits_1001
@@ -4440,8 +4440,8 @@ fn test_migration_services_payment() {
             ));
 
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1002.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(root_origin(), 1002.into(), 0));
             // And also remove the "given_free_credits" storage because the migration will only
             // give them free credits if they have not received them already
             pallet_services_payment::GivenFreeCredits::<Runtime>::remove(ParaId::from(1001));
@@ -4718,7 +4718,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 origin_of(ALICE.into()),
                 1001.into(),
                 block_credits_to_required_balance(
-                    dancebox_runtime::MaxCreditsStored::get() - 1,
+                    dancebox_runtime::MaxBlockProductionCreditsStored::get() - 1,
                     1001.into()
                 )
             ));
@@ -4732,13 +4732,13 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_eq!(
                 balance_tank,
                 block_credits_to_required_balance(
-                    dancebox_runtime::MaxCreditsStored::get() - 1,
+                    dancebox_runtime::MaxBlockProductionCreditsStored::get() - 1,
                     1001.into()
                 )
             );
 
             let expected_cost = block_credits_to_required_balance(
-                dancebox_runtime::MaxCreditsStored::get() - 1,
+                dancebox_runtime::MaxBlockProductionCreditsStored::get() - 1,
                 1001.into(),
             );
             assert_eq!(balance_before - balance_after, expected_cost);
@@ -4764,7 +4764,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get());
+            assert_eq!(credits, dancebox_runtime::MaxBlockProductionCreditsStored::get());
         });
 }
 
@@ -4809,7 +4809,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(credits, dancebox_runtime::MaxCreditsStored::get());
+            assert_eq!(credits, dancebox_runtime::MaxBlockProductionCreditsStored::get());
             // Deregister after 1 session
             run_to_session(1);
             assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
@@ -4822,7 +4822,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             // We spent some credits because this container chain had collators for 1 session
             assert_ne!(
                 credits_before_2nd_register,
-                dancebox_runtime::MaxCreditsStored::get()
+                dancebox_runtime::MaxBlockProductionCreditsStored::get()
             );
             // Register again
             assert_ok!(Registrar::register(
@@ -5048,7 +5048,7 @@ fn test_ed_plus_two_sessions_purchase_works() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(root_origin(), 1001.into(), 0));
             let credits_1001 =
                 block_credits_to_required_balance(dancebox_runtime::Period::get() * 2, 1001.into())
                     + dancebox_runtime::EXISTENTIAL_DEPOSIT;
@@ -5144,7 +5144,7 @@ fn test_ed_plus_two_sessions_minus_1_purchase_fails() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(root_origin(), 1001.into(), 0));
+            assert_ok!(ServicesPayment::set_block_production_credits(root_origin(), 1001.into(), 0));
             let credits_1001 =
                 block_credits_to_required_balance(dancebox_runtime::Period::get() * 2, 1001.into())
                     + dancebox_runtime::EXISTENTIAL_DEPOSIT
@@ -5213,7 +5213,7 @@ fn test_credits_with_purchase_can_be_combined() {
                 1001.into()
             ));
             // Need to reset credits to 0 because now parachains are given free credits on register
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
                 dancebox_runtime::Period::get()

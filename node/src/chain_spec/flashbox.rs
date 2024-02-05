@@ -214,7 +214,7 @@ fn testnet_genesis(
     // Assign 1000 block credits to all container chains registered in genesis
     let para_id_credits: Vec<_> = para_ids
         .iter()
-        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000))
+        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000, 3))
         .collect();
     let para_id_boot_nodes: Vec<_> = para_ids
         .iter()

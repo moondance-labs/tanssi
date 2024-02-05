@@ -22,6 +22,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use pallet_services_payment::ProvideCollatorAssignmentCost;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -605,13 +606,20 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
 
         let blocks_per_session = Period::get();
         // Enough credits to run any benchmark
-        let credits = 20 * blocks_per_session;
+        let block_credits = 20 * blocks_per_session;
+        let session_credits = 20;
+
 
         for para_id in para_ids {
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 RuntimeOrigin::root(),
                 *para_id,
-                credits,
+                block_credits,
+            ));
+            assert_ok!(ServicesPayment::set_collator_assignment_credits(
+                RuntimeOrigin::root(),
+                *para_id,
+                session_credits,
             ));
         }
     }
@@ -644,6 +652,8 @@ impl pallet_authority_assignment::Config for Runtime {
 }
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * currency::MICRODANCE;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * currency::MICRODANCE;
+
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
@@ -652,11 +662,18 @@ impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
     }
 }
 
+pub struct CollatorAssignmentCost<Runtime>(PhantomData<Runtime>);
+impl ProvideCollatorAssignmentCost<Runtime> for CollatorAssignmentCost<Runtime> {
+    fn collator_assignment_cost(_para_id: &ParaId) -> (u128, Weight) {
+        (FIXED_COLLATOR_ASSIGNMENT_COST, Weight::zero())
+    }
+}
+
 parameter_types! {
     // 60 days worth of blocks
     pub const MaxBlockProductionCreditsStored: BlockNumber = 60 * DAYS;
     // 60 days worth of blocks
-    pub const MaxCollatorAssignmentCreditsStored: u32 = MaxBlockProductionCreditsStored/Period::get();
+    pub const MaxCollatorAssignmentCreditsStored: u32 = MaxBlockProductionCreditsStored::get()/Period::get();
 }
 
 impl pallet_services_payment::Config for Runtime {
@@ -669,7 +686,7 @@ impl pallet_services_payment::Config for Runtime {
     /// Provider of a block cost which can adjust from block to block
     type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
     /// Provider of a block cost which can adjust from block to block
-    type ProvideCollatorAssignmentCost = ();
+    type ProvideCollatorAssignmentCost = CollatorAssignmentCost<Runtime>;
     /// The maximum number of block credits that can be accumulated
     type MaxBlockProductionCreditsStored = MaxBlockProductionCreditsStored;
     /// The maximum number of session credits that can be accumulated
