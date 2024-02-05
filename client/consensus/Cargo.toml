@@ -24,6 +24,7 @@ sp-core = { workspace = true }
 sp-inherents = { workspace = true }
 sp-keystore = { workspace = true }
 sp-runtime = { workspace = true }
+sp-state-machine = { workspace = true }
 sp-timestamp = { workspace = true }
 substrate-prometheus-endpoint = { workspace = true }
 
@@ -31,9 +32,18 @@ substrate-prometheus-endpoint = { workspace = true }
 tp-consensus = { workspace = true, features = [ "std" ] }
 
 # Cumulus dependencies
+cumulus-client-collator = { workspace = true }
+cumulus-client-consensus-aura = { workspace = true }
 cumulus-client-consensus-common = { workspace = true }
+cumulus-client-consensus-proposer = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
+cumulus-relay-chain-interface = { workspace = true }
+
+# Polkadot
+polkadot-node-primitives = { workspace = true }
+polkadot-overseer = { workspace = true }
+polkadot-primitives = { workspace = true }
 
 # Nimbus Dependencies
 nimbus-consensus = { workspace = true }
