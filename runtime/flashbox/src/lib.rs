@@ -651,6 +651,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type GetRandomnessForNextBlock = ();
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
+    type CollatorAssignmentHook = ServicesPayment;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
@@ -829,7 +830,6 @@ impl pallet_registrar::Config for Runtime {
     type Currency = Balances;
     type DepositAmount = DepositAmount;
     type RegistrarHooks = FlashboxRegistrarHooks;
-    type CollatorAssignmentHook = ServicesPayment;
     type WeightInfo = pallet_registrar::weights::SubstrateWeight<Runtime>;
 }
 

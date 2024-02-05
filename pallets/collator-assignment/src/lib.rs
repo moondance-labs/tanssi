@@ -58,7 +58,7 @@ use {
     },
     sp_std::{fmt::Debug, prelude::*, vec},
     tp_traits::{
-        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
+        CollatorAssignmentHook, GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
         RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
     },
 };
@@ -102,6 +102,7 @@ pub mod pallet {
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
         type RemoveParaIdsWithNoCredits: RemoveParaIdsWithNoCredits;
+        type CollatorAssignmentHook: CollatorAssignmentHook;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -216,6 +217,7 @@ pub mod pallet {
             let collators_per_container =
                 T::HostConfiguration::collators_per_container(target_session_index);
             for para_id in &container_chain_ids {
+                T::CollatorAssignmentHook::on_collators_assigned(*para_id);
                 chains.push(ChainNumCollators {
                     para_id: *para_id,
                     min_collators: collators_per_container,
@@ -225,6 +227,7 @@ pub mod pallet {
             let collators_per_parathread =
                 T::HostConfiguration::collators_per_parathread(target_session_index);
             for para_id in &parathreads {
+                T::CollatorAssignmentHook::on_collators_assigned(*para_id);
                 chains.push(ChainNumCollators {
                     para_id: *para_id,
                     min_collators: collators_per_parathread,
