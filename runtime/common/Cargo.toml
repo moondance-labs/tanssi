@@ -27,9 +27,9 @@ pallet-services-payment = { workspace = true }
 pallet-migrations = { workspace = true }
 
 # Substrate
-frame-try-runtime = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
+frame-try-runtime = { workspace = true, optional = true }
 pallet-balances = { workspace = true }
 
 sp-core = { workspace = true }
@@ -53,15 +53,15 @@ std = [
 	"pallet-balances/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
-    "pallet-invulnerables/std",
+	"pallet-invulnerables/std",
 	"pallet-migrations/std",
+	"pallet-pooled-staking/std",
 	"pallet-registrar/std",
-    "pallet-pooled-staking/std",
 	"pallet-services-payment/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"sp-core/std",
-    "sp-runtime/std",
+	"sp-runtime/std",
 	"sp-std/std",
 ]
 
@@ -71,12 +71,12 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
-    "pallet-invulnerables/runtime-benchmarks",
+	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
-    "pallet-pooled-staking/runtime-benchmarks",
+	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
-    "sp-runtime/runtime-benchmarks"
+	"sp-runtime/runtime-benchmarks",
 ]
 
 try-runtime = [
@@ -86,12 +86,12 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
-    "pallet-invulnerables/try-runtime",
+	"pallet-invulnerables/try-runtime",
 	"pallet-migrations/try-runtime",
-    "pallet-pooled-staking/try-runtime",
+	"pallet-pooled-staking/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-services-payment/try-runtime",
-    "sp-runtime/try-runtime",
+	"sp-runtime/try-runtime",
 ]
 
 fast-runtime = []
