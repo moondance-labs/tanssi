@@ -524,42 +524,14 @@ pub mod pallet {
 
             // If asset id and time unit are the same, we allow to make the change
             // immediatly if the origin is at a disadvantage.
-            // We allow this event if there is already a pending request.
-            'immediate: {
-                if new_config.time_unit != stream.config.time_unit
-                    || new_config.asset_id != stream.config.asset_id
-                {
-                    break 'immediate;
-                }
-
-                if requester == Party::Source && new_config.rate < stream.config.rate {
-                    break 'immediate;
-                }
-
-                if requester == Party::Target && new_config.rate > stream.config.rate {
-                    break 'immediate;
-                }
-
-                // Perform pending payment before changing config.
-                Self::perform_stream_payment(stream_id, &mut stream)?;
-
-                // We apply the requested deposit change.
-                if let Some(change) = deposit_change {
-                    Self::apply_deposit_change(&mut stream, change)?;
-                }
-
-                // Emit event.
-                Pallet::<T>::deposit_event(Event::<T>::StreamConfigChanged {
-                    stream_id,
-                    old_config: stream.config.clone(),
-                    new_config: new_config.clone(),
-                    deposit_change,
-                });
-
-                // Update storage.
-                stream.config = new_config.clone();
-                Streams::<T>::insert(stream_id, stream);
-
+            // We allow this even if there is already a pending request.
+            if Self::maybe_immediate_change(
+                stream_id,
+                &mut stream,
+                &new_config,
+                deposit_change,
+                requester,
+            )? {
                 return Ok(().into());
             }
 
@@ -909,6 +881,56 @@ pub mod pallet {
             }
 
             Ok(().into())
+        }
+
+        /// Tries to apply a possibly immediate change. Return if that change was immediate and
+        /// applied or not.
+        ///
+        /// If asset id and time unit are the same, we allow to make the change
+        /// immediatly if the origin is at a disadvantage.
+        /// We allow this even if there is already a pending request.
+        fn maybe_immediate_change(
+            stream_id: T::StreamId,
+            stream: &mut StreamOf<T>,
+            new_config: &StreamConfigOf<T>,
+            deposit_change: Option<DepositChange<T::Balance>>,
+            requester: Party,
+        ) -> Result<bool, DispatchErrorWithPostInfo> {
+            if new_config.time_unit != stream.config.time_unit
+                || new_config.asset_id != stream.config.asset_id
+            {
+                return Ok(false);
+            }
+
+            if requester == Party::Source && new_config.rate < stream.config.rate {
+                return Ok(false);
+            }
+
+            if requester == Party::Target && new_config.rate > stream.config.rate {
+                return Ok(false);
+            }
+
+            // Perform pending payment before changing config.
+            Self::perform_stream_payment(stream_id, stream)?;
+
+            // We apply the requested deposit change.
+            if let Some(change) = deposit_change {
+                Self::apply_deposit_change(stream, change)?;
+            }
+
+            // Emit event.
+            Pallet::<T>::deposit_event(Event::<T>::StreamConfigChanged {
+                stream_id,
+                old_config: stream.config.clone(),
+                new_config: new_config.clone(),
+                deposit_change,
+            });
+
+            // Update storage.
+            stream.config = new_config.clone();
+            Streams::<T>::insert(stream_id, stream);
+
+            Ok(true)
         }
     }
 }
