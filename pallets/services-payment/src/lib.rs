@@ -431,7 +431,7 @@ impl<T: Config> CollatorAssignmentHook for Pallet<T> {
                 }
             }
         }
-        Weight::from_parts(0, 0)
+        T::WeightInfo::on_collators_assigned()
     }
 }
 

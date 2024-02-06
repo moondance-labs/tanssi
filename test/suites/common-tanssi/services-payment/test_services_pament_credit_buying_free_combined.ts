@@ -27,8 +27,8 @@ describeSuite({
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
 
-                const tx2000free = polkadotJs.tx.servicesPayment.setCredits(paraId2000, 0n);
-                const tx2001free = polkadotJs.tx.servicesPayment.setCredits(paraId2001, 0n);
+                const tx2000free = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2000, 0n);
+                const tx2001free = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0n);
 
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000free).signAsync(alice)]);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2001free).signAsync(alice)]);
@@ -47,7 +47,7 @@ describeSuite({
             id: "E02",
             title: "Collators are not assigned when we buy 2 session + ED -1",
             test: async function () {
-                const tx2000OneSession = polkadotJs.tx.servicesPayment.setCredits(paraId2000, blocksPerSession);
+                const tx2000OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2000, blocksPerSession);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice)]);
                 const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
                 // Now, buy some credits for container chain 2000. we only buy ones session -1

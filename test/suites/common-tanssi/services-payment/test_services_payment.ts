@@ -35,6 +35,11 @@ describeSuite({
 
                     // Should have assigned collators
                     const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                    
+                    // We are evaluating blockCredits for now, so lets put a lot of collatorAssignmentCredits
+                    const tx = polkadotJs.tx.servicesPayment.setCollatorAssignmentCredits(paraId, 1000n);
+                    await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
+
                     // Container chain 2001 does not have any collators, this will result in only 1 container chain
                     // producing blocks at a time. So if both container chains have 1000 credits, container 2000
                     // will produce blocks 0-999, and container 2001 will produce blocks 1000-1999.
@@ -87,6 +92,7 @@ describeSuite({
                 let containerBlockNum3 = -1;
                 let containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
                     .blockNumber;
+
                 while (containerBlockNum3 != containerBlockNum4) {
                     await context.createBlock();
                     containerBlockNum3 = containerBlockNum4;
@@ -145,7 +151,7 @@ describeSuite({
                 );
 
                 // Set credits to 0
-                const tx = polkadotJs.tx.servicesPayment.setCredits(paraId, 0n);
+                const tx = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId, 0n);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
 
                 const credits3 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON() || 0;
