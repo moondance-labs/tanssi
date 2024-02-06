@@ -365,7 +365,7 @@ where
 pub struct MigrateServicesPaymentAddCredits<T>(pub PhantomData<T>);
 impl<T> Migration for MigrateServicesPaymentAddCredits<T>
 where
-    T: cumulus_pallet_xcmp_queue::Config,
+    T: frame_system::Config,
 {
     fn friendly_name(&self) -> &str {
         "TM_MigrateServicesPaymentAddCredits"
@@ -391,6 +391,44 @@ where
         for para_id in para_ids {
             // 2 reads 2 writes
             ServicesPayment::give_free_credits(&para_id);
+        }
+
+        let db_weights = T::DbWeight::get();
+        db_weights.reads_writes(reads, writes)
+    }
+}
+
+pub struct MigrateServicesPaymentAddCollatorAssignmentCredits<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateServicesPaymentAddCollatorAssignmentCredits<T>
+where
+    T: pallet_services_payment::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateServicesPaymentAddCollatorAssignmentCredits"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        // For each parachain in pallet_registrar (active, pending or pending_verification),
+        // insert `MaxCreditsStored` to pallet_services_payment,
+        // and mark that parachain as "given_free_credits".
+        let mut para_ids = BTreeSet::new();
+        let active = pallet_registrar::RegisteredParaIds::<Runtime>::get();
+        let pending = pallet_registrar::PendingParaIds::<Runtime>::get();
+
+        let paused = pallet_registrar::Paused::<Runtime>::get();
+        para_ids.extend(active);
+        para_ids.extend(pending.into_iter().flat_map(|(_session, active)| active));
+        para_ids.extend(paused);
+
+        let reads = 3 + 2 * para_ids.len() as u64;
+        let writes = 2 * para_ids.len() as u64;
+
+        for para_id in para_ids {
+            // 2 reads 2 writes
+            ServicesPayment::set_free_collator_assignment_credits(
+                &para_id,
+                T::MaxCollatorAssignmentCreditsStored::get(),
+            );
         }
 
         let db_weights = T::DbWeight::get();
@@ -573,6 +611,7 @@ where
     Runtime: pallet_configuration::Config,
     Runtime: pallet_xcm::Config,
     Runtime: cumulus_pallet_xcmp_queue::Config,
+    Runtime: pallet_services_payment::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
 {
@@ -582,14 +621,17 @@ where
         //let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
         //let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
         // let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
-        let migrate_services_payment =
-            MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
-        let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
-        let migrate_config_parathread_params =
-            MigrateConfigurationParathreads::<Runtime>(Default::default());
+        //let migrate_services_payment =
+        //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+        //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        //let migrate_config_parathread_params =
+        //    MigrateConfigurationParathreads::<Runtime>(Default::default());
 
-        let migrate_hold_reason_runtime_enum =
-            MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
+        //let migrate_hold_reason_runtime_enum =
+        //    MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
+
+        let migrate_add_collator_assignment_credits =
+            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
         vec![
             // Applied in runtime 200
             //Box::new(migrate_invulnerables),
@@ -601,10 +643,15 @@ where
             //Box::new(migrate_xcm),
             // Applied in runtime 300
             //Box::new(migrate_xcmp_queue),
-            Box::new(migrate_services_payment),
-            Box::new(migrate_hold_reason_runtime_enum),
-            Box::new(migrate_boot_nodes),
-            Box::new(migrate_config_parathread_params),
+            // Applied in runtime 400
+            //Box::new(migrate_services_payment),
+            // Applied in runtime 400
+            //Box::new(migrate_hold_reason_runtime_enum),
+            // Applied in runtime 400
+            //Box::new(migrate_boot_nodes),
+            // Applied in runtime 400
+            //Box::new(migrate_config_parathread_params),
+            Box::new(migrate_add_collator_assignment_credits),
         ]
     }
 }
