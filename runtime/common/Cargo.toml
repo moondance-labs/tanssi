@@ -15,7 +15,6 @@ parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 
 # Own
-dp-core = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
 pallet-invulnerables = { workspace = true }
@@ -50,6 +49,7 @@ std = [
 	"cumulus-primitives-core/std",
 	"frame-support/std",
 	"frame-system/std",
+    "frame-try-runtime?/std",
 	"pallet-balances/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
