@@ -1567,11 +1567,19 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u128]
             >;
-            /** See [`Pallet::set_credits`]. */
-            setCredits: AugmentedSubmittable<
+            /** See [`Pallet::set_block_production_credits`]. */
+            setBlockProductionCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    credits: u32 | AnyNumber | Uint8Array
+                    freeBlockCredits: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, u32]
+            >;
+            /** See [`Pallet::set_collator_assignment_credits`]. */
+            setCollatorAssignmentCredits: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    freeCollatorAssignmentCredits: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u32]
             >;
