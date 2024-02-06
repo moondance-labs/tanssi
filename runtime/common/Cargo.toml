@@ -49,7 +49,7 @@ std = [
 	"cumulus-primitives-core/std",
 	"frame-support/std",
 	"frame-system/std",
-    "frame-try-runtime?/std",
+	"frame-try-runtime?/std",
 	"pallet-balances/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",

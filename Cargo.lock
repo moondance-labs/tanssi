@@ -11294,7 +11294,6 @@ name = "runtime-common"
 version = "0.1.0"
 dependencies = [
  "cumulus-primitives-core",
- "dp-core",
  "frame-support",
  "frame-system",
  "frame-try-runtime",
