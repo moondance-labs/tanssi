@@ -1273,6 +1273,7 @@ mod benches {
         [pallet_sudo, Sudo]
         [pallet_proxy, Proxy]
         [pallet_utility, Utility]
+        [pallet_treasury, Treasury]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
         [pallet_identity, Identity]
