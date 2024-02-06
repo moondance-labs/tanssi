@@ -30,7 +30,6 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-pub mod migrations;
 pub mod weights;
 
 #[cfg(feature = "try-runtime")]
@@ -98,8 +97,6 @@ pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
-
-const LOG_TARGET: &str = "runtime::tanssi";
 
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
@@ -1108,7 +1105,7 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = (migrations::DanceboxMigrations<Runtime>,);
+    type MigrationsList = (runtime_common::migrations::DanceboxMigrations<Runtime>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
 

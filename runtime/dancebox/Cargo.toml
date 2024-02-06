@@ -35,6 +35,7 @@ pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-relay-storage-roots = { workspace = true }
 pallet-services-payment = { workspace = true }
+runtime-common = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -203,6 +204,7 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"polkadot-runtime-parachains/std",
+	"runtime-common/std",
 	"scale-info/std",
 	"serde",
 	"serde?/std",
@@ -285,6 +287,7 @@ runtime-benchmarks = [
 	"polkadot-runtime-common/runtime-benchmarks",
 	"polkadot-runtime-parachains/runtime-benchmarks",
 	"polkadot-service/runtime-benchmarks",
+	"runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
@@ -346,6 +349,7 @@ try-runtime = [
 	"polkadot-runtime-common/try-runtime",
 	"polkadot-runtime-parachains/try-runtime",
 	"polkadot-service/try-runtime",
+	"runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"westend-runtime/try-runtime",
 ]

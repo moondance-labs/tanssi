@@ -8,8 +8,6 @@ members = [
 	"pallets/collator-assignment/rpc/runtime-api",
 	"pallets/registrar/rpc/runtime-api",
 	"primitives/*",
-	"runtime/dancebox",
-	"runtime/flashbox",
 ]
 resolver = "2"
 
@@ -43,6 +41,7 @@ dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
+runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-consensus = { path = "primitives/consensus", default-features = false }

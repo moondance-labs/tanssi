@@ -32,8 +32,6 @@ pub use sp_runtime::BuildStorage;
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
 
-pub mod migrations;
-
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
@@ -92,8 +90,6 @@ pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
-
-const LOG_TARGET: &str = "runtime::tanssi";
 
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
@@ -964,7 +960,7 @@ impl pallet_proxy::Config for Runtime {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = (migrations::FlashboxMigrations<Runtime>,);
+    type MigrationsList = (runtime_common::migrations::FlashboxMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
 

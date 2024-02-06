@@ -2870,6 +2870,7 @@ dependencies = [
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "polkadot-service",
+ "runtime-common",
  "sc-consensus-grandpa",
  "scale-info",
  "serde",
@@ -3998,6 +3999,7 @@ dependencies = [
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
+ "runtime-common",
  "sc-consensus-grandpa",
  "scale-info",
  "serde",
@@ -11285,6 +11287,32 @@ checksum = "c247d24e63230cdb56463ae328478bd5eac8b8faa8c69461a77e8e323afac90e"
 dependencies = [
  "libc",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "runtime-common"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "dp-core",
+ "frame-support",
+ "frame-system",
+ "frame-try-runtime",
+ "hex-literal 0.3.4",
+ "pallet-balances",
+ "pallet-configuration",
+ "pallet-data-preservers",
+ "pallet-invulnerables",
+ "pallet-migrations",
+ "pallet-pooled-staking",
+ "pallet-registrar",
+ "pallet-services-payment",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+ "substrate-wasm-builder",
 ]
 
 [[package]]
