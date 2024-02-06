@@ -35,7 +35,7 @@ describeSuite({
 
                     // Should have assigned collators
                     const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
-                    
+
                     // We are evaluating blockCredits for now, so lets put a lot of collatorAssignmentCredits
                     const tx = polkadotJs.tx.servicesPayment.setCollatorAssignmentCredits(paraId, 1000n);
                     await context.createBlock([await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)]);
