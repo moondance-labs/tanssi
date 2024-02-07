@@ -218,7 +218,6 @@ pub mod pallet {
             let collators_per_container =
                 T::HostConfiguration::collators_per_container(target_session_index);
             for para_id in &container_chain_ids {
-                T::CollatorAssignmentHook::on_collators_assigned(*para_id);
                 chains.push(ChainNumCollators {
                     para_id: *para_id,
                     min_collators: collators_per_container,
@@ -228,7 +227,6 @@ pub mod pallet {
             let collators_per_parathread =
                 T::HostConfiguration::collators_per_parathread(target_session_index);
             for para_id in &parathreads {
-                T::CollatorAssignmentHook::on_collators_assigned(*para_id);
                 chains.push(ChainNumCollators {
                     para_id: *para_id,
                     min_collators: collators_per_parathread,
@@ -288,6 +286,20 @@ pub mod pallet {
                     old_assigned.clone()
                 }
             };
+
+            // TODO: this probably is asking for a refactor
+            // only apply the onCollatorAssignedHook if sufficient collators
+            for para_id in &container_chain_ids {
+                if !new_assigned.container_chains.get(para_id).unwrap_or(&vec![]).is_empty() {
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                }
+            }
+
+            for para_id in &parathreads {
+                if !new_assigned.container_chains.get(para_id).unwrap_or(&vec![]).is_empty() {
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                }
+            }
 
             let mut pending = PendingCollatorContainerChain::<T>::get();
             let old_assigned_changed = old_assigned != new_assigned;

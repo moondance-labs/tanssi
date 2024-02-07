@@ -22,7 +22,7 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Collators are unassigned when a container chain does not have enough credits",
+            title: "Collators are unassigned when a container chain does not have enough block credits",
             test: async function () {
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
@@ -45,7 +45,7 @@ describeSuite({
         });
         it({
             id: "E02",
-            title: "Collators are not assigned when we buy 2 session + ED -1",
+            title: "Collators are not assigned when we buy 2 session + ED -1 of block credits",
             test: async function () {
                 const tx2000OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(
                     paraId2000,
@@ -71,7 +71,7 @@ describeSuite({
         });
         it({
             id: "E03",
-            title: "Collators are assigned when we buy at least 2 session + ED",
+            title: "Collators are assigned when we buy at least 2 session + ED of block credits",
             test: async function () {
                 // Now, buy the remaining
                 const purchasedCredits = 1n;
