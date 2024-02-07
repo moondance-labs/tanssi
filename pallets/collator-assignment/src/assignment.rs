@@ -21,7 +21,7 @@ use {
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
         marker::PhantomData,
         mem,
-        vec::Vec,
+        vec::{self, Vec},
     },
     tp_traits::{ParaId, RemoveInvulnerables as RemoveInvulnerablesT},
 };
