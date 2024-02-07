@@ -296,7 +296,9 @@ mod open_stream {
             }
 
             for (i, s) in open_streams.iter().enumerate() {
-                assert_event_emitted!(Event::<Runtime>::StreamOpened { stream_id: i as u64 });
+                assert_event_emitted!(Event::<Runtime>::StreamOpened {
+                    stream_id: i as u64
+                });
                 assert_eq!(
                     Streams::<Runtime>::get(i as u64),
                     Some(Stream {
@@ -752,7 +754,7 @@ mod request_change {
     use super::*;
 
     #[test]
-    fn cannot_change_rate_of_unknown_stream() {
+    fn cannot_request_change_of_unknown_stream() {
         ExtBuilder::default().build().execute_with(|| {
             assert_err!(
                 StreamPayment::request_change(
@@ -1209,5 +1211,501 @@ mod request_change {
     #[test]
     fn target_cant_override_source_mandatory_request() {
         cant_override_mandatory_request(Party::Target)
+    }
+}
+
+mod accept_requested_change {
+    use super::*;
+
+    #[test]
+    fn cannot_accept_requested_change_of_unknown_stream() {
+        ExtBuilder::default().build().execute_with(|| {
+            assert_err!(
+                StreamPayment::accept_requested_change(RuntimeOrigin::signed(ALICE), 0, 0, None),
+                Error::UnknownStreamId
+            );
+        })
+    }
+
+    #[test]
+    fn third_party_cant_accept_change() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::accept_requested_change(RuntimeOrigin::signed(CHARLIE), 0, 1, None),
+                Error::UnauthorizedOrigin
+            );
+        })
+    }
+
+    #[test]
+    fn party_cant_accept_own_change() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::accept_requested_change(RuntimeOrigin::signed(ALICE), 0, 1, None),
+                Error::CantAcceptOwnRequest
+            );
+        })
+    }
+
+    #[test]
+    fn wrong_nonce() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::accept_requested_change(RuntimeOrigin::signed(BOB), 0, 0, None),
+                Error::WrongRequestNonce
+            );
+        })
+    }
+
+    #[test]
+    fn target_cant_change_deposit() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::accept_requested_change(
+                    RuntimeOrigin::signed(BOB),
+                    0,
+                    1,
+                    Some(DepositChange::Absolute(500)),
+                ),
+                Error::TargetCantChangeDeposit
+            );
+        })
+    }
+
+    fn can_accept_other_party_request(party1: AccountId, party2: AccountId) {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(party1),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_ok!(StreamPayment::accept_requested_change(
+                RuntimeOrigin::signed(party2),
+                0,
+                1,
+                None,
+            ));
+
+            let stream = Streams::<Runtime>::get(0).unwrap();
+            assert_eq!(
+                stream,
+                Stream {
+                    config: change,
+                    request_nonce: 1,
+                    pending_request: None,
+                    deposit: open_stream.deposit,
+                    last_time_updated: 12, // 1st block = 12s
+                    ..default_stream()
+                }
+            );
+        })
+    }
+
+    #[test]
+    fn target_can_accept_source_request() {
+        can_accept_other_party_request(ALICE, BOB)
+    }
+
+    #[test]
+    fn source_can_accept_target_request() {
+        can_accept_other_party_request(BOB, ALICE)
+    }
+
+    #[test]
+    fn change_of_asset_requires_absolute_deposit_change() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let new_config = StreamConfig {
+                asset_id: StreamPaymentAssetId::Dummy,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(BOB),
+                0,
+                ChangeKind::Suggestion,
+                new_config,
+                None,
+            ));
+
+            assert_err!(
+                StreamPayment::accept_requested_change(RuntimeOrigin::signed(ALICE), 0, 1, None,),
+                Error::ChangingAssetRequiresAbsoluteDepositChange,
+            );
+
+            assert_err!(
+                StreamPayment::accept_requested_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    1,
+                    Some(DepositChange::Increase(5)),
+                ),
+                Error::ChangingAssetRequiresAbsoluteDepositChange,
+            );
+
+            assert_err!(
+                StreamPayment::accept_requested_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    1,
+                    Some(DepositChange::Decrease(5)),
+                ),
+                Error::ChangingAssetRequiresAbsoluteDepositChange,
+            );
+
+            assert_ok!(StreamPayment::accept_requested_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                1,
+                Some(DepositChange::Absolute(5)),
+            ));
+        })
+    }
+}
+
+mod cancel_change_request {
+    use super::*;
+
+    #[test]
+    fn cannot_cancel_request_of_unknown_stream() {
+        ExtBuilder::default().build().execute_with(|| {
+            assert_err!(
+                StreamPayment::cancel_change_request(RuntimeOrigin::signed(ALICE), 0),
+                Error::UnknownStreamId
+            );
+        })
+    }
+
+    #[test]
+    fn can_only_cancel_if_there_is_a_pending_request() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            assert_err!(
+                StreamPayment::cancel_change_request(RuntimeOrigin::signed(ALICE), 0),
+                Error::NoPendingRequest
+            );
+        })
+    }
+
+    #[test]
+    fn third_party_cant_cancel_change() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::cancel_change_request(RuntimeOrigin::signed(CHARLIE), 0),
+                Error::UnauthorizedOrigin
+            );
+        })
+    }
+
+    fn can_only_cancel_own_request(caller1: AccountId, caller2: AccountId) {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(caller1),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::cancel_change_request(RuntimeOrigin::signed(caller2), 0),
+                Error::CanOnlyCancelOwnRequest
+            );
+        })
+    }
+
+    #[test]
+    fn source_can_only_cancel_own_request() {
+        can_only_cancel_own_request(ALICE, BOB)
+    }
+
+    #[test]
+    fn target_can_only_cancel_own_request() {
+        can_only_cancel_own_request(BOB, ALICE)
+    }
+}
+
+mod immediately_change_deposit {
+    use super::*;
+
+    #[test]
+    fn cannot_immediately_change_deposit_of_unknown_stream() {
+        ExtBuilder::default().build().execute_with(|| {
+            assert_err!(
+                StreamPayment::immediately_change_deposit(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    StreamPaymentAssetId::Native,
+                    DepositChange::Absolute(500),
+                ),
+                Error::UnknownStreamId
+            );
+        })
+    }
+
+    fn cant_change_deposit(account: AccountId) {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::immediately_change_deposit(
+                    RuntimeOrigin::signed(account),
+                    0,
+                    StreamPaymentAssetId::Native,
+                    DepositChange::Absolute(500)
+                ),
+                Error::UnauthorizedOrigin
+            );
+        })
+    }
+
+    #[test]
+    fn target_cant_change_deposit() {
+        cant_change_deposit(BOB)
+    }
+
+    #[test]
+    fn third_party_cant_change_deposit() {
+        cant_change_deposit(CHARLIE)
+    }
+
+    #[test]
+    fn source_can_change_deposit() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_ok!(StreamPayment::immediately_change_deposit(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                StreamPaymentAssetId::Native,
+                DepositChange::Absolute(500)
+            ));
+
+            assert_eq!(get_deposit(ALICE), 500);
+        })
+    }
+
+    #[test]
+    fn change_deposit_funds_unavailable() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::immediately_change_deposit(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    StreamPaymentAssetId::Native,
+                    DepositChange::Absolute(DEFAULT_BALANCE + 1)
+                ),
+                TokenError::FundsUnavailable
+            );
+        })
+    }
+
+    #[test]
+    fn change_deposit_increase_overflow() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::immediately_change_deposit(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    StreamPaymentAssetId::Native,
+                    DepositChange::Increase(u128::MAX)
+                ),
+                ArithmeticError::Overflow
+            );
+        })
+    }
+
+    #[test]
+    fn change_deposit_decrease_underflow() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_err!(
+                StreamPayment::immediately_change_deposit(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    StreamPaymentAssetId::Native,
+                    DepositChange::Decrease(open_stream.deposit + 1)
+                ),
+                ArithmeticError::Underflow
+            );
+        })
     }
 }
