@@ -319,6 +319,46 @@ where
         let db_weights = T::DbWeight::get();
         db_weights.reads_writes(reads, writes)
     }
+    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        let mut para_ids = BTreeSet::new();
+        let active = pallet_registrar::RegisteredParaIds::<T>::get();
+        let pending = pallet_registrar::PendingParaIds::<T>::get();
+        let paused = pallet_registrar::Paused::<T>::get();
+        para_ids.extend(active);
+        para_ids.extend(pending.into_iter().flat_map(|(_session, active)| active));
+        para_ids.extend(paused);
+
+        for para_id in para_ids {
+            assert!(
+                pallet_services_payment::CollatorAssignmentCredits::<T>::get(para_id).is_none()
+            );
+        }
+
+        Ok(vec![])
+    }
+
+    // Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _result: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        let mut para_ids = BTreeSet::new();
+        let active = pallet_registrar::RegisteredParaIds::<T>::get();
+        let pending = pallet_registrar::PendingParaIds::<T>::get();
+        let paused = pallet_registrar::Paused::<T>::get();
+        para_ids.extend(active);
+        para_ids.extend(pending.into_iter().flat_map(|(_session, active)| active));
+        para_ids.extend(paused);
+
+        for para_id in para_ids {
+            assert_eq!(
+                pallet_services_payment::CollatorAssignmentCredits::<T>::get(para_id),
+                Some(T::MaxCollatorAssignmentCreditsStored::get())
+            );
+        }
+
+        Ok(())
+    }
 }
 
 pub struct RegistrarBootNodesStorageValuePrefix<T>(PhantomData<T>);
@@ -592,8 +632,8 @@ where
         //let migrate_services_payment =
         //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
         //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
-        //let migrate_config_parathread_params =
-        //    MigrateConfigurationParathreads::<Runtime>(Default::default());
+        let migrate_config_parathread_params =
+            MigrateConfigurationParathreads::<Runtime>(Default::default());
 
         let migrate_add_collator_assignment_credits =
             MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
@@ -604,7 +644,7 @@ where
             // Applied in runtime 400
             //Box::new(migrate_boot_nodes),
             // Applied in runtime 400
-            //Box::new(migrate_config_parathread_params),
+            Box::new(migrate_config_parathread_params),
             Box::new(migrate_add_collator_assignment_credits),
         ]
     }
@@ -632,8 +672,8 @@ where
         //let migrate_services_payment =
         //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
         //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
-        //let migrate_config_parathread_params =
-        //    MigrateConfigurationParathreads::<Runtime>(Default::default());
+        let migrate_config_parathread_params =
+            MigrateConfigurationParathreads::<Runtime>(Default::default());
 
         //let migrate_hold_reason_runtime_enum =
         //    MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
@@ -657,8 +697,7 @@ where
             //Box::new(migrate_hold_reason_runtime_enum),
             // Applied in runtime 400
             //Box::new(migrate_boot_nodes),
-            // Applied in runtime 400
-            //Box::new(migrate_config_parathread_params),
+            Box::new(migrate_config_parathread_params),
             Box::new(migrate_add_collator_assignment_credits),
         ]
     }
