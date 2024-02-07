@@ -373,6 +373,7 @@ pub mod pallet {
         WrongRequestNonce,
         ChangingAssetRequiresAbsoluteDepositChange,
         TargetCantChangeDeposit,
+        ImmediateDepositChangeRequiresSameAssetId,
     }
 
     #[pallet::event]
@@ -697,6 +698,47 @@ pub mod pallet {
 
             // Update storage.
             // Pending request is removed by calling `.take()`.
+            Streams::<T>::insert(stream_id, stream);
+
+            Ok(().into())
+        }
+
+        /// Allows immediately changing the deposit for a stream, which is simpler than
+        /// calling `request_change` with the proper parameters.
+        /// The call takes an asset id to ensure it has not changed (by an accepted request) before
+        /// the call is included in a block, in which case the unit is no longer the same and quantities
+        /// will not have the same scale/value.
+        #[pallet::call_index(6)]
+        pub fn immediately_change_deposit(
+            origin: OriginFor<T>,
+            stream_id: T::StreamId,
+            asset_id: T::AssetId,
+            change: DepositChange<T::Balance>,
+        ) -> DispatchResultWithPostInfo {
+            let origin = ensure_signed(origin)?;
+            let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
+
+            ensure!(stream.source == origin, Error::<T>::UnauthorizedOrigin);
+            ensure!(
+                stream.config.asset_id == asset_id,
+                Error::<T>::ImmediateDepositChangeRequiresSameAssetId
+            );
+
+            // Perform pending payment before changing deposit.
+            Self::perform_stream_payment(stream_id, &mut stream)?;
+
+            // Apply change.
+            Self::apply_deposit_change(&mut stream, change)?;
+
+            // Event
+            Pallet::<T>::deposit_event(Event::<T>::StreamConfigChanged {
+                stream_id,
+                old_config: stream.config.clone(),
+                new_config: stream.config.clone(),
+                deposit_change: Some(change),
+            });
+
+            // Update stream in storage.
             Streams::<T>::insert(stream_id, stream);
 
             Ok(().into())
