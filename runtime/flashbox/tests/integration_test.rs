@@ -25,10 +25,12 @@ use {
     pallet_author_noting::ContainerChainBlockInfo,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
+    pallet_migrations::Migration,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     parity_scale_codec::Encode,
+    runtime_common::migrations::MigrateServicesPaymentAddCollatorAssignmentCredits,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
@@ -3353,5 +3355,99 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+        });
+}
+
+#[test]
+fn test_migration_services_collator_assignment_payment() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            // Register a new parachain with no credits
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1001.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1001.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1001.into()
+            ));
+            // Register another parachain with no credits, do not mark this as valid for collation
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                1002.into(),
+                empty_genesis_data()
+            ));
+            assert_ok!(DataPreservers::set_boot_nodes(
+                origin_of(ALICE.into()),
+                1002.into(),
+                dummy_boot_nodes()
+            ));
+            assert_ok!(Registrar::mark_valid_for_collating(
+                root_origin(),
+                1002.into()
+            ));
+
+            // Need to reset credits to 0 because now parachains are given free credits on register
+            assert_ok!(ServicesPayment::set_collator_assignment_credits(
+                root_origin(),
+                1001.into(),
+                0
+            ));
+            assert_ok!(ServicesPayment::set_collator_assignment_credits(
+                root_origin(),
+                1002.into(),
+                0
+            ));
+
+            let credits_1001 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits_1001, 0);
+            let credits_1002 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
+                &ParaId::from(1002),
+            )
+            .unwrap_or_default();
+            assert_eq!(credits_1002, 0);
+
+            // Apply migration
+            let migration =
+                MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
+            migration.migrate(Default::default());
+
+            // Both parachains have been given credits
+            let credits_1001 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
+                &ParaId::from(1001),
+            )
+            .unwrap_or_default();
+            assert_eq!(
+                credits_1001,
+                flashbox_runtime::MaxCollatorAssignmentCreditsStored::get()
+            );
+            let credits_1002 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
+                &ParaId::from(1002),
+            )
+            .unwrap_or_default();
+            assert_eq!(
+                credits_1002,
+                flashbox_runtime::MaxCollatorAssignmentCreditsStored::get()
+            );
         });
 }
