@@ -290,13 +290,23 @@ pub mod pallet {
             // TODO: this probably is asking for a refactor
             // only apply the onCollatorAssignedHook if sufficient collators
             for para_id in &container_chain_ids {
-                if !new_assigned.container_chains.get(para_id).unwrap_or(&vec![]).is_empty() {
+                if !new_assigned
+                    .container_chains
+                    .get(para_id)
+                    .unwrap_or(&vec![])
+                    .is_empty()
+                {
                     T::CollatorAssignmentHook::on_collators_assigned(*para_id);
                 }
             }
 
             for para_id in &parathreads {
-                if !new_assigned.container_chains.get(para_id).unwrap_or(&vec![]).is_empty() {
+                if !new_assigned
+                    .container_chains
+                    .get(para_id)
+                    .unwrap_or(&vec![])
+                    .is_empty()
+                {
                     T::CollatorAssignmentHook::on_collators_assigned(*para_id);
                 }
             }
