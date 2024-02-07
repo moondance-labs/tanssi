@@ -19,13 +19,7 @@
 use {
     common::*,
     cumulus_primitives_core::ParaId,
-    dancebox_runtime::{
-        migrations::{
-            CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
-            MigrateInvulnerables, MigrateServicesPaymentAddCredits,
-        },
-        RewardsCollatorCommission,
-    },
+    dancebox_runtime::RewardsCollatorCommission,
     dp_core::well_known_keys,
     frame_support::{assert_noop, assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -33,6 +27,7 @@ use {
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_balances::Instance1,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
+    pallet_migrations::Migration,
     pallet_pooled_staking::{
         traits::IsCandidateEligible, AllTargetPool, EligibleCandidate, PendingOperationKey,
         PendingOperationQuery, PoolsKey, SharesOrStake, TargetPool,
@@ -41,6 +36,10 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     parity_scale_codec::Encode,
+    runtime_common::migrations::{
+        CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
+        MigrateInvulnerables, MigrateServicesPaymentAddCredits,
+    },
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
@@ -3921,8 +3920,8 @@ fn test_pallet_session_limits_num_validators_from_staking() {
 #[test]
 fn test_migration_holds() {
     use {
-        dancebox_runtime::migrations::MigrateHoldReason,
         frame_support::{migration::put_storage_value, Blake2_128Concat, StorageHasher},
+        runtime_common::migrations::MigrateHoldReason,
     };
     ExtBuilder::default()
         .with_balances(vec![
@@ -3975,8 +3974,8 @@ fn test_migration_holds() {
 #[test]
 fn test_migration_holds_runtime_enum() {
     use {
-        dancebox_runtime::migrations::{MigrateHoldReasonRuntimeEnum, OldHoldReason},
         frame_support::{migration::put_storage_value, Blake2_128Concat, StorageHasher},
+        runtime_common::migrations::{MigrateHoldReasonRuntimeEnum, OldHoldReason},
     };
     ExtBuilder::default()
         .with_balances(vec![
