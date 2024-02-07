@@ -33,7 +33,6 @@ use {
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_balances::Instance1,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
-    pallet_migrations::Migration,
     pallet_pooled_staking::{
         traits::IsCandidateEligible, AllTargetPool, EligibleCandidate, PendingOperationKey,
         PendingOperationQuery, PoolsKey, SharesOrStake, TargetPool,

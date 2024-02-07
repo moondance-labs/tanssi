@@ -8,6 +8,8 @@ members = [
 	"pallets/collator-assignment/rpc/runtime-api",
 	"pallets/registrar/rpc/runtime-api",
 	"primitives/*",
+	"runtime/dancebox",
+	"runtime/flashbox",
 ]
 resolver = "2"
 
