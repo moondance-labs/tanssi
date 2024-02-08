@@ -332,17 +332,14 @@ where
         if let Ok(chain_head_slot) = find_pre_digest::<B, P::Signature>(chain_head) {
             let slot_diff = slot.saturating_sub(chain_head_slot);
 
-            if slot_diff >= start {
-                false
-            } else {
-                // TODO: this ignores force authoring
-                true
-            }
+            // TODO: this ignores force authoring
+            slot_diff < start
         } else {
             // In case of error always propose
             false
         }
     } else {
+        // Not a parathread: always propose
         false
     }
 }
