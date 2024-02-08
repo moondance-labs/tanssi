@@ -71,7 +71,7 @@ describeSuite({
             },
         });
         it({
-            id: "E02",
+            id: "E03",
             title: "Additionally buying credits only for block-credits makes it assigned",
             test: async function () {
                 // Now, buy some credits for container chain 2000. we only buy ones session -1
@@ -88,6 +88,20 @@ describeSuite({
                     collators.toJSON().containerChains[paraId2000].length,
                     `Container chain ${paraId2000} has 0 collators`
                 ).toBeGreaterThan(0);
+            },
+        });
+        it({
+            id: "E04",
+            title: "Just one session later they should be unassinged",
+            test: async function () {
+                // Check that after 1 sessions
+                await jumpSessions(context, 1);
+
+                const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
+                expect(
+                    collators.toJSON().containerChains[paraId2000],
+                    `Container chain ${paraId2000} should have 0 collators`
+                ).toBeUndefined();
             },
         });
     },
