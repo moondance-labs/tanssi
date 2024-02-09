@@ -651,10 +651,14 @@ mod perform_payment {
 
             roll_to(10);
 
-            assert_err!(
-                StreamPayment::perform_payment(RuntimeOrigin::signed(CHARLIE), 0),
-                Error::TimeMustBeIncreasing
-            );
+            assert_ok!(StreamPayment::perform_payment(
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+
+            assert_eq!(get_deposit(ALICE), initial_deposit);
+            assert_balance_change!(-, ALICE, initial_deposit);
+            assert_balance_change!(+, BOB, 0); // no payment
         })
     }
 }
@@ -1061,6 +1065,65 @@ mod request_change {
                 RuntimeOrigin::signed(BOB),
                 0,
                 ChangeKind::Mandatory { deadline: 20 },
+                change1,
+                None,
+            ));
+
+            let deposit_before = Streams::<Runtime>::get(0).unwrap().deposit;
+            assert_ok!(StreamPayment::perform_payment(
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+            let deposit_after = Streams::<Runtime>::get(0).unwrap().deposit;
+
+            assert_eq!(
+                deposit_before, deposit_after,
+                "no payment should be performed"
+            );
+        })
+    }
+
+    #[test]
+    fn deadline_in_past_is_fine() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            // Target requets a change.
+            let change1 = StreamConfig {
+                rate: 101,
+                ..open_stream.config
+            };
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(BOB),
+                0,
+                ChangeKind::Mandatory { deadline: 10 },
+                change1,
+                None,
+            ));
+
+            // Roll to block after deadline, payment should stop at deadline.
+            let delta = roll_to(11) as u128;
+            let payment = (delta - 1) * open_stream.config.rate;
+
+            assert_ok!(StreamPayment::perform_payment(
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+            assert_event_emitted!(PaymentEvent {
+                amount: payment,
+                ..default()
+            });
+
+            // Target requets a new change that moves the deadline in the future.
+            let change1 = StreamConfig {
+                rate: 102,
+                ..open_stream.config
+            };
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(BOB),
+                0,
+                ChangeKind::Mandatory { deadline: 5 },
                 change1,
                 None,
             ));

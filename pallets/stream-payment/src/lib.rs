@@ -289,8 +289,11 @@ pub mod pallet {
     #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
     #[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo)]
     pub enum DepositChange<Balance> {
+        /// Increase deposit by given amount.
         Increase(Balance),
+        /// Decrease deposit by given amount.
         Decrease(Balance),
+        /// Set deposit to given amount.
         Absolute(Balance),
     }
 
@@ -363,7 +366,6 @@ pub mod pallet {
         UnauthorizedOrigin,
         CantBeBothSourceAndTarget,
         CantFetchCurrentTime,
-        TimeMustBeIncreasing,
         SourceCantDecreaseRate,
         TargetCantIncreaseRate,
         CantOverrideMandatoryChange,
@@ -825,19 +827,16 @@ pub mod pallet {
                 now = min(now, *deadline);
             }
 
-            // Dont perform payment
-            if now == last_time_updated {
-                return Ok(0u32.into());
-            }
-
             // If deposit is zero the stream is fully drained and there is nothing to transfer.
             if stream.deposit.is_zero() {
                 return Ok(0u32.into());
             }
 
-            let delta = now
-                .checked_sub(&last_time_updated)
-                .ok_or(Error::<T>::TimeMustBeIncreasing)?;
+            // Dont perform payment if now is before or equal to `last_time_updated`.
+            // It can be before due to the deadline adjustment.
+            let Some(delta) = now.checked_sub(&last_time_updated) else {
+                return Ok(0u32.into());
+            };
 
             // We compute the amount due to the target according to the rate, which may be
             // lowered if the stream deposit is lower.
