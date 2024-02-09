@@ -575,7 +575,7 @@ async fn collate_returns_correct_block() {
             None,
             (parachain_inherent_data, other_inherent_data),
             Duration::from_millis(500),
-            3_500_000 as usize,
+            3_500_000usize,
         )
         .await
         .unwrap()
@@ -595,7 +595,7 @@ async fn authorities_runtime_api_tests() {
     let mut net = net.lock();
     let peer = net.peer(3);
     let client = peer.client().as_client();
-    let environ = DummyFactory(client.clone());
+    let environ = DummyFactory(client);
 
     let default_hash = Default::default();
 
