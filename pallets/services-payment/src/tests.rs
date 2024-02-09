@@ -266,3 +266,54 @@ fn not_having_enough_tokens_in_tank_should_not_error() {
             );
         });
 }
+
+#[test]
+fn on_deregister_burns_if_no_deposit_address() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1000u128,
+            ));
+
+            let issuance_before = Balances::total_issuance();
+            crate::Pallet::<Test>::para_deregistered(1.into());
+            let issuance_after = Balances::total_issuance();
+            assert_eq!(issuance_after, issuance_before - 1000u128);
+        });
+}
+
+#[test]
+fn on_deregister_deposits_if_refund_address() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            let refund_address = 10u64;
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1000u128,
+            ));
+
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                refund_address,
+            ));
+
+            let issuance_before = Balances::total_issuance();
+            crate::Pallet::<Test>::para_deregistered(1.into());
+            let issuance_after = Balances::total_issuance();
+            assert_eq!(issuance_after, issuance_before);
+
+            let balance_refund_address = Balances::balance(&refund_address);
+            assert_eq!(balance_refund_address, 1000u128);
+        });
+}
