@@ -82,6 +82,7 @@ pub mod weights;
 use serde::{Deserialize, Serialize};
 
 use {
+    crate::weights::WeightInfo,
     core::cmp::min,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
@@ -159,7 +160,7 @@ pub trait Assets<AccountId, AssetId, Balance> {
     fn bench_set_balance(asset_id: &AssetId, account: &AccountId, amount: Balance);
 }
 
-#[pallet(dev_mode)]
+#[pallet]
 pub mod pallet {
     use super::*;
 
@@ -201,7 +202,7 @@ pub mod pallet {
         /// Provide the current time in given unit.
         type TimeProvider: TimeProvider<Self::TimeUnit, Self::Balance>;
 
-        type WeightInfo;
+        type WeightInfo: weights::WeightInfo;
     }
 
     type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
@@ -427,6 +428,7 @@ pub mod pallet {
         /// Create a payment stream from the origin to the target with provided config
         /// and initial deposit (in the asset defined in the config).
         #[pallet::call_index(0)]
+        #[pallet::weight(T::WeightInfo::open_stream())]
         pub fn open_stream(
             origin: OriginFor<T>,
             target: AccountIdOf<T>,
@@ -443,6 +445,7 @@ pub mod pallet {
         /// Close a given stream in which the origin is involved. It performs the pending payment
         /// before closing the stream.
         #[pallet::call_index(1)]
+        #[pallet::weight(T::WeightInfo::close_stream())]
         pub fn close_stream(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -478,6 +481,7 @@ pub mod pallet {
 
         /// Perform the pending payment of a stream. Anyone can call this.
         #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::perform_payment())]
         pub fn perform_payment(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -502,6 +506,10 @@ pub mod pallet {
         /// stream. An absolute change is required when changing asset id, as the current deposit
         /// will be released and a new deposit is required in the new asset.
         #[pallet::call_index(3)]
+        #[pallet::weight(
+            T::WeightInfo::request_change_immediate()
+            .max(T::WeightInfo::request_change_delayed())
+        )]
         pub fn request_change(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -587,6 +595,7 @@ pub mod pallet {
         /// frontrunning attacks. If the target made a request, the source is able to change their
         /// deposit.
         #[pallet::call_index(4)]
+        #[pallet::weight(T::WeightInfo::accept_requested_change())]
         pub fn accept_requested_change(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -678,6 +687,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(5)]
+        #[pallet::weight(T::WeightInfo::cancel_change_request())]
         pub fn cancel_change_request(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -711,6 +721,7 @@ pub mod pallet {
         /// the call is included in a block, in which case the unit is no longer the same and quantities
         /// will not have the same scale/value.
         #[pallet::call_index(6)]
+        #[pallet::weight(T::WeightInfo::immediately_change_deposit())]
         pub fn immediately_change_deposit(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
