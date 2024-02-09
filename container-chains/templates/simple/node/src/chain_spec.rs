@@ -89,29 +89,47 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
         })
         .collect();
 
-    ChainSpec::from_genesis(
-        // Name
-        "Development",
-        // ID
-        "dev",
-        ChainType::Development,
-        move || {
-            testnet_genesis(
-                default_funded_accounts.clone(),
-                para_id,
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-            )
-        },
-        boot_nodes,
-        None,
-        None,
-        None,
-        Some(properties),
-        Extensions {
-            relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-            para_id: para_id.into(),
-        },
-    )
+    // ChainSpec::from_genesis(
+    //     // Name
+    //     "Development",
+    //     // ID
+    //     "dev",
+    //     ChainType::Development,
+    //     move || {
+    //         testnet_genesis(
+    //             default_funded_accounts.clone(),
+    //             para_id,
+    //             get_account_id_from_seed::<sr25519::Public>("Alice"),
+    //         )
+    //     },
+    //     boot_nodes,
+    //     None,
+    //     None,
+    //     None,
+    //     Some(properties),
+    //     Extensions {
+    //         relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
+    //         para_id: para_id.into(),
+    //     },
+    // )
+
+	ChainSpec::builder(
+		moonkit_template_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
+		Extensions {
+			relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
+			para_id: para_id.into(),
+		},
+	)
+	.with_name("Development")
+	.with_id("dev")
+	.with_chain_type(ChainType::Development)
+	.with_genesis_config(testnet_genesis(
+        default_funded_accounts.clone(),
+        para_id,
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+    ))
+    .with_boot_nodes(boot_nodes)
+	.build()
 }
 
 pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
@@ -134,57 +152,114 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
         })
         .collect();
 
-    ChainSpec::from_genesis(
-        // Name
-        &format!("Simple Container {}", para_id),
-        // ID
-        &format!("simple_container_{}", para_id),
-        ChainType::Local,
-        move || {
-            testnet_genesis(
-                default_funded_accounts.clone(),
-                para_id,
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-            )
-        },
-        // Bootnodes
-        boot_nodes,
-        // Telemetry
-        None,
-        // Protocol ID
-        protocol_id.as_deref(),
-        // Fork ID
-        None,
-        // Properties
-        Some(properties),
-        // Extensions
-        Extensions {
-            relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
-            para_id: para_id.into(),
-        },
-    )
+    // ChainSpec::from_genesis(
+    //     // Name
+    //     &format!("Simple Container {}", para_id),
+    //     // ID
+    //     &format!("simple_container_{}", para_id),
+    //     ChainType::Local,
+    //     move || {
+    //         testnet_genesis(
+    //             default_funded_accounts.clone(),
+    //             para_id,
+    //             get_account_id_from_seed::<sr25519::Public>("Alice"),
+    //         )
+    //     },
+    //     // Bootnodes
+    //     boot_nodes,
+    //     // Telemetry
+    //     None,
+    //     // Protocol ID
+    //     protocol_id.as_deref(),
+    //     // Fork ID
+    //     None,
+    //     // Properties
+    //     Some(properties),
+    //     // Extensions
+    //     Extensions {
+    //         relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
+    //         para_id: para_id.into(),
+    //     },
+    // )
+
+	ChainSpec::builder(
+		moonkit_template_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
+		Extensions {
+			relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
+			para_id: para_id.into(),
+		},
+	)
+	.with_name(&format!("Simple Container {}", para_id))
+	.with_id(&format!("simple_container_{}", para_id))
+	.with_chain_type(ChainType::Local)
+	.with_genesis_config(testnet_genesis(
+        default_funded_accounts.clone(),
+        para_id,
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+    ))
+    .with_protocol_id(protocol_id.as_deref())
+    .with_boot_nodes(boot_nodes)
+	.build()
 }
+
+// fn testnet_genesis(
+//     endowed_accounts: Vec<AccountId>,
+//     id: ParaId,
+//     root_key: AccountId,
+// ) -> container_chain_template_simple_runtime::RuntimeGenesisConfig {
+//     container_chain_template_simple_runtime::RuntimeGenesisConfig {
+//         system: container_chain_template_simple_runtime::SystemConfig {
+//             code: container_chain_template_simple_runtime::WASM_BINARY
+//                 .expect("WASM binary was not build, please build it!")
+//                 .to_vec(),
+//             ..Default::default()
+//         },
+//         balances: container_chain_template_simple_runtime::BalancesConfig {
+//             balances: endowed_accounts
+//                 .iter()
+//                 .cloned()
+//                 .map(|k| (k, 1 << 60))
+//                 .collect(),
+//         },
+//         parachain_info: container_chain_template_simple_runtime::ParachainInfoConfig {
+//             parachain_id: id,
+//             ..Default::default()
+//         },
+//         parachain_system: Default::default(),
+//         sudo: container_chain_template_simple_runtime::SudoConfig {
+//             key: Some(root_key),
+//         },
+//         authorities_noting: container_chain_template_simple_runtime::AuthoritiesNotingConfig {
+//             orchestrator_para_id: ORCHESTRATOR,
+//             ..Default::default()
+//         },
+//         migrations: MigrationsConfig::default(),
+//         maintenance_mode: MaintenanceModeConfig {
+//             start_in_maintenance_mode: false,
+//             ..Default::default()
+//         },
+//         // This should initialize it to whatever we have set in the pallet
+//         polkadot_xcm: PolkadotXcmConfig::default(),
+//         transaction_payment: Default::default(),
+//         tx_pause: Default::default(),
+//     }
+// }
+
 
 fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-) -> container_chain_template_simple_runtime::RuntimeGenesisConfig {
-    container_chain_template_simple_runtime::RuntimeGenesisConfig {
-        system: container_chain_template_simple_runtime::SystemConfig {
-            code: container_chain_template_simple_runtime::WASM_BINARY
-                .expect("WASM binary was not build, please build it!")
-                .to_vec(),
-            ..Default::default()
-        },
-        balances: container_chain_template_simple_runtime::BalancesConfig {
+) -> serde_json::Value {
+	let g = moonkit_template_runtime::RuntimeGenesisConfig {
+		balances: container_chain_template_simple_runtime::BalancesConfig {
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|k| (k, 1 << 60))
                 .collect(),
         },
-        parachain_info: container_chain_template_simple_runtime::ParachainInfoConfig {
+		parachain_info: container_chain_template_simple_runtime::ParachainInfoConfig {
             parachain_id: id,
             ..Default::default()
         },
@@ -205,7 +280,15 @@ fn testnet_genesis(
         polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
-    }
+		system: container_chain_template_simple_runtime::SystemConfig {
+            code: container_chain_template_simple_runtime::WASM_BINARY
+                .expect("WASM binary was not build, please build it!")
+                .to_vec(),
+            ..Default::default()
+        },
+	};
+
+	serde_json::to_value(&g).unwrap()
 }
 
 /// Get pre-funded accounts
@@ -224,4 +307,11 @@ pub fn pre_funded_accounts() -> Vec<AccountId> {
         get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
         get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
     ]
+}
+
+#[test]
+fn chain_spec_as_json_raw_works() {
+	let x = local_testnet_config();
+	let raw = true;
+	assert!(x.as_json(raw).is_ok());
 }
