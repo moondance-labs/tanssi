@@ -42,10 +42,11 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            fungible::{Balanced, Credit},
+            fungible::{Balanced, Credit, Inspect},
+            tokens::{PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
-            OnRuntimeUpgrade,
+            Imbalance, InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
+            OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -62,10 +63,11 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
+    pallet_balances::NegativeImbalance,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::{ChargeForBlockCredit, ProvideBlockProductionCost},
+    pallet_services_payment::ProvideBlockProductionCost,
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_transaction_payment::{ConstFeeMultiplier, CurrencyAdapter, Multiplier},
     polkadot_runtime_common::BlockHashCount,
@@ -76,7 +78,9 @@ use {
     sp_core::{crypto::KeyTypeId, Decode, Encode, Get, MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
         create_runtime_str, generic, impl_opaque_keys,
-        traits::{AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT},
+        traits::{
+            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, IdentityLookup,
+        },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
@@ -400,6 +404,44 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
+pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
+impl<R> OnUnbalanced<NegativeImbalance<R>> for DealWithFees<R>
+where
+    R: pallet_balances::Config + pallet_treasury::Config,
+    pallet_treasury::Pallet<R>: OnUnbalanced<NegativeImbalance<R>>,
+{
+    // this seems to be called for substrate-based transactions
+    fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance<R>>) {
+        if let Some(fees) = fees_then_tips.next() {
+            // 80% is burned, 20% goes to the treasury
+            // Same policy applies for tips as well
+            let burn_percentage = 80;
+            let treasury_percentage = 20;
+
+            let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
+            // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
+            <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(to_treasury);
+
+            // handle tip if there is one
+            if let Some(tip) = fees_then_tips.next() {
+                let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
+                <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(to_treasury);
+            }
+        }
+    }
+
+    // this is called from pallet_evm for Ethereum-based transactions
+    // (technically, it calls on_unbalanced, which calls this when non-zero)
+    fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
+        // 80% is burned, 20% goes to the treasury
+        let burn_percentage = 80;
+        let treasury_percentage = 20;
+
+        let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
+        <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(to_treasury);
+    }
+}
+
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
     pub const FeeMultiplier: Multiplier = Multiplier::from_u32(1);
@@ -408,7 +450,7 @@ parameter_types! {
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     // This will burn the fees
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -579,10 +621,22 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
         let credits_for_2_sessions = 2 * blocks_per_session;
         para_ids.retain(|para_id| {
             // Check if the container chain has enough credits for producing blocks for 2 sessions
-            let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+            let free_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
-            credits >= credits_for_2_sessions
+            // Return if we can survive with free credits
+            if free_credits >= credits_for_2_sessions {
+                return true
+            }
+
+            let remaining_credits = credits_for_2_sessions.saturating_sub(free_credits);
+
+            let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
+            // let's check if we can withdraw
+            let remaining_to_pay = (remaining_credits as u128).saturating_mul(block_production_costs);
+            // This should take into account whether we tank goes below ED
+            // The true refers to keepAlive
+            Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), remaining_to_pay).into_result(true).is_ok()
         });
     }
 
@@ -648,7 +702,7 @@ parameter_types! {
 impl pallet_services_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
-    type OnChargeForBlockCredit = ChargeForBlockCredit<Runtime>;
+    type OnChargeForBlock = ();
     /// Currency type for fee payment
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block
@@ -740,16 +794,10 @@ impl RegistrarHooks for FlashboxRegistrarHooks {
                 e,
             );
         }
-        // Remove all credits from pallet_services_payment
-        if let Err(e) = ServicesPayment::set_credits(RuntimeOrigin::root(), para_id, 0) {
-            log::warn!(
-                "Failed to set_credits to 0 after para id {} deregistered: {:?}",
-                u32::from(para_id),
-                e,
-            );
-        }
         // Remove bootnodes from pallet_data_preservers
         DataPreservers::para_deregistered(para_id);
+
+        ServicesPayment::para_deregistered(para_id);
 
         Weight::default()
     }
@@ -1130,6 +1178,41 @@ impl pallet_identity::Config for Runtime {
     type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const TreasuryId: PalletId = PalletId(*b"tns/tsry");
+    pub const ProposalBond: Permill = Permill::from_percent(5);
+    pub TreasuryAccount: AccountId = Treasury::account_id();
+}
+
+impl pallet_treasury::Config for Runtime {
+    type PalletId = TreasuryId;
+    type Currency = Balances;
+
+    type ApproveOrigin = EnsureRoot<AccountId>;
+    type RejectOrigin = EnsureRoot<AccountId>;
+    type RuntimeEvent = RuntimeEvent;
+    // If proposal gets rejected, bond goes to treasury
+    type OnSlash = Treasury;
+    type ProposalBond = ProposalBond;
+    type ProposalBondMinimum = ConstU128<{ 1 * currency::DANCE * currency::SUPPLY_FACTOR }>;
+    type SpendPeriod = ConstU32<{ 6 * DAYS }>;
+    type Burn = ();
+    type BurnDestination = ();
+    type MaxApprovals = ConstU32<100>;
+    type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+    type SpendFunds = ();
+    type ProposalBondMaximum = ();
+    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Same as Polkadot
+    type AssetKind = ();
+    type Beneficiary = AccountId;
+    type BeneficiaryLookup = IdentityLookup<AccountId>;
+    type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
+    type BalanceConverter = UnityAssetBalanceConversion;
+    type PayoutPeriod = ConstU32<0>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1171,6 +1254,9 @@ construct_runtime!(
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
 
+        // Treasury stuff.
+        Treasury: pallet_treasury::{Pallet, Storage, Config<T>, Event<T>, Call} = 40,
+
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
 
@@ -1187,6 +1273,7 @@ mod benches {
         [pallet_sudo, Sudo]
         [pallet_proxy, Proxy]
         [pallet_utility, Utility]
+        [pallet_treasury, Treasury]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
         [pallet_identity, Identity]
@@ -1468,7 +1555,12 @@ impl_runtime_apis! {
                 Session::current_index()
             };
 
-            Registrar::session_container_chains(session_index).to_vec()
+            let container_chains = Registrar::session_container_chains(session_index);
+            let mut para_ids = vec![];
+            para_ids.extend(container_chains.parachains);
+            para_ids.extend(container_chains.parathreads.into_iter().map(|(para_id, _)| para_id));
+
+            para_ids
         }
 
         /// Fetch genesis data for this para id

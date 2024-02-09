@@ -22,15 +22,13 @@
 
 use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
 
+pub mod collators;
 mod consensus_orchestrator;
 mod manual_seal;
 #[cfg(test)]
 mod tests;
 
-pub use {
-    consensus_orchestrator::{BuildOrchestratorAuraConsensusParams, OrchestratorAuraConsensus},
-    sc_consensus_aura::CompatibilityMode,
-};
+pub use sc_consensus_aura::CompatibilityMode;
 
 pub use {
     cumulus_primitives_core::ParaId,

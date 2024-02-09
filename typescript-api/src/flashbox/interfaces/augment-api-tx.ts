@@ -12,7 +12,7 @@ import type {
     SubmittableExtrinsicFunction,
 } from "@polkadot/api-base/types";
 import type { Data } from "@polkadot/types";
-import type { Bytes, Compact, Option, Vec, bool, u128, u16, u32, u64 } from "@polkadot/types-codec";
+import type { Bytes, Compact, Null, Option, Vec, bool, u128, u16, u32, u64 } from "@polkadot/types-codec";
 import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -26,6 +26,7 @@ import type {
     SpWeightsWeightV2Weight,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
+    TpTraitsSlotFrequency,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedSubmittable = AugmentedSubmittable<() => unknown>;
@@ -797,6 +798,27 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, TpContainerChainGenesisDataContainerChainGenesisData]
             >;
+            /** See [`Pallet::register_parathread`]. */
+            registerParathread: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    slotFrequency: TpTraitsSlotFrequency | { min?: any; max?: any } | string | Uint8Array,
+                    genesisData:
+                        | TpContainerChainGenesisDataContainerChainGenesisData
+                        | { storage?: any; name?: any; id?: any; forkId?: any; extensions?: any; properties?: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, TpTraitsSlotFrequency, TpContainerChainGenesisDataContainerChainGenesisData]
+            >;
+            /** See [`Pallet::set_parathread_params`]. */
+            setParathreadParams: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    slotFrequency: TpTraitsSlotFrequency | { min?: any; max?: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, TpTraitsSlotFrequency]
+            >;
             /** See [`Pallet::unpause_container_chain`]. */
             unpauseContainerChain: AugmentedSubmittable<
                 (paraId: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -819,10 +841,9 @@ declare module "@polkadot/api-base/types/submittable" {
             purchaseCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    credits: u32 | AnyNumber | Uint8Array,
-                    maxPricePerCredit: Option<u128> | null | Uint8Array | u128 | AnyNumber
+                    credit: u128 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, u32, Option<u128>]
+                [u32, u128]
             >;
             /** See [`Pallet::set_credits`]. */
             setCredits: AugmentedSubmittable<
@@ -959,6 +980,79 @@ declare module "@polkadot/api-base/types/submittable" {
             set: AugmentedSubmittable<
                 (now: Compact<u64> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [Compact<u64>]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        treasury: {
+            /** See [`Pallet::approve_proposal`]. */
+            approveProposal: AugmentedSubmittable<
+                (proposalId: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Compact<u32>]
+            >;
+            /** See [`Pallet::check_status`]. */
+            checkStatus: AugmentedSubmittable<
+                (index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /** See [`Pallet::payout`]. */
+            payout: AugmentedSubmittable<(index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u32]>;
+            /** See [`Pallet::propose_spend`]. */
+            proposeSpend: AugmentedSubmittable<
+                (
+                    value: Compact<u128> | AnyNumber | Uint8Array,
+                    beneficiary:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [Compact<u128>, MultiAddress]
+            >;
+            /** See [`Pallet::reject_proposal`]. */
+            rejectProposal: AugmentedSubmittable<
+                (proposalId: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Compact<u32>]
+            >;
+            /** See [`Pallet::remove_approval`]. */
+            removeApproval: AugmentedSubmittable<
+                (proposalId: Compact<u32> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Compact<u32>]
+            >;
+            /** See [`Pallet::spend`]. */
+            spend: AugmentedSubmittable<
+                (
+                    assetKind: Null | null,
+                    amount: Compact<u128> | AnyNumber | Uint8Array,
+                    beneficiary: AccountId32 | string | Uint8Array,
+                    validFrom: Option<u32> | null | Uint8Array | u32 | AnyNumber
+                ) => SubmittableExtrinsic<ApiType>,
+                [Null, Compact<u128>, AccountId32, Option<u32>]
+            >;
+            /** See [`Pallet::spend_local`]. */
+            spendLocal: AugmentedSubmittable<
+                (
+                    amount: Compact<u128> | AnyNumber | Uint8Array,
+                    beneficiary:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [Compact<u128>, MultiAddress]
+            >;
+            /** See [`Pallet::void_spend`]. */
+            voidSpend: AugmentedSubmittable<
+                (index: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

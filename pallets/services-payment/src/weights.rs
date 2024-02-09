@@ -55,6 +55,7 @@ pub trait WeightInfo {
 	fn purchase_credits() -> Weight;
 	fn set_credits() -> Weight;
 	fn set_given_free_credits() -> Weight;
+	fn on_container_author_noted() -> Weight;
 }
 
 /// Weights for pallet_services_payment using the Substrate node and recommended hardware.
@@ -93,6 +94,20 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		Weight::from_parts(2_691_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
+
+	/// Storage: `ServicesPayment::BlockProductionCredits` (r:1 w:0)
+	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	fn on_container_author_noted() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `224`
+		//  Estimated: `3593`
+		// Minimum execution time: 19_043_000 picoseconds.
+		Weight::from_parts(19_499_000, 3593)
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
 }
 
 // For backwards compatibility and tests
@@ -128,6 +143,19 @@ impl WeightInfo for () {
 		//  Estimated: `0`
 		// Minimum execution time: 2_541_000 picoseconds.
 		Weight::from_parts(2_691_000, 0)
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `ServicesPayment::BlockProductionCredits` (r:1 w:0)
+	/// Proof: `ServicesPayment::BlockProductionCredits` (`max_values`: None, `max_size`: Some(24), added: 2499, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	fn on_container_author_noted() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `224`
+		//  Estimated: `3593`
+		// Minimum execution time: 19_043_000 picoseconds.
+		Weight::from_parts(19_499_000, 3593)
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }

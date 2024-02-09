@@ -131,7 +131,7 @@ impl HostConfiguration {
         if self.max_orchestrator_collators < self.min_orchestrator_collators {
             return Err(InconsistentError::MaxCollatorsLowerThanMinCollators);
         }
-        if self.collators_per_parathread != 1 || self.parathreads_per_collator != 1 {
+        if self.parathreads_per_collator != 1 {
             return Err(InconsistentError::UnimplementedParameter);
         }
         Ok(())
