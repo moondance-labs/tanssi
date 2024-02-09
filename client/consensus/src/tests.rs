@@ -35,6 +35,7 @@ use {
         CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
         StorageValue,
     },
+    cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     futures::prelude::*,
     futures_timer::Delay,
     nimbus_primitives::{
@@ -161,9 +162,9 @@ impl RelayChainInterface for RelayChain {
         _: ParaId,
         _: PHash,
     ) -> RelayChainResult<Vec<InboundDownwardMessage>> {
-        let downward_msg = InboundDownwardMessage{
+        let downward_msg = InboundDownwardMessage {
             sent_at: 10u32,
-            msg: vec![1u8,2u8,3u8]
+            msg: vec![1u8, 2u8, 3u8],
         };
         Ok(vec![downward_msg])
     }
@@ -174,9 +175,9 @@ impl RelayChainInterface for RelayChain {
         _: PHash,
     ) -> RelayChainResult<BTreeMap<ParaId, Vec<InboundHrmpMessage>>> {
         let mut tree = BTreeMap::new();
-        let hrmp_msg = InboundHrmpMessage{
+        let hrmp_msg = InboundHrmpMessage {
             sent_at: 10u32,
-            data: vec![1u8,2u8,3u8]
+            data: vec![1u8, 2u8, 3u8],
         };
         let para_id = ParaId::from(2000u32);
         tree.insert(para_id, vec![hrmp_msg]);
@@ -381,15 +382,12 @@ impl Proposer<TestBlock> for DummyProposer {
         _: Option<usize>,
     ) -> Self::Proposal {
         let r = self.1.new_block(digests).unwrap().build();
-
-        //TODO: this is new and we should check if it's needed
-        let mut tree = BTreeSet::new();
-        tree.insert(vec![1u8, 3u8, 4u8]);
-        let proof = sc_client_api::StorageProof::new(tree);
+        let (relay_parent_storage_root, proof) =
+            RelayStateSproofBuilder::default().into_state_root_and_proof();
 
         futures::future::ready(r.map(|b| Proposal {
             block: b.block,
-            proof,
+            proof: proof,
             storage_changes: b.storage_changes,
         }))
     }
@@ -674,7 +672,7 @@ async fn on_slot_returns_correct_block() {
     let alice_public = keystore
         .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
         .expect("Key should be created");
-    
+
     let keystore_copy = LocalKeystore::open(keystore_path.path(), None).expect("Copies keystore.");
     keystore_copy
         .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
@@ -715,26 +713,36 @@ async fn on_slot_returns_correct_block() {
         Collator::<Block, NimbusPair, _, _, _, _, _>::new(params)
     };
 
-    let head = client.expect_header(client.info().genesis_hash).unwrap();
+    let mut head = client.expect_header(client.info().genesis_hash).unwrap();
+
+    let (relay_parent_storage_root, proof) =
+        RelayStateSproofBuilder::default().into_state_root_and_proof();
+    head.state_root = relay_parent_storage_root;
 
     let slot = InherentDataProvider::from_timestamp_and_slot_duration(
         Timestamp::current(),
         SlotDuration::from_millis(SLOT_DURATION_MS),
     );
 
-    let (parachain_inherent_data, other_inherent_data) = collator.create_inherent_data(
-        Default::default(),
-        &Default::default(),
-        head.clone().hash(),
-        None,
-    ).await.unwrap();
+    let (parachain_inherent_data, other_inherent_data) = collator
+        .create_inherent_data(
+            Default::default(),
+            &Default::default(),
+            head.clone().hash(),
+            None,
+        )
+        .await
+        .unwrap();
 
     let keystore_ptr: KeystorePtr = keystore_copy.into();
 
-    let mut claim = tanssi_claim_slot::<NimbusPair>(vec![alice_public.into()], *slot, false, &keystore_ptr)
-    .unwrap().unwrap();
+    let mut claim =
+        tanssi_claim_slot::<NimbusPair>(vec![alice_public.into()], *slot, false, &keystore_ptr)
+            .unwrap()
+            .unwrap();
 
-    let res = collator.collate(
+    let res = collator
+        .collate(
             &head,
             &mut claim,
             None,
@@ -742,12 +750,12 @@ async fn on_slot_returns_correct_block() {
             Duration::from_millis(500),
             3_500_000 as usize,
         )
-        .await.unwrap();
-
-    println!("RES: {:#?}", res.0);
+        .await
+        .unwrap()
+        .1;
 
     // The returned block should be imported and we should be able to get its header by now.
-    //assert!(client.header(res.block.hash()).unwrap().is_some());
+    assert!(client.header(res.header().hash()).unwrap().is_some());
 }
 
 // Tests authorities are correctly returned and eligibility is correctly calculated
