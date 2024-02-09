@@ -42,7 +42,7 @@ cumulus-relay-chain-interface = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
 
 # Polkadot
-polkadot-core-primitives = { workspace = true}
+polkadot-core-primitives = { workspace = true }
 polkadot-node-primitives = { workspace = true }
 polkadot-overseer = { workspace = true }
 polkadot-parachain-primitives = { workspace = true }
