@@ -89,7 +89,7 @@ where
         + 'static
         + Clone,
     CIDP::InherentDataProviders: Send + InherentDataProviderExt,
-    BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
+    BI: BlockImport<Block> + Send + Sync + 'static,
     SO: SyncOracle + Send + Sync + Clone + 'static,
     Proposer: ProposerInterface<Block> + Send + Sync + 'static,
     CS: CollatorServiceInterface<Block> + Send + Sync + 'static,

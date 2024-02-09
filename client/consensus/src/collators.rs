@@ -84,7 +84,7 @@ where
     Block: BlockT,
     RClient: RelayChainInterface,
     CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)> + 'static,
-    BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
+    BI: BlockImport<Block> + Send + Sync + 'static,
     Proposer: ProposerInterface<Block>,
     CS: CollatorServiceInterface<Block>,
     P: Pair,
@@ -185,6 +185,7 @@ where
         .map_err(|e| e as Box<dyn Error + Send>)?;
 
         let post_hash = sealed_importable.post_hash();
+        let post_header = sealed_importable.post_header();
         let block = Block::new(
             sealed_importable.post_header(),
             sealed_importable
@@ -198,6 +199,8 @@ where
             .import_block(sealed_importable)
             .map_err(|e| Box::new(e) as Box<dyn Error + Send>)
             .await?;
+
+        let parent_state_root = parent_header.state_root();
 
         if let Some((collation, block_data)) = self.collator_service.build_collation(
             parent_header,

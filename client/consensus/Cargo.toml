@@ -41,8 +41,10 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 
 # Polkadot
+polkadot-core-primitives = { workspace = true}
 polkadot-node-primitives = { workspace = true }
 polkadot-overseer = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
 polkadot-primitives = { workspace = true }
 
 # Nimbus Dependencies

@@ -16,42 +16,73 @@
 
 #![allow(clippy::await_holding_lock)]
 
+use std::borrow::Borrow;
+
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
 use {
-    crate::{InherentDataProviderExt, LOG_TARGET},
+    crate::{
+        collators::{tanssi_claim_slot, Collator, Params as CollatorParams},
+        InherentDataProviderExt, LOG_TARGET,
+    },
+    async_trait::async_trait,
+    cumulus_client_collator::service::CollatorService,
     cumulus_client_consensus_common::ParachainConsensus,
+    cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
+    cumulus_primitives_core::{relay_chain::BlockId, CollationInfo, CollectCollationInfo},
+    cumulus_relay_chain_interface::{
+        CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
+        StorageValue,
+    },
     futures::prelude::*,
     futures_timer::Delay,
-    nimbus_primitives::{CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID},
+    nimbus_primitives::{
+        CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID, NIMBUS_KEY_ID,
+    },
+    parity_scale_codec::alloc::collections::{BTreeMap, BTreeSet},
     parking_lot::Mutex,
+    polkadot_core_primitives::{Header as PHeader, InboundDownwardMessage, InboundHrmpMessage},
+    polkadot_parachain_primitives::primitives::HeadData,
+    polkadot_primitives::{
+        Hash as PHash, OccupiedCoreAssumption, PersistedValidationData, ValidatorId,
+    },
     sc_block_builder::BlockBuilderProvider,
+    sc_client_api::HeaderBackend,
     sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
-    sc_consensus_slots::SlotInfo,
+    sc_consensus_aura::SlotProportion,
+    sc_consensus_slots::{BackoffAuthoringOnFinalizedHeadLagging, SlotInfo},
+    sc_keystore::LocalKeystore,
     sc_network_test::{Block as TestBlock, *},
     sp_consensus::{
-        EnableProofRecording, Environment, Proposal, Proposer, SelectChain, SyncOracle,
+        EnableProofRecording, Environment, NoNetwork as DummyOracle, Proposal, Proposer,
+        SelectChain, SyncOracle,
     },
-    sp_consensus_aura::SlotDuration,
+    sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration},
     sp_consensus_slots::Slot,
-    sp_core::crypto::{ByteArray, Pair},
+    sp_core::{
+        crypto::{ByteArray, Pair},
+        traits::SpawnNamed,
+        H256,
+    },
     sp_inherents::{CreateInherentDataProviders, InherentData},
     sp_keyring::sr25519::Keyring,
+    sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::{
         traits::{Block as BlockT, Header as _},
         Digest, DigestItem,
     },
-    std::{sync::Arc, time::Duration},
+    sp_timestamp::Timestamp,
+    std::{pin::Pin, sync::Arc, time::Duration},
     substrate_test_runtime_client::TestClient,
 };
 
 // Duration of slot time
-#[allow(unused)]
 const SLOT_DURATION_MS: u64 = 1000;
 
 type Error = sp_blockchain::Error;
 
+#[derive(Clone)]
 struct DummyFactory(Arc<TestClient>);
 // We are going to create API because we need this to test runtime apis
 // We use the client normally, but for testing certain runtime-api calls,
@@ -91,6 +122,159 @@ sp_api::mock_impl_runtime_apis! {
                 None
             }
         }
+    }
+
+    impl CollectCollationInfo<Block> for MockApi {
+        fn collect_collation_info(header: &<Block as BlockT>::Header) -> CollationInfo {
+            CollationInfo {
+                upward_messages: Vec::new(),
+                horizontal_messages: Vec::new(),
+                new_validation_code: None,
+                processed_downward_messages: 0u32,
+                hrmp_watermark: 0u32,
+                head_data: HeadData(vec![1, 2, 3])
+            }
+        }
+
+    }
+}
+
+#[derive(Clone)]
+struct RelayChain(Arc<TestClient>);
+
+#[async_trait]
+impl RelayChainInterface for RelayChain {
+    async fn validators(&self, _: PHash) -> RelayChainResult<Vec<ValidatorId>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn best_block_hash(&self) -> RelayChainResult<PHash> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn finalized_block_hash(&self) -> RelayChainResult<PHash> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn retrieve_dmq_contents(
+        &self,
+        _: ParaId,
+        _: PHash,
+    ) -> RelayChainResult<Vec<InboundDownwardMessage>> {
+        let downward_msg = InboundDownwardMessage{
+            sent_at: 10u32,
+            msg: vec![1u8,2u8,3u8]
+        };
+        Ok(vec![downward_msg])
+    }
+
+    async fn retrieve_all_inbound_hrmp_channel_contents(
+        &self,
+        _: ParaId,
+        _: PHash,
+    ) -> RelayChainResult<BTreeMap<ParaId, Vec<InboundHrmpMessage>>> {
+        let mut tree = BTreeMap::new();
+        let hrmp_msg = InboundHrmpMessage{
+            sent_at: 10u32,
+            data: vec![1u8,2u8,3u8]
+        };
+        let para_id = ParaId::from(2000u32);
+        tree.insert(para_id, vec![hrmp_msg]);
+        Ok(tree)
+    }
+
+    async fn persisted_validation_data(
+        &self,
+        hash: PHash,
+        _: ParaId,
+        assumption: OccupiedCoreAssumption,
+    ) -> RelayChainResult<Option<PersistedValidationData>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn candidate_pending_availability(
+        &self,
+        _: PHash,
+        _: ParaId,
+    ) -> RelayChainResult<Option<CommittedCandidateReceipt>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn session_index_for_child(&self, _: PHash) -> RelayChainResult<u32> {
+        Ok(0)
+    }
+
+    async fn import_notification_stream(
+        &self,
+    ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn finality_notification_stream(
+        &self,
+    ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn is_major_syncing(&self) -> RelayChainResult<bool> {
+        Ok(false)
+    }
+
+    fn overseer_handle(&self) -> RelayChainResult<OverseerHandle> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn get_storage_by_key(
+        &self,
+        _: PHash,
+        _: &[u8],
+    ) -> RelayChainResult<Option<StorageValue>> {
+        Ok(None)
+    }
+
+    async fn prove_read(
+        &self,
+        _: PHash,
+        _: &Vec<Vec<u8>>,
+    ) -> RelayChainResult<sc_client_api::StorageProof> {
+        let mut tree = BTreeSet::new();
+        tree.insert(vec![1u8, 2u8, 3u8]);
+        let proof = sc_client_api::StorageProof::new(tree);
+        Ok(proof)
+    }
+
+    async fn wait_for_block(&self, _: PHash) -> RelayChainResult<()> {
+        Ok(())
+    }
+
+    async fn new_best_notification_stream(
+        &self,
+    ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn header(&self, block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
+        unimplemented!("Not needed for test")
+    }
+}
+
+#[derive(Clone)]
+struct DummySpawner(Arc<TestClient>);
+impl SpawnNamed for DummySpawner {
+    fn spawn_blocking(
+        &self,
+        _name: &'static str,
+        _group: Option<&'static str>,
+        _future: futures::future::BoxFuture<'static, ()>,
+    ) {
+    }
+
+    fn spawn(
+        &self,
+        _name: &'static str,
+        _group: Option<&'static str>,
+        _future: futures::future::BoxFuture<'static, ()>,
+    ) {
     }
 }
 
@@ -198,9 +382,14 @@ impl Proposer<TestBlock> for DummyProposer {
     ) -> Self::Proposal {
         let r = self.1.new_block(digests).unwrap().build();
 
+        //TODO: this is new and we should check if it's needed
+        let mut tree = BTreeSet::new();
+        tree.insert(vec![1u8, 3u8, 4u8]);
+        let proof = sc_client_api::StorageProof::new(tree);
+
         futures::future::ready(r.map(|b| Proposal {
             block: b.block,
-            proof: sc_client_api::StorageProof::empty(),
+            proof,
             storage_changes: b.storage_changes,
         }))
     }
@@ -351,7 +540,6 @@ where
     }
 }
 /// Returns current duration since unix epoch.
-#[allow(unused)]
 pub fn duration_now() -> Duration {
     use std::time::SystemTime;
     let now = SystemTime::now();
@@ -365,7 +553,6 @@ pub fn duration_now() -> Duration {
 }
 
 /// Returns the duration until the next slot from now.
-#[allow(unused)]
 pub fn time_until_next_slot(slot_duration: Duration) -> Duration {
     let now = duration_now().as_millis();
 
@@ -380,7 +567,6 @@ pub fn time_until_next_slot(slot_duration: Duration) -> Duration {
 /// is called and the future it returns is
 /// polled until completion, unless we are major syncing.
 /// TODO: refactor to use the new Tanssi Aura params
-#[allow(unused)]
 pub async fn start_orchestrator_aura_consensus_candidate_producer<B, C, SO, CIDP>(
     slot_duration: SlotDuration,
     client: C,
@@ -415,6 +601,153 @@ pub async fn start_orchestrator_aura_consensus_candidate_producer<B, C, SO, CIDP
             )
             .await;
     }
+}
+
+// Checks node slot claim. Again for different slots, different authorities
+// should be able to claim
+#[tokio::test]
+async fn current_node_authority_should_claim_slot() {
+    let mut authorities: Vec<NimbusId> = vec![
+        Keyring::Alice.public().into(),
+        Keyring::Bob.public().into(),
+        Keyring::Charlie.public().into(),
+    ];
+
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+
+    let public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, None)
+        .expect("Key should be created");
+    authorities.push(public.into());
+
+    let keystore_ptr: KeystorePtr = keystore.into();
+
+    assert!(
+        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 0.into(), false, &keystore_ptr)
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 1.into(), false, &keystore_ptr)
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 2.into(), false, &keystore_ptr)
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 3.into(), false, &keystore_ptr)
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 4.into(), false, &keystore_ptr)
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 5.into(), false, &keystore_ptr)
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 6.into(), false, &keystore_ptr)
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        tanssi_claim_slot::<NimbusPair>(authorities.clone(), 7.into(), false, &keystore_ptr)
+            .unwrap()
+            .is_some()
+    );
+}
+
+#[tokio::test]
+async fn on_slot_returns_correct_block() {
+    let net = AuraTestNet::new(4);
+
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+    let alice_public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be created");
+    
+    let keystore_copy = LocalKeystore::open(keystore_path.path(), None).expect("Copies keystore.");
+    keystore_copy
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be copied");
+
+    let net = Arc::new(Mutex::new(net));
+
+    let mut net = net.lock();
+    let peer = net.peer(3);
+    let client = peer.client().as_client();
+    let environ = DummyFactory(client.clone());
+    let spawner = DummySpawner(client.clone());
+    let relay_client = RelayChain(client.clone());
+
+    let mut collator = {
+        let params = CollatorParams {
+            create_inherent_data_providers: |_, _| async {
+                let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+                    Timestamp::current(),
+                    SlotDuration::from_millis(SLOT_DURATION_MS),
+                );
+
+                Ok((slot,))
+            },
+            block_import: client.clone(),
+            relay_client: relay_client.clone(),
+            keystore: keystore.into(),
+            para_id: 1000.into(),
+            proposer: ConsensusProposer::new(environ.clone()),
+            collator_service: CollatorService::new(
+                client.clone(),
+                Arc::new(spawner),
+                Arc::new(move |_, _| {}),
+                Arc::new(environ),
+            ),
+        };
+
+        Collator::<Block, NimbusPair, _, _, _, _, _>::new(params)
+    };
+
+    let head = client.expect_header(client.info().genesis_hash).unwrap();
+
+    let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+        Timestamp::current(),
+        SlotDuration::from_millis(SLOT_DURATION_MS),
+    );
+
+    let (parachain_inherent_data, other_inherent_data) = collator.create_inherent_data(
+        Default::default(),
+        &Default::default(),
+        head.clone().hash(),
+        None,
+    ).await.unwrap();
+
+    let keystore_ptr: KeystorePtr = keystore_copy.into();
+
+    let mut claim = tanssi_claim_slot::<NimbusPair>(vec![alice_public.into()], *slot, false, &keystore_ptr)
+    .unwrap().unwrap();
+
+    let res = collator.collate(
+            &head,
+            &mut claim,
+            None,
+            (parachain_inherent_data, other_inherent_data),
+            Duration::from_millis(500),
+            3_500_000 as usize,
+        )
+        .await.unwrap();
+
+    println!("RES: {:#?}", res.0);
+
+    // The returned block should be imported and we should be able to get its header by now.
+    //assert!(client.header(res.block.hash()).unwrap().is_some());
 }
 
 // Tests authorities are correctly returned and eligibility is correctly calculated
