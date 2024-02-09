@@ -29,7 +29,7 @@
 //! to that containerChain, by simply assigning the slot position.
 
 use {
-    crate::{mock::*, pallet as pallet_services_payment, BlockProductionCredits},
+    crate::{mock::*, pallet as pallet_services_payment, BlockProductionCredits, RefundAddress},
     cumulus_primitives_core::ParaId,
     frame_support::{assert_err, assert_ok, traits::fungible::Inspect},
     sp_runtime::DispatchError,
@@ -284,6 +284,9 @@ fn on_deregister_burns_if_no_deposit_address() {
             crate::Pallet::<Test>::para_deregistered(1.into());
             let issuance_after = Balances::total_issuance();
             assert_eq!(issuance_after, issuance_before - 1000u128);
+
+            // Refund address gets cleared
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
         });
 }
 

@@ -368,7 +368,7 @@ impl<T: Config> Pallet<T> {
                 WithdrawReasons::FEE,
                 ExistenceRequirement::AllowDeath,
             ) {
-                if let Some(address) = RefundAddress::<T>::get(para_id) {
+                if let Some(address) = RefundAddress::<T>::take(para_id) {
                     T::Currency::resolve_creating(&address, imbalance);
                 } else {
                     // Burn for now, we might be able to pass something to do with this

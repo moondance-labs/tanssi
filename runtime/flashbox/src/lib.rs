@@ -665,7 +665,7 @@ impl pallet_services_payment::Config for Runtime {
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block
     type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
-    type SetRefundAddressOrigin = 
+    type SetRefundAddressOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     /// The maximum number of credits that can be accumulated
     type MaxCreditsStored = MaxCreditsStored;
