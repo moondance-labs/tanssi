@@ -21,10 +21,14 @@ use {
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
         marker::PhantomData,
         mem,
-        vec::{self, Vec},
+        vec::Vec,
     },
     tp_traits::{ParaId, RemoveInvulnerables as RemoveInvulnerablesT},
 };
+
+// Separate import of `sp_std::vec!` macro, which cause issues with rustfmt if grouped
+// with `sp_std::vec::Vec`.
+use sp_std::vec;
 
 /// Helper methods to implement collator assignment algorithm
 pub struct Assignment<T>(PhantomData<T>);
