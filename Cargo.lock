@@ -3988,6 +3988,7 @@ dependencies = [
  "pallet-root-testing",
  "pallet-services-payment",
  "pallet-session",
+ "pallet-stream-payment",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",

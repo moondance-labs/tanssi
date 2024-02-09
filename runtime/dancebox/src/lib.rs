@@ -1353,7 +1353,7 @@ parameter_types! {
     // The equation to solve is:
     // initial_supply * (1.05) = initial_supply * (1+x)^2_629_800
     // we should solve for x = (1.05)^(1/2_629_800) -1 -> 0.000000019 per block or 19/1_000_000_000
-    // 1% in the case of dev moed
+    // 1% in the case of dev mode
     // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(19), Perbill::from_percent(1));

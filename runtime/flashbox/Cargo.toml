@@ -34,6 +34,7 @@ pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-relay-storage-roots = { workspace = true }
 pallet-services-payment = { workspace = true }
+pallet-stream-payment = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -157,6 +158,7 @@ std = [
 	"pallet-root-testing/std",
 	"pallet-services-payment/std",
 	"pallet-session/std",
+	"pallet-stream-payment/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
@@ -225,6 +227,7 @@ runtime-benchmarks = [
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-relay-storage-roots/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
+	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
