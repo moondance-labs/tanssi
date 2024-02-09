@@ -488,6 +488,10 @@ export default {
                 paraId: "u32",
                 credits: "u32",
             },
+            RefundAddressUpdated: {
+                paraId: "u32",
+                refundAddress: "AccountId32",
+            },
         },
     },
     /** Lookup55: pallet_data_preservers::pallet::Event<T> */
@@ -2314,6 +2318,10 @@ export default {
             set_given_free_credits: {
                 paraId: "u32",
                 givenFreeCredits: "bool",
+            },
+            set_refund_address: {
+                paraId: "u32",
+                refundAddress: "AccountId32",
             },
         },
     },

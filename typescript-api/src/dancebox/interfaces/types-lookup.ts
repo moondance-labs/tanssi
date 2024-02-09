@@ -722,7 +722,12 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly credits: u32;
         } & Struct;
-        readonly type: "CreditsPurchased" | "CreditBurned" | "CreditsSet";
+        readonly isRefundAddressUpdated: boolean;
+        readonly asRefundAddressUpdated: {
+            readonly paraId: u32;
+            readonly refundAddress: AccountId32;
+        } & Struct;
+        readonly type: "CreditsPurchased" | "CreditBurned" | "CreditsSet" | "RefundAddressUpdated";
     }
 
     /** @name PalletDataPreserversEvent (55) */
@@ -3111,7 +3116,12 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly givenFreeCredits: bool;
         } & Struct;
-        readonly type: "PurchaseCredits" | "SetCredits" | "SetGivenFreeCredits";
+        readonly isSetRefundAddress: boolean;
+        readonly asSetRefundAddress: {
+            readonly paraId: u32;
+            readonly refundAddress: AccountId32;
+        } & Struct;
+        readonly type: "PurchaseCredits" | "SetCredits" | "SetGivenFreeCredits" | "SetRefundAddress";
     }
 
     /** @name PalletDataPreserversCall (263) */
