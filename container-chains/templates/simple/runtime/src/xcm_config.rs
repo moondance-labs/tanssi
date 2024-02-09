@@ -16,9 +16,11 @@
 
 use {
     super::{
-        AccountId, AllPalletsWithSystem, Balances, ParachainInfo, ParachainSystem, PolkadotXcm, MaintenanceMode,
-        Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue, MessageQueue, RuntimeBlockWeights,
+        AccountId, AllPalletsWithSystem, Balances, MaintenanceMode, MessageQueue, ParachainInfo,
+        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, WeightToFee, XcmpQueue,
     },
+    cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
         traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
@@ -26,6 +28,7 @@ use {
     },
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
+    parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     sp_core::ConstU32,
     sp_runtime::Perbill,
@@ -38,8 +41,6 @@ use {
         SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WithComputedOrigin,
     },
     staging_xcm_executor::XcmExecutor,
-    cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
-    parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
 };
 
 parameter_types! {
@@ -232,8 +233,8 @@ impl cumulus_pallet_xcmp_queue::Config for Runtime {
     type WeightInfo = cumulus_pallet_xcmp_queue::weights::SubstrateWeight<Self>;
     type PriceForSiblingDelivery = NoPriceForMessageDelivery<ParaId>;
     // Enqueue XCMP messages from siblings for later processing.
-	type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
-	type MaxInboundSuspended = sp_core::ConstU32<1_000>;
+    type XcmpQueue = TransformOrigin<MessageQueue, AggregateMessageOrigin, ParaId, ParaIdToSibling>;
+    type MaxInboundSuspended = sp_core::ConstU32<1_000>;
 }
 
 impl cumulus_pallet_xcm::Config for Runtime {
@@ -242,40 +243,40 @@ impl cumulus_pallet_xcm::Config for Runtime {
 }
 
 parameter_types! {
-	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
+    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
 impl cumulus_pallet_dmp_queue::Config for Runtime {
-	type WeightInfo = cumulus_pallet_dmp_queue::weights::SubstrateWeight<Runtime>;
-	type RuntimeEvent = RuntimeEvent;
-	type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
+    type WeightInfo = cumulus_pallet_dmp_queue::weights::SubstrateWeight<Runtime>;
+    type RuntimeEvent = RuntimeEvent;
+    type DmpSink = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
 }
 
 parameter_types! {
-	// TODO verify 35%
-	pub MessageQueueServiceWeight: Weight = Perbill::from_percent(35) * RuntimeBlockWeights::get().max_block;
+    // TODO verify 35%
+    pub MessageQueueServiceWeight: Weight = Perbill::from_percent(35) * RuntimeBlockWeights::get().max_block;
 }
 
 impl pallet_message_queue::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type WeightInfo = ();
-	#[cfg(feature = "runtime-benchmarks")]
-	type MessageProcessor = pallet_message_queue::mock_helpers::NoopMessageProcessor<
-		cumulus_primitives_core::AggregateMessageOrigin,
-	>;
-	#[cfg(not(feature = "runtime-benchmarks"))]
-	type MessageProcessor = staging_xcm_builder::ProcessXcmMessage<
-		AggregateMessageOrigin,
-		XcmExecutor<XcmConfig>,
-		RuntimeCall,
-	>;
-	type Size = u32;
-	// The XCMP queue pallet is only ever able to handle the `Sibling(ParaId)` origin:
-	type QueueChangeHandler = NarrowOriginToSibling<XcmpQueue>;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type MessageProcessor = pallet_message_queue::mock_helpers::NoopMessageProcessor<
+        cumulus_primitives_core::AggregateMessageOrigin,
+    >;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type MessageProcessor = staging_xcm_builder::ProcessXcmMessage<
+        AggregateMessageOrigin,
+        XcmExecutor<XcmConfig>,
+        RuntimeCall,
+    >;
+    type Size = u32;
+    // The XCMP queue pallet is only ever able to handle the `Sibling(ParaId)` origin:
+    type QueueChangeHandler = NarrowOriginToSibling<XcmpQueue>;
     // NarrowOriginToSibling calls XcmpQueue's is_pause if Origin is sibling. Allows all other origins
-	type QueuePausedQuery = (MaintenanceMode, NarrowOriginToSibling<XcmpQueue>);
+    type QueuePausedQuery = (MaintenanceMode, NarrowOriginToSibling<XcmpQueue>);
     // TODO verify values
-	type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
-	type MaxStale = sp_core::ConstU32<8>;
-	type ServiceWeight = MessageQueueServiceWeight;
+    type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
+    type MaxStale = sp_core::ConstU32<8>;
+    type ServiceWeight = MessageQueueServiceWeight;
 }

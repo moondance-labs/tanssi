@@ -31,15 +31,14 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber,AggregateMessageOrigin, DmpMessageHandler},
+    cumulus_primitives_core::AggregateMessageOrigin,
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth,
-            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, BeforeAllRuntimeMigrations,
+            ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth, InstanceFilter,
         },
         weights::{
             constants::{
@@ -136,7 +135,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    pallet_maintenance_mode::ExecutiveHooks<Runtime>,
+    AllPalletsWithSystem,
 >;
 
 /// Handles converting a weight scalar to a fee value, based on the scale and granularity of the
@@ -335,7 +334,7 @@ impl frame_system::Config for Runtime {
     /// The action to take on a Runtime Upgrade
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
-	type RuntimeTask = RuntimeTask;
+    type RuntimeTask = RuntimeTask;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -390,7 +389,7 @@ impl pallet_transaction_payment::Config for Runtime {
 parameter_types! {
     pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
+    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
@@ -404,14 +403,12 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
-	type WeightInfo = ();
+    type WeightInfo = cumulus_pallet_parachain_system::weights::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type OutboundXcmpMessageSource = XcmpQueue;
     type SelfParaId = parachain_info::Pallet<Runtime>;
-    // type DmpMessageHandler = MaintenanceMode;
-    // TODO integrate MaintenanceMode with DmpQueue
-	type DmpQueue = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
+    type DmpQueue = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
@@ -589,95 +586,12 @@ impl Contains<RuntimeCall> for NormalFilter {
     }
 }
 
-// pub struct NormalDmpHandler;
-// impl DmpMessageHandler for NormalDmpHandler {
-//     // This implementation makes messages be queued
-//     // Since the limit is 0, messages are queued for next iteration
-//     fn handle_dmp_messages(
-//         iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-//         limit: Weight,
-//     ) -> Weight {
-//         (if Migrations::should_pause_xcm() {
-//             DmpQueue::handle_dmp_messages(iter, Weight::zero())
-//         } else {
-//             DmpQueue::handle_dmp_messages(iter, limit)
-//         }) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
-//     }
-// }
-
-// pub struct MaintenanceDmpHandler;
-// impl DmpMessageHandler for MaintenanceDmpHandler {
-//     // This implementation makes messages be queued
-//     // Since the limit is 0, messages are queued for next iteration
-//     fn handle_dmp_messages(
-//         iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-//         _limit: Weight,
-//     ) -> Weight {
-//         DmpQueue::handle_dmp_messages(iter, Weight::zero())
-//     }
-// }
-
-/// The hooks we want to run in Maintenance Mode
-pub struct MaintenanceHooks;
-
-impl BeforeAllRuntimeMigrations for MaintenanceHooks {
-	fn before_all_runtime_migrations() -> Weight {
-		<AllPalletsWithSystem as BeforeAllRuntimeMigrations>::before_all_runtime_migrations()
-	}
-}
-
-impl OnInitialize<BlockNumber> for MaintenanceHooks {
-    fn on_initialize(n: BlockNumber) -> Weight {
-        AllPalletsWithSystem::on_initialize(n)
-    }
-}
-
-// We override onIdle for xcmQueue and dmpQueue pallets to not process messages inside it
-impl OnIdle<BlockNumber> for MaintenanceHooks {
-    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
-        Weight::zero()
-    }
-}
-
-impl OnRuntimeUpgrade for MaintenanceHooks {
-    fn on_runtime_upgrade() -> Weight {
-        AllPalletsWithSystem::on_runtime_upgrade()
-    }
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        AllPalletsWithSystem::pre_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        AllPalletsWithSystem::post_upgrade(state)
-    }
-}
-
-impl OnFinalize<BlockNumber> for MaintenanceHooks {
-    fn on_finalize(n: BlockNumber) {
-        AllPalletsWithSystem::on_finalize(n)
-    }
-}
-
-impl OffchainWorker<BlockNumber> for MaintenanceHooks {
-    fn offchain_worker(n: BlockNumber) {
-        AllPalletsWithSystem::offchain_worker(n)
-    }
-}
-
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = XcmExecutionManager;
-    // type NormalDmpHandler = NormalDmpHandler;
-    // type MaintenanceDmpHandler = MaintenanceDmpHandler;
-    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
-    // operation
-    type NormalExecutiveHooks = AllPalletsWithSystem;
-    type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
 impl pallet_cc_authorities_noting::Config for Runtime {
@@ -741,7 +655,7 @@ construct_runtime!(
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
-		MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 74,
+        MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 74,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
