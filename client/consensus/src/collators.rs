@@ -16,36 +16,42 @@
 
 pub mod basic;
 
-use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
-use cumulus_client_consensus_common::{ParachainBlockImportMarker, ParachainCandidate};
-use cumulus_client_consensus_proposer::ProposerInterface;
-use cumulus_primitives_core::{
-    relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
+use {
+    cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
+    cumulus_client_consensus_common::{ParachainBlockImportMarker, ParachainCandidate},
+    cumulus_client_consensus_proposer::ProposerInterface,
+    cumulus_primitives_core::{
+        relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
+    },
+    cumulus_primitives_parachain_inherent::ParachainInherentData,
+    cumulus_relay_chain_interface::RelayChainInterface,
+    parity_scale_codec::{Codec, Encode},
 };
-use cumulus_primitives_parachain_inherent::ParachainInherentData;
-use cumulus_relay_chain_interface::RelayChainInterface;
-use parity_scale_codec::{Codec, Encode};
 
-use polkadot_node_primitives::{Collation, MaybeCompressedPoV};
-use polkadot_primitives::Id as ParaId;
-
-use crate::AuthorityId;
-use futures::prelude::*;
-use nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID};
-use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};
-use sp_application_crypto::{AppCrypto, AppPublic};
-use sp_consensus::BlockOrigin;
-use sp_consensus_aura::{digests::CompatibleDigestItem, Slot};
-use sp_core::crypto::{ByteArray, Pair};
-use sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider};
-use sp_keystore::{Keystore, KeystorePtr};
-use sp_runtime::{
-    generic::Digest,
-    traits::{Block as BlockT, HashingFor, Header as HeaderT, Member},
+use {
+    polkadot_node_primitives::{Collation, MaybeCompressedPoV},
+    polkadot_primitives::Id as ParaId,
 };
-use sp_state_machine::StorageChanges;
-use sp_timestamp::Timestamp;
-use std::{convert::TryFrom, error::Error, time::Duration};
+
+use {
+    crate::AuthorityId,
+    futures::prelude::*,
+    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID},
+    sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
+    sp_application_crypto::{AppCrypto, AppPublic},
+    sp_consensus::BlockOrigin,
+    sp_consensus_aura::{digests::CompatibleDigestItem, Slot},
+    sp_core::crypto::{ByteArray, Pair},
+    sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider},
+    sp_keystore::{Keystore, KeystorePtr},
+    sp_runtime::{
+        generic::Digest,
+        traits::{Block as BlockT, HashingFor, Header as HeaderT, Member},
+    },
+    sp_state_machine::StorageChanges,
+    sp_timestamp::Timestamp,
+    std::{convert::TryFrom, error::Error, time::Duration},
+};
 
 /// Parameters for instantiating a [`Collator`].
 pub struct Params<BI, CIDP, RClient, Proposer, CS> {
