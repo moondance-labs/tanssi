@@ -193,8 +193,10 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     #[cfg(feature = "runtime-benchmarks")]
     fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
         match asset_id {
-            StreamPaymentAssetId::Native => Balances::set_balance(account, amount),
-            StreamPaymentAssetId::Dummy => (),
+            StreamPaymentAssetId::Native => {
+                Balances::set_balance(account, amount);
+            },
+            StreamPaymentAssetId::Dummy => {},
         }
     }
 }
@@ -227,8 +229,8 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
 
     /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
     #[cfg(feature = "runtime-benchmarks")]
-    fn bench_set_now(instant: Balance) {
-        Timestamp::set_timestamp(instant as u64)
+    fn bench_set_now(instant: u128) {
+        System::set_block_number(instant as u64)
     }
 }
 
