@@ -4240,7 +4240,8 @@ declare module "@polkadot/types/lookup" {
         readonly isTooManyInvulnerables: boolean;
         readonly isAlreadyInvulnerable: boolean;
         readonly isNotInvulnerable: boolean;
-        readonly type: "TooManyInvulnerables" | "AlreadyInvulnerable" | "NotInvulnerable";
+        readonly isNoKeysRegistered: boolean;
+        readonly type: "TooManyInvulnerables" | "AlreadyInvulnerable" | "NotInvulnerable" | "NoKeysRegistered";
     }
 
     /** @name SpCoreCryptoKeyTypeId (386) */
