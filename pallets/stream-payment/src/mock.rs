@@ -177,19 +177,19 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     /// Benchmarks: should return the asset id which has the worst performance when interacting
     /// with it.
     #[cfg(feature = "runtime-benchmarks")]
-    fn bench_asset_id() -> StreamPaymentAssetId {
+    fn bench_worst_case_asset_id() -> StreamPaymentAssetId {
         StreamPaymentAssetId::Native
     }
 
     /// Benchmarks: should return the another asset id which has the worst performance when interacting
-    /// with it afther `bench_asset_id`. This is to benchmark the worst case when changing config
+    /// with it afther `bench_worst_case_asset_id`. This is to benchmark the worst case when changing config
     /// from one asset to another.
     #[cfg(feature = "runtime-benchmarks")]
-    fn bench_asset_id2() -> StreamPaymentAssetId {
+    fn bench_worst_case_asset_id2() -> StreamPaymentAssetId {
         StreamPaymentAssetId::Native
     }
 
-    /// Benchmarks: should set the balance for the asset id returned by `bench_asset_id`.
+    /// Benchmarks: should set the balance for the asset id returned by `bench_worst_case_asset_id`.
     #[cfg(feature = "runtime-benchmarks")]
     fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
         match asset_id {
@@ -221,7 +221,7 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
     /// Benchmarks: should return the time unit which has the worst performance calling
     /// `TimeProvider::now(unit)` with.
     #[cfg(feature = "runtime-benchmarks")]
-    fn bench_time_unit() -> TimeUnit {
+    fn bench_worst_case_time_unit() -> TimeUnit {
         TimeUnit::Timestamp
     }
 

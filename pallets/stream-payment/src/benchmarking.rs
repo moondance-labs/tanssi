@@ -15,7 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{Assets, Call, Config, Event, Pallet, StreamConfig, TimeProvider},
+    crate::{
+        Assets, Call, ChangeKind, Config, DepositChange, Event, Pallet, Party, StreamConfig,
+        TimeProvider,
+    },
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{assert_ok, dispatch::RawOrigin},
     frame_system::EventRecord,
@@ -27,10 +30,14 @@ fn create_funded_user<T: Config>(
     string: &'static str,
     n: u32,
     asset_id: &T::AssetId,
-    amount: T::Balance,
+    // amount: T::Balance,
 ) -> T::AccountId {
     const SEED: u32 = 0;
     let user = account(string, n, SEED);
+
+    // create a large amount that should be greater than ED
+    let amount: T::Balance = 1_000_000_000u32.into();
+    let amount: T::Balance = amount * T::Balance::from(1_000_000_000u32);
     T::Assets::bench_set_balance(asset_id, &user, amount);
     user
 }
@@ -49,11 +56,11 @@ mod benchmarks {
 
     #[benchmark]
     fn open_stream() -> Result<(), BenchmarkError> {
-        let asset_id = T::Assets::bench_asset_id();
-        let time_unit = T::TimeProvider::bench_time_unit();
+        let asset_id = T::Assets::bench_worst_case_asset_id();
+        let time_unit = T::TimeProvider::bench_worst_case_time_unit();
 
-        let source = create_funded_user::<T>("source", 1, &asset_id, 1_000_000_000u32.into());
-        let target = create_funded_user::<T>("target", 2, &asset_id, 1_000_000_000u32.into());
+        let source = create_funded_user::<T>("source", 1, &asset_id);
+        let target = create_funded_user::<T>("target", 2, &asset_id);
 
         #[extrinsic_call]
         _(
@@ -80,11 +87,11 @@ mod benchmarks {
     #[benchmark]
     fn close_stream() -> Result<(), BenchmarkError> {
         // Worst case is closing a stream with a pending payment.
-        let time_unit = T::TimeProvider::bench_time_unit();
-        let asset_id = T::Assets::bench_asset_id();
+        let time_unit = T::TimeProvider::bench_worst_case_time_unit();
+        let asset_id = T::Assets::bench_worst_case_asset_id();
 
-        let source = create_funded_user::<T>("source", 1, &asset_id, 1_000_000_000u32.into());
-        let target = create_funded_user::<T>("target", 2, &asset_id, 1_000_000_000u32.into());
+        let source = create_funded_user::<T>("source", 1, &asset_id);
+        let target = create_funded_user::<T>("target", 2, &asset_id);
 
         let rate = 100u32.into();
         let initial_deposit = 1_000_000u32.into();
@@ -112,6 +119,107 @@ mod benchmarks {
             Event::StreamClosed {
                 stream_id: 0u32.into(),
                 refunded: initial_deposit - (rate * delta),
+            }
+            .into(),
+        );
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn request_change_immediate() -> Result<(), BenchmarkError> {
+        let time_unit = T::TimeProvider::bench_worst_case_time_unit();
+        let asset_id = T::Assets::bench_worst_case_asset_id();
+
+        let source = create_funded_user::<T>("source", 1, &asset_id);
+        let target = create_funded_user::<T>("target", 2, &asset_id);
+
+        let rate = 100u32.into();
+        let initial_deposit = 1_000_000u32.into();
+        let config = StreamConfig {
+            time_unit: time_unit.clone(),
+            asset_id,
+            rate,
+        };
+
+        assert_ok!(Pallet::<T>::open_stream(
+            RawOrigin::Signed(source.clone()).into(),
+            target,
+            config.clone(),
+            initial_deposit,
+        ));
+
+        let new_config = StreamConfig {
+            rate: 101u32.into(),
+            ..config.clone()
+        };
+        #[extrinsic_call]
+        Pallet::<T>::request_change(
+            RawOrigin::Signed(source.clone()),
+            0u32.into(),
+            ChangeKind::Suggestion,
+            new_config.clone(),
+            Some(DepositChange::Increase(1_000u32.into())),
+        );
+
+        assert_last_event::<T>(
+            Event::StreamConfigChanged {
+                stream_id: 0u32.into(),
+                old_config: config,
+                new_config: new_config,
+                deposit_change: Some(DepositChange::Increase(1_000u32.into())),
+            }
+            .into(),
+        );
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn request_change_delayed() -> Result<(), BenchmarkError> {
+        let time_unit = T::TimeProvider::bench_worst_case_time_unit();
+        let asset_id = T::Assets::bench_worst_case_asset_id();
+        let asset_id2 = T::Assets::bench_worst_case_asset_id2();
+
+        let source = create_funded_user::<T>("source", 1, &asset_id);
+        let target = create_funded_user::<T>("target", 2, &asset_id);
+
+        let rate = 100u32.into();
+        let initial_deposit = 1_000_000u32.into();
+        let config = StreamConfig {
+            time_unit: time_unit.clone(),
+            asset_id,
+            rate,
+        };
+
+        assert_ok!(Pallet::<T>::open_stream(
+            RawOrigin::Signed(source.clone()).into(),
+            target,
+            config.clone(),
+            initial_deposit,
+        ));
+
+        let new_config = StreamConfig {
+            asset_id: asset_id2,
+            ..config.clone()
+        };
+
+        #[extrinsic_call]
+        Pallet::<T>::request_change(
+            RawOrigin::Signed(source.clone()),
+            0u32.into(),
+            ChangeKind::Suggestion,
+            new_config.clone(),
+            Some(DepositChange::Absolute(500u32.into())),
+        );
+
+        assert_last_event::<T>(
+            Event::StreamConfigChangeRequested {
+                stream_id: 0u32.into(),
+                request_nonce: 1,
+                requester: Party::Source,
+                old_config: config,
+                new_config,
             }
             .into(),
         );

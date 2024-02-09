@@ -112,9 +112,9 @@ pub trait TimeProvider<Unit, Number> {
     /// Benchmarks: should return the time unit which has the worst performance calling
     /// `TimeProvider::now(unit)` with.
     #[cfg(feature = "runtime-benchmarks")]
-    fn bench_time_unit() -> Unit;
+    fn bench_worst_case_time_unit() -> Unit;
 
-    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
+    /// Benchmarks: sets the "now" time for time unit returned by `bench_worst_case_time_unit`.
     #[cfg(feature = "runtime-benchmarks")]
     fn bench_set_now(instant: Number);
 }
@@ -145,14 +145,14 @@ pub trait Assets<AccountId, AssetId, Balance> {
     /// Benchmarks: should return the asset id which has the worst performance when interacting
     /// with it.
     #[cfg(feature = "runtime-benchmarks")]
-    fn bench_asset_id() -> AssetId;
+    fn bench_worst_case_asset_id() -> AssetId;
 
     /// Benchmarks: should return the another asset id which has the worst performance when interacting
-    /// with it afther `bench_asset_id`. This is to benchmark the worst case when changing config
+    /// with it afther `bench_worst_case_asset_id`. This is to benchmark the worst case when changing config
     /// from one asset to another. If there is only one asset id it is fine to return it in both
-    /// `bench_asset_id` and `bench_asset_id2`.
+    /// `bench_worst_case_asset_id` and `bench_worst_case_asset_id2`.
     #[cfg(feature = "runtime-benchmarks")]
-    fn bench_asset_id2() -> AssetId;
+    fn bench_worst_case_asset_id2() -> AssetId;
 
     /// Benchmarks: should set the balance.
     #[cfg(feature = "runtime-benchmarks")]
