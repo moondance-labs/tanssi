@@ -31,7 +31,7 @@ pub use sp_runtime::BuildStorage;
 pub use sp_runtime::{MultiAddress, Perbill, Permill};
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
-    cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber, DmpMessageHandler},
+    cumulus_primitives_core::{relay_chain::BlockNumber as RelayBlockNumber,AggregateMessageOrigin, DmpMessageHandler},
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
@@ -39,7 +39,7 @@ use {
         parameter_types,
         traits::{
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, InsideBoth,
-            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade,
+            InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize, OnRuntimeUpgrade, BeforeAllRuntimeMigrations,
         },
         weights::{
             constants::{
@@ -335,6 +335,7 @@ impl frame_system::Config for Runtime {
     /// The action to take on a Runtime Upgrade
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+	type RuntimeTask = RuntimeTask;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -389,6 +390,7 @@ impl pallet_transaction_payment::Config for Runtime {
 parameter_types! {
     pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+	pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
@@ -402,11 +404,14 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
+	type WeightInfo = ();
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
-    type SelfParaId = parachain_info::Pallet<Runtime>;
     type OutboundXcmpMessageSource = XcmpQueue;
-    type DmpMessageHandler = MaintenanceMode;
+    type SelfParaId = parachain_info::Pallet<Runtime>;
+    // type DmpMessageHandler = MaintenanceMode;
+    // TODO integrate MaintenanceMode with DmpQueue
+	type DmpQueue = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
@@ -584,36 +589,42 @@ impl Contains<RuntimeCall> for NormalFilter {
     }
 }
 
-pub struct NormalDmpHandler;
-impl DmpMessageHandler for NormalDmpHandler {
-    // This implementation makes messages be queued
-    // Since the limit is 0, messages are queued for next iteration
-    fn handle_dmp_messages(
-        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-        limit: Weight,
-    ) -> Weight {
-        (if Migrations::should_pause_xcm() {
-            DmpQueue::handle_dmp_messages(iter, Weight::zero())
-        } else {
-            DmpQueue::handle_dmp_messages(iter, limit)
-        }) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
-    }
-}
+// pub struct NormalDmpHandler;
+// impl DmpMessageHandler for NormalDmpHandler {
+//     // This implementation makes messages be queued
+//     // Since the limit is 0, messages are queued for next iteration
+//     fn handle_dmp_messages(
+//         iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+//         limit: Weight,
+//     ) -> Weight {
+//         (if Migrations::should_pause_xcm() {
+//             DmpQueue::handle_dmp_messages(iter, Weight::zero())
+//         } else {
+//             DmpQueue::handle_dmp_messages(iter, limit)
+//         }) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
+//     }
+// }
 
-pub struct MaintenanceDmpHandler;
-impl DmpMessageHandler for MaintenanceDmpHandler {
-    // This implementation makes messages be queued
-    // Since the limit is 0, messages are queued for next iteration
-    fn handle_dmp_messages(
-        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-        _limit: Weight,
-    ) -> Weight {
-        DmpQueue::handle_dmp_messages(iter, Weight::zero())
-    }
-}
+// pub struct MaintenanceDmpHandler;
+// impl DmpMessageHandler for MaintenanceDmpHandler {
+//     // This implementation makes messages be queued
+//     // Since the limit is 0, messages are queued for next iteration
+//     fn handle_dmp_messages(
+//         iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
+//         _limit: Weight,
+//     ) -> Weight {
+//         DmpQueue::handle_dmp_messages(iter, Weight::zero())
+//     }
+// }
 
 /// The hooks we want to run in Maintenance Mode
 pub struct MaintenanceHooks;
+
+impl BeforeAllRuntimeMigrations for MaintenanceHooks {
+	fn before_all_runtime_migrations() -> Weight {
+		<AllPalletsWithSystem as BeforeAllRuntimeMigrations>::before_all_runtime_migrations()
+	}
+}
 
 impl OnInitialize<BlockNumber> for MaintenanceHooks {
     fn on_initialize(n: BlockNumber) -> Weight {
@@ -661,8 +672,8 @@ impl pallet_maintenance_mode::Config for Runtime {
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = XcmExecutionManager;
-    type NormalDmpHandler = NormalDmpHandler;
-    type MaintenanceDmpHandler = MaintenanceDmpHandler;
+    // type NormalDmpHandler = NormalDmpHandler;
+    // type MaintenanceDmpHandler = MaintenanceDmpHandler;
     // We use AllPalletsWithSystem because we dont want to change the hooks in normal
     // operation
     type NormalExecutiveHooks = AllPalletsWithSystem;
@@ -687,7 +698,9 @@ impl pallet_author_inherent::Config for Runtime {
     type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_root_testing::Config for Runtime {}
+impl pallet_root_testing::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
 
 impl pallet_tx_pause::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -728,6 +741,7 @@ construct_runtime!(
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 71,
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
+		MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 74,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
