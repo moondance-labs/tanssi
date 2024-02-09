@@ -779,16 +779,15 @@ async fn start_consensus_container(
                     latest_header
                 );
 
-                let next_slot_range_inclusive =
-                    tc_consensus::slot_range::<Block, ParachainClient, NimbusPair>(
-                        orchestrator_client_for_cidp.as_ref(),
-                        &latest_header.hash(),
-                        para_id,
-                    );
+                let min_slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
+                    orchestrator_client_for_cidp.as_ref(),
+                    &latest_header.hash(),
+                    para_id,
+                );
 
                 let aux_data = OrchestratorAuraWorkerAuxData {
                     authorities,
-                    next_slot_range_inclusive,
+                    min_slot_freq,
                 };
 
                 Ok(aux_data)
@@ -916,7 +915,7 @@ fn start_consensus_orchestrator(
 
                     let aux_data = OrchestratorAuraWorkerAuxData {
                         authorities,
-                        next_slot_range_inclusive: None,
+                        min_slot_freq: None,
                     };
 
                     Ok(aux_data)

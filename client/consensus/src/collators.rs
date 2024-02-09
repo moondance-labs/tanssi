@@ -328,12 +328,14 @@ where
         // Always produce on slot 0 (for tests)
         return false;
     }
-    if let Some((start, _end)) = aux_data.next_slot_range_inclusive {
+    if let Some(min_slot_freq) = aux_data.min_slot_freq {
         if let Ok(chain_head_slot) = find_pre_digest::<B, P::Signature>(chain_head) {
             let slot_diff = slot.saturating_sub(chain_head_slot);
 
-            // TODO: this ignores force authoring
-            slot_diff < start
+            // TODO: this doesn't take into account force authoring.
+            // So a node with `force_authoring = true` will not propose a block for a parathread until the
+            // `min_slot_freq` has elapsed.
+            slot_diff < min_slot_freq
         } else {
             // In case of error always propose
             false

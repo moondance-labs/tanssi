@@ -68,7 +68,7 @@ where
     P: Pair + Send + Sync + 'static,
 {
     pub authorities: Vec<AuthorityId<P>>,
-    pub next_slot_range_inclusive: Option<(Slot, Slot)>,
+    pub min_slot_freq: Option<Slot>,
 }
 
 #[async_trait::async_trait]

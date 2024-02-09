@@ -1834,16 +1834,16 @@ impl_runtime_apis! {
     }
 
     impl pallet_registrar_runtime_api::OnDemandBlockProductionApi<Block, ParaId, Slot> for Runtime {
-        /// Inclusive range of slots during which collators can propose the next block.
+        /// Return the minimum number of slots that must pass between to blocks before parathread collators can propose
+        /// the next block.
         ///
         /// # Returns
         ///
-        /// Range `Some((start, end))`, where the condition for the slot to be valid is
-        /// `(slot - parent_slot) >= start && (slot - parent_slot) <= end`.
-        /// `None` if the `para_id` is not a parathread.
-        fn next_slot_range_inclusive(para_id: ParaId) -> Option<(Slot, Slot)> {
+        /// * `Some(min)`, where the condition for the slot to be valid is `(slot - parent_slot) >= min`.
+        /// * `None` if the `para_id` is not a parathread.
+        fn min_slot_freq(para_id: ParaId) -> Option<Slot> {
             Registrar::parathread_params(para_id).map(|params| {
-                (Slot::from(params.slot_frequency.min as u64), Slot::from(params.slot_frequency.max as u64))
+                Slot::from(u64::from(params.slot_frequency.min))
             })
         }
 

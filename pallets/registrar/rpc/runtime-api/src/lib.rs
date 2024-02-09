@@ -42,13 +42,13 @@ sp_api::decl_runtime_apis! {
         ParaId: parity_scale_codec::Codec,
         Slot: parity_scale_codec::Codec,
     {
-        /// Inclusive range of slots during which collators can propose the next block.
+        /// Return the minimum number of slots that must pass between to blocks before parathread collators can propose
+        /// the next block.
         ///
         /// # Returns
         ///
-        /// Range `Some((start, end))`, where the condition for the slot to be valid is
-        /// `(slot - parent_slot) >= start && (slot - parent_slot) <= end`.
-        /// `None` if the `para_id` is not a parathread.
-        fn next_slot_range_inclusive(para_id: ParaId) -> Option<(Slot, Slot)>;
+        /// * `Some(min)`, where the condition for the slot to be valid is `(slot - parent_slot) >= min`.
+        /// * `None` if the `para_id` is not a parathread.
+        fn min_slot_freq(para_id: ParaId) -> Option<Slot>;
     }
 }

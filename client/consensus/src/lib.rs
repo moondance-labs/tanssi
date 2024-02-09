@@ -108,11 +108,7 @@ where
 
 /// Return the set of authorities assigned to the paraId where
 /// the first eligible key from the keystore is collating
-pub fn slot_range<B, C, P>(
-    client: &C,
-    parent_hash: &B::Hash,
-    para_id: ParaId,
-) -> Option<(Slot, Slot)>
+pub fn min_slot_freq<B, C, P>(client: &C, parent_hash: &B::Hash, para_id: ParaId) -> Option<Slot>
 where
     P: Pair + Send + Sync + 'static,
     P::Public: AppPublic + Hash + Member + Encode + Decode,
@@ -124,15 +120,13 @@ where
 {
     let runtime_api = client.runtime_api();
 
-    let authorities = runtime_api
-        .next_slot_range_inclusive(*parent_hash, para_id)
-        .ok()?;
-    log::info!(
-        "Authorities found for para {:?} are {:?}",
+    let min_slot_freq = runtime_api.min_slot_freq(*parent_hash, para_id).ok()?;
+    log::debug!(
+        "min_slot_freq for para {:?} is {:?}",
         para_id,
-        authorities
+        min_slot_freq
     );
-    authorities
+    min_slot_freq
 }
 
 use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
