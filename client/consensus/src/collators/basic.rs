@@ -17,7 +17,6 @@
 use cumulus_client_collator::{
     relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
 };
-use cumulus_client_consensus_common::ParachainBlockImportMarker;
 use cumulus_client_consensus_proposer::ProposerInterface;
 use cumulus_primitives_core::{
     relay_chain::{BlockId as RBlockId, Hash as PHash},

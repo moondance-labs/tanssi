@@ -14650,6 +14650,7 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
+ "cumulus-test-relay-sproof-builder",
  "fc-rpc",
  "futures 0.3.30",
  "futures-timer",

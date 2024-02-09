@@ -17,7 +17,7 @@
 pub mod basic;
 
 use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
-use cumulus_client_consensus_common::{ParachainBlockImportMarker, ParachainCandidate};
+use cumulus_client_consensus_common::ParachainCandidate;
 use cumulus_client_consensus_proposer::ProposerInterface;
 use cumulus_primitives_core::{
     relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
@@ -185,7 +185,6 @@ where
         .map_err(|e| e as Box<dyn Error + Send>)?;
 
         let post_hash = sealed_importable.post_hash();
-        let post_header = sealed_importable.post_header();
         let block = Block::new(
             sealed_importable.post_header(),
             sealed_importable
@@ -199,8 +198,6 @@ where
             .import_block(sealed_importable)
             .map_err(|e| Box::new(e) as Box<dyn Error + Send>)
             .await?;
-
-        let parent_state_root = parent_header.state_root();
 
         if let Some((collation, block_data)) = self.collator_service.build_collation(
             parent_header,
