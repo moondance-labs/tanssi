@@ -3256,7 +3256,7 @@ export default {
     },
     /** Lookup383: pallet_invulnerables::pallet::Error<T> */
     PalletInvulnerablesError: {
-        _enum: ["TooManyInvulnerables", "AlreadyInvulnerable", "NotInvulnerable"],
+        _enum: ["TooManyInvulnerables", "AlreadyInvulnerable", "NotInvulnerable", "NoKeysRegistered"],
     },
     /** Lookup388: sp_core::crypto::KeyTypeId */
     SpCoreCryptoKeyTypeId: "[u8;4]",

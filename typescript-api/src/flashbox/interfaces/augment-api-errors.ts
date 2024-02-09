@@ -112,6 +112,8 @@ declare module "@polkadot/api-base/types/errors" {
         invulnerables: {
             /** Account is already an Invulnerable. */
             AlreadyInvulnerable: AugmentedError<ApiType>;
+            /** Account does not have keys registered */
+            NoKeysRegistered: AugmentedError<ApiType>;
             /** Account is not an Invulnerable. */
             NotInvulnerable: AugmentedError<ApiType>;
             /** There are too many Invulnerables. */

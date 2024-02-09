@@ -160,6 +160,8 @@ pub mod pallet {
         AlreadyInvulnerable,
         /// Account is not an Invulnerable.
         NotInvulnerable,
+        /// Account does not have keys registered
+        NoKeysRegistered,
     }
 
     #[pallet::call]
@@ -221,6 +223,14 @@ pub mod pallet {
             who: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             T::UpdateOrigin::ensure_origin(origin)?;
+            // don't let one unprepared collator ruin things for everyone.
+            let collator_id = T::CollatorIdOf::convert(who.clone());
+
+            // Ensure it has keys registered
+            ensure!(
+                collator_id.map_or(false, |key| T::CollatorRegistration::is_registered(&key)),
+                Error::<T>::NoKeysRegistered
+            );
 
             <Invulnerables<T>>::try_mutate(|invulnerables| -> DispatchResult {
                 if invulnerables.contains(&who) {

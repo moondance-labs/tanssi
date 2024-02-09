@@ -146,7 +146,13 @@ mod benchmarks {
             frame_support::BoundedVec::try_from(invulnerables).unwrap();
         <Invulnerables<T>>::put(invulnerables);
 
-        let new_invulnerable = invulnerable::<T>(b + 1).0;
+        let (new_invulnerable, keys) = invulnerable::<T>(b + 1);
+        <session::Pallet<T>>::set_keys(
+            RawOrigin::Signed(new_invulnerable.clone()).into(),
+            keys,
+            Vec::new(),
+        )
+        .unwrap();
 
         #[extrinsic_call]
         _(origin as T::RuntimeOrigin, new_invulnerable.clone());
