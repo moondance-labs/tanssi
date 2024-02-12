@@ -87,7 +87,7 @@ mod benchmarks {
     #[benchmark]
     fn set_block_production_credits() {
         let para_id = 1001u32.into();
-        let credits = T::MaxBlockProductionCreditsStored::get();
+        let credits = T::FreeBlockProductionCredits::get();
 
         assert_ok!(Pallet::<T>::set_block_production_credits(
             RawOrigin::Root.into(),
@@ -98,7 +98,7 @@ mod benchmarks {
         // Before call: 1000 credits
         assert_eq!(
             crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
-            T::MaxBlockProductionCreditsStored::get()
+            T::FreeBlockProductionCredits::get()
         );
 
         #[extrinsic_call]
@@ -129,7 +129,7 @@ mod benchmarks {
     fn on_container_author_noted() {
         let para_id = 1001u32;
         let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
-        let max_credit_stored = T::MaxBlockProductionCreditsStored::get();
+        let max_credit_stored = T::FreeBlockProductionCredits::get();
         let balance_to_purchase = block_cost.saturating_mul(max_credit_stored.into());
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
         let existential_deposit = <T::Currency>::minimum_balance();
@@ -153,7 +153,7 @@ mod benchmarks {
         let para_id = 1001u32;
         let collator_assignment_cost =
             T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id.into()).0;
-        let max_credit_stored = T::MaxCollatorAssignmentCreditsStored::get();
+        let max_credit_stored = T::FreeCollatorAssignmentCredits::get();
         let balance_to_purchase = collator_assignment_cost.saturating_mul(max_credit_stored.into());
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
         let existential_deposit = <T::Currency>::minimum_balance();

@@ -4729,7 +4729,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 origin_of(ALICE.into()),
                 1001.into(),
                 block_credits_to_required_balance(
-                    dancebox_runtime::MaxBlockProductionCreditsStored::get() - 1,
+                    dancebox_runtime::FreeBlockProductionCredits::get() - 1,
                     1001.into()
                 )
             ));
@@ -4743,13 +4743,13 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_eq!(
                 balance_tank,
                 block_credits_to_required_balance(
-                    dancebox_runtime::MaxBlockProductionCreditsStored::get() - 1,
+                    dancebox_runtime::FreeBlockProductionCredits::get() - 1,
                     1001.into()
                 )
             );
 
             let expected_cost = block_credits_to_required_balance(
-                dancebox_runtime::MaxBlockProductionCreditsStored::get() - 1,
+                dancebox_runtime::FreeBlockProductionCredits::get() - 1,
                 1001.into(),
             );
             assert_eq!(balance_before - balance_after, expected_cost);
@@ -4775,10 +4775,7 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(
-                credits,
-                dancebox_runtime::MaxBlockProductionCreditsStored::get()
-            );
+            assert_eq!(credits, dancebox_runtime::FreeBlockProductionCredits::get());
         });
 }
 
@@ -4823,10 +4820,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(
-                credits,
-                dancebox_runtime::MaxBlockProductionCreditsStored::get()
-            );
+            assert_eq!(credits, dancebox_runtime::FreeBlockProductionCredits::get());
             // Deregister after 1 session
             run_to_session(1);
             assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
@@ -4839,7 +4833,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             // We spent some credits because this container chain had collators for 1 session
             assert_ne!(
                 credits_before_2nd_register,
-                dancebox_runtime::MaxBlockProductionCreditsStored::get()
+                dancebox_runtime::FreeBlockProductionCredits::get()
             );
             // Register again
             assert_ok!(Registrar::register(
@@ -5735,7 +5729,7 @@ fn test_migration_services_collator_assignment_payment() {
             .unwrap_or_default();
             assert_eq!(
                 credits_1001,
-                dancebox_runtime::MaxCollatorAssignmentCreditsStored::get()
+                dancebox_runtime::FreeCollatorAssignmentCredits::get()
             );
             let credits_1002 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
                 &ParaId::from(1002),
@@ -5743,7 +5737,7 @@ fn test_migration_services_collator_assignment_payment() {
             .unwrap_or_default();
             assert_eq!(
                 credits_1002,
-                dancebox_runtime::MaxCollatorAssignmentCreditsStored::get()
+                dancebox_runtime::FreeCollatorAssignmentCredits::get()
             );
         });
 }

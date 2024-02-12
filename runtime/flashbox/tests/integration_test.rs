@@ -2582,13 +2582,13 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
         .execute_with(|| {
             run_to_block(2);
 
-            // Try to buy (MaxBlockProductionCreditsStored - 1) credits
+            // Try to buy (FreeBlockProductionCredits - 1) credits
             let balance_before = System::account(AccountId::from(ALICE)).data.free;
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 1001.into(),
                 block_credits_to_required_balance(
-                    flashbox_runtime::MaxBlockProductionCreditsStored::get() - 1,
+                    flashbox_runtime::FreeBlockProductionCredits::get() - 1,
                     1001.into()
                 )
             ));
@@ -2602,13 +2602,13 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
             assert_eq!(
                 balance_tank,
                 block_credits_to_required_balance(
-                    flashbox_runtime::MaxBlockProductionCreditsStored::get() - 1,
+                    flashbox_runtime::FreeBlockProductionCredits::get() - 1,
                     1001.into()
                 )
             );
 
             let expected_cost = block_credits_to_required_balance(
-                flashbox_runtime::MaxBlockProductionCreditsStored::get() - 1,
+                flashbox_runtime::FreeBlockProductionCredits::get() - 1,
                 1001.into(),
             );
             assert_eq!(balance_before - balance_after, expected_cost);
@@ -2629,15 +2629,12 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                 1001.into()
             ));
 
-            // We received aññ free credits, because we cannot have more than MaxBlockProductionCreditsStored
+            // We received aññ free credits, because we cannot have more than FreeBlockProductionCredits
             let credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(
-                credits,
-                flashbox_runtime::MaxBlockProductionCreditsStored::get()
-            );
+            assert_eq!(credits, flashbox_runtime::FreeBlockProductionCredits::get());
         });
 }
 
@@ -2682,10 +2679,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
                 &ParaId::from(1001),
             )
             .unwrap_or_default();
-            assert_eq!(
-                credits,
-                flashbox_runtime::MaxBlockProductionCreditsStored::get()
-            );
+            assert_eq!(credits, flashbox_runtime::FreeBlockProductionCredits::get());
             // Deregister after 1 session
             run_to_session(1);
             assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
@@ -2698,7 +2692,7 @@ fn test_deregister_and_register_again_does_not_give_free_credits() {
             // We spent some credits because this container chain had collators for 1 session
             assert_ne!(
                 credits_before_2nd_register,
-                flashbox_runtime::MaxBlockProductionCreditsStored::get()
+                flashbox_runtime::FreeBlockProductionCredits::get()
             );
             // Register again
             assert_ok!(Registrar::register(
@@ -3439,7 +3433,7 @@ fn test_migration_services_collator_assignment_payment() {
             .unwrap_or_default();
             assert_eq!(
                 credits_1001,
-                flashbox_runtime::MaxCollatorAssignmentCreditsStored::get()
+                flashbox_runtime::FreeCollatorAssignmentCredits::get()
             );
             let credits_1002 = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(
                 &ParaId::from(1002),
@@ -3447,7 +3441,7 @@ fn test_migration_services_collator_assignment_payment() {
             .unwrap_or_default();
             assert_eq!(
                 credits_1002,
-                flashbox_runtime::MaxCollatorAssignmentCreditsStored::get()
+                flashbox_runtime::FreeCollatorAssignmentCredits::get()
             );
         });
 }

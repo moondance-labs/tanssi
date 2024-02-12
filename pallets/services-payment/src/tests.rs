@@ -208,12 +208,12 @@ fn set_block_production_credits_above_max_works() {
             assert_ok!(PaymentServices::set_block_production_credits(
                 RuntimeOrigin::root(),
                 1.into(),
-                MaxBlockProductionCreditsStored::get() * 2,
+                FreeBlockProductionCredits::get() * 2,
             ));
 
             assert_eq!(
                 <BlockProductionCredits<Test>>::get(ParaId::from(1)),
-                Some(MaxBlockProductionCreditsStored::get() * 2)
+                Some(FreeBlockProductionCredits::get() * 2)
             );
         });
 }

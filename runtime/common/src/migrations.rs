@@ -312,7 +312,7 @@ where
             // 2 reads 2 writes
             pallet_services_payment::Pallet::<T>::set_free_collator_assignment_credits(
                 &para_id,
-                T::MaxCollatorAssignmentCreditsStored::get(),
+                T::FreeCollatorAssignmentCredits::get(),
             );
         }
 
@@ -353,7 +353,7 @@ where
         for para_id in para_ids {
             assert_eq!(
                 pallet_services_payment::CollatorAssignmentCredits::<T>::get(para_id),
-                Some(T::MaxCollatorAssignmentCreditsStored::get())
+                Some(T::FreeCollatorAssignmentCredits::get())
             );
         }
 

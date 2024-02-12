@@ -675,9 +675,9 @@ impl ProvideCollatorAssignmentCost<Runtime> for CollatorAssignmentCost<Runtime> 
 
 parameter_types! {
     // 60 days worth of blocks
-    pub const MaxBlockProductionCreditsStored: BlockNumber = 60 * DAYS;
+    pub const FreeBlockProductionCredits: BlockNumber = 60 * DAYS;
     // 60 days worth of blocks
-    pub const MaxCollatorAssignmentCreditsStored: u32 = MaxBlockProductionCreditsStored::get()/Period::get();
+    pub const FreeCollatorAssignmentCredits: u32 = FreeBlockProductionCredits::get()/Period::get();
 }
 
 impl pallet_services_payment::Config for Runtime {
@@ -692,9 +692,9 @@ impl pallet_services_payment::Config for Runtime {
     /// Provider of a block cost which can adjust from block to block
     type ProvideCollatorAssignmentCost = CollatorAssignmentCost<Runtime>;
     /// The maximum number of block credits that can be accumulated
-    type MaxBlockProductionCreditsStored = MaxBlockProductionCreditsStored;
+    type FreeBlockProductionCredits = FreeBlockProductionCredits;
     /// The maximum number of session credits that can be accumulated
-    type MaxCollatorAssignmentCreditsStored = MaxCollatorAssignmentCreditsStored;
+    type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
 impl pallet_data_preservers::Config for Runtime {

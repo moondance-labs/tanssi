@@ -83,10 +83,10 @@ pub mod pallet {
         type ProvideCollatorAssignmentCost: ProvideCollatorAssignmentCost<Self>;
 
         /// The maximum number of block production credits that can be accumulated
-        type MaxBlockProductionCreditsStored: Get<BlockNumberFor<Self>>;
+        type FreeBlockProductionCredits: Get<BlockNumberFor<Self>>;
 
         /// The maximum number of collator assigment production credits that can be accumulated
-        type MaxCollatorAssignmentCreditsStored: Get<u32>;
+        type FreeCollatorAssignmentCredits: Get<u32>;
 
         type WeightInfo: WeightInfo;
     }
@@ -277,7 +277,7 @@ pub mod pallet {
             // Set number of credits to MaxCreditsStored
             let block_production_existing_credits =
                 BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
-            let block_production_updated_credits = T::MaxBlockProductionCreditsStored::get();
+            let block_production_updated_credits = T::FreeBlockProductionCredits::get();
             // Do not update credits if for some reason this para id had more
             if block_production_existing_credits < block_production_updated_credits {
                 Self::set_free_block_production_credits(&para_id, block_production_updated_credits);
@@ -286,7 +286,7 @@ pub mod pallet {
             // Set number of credits to MaxCreditsStored
             let collator_assignment_existing_credits =
                 CollatorAssignmentCredits::<T>::get(para_id).unwrap_or(0u32);
-            let collator_assignment_updated_credits = T::MaxCollatorAssignmentCreditsStored::get();
+            let collator_assignment_updated_credits = T::FreeCollatorAssignmentCredits::get();
 
             // Do not update credits if for some reason this para id had more
             if collator_assignment_existing_credits < collator_assignment_updated_credits {
