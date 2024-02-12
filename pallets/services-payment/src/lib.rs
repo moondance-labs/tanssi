@@ -45,6 +45,7 @@ use {
     },
     frame_system::pallet_prelude::*,
     scale_info::prelude::vec::Vec,
+    serde::{Deserialize, Serialize},
     sp_io::hashing::blake2_256,
     sp_runtime::traits::TrailingZeroInput,
     tp_traits::{AuthorNotingHook, BlockNumber, CollatorAssignmentHook},
@@ -341,7 +342,7 @@ pub mod pallet {
 
     #[pallet::genesis_config]
     pub struct GenesisConfig<T: Config> {
-        pub para_id_credits: Vec<(ParaId, BlockNumberFor<T>, u32)>,
+        pub para_id_credits: Vec<FreeCreditGenesisParams<BlockNumberFor<T>>>,
     }
 
     impl<T: Config> Default for GenesisConfig<T> {
@@ -355,12 +356,35 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            for (para_id, block_production_credits, collator_assignment_credits) in
-                &self.para_id_credits
-            {
-                BlockProductionCredits::<T>::insert(para_id, block_production_credits);
-                CollatorAssignmentCredits::<T>::insert(para_id, collator_assignment_credits);
+            for para_id_credits in &self.para_id_credits {
+                BlockProductionCredits::<T>::insert(
+                    para_id_credits.para_id,
+                    para_id_credits.block_production_credits,
+                );
+                CollatorAssignmentCredits::<T>::insert(
+                    para_id_credits.para_id,
+                    para_id_credits.collator_assignment_credits,
+                );
             }
+        }
+    }
+}
+
+// Params to be set in genesis
+#[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug, TypeInfo, Serialize, Deserialize)]
+pub struct FreeCreditGenesisParams<BlockProductCredits> {
+    pub para_id: ParaId,
+    pub block_production_credits: BlockProductCredits,
+    pub collator_assignment_credits: u32,
+}
+impl<BlockProductCredits> From<(ParaId, BlockProductCredits, u32)>
+    for FreeCreditGenesisParams<BlockProductCredits>
+{
+    fn from(value: (ParaId, BlockProductCredits, u32)) -> Self {
+        Self {
+            para_id: value.0,
+            block_production_credits: value.1,
+            collator_assignment_credits: value.2,
         }
     }
 }

@@ -215,7 +215,7 @@ fn testnet_genesis(
     // Assign 100 collator assignment credits to all container chains registered in genesis
     let para_id_credits: Vec<_> = para_ids
         .iter()
-        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000, 100))
+        .map(|(para_id, _genesis_data, _boot_nodes)| (*para_id, 1000, 100).into())
         .collect();
     let para_id_boot_nodes: Vec<_> = para_ids
         .iter()

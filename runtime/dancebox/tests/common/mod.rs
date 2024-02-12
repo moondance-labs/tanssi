@@ -326,7 +326,7 @@ impl ExtBuilder {
                 .into_iter()
                 .map(
                     |(para_id, _genesis_data, _boot_nodes, block_credits, session_credits)| {
-                        (para_id.into(), block_credits, session_credits)
+                        (para_id.into(), block_credits, session_credits).into()
                     },
                 )
                 .collect(),
