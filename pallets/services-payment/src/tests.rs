@@ -291,6 +291,27 @@ fn on_deregister_burns_if_no_deposit_address() {
 }
 
 #[test]
+fn on_deregister_cleans_refund_address_even_when_purchases_have_not_being_made() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            let refund_address = 10u64;
+
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                refund_address,
+            ));
+
+            crate::Pallet::<Test>::para_deregistered(1.into());
+
+            // Refund address gets cleared
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
+        });
+}
+
+#[test]
 fn on_deregister_deposits_if_refund_address() {
     ExtBuilder::default()
         .with_balances([(ALICE, 2_000)].into())
@@ -304,7 +325,7 @@ fn on_deregister_deposits_if_refund_address() {
                 1000u128,
             ));
 
-            // this should give 10 block credit
+            // this should set refund address
             assert_ok!(PaymentServices::set_refund_address(
                 RuntimeOrigin::root(),
                 1.into(),
@@ -318,5 +339,7 @@ fn on_deregister_deposits_if_refund_address() {
 
             let balance_refund_address = Balances::balance(&refund_address);
             assert_eq!(balance_refund_address, 1000u128);
+
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
         });
 }
