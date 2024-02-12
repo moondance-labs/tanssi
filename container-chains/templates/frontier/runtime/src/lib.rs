@@ -467,17 +467,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
 }
 
-impl pallet_timestamp::Config for Runtime {
-    /// A timestamp: milliseconds since the unix epoch.
-    type Moment = u64;
-    type OnTimestampSet = tp_consensus::OnTimestampSet<
-        <Self as pallet_author_inherent::Config>::SlotBeacon,
-        ConstU64<{ SLOT_DURATION }>,
-    >;
-    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
-}
-
 parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
 }
@@ -792,14 +781,6 @@ impl pallet_maintenance_mode::Config for Runtime {
     type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
-impl pallet_cc_authorities_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type SelfParaId = parachain_info::Pallet<Runtime>;
-    type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type AuthorityId = NimbusId;
-    type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
-}
-
 // To match ethereum expectations
 const BLOCK_GAS_LIMIT: u64 = 15_000_000;
 
@@ -914,6 +895,9 @@ impl pallet_tx_pause::Config for Runtime {
 
 impl tp_construct_tanssi_runtime::Config for Runtime {
     const SLOT_DURATION: u64 = SLOT_DURATION;
+    type TimestampWeights = pallet_timestamp::weights::SubstrateWeight<Runtime>;
+    type AuthorInherentWeights = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
+    type AuthoritiesNotingWeights = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

@@ -15162,6 +15162,9 @@ name = "tp-construct-tanssi-runtime"
 version = "0.1.0"
 dependencies = [
  "impls",
+ "pallet-author-inherent",
+ "pallet-cc-authorities-noting",
+ "pallet-timestamp",
  "sp-core",
  "sp-runtime",
 ]

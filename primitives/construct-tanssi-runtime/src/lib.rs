@@ -18,11 +18,14 @@
 
 #[doc(hidden)]
 pub mod deps {
-    pub use impls::impls;
+    pub use {impls::impls, pallet_author_inherent, pallet_timestamp, pallet_cc_authorities_noting};
 }
 
 pub trait Config {
     const SLOT_DURATION: u64;
+    type TimestampWeights: pallet_timestamp::weights::WeightInfo;
+    type AuthorInherentWeights: pallet_author_inherent::weights::WeightInfo;
+    type AuthoritiesNotingWeights: pallet_cc_authorities_noting::weights::WeightInfo;
 }
 
 #[macro_export]
@@ -30,7 +33,8 @@ macro_rules! construct_tanssi_runtime {
     (
         pub enum $runtime:ident $($inner:tt)+
     ) => {
-
+        // `const _:() = { ... }` allows to import and define types that will not leak into the macro
+        // call site.
         const _:() = {
             use $crate::deps::*;
 
@@ -39,7 +43,26 @@ macro_rules! construct_tanssi_runtime {
                 type AccountLookup = tp_consensus::NimbusLookUp;
                 type CanAuthor = pallet_cc_authorities_noting::CanAuthor<$runtime>;
                 type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<$runtime>;
-                type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<$runtime>;
+                type WeightInfo = <$runtime as $crate::Config>::AuthorInherentWeights;
+            }
+
+            impl pallet_timestamp::Config for $runtime {
+                /// A timestamp: milliseconds since the unix epoch.
+                type Moment = u64;
+                type OnTimestampSet = tp_consensus::OnTimestampSet<
+                    <Self as pallet_author_inherent::Config>::SlotBeacon,
+                    ConstU64<{ <$runtime as $crate::Config>::SLOT_DURATION }>,
+                >;
+                type MinimumPeriod = ConstU64<{ <$runtime as $crate::Config>::SLOT_DURATION / 2 }>;
+                type WeightInfo = <$runtime as $crate::Config>::TimestampWeights;
+            }
+
+            impl pallet_cc_authorities_noting::Config for $runtime {
+                type RuntimeEvent = RuntimeEvent;
+                type SelfParaId = parachain_info::Pallet<$runtime>;
+                type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+                type AuthorityId = NimbusId;
+                type WeightInfo = <$runtime as $crate::Config>::AuthoritiesNotingWeights;
             }
         };
 
@@ -55,6 +78,8 @@ macro_rules! construct_tanssi_runtime {
 
             assert!(impls!($runtime: $crate::Config), "{runtime_name} must impl tp_construct_tanssi_runtime::Config");
             assert!(impls!(RuntimeError: From<pallet_author_inherent::Error<$runtime>>), "pallet_author_inherent is not installed in {runtime_name}");
+            assert!(impls!(RuntimeError: From<pallet_cc_authorities_noting::Error<$runtime>>), "pallet_cc_authorities_noting is not installed in {runtime_name}");
+            // TODO: How to test `pallet_timestamp` is installed?
         }
     };
 }
