@@ -51,7 +51,7 @@ use crate::{collators as collator_util, OrchestratorAuraWorkerAuxData};
 /// Parameters for [`run`].
 pub struct Params<BI, CIDP, Client, RClient, SO, Proposer, CS, GOH> {
     pub create_inherent_data_providers: CIDP,
-    pub get_authorities_from_orchestrator: GOH,
+    pub get_orchestrator_aux_data: GOH,
     pub block_import: BI,
     pub para_client: Arc<Client>,
     pub relay_client: RClient,
@@ -178,7 +178,7 @@ where
 
             // Retrieve authorities that are able to produce the block
             let authorities = match params
-                .get_authorities_from_orchestrator
+                .get_orchestrator_aux_data
                 .retrieve_authorities_from_orchestrator(
                     parent_hash,
                     (relay_parent_header.hash(), validation_data.clone()),

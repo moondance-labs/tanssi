@@ -742,7 +742,7 @@ async fn start_consensus_container(
                 Ok((slot, timestamp, authorities_noting_inherent))
             }
         },
-        get_authorities_from_orchestrator: move |_block_hash, (relay_parent, _validation_data)| {
+        get_orchestrator_aux_data: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
             let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
 
@@ -890,37 +890,37 @@ fn start_consensus_orchestrator(
                 Ok((slot, timestamp, author_noting_inherent))
             }
         },
-        get_authorities_from_orchestrator:
-            move |block_hash: H256, (_relay_parent, _validation_data)| {
-                let client_set_aside_for_orch = client_set_aside_for_orch.clone();
+        get_orchestrator_aux_data: move |block_hash: H256, (_relay_parent, _validation_data)| {
+            let client_set_aside_for_orch = client_set_aside_for_orch.clone();
 
-                async move {
-                    let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
-                        client_set_aside_for_orch.as_ref(),
-                        &block_hash,
-                        para_id,
-                    );
+            async move {
+                let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                    client_set_aside_for_orch.as_ref(),
+                    &block_hash,
+                    para_id,
+                );
 
-                    let authorities = authorities.ok_or_else(|| {
-                        Box::<dyn std::error::Error + Send + Sync>::from(
-                            "Failed to fetch authorities with error",
-                        )
-                    })?;
+                let authorities = authorities.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to fetch authorities with error",
+                    )
+                })?;
 
-                    log::info!(
-                        "Authorities {:?} found for header {:?}",
-                        authorities,
-                        block_hash
-                    );
+                log::info!(
+                    "Authorities {:?} found for header {:?}",
+                    authorities,
+                    block_hash
+                );
 
-                    let aux_data = OrchestratorAuraWorkerAuxData {
-                        authorities,
-                        min_slot_freq: None,
-                    };
+                let aux_data = OrchestratorAuraWorkerAuxData {
+                    authorities,
+                    // This is the orchestrator consensus, it does not have a slot frequency
+                    min_slot_freq: None,
+                };
 
-                    Ok(aux_data)
-                }
-            },
+                Ok(aux_data)
+            }
+        },
         block_import,
         para_client: client,
         relay_client: relay_chain_interface,
