@@ -17,7 +17,7 @@
 pub mod basic;
 
 use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
-use cumulus_client_consensus_common::{ParachainBlockImportMarker, ParachainCandidate};
+use cumulus_client_consensus_common::ParachainCandidate;
 use cumulus_client_consensus_proposer::ProposerInterface;
 use cumulus_primitives_core::{
     relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
@@ -84,7 +84,7 @@ where
     Block: BlockT,
     RClient: RelayChainInterface,
     CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)> + 'static,
-    BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
+    BI: BlockImport<Block> + Send + Sync + 'static,
     Proposer: ProposerInterface<Block>,
     CS: CollatorServiceInterface<Block>,
     P: Pair,
