@@ -406,7 +406,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                 ExistenceRequirement::KeepAlive,
             ) {
                 Err(e) => log::warn!(
-                    "Failed to withdraw credits for container chain {}: {:?}",
+                    "Failed to withdraw block production payment for container chain {}: {:?}",
                     u32::from(para_id),
                     e
                 ),
@@ -432,7 +432,7 @@ impl<T: Config> CollatorAssignmentHook for Pallet<T> {
                 ExistenceRequirement::KeepAlive,
             ) {
                 Err(e) => log::warn!(
-                    "Failed to withdraw credits for container chain {}: {:?}",
+                    "Failed to withdraw collator assignment payment for container chain {}: {:?}",
                     u32::from(para_id),
                     e
                 ),
