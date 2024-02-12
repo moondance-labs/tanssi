@@ -77,8 +77,8 @@ fn genesis_para_registrar() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -109,8 +109,8 @@ fn genesis_para_registrar_deregister() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -158,8 +158,8 @@ fn genesis_para_registrar_runtime_api() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -209,8 +209,8 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, genesis_data_1001.clone(), vec![], u32::MAX, u32::MAX),
-            (1002, genesis_data_1002.clone(), vec![], u32::MAX, u32::MAX),
+            (1001, genesis_data_1001.clone(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, genesis_data_1002.clone(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
@@ -287,8 +287,8 @@ fn test_author_collation_aura() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -322,8 +322,8 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -394,8 +394,8 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -941,8 +941,8 @@ fn test_parachains_deregister_collators_re_assigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -1004,8 +1004,8 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -1071,8 +1071,8 @@ fn test_orchestrator_collators_with_non_sufficient_collators() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -1158,8 +1158,8 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -1319,8 +1319,8 @@ fn test_consensus_runtime_api() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -1414,8 +1414,8 @@ fn test_consensus_runtime_api_session_changes() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -1530,8 +1530,8 @@ fn test_consensus_runtime_api_next_session() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -1742,8 +1742,8 @@ fn test_author_noting_not_self_para() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1800,8 +1800,8 @@ fn test_author_noting_set_author_and_kill_author_data() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1845,8 +1845,8 @@ fn test_author_noting_set_author_and_kill_author_data_bad_origin() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1886,8 +1886,8 @@ fn test_author_noting_runtime_api() {
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .build()
         .execute_with(|| {
@@ -1956,8 +1956,8 @@ fn test_session_keys_with_authority_mapping() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -2041,8 +2041,8 @@ fn test_session_keys_with_authority_assignment() {
             (AccountId::from(BOB), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(default_config())
         .build()
@@ -2375,8 +2375,8 @@ fn test_reward_to_invulnerable() {
             (AccountId::from(CHARLIE), 100 * UNIT),
         ])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
@@ -2436,8 +2436,8 @@ fn test_reward_to_invulnerable_with_key_change() {
         ])
         .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
         .with_para_ids(vec![
-            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
-            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX),
+            (1001, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
+            (1002, empty_genesis_data(), vec![], u32::MAX, u32::MAX).into(),
         ])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,

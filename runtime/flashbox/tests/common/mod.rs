@@ -174,16 +174,47 @@ pub struct ExtBuilder {
     // sudo key
     sudo: Option<AccountId>,
     // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits, session_credits
-    para_ids: Vec<(
+    para_ids: Vec<ParaRegistrationParams>,
+    // configuration to apply
+    config: pallet_configuration::HostConfiguration,
+    own_para_id: Option<ParaId>,
+}
+
+#[derive(Default, Clone)]
+pub struct ParaRegistrationParams {
+    para_id: u32,
+    genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
+    bootnodes: Vec<Vec<u8>>,
+    block_production_credits: u32,
+    collator_assignment_credits: u32,
+}
+
+impl
+    From<(
         u32,
         ContainerChainGenesisData<MaxLengthTokenSymbol>,
         Vec<Vec<u8>>,
         u32,
         u32,
-    )>,
-    // configuration to apply
-    config: pallet_configuration::HostConfiguration,
-    own_para_id: Option<ParaId>,
+    )> for ParaRegistrationParams
+{
+    fn from(
+        value: (
+            u32,
+            ContainerChainGenesisData<MaxLengthTokenSymbol>,
+            Vec<Vec<u8>>,
+            u32,
+            u32,
+        ),
+    ) -> Self {
+        Self {
+            para_id: value.0,
+            genesis_data: value.1,
+            bootnodes: value.2,
+            block_production_credits: value.3,
+            collator_assignment_credits: value.4,
+        }
+    }
 }
 
 impl ExtBuilder {
@@ -202,16 +233,7 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_para_ids(
-        mut self,
-        para_ids: Vec<(
-            u32,
-            ContainerChainGenesisData<MaxLengthTokenSymbol>,
-            Vec<Vec<u8>>,
-            u32,
-            u32,
-        )>,
-    ) -> Self {
+    pub fn with_para_ids(mut self, para_ids: Vec<ParaRegistrationParams>) -> Self {
         self.para_ids = para_ids;
         self
     }
@@ -240,11 +262,9 @@ impl ExtBuilder {
                 .para_ids
                 .iter()
                 .cloned()
-                .map(
-                    |(para_id, genesis_data, _boot_nodes, _block_credits, _session_credits)| {
-                        (para_id.into(), genesis_data)
-                    },
-                )
+                .map(|registered_para| {
+                    (registered_para.para_id.into(), registered_para.genesis_data)
+                })
                 .collect(),
         }
         .assimilate_storage(&mut t)
@@ -253,13 +273,28 @@ impl ExtBuilder {
         pallet_services_payment::GenesisConfig::<Runtime> {
             para_id_credits: self
                 .para_ids
+                .clone()
                 .into_iter()
-                .map(
-                    |(para_id, _genesis_data, _boot_nodes, block_credits, session_credits)| {
-                        (para_id.into(), block_credits, session_credits).into()
-                    },
-                )
+                .map(|registered_para| {
+                    (
+                        registered_para.para_id.into(),
+                        registered_para.block_production_credits,
+                        registered_para.collator_assignment_credits,
+                    )
+                        .into()
+                })
                 .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
+        pallet_data_preservers::GenesisConfig::<Runtime> {
+            para_id_boot_nodes: self
+                .para_ids
+                .into_iter()
+                .map(|registered_para| (registered_para.para_id.into(), registered_para.bootnodes))
+                .collect(),
+            _phantom: Default::default(),
         }
         .assimilate_storage(&mut t)
         .unwrap();
