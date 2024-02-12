@@ -210,7 +210,7 @@ pub mod pallet {
 
         /// Call index to set the refund address for non-spent tokens
         #[pallet::call_index(3)]
-        #[pallet::weight(T::WeightInfo::set_given_free_credits())]
+        #[pallet::weight(T::WeightInfo::set_refund_address())]
         pub fn set_refund_address(
             origin: OriginFor<T>,
             para_id: ParaId,
