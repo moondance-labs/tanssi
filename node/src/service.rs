@@ -72,7 +72,7 @@ use {
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{future::Future, pin::Pin, sync::Arc, time::Duration},
+    std::{sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
     tc_consensus::collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
@@ -467,12 +467,7 @@ pub async fn start_node_impl_container(
     para_id: ParaId,
     orchestrator_para_id: ParaId,
     collator: bool,
-) -> sc_service::error::Result<(
-    TaskManager,
-    Arc<ParachainClient>,
-    Arc<ParachainBackend>,
-    Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
-)> {
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>, Arc<ParachainBackend>)> {
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
@@ -519,10 +514,6 @@ pub async fn start_node_impl_container(
     };
 
     let relay_chain_slot_duration = Duration::from_secs(6);
-
-    let mut start_collation: Option<
-        Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
-    > = None;
 
     let overseer_handle = relay_chain_interface
         .overseer_handle()
@@ -594,45 +585,28 @@ pub async fn start_node_impl_container(
             pov_recovery.run(),
         );
 
-        // Hack to fix logs, if this future is awaited by the ContainerChainSpawner thread,
-        // the logs will say "Orchestrator" instead of "Container-2000".
-        // Wrapping the future in this function fixes that.
-        #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
-        async fn wrap<F, O>(para_id: ParaId, f: F) -> O
-        where
-            F: Future<Output = O>,
-        {
-            f.await
-        }
-
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
-
-        start_collation = Some(Arc::new(move || {
-            Box::pin(wrap(
-                para_id,
-                start_consensus_container(
-                    node_client.clone(),
-                    orchestrator_client.clone(),
-                    block_import.clone(),
-                    prometheus_registry.clone(),
-                    node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
-                    node_spawn_handle.clone(),
-                    relay_chain_interface.clone(),
-                    orchestrator_chain_interface.clone(),
-                    node_builder.transaction_pool.clone(),
-                    node_builder.network.sync_service.clone(),
-                    keystore.clone(),
-                    force_authoring,
-                    relay_chain_slot_duration,
-                    para_id,
-                    orchestrator_para_id,
-                    collator_key.clone(),
-                    overseer_handle.clone(),
-                    announce_block.clone(),
-                ),
-            ))
-        }));
+        start_consensus_container(
+            node_client.clone(),
+            orchestrator_client.clone(),
+            block_import.clone(),
+            prometheus_registry.clone(),
+            node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
+            node_spawn_handle.clone(),
+            relay_chain_interface.clone(),
+            orchestrator_chain_interface.clone(),
+            node_builder.transaction_pool.clone(),
+            node_builder.network.sync_service.clone(),
+            keystore.clone(),
+            force_authoring,
+            relay_chain_slot_duration,
+            para_id,
+            orchestrator_para_id,
+            collator_key.clone(),
+            overseer_handle.clone(),
+            announce_block.clone(),
+        );
     }
 
     node_builder.network.start_network.start_network();
@@ -641,7 +615,6 @@ pub async fn start_node_impl_container(
         node_builder.task_manager,
         node_builder.client,
         node_builder.backend,
-        start_collation,
     ))
 }
 
@@ -660,9 +633,8 @@ fn build_manual_seal_import_queue(
     ))
 }
 
-// TODO: this function does not need to be async
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
-async fn start_consensus_container(
+fn start_consensus_container(
     client: Arc<ParachainClient>,
     orchestrator_client: Arc<ParachainClient>,
     block_import: ParachainBlockImport,
