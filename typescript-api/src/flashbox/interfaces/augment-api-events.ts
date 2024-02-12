@@ -6,13 +6,16 @@
 import "@polkadot/api-base/types/events";
 
 import type { ApiTypes, AugmentedEvent } from "@polkadot/api-base/types";
-import type { Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32 } from "@polkadot/types-codec";
+import type { Bytes, Null, Option, Result, U8aFixed, Vec, bool, u128, u16, u32, u64 } from "@polkadot/types-codec";
 import type { ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
     FlashboxRuntimeProxyType,
     FrameSupportDispatchDispatchInfo,
     FrameSupportTokensMiscBalanceStatus,
+    PalletStreamPaymentDepositChange,
+    PalletStreamPaymentParty,
+    PalletStreamPaymentStreamConfig,
     SpRuntimeDispatchError,
     SpWeightsWeightV2Weight,
 } from "@polkadot/types/lookup";
@@ -360,6 +363,49 @@ declare module "@polkadot/api-base/types/events" {
         session: {
             /** New session has happened. Note that the argument is the session index, not the block number as the type might suggest. */
             NewSession: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        streamPayment: {
+            StreamClosed: AugmentedEvent<ApiType, [streamId: u64, refunded: u128], { streamId: u64; refunded: u128 }>;
+            StreamConfigChanged: AugmentedEvent<
+                ApiType,
+                [
+                    streamId: u64,
+                    oldConfig: PalletStreamPaymentStreamConfig,
+                    newConfig: PalletStreamPaymentStreamConfig,
+                    depositChange: Option<PalletStreamPaymentDepositChange>
+                ],
+                {
+                    streamId: u64;
+                    oldConfig: PalletStreamPaymentStreamConfig;
+                    newConfig: PalletStreamPaymentStreamConfig;
+                    depositChange: Option<PalletStreamPaymentDepositChange>;
+                }
+            >;
+            StreamConfigChangeRequested: AugmentedEvent<
+                ApiType,
+                [
+                    streamId: u64,
+                    requestNonce: u32,
+                    requester: PalletStreamPaymentParty,
+                    oldConfig: PalletStreamPaymentStreamConfig,
+                    newConfig: PalletStreamPaymentStreamConfig
+                ],
+                {
+                    streamId: u64;
+                    requestNonce: u32;
+                    requester: PalletStreamPaymentParty;
+                    oldConfig: PalletStreamPaymentStreamConfig;
+                    newConfig: PalletStreamPaymentStreamConfig;
+                }
+            >;
+            StreamOpened: AugmentedEvent<ApiType, [streamId: u64], { streamId: u64 }>;
+            StreamPayment: AugmentedEvent<
+                ApiType,
+                [streamId: u64, source: AccountId32, target: AccountId32, amount: u128, drained: bool],
+                { streamId: u64; source: AccountId32; target: AccountId32; amount: u128; drained: bool }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
