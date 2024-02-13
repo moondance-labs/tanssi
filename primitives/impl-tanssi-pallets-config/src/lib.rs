@@ -18,7 +18,10 @@
 
 #[doc(hidden)]
 pub mod deps {
-    pub use {impls::impls, pallet_author_inherent, pallet_timestamp, pallet_cc_authorities_noting};
+    pub use {
+        frame_support, impls::impls, pallet_author_inherent, pallet_cc_authorities_noting,
+        pallet_timestamp,
+    };
 }
 
 pub trait Config {
@@ -29,9 +32,9 @@ pub trait Config {
 }
 
 #[macro_export]
-macro_rules! construct_tanssi_runtime {
+macro_rules! impl_tanssi_pallets_config {
     (
-        pub enum $runtime:ident $($inner:tt)+
+        $runtime:ident
     ) => {
         // `const _:() = { ... }` allows to import and define types that will not leak into the macro
         // call site.
@@ -66,20 +69,20 @@ macro_rules! construct_tanssi_runtime {
             }
         };
 
-        construct_runtime!(
-            pub enum $runtime $($inner)+
-        );
-
         #[test]
-        fn __construct_tanssi_runtime_tests() {
-            use $crate::deps::impls;
+        fn __impl_tanssi_pallets_config_tests() {
+            use $crate::deps::{frame_support::traits::PalletInfo, impls};
 
             let runtime_name = stringify!($runtime);
 
-            assert!(impls!($runtime: $crate::Config), "{runtime_name} must impl tp_construct_tanssi_runtime::Config");
-            assert!(impls!(RuntimeError: From<pallet_author_inherent::Error<$runtime>>), "pallet_author_inherent is not installed in {runtime_name}");
-            assert!(impls!(RuntimeError: From<pallet_cc_authorities_noting::Error<$runtime>>), "pallet_cc_authorities_noting is not installed in {runtime_name}");
-            // TODO: How to test `pallet_timestamp` is installed?
+            fn is_pallet_installed<P: 'static>() -> bool {
+                <$runtime as frame_system::Config>::PalletInfo::index::<P>().is_some()
+            }
+
+            assert!(impls!($runtime: $crate::Config), "{runtime_name} must impl tp_impl_tanssi_pallets_config::Config");
+            assert!(is_pallet_installed::<pallet_author_inherent::Pallet::<$runtime>>(), "pallet_author_inherent is not installed in {runtime_name}");
+            assert!(is_pallet_installed::<pallet_cc_authorities_noting::Pallet::<$runtime>>(), "pallet_cc_authorities_noting is not installed in {runtime_name}");
+            assert!(is_pallet_installed::<pallet_timestamp::Pallet::<$runtime>>(), "pallet_timestamp is not installed in {runtime_name}");
         }
     };
 }

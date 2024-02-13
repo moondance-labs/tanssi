@@ -89,7 +89,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    tp_construct_tanssi_runtime::construct_tanssi_runtime,
+    tp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
 };
 pub use {
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
@@ -893,15 +893,17 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
-impl tp_construct_tanssi_runtime::Config for Runtime {
+impl tp_impl_tanssi_pallets_config::Config for Runtime {
     const SLOT_DURATION: u64 = SLOT_DURATION;
     type TimestampWeights = pallet_timestamp::weights::SubstrateWeight<Runtime>;
     type AuthorInherentWeights = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
     type AuthoritiesNotingWeights = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
 }
 
+impl_tanssi_pallets_config!(Runtime);
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
-construct_tanssi_runtime!(
+construct_runtime!(
     pub enum Runtime
     {
         // System support stuff.

@@ -1707,7 +1707,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tp-consensus",
- "tp-construct-tanssi-runtime",
+ "tp-impl-tanssi-pallets-config",
  "xcm-primitives",
 ]
 
@@ -1848,6 +1848,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tp-consensus",
+ "tp-impl-tanssi-pallets-config",
  "xcm-primitives",
 ]
 
@@ -15158,18 +15159,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tp-construct-tanssi-runtime"
-version = "0.1.0"
-dependencies = [
- "impls",
- "pallet-author-inherent",
- "pallet-cc-authorities-noting",
- "pallet-timestamp",
- "sp-core",
- "sp-runtime",
-]
-
-[[package]]
 name = "tp-container-chain-genesis-data"
 version = "0.1.0"
 dependencies = [
@@ -15189,6 +15178,19 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "tp-traits",
+]
+
+[[package]]
+name = "tp-impl-tanssi-pallets-config"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "impls",
+ "pallet-author-inherent",
+ "pallet-cc-authorities-noting",
+ "pallet-timestamp",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
