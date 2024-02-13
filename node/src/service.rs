@@ -28,7 +28,6 @@ use {
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
     },
     cumulus_client_consensus_proposer::Proposer,
-    cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
     cumulus_client_service::{
         prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
     },
@@ -47,7 +46,7 @@ use {
     dc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
-    futures::{channel::mpsc, StreamExt},
+    futures::StreamExt,
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
@@ -316,24 +315,24 @@ async fn start_node_impl(
 
     let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
 
-    start_relay_chain_tasks(StartRelayChainTasksParams {
-        client: node_builder.client.clone(),
-        announce_block: announce_block.clone(),
-        para_id,
-        relay_chain_interface: relay_chain_interface.clone(),
-        task_manager: &mut node_builder.task_manager,
-        da_recovery_profile: if validator {
-            DARecoveryProfile::Collator
-        } else {
-            DARecoveryProfile::FullNode
-        },
-        import_queue: import_queue_service,
-        relay_chain_slot_duration,
-        recovery_handle: Box::new(overseer_handle.clone()),
-        sync_service: node_builder.network.sync_service.clone(),
-    })?;
-
     if validator {
+        start_relay_chain_tasks(StartRelayChainTasksParams {
+            client: node_builder.client.clone(),
+            announce_block: announce_block.clone(),
+            para_id,
+            relay_chain_interface: relay_chain_interface.clone(),
+            task_manager: &mut node_builder.task_manager,
+            da_recovery_profile: if validator {
+                DARecoveryProfile::Collator
+            } else {
+                DARecoveryProfile::FullNode
+            },
+            import_queue: import_queue_service,
+            relay_chain_slot_duration,
+            recovery_handle: Box::new(overseer_handle.clone()),
+            sync_service: node_builder.network.sync_service.clone(),
+        })?;
+
         let collator_key = collator_key
             .clone()
             .expect("Command line arguments do not allow this. qed");
@@ -518,72 +517,29 @@ pub async fn start_node_impl_container(
     let overseer_handle = relay_chain_interface
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-    let (mut node_builder, node_import_queue_service) = node_builder.extract_import_queue_service();
-
-    start_relay_chain_tasks(StartRelayChainTasksParams {
-        client: node_builder.client.clone(),
-        announce_block: announce_block.clone(),
-        para_id,
-        relay_chain_interface: relay_chain_interface.clone(),
-        task_manager: &mut node_builder.task_manager,
-        da_recovery_profile: if collator {
-            DARecoveryProfile::Collator
-        } else {
-            DARecoveryProfile::FullNode
-        },
-        import_queue: import_queue_service,
-        relay_chain_slot_duration,
-        recovery_handle: Box::new(overseer_handle.clone()),
-        sync_service: node_builder.network.sync_service.clone(),
-    })?;
+    let (mut node_builder, _) = node_builder.extract_import_queue_service();
 
     if collator {
+        start_relay_chain_tasks(StartRelayChainTasksParams {
+            client: node_builder.client.clone(),
+            announce_block: announce_block.clone(),
+            para_id,
+            relay_chain_interface: relay_chain_interface.clone(),
+            task_manager: &mut node_builder.task_manager,
+            da_recovery_profile: if collator {
+                DARecoveryProfile::Collator
+            } else {
+                DARecoveryProfile::FullNode
+            },
+            import_queue: import_queue_service,
+            relay_chain_slot_duration,
+            recovery_handle: Box::new(overseer_handle.clone()),
+            sync_service: node_builder.network.sync_service.clone(),
+        })?;
+
         let collator_key = collator_key
             .clone()
             .expect("Command line arguments do not allow this. qed");
-
-        // Given the sporadic nature of the explicit recovery operation and the
-        // possibility to retry infinite times this value is more than enough.
-        // In practice here we expect no more than one queued messages.
-        const RECOVERY_CHAN_SIZE: usize = 8;
-
-        let (recovery_chan_tx, recovery_chan_rx) = mpsc::channel(RECOVERY_CHAN_SIZE);
-
-        let consensus = cumulus_client_consensus_common::run_parachain_consensus(
-            para_id,
-            node_builder.client.clone(),
-            relay_chain_interface.clone(),
-            announce_block.clone(),
-            Some(recovery_chan_tx),
-        );
-
-        node_builder
-            .task_manager
-            .spawn_essential_handle()
-            .spawn_blocking("cumulus-consensus", None, consensus);
-
-        let pov_recovery = PoVRecovery::new(
-            Box::new(overseer_handle.clone()),
-            // We want that collators wait at maximum the relay chain slot duration before starting
-            // to recover blocks. Additionally, we wait at least half the slot time to give the
-            // relay chain the chance to increase availability.
-            RecoveryDelayRange {
-                min: relay_chain_slot_duration / 2,
-                max: relay_chain_slot_duration,
-            },
-            node_builder.client.clone(),
-            node_import_queue_service,
-            relay_chain_interface.clone(),
-            para_id,
-            recovery_chan_rx,
-            node_builder.network.sync_service.clone(),
-        );
-
-        node_builder.task_manager.spawn_essential_handle().spawn(
-            "cumulus-pov-recovery",
-            None,
-            pov_recovery.run(),
-        );
 
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
