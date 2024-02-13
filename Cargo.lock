@@ -2307,7 +2307,6 @@ dependencies = [
  "cumulus-relay-chain-interface",
  "futures 0.3.30",
  "futures-timer",
- "log",
  "parity-scale-codec",
  "polkadot-node-primitives",
  "polkadot-node-subsystem",
