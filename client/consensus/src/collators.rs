@@ -17,26 +17,20 @@
 pub mod basic;
 
 use {
+    crate::AuthorityId,
     cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
-    cumulus_client_consensus_common::{ParachainBlockImportMarker, ParachainCandidate},
+    cumulus_client_consensus_common::ParachainCandidate,
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_primitives_core::{
         relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
     },
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     cumulus_relay_chain_interface::RelayChainInterface,
-    parity_scale_codec::{Codec, Encode},
-};
-
-use {
-    polkadot_node_primitives::{Collation, MaybeCompressedPoV},
-    polkadot_primitives::Id as ParaId,
-};
-
-use {
-    crate::AuthorityId,
     futures::prelude::*,
     nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID},
+    parity_scale_codec::{Codec, Encode},
+    polkadot_node_primitives::{Collation, MaybeCompressedPoV},
+    polkadot_primitives::Id as ParaId,
     sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
     sp_application_crypto::{AppCrypto, AppPublic},
     sp_consensus::BlockOrigin,
@@ -90,7 +84,7 @@ where
     Block: BlockT,
     RClient: RelayChainInterface,
     CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)> + 'static,
-    BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
+    BI: BlockImport<Block> + Send + Sync + 'static,
     Proposer: ProposerInterface<Block>,
     CS: CollatorServiceInterface<Block>,
     P: Pair,

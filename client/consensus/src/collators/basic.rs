@@ -15,27 +15,24 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    crate::{
+        collators as collator_util, consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
+        AuthorityId,
+    },
     cumulus_client_collator::{
         relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
     },
-    cumulus_client_consensus_common::ParachainBlockImportMarker,
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_primitives_core::{
         relay_chain::{BlockId as RBlockId, Hash as PHash},
         PersistedValidationData,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
+    futures::{channel::mpsc::Receiver, prelude::*},
     parity_scale_codec::{Codec, Decode},
-};
-
-use {
     polkadot_node_primitives::CollationResult,
     polkadot_overseer::Handle as OverseerHandle,
     polkadot_primitives::{CollatorPair, Id as ParaId},
-};
-
-use {
-    futures::{channel::mpsc::Receiver, prelude::*},
     sc_client_api::{backend::AuxStore, BlockBackend, BlockOf},
     sc_consensus::BlockImport,
     sc_consensus_slots::InherentDataProviderExt,
@@ -49,11 +46,6 @@ use {
     sp_keystore::KeystorePtr,
     sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member},
     std::{convert::TryFrom, sync::Arc, time::Duration},
-};
-
-use crate::{
-    collators as collator_util, consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
-    AuthorityId,
 };
 
 /// Parameters for [`run`].
@@ -97,7 +89,7 @@ where
         + 'static
         + Clone,
     CIDP::InherentDataProviders: Send + InherentDataProviderExt,
-    BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
+    BI: BlockImport<Block> + Send + Sync + 'static,
     SO: SyncOracle + Send + Sync + Clone + 'static,
     Proposer: ProposerInterface<Block> + Send + Sync + 'static,
     CS: CollatorServiceInterface<Block> + Send + Sync + 'static,
