@@ -59,8 +59,8 @@ use {
     sc_client_api::{
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
-    sc_consensus::BasicQueue,
     sc_consensus::BlockImport,
+    sc_consensus::{BasicQueue, ImportQueue},
     sc_executor::NativeElseWasmExecutor,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
@@ -479,6 +479,7 @@ pub async fn start_node_impl_container(
     let node_builder = NodeConfig::new_builder(&parachain_config, None)?;
 
     let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
+    let import_queue_service = import_queue.service();
 
     log::info!("are we collators? {:?}", collator);
     let node_builder = node_builder
@@ -526,7 +527,24 @@ pub async fn start_node_impl_container(
     let overseer_handle = relay_chain_interface
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-    let (node_builder, node_import_queue_service) = node_builder.extract_import_queue_service();
+    let (mut node_builder, node_import_queue_service) = node_builder.extract_import_queue_service();
+
+    start_relay_chain_tasks(StartRelayChainTasksParams {
+        client: node_builder.client.clone(),
+        announce_block: announce_block.clone(),
+        para_id,
+        relay_chain_interface: relay_chain_interface.clone(),
+        task_manager: &mut node_builder.task_manager,
+        da_recovery_profile: if collator {
+            DARecoveryProfile::Collator
+        } else {
+            DARecoveryProfile::FullNode
+        },
+        import_queue: import_queue_service,
+        relay_chain_slot_duration,
+        recovery_handle: Box::new(overseer_handle.clone()),
+        sync_service: node_builder.network.sync_service.clone(),
+    })?;
 
     if collator {
         let collator_key = collator_key
