@@ -136,7 +136,6 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     .build()
 }
 
-
 fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,

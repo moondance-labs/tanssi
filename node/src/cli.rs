@@ -348,9 +348,10 @@ impl ContainerChainCli {
         .with_properties(properties)
         .with_boot_nodes(boot_nodes)
         .with_protocol_id(&protocol_id);
-        
+
         if let Some(fork_id) = genesis_data.fork_id {
-            let fork_id_string = String::from_utf8(fork_id).map_err(|_e| "Invalid fork_id".to_string())?;
+            let fork_id_string =
+                String::from_utf8(fork_id).map_err(|_e| "Invalid fork_id".to_string())?;
             return Ok(chain_spec.with_fork_id(&fork_id_string).build());
         }
 
