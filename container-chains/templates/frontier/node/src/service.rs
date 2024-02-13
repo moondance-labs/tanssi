@@ -22,11 +22,9 @@ use {
     container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
+    cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::prepare_node_config,
     cumulus_primitives_core::{relay_chain::well_known_keys as RelayWellKnownKeys, ParaId},
-    cumulus_primitives_parachain_inherent::{
-        MockValidationDataInherentDataProvider, MockXcmConfig,
-    },
     fc_consensus::FrontierBlockImport,
     fc_db::DatabaseSource,
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},

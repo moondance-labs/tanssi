@@ -68,10 +68,7 @@ use {
         time::{Duration, Instant},
     },
 };
-pub use {
-    sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
-    sc_consensus_slots::InherentDataProviderExt,
-};
+pub use {sc_consensus_aura::SlotProportion, sc_consensus_slots::InherentDataProviderExt};
 
 const LOG_TARGET: &str = "aura::tanssi";
 

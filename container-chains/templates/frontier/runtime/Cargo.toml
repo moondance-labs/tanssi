@@ -42,6 +42,7 @@ frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
 pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
+pallet-message-queue = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -85,6 +86,7 @@ cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
+parachains-common = { workspace = true }
 
 # Frontier
 fp-account = { workspace = true, features = [ "serde" ] }
@@ -154,6 +156,7 @@ std = [
 	"pallet-evm/std",
 	"pallet-hotfix-sufficients/std",
 	"pallet-maintenance-mode/std",
+	"pallet-message-queue/std",
 	"pallet-migrations/std",
 	"pallet-proxy/std",
 	"pallet-root-testing/std",
@@ -166,6 +169,7 @@ std = [
 	"pallet-xcm-benchmarks?/std",
 	"pallet-xcm/std",
 	"parachain-info/std",
+	"parachains-common/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
@@ -211,6 +215,7 @@ runtime-benchmarks = [
 	"pallet-author-inherent/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-cc-authorities-noting/runtime-benchmarks",
+	"pallet-message-queue/runtime-benchmarks",
 	"pallet-ethereum/runtime-benchmarks",
 	"pallet-evm-precompile-xcm-utils/runtime-benchmarks",
 	"pallet-evm/runtime-benchmarks",
@@ -223,6 +228,7 @@ runtime-benchmarks = [
 	"pallet-utility/runtime-benchmarks",
 	"pallet-xcm-benchmarks/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
+	"parachains-common/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
@@ -253,6 +259,7 @@ try-runtime = [
 	"pallet-evm/try-runtime",
 	"pallet-hotfix-sufficients/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
+	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-root-testing/try-runtime",

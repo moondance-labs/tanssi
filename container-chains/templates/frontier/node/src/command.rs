@@ -21,10 +21,10 @@ use {
         service::{self, frontier_database_dir, NodeConfig},
     },
     container_chain_template_frontier_runtime::Block,
-    cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    node_common::command::generate_genesis_block,
     node_common::service::NodeBuilderConfig as _,
     parity_scale_codec::Encode,
     polkadot_cli::IdentifyVariant,
@@ -235,11 +235,11 @@ pub fn run() -> Result<()> {
                 cmd.run(config, polkadot_config)
             })
         }
-        Some(Subcommand::ExportGenesisState(cmd)) => {
+        Some(Subcommand::ExportGenesisHead(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|mut config| {
                 let partials = NodeConfig::new_builder(&mut config, None)?;
-                cmd.run(&*config.chain_spec, &*partials.client)
+                cmd.run(partials.client)
             })
         }
         Some(Subcommand::ExportGenesisWasm(cmd)) => {

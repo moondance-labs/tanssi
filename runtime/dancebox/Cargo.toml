@@ -54,6 +54,7 @@ pallet-asset-rate = { workspace = true }
 pallet-assets = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
+pallet-message-queue = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -92,6 +93,7 @@ staging-xcm-builder = { workspace = true }
 staging-xcm-executor = { workspace = true }
 
 # Cumulus
+emulated-integration-tests-common = { workspace = true }
 cumulus-pallet-dmp-queue = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }

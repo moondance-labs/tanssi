@@ -122,7 +122,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T>
     where
-        BalanceOf<T>: From<BlockNumberFor<T>>,
+        BlockNumberFor<T>: Into<BalanceOf<T>>,
     {
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::purchase_credits())]

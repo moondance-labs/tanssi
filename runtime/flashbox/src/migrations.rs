@@ -22,7 +22,8 @@
 use {
     crate::{ParaId, Runtime, ServicesPayment, LOG_TARGET},
     frame_support::{
-        pallet_prelude::ValueQuery, storage::types::StorageMap, weights::Weight, Blake2_128Concat,
+        pallet_prelude::ValueQuery, storage::types::StorageMap, traits::OnRuntimeUpgrade,
+        weights::Weight, Blake2_128Concat,
     },
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
     pallet_migrations::{GetMigrations, Migration},
@@ -233,12 +234,39 @@ where
     }
 }
 
+const IDENTITY_MIGRATION_KEY_LIMIT: u64 = u64::MAX;
+
+pub struct IdentityMigration<T>(pub PhantomData<T>);
+impl<T> Migration for IdentityMigration<T>
+where
+    T: pallet_identity::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_IdentityMigration"
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        pallet_identity::migration::versioned::V0ToV1::<T, IDENTITY_MIGRATION_KEY_LIMIT>::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        pallet_identity::migration::versioned::V0ToV1::<T, IDENTITY_MIGRATION_KEY_LIMIT>::post_upgrade()
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        pallet_identity::migration::versioned::V0ToV1::<T, IDENTITY_MIGRATION_KEY_LIMIT>::on_runtime_upgrade()
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
 where
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
+    Runtime: pallet_identity::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_services_payment =
@@ -246,11 +274,13 @@ where
         let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
         let migrate_config_parathread_params =
             MigrateConfigurationParathreads::<Runtime>(Default::default());
+        let migrate_identity = IdentityMigration::<Runtime>(Default::default());
 
         vec![
             Box::new(migrate_services_payment),
             Box::new(migrate_boot_nodes),
             Box::new(migrate_config_parathread_params),
+            Box::new(migrate_identity),
         ]
     }
 }

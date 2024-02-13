@@ -18,8 +18,8 @@ use crate::common::xcm::*;
 
 use {
     crate::common::xcm::mocknets::{
-        Dancebox, FrontierTemplate, FrontierTemplatePallet, SimpleTemplate, SimpleTemplatePallet,
-        Westend, WestendPallet,
+        Dancebox, FrontierTemplate, FrontierTemplateParaPallet, SimpleTemplate,
+        SimpleTemplateParaPallet, Westend, WestendRelayPallet,
     },
     frame_support::{
         assert_ok,
@@ -72,7 +72,7 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
 
     // Send XCM message from Relay Chain
     Westend::execute_with(|| {
-        assert_ok!(<Westend as WestendPallet>::XcmPallet::send(
+        assert_ok!(<Westend as WestendRelayPallet>::XcmPallet::send(
             sudo_origin,
             bx!(dancebox_para_destination),
             bx!(xcm),
@@ -145,7 +145,7 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
 
     // Send XCM message from Relay Chain
     Westend::execute_with(|| {
-        assert_ok!(<Westend as WestendPallet>::XcmPallet::send(
+        assert_ok!(<Westend as WestendRelayPallet>::XcmPallet::send(
             sudo_origin,
             bx!(dancebox_para_destination),
             bx!(xcm),
@@ -222,7 +222,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
 
     // Send XCM message from Relay Chain
     Westend::execute_with(|| {
-        assert_ok!(<Westend as WestendPallet>::XcmPallet::send(
+        assert_ok!(<Westend as WestendRelayPallet>::XcmPallet::send(
             sudo_origin,
             bx!(dancebox_para_destination),
             bx!(xcm),
@@ -304,7 +304,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     // Send XCM message from Frontier Template
     FrontierTemplate::execute_with(|| {
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::PolkadotXcm::send(
+            <FrontierTemplate as FrontierTemplateParaPallet>::PolkadotXcm::send(
                 sudo_origin,
                 bx!(dancebox_para_destination),
                 bx!(xcm),
@@ -388,11 +388,13 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
 
     // Send XCM message from Relay Chain
     SimpleTemplate::execute_with(|| {
-        assert_ok!(<SimpleTemplate as SimpleTemplatePallet>::PolkadotXcm::send(
-            sudo_origin,
-            bx!(dancebox_para_destination),
-            bx!(xcm),
-        ));
+        assert_ok!(
+            <SimpleTemplate as SimpleTemplateParaPallet>::PolkadotXcm::send(
+                sudo_origin,
+                bx!(dancebox_para_destination),
+                bx!(xcm),
+            )
+        );
 
         type RuntimeEvent = <SimpleTemplate as Chain>::RuntimeEvent;
 

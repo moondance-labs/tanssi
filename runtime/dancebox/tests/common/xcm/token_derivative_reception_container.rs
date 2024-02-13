@@ -17,8 +17,8 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxPallet, DanceboxReceiver, SimpleTemplate, SimpleTemplatePallet,
-            SimpleTemplateSender,
+            Dancebox, DanceboxParaPallet, DanceboxReceiver, SimpleTemplate,
+            SimpleTemplateParaPallet, SimpleTemplateSender,
         },
         *,
     },
@@ -59,7 +59,7 @@ fn receive_tokens_from_the_container_to_tanssi() {
         container_chain_template_simple_runtime::ExistentialDeposit::get() * 1000;
 
     let simple_template_pallet_info_junction = PalletInstance(
-        <<SimpleTemplate as SimpleTemplatePallet>::Balances as PalletInfoAccess>::index() as u8,
+        <<SimpleTemplate as SimpleTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8,
     );
     let assets: MultiAssets = (X1(simple_template_pallet_info_junction), amount_to_send).into();
     let fee_asset_item = 0;
@@ -70,7 +70,7 @@ fn receive_tokens_from_the_container_to_tanssi() {
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <Dancebox as DanceboxPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation {
                     parents: 1,
@@ -83,7 +83,7 @@ fn receive_tokens_from_the_container_to_tanssi() {
             )
         );
 
-        assert_ok!(<Dancebox as DanceboxPallet>::AssetRate::create(
+        assert_ok!(<Dancebox as DanceboxParaPallet>::AssetRate::create(
             root_origin,
             bx!(1),
             FixedU128::from_u32(1)
@@ -93,7 +93,7 @@ fn receive_tokens_from_the_container_to_tanssi() {
     // Send XCM message from SimpleTemplate
     SimpleTemplate::execute_with(|| {
         assert_ok!(
-            <SimpleTemplate as SimpleTemplatePallet>::PolkadotXcm::limited_reserve_transfer_assets(
+            <SimpleTemplate as SimpleTemplateParaPallet>::PolkadotXcm::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(dancebox_dest),
                 bx!(dancebox_beneficiary),
@@ -122,7 +122,7 @@ fn receive_tokens_from_the_container_to_tanssi() {
                 },
             ]
         );
-        type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
         let native_balance = dancebox_runtime::WeightToFee::weight_to_fee(&outcome_weight);

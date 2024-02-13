@@ -57,59 +57,53 @@ pub fn development_config(
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
-    ChainSpec::from_genesis(
-        // Name
-        "Flashbox Development Testnet",
-        // ID
-        "flashbox_dev",
-        ChainType::Development,
-        move || {
-            testnet_genesis(
-                // initial collators.
-                invulnerables_from_seeds(invulnerables.iter()),
-                account_ids(&[
-                    "Alice",
-                    "Bob",
-                    "Charlie",
-                    "Dave",
-                    "Eve",
-                    "Ferdie",
-                    "Alice//stash",
-                    "Bob//stash",
-                    "Charlie//stash",
-                    "Dave//stash",
-                    "Eve//stash",
-                    "Ferdie//stash",
-                ]),
-                para_id,
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-                &container_chains,
-                &mock_container_chains,
-                pallet_configuration::GenesisConfig {
-                    config: HostConfiguration {
-                        max_collators: 100u32,
-                        min_orchestrator_collators: 1u32,
-                        max_orchestrator_collators: 1u32,
-                        collators_per_container: 2u32,
-                        full_rotation_period: 0,
-                        collators_per_parathread: 1,
-                        parathreads_per_collator: 1,
-                        target_container_chain_fullness: Perbill::from_percent(80),
-                    },
-                    ..Default::default()
-                },
-            )
-        },
-        vec![],
-        None,
-        None,
-        None,
-        Some(properties),
+    ChainSpec::builder(
+        flashbox_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: para_id.into(),
         },
     )
+    .with_name("Flashbox Development Testnet")
+    .with_id("flashbox_dev")
+    .with_chain_type(ChainType::Development)
+    .with_genesis_config(testnet_genesis(
+        // initial collators.
+        invulnerables_from_seeds(invulnerables.iter()),
+        account_ids(&[
+            "Alice",
+            "Bob",
+            "Charlie",
+            "Dave",
+            "Eve",
+            "Ferdie",
+            "Alice//stash",
+            "Bob//stash",
+            "Charlie//stash",
+            "Dave//stash",
+            "Eve//stash",
+            "Ferdie//stash",
+        ]),
+        para_id,
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        &container_chains,
+        &mock_container_chains,
+        pallet_configuration::GenesisConfig {
+            config: HostConfiguration {
+                max_collators: 100u32,
+                min_orchestrator_collators: 1u32,
+                max_orchestrator_collators: 1u32,
+                collators_per_container: 2u32,
+                full_rotation_period: 0,
+                collators_per_parathread: 1,
+                parathreads_per_collator: 1,
+                target_container_chain_fullness: Perbill::from_percent(80),
+            },
+            ..Default::default()
+        },
+    ))
+    .with_properties(properties)
+    .build()
 }
 
 pub fn local_flashbox_config(
@@ -125,65 +119,54 @@ pub fn local_flashbox_config(
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
 
-    ChainSpec::from_genesis(
-        // Name
-        "Flashbox Local Testnet",
-        // ID
-        "flashbox_local",
-        ChainType::Local,
-        move || {
-            testnet_genesis(
-                // initial collators.
-                invulnerables_from_seeds(invulnerables.iter()),
-                account_ids(&[
-                    "Alice",
-                    "Bob",
-                    "Charlie",
-                    "Dave",
-                    "Eve",
-                    "Ferdie",
-                    "Alice//stash",
-                    "Bob//stash",
-                    "Charlie//stash",
-                    "Dave//stash",
-                    "Eve//stash",
-                    "Ferdie//stash",
-                ]),
-                para_id,
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-                &container_chains,
-                &mock_container_chains,
-                pallet_configuration::GenesisConfig {
-                    config: HostConfiguration {
-                        max_collators: 100u32,
-                        min_orchestrator_collators: 2u32,
-                        max_orchestrator_collators: 5u32,
-                        collators_per_container: 2u32,
-                        full_rotation_period: 0,
-                        collators_per_parathread: 1,
-                        parathreads_per_collator: 1,
-                        target_container_chain_fullness: Perbill::from_percent(80),
-                    },
-                    ..Default::default()
-                },
-            )
-        },
-        // Bootnodes
-        vec![],
-        // Telemetry
-        None,
-        // Protocol ID
-        Some("orchestrator"),
-        // Fork ID
-        None,
-        // Properties
-        Some(properties),
-        // Extensions
+    ChainSpec::builder(
+        flashbox_runtime::WASM_BINARY.expect("WASM binary was not built, please build it!"),
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: para_id.into(),
         },
     )
+    .with_name("Flashbox Local Testnet")
+    .with_id("flashbox_local")
+    .with_chain_type(ChainType::Local)
+    .with_genesis_config(testnet_genesis(
+        // initial collators.
+        invulnerables_from_seeds(invulnerables.iter()),
+        account_ids(&[
+            "Alice",
+            "Bob",
+            "Charlie",
+            "Dave",
+            "Eve",
+            "Ferdie",
+            "Alice//stash",
+            "Bob//stash",
+            "Charlie//stash",
+            "Dave//stash",
+            "Eve//stash",
+            "Ferdie//stash",
+        ]),
+        para_id,
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        &container_chains,
+        &mock_container_chains,
+        pallet_configuration::GenesisConfig {
+            config: HostConfiguration {
+                max_collators: 100u32,
+                min_orchestrator_collators: 2u32,
+                max_orchestrator_collators: 5u32,
+                collators_per_container: 2u32,
+                full_rotation_period: 0,
+                collators_per_parathread: 1,
+                parathreads_per_collator: 1,
+                target_container_chain_fullness: Perbill::from_percent(80),
+            },
+            ..Default::default()
+        },
+    ))
+    .with_properties(properties)
+    .with_protocol_id("orchestrator")
+    .build()
 }
 
 fn testnet_genesis(
@@ -194,7 +177,7 @@ fn testnet_genesis(
     container_chains: &[String],
     mock_container_chains: &[ParaId],
     configuration: pallet_configuration::GenesisConfig<flashbox_runtime::Runtime>,
-) -> flashbox_runtime::RuntimeGenesisConfig {
+) -> serde_json::Value {
     let para_ids: Vec<_> = container_chains
         .iter()
         .map(|x| {
@@ -230,13 +213,8 @@ fn testnet_genesis(
         flashbox_runtime::ParachainBondAccount::get(),
         flashbox_runtime::PendingRewardsAccount::get(),
     ];
-    flashbox_runtime::RuntimeGenesisConfig {
-        system: flashbox_runtime::SystemConfig {
-            code: flashbox_runtime::WASM_BINARY
-                .expect("WASM binary was not build, please build it!")
-                .to_vec(),
-            ..Default::default()
-        },
+    let g = flashbox_runtime::RuntimeGenesisConfig {
+        system: Default::default(),
         balances: flashbox_runtime::BalancesConfig {
             balances: endowed_accounts
                 .iter()
@@ -289,7 +267,9 @@ fn testnet_genesis(
         },
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
-    }
+    };
+
+    serde_json::to_value(&g).unwrap()
 }
 
 fn mock_container_chain_genesis_data<MaxLengthTokenSymbol: Get<u32>>(

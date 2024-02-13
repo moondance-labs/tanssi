@@ -17,7 +17,8 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxPallet, DanceboxReceiver, Westend, WestendPallet, WestendSender,
+            Dancebox, DanceboxParaPallet, DanceboxReceiver, Westend, WestendRelayPallet,
+            WestendSender,
         },
         *,
     },
@@ -62,7 +63,7 @@ fn receive_tokens_from_the_relay_to_tanssi() {
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <Dancebox as DanceboxPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
                 westend_token_asset_id,
@@ -72,7 +73,7 @@ fn receive_tokens_from_the_relay_to_tanssi() {
             )
         );
 
-        assert_ok!(<Dancebox as DanceboxPallet>::AssetRate::create(
+        assert_ok!(<Dancebox as DanceboxParaPallet>::AssetRate::create(
             root_origin,
             bx!(1),
             FixedU128::from_u32(1)
@@ -82,7 +83,7 @@ fn receive_tokens_from_the_relay_to_tanssi() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(dancebox_dest),
                 bx!(dancebox_beneficiary),
@@ -110,7 +111,7 @@ fn receive_tokens_from_the_relay_to_tanssi() {
                 },
             ]
         );
-        type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
         let native_balance = dancebox_runtime::WeightToFee::weight_to_fee(&outcome_weight);
@@ -157,7 +158,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <Dancebox as DanceboxPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
                 westend_token_asset_id,
@@ -172,7 +173,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(dancebox_dest),
                 bx!(dancebox_beneficiary),
@@ -198,7 +199,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
                 },
             ]
         );
-        type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(
@@ -240,7 +241,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(dancebox_dest),
                 bx!(dancebox_beneficiary),
@@ -266,7 +267,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
                 },
             ]
         );
-        type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(

@@ -57,6 +57,7 @@ impl frame_system::Config for Test {
     type SS58Prefix = ();
     type OnSetCode = ();
     type MaxConsumers = ConstU32<16>;
+    type RuntimeTask = ();
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {

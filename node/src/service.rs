@@ -28,14 +28,12 @@ use {
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
         ParachainConsensus,
     },
+    cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
     cumulus_client_service::prepare_node_config,
     cumulus_primitives_core::{
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair, Hash as PHash},
         ParaId,
-    },
-    cumulus_primitives_parachain_inherent::{
-        MockValidationDataInherentDataProvider, MockXcmConfig,
     },
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{opaque::Block, RuntimeApi},
@@ -673,7 +671,7 @@ fn build_consensus_container(
 
             async move {
                 let parachain_inherent =
-                    cumulus_primitives_parachain_inherent::ParachainInherentData::create_at(
+                    cumulus_client_parachain_inherent::ParachainInherentDataProvider::create_at(
                         relay_parent,
                         &relay_chain_interface,
                         &validation_data,
@@ -816,7 +814,7 @@ fn build_consensus_orchestrator(
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
             async move {
                 let parachain_inherent =
-                    cumulus_primitives_parachain_inherent::ParachainInherentData::create_at(
+                    cumulus_client_parachain_inherent::ParachainInherentDataProvider::create_at(
                         relay_parent,
                         &relay_chain_interface,
                         &validation_data,

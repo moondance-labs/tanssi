@@ -20,11 +20,12 @@ use {
         cli::{Cli, ContainerChainCli, RelayChainCli, Subcommand},
         service::{self, IdentifyVariant, NodeConfig},
     },
-    cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
+    cumulus_client_cli::extract_genesis_wasm,
     cumulus_primitives_core::ParaId,
     dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    node_common::command::generate_genesis_block,
     node_common::service::NodeBuilderConfig as _,
     parity_scale_codec::Encode,
     sc_cli::{
@@ -344,11 +345,11 @@ pub fn run() -> Result<()> {
                 cmd.run(config, polkadot_config)
             })
         }
-        Some(Subcommand::ExportGenesisState(cmd)) => {
+        Some(Subcommand::ExportGenesisHead(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let client = NodeConfig::new_builder(&config, None)?.client;
-                cmd.run(&*config.chain_spec, &*client)
+                cmd.run(client)
             })
         }
         Some(Subcommand::ExportGenesisWasm(params)) => {

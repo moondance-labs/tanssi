@@ -17,6 +17,7 @@ jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
+serde_json = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true }
@@ -84,6 +85,7 @@ cumulus-client-network = { workspace = true }
 cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
+cumulus-client-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }

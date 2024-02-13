@@ -21,10 +21,10 @@ use {
         service::{self, NodeConfig},
     },
     container_chain_template_simple_runtime::Block,
-    cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    node_common::command::generate_genesis_block,
     node_common::service::NodeBuilderConfig as _,
     parity_scale_codec::Encode,
     polkadot_service::IdentifyVariant as _,
@@ -216,11 +216,11 @@ pub fn run() -> Result<()> {
                 cmd.run(config, polkadot_config)
             })
         }
-        Some(Subcommand::ExportGenesisState(cmd)) => {
+        Some(Subcommand::ExportGenesisHead(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let partials = NodeConfig::new_builder(&config, None)?;
-                cmd.run(&*config.chain_spec, &*partials.client)
+                cmd.run(partials.client)
             })
         }
         Some(Subcommand::ExportGenesisWasm(cmd)) => {

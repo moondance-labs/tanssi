@@ -34,7 +34,7 @@ use {
         CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID, NIMBUS_KEY_ID,
     },
     parking_lot::Mutex,
-    sc_block_builder::BlockBuilderProvider,
+    sc_block_builder::BlockBuilderBuilder,
     sc_client_api::{BlockchainEvents, HeaderBackend},
     sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
     sc_consensus_aura::SlotProportion,
@@ -212,7 +212,14 @@ impl Proposer<TestBlock> for DummyProposer {
         _: Duration,
         _: Option<usize>,
     ) -> Self::Proposal {
-        let r = self.1.new_block(digests).unwrap().build();
+        let r = BlockBuilderBuilder::new(&*self.1)
+            .on_parent_block(self.1.chain_info().best_hash)
+            .fetch_parent_block_number(&*self.1)
+            .unwrap()
+            .with_inherent_digests(digests)
+            .build()
+            .unwrap()
+            .build();
 
         futures::future::ready(r.map(|b| Proposal {
             block: b.block,

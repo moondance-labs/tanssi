@@ -17,7 +17,7 @@
 use crate::common::xcm::*;
 
 use {
-    crate::common::xcm::mocknets::{Dancebox, Westend, WestendPallet},
+    crate::common::xcm::mocknets::{Dancebox, Westend, WestendRelayPallet},
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
@@ -57,7 +57,7 @@ fn trapping_asserts_works_with_polkadot_xcm() {
 
     // Send XCM message from Relay Chain
     Westend::execute_with(|| {
-        assert_ok!(<Westend as WestendPallet>::XcmPallet::send(
+        assert_ok!(<Westend as WestendRelayPallet>::XcmPallet::send(
             sudo_origin,
             bx!(dancebox_para_destination),
             bx!(xcm),
