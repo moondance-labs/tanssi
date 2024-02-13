@@ -315,24 +315,24 @@ async fn start_node_impl(
 
     let (mut node_builder, import_queue_service) = node_builder.extract_import_queue_service();
 
-    if validator {
-        start_relay_chain_tasks(StartRelayChainTasksParams {
-            client: node_builder.client.clone(),
-            announce_block: announce_block.clone(),
-            para_id,
-            relay_chain_interface: relay_chain_interface.clone(),
-            task_manager: &mut node_builder.task_manager,
-            da_recovery_profile: if validator {
-                DARecoveryProfile::Collator
-            } else {
-                DARecoveryProfile::FullNode
-            },
-            import_queue: import_queue_service,
-            relay_chain_slot_duration,
-            recovery_handle: Box::new(overseer_handle.clone()),
-            sync_service: node_builder.network.sync_service.clone(),
-        })?;
+    start_relay_chain_tasks(StartRelayChainTasksParams {
+        client: node_builder.client.clone(),
+        announce_block: announce_block.clone(),
+        para_id,
+        relay_chain_interface: relay_chain_interface.clone(),
+        task_manager: &mut node_builder.task_manager,
+        da_recovery_profile: if validator {
+            DARecoveryProfile::Collator
+        } else {
+            DARecoveryProfile::FullNode
+        },
+        import_queue: import_queue_service,
+        relay_chain_slot_duration,
+        recovery_handle: Box::new(overseer_handle.clone()),
+        sync_service: node_builder.network.sync_service.clone(),
+    })?;
 
+    if validator {
         let collator_key = collator_key
             .clone()
             .expect("Command line arguments do not allow this. qed");
@@ -528,24 +528,24 @@ pub async fn start_node_impl_container(
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
     let (mut node_builder, _) = node_builder.extract_import_queue_service();
 
-    if collator {
-        start_relay_chain_tasks(StartRelayChainTasksParams {
-            client: node_builder.client.clone(),
-            announce_block: announce_block.clone(),
-            para_id,
-            relay_chain_interface: relay_chain_interface.clone(),
-            task_manager: &mut node_builder.task_manager,
-            da_recovery_profile: if collator {
-                DARecoveryProfile::Collator
-            } else {
-                DARecoveryProfile::FullNode
-            },
-            import_queue: import_queue_service,
-            relay_chain_slot_duration,
-            recovery_handle: Box::new(overseer_handle.clone()),
-            sync_service: node_builder.network.sync_service.clone(),
-        })?;
+    start_relay_chain_tasks(StartRelayChainTasksParams {
+        client: node_builder.client.clone(),
+        announce_block: announce_block.clone(),
+        para_id,
+        relay_chain_interface: relay_chain_interface.clone(),
+        task_manager: &mut node_builder.task_manager,
+        da_recovery_profile: if collator {
+            DARecoveryProfile::Collator
+        } else {
+            DARecoveryProfile::FullNode
+        },
+        import_queue: import_queue_service,
+        relay_chain_slot_duration,
+        recovery_handle: Box::new(overseer_handle.clone()),
+        sync_service: node_builder.network.sync_service.clone(),
+    })?;
 
+    if collator {
         let collator_key = collator_key
             .clone()
             .expect("Command line arguments do not allow this. qed");
