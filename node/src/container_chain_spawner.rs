@@ -783,8 +783,25 @@ mod tests {
             }
         }
 
-        async fn spawn(&self, container_chain_para_id: ParaId, _start_collation: bool) {
+        async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
             let (signal, _on_exit) = oneshot::channel();
+            let currently_collating_on2 = self.currently_collating_on.clone();
+            let collate_closure = move || async move {
+                let mut cco = currently_collating_on2.lock().unwrap();
+                // TODO: this is also wrong, see comment in test keep_collating_on_container
+                /*
+                assert_ne!(
+                    *cco,
+                    Some(container_chain_para_id),
+                    "Received CollateOn message when we were already collating on this chain: {}",
+                    container_chain_para_id
+                );
+                */
+                *cco = Some(container_chain_para_id);
+            };
+            let collate_on: Arc<
+                dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
+            > = Arc::new(move || Box::pin((collate_closure.clone())()));
 
             let old = self
                 .state
@@ -803,6 +820,10 @@ mod tests {
                 "tried to spawn a container chain that was already running: {}",
                 container_chain_para_id
             );
+
+            if start_collation {
+                collate_on().await;
+            }
         }
 
         fn stop(&self, container_chain_para_id: ParaId) {
