@@ -297,7 +297,7 @@ impl ContainerChainSpawner {
                     sync_keystore.clone(),
                     container_chain_para_id,
                     orchestrator_para_id,
-                    validator,
+                    validator && start_collation,
                 )
                 .await?;
 
