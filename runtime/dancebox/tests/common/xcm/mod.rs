@@ -19,10 +19,11 @@ mod foreign_signed_based_sovereign;
 mod foreign_sovereigns;
 mod mocknets;
 mod token_derivative_reception_container_dancebox;
+mod token_derivative_reception_dancebox_frontier_container;
+mod token_derivative_reception_dancebox_simple_container;
+mod token_derivative_reception_relay_dancebox;
 mod token_derivative_reception_relay_frontier_container;
 mod token_derivative_reception_relay_simple_container;
-
-mod token_derivative_reception_relay_dancebox;
 mod transact;
 mod trap;
 
