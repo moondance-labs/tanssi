@@ -1557,6 +1557,8 @@ mod benches {
         [pallet_xcm, PolkadotXcm]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_relay_storage_roots, RelayStorageRoots]
+        [pallet_assets, ForeignAssets]
+        [pallet_asset_rate, AssetRate]
     );
 }
 

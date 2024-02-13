@@ -752,7 +752,10 @@ mod benches {
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PolkadotXcm]
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+        [pallet_assets, ForeignAssets]
+        [pallet_asset_rate, AssetRate]
     );
 }
 
