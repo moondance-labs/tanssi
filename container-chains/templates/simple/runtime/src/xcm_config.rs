@@ -170,7 +170,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = ();
+    type IsReserve = NativeAssetReserve;
     type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;

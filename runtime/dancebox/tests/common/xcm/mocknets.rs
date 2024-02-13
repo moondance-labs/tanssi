@@ -114,6 +114,9 @@ decl_test_parachains! {
             Balances: container_chain_template_frontier_runtime::Balances,
             ParachainSystem: container_chain_template_frontier_runtime::ParachainSystem,
             PolkadotXcm: container_chain_template_frontier_runtime::PolkadotXcm,
+            ForeignAssets:  container_chain_template_frontier_runtime::ForeignAssets,
+            AssetRate:  container_chain_template_frontier_runtime::AssetRate,
+            ForeignAssetsCreator: container_chain_template_frontier_runtime::ForeignAssetsCreator,
         }
     },
     pub struct SimpleTemplate {
@@ -131,6 +134,9 @@ decl_test_parachains! {
             Balances: container_chain_template_simple_runtime::Balances,
             ParachainSystem: container_chain_template_simple_runtime::ParachainSystem,
             PolkadotXcm: container_chain_template_simple_runtime::PolkadotXcm,
+            ForeignAssets:  container_chain_template_simple_runtime::ForeignAssets,
+            AssetRate:  container_chain_template_simple_runtime::AssetRate,
+            ForeignAssetsCreator: container_chain_template_simple_runtime::ForeignAssetsCreator,
         }
     }
 }
