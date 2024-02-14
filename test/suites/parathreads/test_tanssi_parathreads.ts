@@ -4,7 +4,7 @@ import { ApiPromise, Keyring } from "@polkadot/api";
 import { Signer } from "ethers";
 import fs from "fs/promises";
 import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitSessions, waitToSession } from "../../util/block";
+import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
