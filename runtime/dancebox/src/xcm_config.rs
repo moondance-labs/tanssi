@@ -333,11 +333,12 @@ impl pallet_asset_rate::Config for Runtime {
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
 
-use crate::ForeignAssets;
-use sp_runtime::{traits::CheckedDiv, FixedPointNumber};
-use staging_xcm_builder::FungiblesAdapter;
-use staging_xcm_builder::NoChecking;
-use staging_xcm_executor::traits::JustTry;
+use {
+    crate::ForeignAssets,
+    sp_runtime::{traits::CheckedDiv, FixedPointNumber},
+    staging_xcm_builder::{FungiblesAdapter, NoChecking},
+    staging_xcm_executor::traits::JustTry,
+};
 
 /// Means for transacting foreign assets from different global consensus.
 pub type ForeignFungiblesTransactor = FungiblesAdapter<

@@ -49,9 +49,10 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect},
+            tokens::{PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
-            OnRuntimeUpgrade, ValidatorRegistration,
+            Imbalance, InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
+            OnInitialize, OnRuntimeUpgrade, OnUnbalanced, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -68,6 +69,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::NimbusId,
+    pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
@@ -86,6 +88,7 @@ use {
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Hash as HashT,
+            IdentityLookup,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
@@ -419,6 +422,44 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
+pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
+impl<R> OnUnbalanced<NegativeImbalance<R>> for DealWithFees<R>
+where
+    R: pallet_balances::Config + pallet_treasury::Config,
+    pallet_treasury::Pallet<R>: OnUnbalanced<NegativeImbalance<R>>,
+{
+    // this seems to be called for substrate-based transactions
+    fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item = NegativeImbalance<R>>) {
+        if let Some(fees) = fees_then_tips.next() {
+            // 80% is burned, 20% goes to the treasury
+            // Same policy applies for tips as well
+            let burn_percentage = 80;
+            let treasury_percentage = 20;
+
+            let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
+            // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
+            <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(to_treasury);
+
+            // handle tip if there is one
+            if let Some(tip) = fees_then_tips.next() {
+                let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
+                <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(to_treasury);
+            }
+        }
+    }
+
+    // this is called from pallet_evm for Ethereum-based transactions
+    // (technically, it calls on_unbalanced, which calls this when non-zero)
+    fn on_nonzero_unbalanced(amount: NegativeImbalance<R>) {
+        // 80% is burned, 20% goes to the treasury
+        let burn_percentage = 80;
+        let treasury_percentage = 20;
+
+        let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
+        <pallet_treasury::Pallet<R> as OnUnbalanced<_>>::on_unbalanced(to_treasury);
+    }
+}
+
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
     pub const FeeMultiplier: Multiplier = Multiplier::from_u32(1);
@@ -426,8 +467,8 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // This will burn the fees
-    type OnChargeTransaction = CurrencyAdapter<Balances, ()>;
+    // This will burn 80% from fees & tips and deposit the remainder into the treasury
+    type OnChargeTransaction = CurrencyAdapter<Balances, DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -1394,6 +1435,42 @@ impl pallet_identity::Config for Runtime {
     type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const TreasuryId: PalletId = PalletId(*b"tns/tsry");
+    pub const ProposalBond: Permill = Permill::from_percent(5);
+    pub TreasuryAccount: AccountId = Treasury::account_id();
+}
+
+impl pallet_treasury::Config for Runtime {
+    type PalletId = TreasuryId;
+    type Currency = Balances;
+
+    type ApproveOrigin = EnsureRoot<AccountId>;
+    type RejectOrigin = EnsureRoot<AccountId>;
+    type RuntimeEvent = RuntimeEvent;
+    // If proposal gets rejected, bond goes to treasury
+    type OnSlash = Treasury;
+    type ProposalBond = ProposalBond;
+    type ProposalBondMinimum = ConstU128<{ 1 * currency::DANCE * currency::SUPPLY_FACTOR }>;
+    type SpendPeriod = ConstU32<{ 6 * DAYS }>;
+    type Burn = ();
+    type BurnDestination = ();
+    type MaxApprovals = ConstU32<100>;
+    type WeightInfo = pallet_treasury::weights::SubstrateWeight<Runtime>;
+    type SpendFunds = ();
+    type ProposalBondMaximum = ();
+    type SpendOrigin = frame_support::traits::NeverEnsureOrigin<Balance>; // Same as Polkadot
+    type AssetKind = ();
+    type Beneficiary = AccountId;
+    type BeneficiaryLookup = IdentityLookup<AccountId>;
+    type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
+    // TODO: implement pallet-asset-rate to allow the treasury to spend other assets
+    type BalanceConverter = UnityAssetBalanceConversion;
+    type PayoutPeriod = ConstU32<0>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ();
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1436,6 +1513,9 @@ construct_runtime!(
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
 
+        // Treasury stuff.
+        Treasury: pallet_treasury::{Pallet, Storage, Config<T>, Event<T>, Call} = 40,
+
         //XCM
         XcmpQueue: cumulus_pallet_xcmp_queue::{Pallet, Call, Storage, Event<T>} = 50,
         CumulusXcm: cumulus_pallet_xcm::{Pallet, Event<T>, Origin} = 51,
@@ -1461,6 +1541,7 @@ mod benches {
         [pallet_sudo, Sudo]
         [pallet_proxy, Proxy]
         [pallet_utility, Utility]
+        [pallet_treasury, Treasury]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
         [pallet_identity, Identity]

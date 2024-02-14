@@ -1659,7 +1659,6 @@ dependencies = [
  "pallet-balances",
  "pallet-base-fee",
  "pallet-cc-authorities-noting",
- "pallet-dynamic-fee",
  "pallet-ethereum",
  "pallet-evm",
  "pallet-evm-chain-id",
@@ -2859,6 +2858,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-treasury",
  "pallet-tx-pause",
  "pallet-utility",
  "pallet-xcm",
@@ -3991,6 +3991,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-treasury",
  "pallet-tx-pause",
  "pallet-utility",
  "parachain-info",
@@ -4138,16 +4139,6 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-std",
-]
-
-[[package]]
-name = "fp-dynamic-fee"
-version = "1.0.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-v1.3.0#17b64ada67c9b52eeb32cea33565e456a0f39fbb"
-dependencies = [
- "async-trait",
- "sp-core",
- "sp-inherents",
 ]
 
 [[package]]
@@ -7759,22 +7750,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-dynamic-fee"
-version = "4.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-v1.3.0#17b64ada67c9b52eeb32cea33565e456a0f39fbb"
-dependencies = [
- "fp-dynamic-fee",
- "fp-evm",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-inherents",
  "sp-std",
 ]
 
@@ -14677,6 +14652,7 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
+ "cumulus-test-relay-sproof-builder",
  "fc-rpc",
  "futures 0.3.30",
  "futures-timer",
@@ -14686,8 +14662,10 @@ dependencies = [
  "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "parking_lot 0.12.1",
+ "polkadot-core-primitives",
  "polkadot-node-primitives",
  "polkadot-overseer",
+ "polkadot-parachain-primitives",
  "polkadot-primitives",
  "sc-block-builder",
  "sc-client-api",

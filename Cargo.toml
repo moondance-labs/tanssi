@@ -98,6 +98,7 @@ pallet-staking = { git = "https://github.com/moondance-labs/polkadot-sdk", branc
 pallet-sudo = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-timestamp = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
+pallet-treasury = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-tx-pause = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-utility = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 parity-scale-codec = { version = "3.0.0", default-features = false, features = [ "derive", "max-encoded-len" ] }
@@ -171,6 +172,7 @@ try-runtime-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", bran
 # Polkadot (wasm)
 pallet-xcm = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-xcm-benchmarks = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
+polkadot-core-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 polkadot-node-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 polkadot-parachain-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 polkadot-runtime-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-v1.3.0", default-features = false }
@@ -219,7 +221,6 @@ fp-evm = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-
 fp-rpc = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 fp-self-contained = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-base-fee = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.3.0", default-features = false }
-pallet-dynamic-fee = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-ethereum = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-evm = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.3.0", default-features = false }
 pallet-evm-chain-id = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-v1.3.0", default-features = false }

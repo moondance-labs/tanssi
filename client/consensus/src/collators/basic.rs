@@ -17,7 +17,6 @@
 use cumulus_client_collator::{
     relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
 };
-use cumulus_client_consensus_common::ParachainBlockImportMarker;
 use cumulus_client_consensus_proposer::ProposerInterface;
 use cumulus_primitives_core::{
     relay_chain::{BlockId as RBlockId, Hash as PHash},
@@ -89,7 +88,7 @@ where
         + 'static
         + Clone,
     CIDP::InherentDataProviders: Send + InherentDataProviderExt,
-    BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
+    BI: BlockImport<Block> + Send + Sync + 'static,
     SO: SyncOracle + Send + Sync + Clone + 'static,
     Proposer: ProposerInterface<Block> + Send + Sync + 'static,
     CS: CollatorServiceInterface<Block> + Send + Sync + 'static,
