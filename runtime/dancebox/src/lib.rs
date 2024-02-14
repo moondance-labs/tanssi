@@ -207,6 +207,8 @@ pub mod opaque {
     pub type BlockId = generic::BlockId<Block>;
     /// Opaque block hash type.
     pub type Hash = <BlakeTwo256 as HashT>::Output;
+    /// Opaque signature type.
+    pub use super::Signature;
 }
 
 impl_opaque_keys! {
@@ -1910,6 +1912,22 @@ impl_runtime_apis! {
 
             bounded_vec.into_iter().map(|x| x.into()).collect()
         }
+    }
+
+    impl pallet_registrar_runtime_api::OnDemandBlockProductionApi<Block, ParaId, Slot> for Runtime {
+        /// Return the minimum number of slots that must pass between to blocks before parathread collators can propose
+        /// the next block.
+        ///
+        /// # Returns
+        ///
+        /// * `Some(min)`, where the condition for the slot to be valid is `(slot - parent_slot) >= min`.
+        /// * `None` if the `para_id` is not a parathread.
+        fn min_slot_freq(para_id: ParaId) -> Option<Slot> {
+            Registrar::parathread_params(para_id).map(|params| {
+                Slot::from(u64::from(params.slot_frequency.min))
+            })
+        }
+
     }
 
     impl pallet_author_noting_runtime_api::AuthorNotingApi<Block, AccountId, BlockNumber, ParaId> for Runtime

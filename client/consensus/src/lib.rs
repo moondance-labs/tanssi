@@ -28,6 +28,7 @@ mod manual_seal;
 #[cfg(test)]
 mod tests;
 
+pub use crate::consensus_orchestrator::OrchestratorAuraWorkerAuxData;
 pub use sc_consensus_aura::CompatibilityMode;
 
 pub use {
@@ -36,7 +37,9 @@ pub use {
         get_aura_id_from_seed, ContainerManualSealAuraConsensusDataProvider,
         OrchestratorManualSealAuraConsensusDataProvider,
     },
+    pallet_registrar_runtime_api::OnDemandBlockProductionApi,
     parity_scale_codec::{Decode, Encode},
+    sc_consensus_aura::find_pre_digest,
     sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
     sc_consensus_slots::InherentDataProviderExt,
     sp_api::{Core, ProvideRuntimeApi},
@@ -101,6 +104,29 @@ where
         authorities
     );
     authorities
+}
+
+/// Return the set of authorities assigned to the paraId where
+/// the first eligible key from the keystore is collating
+pub fn min_slot_freq<B, C, P>(client: &C, parent_hash: &B::Hash, para_id: ParaId) -> Option<Slot>
+where
+    P: Pair + Send + Sync + 'static,
+    P::Public: AppPublic + Hash + Member + Encode + Decode,
+    P::Signature: TryFrom<Vec<u8>> + Hash + Member + Encode + Decode,
+    B: BlockT,
+    C: ProvideRuntimeApi<B>,
+    C::Api: OnDemandBlockProductionApi<B, ParaId, Slot>,
+    AuthorityId<P>: From<<NimbusPair as sp_application_crypto::Pair>::Public>,
+{
+    let runtime_api = client.runtime_api();
+
+    let min_slot_freq = runtime_api.min_slot_freq(*parent_hash, para_id).ok()?;
+    log::debug!(
+        "min_slot_freq for para {:?} is {:?}",
+        para_id,
+        min_slot_freq
+    );
+    min_slot_freq
 }
 
 use nimbus_primitives::{NimbusId, NimbusPair, NIMBUS_KEY_ID};
