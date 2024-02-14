@@ -24,7 +24,7 @@ use {
             CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
             MigrateInvulnerables, MigrateServicesPaymentAddCredits,
         },
-        RewardsCollatorCommission,
+        RewardsCollatorCommission, StreamPayment, StreamPaymentAssetId, TimeUnit,
     },
     dp_core::well_known_keys,
     frame_support::{assert_noop, assert_ok, BoundedVec},
@@ -5278,6 +5278,76 @@ fn test_credits_with_purchase_can_be_combined() {
             assert_eq!(
                 assignment.container_chains[&1001u32.into()],
                 vec![CHARLIE.into(), DAVE.into()]
+            );
+        });
+}
+
+#[test]
+fn stream_payment_works() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .with_config(default_config())
+        .build()
+        .execute_with(|| {
+            use pallet_stream_payment::{ChangeKind, StreamConfig};
+
+            assert_ok!(StreamPayment::open_stream(
+                origin_of(ALICE.into()),
+                BOB.into(),
+                StreamConfig {
+                    rate: 2 * UNIT,
+                    asset_id: StreamPaymentAssetId::Native,
+                    time_unit: TimeUnit::BlockNumber,
+                },
+                1_000 * UNIT,
+            ));
+
+            run_block();
+
+            assert_ok!(StreamPayment::perform_payment(origin_of(CHARLIE.into()), 0));
+            assert_eq!(
+                Balances::free_balance(AccountId::from(BOB)),
+                100_000 * UNIT + 2 * UNIT
+            );
+
+            assert_ok!(StreamPayment::request_change(
+                origin_of(ALICE.into()),
+                0,
+                ChangeKind::Suggestion,
+                StreamConfig {
+                    rate: 1 * UNIT,
+                    asset_id: StreamPaymentAssetId::Native,
+                    time_unit: TimeUnit::BlockNumber,
+                },
+                None,
+            ));
+
+            assert_ok!(StreamPayment::accept_requested_change(
+                origin_of(BOB.into()),
+                0,
+                1, // nonce
+                None,
+            ));
+
+            run_block();
+
+            assert_ok!(StreamPayment::close_stream(origin_of(BOB.into()), 0));
+
+            assert_eq!(
+                Balances::free_balance(AccountId::from(BOB)),
+                100_000 * UNIT + 3 * UNIT
+            );
+            assert_eq!(
+                Balances::free_balance(AccountId::from(ALICE)),
+                100_000 * UNIT - 3 * UNIT
             );
         });
 }
