@@ -60,7 +60,7 @@ use {
     },
     sc_consensus::BlockImport,
     sc_consensus::{BasicQueue, ImportQueue},
-    sc_executor::NativeElseWasmExecutor,
+    sc_executor::{NativeElseWasmExecutor, WasmExecutor},
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager},
@@ -98,18 +98,31 @@ pub struct NodeConfig;
 impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
-    type ParachainNativeExecutor = ParachainNativeExecutor;
+    type ParachainExecutor = ParachainExecutor;
 }
 
+pub struct ContainerChainNodeConfig;
+impl NodeBuilderConfig for ContainerChainNodeConfig {
+    type Block = Block;
+    // TODO: RuntimeApi here should be the subset of runtime apis available for all containers
+    // Currently we are using the orchestrator runtime apis
+    type RuntimeApi = RuntimeApi;
+    type ParachainExecutor = ContainerChainExecutor;
+}
+
+// Orchestrator chain types
 type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
-
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
-
 pub type ParachainBackend = TFullBackend<Block>;
-
 type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
-
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
+
+// Container chains types
+type ContainerChainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
+pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
+pub type ContainerChainBackend = ParachainBackend;
+type ContainerChainBlockImport =
+    TParachainBlockImport<Block, Arc<ContainerChainClient>, ContainerChainBackend>;
 
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
 
@@ -221,6 +234,33 @@ pub fn import_queue(
     // in the runtime
     let block_import =
         ParachainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
+
+    let import_queue = nimbus_consensus::import_queue(
+        node_builder.client.clone(),
+        block_import.clone(),
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
+
+            Ok((time,))
+        },
+        &node_builder.task_manager.spawn_essential_handle(),
+        parachain_config.prometheus_registry(),
+        false,
+    )
+    .expect("function never fails");
+
+    (block_import, import_queue)
+}
+
+pub fn container_chain_import_queue(
+    parachain_config: &Configuration,
+    node_builder: &NodeBuilder<ContainerChainNodeConfig>,
+) -> (ContainerChainBlockImport, BasicQueue<Block>) {
+    // The nimbus import queue ONLY checks the signature correctness
+    // Any other checks corresponding to the author-correctness should be done
+    // in the runtime
+    let block_import =
+        ContainerChainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
 
     let import_queue = nimbus_consensus::import_queue(
         node_builder.client.clone(),
@@ -468,16 +508,17 @@ pub async fn start_node_impl_container(
     collator: bool,
 ) -> sc_service::error::Result<(
     TaskManager,
-    Arc<ParachainClient>,
+    Arc<ContainerChainClient>,
     Arc<ParachainBackend>,
     Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
 )> {
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder = NodeConfig::new_builder(&parachain_config, None)?;
+    let node_builder = ContainerChainNodeConfig::new_builder(&parachain_config, None)?;
 
-    let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
+    let (block_import, import_queue) =
+        container_chain_import_queue(&parachain_config, &node_builder);
     let import_queue_service = import_queue.service();
 
     log::info!("are we collators? {:?}", collator);
@@ -619,15 +660,15 @@ fn build_manual_seal_import_queue(
 // TODO: this function does not need to be async
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
 async fn start_consensus_container(
-    client: Arc<ParachainClient>,
+    client: Arc<ContainerChainClient>,
     orchestrator_client: Arc<ParachainClient>,
-    block_import: ParachainBlockImport,
+    block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
-    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
+    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
     force_authoring: bool,
