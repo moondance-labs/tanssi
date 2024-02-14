@@ -93,7 +93,6 @@ staging-xcm-builder = { workspace = true }
 staging-xcm-executor = { workspace = true }
 
 # Cumulus
-emulated-integration-tests-common = { workspace = true }
 cumulus-pallet-dmp-queue = { workspace = true }
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
@@ -116,8 +115,8 @@ container-chain-template-frontier-runtime  = { workspace = true, features = [ "s
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
+emulated-integration-tests-common = { workspace = true }
 pallet-im-online = { workspace = true, features = [ "std" ] }
-pallet-message-queue = { workspace = true }
 pallet-staking = { workspace = true, features = [ "std" ] }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
 polkadot-service = { workspace = true }
