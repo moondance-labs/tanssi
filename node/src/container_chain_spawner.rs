@@ -116,6 +116,7 @@ pub enum CcSpawnMsg {
 
 impl ContainerChainSpawner {
     /// Try to start a new container chain. In case of error, this panics and stops the node.
+    #[must_use]
     fn spawn(
         &self,
         container_chain_para_id: ParaId,
@@ -463,7 +464,7 @@ impl ContainerChainSpawner {
             // Edge case: when starting the node it may be assigned to a container chain, so we need to
             // start a container chain already collating.
             let start_collation = Some(para_id) == current;
-            self.spawn(para_id, start_collation);
+            self.spawn(para_id, start_collation).await;
         }
     }
 }
