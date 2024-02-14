@@ -35,9 +35,9 @@ frame-executive = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
-pallet-balances = { workspace = true }
-pallet-assets = { workspace = true }
 pallet-asset-rate = { workspace = true }
+pallet-assets = { workspace = true }
+pallet-balances = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
@@ -111,8 +111,8 @@ std = [
 	"frame-try-runtime/std",
 	"log/std",
 	"nimbus-primitives/std",
-	"pallet-assets/std",
 	"pallet-asset-rate/std",
+	"pallet-assets/std",
 	"pallet-async-backing/std",
 	"pallet-author-inherent/std",
 	"pallet-balances/std",
@@ -174,9 +174,9 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"hex-literal",
 	"nimbus-primitives/runtime-benchmarks",
-	"pallet-author-inherent/runtime-benchmarks",
-	"pallet-assets/runtime-benchmarks",
 	"pallet-asset-rate/runtime-benchmarks",
+	"pallet-assets/runtime-benchmarks",
+	"pallet-author-inherent/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-cc-authorities-noting/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
@@ -209,8 +209,8 @@ try-runtime = [
 	"frame-try-runtime",
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
-	"pallet-assets/try-runtime",
 	"pallet-asset-rate/try-runtime",
+	"pallet-assets/try-runtime",
 	"pallet-author-inherent/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-cc-authorities-noting/try-runtime",
