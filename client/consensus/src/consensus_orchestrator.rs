@@ -21,6 +21,7 @@
 //! the ParachainConsensus trait to access the orchestrator-dicated authorities, and further
 //! it implements the TanssiWorker to TanssiOnSlot trait. This trait is
 use {
+    crate::{AuthorityId, Pair, Slot},
     sc_consensus_slots::{SimpleSlotWorker, SlotInfo, SlotResult},
     sp_consensus::Proposer,
     sp_runtime::traits::Block as BlockT,
@@ -58,6 +59,14 @@ where
     ) -> Result<A, Box<dyn std::error::Error + Send + Sync>> {
         (*self)(parent, extra_args).await
     }
+}
+
+pub struct OrchestratorAuraWorkerAuxData<P>
+where
+    P: Pair + Send + Sync + 'static,
+{
+    pub authorities: Vec<AuthorityId<P>>,
+    pub min_slot_freq: Option<Slot>,
 }
 
 #[async_trait::async_trait]
