@@ -16,6 +16,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use std::marker::PhantomData;
+
 #[doc(hidden)]
 pub mod deps {
     pub use {
@@ -24,82 +26,83 @@ pub mod deps {
     };
 }
 
+mod private {
+    pub trait Sealed {}
+}
+
 pub trait Config {
+    type Macro: crate::private::Sealed;
     const SLOT_DURATION: u64;
     type TimestampWeights: pallet_timestamp::weights::WeightInfo;
     type AuthorInherentWeights: pallet_author_inherent::weights::WeightInfo;
     type AuthoritiesNotingWeights: pallet_cc_authorities_noting::weights::WeightInfo;
 }
 
+pub struct MacroLol<const N: usize>(PhantomData<[u8; N]>);
+impl<const N: usize> private::Sealed for MacroLol<N> {}
+
 #[macro_export]
 macro_rules! impl_tanssi_pallets_config {
     (
         $runtime:ident
     ) => {
-        // `const _:() = { ... }` allows to import and define types that will not leak into the macro
-        // call site.
-        const _: () = {
-            use $crate::deps::*;
+        // TODO: $runtime arg shouldn't be needed but the compiler doesn't approve using `Self` here
+        // type __Runtime = Self;
+        $crate::MacroLol<{
+            // `const _:() = { ... }` allows to import and define types that will not leak into the macro
+            // call site.
+            const _: () = {
+                use $crate::deps::*;
 
-            impl pallet_author_inherent::Config for $runtime {
-                type AuthorId = NimbusId;
-                type AccountLookup = tp_consensus::NimbusLookUp;
-                type CanAuthor = pallet_cc_authorities_noting::CanAuthor<$runtime>;
-                type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<$runtime>;
-                type WeightInfo = <$runtime as $crate::Config>::AuthorInherentWeights;
+                impl pallet_author_inherent::Config for $runtime {
+                    type AuthorId = NimbusId;
+                    type AccountLookup = tp_consensus::NimbusLookUp;
+                    type CanAuthor = pallet_cc_authorities_noting::CanAuthor<$runtime>;
+                    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<$runtime>;
+                    type WeightInfo = <$runtime as $crate::Config>::AuthorInherentWeights;
+                }
+
+                impl pallet_timestamp::Config for $runtime {
+                    /// A timestamp: milliseconds since the unix epoch.
+                    type Moment = u64;
+                    type OnTimestampSet = tp_consensus::OnTimestampSet<
+                        <Self as pallet_author_inherent::Config>::SlotBeacon,
+                        ConstU64<{ <$runtime as $crate::Config>::SLOT_DURATION }>,
+                    >;
+                    type MinimumPeriod = ConstU64<{ <$runtime as $crate::Config>::SLOT_DURATION / 2 }>;
+                    type WeightInfo = <$runtime as $crate::Config>::TimestampWeights;
+                }
+
+                impl pallet_cc_authorities_noting::Config for $runtime {
+                    type RuntimeEvent = RuntimeEvent;
+                    type SelfParaId = parachain_info::Pallet<$runtime>;
+                    type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+                    type AuthorityId = NimbusId;
+                    type WeightInfo = <$runtime as $crate::Config>::AuthoritiesNotingWeights;
+
+                    #[cfg(feature = "runtime-benchmarks")]
+                    type BenchmarkHelper = pallet_cc_authorities_noting::benchmarks::NimbusIdBenchmarkHelper;
+                }
+            };
+
+            #[test]
+            fn __impl_tanssi_pallets_config_tests() {
+                use $crate::deps::{frame_support::traits::PalletInfo, impls};
+
+                let runtime_name = stringify!($runtime);
+
+                fn is_pallet_installed<P: 'static>() -> bool {
+                    <$runtime as frame_system::Config>::PalletInfo::index::<P>().is_some()
+                }
+
+                assert!(impls!($runtime: $crate::Config), "{runtime_name} must impl tp_impl_tanssi_pallets_config::Config");
+                assert!(is_pallet_installed::<pallet_author_inherent::Pallet::<$runtime>>(), "pallet_author_inherent is not installed in {runtime_name}");
+                assert!(is_pallet_installed::<pallet_cc_authorities_noting::Pallet::<$runtime>>(), "pallet_cc_authorities_noting is not installed in {runtime_name}");
+                assert!(is_pallet_installed::<pallet_timestamp::Pallet::<$runtime>>(), "pallet_timestamp is not installed in {runtime_name}");
             }
 
-            impl pallet_timestamp::Config for $runtime {
-                /// A timestamp: milliseconds since the unix epoch.
-                type Moment = u64;
-                type OnTimestampSet = tp_consensus::OnTimestampSet<
-                    <Self as pallet_author_inherent::Config>::SlotBeacon,
-                    ConstU64<{ <$runtime as $crate::Config>::SLOT_DURATION }>,
-                >;
-                type MinimumPeriod = ConstU64<{ <$runtime as $crate::Config>::SLOT_DURATION / 2 }>;
-                type WeightInfo = <$runtime as $crate::Config>::TimestampWeights;
-            }
-
-            impl pallet_cc_authorities_noting::Config for $runtime {
-                type RuntimeEvent = RuntimeEvent;
-                type SelfParaId = parachain_info::Pallet<$runtime>;
-                type RelayChainStateProvider =
-                    cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-                type AuthorityId = NimbusId;
-                type WeightInfo = <$runtime as $crate::Config>::AuthoritiesNotingWeights;
-
-                #[cfg(feature = "runtime-benchmarks")]
-                type BenchmarkHelper =
-                    pallet_cc_authorities_noting::benchmarks::NimbusIdBenchmarkHelper;
-            }
-        };
-
-        #[test]
-        fn __impl_tanssi_pallets_config_tests() {
-            use $crate::deps::{frame_support::traits::PalletInfo, impls};
-
-            let runtime_name = stringify!($runtime);
-
-            fn is_pallet_installed<P: 'static>() -> bool {
-                <$runtime as frame_system::Config>::PalletInfo::index::<P>().is_some()
-            }
-
-            assert!(
-                impls!($runtime: $crate::Config),
-                "{runtime_name} must impl tp_impl_tanssi_pallets_config::Config"
-            );
-            assert!(
-                is_pallet_installed::<pallet_author_inherent::Pallet::<$runtime>>(),
-                "pallet_author_inherent is not installed in {runtime_name}"
-            );
-            assert!(
-                is_pallet_installed::<pallet_cc_authorities_noting::Pallet::<$runtime>>(),
-                "pallet_cc_authorities_noting is not installed in {runtime_name}"
-            );
-            assert!(
-                is_pallet_installed::<pallet_timestamp::Pallet::<$runtime>>(),
-                "pallet_timestamp is not installed in {runtime_name}"
-            );
-        }
+            // Need to return something for `MacroLol`, we could make this an additional test and fail if not 0
+            0
+        }>
     };
 }

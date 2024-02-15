@@ -890,13 +890,12 @@ impl pallet_tx_pause::Config for Runtime {
 }
 
 impl tp_impl_tanssi_pallets_config::Config for Runtime {
+    type Macro = impl_tanssi_pallets_config!(Runtime);
     const SLOT_DURATION: u64 = SLOT_DURATION;
     type TimestampWeights = pallet_timestamp::weights::SubstrateWeight<Runtime>;
     type AuthorInherentWeights = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
     type AuthoritiesNotingWeights = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
 }
-
-impl_tanssi_pallets_config!(Runtime);
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
