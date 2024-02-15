@@ -218,11 +218,12 @@ pub mod frontier_template {
 
     pub fn genesis() -> sp_core::storage::Storage {
         let genesis_config = container_chain_template_frontier_runtime::RuntimeGenesisConfig {
+            system: Default::default(),
             balances: container_chain_template_frontier_runtime::BalancesConfig {
                 balances: pre_funded_accounts()
                     .iter()
                     .cloned()
-                    .map(|k| (k, 1 << 80))
+                    .map(|k| (k, 1u128 << 60))
                     .collect(),
             },
             parachain_info: container_chain_template_frontier_runtime::ParachainInfoConfig {
@@ -247,12 +248,14 @@ pub mod frontier_template {
             ..Default::default()
         };
 
+        let json = serde_json::to_value(&genesis_config).unwrap();
+
         ChainSpec::builder(
             container_chain_template_frontier_runtime::WASM_BINARY
                 .expect("WASM binary was not build, please build it!"),
             None,
         )
-        .with_genesis_config(serde_json::to_value(&genesis_config).unwrap())
+        .with_genesis_config(json)
         .build()
         .build_storage()
         .unwrap()

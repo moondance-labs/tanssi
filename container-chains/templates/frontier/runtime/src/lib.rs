@@ -42,6 +42,7 @@ use {
     frame_support::{
         construct_runtime,
         dispatch::{DispatchClass, GetDispatchInfo},
+        genesis_builder_helper::{build_config, create_default_config},
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
@@ -1055,6 +1056,16 @@ impl_runtime_apis! {
             ParachainSystem::collect_collation_info(header)
         }
     }
+
+    impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+		fn create_default_config() -> Vec<u8> {
+			create_default_config::<RuntimeGenesisConfig>()
+		}
+
+		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+			build_config::<RuntimeGenesisConfig>(config)
+		}
+	}
 
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
