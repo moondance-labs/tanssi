@@ -14659,6 +14659,7 @@ dependencies = [
  "log",
  "nimbus-consensus",
  "nimbus-primitives",
+ "pallet-registrar-runtime-api",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "polkadot-core-primitives",
