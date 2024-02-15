@@ -865,9 +865,9 @@ declare module "@polkadot/api-base/types/submittable" {
             setRefundAddress: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    refundAddress: AccountId32 | string | Uint8Array
+                    refundAddress: Option<AccountId32> | null | Uint8Array | AccountId32 | string
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, AccountId32]
+                [u32, Option<AccountId32>]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

@@ -135,7 +135,7 @@ mod benchmarks {
         assert!(crate::RefundAddress::<T>::get(&para_id).is_none());
 
         #[extrinsic_call]
-        Pallet::<T>::set_refund_address(origin as T::RuntimeOrigin, para_id, refund_address);
+        Pallet::<T>::set_refund_address(origin as T::RuntimeOrigin, para_id, Some(refund_address));
 
         // After call: given free credits
         assert!(crate::RefundAddress::<T>::get(&para_id).is_some());

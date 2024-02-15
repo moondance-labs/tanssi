@@ -116,7 +116,7 @@ pub mod pallet {
         },
         RefundAddressUpdated {
             para_id: ParaId,
-            refund_address: T::AccountId,
+            refund_address: Option<T::AccountId>,
         },
     }
 
@@ -214,11 +214,15 @@ pub mod pallet {
         pub fn set_refund_address(
             origin: OriginFor<T>,
             para_id: ParaId,
-            refund_address: T::AccountId,
+            refund_address: Option<T::AccountId>,
         ) -> DispatchResultWithPostInfo {
             T::SetRefundAddressOrigin::ensure_origin(origin, &para_id)?;
 
-            RefundAddress::<T>::insert(para_id, refund_address.clone());
+            if let Some(refund_address) = refund_address.clone() {
+                RefundAddress::<T>::insert(para_id, refund_address.clone());
+            } else {
+                RefundAddress::<T>::remove(para_id);
+            }
 
             Self::deposit_event(Event::<T>::RefundAddressUpdated {
                 para_id,

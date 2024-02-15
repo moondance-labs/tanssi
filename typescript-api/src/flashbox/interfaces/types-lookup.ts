@@ -725,7 +725,7 @@ declare module "@polkadot/types/lookup" {
         readonly isRefundAddressUpdated: boolean;
         readonly asRefundAddressUpdated: {
             readonly paraId: u32;
-            readonly refundAddress: AccountId32;
+            readonly refundAddress: Option<AccountId32>;
         } & Struct;
         readonly type: "CreditsPurchased" | "CreditBurned" | "CreditsSet" | "RefundAddressUpdated";
     }
@@ -1624,7 +1624,7 @@ declare module "@polkadot/types/lookup" {
         readonly isSetRefundAddress: boolean;
         readonly asSetRefundAddress: {
             readonly paraId: u32;
-            readonly refundAddress: AccountId32;
+            readonly refundAddress: Option<AccountId32>;
         } & Struct;
         readonly type: "PurchaseCredits" | "SetCredits" | "SetGivenFreeCredits" | "SetRefundAddress";
     }

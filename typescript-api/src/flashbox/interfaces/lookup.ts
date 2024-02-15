@@ -490,7 +490,7 @@ export default {
             },
             RefundAddressUpdated: {
                 paraId: "u32",
-                refundAddress: "AccountId32",
+                refundAddress: "Option<AccountId32>",
             },
         },
     },
@@ -1254,7 +1254,7 @@ export default {
             },
             set_refund_address: {
                 paraId: "u32",
-                refundAddress: "AccountId32",
+                refundAddress: "Option<AccountId32>",
             },
         },
     },

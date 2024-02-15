@@ -945,8 +945,8 @@ declare module "@polkadot/api-base/types/events" {
             CreditsSet: AugmentedEvent<ApiType, [paraId: u32, credits: u32], { paraId: u32; credits: u32 }>;
             RefundAddressUpdated: AugmentedEvent<
                 ApiType,
-                [paraId: u32, refundAddress: AccountId32],
-                { paraId: u32; refundAddress: AccountId32 }
+                [paraId: u32, refundAddress: Option<AccountId32>],
+                { paraId: u32; refundAddress: Option<AccountId32> }
             >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
