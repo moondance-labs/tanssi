@@ -116,11 +116,11 @@ container-chain-template-simple-runtime  = { workspace = true, features = [ "std
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
-pallet-im-online = { workspace = true, features = [ "std" ] }
 pallet-staking = { workspace = true, features = [ "std" ] }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
 polkadot-service = { workspace = true }
 sc-consensus-grandpa = { workspace = true }
+sc-service = { workspace = true }
 sp-consensus-babe = { workspace = true, features = [ "std" ] }
 sp-consensus-beefy = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true }
@@ -128,6 +128,7 @@ test-relay-sproof-builder = { workspace = true }
 westend-runtime = { workspace = true, features = [ "std" ] }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
+serde_json = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
@@ -174,7 +175,6 @@ std = [
 	"pallet-data-preservers/std",
 	"pallet-foreign-asset-creator/std",
 	"pallet-identity/std",
-	"pallet-im-online/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
@@ -264,7 +264,6 @@ runtime-benchmarks = [
 	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
-	"pallet-im-online/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
@@ -322,7 +321,6 @@ try-runtime = [
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-identity/try-runtime",
-	"pallet-im-online/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",

@@ -18,21 +18,16 @@ use crate::common::xcm::*;
 
 use {
     crate::common::xcm::mocknets::{
-        Dancebox, FrontierTemplate, FrontierTemplateParaPallet, SimpleTemplate,
-        SimpleTemplateParaPallet, Westend, WestendRelayPallet,
+        DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate,
+        FrontierTemplateParaPallet, SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet,
+        WestendRelay as Westend, WestendRelayPallet,
     },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
     parity_scale_codec::Encode,
-    staging_xcm::{
-        latest::{
-            prelude::*,
-            Error::{BadOrigin, Barrier},
-        },
-        VersionedMultiLocation, VersionedXcm,
-    },
+    staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::Chain,
@@ -90,15 +85,7 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
 
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            Dancebox,
-            vec![
-                RuntimeEvent::DmpQueue(cumulus_pallet_dmp_queue::Event::ExecutedDownward { outcome, .. }) => {
-                    outcome: *outcome == Outcome::Error(Barrier),
-                },
-            ]
-        );
+        Dancebox::assert_dmp_queue_error();
     });
 }
 
@@ -163,18 +150,7 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
 
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            Dancebox,
-            vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome: Outcome::Incomplete(_w, error), ..
-                    }) => {
-                    error: *error == BadOrigin,
-                },
-            ]
-        );
+        Dancebox::assert_dmp_queue_incomplete(None);
     });
 }
 

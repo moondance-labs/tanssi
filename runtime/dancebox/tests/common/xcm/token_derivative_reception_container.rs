@@ -17,8 +17,8 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxParaPallet, DanceboxReceiver, SimpleTemplate,
-            SimpleTemplateParaPallet, SimpleTemplateSender,
+            DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxReceiver,
+            SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet, SimpleTemplateSender,
         },
         *,
     },
@@ -110,16 +110,17 @@ fn receive_tokens_from_the_container_to_tanssi() {
         assert_expected_events!(
             Dancebox,
             vec![
-                RuntimeEvent::XcmpQueue(
-                cumulus_pallet_xcmp_queue::Event::Success {
-                    weight,
-                    ..
-                }) => {
-                    weight: {
-                        outcome_weight = *weight;
-                        weight.all_gte(Weight::from_parts(0, 0))
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: true,
+                        weight_used,
+                        ..
+                    }) => {
+                        weight_used: {
+                            outcome_weight = *weight_used;
+                            weight_used.all_gte(Weight::from_parts(0,0))
+                        },
                     },
-                },
             ]
         );
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;

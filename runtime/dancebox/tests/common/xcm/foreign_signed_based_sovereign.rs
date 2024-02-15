@@ -17,9 +17,9 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxEmptyReceiver, DanceboxParaPallet, DanceboxSender,
-            EthereumEmptyReceiver, EthereumSender, FrontierTemplate, FrontierTemplateParaPallet,
-            Westend, WestendRelayPallet, WestendSender,
+            DanceboxEmptyReceiver, DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender,
+            EthereumEmptyReceiver, EthereumSender, FrontierTemplatePara as FrontierTemplate,
+            FrontierTemplateParaPallet, WestendRelay as Westend, WestendRelayPallet, WestendSender,
         },
         *,
     },
@@ -107,18 +107,7 @@ fn using_signed_based_sovereign_works_in_tanssi() {
 
     // Send XCM message from Dancebox
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            Dancebox,
-            vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
-                    }) => {
-                    outcome: outcome.clone().ensure_complete().is_ok(),
-                },
-            ]
-        );
+        Dancebox::assert_dmp_queue_complete(None);
         // Assert empty receiver received funds
         assert!(
             <Dancebox as DanceboxParaPallet>::System::account(DanceboxEmptyReceiver::get())
@@ -226,16 +215,7 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
     });
 
     FrontierTemplate::execute_with(|| {
-        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            FrontierTemplate,
-            vec![
-                RuntimeEvent::XcmpQueue(
-                cumulus_pallet_xcmp_queue::Event::Success {
-                    ..
-                }) => {},
-            ]
-        );
+        FrontierTemplate::assert_xcmp_queue_success(None);
         // Assert empty receiver received funds
         assert!(
             <FrontierTemplate as FrontierTemplateParaPallet>::System::account(

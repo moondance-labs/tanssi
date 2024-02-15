@@ -98,7 +98,6 @@ frame-try-runtime = { workspace = true, optional = true }
 [dev-dependencies]
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
-pallet-im-online = { workspace = true, features = [ "std" ] }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
 sc-consensus-grandpa = { workspace = true }
 sp-consensus-babe = { workspace = true, features = [ "std" ] }
@@ -143,7 +142,6 @@ std = [
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
 	"pallet-identity/std",
-	"pallet-im-online/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
@@ -215,7 +213,6 @@ runtime-benchmarks = [
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
-	"pallet-im-online/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
@@ -251,7 +248,6 @@ try-runtime = [
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
 	"pallet-identity/try-runtime",
-	"pallet-im-online/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",

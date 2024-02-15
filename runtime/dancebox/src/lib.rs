@@ -39,7 +39,7 @@ use sp_runtime::TryRuntimeError;
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
-        relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
+        relay_chain::{self, SessionIndex},
         AggregateMessageOrigin, BodyId, ParaId,
     },
     frame_support::{
@@ -50,8 +50,7 @@ use {
         traits::{
             fungible::{Balanced, Credit},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle, OnInitialize,
-            OnRuntimeUpgrade, ValidatorRegistration,
+            InsideBoth, InstanceFilter, ValidatorRegistration,
         },
         weights::{
             constants::{

@@ -20,14 +20,10 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{Invulnerables, ParaId, Runtime, RuntimeOrigin, ServicesPayment, LOG_TARGET},
+    crate::{ParaId, Runtime, ServicesPayment, LOG_TARGET},
     frame_support::{
-        migration::storage_key_iter,
-        pallet_prelude::ValueQuery,
-        storage::types::{StorageMap, StorageValue},
-        traits::OnRuntimeUpgrade,
-        weights::Weight,
-        Blake2_128Concat,
+        migration::storage_key_iter, pallet_prelude::ValueQuery, storage::types::StorageMap,
+        traits::OnRuntimeUpgrade, weights::Weight, Blake2_128Concat,
     },
     pallet_balances::IdAmount,
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},

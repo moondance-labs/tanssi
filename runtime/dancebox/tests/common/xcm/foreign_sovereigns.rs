@@ -17,9 +17,9 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxParaPallet, EthereumEmptyReceiver, EthereumSender, FrontierTemplate,
-            FrontierTemplateParaPallet, Westend, WestendEmptyReceiver, WestendRelayPallet,
-            WestendSender,
+            DanceboxPara as Dancebox, DanceboxParaPallet, EthereumEmptyReceiver, EthereumSender,
+            FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
+            WestendEmptyReceiver, WestendRelay as Westend, WestendRelayPallet, WestendSender,
         },
         *,
     },
@@ -223,16 +223,7 @@ fn using_sovereign_works_from_tanssi_frontier_template() {
     });
 
     FrontierTemplate::execute_with(|| {
-        type RuntimeEvent = <FrontierTemplate as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            FrontierTemplate,
-            vec![
-                RuntimeEvent::XcmpQueue(
-                cumulus_pallet_xcmp_queue::Event::Success {
-                    ..
-                }) => {},
-            ]
-        );
+        FrontierTemplate::assert_xcmp_queue_success(None);
         // Assert empty receiver received funds
         assert!(
             <FrontierTemplate as FrontierTemplateParaPallet>::System::account(

@@ -17,8 +17,8 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxParaPallet, DanceboxReceiver, Westend, WestendRelayPallet,
-            WestendSender,
+            DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxReceiver,
+            WestendRelay as Westend, WestendRelayPallet, WestendSender,
         },
         *,
     },
@@ -100,15 +100,17 @@ fn receive_tokens_from_the_relay_to_tanssi() {
         assert_expected_events!(
             Dancebox,
             vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: true,
+                        weight_used,
+                        ..
                     }) => {
-                    outcome: {
-                        outcome_weight = outcome.clone().weight_used();
-                        outcome.clone().ensure_complete().is_ok()
+                        weight_used: {
+                            outcome_weight = *weight_used;
+                            weight_used.all_gte(Weight::from_parts(0,0))
+                        },
                     },
-                },
             ]
         );
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
@@ -185,20 +187,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
     });
     // We should have received the tokens
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            Dancebox,
-            vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
-                    }) => {
-                    outcome: {
-                        outcome.clone().ensure_complete().is_err()
-                    },
-                },
-            ]
-        );
+        Dancebox::assert_dmp_queue_error();
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
@@ -253,20 +242,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     });
     // We should have received the tokens
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            Dancebox,
-            vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
-                    }) => {
-                    outcome: {
-                        outcome.clone().ensure_complete().is_err()
-                    },
-                },
-            ]
-        );
+        Dancebox::assert_dmp_queue_error();
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds

@@ -21,7 +21,7 @@ use {
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     sc_network::config::MultiaddrWithPeerId,
     sp_runtime::traits::Get,
-    std::{collections::BTreeMap, path::PathBuf, str::FromStr},
+    std::{collections::BTreeMap, path::PathBuf},
     tp_container_chain_genesis_data::json::properties_to_map,
 };
 

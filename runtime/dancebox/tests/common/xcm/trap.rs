@@ -17,15 +17,14 @@
 use crate::common::xcm::*;
 
 use {
-    crate::common::xcm::mocknets::{Dancebox, Westend, WestendRelayPallet},
+    crate::common::xcm::mocknets::{
+        DanceboxPara as Dancebox, WestendRelay as Westend, WestendRelayPallet,
+    },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{
-        latest::{prelude::*, Error::Trap as TrapError},
-        VersionedMultiLocation, VersionedXcm,
-    },
+    staging_xcm::{latest::prelude::*, VersionedMultiLocation, VersionedXcm},
     xcm_emulator::Chain,
 };
 
@@ -76,15 +75,10 @@ fn trapping_asserts_works_with_polkadot_xcm() {
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
         type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
+        Dancebox::assert_dmp_queue_incomplete(None);
         assert_expected_events!(
             Dancebox,
             vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome: Outcome::Incomplete(_w, error), ..
-                    }) => {
-                    error: *error == TrapError(0),
-                },
                 RuntimeEvent::PolkadotXcm(
                     pallet_xcm::Event::AssetsTrapped{origin, ..}) => {
                         origin: *origin == MultiLocation::parent(),

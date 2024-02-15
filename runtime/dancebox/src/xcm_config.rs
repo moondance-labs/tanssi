@@ -36,11 +36,11 @@ use {
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, CurrencyAdapter, EnsureXcmOrigin,
-        FixedWeightBounds, FungibleAdapter, IsConcrete, ParentIsPreset, RelayChainAsNative,
-        SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
-        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, UsingComponents,
-        WeightInfoBounds, WithComputedOrigin,
+        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
+        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
+        SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
+        SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
+        WithComputedOrigin,
     },
     staging_xcm_executor::XcmExecutor,
 };
@@ -232,8 +232,6 @@ impl pallet_xcm::Config for Runtime {
     type RemoteLockConsumerIdentifier = ();
     // TODO pallet-xcm weights
     type WeightInfo = pallet_xcm::TestWeightInfo;
-    #[cfg(feature = "runtime-benchmarks")]
-    type ReachableDest = ReachableDest;
     type AdminOrigin = EnsureRoot<AccountId>;
 }
 

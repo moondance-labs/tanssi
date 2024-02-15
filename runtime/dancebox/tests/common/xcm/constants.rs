@@ -17,7 +17,6 @@ use {
     cumulus_primitives_core::relay_chain::{
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
-    pallet_im_online::sr25519::AuthorityId as ImOnlineId,
     polkadot_service::chain_spec::get_authority_keys_from_seed_no_beefy,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
@@ -88,7 +87,6 @@ pub mod validators {
         AccountId,
         BabeId,
         GrandpaId,
-        ImOnlineId,
         ValidatorId,
         AssignmentId,
         AuthorityDiscoveryId,
@@ -106,6 +104,7 @@ pub mod westend {
     };
     const ENDOWMENT: u128 = 1_000_000 * WND;
     const STASH: u128 = 100 * WND;
+    pub type ChainSpec = sc_service::GenericChainSpec<westend_runtime::RuntimeGenesisConfig>;
 
     pub fn get_host_config() -> HostConfiguration<BlockNumber> {
         HostConfiguration {
@@ -121,7 +120,6 @@ pub mod westend {
     fn session_keys(
         babe: BabeId,
         grandpa: GrandpaId,
-        im_online: ImOnlineId,
         para_validator: ValidatorId,
         para_assignment: AssignmentId,
         authority_discovery: AuthorityDiscoveryId,
@@ -130,7 +128,6 @@ pub mod westend {
         westend_runtime::SessionKeys {
             babe,
             grandpa,
-            im_online,
             para_validator,
             para_assignment,
             authority_discovery,
@@ -140,10 +137,6 @@ pub mod westend {
 
     pub fn genesis() -> Storage {
         let genesis_config = westend_runtime::RuntimeGenesisConfig {
-            system: westend_runtime::SystemConfig {
-                code: westend_runtime::WASM_BINARY.unwrap().to_vec(),
-                ..Default::default()
-            },
             balances: westend_runtime::BalancesConfig {
                 balances: accounts::init_balances()
                     .iter()
@@ -164,7 +157,6 @@ pub mod westend {
                                 x.4.clone(),
                                 x.5.clone(),
                                 x.6.clone(),
-                                x.7.clone(),
                                 get_from_seed::<BeefyId>("Alice"),
                             ),
                         )
@@ -204,7 +196,11 @@ pub mod westend {
             ..Default::default()
         };
 
-        genesis_config.build_storage().unwrap()
+        ChainSpec::builder(westend_runtime::WASM_BINARY.unwrap(), None)
+            .with_genesis_config(serde_json::to_value(&genesis_config).unwrap())
+            .build()
+            .build_storage()
+            .unwrap()
     }
 }
 
@@ -216,14 +212,12 @@ pub mod frontier_template {
     };
     pub const PARA_ID: u32 = 2001;
     pub const ORCHESTRATOR: u32 = 2000;
+    pub type ChainSpec = sc_service::GenericChainSpec<
+        container_chain_template_frontier_runtime::RuntimeGenesisConfig,
+    >;
+
     pub fn genesis() -> sp_core::storage::Storage {
         let genesis_config = container_chain_template_frontier_runtime::RuntimeGenesisConfig {
-            system: container_chain_template_frontier_runtime::SystemConfig {
-                code: container_chain_template_frontier_runtime::WASM_BINARY
-                    .expect("WASM binary was not build, please build it!")
-                    .to_vec(),
-                ..Default::default()
-            },
             balances: container_chain_template_frontier_runtime::BalancesConfig {
                 balances: pre_funded_accounts()
                     .iter()
@@ -253,7 +247,15 @@ pub mod frontier_template {
             ..Default::default()
         };
 
-        genesis_config.build_storage().unwrap()
+        ChainSpec::builder(
+            container_chain_template_frontier_runtime::WASM_BINARY
+                .expect("WASM binary was not build, please build it!"),
+            None,
+        )
+        .with_genesis_config(serde_json::to_value(&genesis_config).unwrap())
+        .build()
+        .build_storage()
+        .unwrap()
     }
     /// Get pre-funded accounts
     pub fn pre_funded_accounts() -> Vec<AccountId> {
@@ -276,15 +278,11 @@ pub mod simple_template {
     pub const PARA_ID: u32 = 2002;
     pub const ORCHESTRATOR: u32 = 2000;
     const ENDOWMENT: u128 = 1_000_000 * DEV;
+    pub type ChainSpec =
+        sc_service::GenericChainSpec<container_chain_template_simple_runtime::RuntimeGenesisConfig>;
 
     pub fn genesis() -> sp_core::storage::Storage {
         let genesis_config = container_chain_template_simple_runtime::RuntimeGenesisConfig {
-            system: container_chain_template_simple_runtime::SystemConfig {
-                code: container_chain_template_simple_runtime::WASM_BINARY
-                    .expect("WASM binary was not build, please build it!")
-                    .to_vec(),
-                ..Default::default()
-            },
             balances: container_chain_template_simple_runtime::BalancesConfig {
                 balances: accounts::init_balances()
                     .iter()
@@ -306,6 +304,14 @@ pub mod simple_template {
             ..Default::default()
         };
 
-        genesis_config.build_storage().unwrap()
+        ChainSpec::builder(
+            container_chain_template_simple_runtime::WASM_BINARY
+                .expect("WASM binary was not build, please build it!"),
+            None,
+        )
+        .with_genesis_config(serde_json::to_value(&genesis_config).unwrap())
+        .build()
+        .build_storage()
+        .unwrap()
     }
 }
