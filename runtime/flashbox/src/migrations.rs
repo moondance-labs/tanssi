@@ -20,15 +20,136 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{ParaId, Runtime, ServicesPayment},
+    crate::{ParaId, Runtime, ServicesPayment, LOG_TARGET},
     frame_support::{
         pallet_prelude::ValueQuery, storage::types::StorageMap, weights::Weight, Blake2_128Concat,
     },
+    pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
     pallet_migrations::{GetMigrations, Migration},
     sp_core::Get,
     sp_runtime::BoundedVec,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
+
+#[derive(
+    Clone,
+    parity_scale_codec::Encode,
+    parity_scale_codec::Decode,
+    PartialEq,
+    sp_core::RuntimeDebug,
+    scale_info::TypeInfo,
+)]
+struct HostConfigurationV1 {
+    pub max_collators: u32,
+    pub min_orchestrator_collators: u32,
+    pub max_orchestrator_collators: u32,
+    pub collators_per_container: u32,
+    pub full_rotation_period: u32,
+}
+
+pub struct MigrateConfigurationParathreads<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateConfigurationParathreads<T>
+where
+    T: pallet_configuration::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateConfigurationParathreads"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        log::info!(target: LOG_TARGET, "migrate");
+
+        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
+        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22d53b4123b2e186e07fb7bad5dda5f55c0");
+        let default_config = HostConfiguration::default();
+
+        // Modify active config
+        let old_config: HostConfigurationV1 =
+            frame_support::storage::unhashed::get(CONFIGURATION_ACTIVE_CONFIG_KEY)
+                .expect("configuration.activeConfig should have value");
+        let new_config = HostConfiguration {
+            max_collators: old_config.max_collators,
+            min_orchestrator_collators: old_config.min_orchestrator_collators,
+            max_orchestrator_collators: old_config.max_orchestrator_collators,
+            collators_per_container: old_config.collators_per_container,
+            full_rotation_period: old_config.full_rotation_period,
+            collators_per_parathread: default_config.collators_per_parathread,
+            parathreads_per_collator: default_config.parathreads_per_collator,
+            target_container_chain_fullness: default_config.target_container_chain_fullness,
+        };
+        frame_support::storage::unhashed::put(CONFIGURATION_ACTIVE_CONFIG_KEY, &new_config);
+
+        // Modify pending configs, if any
+        let old_pending_configs: Vec<(u32, HostConfigurationV1)> =
+            frame_support::storage::unhashed::get(CONFIGURATION_PENDING_CONFIGS_KEY)
+                .unwrap_or_default();
+        let mut new_pending_configs: Vec<(u32, HostConfiguration)> = vec![];
+
+        for (session_index, old_config) in old_pending_configs {
+            let new_config = HostConfiguration {
+                max_collators: old_config.max_collators,
+                min_orchestrator_collators: old_config.min_orchestrator_collators,
+                max_orchestrator_collators: old_config.max_orchestrator_collators,
+                collators_per_container: old_config.collators_per_container,
+                full_rotation_period: old_config.full_rotation_period,
+                collators_per_parathread: default_config.collators_per_parathread,
+                parathreads_per_collator: default_config.parathreads_per_collator,
+                target_container_chain_fullness: default_config.target_container_chain_fullness,
+            };
+            new_pending_configs.push((session_index, new_config));
+        }
+
+        if !new_pending_configs.is_empty() {
+            frame_support::storage::unhashed::put(
+                CONFIGURATION_PENDING_CONFIGS_KEY,
+                &new_pending_configs,
+            );
+        }
+
+        <T as pallet_configuration::Config>::WeightInfo::set_config_with_u32()
+    }
+
+    /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
+            &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
+
+        let old_config_bytes =
+            frame_support::storage::unhashed::get_raw(CONFIGURATION_ACTIVE_CONFIG_KEY)
+                .expect("configuration.activeConfig should have value");
+        assert_eq!(old_config_bytes.len(), 20);
+
+        use parity_scale_codec::Encode;
+        Ok((old_config_bytes).encode())
+    }
+
+    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(
+        &self,
+        _number_of_invulnerables: Vec<u8>,
+    ) -> Result<(), sp_runtime::DispatchError> {
+        let new_config = crate::Configuration::config();
+        let default_config = HostConfiguration::default();
+        assert_eq!(
+            new_config.collators_per_parathread,
+            default_config.collators_per_parathread
+        );
+        assert_eq!(
+            new_config.parathreads_per_collator,
+            default_config.collators_per_parathread
+        );
+        assert_eq!(
+            new_config.target_container_chain_fullness,
+            default_config.target_container_chain_fullness
+        );
+
+        Ok(())
+    }
+}
 
 pub struct MigrateServicesPaymentAddCredits<T>(pub PhantomData<T>);
 impl<T> Migration for MigrateServicesPaymentAddCredits<T>
@@ -123,10 +244,13 @@ where
         let migrate_services_payment =
             MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
         let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        let migrate_config_parathread_params =
+            MigrateConfigurationParathreads::<Runtime>(Default::default());
 
         vec![
             Box::new(migrate_services_payment),
             Box::new(migrate_boot_nodes),
+            Box::new(migrate_config_parathread_params),
         ]
     }
 }

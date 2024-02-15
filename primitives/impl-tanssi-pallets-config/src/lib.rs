@@ -66,6 +66,9 @@ macro_rules! impl_tanssi_pallets_config {
                 type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
                 type AuthorityId = NimbusId;
                 type WeightInfo = <$runtime as $crate::Config>::AuthoritiesNotingWeights;
+
+                #[cfg(feature = "runtime-benchmarks")]
+                type BenchmarkHelper = pallet_cc_authorities_noting::benchmarks::NimbusIdBenchmarkHelper;
             }
         };
 

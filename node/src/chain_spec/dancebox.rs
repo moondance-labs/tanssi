@@ -27,7 +27,7 @@ use {
     pallet_configuration::HostConfiguration,
     sc_service::ChainType,
     sp_core::sr25519,
-    sp_runtime::traits::Get,
+    sp_runtime::{traits::Get, Perbill},
     tp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
@@ -92,6 +92,9 @@ pub fn development_config(
                         max_orchestrator_collators: 1u32,
                         collators_per_container: 2u32,
                         full_rotation_period: prod_or_fast!(24u32, 5u32),
+                        collators_per_parathread: 1,
+                        parathreads_per_collator: 1,
+                        target_container_chain_fullness: Perbill::from_percent(80),
                     },
                     ..Default::default()
                 },
@@ -157,6 +160,9 @@ pub fn local_dancebox_config(
                         max_orchestrator_collators: 5u32,
                         collators_per_container: 2u32,
                         full_rotation_period: prod_or_fast!(24u32, 5u32),
+                        collators_per_parathread: 1,
+                        parathreads_per_collator: 1,
+                        target_container_chain_fullness: Perbill::from_percent(80),
                     },
                     ..Default::default()
                 },
@@ -285,6 +291,7 @@ fn testnet_genesis(
         polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
+        treasury: Default::default(),
     }
 }
 
