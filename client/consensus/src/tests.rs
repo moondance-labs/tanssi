@@ -15,48 +15,74 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 #![allow(clippy::await_holding_lock)]
-
 // This tests have been greatly influenced by
 // https://github.com/paritytech/substrate/blob/master/client/consensus/aura/src/lib.rs#L832
 // Most of the items hereby added are intended to make it work with our current consensus mechanism
 use {
-    crate::{InherentDataProviderExt, LOG_TARGET},
-    cumulus_client_consensus_common::ParachainConsensus,
-    futures::prelude::*,
-    futures_timer::Delay,
-    nimbus_primitives::{CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID},
-    parking_lot::Mutex,
-    sc_block_builder::BlockBuilderProvider,
-    sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
-    sc_consensus_slots::SlotInfo,
-    sc_network_test::{Block as TestBlock, *},
-    sp_consensus::{
-        EnableProofRecording, Environment, Proposal, Proposer, SelectChain, SyncOracle,
+    crate::{
+        collators::{tanssi_claim_slot, Collator, Params as CollatorParams},
+        OrchestratorAuraWorkerAuxData,
     },
-    sp_consensus_aura::SlotDuration,
+    async_trait::async_trait,
+    cumulus_client_collator::service::CollatorService,
+    cumulus_client_consensus_proposer::Proposer as ConsensusProposer,
+    cumulus_primitives_core::{relay_chain::BlockId, CollationInfo, CollectCollationInfo, ParaId},
+    cumulus_relay_chain_interface::{
+        CommittedCandidateReceipt, OverseerHandle, RelayChainInterface, RelayChainResult,
+        StorageValue,
+    },
+    cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
+    futures::prelude::*,
+    nimbus_primitives::{
+        CompatibleDigestItem, NimbusId, NimbusPair, NIMBUS_ENGINE_ID, NIMBUS_KEY_ID,
+    },
+    parity_scale_codec::Encode,
+    parking_lot::Mutex,
+    polkadot_core_primitives::{Header as PHeader, InboundDownwardMessage, InboundHrmpMessage},
+    polkadot_parachain_primitives::primitives::HeadData,
+    polkadot_primitives::{
+        Hash as PHash, OccupiedCoreAssumption, PersistedValidationData, ValidatorId,
+    },
+    sc_block_builder::BlockBuilderProvider,
+    sc_client_api::HeaderBackend,
+    sc_consensus::{BoxJustificationImport, ForkChoiceStrategy},
+    sc_keystore::LocalKeystore,
+    sc_network_test::{Block as TestBlock, Header as TestHeader, *},
+    sp_api::{ApiRef, ProvideRuntimeApi},
+    sp_consensus::{EnableProofRecording, Environment, Proposal, Proposer},
+    sp_consensus_aura::{inherents::InherentDataProvider, SlotDuration, AURA_ENGINE_ID},
     sp_consensus_slots::Slot,
-    sp_core::crypto::{ByteArray, Pair},
-    sp_inherents::{CreateInherentDataProviders, InherentData},
+    sp_core::{
+        crypto::{ByteArray, Pair},
+        traits::SpawnNamed,
+    },
+    sp_inherents::InherentData,
     sp_keyring::sr25519::Keyring,
+    sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::{
         traits::{Block as BlockT, Header as _},
         Digest, DigestItem,
     },
-    std::{sync::Arc, time::Duration},
+    sp_timestamp::Timestamp,
+    std::{
+        collections::{BTreeMap, BTreeSet},
+        pin::Pin,
+        sync::Arc,
+        time::Duration,
+    },
     substrate_test_runtime_client::TestClient,
 };
 
 // Duration of slot time
-#[allow(unused)]
 const SLOT_DURATION_MS: u64 = 1000;
 
 type Error = sp_blockchain::Error;
 
+#[derive(Clone)]
 struct DummyFactory(Arc<TestClient>);
 // We are going to create API because we need this to test runtime apis
 // We use the client normally, but for testing certain runtime-api calls,
 // we basically mock the runtime-api calls
-use sp_api::{ApiRef, ProvideRuntimeApi};
 impl ProvideRuntimeApi<Block> for DummyFactory {
     type Api = MockApi;
 
@@ -64,8 +90,6 @@ impl ProvideRuntimeApi<Block> for DummyFactory {
         MockApi.into()
     }
 }
-
-use cumulus_primitives_core::ParaId;
 
 struct MockApi;
 
@@ -91,6 +115,159 @@ sp_api::mock_impl_runtime_apis! {
                 None
             }
         }
+    }
+
+    impl CollectCollationInfo<Block> for MockApi {
+        fn collect_collation_info(_header: &<Block as BlockT>::Header) -> CollationInfo {
+            CollationInfo {
+                upward_messages: Vec::new(),
+                horizontal_messages: Vec::new(),
+                new_validation_code: None,
+                processed_downward_messages: 0u32,
+                hrmp_watermark: 0u32,
+                head_data: HeadData(vec![1, 2, 3])
+            }
+        }
+
+    }
+}
+
+#[derive(Clone)]
+struct RelayChain(Arc<TestClient>);
+
+#[async_trait]
+impl RelayChainInterface for RelayChain {
+    async fn validators(&self, _: PHash) -> RelayChainResult<Vec<ValidatorId>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn best_block_hash(&self) -> RelayChainResult<PHash> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn finalized_block_hash(&self) -> RelayChainResult<PHash> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn retrieve_dmq_contents(
+        &self,
+        _: ParaId,
+        _: PHash,
+    ) -> RelayChainResult<Vec<InboundDownwardMessage>> {
+        let downward_msg = InboundDownwardMessage {
+            sent_at: 10u32,
+            msg: vec![1u8, 2u8, 3u8],
+        };
+        Ok(vec![downward_msg])
+    }
+
+    async fn retrieve_all_inbound_hrmp_channel_contents(
+        &self,
+        _: ParaId,
+        _: PHash,
+    ) -> RelayChainResult<BTreeMap<ParaId, Vec<InboundHrmpMessage>>> {
+        let mut tree = BTreeMap::new();
+        let hrmp_msg = InboundHrmpMessage {
+            sent_at: 10u32,
+            data: vec![1u8, 2u8, 3u8],
+        };
+        let para_id = ParaId::from(2000u32);
+        tree.insert(para_id, vec![hrmp_msg]);
+        Ok(tree)
+    }
+
+    async fn persisted_validation_data(
+        &self,
+        _hash: PHash,
+        _: ParaId,
+        _assumption: OccupiedCoreAssumption,
+    ) -> RelayChainResult<Option<PersistedValidationData>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn candidate_pending_availability(
+        &self,
+        _: PHash,
+        _: ParaId,
+    ) -> RelayChainResult<Option<CommittedCandidateReceipt>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn session_index_for_child(&self, _: PHash) -> RelayChainResult<u32> {
+        Ok(0)
+    }
+
+    async fn import_notification_stream(
+        &self,
+    ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn finality_notification_stream(
+        &self,
+    ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn is_major_syncing(&self) -> RelayChainResult<bool> {
+        Ok(false)
+    }
+
+    fn overseer_handle(&self) -> RelayChainResult<OverseerHandle> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn get_storage_by_key(
+        &self,
+        _: PHash,
+        _: &[u8],
+    ) -> RelayChainResult<Option<StorageValue>> {
+        Ok(None)
+    }
+
+    async fn prove_read(
+        &self,
+        _: PHash,
+        _: &Vec<Vec<u8>>,
+    ) -> RelayChainResult<sc_client_api::StorageProof> {
+        let mut tree = BTreeSet::new();
+        tree.insert(vec![1u8, 2u8, 3u8]);
+        let proof = sc_client_api::StorageProof::new(tree);
+        Ok(proof)
+    }
+
+    async fn wait_for_block(&self, _: PHash) -> RelayChainResult<()> {
+        Ok(())
+    }
+
+    async fn new_best_notification_stream(
+        &self,
+    ) -> RelayChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
+        unimplemented!("Not needed for test")
+    }
+
+    async fn header(&self, _block_id: BlockId) -> RelayChainResult<Option<PHeader>> {
+        unimplemented!("Not needed for test")
+    }
+}
+
+#[derive(Clone)]
+struct DummySpawner(Arc<TestClient>);
+impl SpawnNamed for DummySpawner {
+    fn spawn_blocking(
+        &self,
+        _name: &'static str,
+        _group: Option<&'static str>,
+        _future: futures::future::BoxFuture<'static, ()>,
+    ) {
+    }
+
+    fn spawn(
+        &self,
+        _name: &'static str,
+        _group: Option<&'static str>,
+        _future: futures::future::BoxFuture<'static, ()>,
+    ) {
     }
 }
 
@@ -197,10 +374,12 @@ impl Proposer<TestBlock> for DummyProposer {
         _: Option<usize>,
     ) -> Self::Proposal {
         let r = self.1.new_block(digests).unwrap().build();
+        let (_relay_parent_storage_root, proof) =
+            RelayStateSproofBuilder::default().into_state_root_and_proof();
 
         futures::future::ready(r.map(|b| Proposal {
             block: b.block,
-            proof: sc_client_api::StorageProof::empty(),
+            proof,
             storage_changes: b.storage_changes,
         }))
     }
@@ -250,171 +429,217 @@ impl TestNetFactory for AuraTestNet {
     }
 }
 
-/// A stream that returns every time there is a new slot.
-/// TODO: this would not be necessary if Slots was public in Substrate
-pub(crate) struct Slots<Block, SC, IDP> {
-    last_slot: Slot,
-    slot_duration: Duration,
-    until_next_slot: Option<Delay>,
-    create_inherent_data_providers: IDP,
-    select_chain: SC,
-    _phantom: std::marker::PhantomData<Block>,
-}
+// Checks node slot claim. Again for different slots, different authorities
+// should be able to claim
+#[tokio::test]
+async fn current_node_authority_should_claim_slot() {
+    let mut authorities: Vec<NimbusId> = vec![
+        Keyring::Alice.public().into(),
+        Keyring::Bob.public().into(),
+        Keyring::Charlie.public().into(),
+    ];
 
-impl<Block, SC, IDP> Slots<Block, SC, IDP> {
-    /// Create a new `Slots` stream.
-    pub fn new(
-        slot_duration: Duration,
-        create_inherent_data_providers: IDP,
-        select_chain: SC,
-    ) -> Self {
-        Slots {
-            last_slot: 0.into(),
-            slot_duration,
-            until_next_slot: None,
-            create_inherent_data_providers,
-            select_chain,
-            _phantom: Default::default(),
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+
+    let public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, None)
+        .expect("Key should be created");
+    authorities.push(public.into());
+
+    let keystore_ptr: KeystorePtr = keystore.into();
+    let mut claimed_slots = vec![];
+
+    for slot in 0..8 {
+        let dummy_head = TestHeader {
+            parent_hash: Default::default(),
+            number: Default::default(),
+            state_root: Default::default(),
+            extrinsics_root: Default::default(),
+            digest: Default::default(),
+        };
+        let aux_data = OrchestratorAuraWorkerAuxData {
+            authorities: authorities.clone(),
+            min_slot_freq: None,
+        };
+        let claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
+            aux_data,
+            &dummy_head,
+            slot.into(),
+            false,
+            &keystore_ptr,
+        )
+        .unwrap();
+        if claim.is_some() {
+            claimed_slots.push(slot);
         }
     }
+
+    assert_eq!(claimed_slots, vec![3, 7]);
 }
 
-impl<Block, SC, IDP> Slots<Block, SC, IDP>
-where
-    Block: BlockT,
-    SC: SelectChain<Block>,
-    IDP: CreateInherentDataProviders<Block, ()> + 'static,
-    IDP::InherentDataProviders: crate::InherentDataProviderExt,
-{
-    /// Returns a future that fires when the next slot starts.
-    pub async fn next_slot(&mut self) -> SlotInfo<Block> {
-        loop {
-            // Wait for slot timeout
-            self.until_next_slot
-                .take()
-                .unwrap_or_else(|| {
-                    // Schedule first timeout.
-                    let wait_dur = time_until_next_slot(self.slot_duration);
-                    Delay::new(wait_dur)
-                })
-                .await;
+#[tokio::test]
+async fn claim_slot_respects_min_slot_freq() {
+    // There is only 1 authority, but it can only claim every 4 slots
+    let mut authorities: Vec<NimbusId> = vec![];
+    let min_slot_freq = 4;
 
-            // Schedule delay for next slot.
-            let wait_dur = time_until_next_slot(self.slot_duration);
-            self.until_next_slot = Some(Delay::new(wait_dur));
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
 
-            let chain_head = match self.select_chain.best_chain().await {
-                Ok(x) => x,
-                Err(e) => {
-                    log::warn!(
-                        target: LOG_TARGET,
-                        "Unable to author block in slot. No best block header: {}",
-                        e,
-                    );
-                    // Let's retry at the next slot.
-                    continue;
-                }
-            };
+    let public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, None)
+        .expect("Key should be created");
+    authorities.push(public.into());
 
-            let inherent_data_providers = match self
-                .create_inherent_data_providers
-                .create_inherent_data_providers(chain_head.hash(), ())
-                .await
-            {
-                Ok(x) => x,
-                Err(e) => {
-                    log::warn!(
-                        target: LOG_TARGET,
-                        "Unable to author block in slot. Failure creating inherent data provider: {}",
-                        e,
-                    );
-                    // Let's retry at the next slot.
-                    continue;
-                }
-            };
+    let keystore_ptr: KeystorePtr = keystore.into();
 
-            let slot = inherent_data_providers.slot();
+    let mut claimed_slots = vec![];
 
-            // Never yield the same slot twice.
-            if slot > self.last_slot {
-                self.last_slot = slot;
+    for slot in 0..10 {
+        let parent_slot: u64 = claimed_slots.last().copied().unwrap_or_default();
+        let parent_slot: Slot = parent_slot.into();
+        let pre_digest = Digest {
+            logs: vec![
+                DigestItem::PreRuntime(AURA_ENGINE_ID, parent_slot.encode()),
+                //DigestItem::PreRuntime(NIMBUS_ENGINE_ID, authority.encode()),
+            ],
+        };
+        let head = TestHeader {
+            parent_hash: Default::default(),
+            // If we use number=0 aura ignores the digest
+            number: claimed_slots.len() as u64,
+            state_root: Default::default(),
+            extrinsics_root: Default::default(),
+            digest: pre_digest,
+        };
+        let aux_data = OrchestratorAuraWorkerAuxData {
+            authorities: authorities.clone(),
+            min_slot_freq: Some(min_slot_freq.into()),
+        };
+        let claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
+            aux_data,
+            &head,
+            slot.into(),
+            false,
+            &keystore_ptr,
+        )
+        .unwrap();
+        if claim.is_some() {
+            claimed_slots.push(slot);
+        }
+    }
 
-                break SlotInfo::new(
-                    slot,
-                    Box::new(inherent_data_providers),
-                    self.slot_duration,
-                    chain_head,
-                    None,
+    assert_eq!(claimed_slots, vec![0, 4, 8]);
+}
+
+#[tokio::test]
+async fn collate_returns_correct_block() {
+    let net = AuraTestNet::new(4);
+
+    let keystore_path = tempfile::tempdir().expect("Creates keystore path");
+    let keystore = LocalKeystore::open(keystore_path.path(), None).expect("Creates keystore.");
+    let alice_public = keystore
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be created");
+
+    // Copy of the keystore needed for tanssi_claim_slot()
+    let keystore_copy = LocalKeystore::open(keystore_path.path(), None).expect("Copies keystore.");
+    keystore_copy
+        .sr25519_generate_new(NIMBUS_KEY_ID, Some(&Keyring::Alice.to_seed()))
+        .expect("Key should be copied");
+
+    let net = Arc::new(Mutex::new(net));
+
+    let mut net = net.lock();
+    let peer = net.peer(3);
+    let client = peer.client().as_client();
+    let environ = DummyFactory(client.clone());
+    let spawner = DummySpawner(client.clone());
+    let relay_client = RelayChain(client.clone());
+
+    // Build the collator
+    let mut collator = {
+        let params = CollatorParams {
+            create_inherent_data_providers: |_, _| async {
+                let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+                    Timestamp::current(),
+                    SlotDuration::from_millis(SLOT_DURATION_MS),
                 );
-            }
-        }
-    }
-}
-/// Returns current duration since unix epoch.
-#[allow(unused)]
-pub fn duration_now() -> Duration {
-    use std::time::SystemTime;
-    let now = SystemTime::now();
-    now.duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_else(|e| {
-            panic!(
-                "Current time {:?} is before unix epoch. Something is wrong: {:?}",
-                now, e
-            )
-        })
-}
 
-/// Returns the duration until the next slot from now.
-#[allow(unused)]
-pub fn time_until_next_slot(slot_duration: Duration) -> Duration {
-    let now = duration_now().as_millis();
+                Ok((slot,))
+            },
+            block_import: client.clone(),
+            relay_client: relay_client.clone(),
+            keystore: keystore.into(),
+            para_id: 1000.into(),
+            proposer: ConsensusProposer::new(environ.clone()),
+            collator_service: CollatorService::new(
+                client.clone(),
+                Arc::new(spawner),
+                Arc::new(move |_, _| {}),
+                Arc::new(environ),
+            ),
+        };
 
-    let next_slot = (now + slot_duration.as_millis()) / slot_duration.as_millis();
-    let remaining_millis = next_slot * slot_duration.as_millis() - now;
-    Duration::from_millis(remaining_millis as u64)
-}
+        Collator::<Block, NimbusPair, _, _, _, _, _>::new(params)
+    };
 
-/// Start a new slot worker.
-///
-/// Every time a new slot is triggered, `parachain_block_producer.produce_candidate`
-/// is called and the future it returns is
-/// polled until completion, unless we are major syncing.
-/// TODO: refactor to use the new Tanssi Aura params
-#[allow(unused)]
-pub async fn start_orchestrator_aura_consensus_candidate_producer<B, C, SO, CIDP>(
-    slot_duration: SlotDuration,
-    client: C,
-    mut parachain_block_producer: Box<dyn ParachainConsensus<B>>,
-    sync_oracle: SO,
-    create_inherent_data_providers: CIDP,
-) where
-    B: BlockT,
-    C: SelectChain<B>,
-    SO: SyncOracle + Send,
-    CIDP: CreateInherentDataProviders<B, ()> + Send + 'static,
-    CIDP::InherentDataProviders: InherentDataProviderExt + Send,
-{
-    let mut slots = Slots::new(
-        slot_duration.as_duration(),
-        create_inherent_data_providers,
-        client,
+    let mut head = client.expect_header(client.info().genesis_hash).unwrap();
+
+    // Modify the state root of the genesis header for it to match
+    // the one inside propose() function
+    let (relay_parent_storage_root, _proof) =
+        RelayStateSproofBuilder::default().into_state_root_and_proof();
+    head.state_root = relay_parent_storage_root;
+
+    // First we create inherent data
+    let (parachain_inherent_data, other_inherent_data) = collator
+        .create_inherent_data(
+            Default::default(),
+            &Default::default(),
+            head.clone().hash(),
+            None,
+        )
+        .await
+        .unwrap();
+
+    // Params for tanssi_claim_slot()
+    let slot = InherentDataProvider::from_timestamp_and_slot_duration(
+        Timestamp::current(),
+        SlotDuration::from_millis(SLOT_DURATION_MS),
     );
+    let keystore_ptr: KeystorePtr = keystore_copy.into();
 
-    loop {
-        let slot_info = slots.next_slot().await;
+    let mut claim = tanssi_claim_slot::<NimbusPair, TestBlock>(
+        OrchestratorAuraWorkerAuxData {
+            authorities: vec![alice_public.into()],
+            min_slot_freq: None,
+        },
+        &head,
+        *slot,
+        false,
+        &keystore_ptr,
+    )
+    .unwrap()
+    .unwrap();
 
-        if sync_oracle.is_major_syncing() {
-            continue;
-        }
+    // At the end we call collate() function
+    let res = collator
+        .collate(
+            &head,
+            &mut claim,
+            None,
+            (parachain_inherent_data, other_inherent_data),
+            Duration::from_millis(500),
+            3_500_000usize,
+        )
+        .await
+        .unwrap()
+        .1;
 
-        let _ = parachain_block_producer
-            .produce_candidate(
-                &slot_info.chain_head,
-                Default::default(),
-                &Default::default(),
-            )
-            .await;
-    }
+    // The returned block should be imported and we should be able to get its header by now.
+    assert!(client.header(res.header().hash()).unwrap().is_some());
 }
 
 // Tests authorities are correctly returned and eligibility is correctly calculated
@@ -427,7 +652,7 @@ async fn authorities_runtime_api_tests() {
     let mut net = net.lock();
     let peer = net.peer(3);
     let client = peer.client().as_client();
-    let environ = DummyFactory(client.clone());
+    let environ = DummyFactory(client);
 
     let default_hash = Default::default();
 

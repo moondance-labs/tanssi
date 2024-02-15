@@ -86,6 +86,20 @@ fn add_invulnerable_works() {
 }
 
 #[test]
+fn add_invulnerable_does_not_work_if_not_registered() {
+    new_test_ext().execute_with(|| {
+        initialize_to_block(1);
+        assert_eq!(Invulnerables::invulnerables(), vec![1, 2]);
+        let new = 42;
+
+        assert_noop!(
+            Invulnerables::add_invulnerable(RuntimeOrigin::signed(RootAccount::get()), new),
+            Error::<Test>::NoKeysRegistered
+        );
+    });
+}
+
+#[test]
 fn invulnerable_limit_works() {
     new_test_ext().execute_with(|| {
         assert_eq!(Invulnerables::invulnerables(), vec![1, 2]);

@@ -38,6 +38,8 @@ import type {
     PalletProxyProxyDefinition,
     PalletRegistrarDepositInfo,
     PalletTransactionPaymentReleases,
+    PalletTreasuryProposal,
+    PalletTreasurySpendStatus,
     PolkadotCorePrimitivesOutboundHrmpMessage,
     PolkadotPrimitivesV6AbridgedHostConfiguration,
     PolkadotPrimitivesV6PersistedValidationData,
@@ -794,6 +796,32 @@ declare module "@polkadot/api-base/types/storage" {
             nextFeeMultiplier: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
             storageVersion: AugmentedQuery<ApiType, () => Observable<PalletTransactionPaymentReleases>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        treasury: {
+            /** Proposal indices that have been approved but not yet awarded. */
+            approvals: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> & QueryableStorageEntry<ApiType, []>;
+            /** The amount which has been reported as inactive to Currency. */
+            deactivated: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Number of proposals that have been made. */
+            proposalCount: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Proposals that have been made. */
+            proposals: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletTreasuryProposal>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** The count of spends that have been made. */
+            spendCount: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Spends that have been approved and being processed. */
+            spends: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<PalletTreasurySpendStatus>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

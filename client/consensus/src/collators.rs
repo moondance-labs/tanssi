@@ -17,7 +17,7 @@
 pub mod basic;
 
 use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
-use cumulus_client_consensus_common::{ParachainBlockImportMarker, ParachainCandidate};
+use cumulus_client_consensus_common::ParachainCandidate;
 use cumulus_client_consensus_proposer::ProposerInterface;
 use cumulus_primitives_core::{
     relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
@@ -29,7 +29,7 @@ use parity_scale_codec::{Codec, Encode};
 use polkadot_node_primitives::{Collation, MaybeCompressedPoV};
 use polkadot_primitives::Id as ParaId;
 
-use crate::AuthorityId;
+use crate::{find_pre_digest, AuthorityId, OrchestratorAuraWorkerAuxData};
 use futures::prelude::*;
 use nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID};
 use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};
@@ -41,7 +41,7 @@ use sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvid
 use sp_keystore::{Keystore, KeystorePtr};
 use sp_runtime::{
     generic::Digest,
-    traits::{Block as BlockT, HashingFor, Header as HeaderT, Member},
+    traits::{Block as BlockT, HashingFor, Header as HeaderT, Member, Zero},
 };
 use sp_state_machine::StorageChanges;
 use sp_timestamp::Timestamp;
@@ -84,10 +84,10 @@ where
     Block: BlockT,
     RClient: RelayChainInterface,
     CIDP: CreateInherentDataProviders<Block, (PHash, PersistedValidationData)> + 'static,
-    BI: BlockImport<Block> + ParachainBlockImportMarker + Send + Sync + 'static,
+    BI: BlockImport<Block> + Send + Sync + 'static,
     Proposer: ProposerInterface<Block>,
     CS: CollatorServiceInterface<Block>,
-    P: Pair,
+    P: Pair + Send + Sync + 'static,
     P::Public: AppPublic + Member,
     P::Signature: TryFrom<Vec<u8>> + Member + Codec,
 {
@@ -284,26 +284,66 @@ impl<Pub: Clone> SlotClaim<Pub> {
 }
 
 /// Attempt to claim a slot locally.
-pub fn tanssi_claim_slot<P>(
-    authorities: Vec<AuthorityId<P>>,
+pub fn tanssi_claim_slot<P, B>(
+    aux_data: OrchestratorAuraWorkerAuxData<P>,
+    chain_head: &B::Header,
     slot: Slot,
     force_authoring: bool,
     keystore: &KeystorePtr,
 ) -> Result<Option<SlotClaim<P::Public>>, Box<dyn Error>>
 where
-    P: Pair,
+    P: Pair + Send + Sync + 'static,
     P::Public: Codec + std::fmt::Debug,
     P::Signature: Codec,
+    B: BlockT,
 {
     let author_pub = {
-        let res = claim_slot_inner::<P>(slot, &authorities, keystore, force_authoring);
+        let res = claim_slot_inner::<P>(slot, &aux_data.authorities, keystore, force_authoring);
         match res {
             Some(p) => p,
             None => return Ok(None),
         }
     };
 
+    if is_parathread_and_should_skip_slot::<P, B>(&aux_data, chain_head, slot) {
+        return Ok(None);
+    }
+
     Ok(Some(SlotClaim::unchecked::<P>(author_pub, slot)))
+}
+
+/// Returns true if this container chain is a parathread and the collator should skip this slot and not produce a block
+pub fn is_parathread_and_should_skip_slot<P, B>(
+    aux_data: &OrchestratorAuraWorkerAuxData<P>,
+    chain_head: &B::Header,
+    slot: Slot,
+) -> bool
+where
+    P: Pair + Send + Sync + 'static,
+    P::Public: Codec + std::fmt::Debug,
+    P::Signature: Codec,
+    B: BlockT,
+{
+    if slot.is_zero() {
+        // Always produce on slot 0 (for tests)
+        return false;
+    }
+    if let Some(min_slot_freq) = aux_data.min_slot_freq {
+        if let Ok(chain_head_slot) = find_pre_digest::<B, P::Signature>(chain_head) {
+            let slot_diff = slot.saturating_sub(chain_head_slot);
+
+            // TODO: this doesn't take into account force authoring.
+            // So a node with `force_authoring = true` will not propose a block for a parathread until the
+            // `min_slot_freq` has elapsed.
+            slot_diff < min_slot_freq
+        } else {
+            // In case of error always propose
+            false
+        }
+    } else {
+        // Not a parathread: always propose
+        false
+    }
 }
 
 /// Attempt to claim a slot using a keystore.

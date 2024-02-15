@@ -26,6 +26,11 @@ yargs(hideBin(process.argv))
                         describe: "Input path of raw chainSpec file",
                         type: "string",
                     },
+                    parathread: {
+                        describe: "Set the chain as a parathread instead of a parachain",
+                        type: "boolean",
+                        default: false,
+                    },
                 })
                 .demandOption(["chain", "account-priv-key"]);
         },
@@ -42,7 +47,16 @@ yargs(hideBin(process.argv))
 
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
                 const txs = [];
-                const tx1 = api.tx.registrar.register(rawSpec.para_id, containerChainGenesisData);
+                let tx1;
+                if (argv.parathread) {
+                    const slotFreq = api.createType("TpTraitsSlotFrequency", {
+                        min: 1,
+                        max: 1,
+                    });
+                    tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, slotFreq, containerChainGenesisData);
+                } else {
+                    tx1 = api.tx.registrar.registerParathread(rawSpec.para_id, containerChainGenesisData);
+                }
                 txs.push(tx1);
                 if (rawSpec.bootNodes?.length) {
                     const tx2 = api.tx.dataPreservers.setBootNodes(rawSpec.para_id, rawSpec.bootNodes);

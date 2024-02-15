@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use dp_collator_assignment::AssignedCollators;
 use {
     crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
+    dp_collator_assignment::AssignedCollators,
     std::collections::BTreeMap,
 };
 

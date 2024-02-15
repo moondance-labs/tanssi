@@ -74,20 +74,22 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(Weight::from_parts(56_720, 0).saturating_mul(b.into()))
 			.saturating_add(T::DbWeight::get().writes(1))
 	}
-	/// Storage: Invulnerables Invulnerables (r:1 w:1)
-	/// Proof: Invulnerables Invulnerables (max_values: Some(1), max_size: Some(3202), added: 3697, mode: MaxEncodedLen)
+	/// Storage: `Session::NextKeys` (r:1 w:0)
+	/// Proof: `Session::NextKeys` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Invulnerables::Invulnerables` (r:1 w:1)
+	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
 	/// The range of component `b` is `[1, 99]`.
 	fn add_invulnerable(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `70 + b * (32 ±0)`
-		//  Estimated: `4687`
-		// Minimum execution time: 6_840_000 picoseconds.
-		Weight::from_parts(7_533_824, 0)
-			.saturating_add(Weight::from_parts(0, 4687))
-			// Standard Error: 384
-			.saturating_add(Weight::from_parts(19_372, 0).saturating_mul(b.into()))
-			.saturating_add(T::DbWeight::get().reads(1))
-			.saturating_add(T::DbWeight::get().writes(1))
+		//  Measured:  `548 + b * (36 ±0)`
+		//  Estimated: `4687 + b * (37 ±0)`
+		// Minimum execution time: 16_117_000 picoseconds.
+		Weight::from_parts(18_327_160, 4687)
+			// Standard Error: 1_293
+			.saturating_add(Weight::from_parts(94_608, 0).saturating_mul(b.into()))
+			.saturating_add(T::DbWeight::get().reads(2_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+			.saturating_add(Weight::from_parts(0, 37).saturating_mul(b.into()))
 	}
 	/// Storage: Invulnerables Invulnerables (r:1 w:1)
 	/// Proof: Invulnerables Invulnerables (max_values: Some(1), max_size: Some(3202), added: 3697, mode: MaxEncodedLen)
@@ -155,20 +157,22 @@ impl WeightInfo for () {
 			.saturating_add(Weight::from_parts(56_720, 0).saturating_mul(b.into()))
 			.saturating_add(RocksDbWeight::get().writes(1))
 	}
-	/// Storage: Invulnerables Invulnerables (r:1 w:1)
-	/// Proof: Invulnerables Invulnerables (max_values: Some(1), max_size: Some(3202), added: 3697, mode: MaxEncodedLen)
+	/// Storage: `Session::NextKeys` (r:1 w:0)
+	/// Proof: `Session::NextKeys` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Invulnerables::Invulnerables` (r:1 w:1)
+	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
 	/// The range of component `b` is `[1, 99]`.
 	fn add_invulnerable(b: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `70 + b * (32 ±0)`
-		//  Estimated: `4687`
-		// Minimum execution time: 6_840_000 picoseconds.
-		Weight::from_parts(7_533_824, 0)
-			.saturating_add(Weight::from_parts(0, 4687))
-			// Standard Error: 384
-			.saturating_add(Weight::from_parts(19_372, 0).saturating_mul(b.into()))
-			.saturating_add(RocksDbWeight::get().reads(1))
-			.saturating_add(RocksDbWeight::get().writes(1))
+		//  Measured:  `548 + b * (36 ±0)`
+		//  Estimated: `4687 + b * (37 ±0)`
+		// Minimum execution time: 16_117_000 picoseconds.
+		Weight::from_parts(18_327_160, 4687)
+			// Standard Error: 1_293
+			.saturating_add(Weight::from_parts(94_608, 0).saturating_mul(b.into()))
+			.saturating_add(RocksDbWeight::get().reads(2_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
+			.saturating_add(Weight::from_parts(0, 37).saturating_mul(b.into()))
 	}
 	/// Storage: Invulnerables Invulnerables (r:1 w:1)
 	/// Proof: Invulnerables Invulnerables (max_values: Some(1), max_size: Some(3202), added: 3697, mode: MaxEncodedLen)
