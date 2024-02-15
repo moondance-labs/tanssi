@@ -2,8 +2,6 @@ import "@tanssi/api-augment";
 import { describeSuite, beforeAll, expect } from "@moonwall/cli";
 import { KeyringPair } from "@moonwall/util";
 import { ApiPromise } from "@polkadot/api";
-import { numberToHex } from "@polkadot/util";
-import { jumpToBlock } from "../../../util/block";
 
 describeSuite({
     id: "DT0501",
@@ -68,11 +66,7 @@ describeSuite({
                     )
                     .signAsync(alice, { nonce: aliceNonce++ });
 
-                const txAcceptChange = await polkadotJs.tx.streamPayment
-                    .acceptRequestedChange(0, 1, null)
-                    .signAsync(bob);
-
-                await context.createBlock([txPerformPayment, txRequestChange, txAcceptChange]);
+                await context.createBlock([txPerformPayment, txRequestChange]);
 
                 const performPaymentEvents = (await polkadotJs.query.system.events()).filter((a) => {
                     return a.event.method == "StreamPayment";
@@ -82,14 +76,20 @@ describeSuite({
                 const requestChangeEvents = (await polkadotJs.query.system.events()).filter((a) => {
                     return a.event.method == "StreamConfigChangeRequested";
                 });
-                expect(performPaymentEvents.length).to.be.equal(1);
+                expect(requestChangeEvents.length).to.be.equal(1);
+
+                // 3rd block
+                const txAcceptChange = await polkadotJs.tx.streamPayment
+                    .acceptRequestedChange(0, 1, null)
+                    .signAsync(bob);
+                await context.createBlock([txAcceptChange]);
 
                 const acceptChangeEvents = (await polkadotJs.query.system.events()).filter((a) => {
                     return a.event.method == "StreamConfigChanged";
                 });
-                expect(performPaymentEvents.length).to.be.equal(1);
+                expect(acceptChangeEvents.length).to.be.equal(1);
 
-                // 3rd block
+                // 4rd block
                 const txCloseStream = await polkadotJs.tx.streamPayment
                     .closeStream(0)
                     .signAsync(alice, { nonce: aliceNonce++ });
@@ -99,7 +99,7 @@ describeSuite({
                 const closeStreamEvents = (await polkadotJs.query.system.events()).filter((a) => {
                     return a.event.method == "StreamClosed";
                 });
-                expect(performPaymentEvents.length).to.be.equal(1);
+                expect(closeStreamEvents.length).to.be.equal(1);
             },
         });
     },
