@@ -309,7 +309,13 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
     let sync_keystore = node_builder.keystore_container.keystore();
-    let mut collate_on_tanssi = None;
+    let mut collate_on_tanssi: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
+        if validator {
+            panic!("Called uninitialized collate_on_tanssi");
+        } else {
+            panic!("Called collate_on_tanssi when node is not running as a validator");
+        }
+    });
 
     let announce_block = {
         let sync_service = node_builder.network.sync_service.clone();
@@ -385,7 +391,7 @@ async fn start_node_impl(
         // Start collating now
         start_collation();
         // And save callback for later, used when collator rotates from container chain back to orchestrator chain
-        collate_on_tanssi = Some(start_collation);
+        collate_on_tanssi = Arc::new(start_collation);
     }
 
     node_builder.network.start_network.start_network();
@@ -431,7 +437,7 @@ async fn start_node_impl(
             validator,
             spawn_handle,
             state: Default::default(),
-            collate_on_tanssi: Arc::new(collate_on_tanssi.clone().unwrap()),
+            collate_on_tanssi,
         };
         let state = container_chain_spawner.state.clone();
 
