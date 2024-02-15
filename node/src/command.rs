@@ -27,6 +27,7 @@ use {
     log::{info, warn},
     node_common::service::NodeBuilderConfig as _,
     parity_scale_codec::Encode,
+    polkadot_service::WestendChainSpec,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, SharedParams, SubstrateCli,
@@ -64,6 +65,9 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
                 "Dave".to_string(),
             ],
         )),
+        "dancebox" => Box::new(chain_spec::RawChainSpec::from_json_bytes(
+            &include_bytes!("../../specs/dancebox/dancebox-raw-specs.json")[..],
+        )?),
         "flashbox_dev" => Box::new(chain_spec::flashbox::development_config(
             para_id,
             vec![],
@@ -160,7 +164,15 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
+        match id {
+            "westend_moonbase_relay_testnet" => Ok(Box::new(WestendChainSpec::from_json_bytes(
+                &include_bytes!("../../specs/dancebox/alphanet-relay-raw-specs.json")[..],
+            )?)),
+            // If we are not using a moonbeam-centric pre-baked relay spec, then fall back to the
+            // Polkadot service to interpret the id.
+            _ => polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter())
+                .load_spec(id),
+        }
     }
 }
 
