@@ -19,6 +19,10 @@ pallet-timestamp = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
+	"frame-support/std",
+	"pallet-author-inherent/std",
+	"pallet-cc-authorities-noting/std",
+	"pallet-timestamp/std",
 	"sp-core/std",
 	"sp-runtime/std",
 ]

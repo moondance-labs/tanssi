@@ -190,6 +190,7 @@ std = [
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
 	"tp-consensus/std",
+	"tp-impl-tanssi-pallets-config/std",
 	"xcm-primitives/std",
 ]
 
