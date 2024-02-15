@@ -17,7 +17,7 @@
 use {
     crate::{
         collators as collator_util, consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
-        AuthorityId,
+        AuthorityId, OrchestratorAuraWorkerAuxData,
     },
     cumulus_client_collator::{
         relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
@@ -33,33 +33,6 @@ use {
     polkadot_node_primitives::CollationResult,
     polkadot_overseer::Handle as OverseerHandle,
     polkadot_primitives::{CollatorPair, Id as ParaId},
-    sc_client_api::{backend::AuxStore, BlockBackend, BlockOf},
-    sc_consensus::BlockImport,
-    sc_consensus_slots::InherentDataProviderExt,
-    sp_api::ProvideRuntimeApi,
-    sp_application_crypto::AppPublic,
-    sp_blockchain::HeaderBackend,
-    sp_consensus::SyncOracle,
-    sp_consensus_aura::SlotDuration,
-    sp_core::crypto::Pair,
-    sp_inherents::CreateInherentDataProviders,
-    sp_keystore::KeystorePtr,
-    sp_runtime::traits::{Block as BlockT, Header as HeaderT, Member},
-    std::{convert::TryFrom, sync::Arc, time::Duration},
-};
-
-use {
-    polkadot_node_primitives::CollationResult,
-    polkadot_overseer::Handle as OverseerHandle,
-    polkadot_primitives::{CollatorPair, Id as ParaId},
-};
-
-use {
-    crate::{
-        collators as collator_util, consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
-        OrchestratorAuraWorkerAuxData,
-    },
-    futures::{channel::mpsc::Receiver, prelude::*},
     sc_client_api::{backend::AuxStore, BlockBackend, BlockOf},
     sc_consensus::BlockImport,
     sc_consensus_slots::InherentDataProviderExt,
