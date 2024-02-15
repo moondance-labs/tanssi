@@ -638,6 +638,13 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /** Refund address */
+            refundAddress: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<AccountId32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
