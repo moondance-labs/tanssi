@@ -31,6 +31,8 @@ pallet-evm-precompile-balances-erc20 = { workspace = true }
 pallet-evm-precompile-batch = { workspace = true }
 pallet-evm-precompile-call-permit = { workspace = true }
 pallet-evm-precompile-xcm-utils = { workspace = true }
+pallet-evm-precompileset-assets-erc20 = { workspace = true }
+pallet-foreign-asset-creator = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
@@ -41,6 +43,8 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
+pallet-asset-rate = { workspace = true }
+pallet-assets = { workspace = true }
 pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
 pallet-proxy = { workspace = true }
 pallet-root-testing = { workspace = true }
@@ -84,6 +88,7 @@ cumulus-pallet-xcmp-queue = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
+parachains-common = { workspace = true }
 parachain-info = { workspace = true }
 
 # Frontier
@@ -134,6 +139,8 @@ std = [
 	"log/std",
 	"nimbus-primitives/std",
 	"num_enum/std",
+	"pallet-asset-rate/std",
+	"pallet-assets/std",
 	"pallet-async-backing/std",
 	"pallet-author-inherent/std",
 	"pallet-balances/std",
@@ -149,7 +156,9 @@ std = [
 	"pallet-evm-precompile-sha3fips/std",
 	"pallet-evm-precompile-simple/std",
 	"pallet-evm-precompile-xcm-utils/std",
+	"pallet-evm-precompileset-assets-erc20/std",
 	"pallet-evm/std",
+	"pallet-foreign-asset-creator/std",
 	"pallet-hotfix-sufficients/std",
 	"pallet-maintenance-mode/std",
 	"pallet-migrations/std",
@@ -163,6 +172,7 @@ std = [
 	"pallet-utility/std",
 	"pallet-xcm-benchmarks?/std",
 	"pallet-xcm/std",
+	"parachains-common/std",
 	"parachain-info/std",
 	"parity-scale-codec/std",
 	"polkadot-parachain-primitives/std",

@@ -15,7 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::xcm_config::XcmConfig,
+    crate::xcm_config::{XcmConfig, ForeignAssetsInstance},
+    frame_support::parameter_types,
     pallet_evm_precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata},
     pallet_evm_precompile_batch::BatchPrecompile,
     pallet_evm_precompile_call_permit::CallPermitPrecompile,
@@ -23,9 +24,10 @@ use {
     pallet_evm_precompile_sha3fips::Sha3FIPS256,
     pallet_evm_precompile_simple::{ECRecover, ECRecoverPublicKey, Identity, Ripemd160, Sha256},
     pallet_evm_precompile_xcm_utils::{AllExceptXcmExecute, XcmUtilsPrecompile},
+    pallet_evm_precompileset_assets_erc20::Erc20AssetsPrecompileSet,
     precompile_utils::precompile_set::{
         AcceptDelegateCall, AddressU64, CallableByContract, CallableByPrecompile, PrecompileAt,
-        PrecompileSetBuilder, PrecompilesInRangeInclusive, SubcallWithMaxNesting,
+        PrecompileSetBuilder, PrecompilesInRangeInclusive, SubcallWithMaxNesting, PrecompileSetStartingWith
     },
 };
 
@@ -53,6 +55,14 @@ impl Erc20Metadata for NativeErc20Metadata {
     fn is_native_currency() -> bool {
         true
     }
+}
+
+/// The asset precompile address prefix. Addresses that match against this prefix will be routed
+/// to Erc20AssetsPrecompileSet being marked as foreign
+pub const FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX: &[u8] = &[255u8; 4];
+
+parameter_types! {
+	pub ForeignAssetPrefix: &'static [u8] = FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX;
 }
 
 type EthereumPrecompilesChecks = (AcceptDelegateCall, CallableByContract, CallableByPrecompile);
@@ -90,5 +100,13 @@ type TemplatePrecompilesAt<R> = (
 
 pub type TemplatePrecompiles<R> = PrecompileSetBuilder<
     R,
-    (PrecompilesInRangeInclusive<(AddressU64<1>, AddressU64<4095>), TemplatePrecompilesAt<R>>,),
+    (   
+        PrecompilesInRangeInclusive<(AddressU64<1>, AddressU64<4095>), TemplatePrecompilesAt<R>>,
+		// Prefixed precompile sets (XC20)
+ 		PrecompileSetStartingWith<
+			ForeignAssetPrefix,
+			Erc20AssetsPrecompileSet<R, ForeignAssetsInstance>,
+			(CallableByContract, CallableByPrecompile),
+		>,
+    ),
 >;
