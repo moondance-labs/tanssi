@@ -38,7 +38,7 @@ macro_rules! impl_tanssi_pallets_config {
     ) => {
         // `const _:() = { ... }` allows to import and define types that will not leak into the macro
         // call site.
-        const _:() = {
+        const _: () = {
             use $crate::deps::*;
 
             impl pallet_author_inherent::Config for $runtime {
@@ -63,12 +63,14 @@ macro_rules! impl_tanssi_pallets_config {
             impl pallet_cc_authorities_noting::Config for $runtime {
                 type RuntimeEvent = RuntimeEvent;
                 type SelfParaId = parachain_info::Pallet<$runtime>;
-                type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
+                type RelayChainStateProvider =
+                    cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
                 type AuthorityId = NimbusId;
                 type WeightInfo = <$runtime as $crate::Config>::AuthoritiesNotingWeights;
 
                 #[cfg(feature = "runtime-benchmarks")]
-                type BenchmarkHelper = pallet_cc_authorities_noting::benchmarks::NimbusIdBenchmarkHelper;
+                type BenchmarkHelper =
+                    pallet_cc_authorities_noting::benchmarks::NimbusIdBenchmarkHelper;
             }
         };
 
@@ -82,10 +84,22 @@ macro_rules! impl_tanssi_pallets_config {
                 <$runtime as frame_system::Config>::PalletInfo::index::<P>().is_some()
             }
 
-            assert!(impls!($runtime: $crate::Config), "{runtime_name} must impl tp_impl_tanssi_pallets_config::Config");
-            assert!(is_pallet_installed::<pallet_author_inherent::Pallet::<$runtime>>(), "pallet_author_inherent is not installed in {runtime_name}");
-            assert!(is_pallet_installed::<pallet_cc_authorities_noting::Pallet::<$runtime>>(), "pallet_cc_authorities_noting is not installed in {runtime_name}");
-            assert!(is_pallet_installed::<pallet_timestamp::Pallet::<$runtime>>(), "pallet_timestamp is not installed in {runtime_name}");
+            assert!(
+                impls!($runtime: $crate::Config),
+                "{runtime_name} must impl tp_impl_tanssi_pallets_config::Config"
+            );
+            assert!(
+                is_pallet_installed::<pallet_author_inherent::Pallet::<$runtime>>(),
+                "pallet_author_inherent is not installed in {runtime_name}"
+            );
+            assert!(
+                is_pallet_installed::<pallet_cc_authorities_noting::Pallet::<$runtime>>(),
+                "pallet_cc_authorities_noting is not installed in {runtime_name}"
+            );
+            assert!(
+                is_pallet_installed::<pallet_timestamp::Pallet::<$runtime>>(),
+                "pallet_timestamp is not installed in {runtime_name}"
+            );
         }
     };
 }
