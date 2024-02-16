@@ -2854,6 +2854,7 @@ dependencies = [
  "pallet-services-payment",
  "pallet-session",
  "pallet-staking",
+ "pallet-stream-payment",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -3987,6 +3988,7 @@ dependencies = [
  "pallet-root-testing",
  "pallet-services-payment",
  "pallet-session",
+ "pallet-stream-payment",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -8727,6 +8729,30 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-std",
+]
+
+[[package]]
+name = "pallet-stream-payment"
+version = "0.1.0"
+dependencies = [
+ "dp-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "num-traits",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "similar-asserts",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "tap",
+ "tp-maths",
+ "tp-traits",
 ]
 
 [[package]]
