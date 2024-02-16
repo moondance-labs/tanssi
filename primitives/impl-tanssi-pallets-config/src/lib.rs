@@ -31,6 +31,10 @@ pub trait Config {
     type AuthoritiesNotingWeights: pallet_cc_authorities_noting::weights::WeightInfo;
 }
 
+/// Implements Config traits for `pallet_author_inherent`, `pallet_timestamp` and
+/// `pallet_cc_authorities_noting` with the proper parameters to be compatible with Tanssi.
+/// Requires to implement the [`Config`] trait on the runtime.
+/// It generates a test that will fail if the pallets above are not listed in `construct_runtime!`.
 #[macro_export]
 macro_rules! impl_tanssi_pallets_config {
     (
