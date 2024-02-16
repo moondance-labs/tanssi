@@ -124,6 +124,16 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         identity: {
+            /** A username authority was added. */
+            AuthorityAdded: AugmentedEvent<ApiType, [authority: AccountId32], { authority: AccountId32 }>;
+            /** A username authority was removed. */
+            AuthorityRemoved: AugmentedEvent<ApiType, [authority: AccountId32], { authority: AccountId32 }>;
+            /** A dangling username (as in, a username corresponding to an account that has removed its identity) has been removed. */
+            DanglingUsernameRemoved: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, username: Bytes],
+                { who: AccountId32; username: Bytes }
+            >;
             /** A name was cleared, and the given balance returned. */
             IdentityCleared: AugmentedEvent<
                 ApiType,
@@ -156,6 +166,14 @@ declare module "@polkadot/api-base/types/events" {
                 [who: AccountId32, registrarIndex: u32],
                 { who: AccountId32; registrarIndex: u32 }
             >;
+            /** A queued username passed its expiration without being claimed and was removed. */
+            PreapprovalExpired: AugmentedEvent<ApiType, [whose: AccountId32], { whose: AccountId32 }>;
+            /** A username was set as a primary and can be looked up from `who`. */
+            PrimaryUsernameSet: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, username: Bytes],
+                { who: AccountId32; username: Bytes }
+            >;
             /** A registrar was added. */
             RegistrarAdded: AugmentedEvent<ApiType, [registrarIndex: u32], { registrarIndex: u32 }>;
             /** A sub-identity was added to an identity and the deposit paid. */
@@ -175,6 +193,18 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [sub: AccountId32, main: AccountId32, deposit: u128],
                 { sub: AccountId32; main: AccountId32; deposit: u128 }
+            >;
+            /** A username was queued, but `who` must accept it prior to `expiration`. */
+            UsernameQueued: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, username: Bytes, expiration: u32],
+                { who: AccountId32; username: Bytes; expiration: u32 }
+            >;
+            /** A username was set for `who`. */
+            UsernameSet: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, username: Bytes],
+                { who: AccountId32; username: Bytes }
             >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
@@ -275,8 +305,6 @@ declare module "@polkadot/api-base/types/events" {
             >;
             /** Some downward messages have been received and will be processed. */
             DownwardMessagesReceived: AugmentedEvent<ApiType, [count: u32], { count: u32 }>;
-            /** An upgrade has been authorized. */
-            UpgradeAuthorized: AugmentedEvent<ApiType, [codeHash: H256], { codeHash: H256 }>;
             /** An upward message was sent to the relay chain. */
             UpwardMessageSent: AugmentedEvent<
                 ApiType,
@@ -340,6 +368,12 @@ declare module "@polkadot/api-base/types/events" {
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
+        rootTesting: {
+            /** Event dispatched when the trigger_defensive extrinsic is called. */
+            DefensiveTestCall: AugmentedEvent<ApiType, []>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         servicesPayment: {
             CreditBurned: AugmentedEvent<
                 ApiType,
@@ -363,7 +397,13 @@ declare module "@polkadot/api-base/types/events" {
         };
         sudo: {
             /** The sudo key has been updated. */
-            KeyChanged: AugmentedEvent<ApiType, [oldSudoer: Option<AccountId32>], { oldSudoer: Option<AccountId32> }>;
+            KeyChanged: AugmentedEvent<
+                ApiType,
+                [old: Option<AccountId32>, new_: AccountId32],
+                { old: Option<AccountId32>; new_: AccountId32 }
+            >;
+            /** The key was permanently removed. */
+            KeyRemoved: AugmentedEvent<ApiType, []>;
             /** A sudo call just took place. */
             Sudid: AugmentedEvent<
                 ApiType,
@@ -400,6 +440,12 @@ declare module "@polkadot/api-base/types/events" {
             NewAccount: AugmentedEvent<ApiType, [account: AccountId32], { account: AccountId32 }>;
             /** On on-chain remark happened. */
             Remarked: AugmentedEvent<ApiType, [sender: AccountId32, hash_: H256], { sender: AccountId32; hash_: H256 }>;
+            /** An upgrade was authorized. */
+            UpgradeAuthorized: AugmentedEvent<
+                ApiType,
+                [codeHash: H256, checkVersion: bool],
+                { codeHash: H256; checkVersion: bool }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
