@@ -111,12 +111,6 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
 
-            # This is to avoid an error when running rustup show while multiple toolchains are installed:
-            # error: no default toolchain configured
-            # Only needs to run once per runner
-            - name: Setup Rust toolchain to default stable
-              run: rustup show || rustup default stable
-
             - name: Setup Rust toolchain
               run: rustup show
 
