@@ -29,11 +29,6 @@ use {
     sp_runtime::traits::Block as BlockT,
 };
 
-pub use {
-    sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
-    sc_consensus_slots::InherentDataProviderExt,
-};
-
 #[async_trait::async_trait]
 pub trait RetrieveAuthoritiesFromOrchestrator<Block: BlockT, ExtraArgs, A>: Send + Sync {
     /// Create the inherent data providers at the given `parent` block using the given `extra_args`.
