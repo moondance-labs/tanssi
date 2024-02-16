@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use sc_chain_spec::ChainSpec;
+use sp_runtime::Storage;
 use {
     crate::chain_spec::RawGenesisConfig,
     node_common::service::Sealing,
@@ -336,6 +338,7 @@ impl ContainerChainCli {
         };
 
         let chain_spec = crate::chain_spec::RawChainSpec::builder(
+            // This code is not used, we override it in `set_storage` below
             &[],
             // TODO: what to do with extensions? We are hardcoding the relay_chain and the para_id, any
             // other extensions are being ignored
@@ -344,18 +347,26 @@ impl ContainerChainCli {
         .with_name(&name)
         .with_id(&id)
         .with_chain_type(chain_type)
-        .with_genesis_config(serde_json::to_value(&raw_genesis_config).unwrap())
         .with_properties(properties)
         .with_boot_nodes(boot_nodes)
         .with_protocol_id(&protocol_id);
 
-        if let Some(fork_id) = genesis_data.fork_id {
+        let chain_spec = if let Some(fork_id) = genesis_data.fork_id {
             let fork_id_string =
                 String::from_utf8(fork_id).map_err(|_e| "Invalid fork_id".to_string())?;
-            return Ok(chain_spec.with_fork_id(&fork_id_string).build());
-        }
+            chain_spec.with_fork_id(&fork_id_string)
+        } else {
+            chain_spec
+        };
 
-        Ok(chain_spec.build())
+        let mut chain_spec = chain_spec.build();
+
+        chain_spec.set_storage(Storage {
+            top: raw_genesis_config.storage_raw,
+            children_default: Default::default(),
+        });
+
+        Ok(chain_spec)
     }
 
     pub fn preload_chain_spec_from_genesis_data<MaxLengthTokenSymbol: Get<u32>>(
