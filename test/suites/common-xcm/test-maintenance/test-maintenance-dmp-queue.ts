@@ -128,9 +128,9 @@ describeSuite({
                 .as_v3();
 
             // In case of templates, we set a different Config for DmpQueue
-            if (["frontier-template", "container-chain-template"].includes(chain)) {
-                await setDmpConfigStorage(context, polkadotJs, alice);
-            }
+            // if (["frontier-template", "container-chain-template"].includes(chain)) {
+            //     await setDmpConfigStorage(context, polkadotJs, alice);
+            // }
         });
 
         it({
