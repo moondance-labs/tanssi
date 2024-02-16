@@ -187,7 +187,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
     });
     // We should have received the tokens
     Dancebox::execute_with(|| {
-        Dancebox::assert_dmp_queue_error();
+        Dancebox::assert_dmp_queue_incomplete(None);
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
@@ -242,7 +242,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     });
     // We should have received the tokens
     Dancebox::execute_with(|| {
-        Dancebox::assert_dmp_queue_error();
+        Dancebox::assert_dmp_queue_incomplete(None);
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
