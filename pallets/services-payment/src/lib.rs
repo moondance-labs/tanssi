@@ -41,7 +41,10 @@ use {
     frame_support::{
         pallet_prelude::*,
         sp_runtime::{traits::Zero, Saturating},
-        traits::{tokens::ExistenceRequirement, Currency, OnUnbalanced, WithdrawReasons},
+        traits::{
+            tokens::ExistenceRequirement, Currency, EnsureOriginWithArg, OnUnbalanced,
+            WithdrawReasons,
+        },
     },
     frame_system::pallet_prelude::*,
     scale_info::prelude::vec::Vec,
@@ -88,6 +91,8 @@ pub mod pallet {
 
         /// The maximum number of collator assigment production credits that can be accumulated
         type FreeCollatorAssignmentCredits: Get<u32>;
+        // Who can call set_refund_address?
+        type SetRefundAddressOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
         type WeightInfo: WeightInfo;
     }
@@ -122,6 +127,10 @@ pub mod pallet {
             para_id: ParaId,
             credits: BlockNumberFor<T>,
         },
+        RefundAddressUpdated {
+            para_id: ParaId,
+            refund_address: Option<T::AccountId>,
+        },
         CollatorAssignmentCreditsSet {
             para_id: ParaId,
             credits: u32,
@@ -142,6 +151,12 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn given_free_credits)]
     pub type GivenFreeCredits<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
+
+    /// Refund address
+    #[pallet::storage]
+    #[pallet::getter(fn refund_address)]
+    pub type RefundAddress<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T>
@@ -209,9 +224,33 @@ pub mod pallet {
             Ok(().into())
         }
 
+        /// Call index to set the refund address for non-spent tokens
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_refund_address())]
+        pub fn set_refund_address(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            refund_address: Option<T::AccountId>,
+        ) -> DispatchResultWithPostInfo {
+            T::SetRefundAddressOrigin::ensure_origin(origin, &para_id)?;
+
+            if let Some(refund_address) = refund_address.clone() {
+                RefundAddress::<T>::insert(para_id, refund_address.clone());
+            } else {
+                RefundAddress::<T>::remove(para_id);
+            }
+
+            Self::deposit_event(Event::<T>::RefundAddressUpdated {
+                para_id,
+                refund_address,
+            });
+
+            Ok(().into())
+        }
+
         /// Set the number of block production credits for this para_id without paying for them.
         /// Can only be called by root.
-        #[pallet::call_index(3)]
+        #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::set_credits())]
         pub fn set_collator_assignment_credits(
             origin: OriginFor<T>,
@@ -275,7 +314,7 @@ pub mod pallet {
                 return Weight::default();
             }
 
-            // Set number of credits to MaxCreditsStored
+            // Set number of credits to FreeBlockProductionCredits
             let block_production_existing_credits =
                 BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
             let block_production_updated_credits = T::FreeBlockProductionCredits::get();
@@ -284,7 +323,7 @@ pub mod pallet {
                 Self::set_free_block_production_credits(&para_id, block_production_updated_credits);
             }
 
-            // Set number of credits to MaxCreditsStored
+            // Set number of credits to FreeCollatorAssignmentCredits
             let collator_assignment_existing_credits =
                 CollatorAssignmentCredits::<T>::get(para_id).unwrap_or(0u32);
             let collator_assignment_updated_credits = T::FreeCollatorAssignmentCredits::get();
@@ -488,10 +527,17 @@ impl<T: Config> Pallet<T> {
                 WithdrawReasons::FEE,
                 ExistenceRequirement::AllowDeath,
             ) {
-                // Burn for now, we might be able to pass something to do with this
-                drop(imbalance);
+                if let Some(address) = RefundAddress::<T>::get(para_id) {
+                    T::Currency::resolve_creating(&address, imbalance);
+                } else {
+                    // Burn for now, we might be able to pass something to do with this
+                    drop(imbalance);
+                }
             }
         }
+
+        // Clean refund addres
+        RefundAddress::<T>::remove(para_id);
 
         // Clean credits
         BlockProductionCredits::<T>::remove(para_id);

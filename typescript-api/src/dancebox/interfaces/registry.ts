@@ -47,6 +47,7 @@ import type {
     FrameSupportDispatchPerDispatchClassWeight,
     FrameSupportDispatchPerDispatchClassWeightsPerClass,
     FrameSupportDispatchRawOrigin,
+    FrameSupportPalletId,
     FrameSupportTokensMiscBalanceStatus,
     FrameSystemAccountInfo,
     FrameSystemCall,
@@ -157,6 +158,12 @@ import type {
     PalletTransactionPaymentChargeTransactionPayment,
     PalletTransactionPaymentEvent,
     PalletTransactionPaymentReleases,
+    PalletTreasuryCall,
+    PalletTreasuryError,
+    PalletTreasuryEvent,
+    PalletTreasuryPaymentState,
+    PalletTreasuryProposal,
+    PalletTreasurySpendStatus,
     PalletTxPauseCall,
     PalletTxPauseError,
     PalletTxPauseEvent,
@@ -300,6 +307,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSupportDispatchPerDispatchClassWeight: FrameSupportDispatchPerDispatchClassWeight;
         FrameSupportDispatchPerDispatchClassWeightsPerClass: FrameSupportDispatchPerDispatchClassWeightsPerClass;
         FrameSupportDispatchRawOrigin: FrameSupportDispatchRawOrigin;
+        FrameSupportPalletId: FrameSupportPalletId;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
         FrameSystemAccountInfo: FrameSystemAccountInfo;
         FrameSystemCall: FrameSystemCall;
@@ -410,6 +418,12 @@ declare module "@polkadot/types/types/registry" {
         PalletTransactionPaymentChargeTransactionPayment: PalletTransactionPaymentChargeTransactionPayment;
         PalletTransactionPaymentEvent: PalletTransactionPaymentEvent;
         PalletTransactionPaymentReleases: PalletTransactionPaymentReleases;
+        PalletTreasuryCall: PalletTreasuryCall;
+        PalletTreasuryError: PalletTreasuryError;
+        PalletTreasuryEvent: PalletTreasuryEvent;
+        PalletTreasuryPaymentState: PalletTreasuryPaymentState;
+        PalletTreasuryProposal: PalletTreasuryProposal;
+        PalletTreasurySpendStatus: PalletTreasurySpendStatus;
         PalletTxPauseCall: PalletTxPauseCall;
         PalletTxPauseError: PalletTxPauseError;
         PalletTxPauseEvent: PalletTxPauseEvent;

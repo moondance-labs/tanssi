@@ -31,7 +31,7 @@
 use {
     crate::{
         mock::*, pallet as pallet_services_payment, BlockProductionCredits,
-        CollatorAssignmentCredits,
+        CollatorAssignmentCredits, RefundAddress
     },
     cumulus_primitives_core::ParaId,
     frame_support::{assert_err, assert_ok, traits::fungible::Inspect},
@@ -319,5 +319,115 @@ fn not_having_enough_tokens_in_tank_should_not_error() {
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
                 1u128
             );
+        });
+}
+
+#[test]
+fn on_deregister_burns_if_no_deposit_address() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1000u128,
+            ));
+
+            let issuance_before = Balances::total_issuance();
+            crate::Pallet::<Test>::para_deregistered(1.into());
+            let issuance_after = Balances::total_issuance();
+            assert_eq!(issuance_after, issuance_before - 1000u128);
+
+            // Refund address gets cleared
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
+        });
+}
+
+#[test]
+fn on_deregister_cleans_refund_address_even_when_purchases_have_not_being_made() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            let refund_address = 10u64;
+
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                Some(refund_address),
+            ));
+
+            crate::Pallet::<Test>::para_deregistered(1.into());
+
+            // Refund address gets cleared
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
+        });
+}
+
+#[test]
+fn on_deregister_deposits_if_refund_address() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            let refund_address = 10u64;
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1000u128,
+            ));
+
+            // this should set refund address
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                Some(refund_address),
+            ));
+
+            let issuance_before = Balances::total_issuance();
+            crate::Pallet::<Test>::para_deregistered(1.into());
+            let issuance_after = Balances::total_issuance();
+            assert_eq!(issuance_after, issuance_before);
+
+            let balance_refund_address = Balances::balance(&refund_address);
+            assert_eq!(balance_refund_address, 1000u128);
+
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
+        });
+}
+
+#[test]
+fn set_refund_address_with_none_removes_storage() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            let refund_address = 10u64;
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1000u128,
+            ));
+
+            // this should set refund address
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                Some(refund_address),
+            ));
+
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_some());
+
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                None,
+            ));
+
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
         });
 }

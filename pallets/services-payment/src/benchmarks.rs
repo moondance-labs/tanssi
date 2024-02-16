@@ -25,7 +25,7 @@ use {
     frame_benchmarking::{account, v2::*},
     frame_support::{
         assert_ok,
-        traits::{Currency, Get},
+        traits::{Currency, EnsureOriginWithArg, Get},
     },
     frame_system::RawOrigin,
     sp_runtime::Saturating,
@@ -123,6 +123,25 @@ mod benchmarks {
 
         // After call: given free credits
         assert!(crate::GivenFreeCredits::<T>::get(&para_id).is_some());
+    }
+
+    #[benchmark]
+    fn set_refund_address() {
+        let para_id = 1001u32.into();
+
+        let origin = T::SetRefundAddressOrigin::try_successful_origin(&para_id)
+            .expect("failed to create SetRefundAddressOrigin");
+
+        let refund_address = account("sufficient", 0, 1000);
+
+        // Before call: no given free credits
+        assert!(crate::RefundAddress::<T>::get(&para_id).is_none());
+
+        #[extrinsic_call]
+        Pallet::<T>::set_refund_address(origin as T::RuntimeOrigin, para_id, Some(refund_address));
+
+        // After call: given free credits
+        assert!(crate::RefundAddress::<T>::get(&para_id).is_some());
     }
 
     #[benchmark]

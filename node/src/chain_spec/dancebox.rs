@@ -292,6 +292,7 @@ fn testnet_genesis(
         polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
+        treasury: Default::default(),
     }
 }
 

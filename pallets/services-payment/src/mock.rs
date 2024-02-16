@@ -38,6 +38,7 @@ use {
         parameter_types,
         traits::{ConstU32, ConstU64, Everything},
     },
+    frame_system::EnsureRoot,
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
@@ -119,6 +120,7 @@ impl pallet_services_payment::Config for Test {
     type ProvideCollatorAssignmentCost = CollatorAssignmentProductionCost<Test>;
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
+    type SetRefundAddressOrigin = EnsureRoot<AccountId>;
     type WeightInfo = ();
 }
 

@@ -112,6 +112,8 @@ declare module "@polkadot/api-base/types/errors" {
         invulnerables: {
             /** Account is already an Invulnerable. */
             AlreadyInvulnerable: AugmentedError<ApiType>;
+            /** Account does not have keys registered */
+            NoKeysRegistered: AugmentedError<ApiType>;
             /** Account is not an Invulnerable. */
             NotInvulnerable: AugmentedError<ApiType>;
             /** There are too many Invulnerables. */
@@ -247,6 +249,34 @@ declare module "@polkadot/api-base/types/errors" {
             NonZeroRefCount: AugmentedError<ApiType>;
             /** The specification version is not allowed to decrease between the current runtime and the new runtime. */
             SpecVersionNeedsToIncrease: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
+        treasury: {
+            /** The payment has already been attempted. */
+            AlreadyAttempted: AugmentedError<ApiType>;
+            /** The spend is not yet eligible for payout. */
+            EarlyPayout: AugmentedError<ApiType>;
+            /** The balance of the asset kind is not convertible to the balance of the native asset. */
+            FailedToConvertBalance: AugmentedError<ApiType>;
+            /** The payment has neither failed nor succeeded yet. */
+            Inconclusive: AugmentedError<ApiType>;
+            /** The spend origin is valid but the amount it is allowed to spend is lower than the amount to be spent. */
+            InsufficientPermission: AugmentedError<ApiType>;
+            /** Proposer's balance is too low. */
+            InsufficientProposersBalance: AugmentedError<ApiType>;
+            /** No proposal, bounty or spend at that index. */
+            InvalidIndex: AugmentedError<ApiType>;
+            /** The payout was not yet attempted/claimed. */
+            NotAttempted: AugmentedError<ApiType>;
+            /** There was some issue with the mechanism of payment. */
+            PayoutError: AugmentedError<ApiType>;
+            /** Proposal has not been approved. */
+            ProposalNotApproved: AugmentedError<ApiType>;
+            /** The spend has expired and cannot be claimed. */
+            SpendExpired: AugmentedError<ApiType>;
+            /** Too many approvals in the queue. */
+            TooManyApprovals: AugmentedError<ApiType>;
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
