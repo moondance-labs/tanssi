@@ -41,7 +41,10 @@ use {
     frame_support::{
         pallet_prelude::*,
         sp_runtime::{traits::Zero, Saturating},
-        traits::{tokens::ExistenceRequirement, Currency, OnUnbalanced, WithdrawReasons},
+        traits::{
+            tokens::ExistenceRequirement, Currency, EnsureOriginWithArg, OnUnbalanced,
+            WithdrawReasons,
+        },
     },
     frame_system::pallet_prelude::*,
     scale_info::prelude::vec::Vec,
@@ -76,6 +79,9 @@ pub mod pallet {
         /// Provider of a block cost which can adjust from block to block
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
 
+        // Who can call set_refund_address?
+        type SetRefundAddressOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
+
         /// The maximum number of credits that can be accumulated
         type MaxCreditsStored: Get<BlockNumberFor<Self>>;
 
@@ -108,6 +114,10 @@ pub mod pallet {
             para_id: ParaId,
             credits: BlockNumberFor<T>,
         },
+        RefundAddressUpdated {
+            para_id: ParaId,
+            refund_address: Option<T::AccountId>,
+        },
     }
 
     #[pallet::storage]
@@ -119,6 +129,12 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn given_free_credits)]
     pub type GivenFreeCredits<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
+
+    /// Refund address
+    #[pallet::storage]
+    #[pallet::getter(fn refund_address)]
+    pub type RefundAddress<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T>
@@ -188,6 +204,30 @@ pub mod pallet {
             } else {
                 GivenFreeCredits::<T>::remove(para_id);
             }
+
+            Ok(().into())
+        }
+
+        /// Call index to set the refund address for non-spent tokens
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_refund_address())]
+        pub fn set_refund_address(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            refund_address: Option<T::AccountId>,
+        ) -> DispatchResultWithPostInfo {
+            T::SetRefundAddressOrigin::ensure_origin(origin, &para_id)?;
+
+            if let Some(refund_address) = refund_address.clone() {
+                RefundAddress::<T>::insert(para_id, refund_address.clone());
+            } else {
+                RefundAddress::<T>::remove(para_id);
+            }
+
+            Self::deposit_event(Event::<T>::RefundAddressUpdated {
+                para_id,
+                refund_address,
+            });
 
             Ok(().into())
         }
@@ -332,10 +372,17 @@ impl<T: Config> Pallet<T> {
                 WithdrawReasons::FEE,
                 ExistenceRequirement::AllowDeath,
             ) {
-                // Burn for now, we might be able to pass something to do with this
-                drop(imbalance);
+                if let Some(address) = RefundAddress::<T>::get(para_id) {
+                    T::Currency::resolve_creating(&address, imbalance);
+                } else {
+                    // Burn for now, we might be able to pass something to do with this
+                    drop(imbalance);
+                }
             }
         }
+
+        // Clean refund addres
+        RefundAddress::<T>::remove(para_id);
 
         // Clean credits
         BlockProductionCredits::<T>::remove(para_id);

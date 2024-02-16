@@ -65,7 +65,7 @@ pub struct NodeConfig;
 impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
-    type ParachainNativeExecutor = ParachainNativeExecutor;
+    type ParachainExecutor = ParachainExecutor;
 }
 
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
