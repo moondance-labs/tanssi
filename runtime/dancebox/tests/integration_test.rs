@@ -19,13 +19,7 @@
 use {
     common::*,
     cumulus_primitives_core::ParaId,
-    dancebox_runtime::{
-        runtime_common::migrations::{
-            CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
-            MigrateInvulnerables, MigrateServicesPaymentAddCredits,
-        },
-        RewardsCollatorCommission, StreamPayment, StreamPaymentAssetId, TimeUnit,
-    },
+    dancebox_runtime::{RewardsCollatorCommission, StreamPayment, StreamPaymentAssetId, TimeUnit},
     dp_core::well_known_keys,
     frame_support::{assert_noop, assert_ok, BoundedVec},
     nimbus_primitives::NIMBUS_KEY_ID,
@@ -46,6 +40,10 @@ use {
         CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
         MigrateInvulnerables, MigrateServicesPaymentAddCollatorAssignmentCredits,
         MigrateServicesPaymentAddCredits,
+    },
+    runtime_common::migrations::{
+        CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
+        MigrateInvulnerables, MigrateServicesPaymentAddCredits,
     },
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
