@@ -346,17 +346,31 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         servicesPayment: {
-            CreditBurned: AugmentedEvent<
+            BlockProductionCreditBurned: AugmentedEvent<
                 ApiType,
                 [paraId: u32, creditsRemaining: u32],
                 { paraId: u32; creditsRemaining: u32 }
+            >;
+            BlockProductionCreditsSet: AugmentedEvent<
+                ApiType,
+                [paraId: u32, credits: u32],
+                { paraId: u32; credits: u32 }
+            >;
+            CollatorAssignmentCreditBurned: AugmentedEvent<
+                ApiType,
+                [paraId: u32, creditsRemaining: u32],
+                { paraId: u32; creditsRemaining: u32 }
+            >;
+            CollatorAssignmentCreditsSet: AugmentedEvent<
+                ApiType,
+                [paraId: u32, credits: u32],
+                { paraId: u32; credits: u32 }
             >;
             CreditsPurchased: AugmentedEvent<
                 ApiType,
                 [paraId: u32, payer: AccountId32, credit: u128],
                 { paraId: u32; payer: AccountId32; credit: u128 }
             >;
-            CreditsSet: AugmentedEvent<ApiType, [paraId: u32, credits: u32], { paraId: u32; credits: u32 }>;
             RefundAddressUpdated: AugmentedEvent<
                 ApiType,
                 [paraId: u32, refundAddress: Option<AccountId32>],

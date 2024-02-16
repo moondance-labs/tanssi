@@ -22,6 +22,7 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use pallet_services_payment::ProvideCollatorAssignmentCost;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
@@ -30,8 +31,6 @@ pub use sp_runtime::BuildStorage;
 
 #[cfg(feature = "try-runtime")]
 use sp_runtime::TryRuntimeError;
-
-pub mod migrations;
 
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
@@ -95,8 +94,6 @@ pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
-
-const LOG_TARGET: &str = "runtime::tanssi";
 
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
@@ -618,22 +615,31 @@ pub struct RemoveParaIdsWithNoCreditsImpl;
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
         let blocks_per_session = Period::get();
-        let credits_for_2_sessions = 2 * blocks_per_session;
+        let block_credits_for_2_sessions = 2 * blocks_per_session;
         para_ids.retain(|para_id| {
             // Check if the container chain has enough credits for producing blocks for 2 sessions
-            let free_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+            let free_block_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+                .unwrap_or_default();
+
+            // Check if the container chain has enough credits for 2 session assignments
+            let free_session_credits = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
             // Return if we can survive with free credits
-            if free_credits >= credits_for_2_sessions {
+            if free_block_credits >= block_credits_for_2_sessions && free_session_credits >= 2 {
                 return true
             }
 
-            let remaining_credits = credits_for_2_sessions.saturating_sub(free_credits);
+            let remaining_block_credits = block_credits_for_2_sessions.saturating_sub(free_block_credits);
+            let remaining_session_credits = 2u32.saturating_sub(free_session_credits);
 
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
+            let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(para_id);
             // let's check if we can withdraw
-            let remaining_to_pay = (remaining_credits as u128).saturating_mul(block_production_costs);
+            let remaining_block_credits_to_pay = (remaining_block_credits as u128).saturating_mul(block_production_costs);
+            let remaining_session_credits_to_pay = (remaining_session_credits as u128).saturating_mul(collator_assignment_costs);
+            let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay);
+
             // This should take into account whether we tank goes below ED
             // The true refers to keepAlive
             Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), remaining_to_pay).into_result(true).is_ok()
@@ -647,13 +653,19 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
 
         let blocks_per_session = Period::get();
         // Enough credits to run any benchmark
-        let credits = 20 * blocks_per_session;
+        let block_credits = 20 * blocks_per_session;
+        let session_credits = 20;
 
         for para_id in para_ids {
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 RuntimeOrigin::root(),
                 *para_id,
-                credits,
+                block_credits,
+            ));
+            assert_ok!(ServicesPayment::set_collator_assignment_credits(
+                RuntimeOrigin::root(),
+                *para_id,
+                session_credits,
             ));
         }
     }
@@ -677,6 +689,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type GetRandomnessForNextBlock = ();
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
+    type CollatorAssignmentHook = ServicesPayment;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
@@ -686,6 +699,7 @@ impl pallet_authority_assignment::Config for Runtime {
 }
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * currency::MICRODANCE;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * currency::MICRODANCE;
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
@@ -694,26 +708,39 @@ impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
     }
 }
 
+pub struct CollatorAssignmentCost<Runtime>(PhantomData<Runtime>);
+impl ProvideCollatorAssignmentCost<Runtime> for CollatorAssignmentCost<Runtime> {
+    fn collator_assignment_cost(_para_id: &ParaId) -> (u128, Weight) {
+        (FIXED_COLLATOR_ASSIGNMENT_COST, Weight::zero())
+    }
+}
+
 parameter_types! {
     // 60 days worth of blocks
-    pub const MaxCreditsStored: BlockNumber = 60 * DAYS;
+    pub const FreeBlockProductionCredits: BlockNumber = 60 * DAYS;
+    // 60 days worth of blocks
+    pub const FreeCollatorAssignmentCredits: u32 = FreeBlockProductionCredits::get()/Period::get();
 }
 
 impl pallet_services_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
     type OnChargeForBlock = ();
+    type OnChargeForCollatorAssignment = ();
     /// Currency type for fee payment
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block
     type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
+    /// Provider of a block cost which can adjust from block to block
+    type ProvideCollatorAssignmentCost = CollatorAssignmentCost<Runtime>;
+    /// The maximum number of block credits that can be accumulated
+    type FreeBlockProductionCredits = FreeBlockProductionCredits;
+    /// The maximum number of session credits that can be accumulated
+    type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type SetRefundAddressOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
-    /// The maximum number of credits that can be accumulated
-    type MaxCreditsStored = MaxCreditsStored;
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
-
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -977,7 +1004,7 @@ impl pallet_proxy::Config for Runtime {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = (migrations::FlashboxMigrations<Runtime>,);
+    type MigrationsList = (runtime_common::migrations::FlashboxMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
 

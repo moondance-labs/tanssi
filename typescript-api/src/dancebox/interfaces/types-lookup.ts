@@ -792,13 +792,18 @@ declare module "@polkadot/types/lookup" {
             readonly payer: AccountId32;
             readonly credit: u128;
         } & Struct;
-        readonly isCreditBurned: boolean;
-        readonly asCreditBurned: {
+        readonly isBlockProductionCreditBurned: boolean;
+        readonly asBlockProductionCreditBurned: {
             readonly paraId: u32;
             readonly creditsRemaining: u32;
         } & Struct;
-        readonly isCreditsSet: boolean;
-        readonly asCreditsSet: {
+        readonly isCollatorAssignmentCreditBurned: boolean;
+        readonly asCollatorAssignmentCreditBurned: {
+            readonly paraId: u32;
+            readonly creditsRemaining: u32;
+        } & Struct;
+        readonly isBlockProductionCreditsSet: boolean;
+        readonly asBlockProductionCreditsSet: {
             readonly paraId: u32;
             readonly credits: u32;
         } & Struct;
@@ -807,7 +812,18 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly refundAddress: Option<AccountId32>;
         } & Struct;
-        readonly type: "CreditsPurchased" | "CreditBurned" | "CreditsSet" | "RefundAddressUpdated";
+        readonly isCollatorAssignmentCreditsSet: boolean;
+        readonly asCollatorAssignmentCreditsSet: {
+            readonly paraId: u32;
+            readonly credits: u32;
+        } & Struct;
+        readonly type:
+            | "CreditsPurchased"
+            | "BlockProductionCreditBurned"
+            | "CollatorAssignmentCreditBurned"
+            | "BlockProductionCreditsSet"
+            | "RefundAddressUpdated"
+            | "CollatorAssignmentCreditsSet";
     }
 
     /** @name PalletDataPreserversEvent (62) */
@@ -3333,10 +3349,10 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly credit: u128;
         } & Struct;
-        readonly isSetCredits: boolean;
-        readonly asSetCredits: {
+        readonly isSetBlockProductionCredits: boolean;
+        readonly asSetBlockProductionCredits: {
             readonly paraId: u32;
-            readonly credits: u32;
+            readonly freeBlockCredits: u32;
         } & Struct;
         readonly isSetGivenFreeCredits: boolean;
         readonly asSetGivenFreeCredits: {
@@ -3348,7 +3364,17 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly refundAddress: Option<AccountId32>;
         } & Struct;
-        readonly type: "PurchaseCredits" | "SetCredits" | "SetGivenFreeCredits" | "SetRefundAddress";
+        readonly isSetCollatorAssignmentCredits: boolean;
+        readonly asSetCollatorAssignmentCredits: {
+            readonly paraId: u32;
+            readonly freeCollatorAssignmentCredits: u32;
+        } & Struct;
+        readonly type:
+            | "PurchaseCredits"
+            | "SetBlockProductionCredits"
+            | "SetGivenFreeCredits"
+            | "SetRefundAddress"
+            | "SetCollatorAssignmentCredits";
     }
 
     /** @name PalletDataPreserversCall (273) */

@@ -912,6 +912,12 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            collatorAssignmentCredits: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<u32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /** List of para ids that have already been given free credits */
             givenFreeCredits: AugmentedQuery<
                 ApiType,

@@ -541,17 +541,25 @@ export default {
                 payer: "AccountId32",
                 credit: "u128",
             },
-            CreditBurned: {
+            BlockProductionCreditBurned: {
                 paraId: "u32",
                 creditsRemaining: "u32",
             },
-            CreditsSet: {
+            CollatorAssignmentCreditBurned: {
+                paraId: "u32",
+                creditsRemaining: "u32",
+            },
+            BlockProductionCreditsSet: {
                 paraId: "u32",
                 credits: "u32",
             },
             RefundAddressUpdated: {
                 paraId: "u32",
                 refundAddress: "Option<AccountId32>",
+            },
+            CollatorAssignmentCreditsSet: {
+                paraId: "u32",
+                credits: "u32",
             },
         },
     },
@@ -2476,9 +2484,9 @@ export default {
                 paraId: "u32",
                 credit: "u128",
             },
-            set_credits: {
+            set_block_production_credits: {
                 paraId: "u32",
-                credits: "u32",
+                freeBlockCredits: "u32",
             },
             set_given_free_credits: {
                 paraId: "u32",
@@ -2487,6 +2495,10 @@ export default {
             set_refund_address: {
                 paraId: "u32",
                 refundAddress: "Option<AccountId32>",
+            },
+            set_collator_assignment_credits: {
+                paraId: "u32",
+                freeCollatorAssignmentCredits: "u32",
             },
         },
     },
