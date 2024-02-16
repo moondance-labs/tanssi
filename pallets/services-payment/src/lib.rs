@@ -41,10 +41,15 @@ use {
     frame_support::{
         pallet_prelude::*,
         sp_runtime::{traits::Zero, Saturating},
-        traits::{tokens::ExistenceRequirement, Currency, WithdrawReasons},
+        traits::{
+            tokens::ExistenceRequirement, Currency, EnsureOriginWithArg, OnUnbalanced,
+            WithdrawReasons,
+        },
     },
     frame_system::pallet_prelude::*,
     scale_info::prelude::vec::Vec,
+    sp_io::hashing::blake2_256,
+    sp_runtime::traits::TrailingZeroInput,
     tp_traits::{AuthorNotingHook, BlockNumber},
 };
 
@@ -68,11 +73,15 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// Handler for fees
-        type OnChargeForBlockCredit: OnChargeForBlockCredit<Self>;
+        type OnChargeForBlock: OnUnbalanced<NegativeImbalanceOf<Self>>;
         /// Currency type for fee payment
         type Currency: Currency<Self::AccountId>;
         /// Provider of a block cost which can adjust from block to block
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
+
+        // Who can call set_refund_address?
+        type SetRefundAddressOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
+
         /// The maximum number of credits that can be accumulated
         type MaxCreditsStored: Get<BlockNumberFor<Self>>;
 
@@ -95,9 +104,7 @@ pub mod pallet {
         CreditsPurchased {
             para_id: ParaId,
             payer: T::AccountId,
-            fee: BalanceOf<T>,
-            credits_purchased: BlockNumberFor<T>,
-            credits_remaining: BlockNumberFor<T>,
+            credit: BalanceOf<T>,
         },
         CreditBurned {
             para_id: ParaId,
@@ -107,10 +114,14 @@ pub mod pallet {
             para_id: ParaId,
             credits: BlockNumberFor<T>,
         },
+        RefundAddressUpdated {
+            para_id: ParaId,
+            refund_address: Option<T::AccountId>,
+        },
     }
 
     #[pallet::storage]
-    #[pallet::getter(fn collator_commission)]
+    #[pallet::getter(fn free_block_production_credits)]
     pub type BlockProductionCredits<T: Config> =
         StorageMap<_, Blake2_128Concat, ParaId, BlockNumberFor<T>, OptionQuery>;
 
@@ -118,6 +129,12 @@ pub mod pallet {
     #[pallet::storage]
     #[pallet::getter(fn given_free_credits)]
     pub type GivenFreeCredits<T: Config> = StorageMap<_, Blake2_128Concat, ParaId, (), OptionQuery>;
+
+    /// Refund address
+    #[pallet::storage]
+    #[pallet::getter(fn refund_address)]
+    pub type RefundAddress<T: Config> =
+        StorageMap<_, Blake2_128Concat, ParaId, T::AccountId, OptionQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T>
@@ -129,44 +146,21 @@ pub mod pallet {
         pub fn purchase_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
-            credits: BlockNumberFor<T>,
-            max_price_per_credit: Option<BalanceOf<T>>,
+            credit: BalanceOf<T>,
         ) -> DispatchResultWithPostInfo {
             let account = ensure_signed(origin)?;
-
-            let existing_credits =
-                BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
-            let credits_purchasable = T::MaxCreditsStored::get().saturating_sub(existing_credits);
-            let actual_credits_purchased = credits.min(credits_purchasable);
-
-            let updated_credits = existing_credits.saturating_add(actual_credits_purchased);
-
-            // get the current per-credit cost of a block
-            let (block_cost, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
-            if let Some(max_price_per_credit) = max_price_per_credit {
-                ensure!(
-                    block_cost <= max_price_per_credit,
-                    Error::<T>::CreditPriceTooExpensive,
-                );
-            }
-
-            let total_fee = block_cost.saturating_mul(actual_credits_purchased.into());
-
-            T::OnChargeForBlockCredit::charge_credits(
+            let parachain_tank = Self::parachain_tank(para_id);
+            T::Currency::transfer(
                 &account,
-                &para_id,
-                actual_credits_purchased,
-                total_fee,
+                &parachain_tank,
+                credit,
+                ExistenceRequirement::KeepAlive,
             )?;
-
-            BlockProductionCredits::<T>::insert(para_id, updated_credits);
 
             Self::deposit_event(Event::<T>::CreditsPurchased {
                 para_id,
                 payer: account,
-                fee: total_fee,
-                credits_purchased: actual_credits_purchased,
-                credits_remaining: updated_credits,
+                credit: credit,
             });
 
             Ok(().into())
@@ -213,11 +207,35 @@ pub mod pallet {
 
             Ok(().into())
         }
+
+        /// Call index to set the refund address for non-spent tokens
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_refund_address())]
+        pub fn set_refund_address(
+            origin: OriginFor<T>,
+            para_id: ParaId,
+            refund_address: Option<T::AccountId>,
+        ) -> DispatchResultWithPostInfo {
+            T::SetRefundAddressOrigin::ensure_origin(origin, &para_id)?;
+
+            if let Some(refund_address) = refund_address.clone() {
+                RefundAddress::<T>::insert(para_id, refund_address.clone());
+            } else {
+                RefundAddress::<T>::remove(para_id);
+            }
+
+            Self::deposit_event(Event::<T>::RefundAddressUpdated {
+                para_id,
+                refund_address,
+            });
+
+            Ok(().into())
+        }
     }
 
     impl<T: Config> Pallet<T> {
         /// Burn a credit for the given para. Deducts one credit if possible, errors otherwise.
-        pub fn burn_credit_for_para(para_id: &ParaId) -> DispatchResultWithPostInfo {
+        pub fn burn_free_credit_for_para(para_id: &ParaId) -> DispatchResultWithPostInfo {
             let existing_credits =
                 BlockProductionCredits::<T>::get(para_id).unwrap_or(BlockNumberFor::<T>::zero());
 
@@ -290,42 +308,12 @@ pub mod pallet {
 pub type BalanceOf<T> =
     <<T as Config>::Currency as Currency<<T as frame_system::Config>::AccountId>>::Balance;
 
+pub type CurrencyOf<T> = <T as Config>::Currency;
+/// Type alias to conveniently refer to the `Currency::NegativeImbalance` associated type.
+pub type NegativeImbalanceOf<T> =
+    <CurrencyOf<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 /// Handler for fee charging. This will be invoked when fees need to be deducted from the fee
 /// account for a given paraId.
-pub trait OnChargeForBlockCredit<T: Config> {
-    fn charge_credits(
-        payer: &T::AccountId,
-        para_id: &ParaId,
-        credits: BlockNumberFor<T>,
-        fee: BalanceOf<T>,
-    ) -> Result<(), Error<T>>;
-}
-
-pub struct ChargeForBlockCredit<Runtime>(PhantomData<Runtime>);
-impl<T: Config> OnChargeForBlockCredit<T> for ChargeForBlockCredit<T> {
-    fn charge_credits(
-        payer: &T::AccountId,
-        _para_id: &ParaId,
-        _credits: BlockNumberFor<T>,
-        fee: BalanceOf<T>,
-    ) -> Result<(), crate::Error<T>> {
-        use frame_support::traits::tokens::imbalance::Imbalance;
-
-        let result = T::Currency::withdraw(
-            payer,
-            fee,
-            WithdrawReasons::FEE,
-            ExistenceRequirement::AllowDeath,
-        );
-        let imbalance = result.map_err(|_| crate::Error::InsufficientFundsToPurchaseCredits)?;
-
-        if imbalance.peek() != fee {
-            panic!("withdrawn balance incorrect");
-        }
-
-        Ok(())
-    }
-}
 
 /// Returns the cost for a given block credit at the current time. This can be a complex operation,
 /// so it also returns the weight it consumes. (TODO: or just rely on benchmarking)
@@ -342,16 +330,61 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         _block_number: BlockNumber,
         para_id: ParaId,
     ) -> Weight {
-        let total_weight = T::DbWeight::get().reads_writes(1, 1);
-
-        if let Err(e) = Pallet::<T>::burn_credit_for_para(&para_id) {
-            log::warn!(
-                "Failed to burn credits for container chain {}: {:?}",
-                u32::from(para_id),
-                e
-            );
+        if Pallet::<T>::burn_free_credit_for_para(&para_id).is_err() {
+            let (amount_to_charge, _weight) = T::ProvideBlockProductionCost::block_cost(&para_id);
+            match T::Currency::withdraw(
+                &Self::parachain_tank(para_id),
+                amount_to_charge,
+                WithdrawReasons::FEE,
+                ExistenceRequirement::KeepAlive,
+            ) {
+                Err(e) => log::warn!(
+                    "Failed to withdraw credits for container chain {}: {:?}",
+                    u32::from(para_id),
+                    e
+                ),
+                Ok(imbalance) => {
+                    T::OnChargeForBlock::on_unbalanced(imbalance);
+                }
+            }
         }
 
-        total_weight
+        T::WeightInfo::on_container_author_noted()
+    }
+}
+
+impl<T: Config> Pallet<T> {
+    /// Derive a derivative account ID from the paraId.
+    pub fn parachain_tank(para_id: ParaId) -> T::AccountId {
+        let entropy = (b"modlpy/serpayment", para_id).using_encoded(blake2_256);
+        Decode::decode(&mut TrailingZeroInput::new(entropy.as_ref()))
+            .expect("infinite length input; no invalid inputs for type; qed")
+    }
+
+    /// Hook to perform things on deregister
+    pub fn para_deregistered(para_id: ParaId) {
+        // Drain the para-id account from tokens
+        let parachain_tank_balance = T::Currency::total_balance(&Self::parachain_tank(para_id));
+        if !parachain_tank_balance.is_zero() {
+            if let Ok(imbalance) = T::Currency::withdraw(
+                &Self::parachain_tank(para_id),
+                parachain_tank_balance,
+                WithdrawReasons::FEE,
+                ExistenceRequirement::AllowDeath,
+            ) {
+                if let Some(address) = RefundAddress::<T>::get(para_id) {
+                    T::Currency::resolve_creating(&address, imbalance);
+                } else {
+                    // Burn for now, we might be able to pass something to do with this
+                    drop(imbalance);
+                }
+            }
+        }
+
+        // Clean refund addres
+        RefundAddress::<T>::remove(para_id);
+
+        // Clean credits
+        BlockProductionCredits::<T>::remove(para_id);
     }
 }

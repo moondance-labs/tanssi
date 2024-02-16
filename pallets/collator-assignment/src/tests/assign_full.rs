@@ -14,9 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::assignment::AssignmentError;
 use {
-    crate::{assignment::Assignment, tests::Test},
+    crate::{
+        assignment::{Assignment, AssignmentError},
+        tests::Test,
+    },
     sp_std::collections::btree_map::BTreeMap,
 };
 

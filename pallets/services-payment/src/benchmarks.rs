@@ -18,14 +18,16 @@
 
 //! Benchmarking
 use {
-    crate::{BalanceOf, BlockNumberFor, Call, Config, Pallet},
+    crate::{BalanceOf, BlockNumberFor, Call, Config, Pallet, ProvideBlockProductionCost},
     frame_benchmarking::{account, v2::*},
     frame_support::{
         assert_ok,
-        traits::{Currency, Get},
+        traits::{Currency, EnsureOriginWithArg, Get},
     },
     frame_system::RawOrigin,
+    sp_runtime::Saturating,
     sp_std::prelude::*,
+    tp_traits::AuthorNotingHook,
 };
 
 // Build genesis storage according to the mock runtime.
@@ -57,9 +59,11 @@ mod benchmarks {
 
     #[benchmark]
     fn purchase_credits() {
-        let caller = create_funded_user::<T>("caller", 1, 1000);
         let para_id = 1001u32.into();
-        let credits = T::MaxCreditsStored::get();
+        let payment: BalanceOf<T> = T::ProvideBlockProductionCost::block_cost(&para_id)
+            .0
+            .saturating_mul(1000u32.into());
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
 
         // Before call: 0 credits
         assert_eq!(
@@ -68,31 +72,24 @@ mod benchmarks {
         );
 
         #[extrinsic_call]
-        Pallet::<T>::purchase_credits(
-            RawOrigin::Signed(caller),
-            para_id,
-            credits,
-            Some(u32::MAX.into()),
-        );
+        Pallet::<T>::purchase_credits(RawOrigin::Signed(caller), para_id, payment);
 
         // verification code
         assert_eq!(
-            crate::BlockProductionCredits::<T>::get(&para_id).unwrap_or_default(),
-            credits
+            <T::Currency>::total_balance(&crate::Pallet::<T>::parachain_tank(para_id)),
+            payment
         );
     }
 
     #[benchmark]
     fn set_credits() {
-        let caller = create_funded_user::<T>("caller", 1, 1000);
         let para_id = 1001u32.into();
         let credits = T::MaxCreditsStored::get();
 
-        assert_ok!(Pallet::<T>::purchase_credits(
-            RawOrigin::Signed(caller).into(),
+        assert_ok!(Pallet::<T>::set_credits(
+            RawOrigin::Root.into(),
             para_id,
             credits,
-            Some(u32::MAX.into()),
         ));
 
         // Before call: 1000 credits
@@ -123,6 +120,48 @@ mod benchmarks {
 
         // After call: given free credits
         assert!(crate::GivenFreeCredits::<T>::get(&para_id).is_some());
+    }
+
+    #[benchmark]
+    fn set_refund_address() {
+        let para_id = 1001u32.into();
+
+        let origin = T::SetRefundAddressOrigin::try_successful_origin(&para_id)
+            .expect("failed to create SetRefundAddressOrigin");
+
+        let refund_address = account("sufficient", 0, 1000);
+
+        // Before call: no given free credits
+        assert!(crate::RefundAddress::<T>::get(&para_id).is_none());
+
+        #[extrinsic_call]
+        Pallet::<T>::set_refund_address(origin as T::RuntimeOrigin, para_id, Some(refund_address));
+
+        // After call: given free credits
+        assert!(crate::RefundAddress::<T>::get(&para_id).is_some());
+    }
+
+    #[benchmark]
+    fn on_container_author_noted() {
+        let para_id = 1001u32;
+        let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
+        let max_credit_stored = T::MaxCreditsStored::get();
+        let balance_to_purchase = block_cost.saturating_mul(max_credit_stored.into());
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+        let existential_deposit = <T::Currency>::minimum_balance();
+        assert_ok!(Pallet::<T>::purchase_credits(
+            RawOrigin::Signed(caller.clone()).into(),
+            para_id.into(),
+            balance_to_purchase + existential_deposit
+        ));
+        #[block]
+        {
+            <Pallet<T> as AuthorNotingHook<T::AccountId>>::on_container_author_noted(
+                &caller,
+                0,
+                para_id.into(),
+            );
+        }
     }
 
     impl_benchmark_test_suite!(Pallet, crate::benchmarks::new_test_ext(), crate::mock::Test);

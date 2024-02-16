@@ -793,10 +793,6 @@ parameter_types! {
     pub BoundDivision: U256 = U256::from(1024);
 }
 
-impl pallet_dynamic_fee::Config for Runtime {
-    type MinGasPriceBoundDivisor = BoundDivision;
-}
-
 parameter_types! {
     pub DefaultBaseFeePerGas: U256 = U256::from(2_000_000_000);
     pub DefaultElasticity: Permill = Permill::from_parts(125_000);
@@ -876,7 +872,6 @@ construct_runtime!(
         Ethereum: pallet_ethereum = 60,
         EVM: pallet_evm = 61,
         EVMChainId: pallet_evm_chain_id = 62,
-        DynamicFee: pallet_dynamic_fee = 63,
         BaseFee: pallet_base_fee = 64,
         HotfixSufficients: pallet_hotfix_sufficients = 65,
         TransactionPayment: pallet_transaction_payment = 66,
@@ -1058,14 +1053,14 @@ impl_runtime_apis! {
     }
 
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
-		fn create_default_config() -> Vec<u8> {
-			create_default_config::<RuntimeGenesisConfig>()
-		}
+        fn create_default_config() -> Vec<u8> {
+            create_default_config::<RuntimeGenesisConfig>()
+        }
 
-		fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
-			build_config::<RuntimeGenesisConfig>(config)
-		}
-	}
+        fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+            build_config::<RuntimeGenesisConfig>(config)
+        }
+    }
 
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {

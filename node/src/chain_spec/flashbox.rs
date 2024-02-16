@@ -267,6 +267,7 @@ fn testnet_genesis(
         },
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
+        treasury: Default::default(),
     };
 
     serde_json::to_value(&g).unwrap()

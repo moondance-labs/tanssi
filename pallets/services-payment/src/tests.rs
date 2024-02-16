@@ -29,10 +29,11 @@
 //! to that containerChain, by simply assigning the slot position.
 
 use {
-    crate::{mock::*, pallet as pallet_services_payment, BlockProductionCredits},
+    crate::{mock::*, pallet as pallet_services_payment, BlockProductionCredits, RefundAddress},
     cumulus_primitives_core::ParaId,
-    frame_support::{assert_err, assert_ok},
+    frame_support::{assert_err, assert_ok, traits::fungible::Inspect},
     sp_runtime::DispatchError,
+    tp_traits::AuthorNotingHook,
 };
 
 const ALICE: u64 = 1;
@@ -48,8 +49,7 @@ fn purchase_credits_works() {
             assert_ok!(PaymentServices::purchase_credits(
                 RuntimeOrigin::signed(ALICE),
                 1.into(),
-                MaxCreditsStored::get(),
-                None,
+                100u128,
             ),);
 
             assert_eq!(
@@ -57,142 +57,34 @@ fn purchase_credits_works() {
                 vec![pallet_services_payment::Event::CreditsPurchased {
                     para_id: 1.into(),
                     payer: ALICE,
-                    fee: 500,
-                    credits_purchased: MaxCreditsStored::get(),
-                    credits_remaining: MaxCreditsStored::get(),
+                    credit: 100u128
                 }]
             );
-        });
-}
-
-#[test]
-fn purchase_credits_purchases_zero_when_max_already_stored() {
-    ExtBuilder::default()
-        .with_balances([(ALICE, 1_000)].into())
-        .build()
-        .execute_with(|| {
-            System::set_block_number(1);
-
-            let para_id = 1.into();
-            assert_ok!(PaymentServices::purchase_credits(
-                RuntimeOrigin::signed(ALICE),
-                para_id,
-                MaxCreditsStored::get(),
-                None,
-            ),);
-
             assert_eq!(
-                <BlockProductionCredits<Test>>::get(para_id),
-                Some(MaxCreditsStored::get())
-            );
-            assert_ok!(PaymentServices::purchase_credits(
-                RuntimeOrigin::signed(ALICE),
-                para_id,
-                1,
-                None
-            ),);
-            assert_eq!(
-                <BlockProductionCredits<Test>>::get(para_id),
-                Some(MaxCreditsStored::get())
-            );
-
-            // should have two purchase events (one with MaxCreditsStored, then one with zero)
-            assert_eq!(
-                events(),
-                vec![
-                    pallet_services_payment::Event::CreditsPurchased {
-                        para_id,
-                        payer: ALICE,
-                        fee: 500,
-                        credits_purchased: MaxCreditsStored::get(),
-                        credits_remaining: MaxCreditsStored::get(),
-                    },
-                    pallet_services_payment::Event::CreditsPurchased {
-                        para_id,
-                        payer: ALICE,
-                        fee: 0,
-                        credits_purchased: 0,
-                        credits_remaining: MaxCreditsStored::get(),
-                    },
-                ]
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
+                100u128
             );
         });
 }
-
-#[test]
-fn purchase_credits_purchases_max_possible_when_cant_purchase_all_requested() {
-    ExtBuilder::default()
-        .with_balances([(ALICE, 1_000)].into())
-        .build()
-        .execute_with(|| {
-            System::set_block_number(1);
-
-            let para_id = 1.into();
-            let amount_purchased = 1u64;
-            assert_ok!(PaymentServices::purchase_credits(
-                RuntimeOrigin::signed(ALICE),
-                para_id,
-                amount_purchased,
-                None,
-            ));
-
-            let purchasable = MaxCreditsStored::get() - amount_purchased;
-            assert_eq!(purchasable, 4);
-
-            assert_eq!(
-                <BlockProductionCredits<Test>>::get(para_id),
-                Some(amount_purchased)
-            );
-            assert_ok!(PaymentServices::purchase_credits(
-                RuntimeOrigin::signed(ALICE),
-                para_id,
-                MaxCreditsStored::get(),
-                None,
-            ),);
-            assert_eq!(
-                <BlockProductionCredits<Test>>::get(para_id),
-                Some(MaxCreditsStored::get())
-            );
-
-            // should have two purchase events (one with amount_purchased, then with purchasable)
-            assert_eq!(
-                events(),
-                vec![
-                    pallet_services_payment::Event::CreditsPurchased {
-                        para_id,
-                        payer: ALICE,
-                        fee: 100,
-                        credits_purchased: amount_purchased,
-                        credits_remaining: amount_purchased,
-                    },
-                    pallet_services_payment::Event::CreditsPurchased {
-                        para_id,
-                        payer: ALICE,
-                        fee: 400,
-                        credits_purchased: purchasable,
-                        credits_remaining: MaxCreditsStored::get(),
-                    },
-                ]
-            );
-        });
-}
-
 #[test]
 fn purchase_credits_fails_with_insufficient_balance() {
-    ExtBuilder::default().build().execute_with(|| {
-        // really what we're testing is that purchase_credits fails when OnChargeForBlockCredits does
-        assert_err!(
-            PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1, None),
-            pallet_services_payment::Error::<Test>::InsufficientFundsToPurchaseCredits,
-        );
-    });
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            // cannot purchase if death
+            assert_err!(
+                PaymentServices::purchase_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1000u128),
+                sp_runtime::TokenError::NotExpendable,
+            );
+        });
 }
 
 #[test]
 fn burn_credit_fails_with_no_credits() {
     ExtBuilder::default().build().execute_with(|| {
         assert_err!(
-            PaymentServices::burn_credit_for_para(&1u32.into()),
+            PaymentServices::burn_free_credit_for_para(&1u32.into()),
             pallet_services_payment::Error::<Test>::InsufficientCredits,
         );
     });
@@ -205,21 +97,20 @@ fn burn_credit_works() {
         .build()
         .execute_with(|| {
             let para_id = 1.into();
-            assert_ok!(PaymentServices::purchase_credits(
-                RuntimeOrigin::signed(ALICE),
+            assert_ok!(PaymentServices::set_credits(
+                RuntimeOrigin::root(),
                 para_id,
                 1u64,
-                None,
             ),);
 
             // should succeed and burn one
             assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(1u64));
-            assert_ok!(PaymentServices::burn_credit_for_para(&para_id));
+            assert_ok!(PaymentServices::burn_free_credit_for_para(&para_id));
             assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(0u64));
 
             // now should fail
             assert_err!(
-                PaymentServices::burn_credit_for_para(&para_id),
+                PaymentServices::burn_free_credit_for_para(&para_id),
                 pallet_services_payment::Error::<Test>::InsufficientCredits,
             );
         });
@@ -232,82 +123,18 @@ fn burn_credit_fails_for_wrong_para() {
         .build()
         .execute_with(|| {
             let para_id = 1.into();
-            assert_ok!(PaymentServices::purchase_credits(
-                RuntimeOrigin::signed(ALICE),
+            assert_ok!(PaymentServices::set_credits(
+                RuntimeOrigin::root(),
                 para_id,
                 1u64,
-                None,
             ),);
 
             // fails for wrong para
             let wrong_para_id = 2.into();
             assert_err!(
-                PaymentServices::burn_credit_for_para(&wrong_para_id),
+                PaymentServices::burn_free_credit_for_para(&wrong_para_id),
                 pallet_services_payment::Error::<Test>::InsufficientCredits,
             );
-        });
-}
-
-#[test]
-fn buy_credits_no_limit_works() {
-    ExtBuilder::default()
-        .with_balances([(ALICE, 1_000)].into())
-        .build()
-        .execute_with(|| {
-            assert_ok!(PaymentServices::purchase_credits(
-                RuntimeOrigin::signed(ALICE),
-                1.into(),
-                1u64,
-                None,
-            ));
-        });
-}
-
-#[test]
-fn buy_credits_too_expensive_fails() {
-    ExtBuilder::default()
-        .with_balances([(ALICE, 1_000)].into())
-        .build()
-        .execute_with(|| {
-            assert_err!(
-                PaymentServices::purchase_credits(
-                    RuntimeOrigin::signed(ALICE),
-                    1.into(),
-                    1u64,
-                    Some(FIXED_BLOCK_PRODUCTION_COST - 1),
-                ),
-                pallet_services_payment::Error::<Test>::CreditPriceTooExpensive,
-            );
-        });
-}
-
-#[test]
-fn buy_credits_exact_price_limit_works() {
-    ExtBuilder::default()
-        .with_balances([(ALICE, 1_000)].into())
-        .build()
-        .execute_with(|| {
-            assert_ok!(PaymentServices::purchase_credits(
-                RuntimeOrigin::signed(ALICE),
-                1.into(),
-                1u64,
-                Some(FIXED_BLOCK_PRODUCTION_COST),
-            ),);
-        });
-}
-
-#[test]
-fn buy_credits_limit_exceeds_price_works() {
-    ExtBuilder::default()
-        .with_balances([(ALICE, 1_000)].into())
-        .build()
-        .execute_with(|| {
-            assert_ok!(PaymentServices::purchase_credits(
-                RuntimeOrigin::signed(ALICE),
-                1.into(),
-                1u64,
-                Some(FIXED_BLOCK_PRODUCTION_COST + 1),
-            ),);
         });
 }
 
@@ -356,5 +183,196 @@ fn set_credits_to_zero_kills_storage() {
             ));
 
             assert_eq!(<BlockProductionCredits<Test>>::get(ParaId::from(1)), None,);
+        });
+}
+
+#[test]
+fn credits_should_be_substracted_from_tank_if_no_free_credits() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1000u128,
+            ));
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
+                1000u128
+            );
+
+            PaymentServices::on_container_author_noted(&1, 1, 1.into());
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
+                900u128
+            );
+        });
+}
+
+#[test]
+fn credits_should_not_be_substracted_from_tank_if_it_involves_death() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                100u128,
+            ));
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
+                100u128
+            );
+
+            PaymentServices::on_container_author_noted(&1, 1, 1.into());
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
+                100u128
+            );
+        });
+}
+
+#[test]
+fn not_having_enough_tokens_in_tank_should_not_error() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1u128,
+            ));
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
+                1u128
+            );
+
+            PaymentServices::on_container_author_noted(&1, 1, 1.into());
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
+                1u128
+            );
+        });
+}
+
+#[test]
+fn on_deregister_burns_if_no_deposit_address() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1000u128,
+            ));
+
+            let issuance_before = Balances::total_issuance();
+            crate::Pallet::<Test>::para_deregistered(1.into());
+            let issuance_after = Balances::total_issuance();
+            assert_eq!(issuance_after, issuance_before - 1000u128);
+
+            // Refund address gets cleared
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
+        });
+}
+
+#[test]
+fn on_deregister_cleans_refund_address_even_when_purchases_have_not_being_made() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            let refund_address = 10u64;
+
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                Some(refund_address),
+            ));
+
+            crate::Pallet::<Test>::para_deregistered(1.into());
+
+            // Refund address gets cleared
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
+        });
+}
+
+#[test]
+fn on_deregister_deposits_if_refund_address() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            let refund_address = 10u64;
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1000u128,
+            ));
+
+            // this should set refund address
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                Some(refund_address),
+            ));
+
+            let issuance_before = Balances::total_issuance();
+            crate::Pallet::<Test>::para_deregistered(1.into());
+            let issuance_after = Balances::total_issuance();
+            assert_eq!(issuance_after, issuance_before);
+
+            let balance_refund_address = Balances::balance(&refund_address);
+            assert_eq!(balance_refund_address, 1000u128);
+
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
+        });
+}
+
+#[test]
+fn set_refund_address_with_none_removes_storage() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 2_000)].into())
+        .build()
+        .execute_with(|| {
+            let refund_address = 10u64;
+            // this should give 10 block credit
+            assert_ok!(PaymentServices::purchase_credits(
+                RuntimeOrigin::signed(ALICE),
+                1.into(),
+                1000u128,
+            ));
+
+            // this should set refund address
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                Some(refund_address),
+            ));
+
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_some());
+
+            assert_ok!(PaymentServices::set_refund_address(
+                RuntimeOrigin::root(),
+                1.into(),
+                None,
+            ));
+
+            assert!(<RefundAddress<Test>>::get(ParaId::from(1)).is_none());
         });
 }
