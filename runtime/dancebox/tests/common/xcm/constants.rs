@@ -223,7 +223,7 @@ pub mod frontier_template {
                 balances: pre_funded_accounts()
                     .iter()
                     .cloned()
-                    .map(|k| (k, 1u128 << 60))
+                    .map(|k| (k, 1 << 80))
                     .collect(),
             },
             parachain_info: container_chain_template_frontier_runtime::ParachainInfoConfig {

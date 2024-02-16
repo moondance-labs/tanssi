@@ -18,7 +18,7 @@ jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
-serde_json = { workspace = true }
+serde_json = { workspace = true, features = [ "arbitrary_precision" ]}
 url = { workspace = true }
 
 # Local

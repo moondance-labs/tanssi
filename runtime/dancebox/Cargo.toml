@@ -15,6 +15,7 @@ log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 serde = { workspace = true, optional = true, features = [ "derive" ] }
+serde_json = { workspace = true, features = [ "arbitrary_precision" ]}
 smallvec = { workspace = true }
 
 # Own
@@ -130,7 +131,6 @@ test-relay-sproof-builder = { workspace = true }
 westend-runtime = { workspace = true, features = [ "std" ] }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
-serde_json = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
