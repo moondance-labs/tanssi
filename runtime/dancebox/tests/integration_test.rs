@@ -41,10 +41,6 @@ use {
         MigrateInvulnerables, MigrateServicesPaymentAddCollatorAssignmentCredits,
         MigrateServicesPaymentAddCredits,
     },
-    runtime_common::migrations::{
-        CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
-        MigrateInvulnerables, MigrateServicesPaymentAddCredits,
-    },
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{
