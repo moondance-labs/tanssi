@@ -26,6 +26,7 @@ use {
         traits::{IdentifyAccount, Verify},
         BuildStorage, MultiSignature,
     },
+    emulated_integration_tests_common::build_genesis_storage,
 };
 
 type AccountPublic = <MultiSignature as Verify>::Signer;
@@ -195,12 +196,7 @@ pub mod westend {
             },
             ..Default::default()
         };
-
-        ChainSpec::builder(westend_runtime::WASM_BINARY.unwrap(), None)
-            .with_genesis_config(serde_json::to_value(&genesis_config).unwrap())
-            .build()
-            .build_storage()
-            .unwrap()
+        build_genesis_storage(&genesis_config, westend_runtime::WASM_BINARY.unwrap())
     }
 }
 
@@ -209,6 +205,7 @@ pub mod frontier_template {
     use {
         container_chain_template_frontier_runtime::AccountId, hex_literal::hex,
         sp_runtime::BuildStorage,
+        emulated_integration_tests_common::build_genesis_storage,
     };
     pub const PARA_ID: u32 = 2001;
     pub const ORCHESTRATOR: u32 = 2000;
@@ -248,17 +245,8 @@ pub mod frontier_template {
             ..Default::default()
         };
 
-        let json = serde_json::to_value(&genesis_config).unwrap();
+        build_genesis_storage(&genesis_config, container_chain_template_frontier_runtime::WASM_BINARY.unwrap())
 
-        ChainSpec::builder(
-            container_chain_template_frontier_runtime::WASM_BINARY
-                .expect("WASM binary was not build, please build it!"),
-            None,
-        )
-        .with_genesis_config(json)
-        .build()
-        .build_storage()
-        .unwrap()
     }
     /// Get pre-funded accounts
     pub fn pre_funded_accounts() -> Vec<AccountId> {
@@ -306,15 +294,6 @@ pub mod simple_template {
             },
             ..Default::default()
         };
-
-        ChainSpec::builder(
-            container_chain_template_simple_runtime::WASM_BINARY
-                .expect("WASM binary was not build, please build it!"),
-            None,
-        )
-        .with_genesis_config(serde_json::to_value(&genesis_config).unwrap())
-        .build()
-        .build_storage()
-        .unwrap()
+        build_genesis_storage(&genesis_config, container_chain_template_simple_runtime::WASM_BINARY.unwrap())
     }
 }
