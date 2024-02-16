@@ -20,7 +20,7 @@ use {
     common::*,
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{
-        migrations::{
+        runtime_common::migrations::{
             CollatorSelectionInvulnerablesValue, MigrateBootNodes, MigrateConfigurationParathreads,
             MigrateInvulnerables, MigrateServicesPaymentAddCredits,
         },
