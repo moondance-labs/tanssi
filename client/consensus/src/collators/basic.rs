@@ -17,7 +17,7 @@
 use {
     crate::{
         collators as collator_util, consensus_orchestrator::RetrieveAuthoritiesFromOrchestrator,
-        AuthorityId, OrchestratorAuraWorkerAuxData,
+        OrchestratorAuraWorkerAuxData,
     },
     cumulus_client_collator::{
         relay_chain_driven::CollationRequest, service::ServiceInterface as CollatorServiceInterface,
