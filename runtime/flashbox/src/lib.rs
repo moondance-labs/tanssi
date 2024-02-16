@@ -41,8 +41,8 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            fungible::{Balanced, Credit, Inspect},
-            tokens::{PayFromAccount, UnityAssetBalanceConversion},
+            fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
+            tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             Imbalance, InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
             OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
@@ -81,7 +81,7 @@ use {
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, IdentityLookup,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
-        AccountId32, ApplyExtrinsicResult,
+        AccountId32, ApplyExtrinsicResult, RuntimeDebug,
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
@@ -1178,6 +1178,137 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+pub enum StreamPaymentAssetId {
+    Native,
+}
+
+pub struct StreamPaymentAssets;
+impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
+    for StreamPaymentAssets
+{
+    fn transfer_deposit(
+        asset_id: &StreamPaymentAssetId,
+        from: &AccountId,
+        to: &AccountId,
+        amount: Balance,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        match asset_id {
+            StreamPaymentAssetId::Native => {
+                // We remove the hold before transfering.
+                Self::decrease_deposit(asset_id, from, amount)?;
+                Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
+            }
+        }
+    }
+
+    fn increase_deposit(
+        asset_id: &StreamPaymentAssetId,
+        account: &AccountId,
+        amount: Balance,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
+                account,
+                amount,
+            ),
+        }
+    }
+
+    fn decrease_deposit(
+        asset_id: &StreamPaymentAssetId,
+        account: &AccountId,
+        amount: Balance,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::release(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
+                account,
+                amount,
+                Precision::Exact,
+            )
+            .map(|_| ()),
+        }
+    }
+
+    fn get_deposit(asset_id: &StreamPaymentAssetId, account: &AccountId) -> Balance {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::balance_on_hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
+                account,
+            ),
+        }
+    }
+
+    /// Benchmarks: should return the asset id which has the worst performance when interacting
+    /// with it.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_worst_case_asset_id() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should return the another asset id which has the worst performance when interacting
+    /// with it afther `bench_worst_case_asset_id`. This is to benchmark the worst case when changing config
+    /// from one asset to another.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_worst_case_asset_id2() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should set the balance for the asset id returned by `bench_worst_case_asset_id`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
+        // only one asset id
+        let StreamPaymentAssetId::Native = asset_id;
+
+        Balances::set_balance(account, amount);
+    }
+}
+
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+pub enum TimeUnit {
+    BlockNumber,
+    Timestamp,
+    // TODO: Container chains/relay block number.
+}
+
+pub struct TimeProvider;
+impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
+    fn now(unit: &TimeUnit) -> Option<Balance> {
+        match *unit {
+            TimeUnit::BlockNumber => Some(System::block_number().into()),
+            TimeUnit::Timestamp => Some(Timestamp::now().into()),
+        }
+    }
+
+    /// Benchmarks: should return the time unit which has the worst performance calling
+    /// `TimeProvider::now(unit)` with.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_worst_case_time_unit() -> TimeUnit {
+        // Both BlockNumber and Timestamp cost the same (1 db read), but overriding timestamp
+        // doesn't work well in benches, while block number works fine.
+        TimeUnit::BlockNumber
+    }
+
+    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_now(instant: Balance) {
+        System::set_block_number(instant as u32)
+    }
+}
+
+impl pallet_stream_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type StreamId = u64;
+    type TimeUnit = TimeUnit;
+    type Balance = Balance;
+    type AssetId = StreamPaymentAssetId;
+    type Assets = StreamPaymentAssets;
+    type TimeProvider = TimeProvider;
+    type WeightInfo = ();
+}
+
 parameter_types! {
     // 1 entry, storing 258 bytes on-chain
     pub const BasicDeposit: Balance = currency::deposit(1, 258);
@@ -1261,6 +1392,7 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
         TransactionPayment: pallet_transaction_payment = 11,
+        StreamPayment: pallet_stream_payment = 12,
 
         // Other utilities
         Identity: pallet_identity = 15,
@@ -1314,6 +1446,7 @@ mod benches {
         [pallet_data_preservers, DataPreservers]
         [pallet_invulnerables, Invulnerables]
         [pallet_author_inherent, AuthorInherent]
+        [pallet_stream_payment, StreamPayment]
         [pallet_relay_storage_roots, RelayStorageRoots]
     );
 }

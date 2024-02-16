@@ -36,8 +36,11 @@ import type {
     DanceboxRuntimeOriginCaller,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeRuntime,
+    DanceboxRuntimeRuntimeFreezeReason,
     DanceboxRuntimeRuntimeHoldReason,
     DanceboxRuntimeSessionKeys,
+    DanceboxRuntimeStreamPaymentAssetId,
+    DanceboxRuntimeTimeUnit,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     FrameSupportDispatchDispatchClass,
@@ -91,7 +94,8 @@ import type {
     PalletBalancesCall,
     PalletBalancesError,
     PalletBalancesEvent,
-    PalletBalancesIdAmount,
+    PalletBalancesIdAmountRuntimeFreezeReason,
+    PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReasons,
     PalletBalancesReserveData,
     PalletCollatorAssignmentCall,
@@ -151,6 +155,17 @@ import type {
     PalletSessionCall,
     PalletSessionError,
     PalletSessionEvent,
+    PalletStreamPaymentCall,
+    PalletStreamPaymentChangeKind,
+    PalletStreamPaymentChangeRequest,
+    PalletStreamPaymentDepositChange,
+    PalletStreamPaymentError,
+    PalletStreamPaymentEvent,
+    PalletStreamPaymentFreezeReason,
+    PalletStreamPaymentHoldReason,
+    PalletStreamPaymentParty,
+    PalletStreamPaymentStream,
+    PalletStreamPaymentStreamConfig,
     PalletSudoCall,
     PalletSudoError,
     PalletSudoEvent,
@@ -296,8 +311,11 @@ declare module "@polkadot/types/types/registry" {
         DanceboxRuntimeOriginCaller: DanceboxRuntimeOriginCaller;
         DanceboxRuntimeProxyType: DanceboxRuntimeProxyType;
         DanceboxRuntimeRuntime: DanceboxRuntimeRuntime;
+        DanceboxRuntimeRuntimeFreezeReason: DanceboxRuntimeRuntimeFreezeReason;
         DanceboxRuntimeRuntimeHoldReason: DanceboxRuntimeRuntimeHoldReason;
         DanceboxRuntimeSessionKeys: DanceboxRuntimeSessionKeys;
+        DanceboxRuntimeStreamPaymentAssetId: DanceboxRuntimeStreamPaymentAssetId;
+        DanceboxRuntimeTimeUnit: DanceboxRuntimeTimeUnit;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
@@ -351,7 +369,8 @@ declare module "@polkadot/types/types/registry" {
         PalletBalancesCall: PalletBalancesCall;
         PalletBalancesError: PalletBalancesError;
         PalletBalancesEvent: PalletBalancesEvent;
-        PalletBalancesIdAmount: PalletBalancesIdAmount;
+        PalletBalancesIdAmountRuntimeFreezeReason: PalletBalancesIdAmountRuntimeFreezeReason;
+        PalletBalancesIdAmountRuntimeHoldReason: PalletBalancesIdAmountRuntimeHoldReason;
         PalletBalancesReasons: PalletBalancesReasons;
         PalletBalancesReserveData: PalletBalancesReserveData;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
@@ -411,6 +430,17 @@ declare module "@polkadot/types/types/registry" {
         PalletSessionCall: PalletSessionCall;
         PalletSessionError: PalletSessionError;
         PalletSessionEvent: PalletSessionEvent;
+        PalletStreamPaymentCall: PalletStreamPaymentCall;
+        PalletStreamPaymentChangeKind: PalletStreamPaymentChangeKind;
+        PalletStreamPaymentChangeRequest: PalletStreamPaymentChangeRequest;
+        PalletStreamPaymentDepositChange: PalletStreamPaymentDepositChange;
+        PalletStreamPaymentError: PalletStreamPaymentError;
+        PalletStreamPaymentEvent: PalletStreamPaymentEvent;
+        PalletStreamPaymentFreezeReason: PalletStreamPaymentFreezeReason;
+        PalletStreamPaymentHoldReason: PalletStreamPaymentHoldReason;
+        PalletStreamPaymentParty: PalletStreamPaymentParty;
+        PalletStreamPaymentStream: PalletStreamPaymentStream;
+        PalletStreamPaymentStreamConfig: PalletStreamPaymentStreamConfig;
         PalletSudoCall: PalletSudoCall;
         PalletSudoError: PalletSudoError;
         PalletSudoEvent: PalletSudoEvent;

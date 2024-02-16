@@ -7,20 +7,7 @@ import "@polkadot/api-base/types/storage";
 
 import type { ApiTypes, AugmentedQuery, QueryableStorageEntry } from "@polkadot/api-base/types";
 import type { Data } from "@polkadot/types";
-import type {
-    BTreeMap,
-    Bytes,
-    Null,
-    Option,
-    Struct,
-    U8aFixed,
-    Vec,
-    bool,
-    u128,
-    u16,
-    u32,
-    u64,
-} from "@polkadot/types-codec";
+import type { BTreeMap, Bytes, Null, Option, U8aFixed, Vec, bool, u128, u16, u32, u64 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
@@ -33,7 +20,6 @@ import type {
     CumulusPalletXcmpQueueInboundChannelDetails,
     CumulusPalletXcmpQueueOutboundChannelDetails,
     CumulusPalletXcmpQueueQueueConfigData,
-    DanceboxRuntimeRuntimeHoldReason,
     DanceboxRuntimeSessionKeys,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
@@ -50,7 +36,8 @@ import type {
     PalletAuthorNotingContainerChainBlockInfo,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
-    PalletBalancesIdAmount,
+    PalletBalancesIdAmountRuntimeFreezeReason,
+    PalletBalancesIdAmountRuntimeHoldReason,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
     PalletIdentityRegistrarInfo,
@@ -62,6 +49,7 @@ import type {
     PalletProxyAnnouncement,
     PalletProxyProxyDefinition,
     PalletRegistrarDepositInfo,
+    PalletStreamPaymentStream,
     PalletTransactionPaymentReleases,
     PalletTreasuryProposal,
     PalletTreasurySpendStatus,
@@ -193,21 +181,14 @@ declare module "@polkadot/api-base/types/storage" {
             /** Freeze locks on account balances. */
             freezes: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmount>>,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeFreezeReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /** Holds on account balances. */
             holds: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<
-                    Vec<
-                        {
-                            readonly id: DanceboxRuntimeRuntimeHoldReason;
-                            readonly amount: u128;
-                        } & Struct
-                    >
-                >,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Vec<PalletBalancesIdAmountRuntimeHoldReason>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
@@ -998,6 +979,47 @@ declare module "@polkadot/api-base/types/storage" {
             /** The current set of validators. */
             validators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        streamPayment: {
+            /**
+             * Lookup for all streams with given source. To avoid maintaining a growing list of stream ids, they are stored in
+             * the form of an entry (AccountId, StreamId). If such entry exists then this AccountId is a source in StreamId.
+             * One can iterate over all storage keys starting with the AccountId to find all StreamIds.
+             */
+            lookupStreamsWithSource: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: AccountId32 | string | Uint8Array,
+                    arg2: u64 | AnyNumber | Uint8Array
+                ) => Observable<Option<Null>>,
+                [AccountId32, u64]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, u64]>;
+            /**
+             * Lookup for all streams with given target. To avoid maintaining a growing list of stream ids, they are stored in
+             * the form of an entry (AccountId, StreamId). If such entry exists then this AccountId is a target in StreamId.
+             * One can iterate over all storage keys starting with the AccountId to find all StreamIds.
+             */
+            lookupStreamsWithTarget: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: AccountId32 | string | Uint8Array,
+                    arg2: u64 | AnyNumber | Uint8Array
+                ) => Observable<Option<Null>>,
+                [AccountId32, u64]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, u64]>;
+            /** Store the next available stream id. */
+            nextStreamId: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Store each stream indexed by an Id. */
+            streams: AugmentedQuery<
+                ApiType,
+                (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletStreamPaymentStream>>,
+                [u64]
+            > &
+                QueryableStorageEntry<ApiType, [u64]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

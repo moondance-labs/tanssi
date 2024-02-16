@@ -20,18 +20,15 @@
 //! slot_author returns the author based on the slot number and authorities provided (aura-like)
 //! authorities retrieves the current set of authorities based on the first eligible key found in the keystore
 
-use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
-
 pub mod collators;
 mod consensus_orchestrator;
 mod manual_seal;
+
 #[cfg(test)]
 mod tests;
 
-pub use crate::consensus_orchestrator::OrchestratorAuraWorkerAuxData;
-pub use sc_consensus_aura::CompatibilityMode;
-
 pub use {
+    crate::consensus_orchestrator::OrchestratorAuraWorkerAuxData,
     cumulus_primitives_core::ParaId,
     manual_seal::{
         get_aura_id_from_seed, ContainerManualSealAuraConsensusDataProvider,
@@ -39,8 +36,10 @@ pub use {
     },
     pallet_registrar_runtime_api::OnDemandBlockProductionApi,
     parity_scale_codec::{Decode, Encode},
-    sc_consensus_aura::find_pre_digest,
-    sc_consensus_aura::{slot_duration, AuraVerifier, BuildAuraWorkerParams, SlotProportion},
+    sc_consensus_aura::{
+        find_pre_digest, slot_duration, AuraVerifier, BuildAuraWorkerParams, CompatibilityMode,
+        SlotProportion,
+    },
     sc_consensus_slots::InherentDataProviderExt,
     sp_api::{Core, ProvideRuntimeApi},
     sp_application_crypto::AppPublic,
@@ -51,6 +50,9 @@ pub use {
     std::hash::Hash,
     tp_consensus::TanssiAuthorityAssignmentApi,
 };
+
+use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
+
 const LOG_TARGET: &str = "aura::tanssi";
 
 type AuthorityId<P> = <P as Pair>::Public;
