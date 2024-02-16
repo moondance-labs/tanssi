@@ -31,7 +31,7 @@
 use {
     crate::{
         mock::*, pallet as pallet_services_payment, BlockProductionCredits,
-        CollatorAssignmentCredits, RefundAddress
+        CollatorAssignmentCredits, RefundAddress,
     },
     cumulus_primitives_core::ParaId,
     frame_support::{assert_err, assert_ok, traits::fungible::Inspect},
