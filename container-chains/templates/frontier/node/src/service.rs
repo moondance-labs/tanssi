@@ -60,7 +60,7 @@ pub struct NodeConfig;
 impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
-    type ParachainNativeExecutor = TemplateRuntimeExecutor;
+    type ParachainExecutor = ParachainExecutor;
 }
 
 pub fn frontier_database_dir(config: &Configuration, path: &str) -> std::path::PathBuf {
