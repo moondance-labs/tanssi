@@ -490,7 +490,6 @@ pub async fn start_dev_node(
         let backend = node_builder.backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
         let overrides = overrides;
-        let fee_history_cache = fee_history_cache;
         let block_data_cache = block_data_cache;
 
         Box::new(move |deny_unsafe, subscription_task_executor| {
