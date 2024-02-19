@@ -20,11 +20,10 @@
 //! slot_author returns the author based on the slot number and authorities provided (aura-like)
 //! authorities retrieves the current set of authorities based on the first eligible key found in the keystore
 
-use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
-
 pub mod collators;
 mod consensus_orchestrator;
 mod manual_seal;
+
 #[cfg(test)]
 mod tests;
 
@@ -51,6 +50,8 @@ pub use {
     std::hash::Hash,
     tp_consensus::TanssiAuthorityAssignmentApi,
 };
+
+use {sp_consensus_slots::Slot, sp_core::crypto::Pair};
 
 const LOG_TARGET: &str = "aura::tanssi";
 

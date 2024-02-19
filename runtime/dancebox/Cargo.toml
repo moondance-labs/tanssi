@@ -35,6 +35,8 @@ pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-relay-storage-roots = { workspace = true }
 pallet-services-payment = { workspace = true }
+pallet-stream-payment = { workspace = true }
+runtime-common = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -190,6 +192,7 @@ std = [
 	"pallet-services-payment/std",
 	"pallet-session/std",
 	"pallet-staking/std",
+	"pallet-stream-payment/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
@@ -205,6 +208,7 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"polkadot-runtime-parachains/std",
+	"runtime-common/std",
 	"scale-info/std",
 	"serde",
 	"serde?/std",
@@ -276,6 +280,7 @@ runtime-benchmarks = [
 	"pallet-relay-storage-roots/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
+	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
@@ -288,6 +293,7 @@ runtime-benchmarks = [
 	"polkadot-runtime-common/runtime-benchmarks",
 	"polkadot-runtime-parachains/runtime-benchmarks",
 	"polkadot-service/runtime-benchmarks",
+	"runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
@@ -350,6 +356,7 @@ try-runtime = [
 	"polkadot-runtime-common/try-runtime",
 	"polkadot-runtime-parachains/try-runtime",
 	"polkadot-service/try-runtime",
+	"runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"westend-runtime/try-runtime",
 ]

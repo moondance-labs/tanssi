@@ -260,7 +260,7 @@ describeSuite({
             timeout: 120000,
             test: async function () {
                 // Wait 1 session so that parathreads have produced at least a few blocks each
-                await waitSessions(context, paraApi, 1);
+                await waitSessions(context, paraApi, 2);
 
                 // TODO: calculate block frequency somehow
                 assertSlotFrequency(await getBlockData(paraApi), 1);

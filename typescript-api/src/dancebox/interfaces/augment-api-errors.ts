@@ -368,6 +368,25 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        streamPayment: {
+            CanOnlyCancelOwnRequest: AugmentedError<ApiType>;
+            CantAcceptOwnRequest: AugmentedError<ApiType>;
+            CantBeBothSourceAndTarget: AugmentedError<ApiType>;
+            CantFetchCurrentTime: AugmentedError<ApiType>;
+            CantOverrideMandatoryChange: AugmentedError<ApiType>;
+            ChangingAssetRequiresAbsoluteDepositChange: AugmentedError<ApiType>;
+            ImmediateDepositChangeRequiresSameAssetId: AugmentedError<ApiType>;
+            NoPendingRequest: AugmentedError<ApiType>;
+            SourceCantDecreaseRate: AugmentedError<ApiType>;
+            StreamIdOverflow: AugmentedError<ApiType>;
+            TargetCantChangeDeposit: AugmentedError<ApiType>;
+            TargetCantIncreaseRate: AugmentedError<ApiType>;
+            UnauthorizedOrigin: AugmentedError<ApiType>;
+            UnknownStreamId: AugmentedError<ApiType>;
+            WrongRequestNonce: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         sudo: {
             /** Sender must be the Sudo account */
             RequireSudo: AugmentedError<ApiType>;

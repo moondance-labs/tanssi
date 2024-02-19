@@ -37,6 +37,7 @@ import type {
     PalletProxyAnnouncement,
     PalletProxyProxyDefinition,
     PalletRegistrarDepositInfo,
+    PalletStreamPaymentStream,
     PalletTransactionPaymentReleases,
     PalletTreasuryProposal,
     PalletTreasurySpendStatus,
@@ -631,10 +632,23 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            collatorAssignmentCredits: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<u32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /** List of para ids that have already been given free credits */
             givenFreeCredits: AugmentedQuery<
                 ApiType,
                 (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<Null>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /** Refund address */
+            refundAddress: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<AccountId32>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
@@ -685,6 +699,47 @@ declare module "@polkadot/api-base/types/storage" {
             /** The current set of validators. */
             validators: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        streamPayment: {
+            /**
+             * Lookup for all streams with given source. To avoid maintaining a growing list of stream ids, they are stored in
+             * the form of an entry (AccountId, StreamId). If such entry exists then this AccountId is a source in StreamId.
+             * One can iterate over all storage keys starting with the AccountId to find all StreamIds.
+             */
+            lookupStreamsWithSource: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: AccountId32 | string | Uint8Array,
+                    arg2: u64 | AnyNumber | Uint8Array
+                ) => Observable<Option<Null>>,
+                [AccountId32, u64]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, u64]>;
+            /**
+             * Lookup for all streams with given target. To avoid maintaining a growing list of stream ids, they are stored in
+             * the form of an entry (AccountId, StreamId). If such entry exists then this AccountId is a target in StreamId.
+             * One can iterate over all storage keys starting with the AccountId to find all StreamIds.
+             */
+            lookupStreamsWithTarget: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: AccountId32 | string | Uint8Array,
+                    arg2: u64 | AnyNumber | Uint8Array
+                ) => Observable<Option<Null>>,
+                [AccountId32, u64]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, u64]>;
+            /** Store the next available stream id. */
+            nextStreamId: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Store each stream indexed by an Id. */
+            streams: AugmentedQuery<
+                ApiType,
+                (arg: u64 | AnyNumber | Uint8Array) => Observable<Option<PalletStreamPaymentStream>>,
+                [u64]
+            > &
+                QueryableStorageEntry<ApiType, [u64]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

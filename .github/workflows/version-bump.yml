@@ -1,0 +1,35 @@
+name: Create version bump ticket
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Polkadot version to bump from (ex: v0.9.40)"
+        required: true
+      to:
+        description: "Polkadot version to bump to (ex: v0.9.42)"
+        required: true
+
+jobs:
+  create_bump_ticket:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.10.0
+      - name: Generate version bump issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd tools
+          yarn install
+          yarn --silent run print-version-bump-info -- --from ${{ github.event.inputs.from }} --to ${{ github.event.inputs.to }} | tee ../version-bump.md
+      - name: Create version bump issue
+        uses: peter-evans/create-issue-from-file@v3
+        with:
+          title: Update polkadot-sdk from ${{ github.event.inputs.from }} to ${{ github.event.inputs.to }}
+          content-filepath: ./version-bump.md
+          labels: |
+            automated issue

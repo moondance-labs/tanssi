@@ -235,6 +235,7 @@ impl pallet_collator_assignment::Config for Test {
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
+    type CollatorAssignmentHook = ();
     type WeightInfo = ();
 }
 
