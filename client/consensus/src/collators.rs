@@ -21,10 +21,10 @@ use {
     cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
     cumulus_client_consensus_common::ParachainCandidate,
     cumulus_client_consensus_proposer::ProposerInterface,
+    cumulus_client_parachain_inherent::{ParachainInherentData, ParachainInherentDataProvider},
     cumulus_primitives_core::{
         relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
     },
-    cumulus_client_parachain_inherent::{ParachainInherentData, ParachainInherentDataProvider},
     cumulus_relay_chain_interface::RelayChainInterface,
     futures::prelude::*,
     nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID},

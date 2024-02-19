@@ -17,6 +17,7 @@ use {
     cumulus_primitives_core::relay_chain::{
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
+    emulated_integration_tests_common::build_genesis_storage,
     polkadot_service::chain_spec::get_authority_keys_from_seed_no_beefy,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
@@ -26,7 +27,6 @@ use {
         traits::{IdentifyAccount, Verify},
         MultiSignature,
     },
-    emulated_integration_tests_common::build_genesis_storage,
 };
 
 type AccountPublic = <MultiSignature as Verify>::Signer;
@@ -202,8 +202,8 @@ pub mod westend {
 // Frontier template
 pub mod frontier_template {
     use {
-        container_chain_template_frontier_runtime::AccountId, hex_literal::hex,
-        emulated_integration_tests_common::build_genesis_storage,
+        container_chain_template_frontier_runtime::AccountId,
+        emulated_integration_tests_common::build_genesis_storage, hex_literal::hex,
     };
     pub const PARA_ID: u32 = 2001;
     pub const ORCHESTRATOR: u32 = 2000;
@@ -240,8 +240,10 @@ pub mod frontier_template {
             ..Default::default()
         };
 
-        build_genesis_storage(&genesis_config, container_chain_template_frontier_runtime::WASM_BINARY.unwrap())
-
+        build_genesis_storage(
+            &genesis_config,
+            container_chain_template_frontier_runtime::WASM_BINARY.unwrap(),
+        )
     }
     /// Get pre-funded accounts
     pub fn pre_funded_accounts() -> Vec<AccountId> {
@@ -258,9 +260,7 @@ pub mod frontier_template {
 
 // Simple template
 pub mod simple_template {
-    use {
-        super::*, container_chain_template_simple_runtime::UNIT as DEV,
-    };
+    use {super::*, container_chain_template_simple_runtime::UNIT as DEV};
     pub const PARA_ID: u32 = 2002;
     pub const ORCHESTRATOR: u32 = 2000;
     const ENDOWMENT: u128 = 1_000_000 * DEV;
@@ -287,6 +287,9 @@ pub mod simple_template {
             },
             ..Default::default()
         };
-        build_genesis_storage(&genesis_config, container_chain_template_simple_runtime::WASM_BINARY.unwrap())
+        build_genesis_storage(
+            &genesis_config,
+            container_chain_template_simple_runtime::WASM_BINARY.unwrap(),
+        )
     }
 }

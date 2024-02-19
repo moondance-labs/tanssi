@@ -37,8 +37,7 @@ use {
     },
     parity_scale_codec::Encode,
     runtime_common::migrations::{
-        MigrateConfigurationParathreads,
-        MigrateServicesPaymentAddCollatorAssignmentCredits,
+        MigrateConfigurationParathreads, MigrateServicesPaymentAddCollatorAssignmentCredits,
     },
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
