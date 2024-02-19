@@ -15,7 +15,7 @@ log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 serde = { workspace = true, optional = true, features = [ "derive" ] }
-serde_json = { workspace = true, features = [ "arbitrary_precision" ]}
+serde_json = { workspace = true, features = [ "arbitrary_precision" ] }
 smallvec = { workspace = true }
 
 # Own
@@ -320,11 +320,11 @@ try-runtime = [
 	"pallet-asset-rate/try-runtime",
 	"pallet-assets/try-runtime",
 	"pallet-assets/try-runtime",
+	"pallet-async-backing/try-runtime",
 	"pallet-author-inherent/try-runtime",
 	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
 	"pallet-authority-mapping/try-runtime",
-	"pallet-async-backing/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-collator-assignment/try-runtime",
 	"pallet-configuration/try-runtime",
