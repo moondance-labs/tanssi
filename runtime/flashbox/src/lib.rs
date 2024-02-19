@@ -45,8 +45,7 @@ use {
             fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
             tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
-            OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
+            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -1046,45 +1045,6 @@ impl Contains<RuntimeCall> for NormalFilter {
             },
             _ => true,
         }
-    }
-}
-
-/// The hooks we want to run in Maintenance Mode
-pub struct MaintenanceHooks;
-
-impl OnInitialize<BlockNumber> for MaintenanceHooks {
-    fn on_initialize(n: BlockNumber) -> Weight {
-        AllPalletsWithSystem::on_initialize(n)
-    }
-}
-
-// We override onIdle for xcmQueue and dmpQueue pallets to not process messages inside it
-impl OnIdle<BlockNumber> for MaintenanceHooks {
-    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
-        Weight::zero()
-    }
-}
-
-impl OnRuntimeUpgrade for MaintenanceHooks {
-    fn on_runtime_upgrade() -> Weight {
-        AllPalletsWithSystem::on_runtime_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn try_on_runtime_upgrade(checks: bool) -> Result<Weight, TryRuntimeError> {
-        AllPalletsWithSystem::try_on_runtime_upgrade(checks)
-    }
-}
-
-impl OnFinalize<BlockNumber> for MaintenanceHooks {
-    fn on_finalize(n: BlockNumber) {
-        AllPalletsWithSystem::on_finalize(n)
-    }
-}
-
-impl OffchainWorker<BlockNumber> for MaintenanceHooks {
-    fn offchain_worker(n: BlockNumber) {
-        AllPalletsWithSystem::offchain_worker(n)
     }
 }
 

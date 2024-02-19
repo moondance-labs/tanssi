@@ -205,6 +205,7 @@ try-runtime = [
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
 	"pallet-author-inherent/try-runtime",
+	"pallet-async-backing/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-cc-authorities-noting/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
