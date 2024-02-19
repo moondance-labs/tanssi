@@ -8,6 +8,7 @@ on:
       to:
         description: "Polkadot version to bump to (ex: v0.9.42)"
         required: true
+  push
 
 jobs:
   create_bump_ticket:
