@@ -1658,7 +1658,7 @@ mod benches {
         [pallet_author_inherent, AuthorInherent]
         [pallet_pooled_staking, PooledStaking]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [pallet_xcm, PolkadotXcm]
+        [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_stream_payment, StreamPayment]
         [pallet_relay_storage_roots, RelayStorageRoots]
@@ -1799,6 +1799,7 @@ impl_runtime_apis! {
         ) {
             use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
@@ -1885,6 +1886,88 @@ impl_runtime_apis! {
 
                 fn alias_origin() -> Result<(MultiLocation, MultiLocation), BenchmarkError> {
                     Err(BenchmarkError::Skip)
+                }
+            }
+
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+            impl pallet_xcm::benchmarking::Config for Runtime {
+                fn reachable_dest() -> Option<MultiLocation> {
+                    Some(Parent.into())
+                }
+
+                fn teleportable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    // Relay/native token can be teleported between AH and Relay.
+                    Some((
+                        MultiAsset {
+                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            id: Concrete(Parent.into())
+                        },
+                        Parent.into(),
+                    ))
+                }
+
+                fn reserve_transferable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    // AH can reserve transfer native token to some random parachain.
+                    let random_para_id = 43211234;
+                    ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
+                        random_para_id.into()
+                    );
+                    Some((
+                        MultiAsset {
+                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            id: Concrete(Parent.into())
+                        },
+                        ParentThen(Parachain(random_para_id).into()).into(),
+                    ))
+                }
+
+                fn set_up_complex_asset_transfer(
+                ) -> Option<(MultiAssets, u32, MultiLocation, Box<dyn FnOnce()>)> {
+                    // Transfer to Relay some local AH asset (local-reserve-transfer) while paying
+                    // fees using teleported native token.
+                    // (We don't care that Relay doesn't accept incoming unknown AH local asset)
+                    let dest = Parent.into();
+
+                    let fee_amount = EXISTENTIAL_DEPOSIT;
+                    let fee_asset: MultiAsset = (MultiLocation::parent(), fee_amount).into();
+
+                    let who = frame_benchmarking::whitelisted_caller();
+                    // Give some multiple of the existential deposit
+                    let balance = fee_amount + EXISTENTIAL_DEPOSIT * 1000;
+                    let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
+                        &who, balance,
+                    );
+                    // verify initial balance
+                    assert_eq!(Balances::free_balance(&who), balance);
+
+                    // set up local asset
+                    let asset_amount = 10u128;
+                    let initial_asset_amount = asset_amount * 10;
+                    let (asset_id, _, _) = pallet_assets::benchmarking::create_default_minted_asset::<
+                        Runtime,
+                        pallet_assets::Instance1
+                    >(true, initial_asset_amount);
+                    let asset_location = MultiLocation::new(
+                        0,
+                        X2(PalletInstance(50), GeneralIndex(u32::from(asset_id).into()))
+                    );
+                    let transfer_asset: MultiAsset = (asset_location, asset_amount).into();
+
+                    let assets: MultiAssets = vec![fee_asset.clone(), transfer_asset].into();
+                    let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
+
+                    // verify transferred successfully
+                    let verify = Box::new(move || {
+                        // verify native balance after transfer, decreased by transferred fee amount
+                        // (plus transport fees)
+                        assert!(Balances::free_balance(&who) <= balance - fee_amount);
+                        // verify asset balance decreased by exactly transferred amount
+                        assert_eq!(
+                            ForeignAssets::balance(asset_id.into(), &who),
+                            initial_asset_amount - asset_amount,
+                        );
+                    });
+                    Some((assets, fee_index as u32, dest, verify))
                 }
             }
 

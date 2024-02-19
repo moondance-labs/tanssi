@@ -677,7 +677,7 @@ mod benches {
         [pallet_cc_authorities_noting, AuthoritiesNoting]
         [pallet_author_inherent, AuthorInherent]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [pallet_xcm, PolkadotXcm]
+        [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
     );
 }
@@ -792,6 +792,7 @@ impl_runtime_apis! {
         ) {
             use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
@@ -876,6 +877,44 @@ impl_runtime_apis! {
 
                 fn alias_origin() -> Result<(MultiLocation, MultiLocation), BenchmarkError> {
                     Err(BenchmarkError::Skip)
+                }
+            }
+
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+            impl pallet_xcm::benchmarking::Config for Runtime {
+                fn reachable_dest() -> Option<MultiLocation> {
+                    Some(Parent.into())
+                }
+
+                fn teleportable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    // Relay/native token can be teleported between AH and Relay.
+                    Some((
+                        MultiAsset {
+                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            id: Concrete(Parent.into())
+                        },
+                        Parent.into(),
+                    ))
+                }
+
+                fn reserve_transferable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    // AH can reserve transfer native token to some random parachain.
+                    let random_para_id = 43211234;
+                    ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
+                        random_para_id.into()
+                    );
+                    Some((
+                        MultiAsset {
+                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            id: Concrete(Parent.into())
+                        },
+                        ParentThen(Parachain(random_para_id).into()).into(),
+                    ))
+                }
+
+                fn set_up_complex_asset_transfer(
+                ) -> Option<(MultiAssets, u32, MultiLocation, Box<dyn FnOnce()>)> {
+                    None
                 }
             }
 
