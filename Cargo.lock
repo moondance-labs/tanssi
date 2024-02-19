@@ -3024,6 +3024,7 @@ dependencies = [
  "pallet-services-payment",
  "pallet-session",
  "pallet-staking",
+ "pallet-stream-payment",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -3039,6 +3040,7 @@ dependencies = [
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "polkadot-service",
+ "runtime-common",
  "sc-consensus-grandpa",
  "sc-service",
  "scale-info",
@@ -4191,6 +4193,7 @@ dependencies = [
  "pallet-root-testing",
  "pallet-services-payment",
  "pallet-session",
+ "pallet-stream-payment",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-transaction-payment",
@@ -4202,6 +4205,7 @@ dependencies = [
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
+ "runtime-common",
  "sc-consensus-grandpa",
  "scale-info",
  "serde",
@@ -9127,6 +9131,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-stream-payment"
+version = "0.1.0"
+dependencies = [
+ "dp-core",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "num-traits",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "similar-asserts",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "tap",
+ "tp-maths",
+ "tp-traits",
+]
+
+[[package]]
 name = "pallet-sudo"
 version = "4.0.0-dev"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.6.0#335795e63441a7c3c409ee5c532d4560a01cf3ae"
@@ -11733,6 +11761,30 @@ checksum = "c247d24e63230cdb56463ae328478bd5eac8b8faa8c69461a77e8e323afac90e"
 dependencies = [
  "libc",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "runtime-common"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "frame-try-runtime",
+ "hex-literal 0.3.4",
+ "pallet-balances",
+ "pallet-configuration",
+ "pallet-data-preservers",
+ "pallet-invulnerables",
+ "pallet-migrations",
+ "pallet-pooled-staking",
+ "pallet-registrar",
+ "pallet-services-payment",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
 ]
 
 [[package]]

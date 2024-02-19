@@ -19,7 +19,7 @@ describeSuite({
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
-            const tx2000OneSession = polkadotJs.tx.servicesPayment.setCredits(paraId2001, 0);
+            const tx2000OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0);
             await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice)]);
             const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
             // Now, buy some credits for container chain 2001

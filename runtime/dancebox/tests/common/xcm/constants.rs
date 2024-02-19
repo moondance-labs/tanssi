@@ -24,7 +24,7 @@ use {
     sp_core::{sr25519, storage::Storage, Pair, Public},
     sp_runtime::{
         traits::{IdentifyAccount, Verify},
-        BuildStorage, MultiSignature,
+        MultiSignature,
     },
     emulated_integration_tests_common::build_genesis_storage,
 };
@@ -105,7 +105,6 @@ pub mod westend {
     };
     const ENDOWMENT: u128 = 1_000_000 * WND;
     const STASH: u128 = 100 * WND;
-    pub type ChainSpec = sc_service::GenericChainSpec<westend_runtime::RuntimeGenesisConfig>;
 
     pub fn get_host_config() -> HostConfiguration<BlockNumber> {
         HostConfiguration {
@@ -204,14 +203,10 @@ pub mod westend {
 pub mod frontier_template {
     use {
         container_chain_template_frontier_runtime::AccountId, hex_literal::hex,
-        sp_runtime::BuildStorage,
         emulated_integration_tests_common::build_genesis_storage,
     };
     pub const PARA_ID: u32 = 2001;
     pub const ORCHESTRATOR: u32 = 2000;
-    pub type ChainSpec = sc_service::GenericChainSpec<
-        container_chain_template_frontier_runtime::RuntimeGenesisConfig,
-    >;
 
     pub fn genesis() -> sp_core::storage::Storage {
         let genesis_config = container_chain_template_frontier_runtime::RuntimeGenesisConfig {
@@ -264,13 +259,11 @@ pub mod frontier_template {
 // Simple template
 pub mod simple_template {
     use {
-        super::*, container_chain_template_simple_runtime::UNIT as DEV, sp_runtime::BuildStorage,
+        super::*, container_chain_template_simple_runtime::UNIT as DEV,
     };
     pub const PARA_ID: u32 = 2002;
     pub const ORCHESTRATOR: u32 = 2000;
     const ENDOWMENT: u128 = 1_000_000 * DEV;
-    pub type ChainSpec =
-        sc_service::GenericChainSpec<container_chain_template_simple_runtime::RuntimeGenesisConfig>;
 
     pub fn genesis() -> sp_core::storage::Storage {
         let genesis_config = container_chain_template_simple_runtime::RuntimeGenesisConfig {

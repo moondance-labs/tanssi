@@ -29,7 +29,9 @@
 //! to that containerChain, by simply assigning the slot position.
 
 use {
-    crate::{self as pallet_services_payment, ProvideBlockProductionCost},
+    crate::{
+        self as pallet_services_payment, ProvideBlockProductionCost, ProvideCollatorAssignmentCost,
+    },
     cumulus_primitives_core::ParaId,
     frame_support::{
         pallet_prelude::*,
@@ -106,25 +108,37 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-    pub const MaxCreditsStored: u64 = 5;
+    pub const FreeBlockProductionCredits: u64 = 5;
+    pub const FreeCollatorAssignmentCredits: u32 = 5;
 }
 
 impl pallet_services_payment::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type OnChargeForBlock = ();
+    type OnChargeForCollatorAssignment = ();
     type Currency = Balances;
     type ProvideBlockProductionCost = BlockProductionCost<Test>;
+    type ProvideCollatorAssignmentCost = CollatorAssignmentProductionCost<Test>;
+    type FreeBlockProductionCredits = FreeBlockProductionCredits;
+    type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type SetRefundAddressOrigin = EnsureRoot<AccountId>;
-    type MaxCreditsStored = MaxCreditsStored;
     type WeightInfo = ();
 }
 
 pub(crate) const FIXED_BLOCK_PRODUCTION_COST: u128 = 100;
+pub(crate) const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 200;
 
 pub struct BlockProductionCost<Test>(PhantomData<Test>);
 impl ProvideBlockProductionCost<Test> for BlockProductionCost<Test> {
     fn block_cost(_para_id: &ParaId) -> (u128, Weight) {
         (FIXED_BLOCK_PRODUCTION_COST, Weight::zero())
+    }
+}
+
+pub struct CollatorAssignmentProductionCost<Test>(PhantomData<Test>);
+impl ProvideCollatorAssignmentCost<Test> for CollatorAssignmentProductionCost<Test> {
+    fn collator_assignment_cost(_para_id: &ParaId) -> (u128, Weight) {
+        (FIXED_COLLATOR_ASSIGNMENT_COST, Weight::zero())
     }
 }
 

@@ -35,6 +35,7 @@ pallet-pooled-staking = { path = "pallets/pooled-staking", default-features = fa
 pallet-registrar = { path = "pallets/registrar", default-features = false }
 pallet-registrar-runtime-api = { path = "pallets/registrar/rpc/runtime-api", default-features = false }
 pallet-services-payment = { path = "pallets/services-payment", default-features = false }
+pallet-stream-payment = { path = "pallets/stream-payment", default-features = false }
 
 container-chain-template-frontier-runtime = { path = "container-chains/templates/frontier/runtime", default-features = false }
 container-chain-template-simple-runtime = { path = "container-chains/templates/simple/runtime", default-features = false }
@@ -43,10 +44,12 @@ dancebox-runtime = { path = "runtime/dancebox", default-features = false }
 flashbox-runtime = { path = "runtime/flashbox", default-features = false }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
+runtime-common = { path = "runtime/common", default-features = false }
 tc-consensus = { path = "client/consensus" }
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-consensus = { path = "primitives/consensus", default-features = false }
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
+tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
@@ -253,6 +256,7 @@ num_enum = { version = "0.7.1", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 serde = { version = "1.0.152", default-features = false }
 smallvec = "1.10.0"
+tap = "1.0.1"
 
 # General (client)
 async-io = "1.3"

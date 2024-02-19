@@ -13,6 +13,21 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
+
+// Tanssi is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// Tanssi is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 //! # Migrations
 //!
@@ -20,16 +35,10 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{ParaId, Runtime, ServicesPayment, LOG_TARGET},
-    frame_support::{
-        migration::storage_key_iter, pallet_prelude::ValueQuery, storage::types::StorageMap,
-        traits::OnRuntimeUpgrade, weights::Weight, Blake2_128Concat,
-    },
-    pallet_balances::IdAmount,
+    frame_support::weights::Weight,
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
     pallet_migrations::{GetMigrations, Migration},
     sp_core::Get,
-    sp_runtime::BoundedVec,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
 
@@ -59,8 +68,6 @@ where
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
-        log::info!(target: LOG_TARGET, "migrate");
-
         const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
             &hex_literal::hex!("06de3d8a54d27e44a9d5ce189618f22db4b49d95320d9021994c850f25b8e385");
         const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
@@ -134,7 +141,7 @@ where
         &self,
         _number_of_invulnerables: Vec<u8>,
     ) -> Result<(), sp_runtime::DispatchError> {
-        let new_config = crate::Configuration::config();
+        let new_config = pallet_configuration::Pallet::<T>::config();
         let default_config = HostConfiguration::default();
         assert_eq!(
             new_config.collators_per_parathread,
@@ -153,13 +160,13 @@ where
     }
 }
 
-pub struct MigrateServicesPaymentAddCredits<T>(pub PhantomData<T>);
-impl<T> Migration for MigrateServicesPaymentAddCredits<T>
+pub struct MigrateServicesPaymentAddCollatorAssignmentCredits<T>(pub PhantomData<T>);
+impl<T> Migration for MigrateServicesPaymentAddCollatorAssignmentCredits<T>
 where
-    T: pallet_balances::Config,
+    T: pallet_services_payment::Config + pallet_registrar::Config,
 {
     fn friendly_name(&self) -> &str {
-        "TM_MigrateServicesPaymentAddCredits"
+        "TM_MigrateServicesPaymentAddCollatorAssignmentCredits"
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
@@ -167,216 +174,99 @@ where
         // insert `MaxCreditsStored` to pallet_services_payment,
         // and mark that parachain as "given_free_credits".
         let mut para_ids = BTreeSet::new();
-        let active = pallet_registrar::RegisteredParaIds::<Runtime>::get();
-        let pending = pallet_registrar::PendingParaIds::<Runtime>::get();
-        let pending_verification = pallet_registrar::PendingVerification::<Runtime>::get();
-        // This migration ignores Paused and PendingPaused because they do not exist yet in dancebox
+        let active = pallet_registrar::RegisteredParaIds::<T>::get();
+        let pending = pallet_registrar::PendingParaIds::<T>::get();
 
+        let paused = pallet_registrar::Paused::<T>::get();
         para_ids.extend(active);
         para_ids.extend(pending.into_iter().flat_map(|(_session, active)| active));
-        para_ids.extend(pending_verification);
+        para_ids.extend(paused);
 
         let reads = 3 + 2 * para_ids.len() as u64;
         let writes = 2 * para_ids.len() as u64;
 
         for para_id in para_ids {
             // 2 reads 2 writes
-            ServicesPayment::give_free_credits(&para_id);
+            pallet_services_payment::Pallet::<T>::set_free_collator_assignment_credits(
+                &para_id,
+                T::FreeCollatorAssignmentCredits::get(),
+            );
         }
 
         let db_weights = T::DbWeight::get();
         db_weights.reads_writes(reads, writes)
     }
-}
-
-/// A reason for placing a hold on funds.
-#[derive(
-    Clone,
-    parity_scale_codec::Encode,
-    parity_scale_codec::Decode,
-    PartialEq,
-    sp_core::RuntimeDebug,
-    scale_info::TypeInfo,
-)]
-pub enum OldHoldReason {
-    /// The Pooled Stake holds
-    PooledStake,
-}
-
-pub struct MigrateHoldReasonRuntimeEnum<T>(pub PhantomData<T>);
-impl<T> Migration for MigrateHoldReasonRuntimeEnum<T>
-where
-    T: pallet_balances::Config,
-    T: pallet_pooled_staking::Config,
-    <T as pallet_balances::Config>::RuntimeHoldReason: From<pallet_pooled_staking::HoldReason>,
-{
-    fn friendly_name(&self) -> &str {
-        "TM_MigrateHoldReasonRuntimeHold"
-    }
-
-    fn migrate(&self, _available_weight: Weight) -> Weight {
-        log::info!(target: LOG_TARGET, "migrate");
-        let pallet_prefix: &[u8] = b"Balances";
-        let storage_item_prefix: &[u8] = b"Holds";
-
-        let stored_data: Vec<_> = storage_key_iter::<
-            T::AccountId,
-            BoundedVec<
-                IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>,
-                T::MaxHolds,
-            >,
-            Blake2_128Concat,
-        >(pallet_prefix, storage_item_prefix)
-        .collect();
-
-        let migrated_count_read = stored_data.len() as u64;
-        let mut migrated_count_write = 0u64;
-
-        // Write to the new storage
-        for (account_id, holds) in stored_data {
-            let mut new_holds = vec![];
-
-            for hold in holds {
-                let new_item: pallet_balances::IdAmount<
-                    <T as pallet_balances::Config>::RuntimeHoldReason,
-                    <T as pallet_balances::Config>::Balance,
-                > = pallet_balances::IdAmount {
-                    id: pallet_pooled_staking::HoldReason::PooledStake.into(),
-                    amount: hold.amount,
-                };
-                new_holds.push(new_item);
-            }
-            let bounded = BoundedVec::<_, T::MaxHolds>::truncate_from(new_holds.clone());
-            pallet_balances::Holds::<T>::insert(&account_id, bounded);
-            migrated_count_write += 1;
-        }
-        let db_weights = T::DbWeight::get();
-        db_weights.reads_writes(migrated_count_read, migrated_count_write)
-    }
-
     /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        log::info!(target: LOG_TARGET, "pre_upgrade");
-        let pallet_prefix: &[u8] = b"Balances";
-        let storage_item_prefix: &[u8] = b"Holds";
+        let mut para_ids = BTreeSet::new();
+        let active = pallet_registrar::RegisteredParaIds::<T>::get();
+        let pending = pallet_registrar::PendingParaIds::<T>::get();
+        let paused = pallet_registrar::Paused::<T>::get();
+        para_ids.extend(active);
+        para_ids.extend(pending.into_iter().flat_map(|(_session, active)| active));
+        para_ids.extend(paused);
 
-        let stored_data: Vec<_> = storage_key_iter::<
-            T::AccountId,
-            BoundedVec<
-                IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>,
-                T::MaxHolds,
-            >,
-            Blake2_128Concat,
-        >(pallet_prefix, storage_item_prefix)
-        .collect();
-        use parity_scale_codec::Encode;
+        for para_id in para_ids {
+            assert!(
+                pallet_services_payment::CollatorAssignmentCredits::<T>::get(para_id).is_none()
+            );
+        }
 
-        Ok(stored_data.encode())
+        Ok(vec![])
     }
 
-    /// Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    // Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, migrated_holds: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        use parity_scale_codec::Decode;
-        let should_be_migrated: Vec<(
-            T::AccountId,
-            BoundedVec<
-                IdAmount<OldHoldReason, <T as pallet_balances::Config>::Balance>,
-                T::MaxHolds,
-            >,
-        )> = Decode::decode(&mut migrated_holds.as_slice()).expect("should be decodable");
+    fn post_upgrade(&self, _result: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        let mut para_ids = BTreeSet::new();
+        let active = pallet_registrar::RegisteredParaIds::<T>::get();
+        let pending = pallet_registrar::PendingParaIds::<T>::get();
+        let paused = pallet_registrar::Paused::<T>::get();
+        para_ids.extend(active);
+        para_ids.extend(pending.into_iter().flat_map(|(_session, active)| active));
+        para_ids.extend(paused);
 
-        // Write to the new storage
-        for (account_id, holds) in should_be_migrated {
-            let migrated = pallet_balances::Holds::<T>::get(&account_id);
-
-            for (index, hold) in holds.iter().enumerate() {
-                assert_eq!(
-                    migrated[index].amount, hold.amount,
-                    "after migration, there should be the same number held amount"
-                );
-                assert_eq!(
-                    migrated[index].id,
-                    pallet_pooled_staking::HoldReason::PooledStake.into(),
-                    "Pooled stake should be migrated"
-                );
-            }
+        for para_id in para_ids {
+            assert_eq!(
+                pallet_services_payment::CollatorAssignmentCredits::<T>::get(para_id),
+                Some(T::FreeCollatorAssignmentCredits::get())
+            );
         }
 
         Ok(())
     }
 }
 
-pub struct RegistrarBootNodesStorageValuePrefix<T>(PhantomData<T>);
-impl<T> frame_support::traits::StorageInstance for RegistrarBootNodesStorageValuePrefix<T> {
-    const STORAGE_PREFIX: &'static str = "BootNodes";
-    fn pallet_prefix() -> &'static str {
-        "Registrar"
-    }
-}
-pub type RegistrarBootNodesStorageMap<T> = StorageMap<
-    RegistrarBootNodesStorageValuePrefix<T>,
-    Blake2_128Concat,
-    ParaId,
-    //BoundedVec<BoundedVec<u8, T::MaxBootNodeUrlLen>, T::MaxBootNodes>,
-    Vec<Vec<u8>>,
-    ValueQuery,
->;
+pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
-pub struct MigrateBootNodes<T>(pub PhantomData<T>);
-impl<T> Migration for MigrateBootNodes<T>
+impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
 where
-    T: pallet_balances::Config,
+    Runtime: pallet_balances::Config,
+    Runtime: pallet_configuration::Config,
+    Runtime: pallet_registrar::Config,
+    Runtime: pallet_data_preservers::Config,
+    Runtime: pallet_services_payment::Config,
 {
-    fn friendly_name(&self) -> &str {
-        "TM_MigrateBootNodes"
-    }
+    fn get_migrations() -> Vec<Box<dyn Migration>> {
+        //let migrate_services_payment =
+        //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+        //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        let migrate_config_parathread_params =
+            MigrateConfigurationParathreads::<Runtime>(Default::default());
 
-    fn migrate(&self, _available_weight: Weight) -> Weight {
-        let mut len = 0;
-        for (para_id, bootnodes) in RegistrarBootNodesStorageMap::<Runtime>::drain() {
-            len += 1;
-            // Convert Vec<Vec<u8>> into BoundedVec<BoundedVec<u8>>
-            // Cannot fail because the old storage was actually a BoundedVec with the same limit as the new one
-            let bootnodes: Vec<_> = bootnodes
-                .into_iter()
-                .map(|bootnode| bootnode.try_into().unwrap())
-                .collect();
-            let bootnodes: BoundedVec<_, _> = bootnodes.try_into().unwrap();
-            pallet_data_preservers::BootNodes::<Runtime>::insert(para_id, bootnodes);
-        }
+        let migrate_add_collator_assignment_credits =
+            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
 
-        let db_weights = T::DbWeight::get();
-        let reads = len;
-        let writes = len;
-        db_weights.reads_writes(reads, writes)
-    }
-}
-
-const IDENTITY_MIGRATION_KEY_LIMIT: u64 = u64::MAX;
-
-pub struct IdentityMigration<T>(pub PhantomData<T>);
-impl<T> Migration for IdentityMigration<T>
-where
-    T: pallet_identity::Config,
-{
-    fn friendly_name(&self) -> &str {
-        "MM_IdentityMigration"
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        pallet_identity::migration::versioned::V0ToV1::<T, IDENTITY_MIGRATION_KEY_LIMIT>::pre_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        pallet_identity::migration::versioned::V0ToV1::<T, IDENTITY_MIGRATION_KEY_LIMIT>::post_upgrade()
-    }
-
-    fn migrate(&self, _available_weight: Weight) -> Weight {
-        pallet_identity::migration::versioned::V0ToV1::<T, IDENTITY_MIGRATION_KEY_LIMIT>::on_runtime_upgrade()
+        vec![
+            // Applied in runtime 400
+            //Box::new(migrate_services_payment),
+            // Applied in runtime 400
+            //Box::new(migrate_boot_nodes),
+            // Applied in runtime 400
+            Box::new(migrate_config_parathread_params),
+            Box::new(migrate_add_collator_assignment_credits),
+        ]
     }
 }
 
@@ -385,9 +275,10 @@ pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
 where
     Runtime: pallet_pooled_staking::Config,
+    Runtime: pallet_registrar::Config,
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
-    Runtime: pallet_identity::Config,
+    Runtime: pallet_services_payment::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
 {
@@ -397,15 +288,17 @@ where
         //let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
         //let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
         // let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
-        let migrate_services_payment =
-            MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
-        let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        //let migrate_services_payment =
+        //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+        //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
         let migrate_config_parathread_params =
             MigrateConfigurationParathreads::<Runtime>(Default::default());
 
-        let migrate_hold_reason_runtime_enum =
-            MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
-        let migrate_identity = IdentityMigration::<Runtime>(Default::default());
+        //let migrate_hold_reason_runtime_enum =
+        //    MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
+
+        let migrate_add_collator_assignment_credits =
+            MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
         vec![
             // Applied in runtime 200
             //Box::new(migrate_invulnerables),
@@ -417,11 +310,14 @@ where
             //Box::new(migrate_xcm),
             // Applied in runtime 300
             //Box::new(migrate_xcmp_queue),
-            Box::new(migrate_services_payment),
-            Box::new(migrate_hold_reason_runtime_enum),
-            Box::new(migrate_boot_nodes),
+            // Applied in runtime 400
+            //Box::new(migrate_services_payment),
+            // Applied in runtime 400
+            //Box::new(migrate_hold_reason_runtime_enum),
+            // Applied in runtime 400
+            //Box::new(migrate_boot_nodes),
             Box::new(migrate_config_parathread_params),
-            Box::new(migrate_identity),
+            Box::new(migrate_add_collator_assignment_credits),
         ]
     }
 }
