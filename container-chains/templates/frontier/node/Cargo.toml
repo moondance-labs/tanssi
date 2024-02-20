@@ -114,6 +114,7 @@ substrate-build-script-utils = { workspace = true }
 default = []
 runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
@@ -124,7 +125,6 @@ runtime-benchmarks = [
 	"polkadot-service/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"cumulus-primitives-core/runtime-benchmarks"
 ]
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",

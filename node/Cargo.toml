@@ -108,6 +108,7 @@ substrate-build-script-utils = { workspace = true }
 [features]
 default = []
 runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
 	"dancebox-runtime/runtime-benchmarks",
 	"flashbox-runtime/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
@@ -120,7 +121,6 @@ runtime-benchmarks = [
 	"polkadot-service/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"cumulus-primitives-core/runtime-benchmarks"
 ]
 try-runtime = [ "dancebox-runtime/try-runtime", "flashbox-runtime/try-runtime", "nimbus-primitives/try-runtime", "pallet-configuration/try-runtime", "polkadot-cli/try-runtime", "polkadot-service/try-runtime", "sp-runtime/try-runtime", "try-runtime-cli/try-runtime" ]
 

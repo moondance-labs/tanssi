@@ -214,6 +214,7 @@ std = [
 	"scale-info/std",
 	"serde",
 	"serde?/std",
+	"serde_json/std",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-application-crypto/std",
@@ -224,6 +225,7 @@ std = [
 	"sp-consensus-slots/std",
 	"sp-core/std",
 	"sp-debug-derive/std",
+	"sp-genesis-builder/std",
 	"sp-inherents/std",
 	"sp-io/std",
 	"sp-offchain/std",
@@ -243,8 +245,6 @@ std = [
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
 	"xcm-primitives/std",
-	"serde_json/std",
-	"sp-genesis-builder/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -253,9 +253,11 @@ force-debug = [ "sp-debug-derive/force-debug" ]
 runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
 	"container-chain-template-simple-runtime/runtime-benchmarks",
+	"cumulus-pallet-dmp-queue/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks",
 	"cumulus-primitives-utility/runtime-benchmarks",
 	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",
@@ -297,6 +299,7 @@ runtime-benchmarks = [
 	"polkadot-runtime-parachains/runtime-benchmarks",
 	"polkadot-service/runtime-benchmarks",
 	"runtime-common/runtime-benchmarks",
+	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
@@ -304,9 +307,6 @@ runtime-benchmarks = [
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
-	"cumulus-pallet-dmp-queue/runtime-benchmarks",
-	"cumulus-primitives-core/runtime-benchmarks",
-	"sc-service/runtime-benchmarks"
 ]
 
 try-runtime = [
