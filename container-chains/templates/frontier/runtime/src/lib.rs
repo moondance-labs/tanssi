@@ -664,7 +664,7 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = (migrations::TemplateMigrations<Runtime>,);
+    type MigrationsList = (migrations::TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>,);
     type XcmExecutionManager = XcmExecutionManager;
 }
 

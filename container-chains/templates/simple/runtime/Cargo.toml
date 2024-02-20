@@ -20,6 +20,7 @@ smallvec = { workspace = true }
 # Local
 pallet-cc-authorities-noting = { workspace = true }
 tp-consensus = { workspace = true }
+runtime-common = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -133,6 +134,7 @@ std = [
 	"parity-scale-codec/std",
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
+	"runtime-common/std",
 	"scale-info/std",
 	"serde",
 	"serde?/std",
@@ -186,6 +188,7 @@ runtime-benchmarks = [
 	"parachains-common/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
+	"runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
@@ -222,5 +225,6 @@ try-runtime = [
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
+	"runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 ]

@@ -20,17 +20,14 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{Precompiles, LOG_TARGET},
-    frame_support::{pallet_prelude::GetStorageVersion, traits::PalletInfoAccess, weights::Weight},
+    frame_support::{pallet_prelude::GetStorageVersion, traits::PalletInfoAccess},
     pallet_migrations::{GetMigrations, Migration},
     runtime_common::migrations::{
         PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
         XcmpQueueMigrationV4,
     },
-    sp_core::Get,
     sp_std::{marker::PhantomData, prelude::*},
 };
-
 
 pub struct TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>(
     PhantomData<(Runtime, XcmpQueue, PolkadotXcm)>,
@@ -41,12 +38,10 @@ impl<Runtime, XcmpQueue, PolkadotXcm> GetMigrations
 where
     PolkadotXcm: GetStorageVersion + PalletInfoAccess + 'static,
     XcmpQueue: GetStorageVersion + PalletInfoAccess + 'static,
-    Runtime: pallet_evm::Config,
     Runtime: frame_system::Config,
     Runtime: cumulus_pallet_xcmp_queue::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        // let migrate_precompiles = MigratePrecompileDummyCode::<Runtime>(Default::default());
         let migrate_polkadot_xcm_v1 =
             PolkadotXcmMigrationFixVersion::<Runtime, PolkadotXcm>(Default::default());
         let migrate_xcmp_queue_v2 =
@@ -54,8 +49,6 @@ where
         let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
         let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
         vec![
-            // Applied in runtime 400
-            // Box::new(migrate_precompiles),
             Box::new(migrate_polkadot_xcm_v1),
             Box::new(migrate_xcmp_queue_v2),
             Box::new(migrate_xcmp_queue_v3),

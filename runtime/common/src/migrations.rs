@@ -34,8 +34,15 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
+#[cfg(feature = "try-runtime")]
+use frame_support::ensure;
+
 use {
-    frame_support::{traits::OnRuntimeUpgrade, weights::Weight},
+    frame_support::{
+        pallet_prelude::GetStorageVersion,
+        traits::{OnRuntimeUpgrade, PalletInfoAccess, StorageVersion},
+        weights::Weight,
+    },
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
     pallet_migrations::{GetMigrations, Migration},
     sp_core::Get,
@@ -238,6 +245,79 @@ where
     }
 }
 
+pub struct PolkadotXcmMigrationFixVersion<T, PolkadotXcm>(pub PhantomData<(T, PolkadotXcm)>);
+impl<T, PolkadotXcm> Migration for PolkadotXcmMigrationFixVersion<T, PolkadotXcm>
+where
+    PolkadotXcm: GetStorageVersion + PalletInfoAccess,
+    T: cumulus_pallet_xcmp_queue::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_PolkadotXcmMigrationFixVersion"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        StorageVersion::new(1).put::<PolkadotXcm>();
+        T::DbWeight::get().writes(1)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        ensure!(
+            <PolkadotXcm as GetStorageVersion>::on_chain_storage_version() == 0,
+            "PolkadotXcm storage version should be 0"
+        );
+        Ok(vec![])
+    }
+
+    // Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        ensure!(
+            <PolkadotXcm as GetStorageVersion>::on_chain_storage_version() == 1,
+            "PolkadotXcm storage version should be 1"
+        );
+        Ok(())
+    }
+}
+
+pub struct XcmpQueueMigrationFixVersion<T, XcmpQueue>(pub PhantomData<(T, XcmpQueue)>);
+impl<T, XcmpQueue> Migration for XcmpQueueMigrationFixVersion<T, XcmpQueue>
+where
+    XcmpQueue: GetStorageVersion + PalletInfoAccess,
+    T: cumulus_pallet_xcmp_queue::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_XcmpQueueMigrationFixVersion"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        StorageVersion::new(2).put::<XcmpQueue>();
+        T::DbWeight::get().writes(1)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        ensure!(
+            <XcmpQueue as GetStorageVersion>::on_chain_storage_version() == 0,
+            "XcmpQueue storage version should be 0"
+        );
+        Ok(vec![])
+    }
+
+    // Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        // Greater than because the post_upgrade is run after all the migrations, so
+        // it can be greater if the following XcmpQueue migrations are applied in the
+        // same runtime
+        ensure!(
+            <XcmpQueue as GetStorageVersion>::on_chain_storage_version() >= 2,
+            "XcmpQueue storage version should be at least 2"
+        );
+        Ok(())
+    }
+}
+
 pub struct XcmpQueueMigrationV3<T>(pub PhantomData<T>);
 impl<T> Migration for XcmpQueueMigrationV3<T>
 where
@@ -246,14 +326,14 @@ where
     fn friendly_name(&self) -> &str {
         "MM_XcmpQueueMigrationV3"
     }
-    
+
     fn migrate(&self, _available_weight: Weight) -> Weight {
         cumulus_pallet_xcmp_queue::migration::v3::MigrationToV3::<T>::on_runtime_upgrade()
     }
 
     // #[cfg(feature = "try-runtime")]
     // let mut pre_upgrade_result: Vec<u8>;
-    
+
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
         cumulus_pallet_xcmp_queue::migration::v3::MigrationToV3::<T>::pre_upgrade()
@@ -261,7 +341,7 @@ where
 
     // Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
-	fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         cumulus_pallet_xcmp_queue::migration::v3::MigrationToV3::<T>::post_upgrade(state)
     }
 }
@@ -286,7 +366,7 @@ where
 
     // Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
-	fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4::<T>::post_upgrade(state)
     }
 }
@@ -337,23 +417,21 @@ where
         From<pallet_pooled_staking::HoldReason>,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        //let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
-        //let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
-        //let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
-        //let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
+        // let migrate_invulnerables = MigrateInvulnerables::<Runtime>(Default::default());
+        // let migrate_holds = MigrateHoldReason::<Runtime>(Default::default());
+        // let migrate_config = MigrateConfigurationFullRotationPeriod::<Runtime>(Default::default());
+        // let migrate_xcm = PolkadotXcmMigration::<Runtime>(Default::default());
         // let migrate_xcmp_queue = XcmpQueueMigration::<Runtime>(Default::default());
-        //let migrate_services_payment =
-        //    MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
-        //let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        // let migrate_services_payment =
+        //     MigrateServicesPaymentAddCredits::<Runtime>(Default::default());
+        // let migrate_boot_nodes = MigrateBootNodes::<Runtime>(Default::default());
+        // let migrate_hold_reason_runtime_enum =
+        //     MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
+
         let migrate_config_parathread_params =
             MigrateConfigurationParathreads::<Runtime>(Default::default());
-
-        //let migrate_hold_reason_runtime_enum =
-        //    MigrateHoldReasonRuntimeEnum::<Runtime>(Default::default());
-
         let migrate_add_collator_assignment_credits =
             MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
-        let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
         let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
         vec![
             // Applied in runtime 200
@@ -374,7 +452,6 @@ where
             //Box::new(migrate_boot_nodes),
             Box::new(migrate_config_parathread_params),
             Box::new(migrate_add_collator_assignment_credits),
-            Box::new(migrate_xcmp_queue_v3),
             Box::new(migrate_xcmp_queue_v4),
         ]
     }
