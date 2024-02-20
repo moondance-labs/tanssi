@@ -2974,6 +2974,7 @@ dependencies = [
 name = "dancebox-runtime"
 version = "0.1.0"
 dependencies = [
+ "assets-common",
  "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
  "cumulus-pallet-dmp-queue",

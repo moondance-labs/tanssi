@@ -1960,7 +1960,7 @@ impl_runtime_apis! {
                         assert!(Balances::free_balance(&who) <= balance - fee_amount);
                         // verify asset balance decreased by exactly transferred amount
                         assert_eq!(
-                            ForeignAssets::balance(asset_id.into(), &who),
+                            ForeignAssets::balance(asset_id, &who),
                             initial_asset_amount - asset_amount,
                         );
                     });
