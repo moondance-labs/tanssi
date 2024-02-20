@@ -41,14 +41,6 @@ use {
     std::net::SocketAddr,
 };
 
-#[cfg(feature = "try-runtime")]
-use {
-    crate::client::TemplateRuntimeExecutor, try_runtime_cli::block_building_info::substrate_info,
-};
-
-#[cfg(feature = "try-runtime")]
-const SLOT_DURATION: u64 = 12;
-
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
         "dev" => Box::new(chain_spec::development_config(para_id, vec![])),
@@ -288,40 +280,11 @@ pub fn run() -> Result<()> {
                 _ => Err("Benchmarking sub-command unsupported".into()),
             }
         }
-        #[cfg(feature = "try-runtime")]
-        Some(Subcommand::TryRuntime(cmd)) => {
-            let runner = cli.create_runner(cmd)?;
-
-            use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
-            type HostFunctionsOf<E> = ExtendedHostFunctions<
-                sp_io::SubstrateHostFunctions,
-                <E as NativeExecutionDispatch>::ExtendHostFunctions,
-            >;
-
-            // grab the task manager.
-            let registry = &runner
-                .config()
-                .prometheus_config
-                .as_ref()
-                .map(|cfg| &cfg.registry);
-            let task_manager =
-                sc_service::TaskManager::new(runner.config().tokio_handle.clone(), *registry)
-                    .map_err(|e| format!("Error: {:?}", e))?;
-
-            let info_provider = substrate_info(SLOT_DURATION);
-            runner.async_run(|_| {
-                Ok((
-                    cmd.run::<Block, HostFunctionsOf<TemplateRuntimeExecutor>, _>(Some(
-                        info_provider,
-                    )),
-                    task_manager,
-                ))
-            })
+        Some(Subcommand::TryRuntime(_)) => {
+            Err("Substrate's `try-runtime` subcommand has been migrated \
+            to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
+                .into())
         }
-        #[cfg(not(feature = "try-runtime"))]
-        Some(Subcommand::TryRuntime) => Err("Try-runtime was not enabled when building the node. \
-			You can enable it with `--features try-runtime`."
-            .into()),
         None => {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();

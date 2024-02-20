@@ -20,17 +20,14 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    crate::{Precompiles, LOG_TARGET},
-    frame_support::{pallet_prelude::GetStorageVersion, traits::PalletInfoAccess, weights::Weight},
+    frame_support::{pallet_prelude::GetStorageVersion, traits::PalletInfoAccess},
     pallet_migrations::{GetMigrations, Migration},
     runtime_common::migrations::{
         PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
         XcmpQueueMigrationV4,
     },
-    sp_core::Get,
     sp_std::{marker::PhantomData, prelude::*},
 };
-
 
 pub struct TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>(
     PhantomData<(Runtime, XcmpQueue, PolkadotXcm)>,

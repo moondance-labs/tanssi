@@ -98,8 +98,6 @@ pub use {
 // Polkadot imports
 use polkadot_runtime_common::BlockHashCount;
 
-const LOG_TARGET: &str = "runtime::evm_template";
-
 pub type Precompiles = TemplatePrecompiles<Runtime>;
 
 /// Alias to 512-bit hash when used in the context of a transaction signature on the chain.

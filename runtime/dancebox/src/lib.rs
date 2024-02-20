@@ -32,9 +32,6 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
-#[cfg(feature = "try-runtime")]
-use sp_runtime::TryRuntimeError;
-
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{

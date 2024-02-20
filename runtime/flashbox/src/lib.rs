@@ -29,9 +29,6 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-#[cfg(feature = "try-runtime")]
-use sp_runtime::TryRuntimeError;
-
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},

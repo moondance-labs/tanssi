@@ -256,8 +256,11 @@ where
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
-        StorageVersion::new(1).put::<PolkadotXcm>();
-        T::DbWeight::get().writes(1)
+        if <PolkadotXcm as GetStorageVersion>::on_chain_storage_version() == 0 {
+            StorageVersion::new(1).put::<PolkadotXcm>();
+            return T::DbWeight::get().writes(1);
+        }
+        Weight::default()
     }
 
     #[cfg(feature = "try-runtime")]
@@ -291,8 +294,11 @@ where
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
-        StorageVersion::new(2).put::<XcmpQueue>();
-        T::DbWeight::get().writes(1)
+        if <XcmpQueue as GetStorageVersion>::on_chain_storage_version() == 0 {
+            StorageVersion::new(2).put::<XcmpQueue>();
+            return T::DbWeight::get().writes(1);
+        }
+        Weight::default()
     }
 
     #[cfg(feature = "try-runtime")]
