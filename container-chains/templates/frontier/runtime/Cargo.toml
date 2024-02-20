@@ -23,6 +23,7 @@ ccp-xcm = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 runtime-common = { workspace = true }
 tp-consensus = { workspace = true }
+tp-impl-tanssi-pallets-config = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -197,6 +198,7 @@ std = [
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
 	"tp-consensus/std",
+	"tp-impl-tanssi-pallets-config/std",
 	"xcm-primitives/std",
 ]
 

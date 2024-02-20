@@ -89,6 +89,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
+    tp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
 };
 pub use {
     sp_consensus_aura::sr25519::AuthorityId as AuraId,
@@ -465,17 +466,6 @@ impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
 }
 
-impl pallet_timestamp::Config for Runtime {
-    /// A timestamp: milliseconds since the unix epoch.
-    type Moment = u64;
-    type OnTimestampSet = tp_consensus::OnTimestampSet<
-        <Self as pallet_author_inherent::Config>::SlotBeacon,
-        ConstU64<{ SLOT_DURATION }>,
-    >;
-    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = pallet_timestamp::weights::SubstrateWeight<Runtime>;
-}
-
 parameter_types! {
     pub const ExistentialDeposit: Balance = EXISTENTIAL_DEPOSIT;
 }
@@ -715,16 +705,6 @@ impl pallet_maintenance_mode::Config for Runtime {
     type XcmExecutionManager = XcmExecutionManager;
 }
 
-impl pallet_cc_authorities_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type SelfParaId = parachain_info::Pallet<Runtime>;
-    type RelayChainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
-    type AuthorityId = NimbusId;
-    type WeightInfo = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
-    #[cfg(feature = "runtime-benchmarks")]
-    type BenchmarkHelper = pallet_cc_authorities_noting::benchmarks::NimbusIdBenchmarkHelper;
-}
-
 // To match ethereum expectations
 const BLOCK_GAS_LIMIT: u64 = 15_000_000;
 
@@ -821,14 +801,6 @@ impl pallet_hotfix_sufficients::Config for Runtime {
     type WeightInfo = pallet_hotfix_sufficients::weights::SubstrateWeight<Runtime>;
 }
 
-impl pallet_author_inherent::Config for Runtime {
-    type AuthorId = NimbusId;
-    type AccountLookup = tp_consensus::NimbusLookUp;
-    type CanAuthor = pallet_cc_authorities_noting::CanAuthor<Runtime>;
-    type SlotBeacon = tp_consensus::AuraDigestSlotBeacon<Runtime>;
-    type WeightInfo = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
-}
-
 impl pallet_root_testing::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
@@ -842,6 +814,15 @@ impl pallet_tx_pause::Config for Runtime {
     type MaxNameLen = ConstU32<256>;
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
+
+impl tp_impl_tanssi_pallets_config::Config for Runtime {
+    const SLOT_DURATION: u64 = SLOT_DURATION;
+    type TimestampWeights = pallet_timestamp::weights::SubstrateWeight<Runtime>;
+    type AuthorInherentWeights = pallet_author_inherent::weights::SubstrateWeight<Runtime>;
+    type AuthoritiesNotingWeights = pallet_cc_authorities_noting::weights::SubstrateWeight<Runtime>;
+}
+
+impl_tanssi_pallets_config!(Runtime);
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
