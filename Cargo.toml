@@ -50,6 +50,7 @@ tp-author-noting-inherent = { path = "primitives/author-noting-inherent", defaul
 tp-consensus = { path = "primitives/consensus", default-features = false }
 tp-container-chain-genesis-data = { path = "primitives/container-chain-genesis-data", default-features = false }
 tp-fungibles-ext = { path = "primitives/fungibles-ext", default-features = false }
+tp-impl-tanssi-pallets-config = { path = "primitives/impl-tanssi-pallets-config", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 
@@ -249,6 +250,7 @@ fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tan
 bounded-collections = { version = "0.1.8", default-features = false }
 hex-literal = { version = "0.3.4" }
 impl-trait-for-tuples = "0.2.2"
+impls = "1.0.3"
 log = { version = "0.4.17", default-features = false }
 num_enum = { version = "0.7.1", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }

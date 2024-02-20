@@ -1,0 +1,28 @@
+[package]
+name = "tp-impl-tanssi-pallets-config"
+authors = { workspace = true }
+description = "Macro to construct tanssi runtime with preconfigured pallets"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[dependencies]
+impls = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+
+frame-support = { workspace = true }
+pallet-author-inherent = { workspace = true }
+pallet-cc-authorities-noting = { workspace = true }
+pallet-timestamp = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"frame-support/std",
+	"pallet-author-inherent/std",
+	"pallet-cc-authorities-noting/std",
+	"pallet-timestamp/std",
+	"sp-core/std",
+	"sp-runtime/std",
+]

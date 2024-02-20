@@ -1709,6 +1709,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tp-consensus",
+ "tp-impl-tanssi-pallets-config",
  "xcm-primitives",
 ]
 
@@ -1850,6 +1851,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tp-consensus",
+ "tp-impl-tanssi-pallets-config",
  "xcm-primitives",
 ]
 
@@ -5223,6 +5225,12 @@ dependencies = [
  "quote",
  "syn 1.0.109",
 ]
+
+[[package]]
+name = "impls"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a46645bbd70538861a90d0f26c31537cdf1e44aae99a794fb75a664b70951bc"
 
 [[package]]
 name = "include_dir"
@@ -15220,6 +15228,19 @@ dependencies = [
  "sp-std",
  "sp-trie",
  "tp-traits",
+]
+
+[[package]]
+name = "tp-impl-tanssi-pallets-config"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "impls",
+ "pallet-author-inherent",
+ "pallet-cc-authorities-noting",
+ "pallet-timestamp",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]
