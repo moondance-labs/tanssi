@@ -11767,6 +11767,7 @@ dependencies = [
 name = "runtime-common"
 version = "0.1.0"
 dependencies = [
+ "cumulus-pallet-xcmp-queue",
  "cumulus-primitives-core",
  "frame-support",
  "frame-system",

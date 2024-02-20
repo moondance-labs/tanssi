@@ -35,7 +35,7 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
-    frame_support::weights::Weight,
+    frame_support::{traits::OnRuntimeUpgrade, weights::Weight},
     pallet_configuration::{weights::WeightInfo as _, HostConfiguration},
     pallet_migrations::{GetMigrations, Migration},
     sp_core::Get,
@@ -238,6 +238,59 @@ where
     }
 }
 
+pub struct XcmpQueueMigrationV3<T>(pub PhantomData<T>);
+impl<T> Migration for XcmpQueueMigrationV3<T>
+where
+    T: cumulus_pallet_xcmp_queue::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_XcmpQueueMigrationV3"
+    }
+    
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        cumulus_pallet_xcmp_queue::migration::v3::MigrationToV3::<T>::on_runtime_upgrade()
+    }
+
+    // #[cfg(feature = "try-runtime")]
+    // let mut pre_upgrade_result: Vec<u8>;
+    
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        cumulus_pallet_xcmp_queue::migration::v3::MigrationToV3::<T>::pre_upgrade()
+    }
+
+    // Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+	fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        cumulus_pallet_xcmp_queue::migration::v3::MigrationToV3::<T>::post_upgrade(state)
+    }
+}
+
+pub struct XcmpQueueMigrationV4<T>(pub PhantomData<T>);
+impl<T> Migration for XcmpQueueMigrationV4<T>
+where
+    T: cumulus_pallet_xcmp_queue::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_XcmpQueueMigrationV4"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4::<T>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4::<T>::pre_upgrade()
+    }
+
+    // Run a standard post-runtime test. This works the same way as in a normal runtime upgrade.
+    #[cfg(feature = "try-runtime")]
+	fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        cumulus_pallet_xcmp_queue::migration::v4::MigrationToV4::<T>::post_upgrade(state)
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -279,6 +332,7 @@ where
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
     Runtime: pallet_services_payment::Config,
+    Runtime: cumulus_pallet_xcmp_queue::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
 {
@@ -299,6 +353,8 @@ where
 
         let migrate_add_collator_assignment_credits =
             MigrateServicesPaymentAddCollatorAssignmentCredits::<Runtime>(Default::default());
+        let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
+        let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
         vec![
             // Applied in runtime 200
             //Box::new(migrate_invulnerables),
@@ -318,6 +374,8 @@ where
             //Box::new(migrate_boot_nodes),
             Box::new(migrate_config_parathread_params),
             Box::new(migrate_add_collator_assignment_credits),
+            Box::new(migrate_xcmp_queue_v3),
+            Box::new(migrate_xcmp_queue_v4),
         ]
     }
 }
