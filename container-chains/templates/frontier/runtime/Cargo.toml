@@ -197,6 +197,7 @@ std = [
 	"staging-xcm/std",
 	"tp-consensus/std",
 	"xcm-primitives/std",
+	"sp-genesis-builder/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -238,6 +239,8 @@ runtime-benchmarks = [
 	"staging-xcm-executor/runtime-benchmarks",
 	"tp-consensus/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
+	"cumulus-pallet-dmp-queue/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks"
 ]
 
 try-runtime = [

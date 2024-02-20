@@ -49,4 +49,5 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks"
 ]

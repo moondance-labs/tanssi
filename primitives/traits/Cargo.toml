@@ -27,4 +27,5 @@ std = [
 ]
 runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks"
 ]

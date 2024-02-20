@@ -198,6 +198,7 @@ std = [
 	"tp-author-noting-inherent/std",
 	"tp-consensus/std",
 	"tp-traits/std",
+	"sp-genesis-builder/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -240,6 +241,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"tp-consensus/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks"
 ]
 
 try-runtime = [

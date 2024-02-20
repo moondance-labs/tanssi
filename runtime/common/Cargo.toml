@@ -63,6 +63,7 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"cumulus-pallet-xcmp-queue/std"
 ]
 
 runtime-benchmarks = [
@@ -77,6 +78,8 @@ runtime-benchmarks = [
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -92,6 +95,7 @@ try-runtime = [
 	"pallet-registrar/try-runtime",
 	"pallet-services-payment/try-runtime",
 	"sp-runtime/try-runtime",
+	"cumulus-pallet-xcmp-queue/try-runtime"
 ]
 
 fast-runtime = []

@@ -243,6 +243,8 @@ std = [
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
 	"xcm-primitives/std",
+	"serde_json/std",
+	"sp-genesis-builder/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -302,6 +304,9 @@ runtime-benchmarks = [
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
+	"cumulus-pallet-dmp-queue/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks",
+	"sc-service/runtime-benchmarks"
 ]
 
 try-runtime = [
