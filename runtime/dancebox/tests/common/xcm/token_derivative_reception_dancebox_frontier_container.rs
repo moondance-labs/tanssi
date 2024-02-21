@@ -73,7 +73,7 @@ fn receive_tokens_from_tanssi_to_simple_template() {
                     parents: 1,
                     interior: X2(Parachain(2000), dancebox_pallet_info_junction)
                 },
-                dancebox_token_asset_id,
+                dancebox_token_asset_id.into(),
                 EthereumReceiver::get(),
                 true,
                 1
@@ -130,7 +130,7 @@ fn receive_tokens_from_tanssi_to_simple_template() {
         // Assert empty receiver received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
-                dancebox_token_asset_id,
+                dancebox_token_asset_id.into(),
                 &EthereumReceiver::get(),
             ),
             amount_to_send - native_balance

@@ -15,7 +15,7 @@ describeSuite({
     id: "DF0911",
     title: "Precompiles - Assets-ERC20",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         let assetId: u16;
         let erc20Abi: Abi;
         let erc20InstanceAddress: `0x${string}`;

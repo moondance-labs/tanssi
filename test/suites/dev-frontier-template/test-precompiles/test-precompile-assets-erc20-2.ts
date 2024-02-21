@@ -9,7 +9,7 @@ describeSuite({
     id: "DF0908",
     title: "Precompiles - Assets-ERC20",
     foundationMethods: "dev",
-    testCases: ({ context, it, log }) => {
+    testCases: ({ context, it }) => {
         let assetId: u16;
         let erc20Abi: Abi;
         const ASSET_ID = 15n;

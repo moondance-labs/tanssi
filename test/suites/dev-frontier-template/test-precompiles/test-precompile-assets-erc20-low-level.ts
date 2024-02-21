@@ -9,7 +9,7 @@ describeSuite({
     id: "DF0907",
     title: "Precompiles - Low Level Transactions",
     foundationMethods: "dev",
-    testCases: ({ context, log, it }) => {
+    testCases: ({ context, it }) => {
         let assetId: u16;
         let contractInstanceAddress: `0x${string}`;
         let contractAbi: Abi;
