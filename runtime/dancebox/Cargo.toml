@@ -254,7 +254,6 @@ std = [
 force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [
-
 	"assets-common/runtime-benchmarks",
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
 	"container-chain-template-simple-runtime/runtime-benchmarks",

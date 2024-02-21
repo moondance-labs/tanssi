@@ -23,6 +23,8 @@ import type {
     FlashboxRuntimeRuntime,
     FlashboxRuntimeRuntimeHoldReason,
     FlashboxRuntimeSessionKeys,
+    FlashboxRuntimeStreamPaymentAssetId,
+    FlashboxRuntimeTimeUnit,
     FrameSupportDispatchDispatchClass,
     FrameSupportDispatchDispatchInfo,
     FrameSupportDispatchPays,
@@ -108,6 +110,16 @@ import type {
     PalletSessionCall,
     PalletSessionError,
     PalletSessionEvent,
+    PalletStreamPaymentCall,
+    PalletStreamPaymentChangeKind,
+    PalletStreamPaymentChangeRequest,
+    PalletStreamPaymentDepositChange,
+    PalletStreamPaymentError,
+    PalletStreamPaymentEvent,
+    PalletStreamPaymentHoldReason,
+    PalletStreamPaymentParty,
+    PalletStreamPaymentStream,
+    PalletStreamPaymentStreamConfig,
     PalletSudoCall,
     PalletSudoError,
     PalletSudoEvent,
@@ -183,6 +195,8 @@ declare module "@polkadot/types/types/registry" {
         FlashboxRuntimeRuntime: FlashboxRuntimeRuntime;
         FlashboxRuntimeRuntimeHoldReason: FlashboxRuntimeRuntimeHoldReason;
         FlashboxRuntimeSessionKeys: FlashboxRuntimeSessionKeys;
+        FlashboxRuntimeStreamPaymentAssetId: FlashboxRuntimeStreamPaymentAssetId;
+        FlashboxRuntimeTimeUnit: FlashboxRuntimeTimeUnit;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
         FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
@@ -268,6 +282,16 @@ declare module "@polkadot/types/types/registry" {
         PalletSessionCall: PalletSessionCall;
         PalletSessionError: PalletSessionError;
         PalletSessionEvent: PalletSessionEvent;
+        PalletStreamPaymentCall: PalletStreamPaymentCall;
+        PalletStreamPaymentChangeKind: PalletStreamPaymentChangeKind;
+        PalletStreamPaymentChangeRequest: PalletStreamPaymentChangeRequest;
+        PalletStreamPaymentDepositChange: PalletStreamPaymentDepositChange;
+        PalletStreamPaymentError: PalletStreamPaymentError;
+        PalletStreamPaymentEvent: PalletStreamPaymentEvent;
+        PalletStreamPaymentHoldReason: PalletStreamPaymentHoldReason;
+        PalletStreamPaymentParty: PalletStreamPaymentParty;
+        PalletStreamPaymentStream: PalletStreamPaymentStream;
+        PalletStreamPaymentStreamConfig: PalletStreamPaymentStreamConfig;
         PalletSudoCall: PalletSudoCall;
         PalletSudoError: PalletSudoError;
         PalletSudoEvent: PalletSudoEvent;

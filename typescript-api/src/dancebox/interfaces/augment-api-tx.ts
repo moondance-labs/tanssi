@@ -21,12 +21,16 @@ import type {
     DanceboxRuntimeOriginCaller,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeSessionKeys,
+    DanceboxRuntimeStreamPaymentAssetId,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
     PalletPooledStakingAllTargetPool,
     PalletPooledStakingPendingOperationQuery,
     PalletPooledStakingSharesOrStake,
     PalletPooledStakingTargetPool,
+    PalletStreamPaymentChangeKind,
+    PalletStreamPaymentDepositChange,
+    PalletStreamPaymentStreamConfig,
     SpRuntimeMultiSignature,
     SpWeightsWeightV2Weight,
     StagingXcmV3MultiLocation,
@@ -1684,11 +1688,19 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u128]
             >;
-            /** See [`Pallet::set_credits`]. */
-            setCredits: AugmentedSubmittable<
+            /** See [`Pallet::set_block_production_credits`]. */
+            setBlockProductionCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    credits: u32 | AnyNumber | Uint8Array
+                    freeBlockCredits: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, u32]
+            >;
+            /** See [`Pallet::set_collator_assignment_credits`]. */
+            setCollatorAssignmentCredits: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    freeCollatorAssignmentCredits: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u32]
             >;
@@ -1721,6 +1733,102 @@ declare module "@polkadot/api-base/types/submittable" {
                     proof: Bytes | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [DanceboxRuntimeSessionKeys, Bytes]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        streamPayment: {
+            /** See [`Pallet::accept_requested_change`]. */
+            acceptRequestedChange: AugmentedSubmittable<
+                (
+                    streamId: u64 | AnyNumber | Uint8Array,
+                    requestNonce: u32 | AnyNumber | Uint8Array,
+                    depositChange:
+                        | Option<PalletStreamPaymentDepositChange>
+                        | null
+                        | Uint8Array
+                        | PalletStreamPaymentDepositChange
+                        | { Increase: any }
+                        | { Decrease: any }
+                        | { Absolute: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, u32, Option<PalletStreamPaymentDepositChange>]
+            >;
+            /** See [`Pallet::cancel_change_request`]. */
+            cancelChangeRequest: AugmentedSubmittable<
+                (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::close_stream`]. */
+            closeStream: AugmentedSubmittable<
+                (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::immediately_change_deposit`]. */
+            immediatelyChangeDeposit: AugmentedSubmittable<
+                (
+                    streamId: u64 | AnyNumber | Uint8Array,
+                    assetId: DanceboxRuntimeStreamPaymentAssetId | "Native" | number | Uint8Array,
+                    change:
+                        | PalletStreamPaymentDepositChange
+                        | { Increase: any }
+                        | { Decrease: any }
+                        | { Absolute: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, DanceboxRuntimeStreamPaymentAssetId, PalletStreamPaymentDepositChange]
+            >;
+            /** See [`Pallet::open_stream`]. */
+            openStream: AugmentedSubmittable<
+                (
+                    target: AccountId32 | string | Uint8Array,
+                    config:
+                        | PalletStreamPaymentStreamConfig
+                        | { timeUnit?: any; assetId?: any; rate?: any }
+                        | string
+                        | Uint8Array,
+                    initialDeposit: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, PalletStreamPaymentStreamConfig, u128]
+            >;
+            /** See [`Pallet::perform_payment`]. */
+            performPayment: AugmentedSubmittable<
+                (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::request_change`]. */
+            requestChange: AugmentedSubmittable<
+                (
+                    streamId: u64 | AnyNumber | Uint8Array,
+                    kind:
+                        | PalletStreamPaymentChangeKind
+                        | { Suggestion: any }
+                        | { Mandatory: any }
+                        | string
+                        | Uint8Array,
+                    newConfig:
+                        | PalletStreamPaymentStreamConfig
+                        | { timeUnit?: any; assetId?: any; rate?: any }
+                        | string
+                        | Uint8Array,
+                    depositChange:
+                        | Option<PalletStreamPaymentDepositChange>
+                        | null
+                        | Uint8Array
+                        | PalletStreamPaymentDepositChange
+                        | { Increase: any }
+                        | { Decrease: any }
+                        | { Absolute: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [
+                    u64,
+                    PalletStreamPaymentChangeKind,
+                    PalletStreamPaymentStreamConfig,
+                    Option<PalletStreamPaymentDepositChange>
+                ]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

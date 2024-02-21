@@ -16,6 +16,9 @@ import type {
     FrameSupportMessagesProcessMessageError,
     FrameSupportTokensMiscBalanceStatus,
     PalletPooledStakingTargetPool,
+    PalletStreamPaymentDepositChange,
+    PalletStreamPaymentParty,
+    PalletStreamPaymentStreamConfig,
     SpRuntimeDispatchError,
     SpWeightsWeightV2Weight,
     StagingXcmV3MultiLocation,
@@ -994,17 +997,31 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         servicesPayment: {
-            CreditBurned: AugmentedEvent<
+            BlockProductionCreditBurned: AugmentedEvent<
                 ApiType,
                 [paraId: u32, creditsRemaining: u32],
                 { paraId: u32; creditsRemaining: u32 }
+            >;
+            BlockProductionCreditsSet: AugmentedEvent<
+                ApiType,
+                [paraId: u32, credits: u32],
+                { paraId: u32; credits: u32 }
+            >;
+            CollatorAssignmentCreditBurned: AugmentedEvent<
+                ApiType,
+                [paraId: u32, creditsRemaining: u32],
+                { paraId: u32; creditsRemaining: u32 }
+            >;
+            CollatorAssignmentCreditsSet: AugmentedEvent<
+                ApiType,
+                [paraId: u32, credits: u32],
+                { paraId: u32; credits: u32 }
             >;
             CreditsPurchased: AugmentedEvent<
                 ApiType,
                 [paraId: u32, payer: AccountId32, credit: u128],
                 { paraId: u32; payer: AccountId32; credit: u128 }
             >;
-            CreditsSet: AugmentedEvent<ApiType, [paraId: u32, credits: u32], { paraId: u32; credits: u32 }>;
             RefundAddressUpdated: AugmentedEvent<
                 ApiType,
                 [paraId: u32, refundAddress: Option<AccountId32>],
@@ -1016,6 +1033,49 @@ declare module "@polkadot/api-base/types/events" {
         session: {
             /** New session has happened. Note that the argument is the session index, not the block number as the type might suggest. */
             NewSession: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
+            /** Generic event */
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        streamPayment: {
+            StreamClosed: AugmentedEvent<ApiType, [streamId: u64, refunded: u128], { streamId: u64; refunded: u128 }>;
+            StreamConfigChanged: AugmentedEvent<
+                ApiType,
+                [
+                    streamId: u64,
+                    oldConfig: PalletStreamPaymentStreamConfig,
+                    newConfig: PalletStreamPaymentStreamConfig,
+                    depositChange: Option<PalletStreamPaymentDepositChange>
+                ],
+                {
+                    streamId: u64;
+                    oldConfig: PalletStreamPaymentStreamConfig;
+                    newConfig: PalletStreamPaymentStreamConfig;
+                    depositChange: Option<PalletStreamPaymentDepositChange>;
+                }
+            >;
+            StreamConfigChangeRequested: AugmentedEvent<
+                ApiType,
+                [
+                    streamId: u64,
+                    requestNonce: u32,
+                    requester: PalletStreamPaymentParty,
+                    oldConfig: PalletStreamPaymentStreamConfig,
+                    newConfig: PalletStreamPaymentStreamConfig
+                ],
+                {
+                    streamId: u64;
+                    requestNonce: u32;
+                    requester: PalletStreamPaymentParty;
+                    oldConfig: PalletStreamPaymentStreamConfig;
+                    newConfig: PalletStreamPaymentStreamConfig;
+                }
+            >;
+            StreamOpened: AugmentedEvent<ApiType, [streamId: u64], { streamId: u64 }>;
+            StreamPayment: AugmentedEvent<
+                ApiType,
+                [streamId: u64, source: AccountId32, target: AccountId32, amount: u128, drained: bool],
+                { streamId: u64; source: AccountId32; target: AccountId32; amount: u128; drained: bool }
+            >;
             /** Generic event */
             [key: string]: AugmentedEvent<ApiType>;
         };
