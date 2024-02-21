@@ -16,9 +16,9 @@
 
 use {
     super::{
-        AccountId, AllPalletsWithSystem, Balance, Balances, ForeignAssetsCreator, ParachainInfo,
-        ParachainSystem, PolkadotXcm, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
-        WeightToFee, XcmpQueue,
+        precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX, AccountId, AllPalletsWithSystem,
+        Balance, Balances, ForeignAssetsCreator, ParachainInfo, ParachainSystem, PolkadotXcm,
+        Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
     },
     ccp_xcm::SignedToAccountKey20,
     cumulus_primitives_core::ParaId,
@@ -31,11 +31,12 @@ use {
         weights::Weight,
     },
     frame_system::EnsureRoot,
+    pallet_evm_precompileset_assets_erc20::AccountIdAssetIdConversion,
     pallet_xcm::XcmPassthrough,
     parachains_common::impls::AccountIdOf,
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
-    sp_core::ConstU32,
-    sp_std::marker::PhantomData,
+    sp_core::{ConstU32, H160},
+    sp_std::{marker::PhantomData, vec::Vec},
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -288,7 +289,34 @@ impl pallet_asset_rate::AssetKindFactory<AssetId> for ForeignAssetBenchmarkHelpe
     }
 }
 
-pub type AssetId = u16;
+// Instruct how to go from an H160 to an AssetID
+// We just take the lowest 16 bits
+impl AccountIdAssetIdConversion<AccountId, AssetId> for Runtime {
+    /// The way to convert an account to assetId is by ensuring that the prefix is 0XFFFFFFFF
+    /// and by taking the lowest 16 bits as the assetId
+    fn account_to_asset_id(account: AccountId) -> Option<(Vec<u8>, AssetId)> {
+        let h160_account: H160 = account.into();
+        let mut data = [0u8; 2];
+        let (prefix_part, id_part) = h160_account.as_fixed_bytes().split_at(18);
+        if prefix_part == FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX {
+            data.copy_from_slice(id_part);
+            let asset_id: AssetId = u16::from_be_bytes(data).into();
+            Some((prefix_part.to_vec(), asset_id))
+        } else {
+            None
+        }
+    }
+
+    // The opposite conversion
+    fn asset_id_to_account(prefix: &[u8], asset_id: AssetId) -> AccountId {
+        let mut data = [0u8; 20];
+        data[0..18].copy_from_slice(prefix);
+        data[18..20].copy_from_slice(&asset_id.to_be_bytes());
+        AccountId::from(data)
+    }
+}
+
+pub type AssetId = u128;
 pub type ForeignAssetsInstance = pallet_assets::Instance1;
 impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
