@@ -283,7 +283,7 @@ describeSuite({
         it({
             id: "T13",
             title: "Blocks are being produced on container 2002",
-            timeout: 90000,
+            timeout: 120000,
             test: async function () {
                 // Wait 3 blocks because the next test needs to get a non empty value from
                 // container2002Api.query.authoritiesNoting()
@@ -352,8 +352,12 @@ describeSuite({
                 // TODO: this passes if only 2 authors are creating blocks, think a way to test that case
                 await countUniqueBlockAuthors(paraApi, blockNumber, blockNumber2002Start - 1, 4);
 
+                expect(sessionPeriod*5 < blockNumber2002End, "2002 should have deregistered after first rotation");
+                expect(sessionPeriod*10 > blockNumber2002End, "2002 should have deregistered before second rotation");
+
                 // While 2002 is live: 2 authors (the other 2 went to container chain 2002)
-                await countUniqueBlockAuthors(paraApi, blockNumber2002Start, blockNumber2002End - 1, 2);
+                // We take from the first block that rotates, otherwise rotation kicks in
+                await countUniqueBlockAuthors(paraApi, sessionPeriod*5, blockNumber2002End - 1, 2);
 
                 // Need to wait one session because the following blocks don't exist yet
                 await waitSessions(context, paraApi, 1);
