@@ -66,7 +66,7 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
             <FrontierTemplate as FrontierTemplatePallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
-                westend_token_asset_id.into(),
+                westend_token_asset_id,
                 EthereumReceiver::get(),
                 true,
                 1
@@ -122,7 +122,7 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
         // Assert empty receiver received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
-                westend_token_asset_id.into(),
+                westend_token_asset_id,
                 &EthereumReceiver::get(),
             ),
             amount_to_send - native_balance
@@ -164,7 +164,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
             <FrontierTemplate as FrontierTemplatePallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
-                westend_token_asset_id.into(),
+                westend_token_asset_id,
                 EthereumReceiver::get(),
                 true,
                 1
@@ -207,7 +207,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
         // Assert receiver should not have received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
-                westend_token_asset_id.into(),
+                westend_token_asset_id,
                 &EthereumReceiver::get(),
             ),
             0
@@ -275,7 +275,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
         // Assert receiver should not have received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
-                westend_token_asset_id.into(),
+                westend_token_asset_id,
                 &EthereumReceiver::get(),
             ),
             0

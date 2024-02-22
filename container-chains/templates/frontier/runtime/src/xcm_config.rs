@@ -290,10 +290,10 @@ impl pallet_asset_rate::AssetKindFactory<AssetId> for ForeignAssetBenchmarkHelpe
 }
 
 // Instruct how to go from an H160 to an AssetID
-// We just take the lowest 16 bits
+// We just take the lowest 2 bytes
 impl AccountIdAssetIdConversion<AccountId, AssetId> for Runtime {
-    /// The way to convert an account to assetId is by ensuring that the prefix is 0XFFFFFFFF
-    /// and by taking the lowest 16 bits as the assetId
+    /// The way to convert an account to assetId is by ensuring that the prefix is [0xFF, 18]
+    /// and by taking the lowest 2 bytes as the assetId
     fn account_to_asset_id(account: AccountId) -> Option<(Vec<u8>, AssetId)> {
         let h160_account: H160 = account.into();
         let mut data = [0u8; 2];
@@ -316,7 +316,7 @@ impl AccountIdAssetIdConversion<AccountId, AssetId> for Runtime {
     }
 }
 
-pub type AssetId = u128;
+pub type AssetId = u16;
 pub type ForeignAssetsInstance = pallet_assets::Instance1;
 impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
