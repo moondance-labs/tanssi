@@ -8,7 +8,7 @@ on:
 
 env:
   NODE_OPTIONS: "--max-old-space-size=12288"
-  GRCOV_VERSION: 0.8.19
+  GRCOV_VERSION: 0.8.18
 
 jobs:
   ####### Check files and formatting #######
@@ -113,7 +113,7 @@ jobs:
           mkdir -p coverage
           ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html,covdir --branch --ignore-not-existing --ignore "target/release/build/*" \
-            --ignore "$HOME/.cargo/**" \
+            --ignore "*mock.rs" --ignore "*tests.rs" --ignore "$HOME/.cargo/**" \
             -o coverage/ --llvm 2>&1 \
             | tee grcov.log
 
@@ -131,7 +131,8 @@ jobs:
             cd ..
             ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html,covdir --branch --ignore-not-existing --ignore "target/release/build/*" \
-            --ignore "$HOME/.cargo/**" -o coverage/ --llvm
+            --ignore "*mock.rs" --ignore "*tests.rs" --ignore "$HOME/.cargo/**" \
+            -o coverage/ --llvm
           fi
 
           if [ "${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}" == "true" ]; then
