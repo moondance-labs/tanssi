@@ -7,8 +7,8 @@ import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../ut
 import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "TX0104",
-    title: "Mock XCM - downward transfer with non-triggered error handler",
+    id: "TX0105",
+    title: "Mock XCM - downward transfer with triggered error handler",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
@@ -39,6 +39,14 @@ describeSuite({
                         true,
                         1
                     ),
+                    polkadotJs.tx.assetRate.create(
+                        1,
+                        // this defines how much the asset costs with respect to the
+                        // new asset
+                        // in this case, asset*2=native
+                        // that means that we will charge 0.5 of the native balance
+                        2000000000000000000n
+                    ),
                 ])
             );
 
@@ -49,7 +57,7 @@ describeSuite({
 
         it({
             id: "T01",
-            title: "Should make sure that Alice does not receive 10 dot without error",
+            title: "Should make sure that Alith does receive 10 dot because there is error",
             test: async function () {
                 // Send an XCM and create block to execute it
                 const xcmMessage = new XcmFragment({
@@ -62,19 +70,15 @@ describeSuite({
                             fungible: transferredBalance,
                         },
                     ],
-                    weight_limit: {
-                        refTime: 4000000000n,
-                        proofSize: 80000n,
-                    } as any,
                     beneficiary: u8aToHex(alice.addressRaw),
                 })
                     .reserve_asset_deposited()
                     .buy_execution()
-
-                    /// Buy execution does not error therefore error handler is not triggered
+                    // Trap makes it error, therefore the handler kicks in
                     .with(function () {
                         return this.set_error_handler_with([this.deposit_asset_v3]);
                     })
+                    .trap()
                     .as_v3();
 
                 // Send an XCM and create block to execute it
@@ -86,9 +90,13 @@ describeSuite({
                 // Create a block in which the XCM will be executed
                 await context.createBlock();
 
-                // Make sure the state has not Alice's tokens
-                const alice_dot_balance = await context.polkadotJs().query.foreignAssets.account(1, alice.address);
-                expect(alice_dot_balance.isNone).to.be.true;
+                // Make sure the state has Alice's DOT tokens
+                const alice_dot_balance = (await context.polkadotJs().query.foreignAssets.account(1, alice.address))
+                    .unwrap()
+                    .balance.toBigInt();
+                expect(alice_dot_balance > 0n).to.be.true;
+                // we should expect to have received less than the amount transferred
+                expect(alice_dot_balance < transferredBalance).to.be.true;
             },
         });
     },

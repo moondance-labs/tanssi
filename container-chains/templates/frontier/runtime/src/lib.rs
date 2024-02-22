@@ -861,6 +861,9 @@ construct_runtime!(
         DmpQueue: cumulus_pallet_dmp_queue::{Pallet, Call, Storage, Event<T>} = 72,
         PolkadotXcm: pallet_xcm::{Pallet, Call, Storage, Event<T>, Origin, Config<T>} = 73,
         MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 74,
+        ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 75,
+        ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 76,
+        AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 77,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
@@ -882,6 +885,9 @@ mod benches {
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+        [pallet_assets, ForeignAssets]
+        [pallet_asset_rate, AssetRate]
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
     );
 }
 

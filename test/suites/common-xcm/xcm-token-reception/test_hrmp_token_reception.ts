@@ -1,13 +1,13 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair, alith } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
-import { u8aToHex, hexToBigInt } from "@polkadot/util";
+import { u8aToHex } from "@polkadot/util";
 
 import { RawXcmMessage, XcmFragment, injectHrmpMessageAndSeal } from "../../../util/xcm.ts";
 import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "TX0106",
+    id: "TX0102",
     title: "Mock XCM - Succeeds receiving tokens through HRMP",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -41,8 +41,11 @@ describeSuite({
                     ),
                     polkadotJs.tx.assetRate.create(
                         1,
-                        // this will make sure we charge a minimum a fee
-                        hexToBigInt("0xffffffffffffffffffffffffffffffff")
+                        // this defines how much the asset costs with respect to the
+                        // new asset
+                        // in this case, asset*2=native
+                        // that means that we will charge 0.5 of the native balance
+                        2000000000000000000n
                     ),
                 ])
             );
@@ -54,7 +57,7 @@ describeSuite({
 
         it({
             id: "T01",
-            title: "Should succeed receiving tokens with 1 fee if sufficeintly large rate",
+            title: "Should succeed receiving tokens",
             test: async function () {
                 // Send an XCM and create block to execute it
                 const xcmMessage = new XcmFragment({
@@ -69,10 +72,6 @@ describeSuite({
                             fungible: transferredBalance,
                         },
                     ],
-                    weight_limit: {
-                        refTime: 4000000000n,
-                        proofSize: 80000n,
-                    } as any,
                     beneficiary: u8aToHex(alice.addressRaw),
                 })
                     .reserve_asset_deposited()
@@ -96,7 +95,7 @@ describeSuite({
                 )
                     .unwrap()
                     .balance.toBigInt();
-                expect(alice_statemint_balance).to.eq(transferredBalance - 1n);
+                expect(alice_statemint_balance > 0n).to.be.true;
             },
         });
     },

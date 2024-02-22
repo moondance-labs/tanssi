@@ -16,9 +16,9 @@
 
 use {
     super::{
-        AccountId, AllPalletsWithSystem, Balances, MaintenanceMode, MessageQueue, ParachainInfo,
-        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
-        RuntimeOrigin, WeightToFee, XcmpQueue,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator,
+        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
+        RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
@@ -35,8 +35,8 @@ use {
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
-        AllowTopLevelPaidExecutionFrom, EnsureXcmOrigin, FixedWeightBounds, FungibleAdapter,
-        IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
+        AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FixedWeightBounds,
+        FungibleAdapter, IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
         SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WithComputedOrigin,
     },
@@ -153,7 +153,7 @@ pub type XcmOriginToTransactDispatchOrigin = (
 );
 
 /// Means for transacting assets on this chain.
-pub type AssetTransactors = CurrencyTransactor;
+pub type AssetTransactors = (CurrencyTransactor, ForeignFungiblesTransactor);
 pub type XcmWeigher = FixedWeightBounds<UnitWeightCost, RuntimeCall, MaxInstructions>;
 
 /// The means for routing XCM messages which are not for local execution into the right message
@@ -171,14 +171,22 @@ impl staging_xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = ();
+    type IsReserve = NativeAssetReserve;
     type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;
     type Weigher = XcmWeigher;
-    // Local token trader only
-    // TODO: update once we have a way to do fees
-    type Trader = UsingComponents<WeightToFee, SelfReserve, AccountId, Balances, ()>;
+    type Trader = (
+        UsingComponents<WeightToFee, SelfReserve, AccountId, Balances, ()>,
+        cumulus_primitives_utility::TakeFirstAssetTrader<
+            AccountId,
+            AssetRateAsMultiplier,
+            // Use this currency when it is a fungible asset matching the given location or name:
+            (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, JustTry>,),
+            ForeignAssets,
+            (),
+        >,
+    );
     type ResponseHandler = PolkadotXcm;
     type AssetTrap = PolkadotXcm;
     type AssetClaims = PolkadotXcm;
@@ -276,4 +284,170 @@ impl pallet_message_queue::Config for Runtime {
     type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
     type MaxStale = sp_core::ConstU32<8>;
     type ServiceWeight = MessageQueueServiceWeight;
+}
+
+parameter_types! {
+    // we just reuse the same deposits
+    pub const ForeignAssetsAssetDeposit: Balance = 0;
+    pub const ForeignAssetsAssetAccountDeposit: Balance = 0;
+    pub const ForeignAssetsApprovalDeposit: Balance = 0;
+    pub const ForeignAssetsAssetsStringLimit: u32 = 50;
+    pub const ForeignAssetsMetadataDepositBase: Balance = 0;
+    pub const ForeignAssetsMetadataDepositPerByte: Balance = 0;
+    pub CheckingAccount: AccountId = PolkadotXcm::check_account();
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+/// Simple conversion of `u32` into an `AssetId` for use in benchmarking.
+pub struct ForeignAssetBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pallet_assets::BenchmarkHelper<AssetId> for ForeignAssetBenchmarkHelper {
+    fn create_asset_id_parameter(id: u32) -> AssetId {
+        id.try_into()
+            .expect("number too large to create benchmarks")
+    }
+}
+#[cfg(feature = "runtime-benchmarks")]
+impl pallet_asset_rate::AssetKindFactory<AssetId> for ForeignAssetBenchmarkHelper {
+    fn create_asset_kind(id: u32) -> AssetId {
+        id.try_into()
+            .expect("number too large to create benchmarks")
+    }
+}
+
+pub type AssetId = u16;
+pub type ForeignAssetsInstance = pallet_assets::Instance1;
+impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Balance = Balance;
+    type AssetId = AssetId;
+    type AssetIdParameter = AssetId;
+    type Currency = Balances;
+    type CreateOrigin = frame_support::traits::NeverEnsureOrigin<AccountId>;
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type AssetDeposit = ForeignAssetsAssetDeposit;
+    type MetadataDepositBase = ForeignAssetsMetadataDepositBase;
+    type MetadataDepositPerByte = ForeignAssetsMetadataDepositPerByte;
+    type ApprovalDeposit = ForeignAssetsApprovalDeposit;
+    type StringLimit = ForeignAssetsAssetsStringLimit;
+    type Freezer = ();
+    type Extra = ();
+    type WeightInfo = pallet_assets::weights::SubstrateWeight<Runtime>;
+    type CallbackHandle = ();
+    type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
+    type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ForeignAssetBenchmarkHelper;
+}
+
+impl pallet_foreign_asset_creator::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ForeignAsset = MultiLocation;
+    type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
+    type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
+    type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
+    type Fungibles = ForeignAssets;
+    type WeightInfo = pallet_foreign_asset_creator::weights::SubstrateWeight<Runtime>;
+}
+
+impl pallet_asset_rate::Config for Runtime {
+    type CreateOrigin = EnsureRoot<AccountId>;
+    type RemoveOrigin = EnsureRoot<AccountId>;
+    type UpdateOrigin = EnsureRoot<AccountId>;
+    type Currency = Balances;
+    type AssetKind = AssetId;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ForeignAssetBenchmarkHelper;
+}
+
+use {
+    crate::ForeignAssets,
+    staging_xcm_builder::{FungiblesAdapter, NoChecking},
+    staging_xcm_executor::traits::JustTry,
+};
+
+/// Means for transacting foreign assets from different global consensus.
+pub type ForeignFungiblesTransactor = FungiblesAdapter<
+    // Use this fungibles implementation:
+    ForeignAssets,
+    // Use this currency when it is a fungible asset matching the given location or name:
+    (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, JustTry>,),
+    // Convert an XCM MultiLocation into a local account id:
+    LocationToAccountId,
+    // Our chain's account ID type (we can't get away without mentioning it explicitly):
+    AccountId,
+    // We dont need to check teleports here.
+    NoChecking,
+    // The account to use for tracking teleports.
+    CheckingAccount,
+>;
+
+/// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
+pub type AssetRateAsMultiplier =
+    parachains_common::xcm_config::AssetFeeAsExistentialDepositMultiplier<
+        Runtime,
+        WeightToFee,
+        AssetRate,
+        ForeignAssetsInstance,
+    >;
+
+// TODO: this should probably move to somewhere in the polkadot-sdk repo
+pub struct NativeAssetReserve;
+impl frame_support::traits::ContainsPair<MultiAsset, MultiLocation> for NativeAssetReserve {
+    fn contains(asset: &MultiAsset, origin: &MultiLocation) -> bool {
+        log::trace!(target: "xcm::contains", "NativeAssetReserve asset: {:?}, origin: {:?}", asset, origin);
+        let reserve = if let Concrete(location) = &asset.id {
+            if location.parents == 0 && !matches!(location.first_interior(), Some(Parachain(_))) {
+                Some(MultiLocation::here())
+            } else {
+                location.chain_part()
+            }
+        } else {
+            None
+        };
+
+        if let Some(ref reserve) = reserve {
+            if reserve == origin {
+                return true;
+            }
+        }
+        false
+    }
+}
+
+pub trait Parse {
+    /// Returns the "chain" location part. It could be parent, sibling
+    /// parachain, or child parachain.
+    fn chain_part(&self) -> Option<MultiLocation>;
+    /// Returns "non-chain" location part.
+    fn non_chain_part(&self) -> Option<MultiLocation>;
+}
+
+impl Parse for MultiLocation {
+    fn chain_part(&self) -> Option<MultiLocation> {
+        match (self.parents, self.first_interior()) {
+            // sibling parachain
+            (1, Some(Parachain(id))) => Some(MultiLocation::new(1, X1(Parachain(*id)))),
+            // parent
+            (1, _) => Some(MultiLocation::parent()),
+            // children parachain
+            (0, Some(Parachain(id))) => Some(MultiLocation::new(0, X1(Parachain(*id)))),
+            _ => None,
+        }
+    }
+
+    fn non_chain_part(&self) -> Option<MultiLocation> {
+        let mut junctions = *self.interior();
+        while matches!(junctions.first(), Some(Parachain(_))) {
+            let _ = junctions.take_first();
+        }
+
+        if junctions != Here {
+            Some(MultiLocation::new(0, junctions))
+        } else {
+            None
+        }
+    }
 }

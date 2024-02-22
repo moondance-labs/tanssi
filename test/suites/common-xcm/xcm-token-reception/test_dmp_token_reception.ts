@@ -3,12 +3,12 @@ import { KeyringPair, alith } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 
-import { RawXcmMessage, XcmFragment, injectHrmpMessageAndSeal } from "../../../util/xcm.ts";
-import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
+import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../util/xcm.ts";
+import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "TX0102",
-    title: "Mock XCM - Succeeds receiving tokens through HRMP",
+    id: "TX0101",
+    title: "Mock XCM - Succeeds receiving tokens DMP",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
@@ -33,7 +33,7 @@ describeSuite({
             const txSigned = polkadotJs.tx.sudo.sudo(
                 polkadotJs.tx.utility.batch([
                     polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                        STATEMINT_LOCATION_EXAMPLE,
+                        RELAY_SOURCE_LOCATION,
                         1,
                         alice.address,
                         true,
@@ -65,17 +65,11 @@ describeSuite({
                         {
                             multilocation: {
                                 parents: 1,
-                                interior: {
-                                    X3: [{ Parachain: 1000 }, { PalletInstance: 50 }, { GeneralIndex: 0n }],
-                                },
+                                interior: { Here: null },
                             },
                             fungible: transferredBalance,
                         },
                     ],
-                    weight_limit: {
-                        refTime: 4000000000n,
-                        proofSize: 80000n,
-                    } as any,
                     beneficiary: u8aToHex(alice.addressRaw),
                 })
                     .reserve_asset_deposited()
@@ -85,7 +79,7 @@ describeSuite({
                     .as_v3();
 
                 // Send an XCM and create block to execute it
-                await injectHrmpMessageAndSeal(context, 1000, {
+                await injectDmpMessageAndSeal(context, {
                     type: "XcmVersionedXcm",
                     payload: xcmMessage,
                 } as RawXcmMessage);
@@ -93,13 +87,68 @@ describeSuite({
                 // Create a block in which the XCM will be executed
                 await context.createBlock();
 
-                // Make sure the state has Alice's tatemint tokens
-                const alice_statemint_balance = (
-                    await context.polkadotJs().query.foreignAssets.account(1, alice.address)
-                )
+                // Make sure the state has ALITH's to DOT tokens
+                const alice_dot_balance = (await context.polkadotJs().query.foreignAssets.account(1, alice.address))
                     .unwrap()
                     .balance.toBigInt();
-                expect(alice_statemint_balance > 0n).to.be.true;
+                expect(alice_dot_balance > 0n).to.be.true;
+                // we should expect to have received less than the amount transferred
+                expect(alice_dot_balance < transferredBalance).to.be.true;
+            },
+        });
+
+        it({
+            id: "T02",
+            title: "Should not succeed receiving tokens if asset rate is not defined",
+            test: async function () {
+                // We register the token
+                const txSigned = polkadotJs.tx.sudo.sudo(
+                    polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                        RELAY_SOURCE_LOCATION_2,
+                        // id 2
+                        2,
+                        alice.address,
+                        true,
+                        1
+                    )
+                );
+
+                await context.createBlock(await txSigned.signAsync(alice), {
+                    allowFailures: false,
+                });
+
+                // Send an XCM and create block to execute it
+                const xcmMessage = new XcmFragment({
+                    assets: [
+                        {
+                            // we change parents to 2
+                            multilocation: {
+                                parents: 2,
+                                interior: { Here: null },
+                            },
+                            fungible: 10000000000000n,
+                        },
+                    ],
+                    beneficiary: u8aToHex(alice.addressRaw),
+                })
+                    .reserve_asset_deposited()
+                    .clear_origin()
+                    .buy_execution()
+                    .deposit_asset()
+                    .as_v3();
+
+                // Send an XCM and create block to execute it
+                await injectDmpMessageAndSeal(context, {
+                    type: "XcmVersionedXcm",
+                    payload: xcmMessage,
+                } as RawXcmMessage);
+
+                // Create a block in which the XCM will be executed
+                await context.createBlock();
+
+                // Make sure the state has not ALITH's DOT_2 tokens
+                const alice_dot_2_balance = await context.polkadotJs().query.foreignAssets.account(2, alice.address);
+                expect(alice_dot_2_balance.isNone).to.be.true;
             },
         });
     },

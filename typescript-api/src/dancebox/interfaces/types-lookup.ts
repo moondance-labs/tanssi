@@ -5269,7 +5269,8 @@ declare module "@polkadot/types/lookup" {
     interface PalletAssetRateError extends Enum {
         readonly isUnknownAssetKind: boolean;
         readonly isAlreadyExists: boolean;
-        readonly type: "UnknownAssetKind" | "AlreadyExists";
+        readonly isOverflow: boolean;
+        readonly type: "UnknownAssetKind" | "AlreadyExists" | "Overflow";
     }
 
     /** @name PalletMessageQueueBookState (488) */

@@ -14,6 +14,8 @@ declare module "@polkadot/api-base/types/errors" {
         assetRate: {
             /** The given asset ID already has an assigned conversion rate and cannot be re-created. */
             AlreadyExists: AugmentedError<ApiType>;
+            /** Overflow ocurred when calculating the inverse rate. */
+            Overflow: AugmentedError<ApiType>;
             /** The given asset ID is unknown. */
             UnknownAssetKind: AugmentedError<ApiType>;
             /** Generic error */

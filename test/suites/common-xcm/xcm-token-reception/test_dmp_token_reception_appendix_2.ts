@@ -7,8 +7,8 @@ import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../ut
 import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "TX0105",
-    title: "Mock XCM - downward transfer with triggered error handler",
+    id: "TX0103",
+    title: "Mock XCM - downward transfer with always triggered appendix",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
@@ -57,7 +57,7 @@ describeSuite({
 
         it({
             id: "T01",
-            title: "Should make sure that Alith does receive 10 dot because there is error",
+            title: "Should make sure Alice receives 10 dot with appendix and without error",
             test: async function () {
                 // Send an XCM and create block to execute it
                 const xcmMessage = new XcmFragment({
@@ -70,17 +70,14 @@ describeSuite({
                             fungible: transferredBalance,
                         },
                     ],
-                    weight_limit: {
-                        refTime: 4000000000n,
-                        proofSize: 80000n,
-                    } as any,
                     beneficiary: u8aToHex(alice.addressRaw),
                 })
                     .reserve_asset_deposited()
+                    .clear_origin()
                     .buy_execution()
-                    // Trap makes it error, therefore the handler kicks in
+                    // Set an appendix to be executed after the XCM message is executed. No matter if errors
                     .with(function () {
-                        return this.set_error_handler_with([this.deposit_asset_v3]);
+                        return this.set_appendix_with([this.deposit_asset_v3]);
                     })
                     .trap()
                     .as_v3();
