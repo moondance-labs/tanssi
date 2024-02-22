@@ -2847,6 +2847,7 @@ dependencies = [
  "pallet-maintenance-mode",
  "pallet-message-queue",
  "pallet-migrations",
+ "pallet-multisig",
  "pallet-pooled-staking",
  "pallet-proxy",
  "pallet-registrar",

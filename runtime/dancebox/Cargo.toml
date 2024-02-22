@@ -56,6 +56,7 @@ pallet-asset-rate = { workspace = true }
 pallet-assets = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
+pallet-multisig = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -183,6 +184,7 @@ std = [
 	"pallet-maintenance-mode/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
+	"pallet-multisig/std",
 	"pallet-pooled-staking/std",
 	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
@@ -274,6 +276,7 @@ runtime-benchmarks = [
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
+	"pallet-multisig/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
@@ -337,6 +340,7 @@ try-runtime = [
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
+	"pallet-multisig/try-runtime",
 	"pallet-pooled-staking/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",
