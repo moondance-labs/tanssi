@@ -347,7 +347,13 @@ async fn start_node_impl(
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
     let sync_keystore = node_builder.keystore_container.keystore();
-    let mut collate_on_tanssi = None;
+    let mut collate_on_tanssi: Arc<dyn Fn() + Send + Sync> = Arc::new(move || {
+        if validator {
+            panic!("Called uninitialized collate_on_tanssi");
+        } else {
+            panic!("Called collate_on_tanssi when node is not running as a validator");
+        }
+    });
 
     let announce_block = {
         let sync_service = node_builder.network.sync_service.clone();
@@ -390,37 +396,40 @@ async fn start_node_impl(
             );
         }
 
-        // Params for collate_on_tanssi closure
-        let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
-        let node_keystore = node_builder.keystore_container.keystore().clone();
-        let node_telemetry_handle = node_builder.telemetry.as_ref().map(|t| t.handle()).clone();
-        let node_client = node_builder.client.clone();
-        let relay_interface = relay_chain_interface.clone();
-        let node_sync_service = node_builder.network.sync_service.clone();
-        let overseer = overseer_handle.clone();
+        let start_collation = {
+            // Params for collate_on_tanssi closure
+            let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
+            let node_keystore = node_builder.keystore_container.keystore().clone();
+            let node_telemetry_handle = node_builder.telemetry.as_ref().map(|t| t.handle()).clone();
+            let node_client = node_builder.client.clone();
+            let relay_interface = relay_chain_interface.clone();
+            let node_sync_service = node_builder.network.sync_service.clone();
+            let overseer = overseer_handle.clone();
 
-        collate_on_tanssi = Some(move || async move {
-            start_consensus_orchestrator(
-                node_client,
-                block_import.clone(),
-                node_builder.prometheus_registry.clone(),
-                node_telemetry_handle,
-                node_spawn_handle,
-                relay_interface,
-                node_builder.transaction_pool.clone(),
-                node_sync_service,
-                node_keystore,
-                force_authoring,
-                relay_chain_slot_duration,
-                para_id,
-                collator_key.clone(),
-                overseer,
-                announce_block.clone(),
-            );
-        });
-
-        let call = collate_on_tanssi.clone().unwrap();
-        call().await;
+            move || {
+                start_consensus_orchestrator(
+                    node_client.clone(),
+                    block_import.clone(),
+                    node_builder.prometheus_registry.clone(),
+                    node_telemetry_handle.clone(),
+                    node_spawn_handle.clone(),
+                    relay_interface.clone(),
+                    node_builder.transaction_pool.clone(),
+                    node_sync_service.clone(),
+                    node_keystore.clone(),
+                    force_authoring,
+                    relay_chain_slot_duration,
+                    para_id,
+                    collator_key.clone(),
+                    overseer.clone(),
+                    announce_block.clone(),
+                )
+            }
+        };
+        // Start collating now
+        start_collation();
+        // And save callback for later, used when collator rotates from container chain back to orchestrator chain
+        collate_on_tanssi = Arc::new(start_collation);
     }
 
     node_builder.network.start_network.start_network();
@@ -466,7 +475,7 @@ async fn start_node_impl(
             validator,
             spawn_handle,
             state: Default::default(),
-            collate_on_tanssi: Arc::new(move || Box::pin((collate_on_tanssi.clone().unwrap())())),
+            collate_on_tanssi,
         };
         let state = container_chain_spawner.state.clone();
 
