@@ -131,8 +131,7 @@ jobs:
             cd ..
             ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
             -t html,covdir --branch --ignore-not-existing --ignore "target/release/build/*" \
-            --ignore "*mock.rs" --ignore "*tests.rs" --ignore "$HOME/.cargo/**" \
-            -o coverage/ --llvm
+            --ignore "$HOME/.cargo/**" -o coverage/ --llvm
           fi
 
           if [ "${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}" == "true" ]; then
