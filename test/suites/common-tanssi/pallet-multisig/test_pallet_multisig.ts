@@ -18,6 +18,7 @@ describeSuite({
         let bob: KeyringPair;
         let call: string;
         let callHash: string;
+        let threshold: number;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -25,11 +26,11 @@ describeSuite({
             charlie = context.keyring.charlie;
             dave = context.keyring.dave;
             bob = context.keyring.bob;
+            threshold = 2;
             // exmple call and hash to be used in tests
             const example_call = context.polkadotJs().tx.balances.transferKeepAlive(charlie.address, 20);
             call = example_call.method.toHex();
             callHash = blake2AsHex(call);
-
         });
 
         it({
@@ -41,7 +42,7 @@ describeSuite({
                 const otherSignatories = [dave.address, bob.address];
                 await context.createBlock(
                     polkadotJs
-                        .tx.multisig.asMulti(2, otherSignatories, null, call, {})
+                        .tx.multisig.asMulti(threshold, otherSignatories, null, call, {})
                         .signAsync(alice)
                     );
         
@@ -53,12 +54,12 @@ describeSuite({
                 expect(eventCount.length).to.be.equal(1);
 
                 //Multisig Cancelation
-                const encodedMultisigId = createKeyMulti([alice.address, dave.address, bob.address], 2);
+                const encodedMultisigId = createKeyMulti([alice.address, dave.address, bob.address], threshold);
                 const multisigId = u8aToHex(encodedMultisigId);
                 const multisigInfo = await polkadotJs.query.multisig.multisigs(multisigId, callHash);
                 await context.createBlock(
                     polkadotJs.tx.multisig.cancelAsMulti(
-                        2,
+                        threshold,
                         otherSignatories,
                         multisigInfo.unwrap().when,
                         callHash
@@ -79,17 +80,19 @@ describeSuite({
             id: "E02",
             title: "Approves a multisig operation",
             test: async function () {
-                const otherSignatories = [dave.address, bob.address];
 
-                // Alice creates a multisig
+                //Multisig creation
+                const otherSignatories = [dave.address, bob.address];
                 await context.createBlock(
-                polkadotJs
-                    .tx.multisig.asMulti(2, otherSignatories, null, call, {})
-                    .signAsync(alice)
-                );
-      
-                // Dave approves
-                const encodedMultisigId = createKeyMulti([alice.address, dave.address, bob.address], 2);
+                    polkadotJs
+                        .tx.multisig.asMulti(threshold, otherSignatories, null, call, {})
+                        .signAsync(alice)
+                    );
+
+                //Multisig Approval
+
+                // This is only needed to get get time point parameter
+                const encodedMultisigId = createKeyMulti([alice.address, dave.address, bob.address], threshold);
                 const multisigId = u8aToHex(encodedMultisigId);
                 const multisigInfo = await polkadotJs.query.multisig.multisigs(multisigId, callHash);
 
@@ -97,19 +100,18 @@ describeSuite({
                     context
                     .polkadotJs()
                     .tx.multisig.approveAsMulti(
-                        2,
-                        otherSignatories,
+                        threshold,
+                        [dave.address, alice.address],
                         multisigInfo.unwrap().when,
                         callHash,
                         {}
                     )
-                    .signAsync(dave)
+                    .signAsync(bob)
                 );
-      
+            
             // Multisig call is approved
             const records = await polkadotJs.query.system.events();
             const eventCount = records.filter((a) => {
-                console.log(a.event.method);
                 return a.event.method == "MultisigApproval";
               });
               expect(eventCount.length).to.be.equal(1);
