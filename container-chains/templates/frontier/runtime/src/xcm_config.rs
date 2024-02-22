@@ -16,7 +16,7 @@
 
 use {
     super::{
-        AccountId, AllPalletsWithSystem, Balance, Balances, ForeignAssetsCreator, MaintenanceMode,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator, MaintenanceMode,
         MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights,
         RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
     },
@@ -25,7 +25,7 @@ use {
     frame_support::{
         parameter_types,
         traits::{
-            fungibles::Inspect, tokens::ConversionToAssetBalance, Everything, Nothing,
+            Everything, Nothing,
             PalletInfoAccess, TransformOrigin,
         },
         weights::Weight,
@@ -33,14 +33,12 @@ use {
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
     parachains_common::{
-        impls::AccountIdOf,
         message_queue::{NarrowOriginToSibling, ParaIdToSibling},
         xcm_config::AssetFeeAsExistentialDepositMultiplier,
     },
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     sp_core::ConstU32,
     sp_runtime::Perbill,
-    sp_std::marker::PhantomData,
     staging_xcm::latest::prelude::*,
     staging_xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -371,7 +369,6 @@ impl pallet_asset_rate::Config for Runtime {
 
 use {
     crate::ForeignAssets,
-    sp_runtime::{traits::CheckedDiv, FixedPointNumber},
     staging_xcm_builder::{FungiblesAdapter, NoChecking},
     staging_xcm_executor::traits::JustTry,
 };

@@ -16,7 +16,7 @@
 
 use {
     super::{
-        AccountId, AllPalletsWithSystem, Balance, Balances, ForeignAssetsCreator, MaintenanceMode,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator, MaintenanceMode,
         MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights,
         RuntimeCall, RuntimeEvent, RuntimeOrigin, WeightToFee, XcmpQueue,
     },
@@ -364,7 +364,6 @@ impl pallet_asset_rate::Config for Runtime {
 
 use {
     crate::ForeignAssets,
-    sp_runtime::{traits::CheckedDiv, FixedPointNumber},
     staging_xcm_builder::{FungiblesAdapter, NoChecking},
     staging_xcm_executor::traits::JustTry,
 };
