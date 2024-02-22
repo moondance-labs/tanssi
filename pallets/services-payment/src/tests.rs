@@ -29,11 +29,14 @@
 //! to that containerChain, by simply assigning the slot position.
 
 use {
-    crate::{mock::*, pallet as pallet_services_payment, BlockProductionCredits, RefundAddress},
+    crate::{
+        mock::*, pallet as pallet_services_payment, BlockProductionCredits,
+        CollatorAssignmentCredits, RefundAddress,
+    },
     cumulus_primitives_core::ParaId,
     frame_support::{assert_err, assert_ok, traits::fungible::Inspect},
     sp_runtime::DispatchError,
-    tp_traits::AuthorNotingHook,
+    tp_traits::{AuthorNotingHook, CollatorAssignmentHook},
 };
 
 const ALICE: u64 = 1;
@@ -84,20 +87,24 @@ fn purchase_credits_fails_with_insufficient_balance() {
 fn burn_credit_fails_with_no_credits() {
     ExtBuilder::default().build().execute_with(|| {
         assert_err!(
-            PaymentServices::burn_free_credit_for_para(&1u32.into()),
+            PaymentServices::burn_block_production_free_credit_for_para(&1u32.into()),
+            pallet_services_payment::Error::<Test>::InsufficientCredits,
+        );
+        assert_err!(
+            PaymentServices::burn_collator_assignment_free_credit_for_para(&1u32.into()),
             pallet_services_payment::Error::<Test>::InsufficientCredits,
         );
     });
 }
 
 #[test]
-fn burn_credit_works() {
+fn burn_block_production_credit_works() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
             let para_id = 1.into();
-            assert_ok!(PaymentServices::set_credits(
+            assert_ok!(PaymentServices::set_block_production_credits(
                 RuntimeOrigin::root(),
                 para_id,
                 1u64,
@@ -105,12 +112,40 @@ fn burn_credit_works() {
 
             // should succeed and burn one
             assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(1u64));
-            assert_ok!(PaymentServices::burn_free_credit_for_para(&para_id));
+            assert_ok!(PaymentServices::burn_block_production_free_credit_for_para(
+                &para_id
+            ));
             assert_eq!(<BlockProductionCredits<Test>>::get(para_id), Some(0u64));
 
             // now should fail
             assert_err!(
-                PaymentServices::burn_free_credit_for_para(&para_id),
+                PaymentServices::burn_block_production_free_credit_for_para(&para_id),
+                pallet_services_payment::Error::<Test>::InsufficientCredits,
+            );
+        });
+}
+
+#[test]
+fn burn_collator_assignment_credit_works() {
+    ExtBuilder::default()
+        .with_balances([(ALICE, 1_000)].into())
+        .build()
+        .execute_with(|| {
+            let para_id = 1.into();
+            assert_ok!(PaymentServices::set_collator_assignment_credits(
+                RuntimeOrigin::root(),
+                para_id,
+                1u32,
+            ),);
+
+            // should succeed and burn one
+            assert_eq!(<CollatorAssignmentCredits<Test>>::get(para_id), Some(1u32));
+            assert_ok!(PaymentServices::burn_collator_assignment_free_credit_for_para(&para_id));
+            assert_eq!(<CollatorAssignmentCredits<Test>>::get(para_id), Some(0u32));
+
+            // now should fail
+            assert_err!(
+                PaymentServices::burn_collator_assignment_free_credit_for_para(&para_id),
                 pallet_services_payment::Error::<Test>::InsufficientCredits,
             );
         });
@@ -123,60 +158,73 @@ fn burn_credit_fails_for_wrong_para() {
         .build()
         .execute_with(|| {
             let para_id = 1.into();
-            assert_ok!(PaymentServices::set_credits(
+            assert_ok!(PaymentServices::set_block_production_credits(
                 RuntimeOrigin::root(),
                 para_id,
                 1u64,
+            ),);
+            assert_ok!(PaymentServices::set_collator_assignment_credits(
+                RuntimeOrigin::root(),
+                para_id,
+                1u32,
             ),);
 
             // fails for wrong para
             let wrong_para_id = 2.into();
             assert_err!(
-                PaymentServices::burn_free_credit_for_para(&wrong_para_id),
+                PaymentServices::burn_block_production_free_credit_for_para(&wrong_para_id),
+                pallet_services_payment::Error::<Test>::InsufficientCredits,
+            );
+            assert_err!(
+                PaymentServices::burn_collator_assignment_free_credit_for_para(&wrong_para_id),
                 pallet_services_payment::Error::<Test>::InsufficientCredits,
             );
         });
 }
 
 #[test]
-fn set_credits_bad_origin() {
+fn set_block_production_credits_bad_origin() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
             assert_err!(
-                PaymentServices::set_credits(RuntimeOrigin::signed(ALICE), 1.into(), 1u64,),
+                PaymentServices::set_block_production_credits(
+                    RuntimeOrigin::signed(ALICE),
+                    1.into(),
+                    1u64,
+                ),
                 DispatchError::BadOrigin
             )
         });
 }
 
 #[test]
-fn set_credits_above_max_works() {
+fn set_block_production_credits_above_max_works() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
-            assert_ok!(PaymentServices::set_credits(
+            assert_ok!(PaymentServices::set_block_production_credits(
                 RuntimeOrigin::root(),
                 1.into(),
-                MaxCreditsStored::get() * 2,
+                FreeBlockProductionCredits::get() * 2,
             ));
 
             assert_eq!(
                 <BlockProductionCredits<Test>>::get(ParaId::from(1)),
-                Some(MaxCreditsStored::get() * 2)
+                Some(FreeBlockProductionCredits::get() * 2)
             );
         });
 }
 
 #[test]
-fn set_credits_to_zero_kills_storage() {
+fn set_block_production_credits_to_zero_kills_storage() {
     ExtBuilder::default()
         .with_balances([(ALICE, 1_000)].into())
         .build()
         .execute_with(|| {
-            assert_ok!(PaymentServices::set_credits(
+            assert_ok!(PaymentServices::set_block_production_credits(
                 RuntimeOrigin::root(),
                 1.into(),
                 0u64,
@@ -232,6 +280,13 @@ fn credits_should_not_be_substracted_from_tank_if_it_involves_death() {
             );
 
             PaymentServices::on_container_author_noted(&1, 1, 1.into());
+
+            assert_eq!(
+                Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),
+                100u128
+            );
+
+            PaymentServices::on_collators_assigned(1.into());
 
             assert_eq!(
                 Balances::balance(&crate::Pallet::<Test>::parachain_tank(1.into())),

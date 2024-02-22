@@ -25,7 +25,7 @@ use {
 // Frontier
 use fc_db::Backend as FrontierBackend;
 pub use {
-    fc_rpc::{EthBlockDataCacheTask, EthConfig, OverrideHandle, StorageOverride},
+    fc_rpc::{EthBlockDataCacheTask, OverrideHandle},
     fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool},
     fc_storage::overrides_handle,
 };

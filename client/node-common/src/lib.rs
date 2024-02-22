@@ -15,3 +15,5 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod service;
+
+pub mod command;

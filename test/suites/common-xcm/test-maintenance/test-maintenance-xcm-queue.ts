@@ -140,6 +140,8 @@ describeSuite({
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(resumeTx).signAsync(alice)]);
 
                 // Create a block in which the XCM message will be executed
+                // MessageQueue takes two blocks to resume execution
+                await context.createBlock();
                 await context.createBlock();
 
                 // Ensure we are NOT in maintenance mode

@@ -18,7 +18,8 @@ use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     dancebox_runtime::{
-        AuthorInherent, BlockProductionCost, MaxBootNodeUrlLen, MaxBootNodes, MaxLengthTokenSymbol,
+        AuthorInherent, BlockProductionCost, CollatorAssignmentCost, MaxBootNodeUrlLen,
+        MaxBootNodes, MaxLengthTokenSymbol,
     },
     frame_support::{
         assert_ok,
@@ -27,7 +28,7 @@ use {
     nimbus_primitives::{NimbusId, NIMBUS_ENGINE_ID},
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::ProvideBlockProductionCost,
+    pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parity_scale_codec::Encode,
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
@@ -45,7 +46,7 @@ pub use dancebox_runtime::{
     AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
     InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation, ParachainInfo,
-    PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime, RuntimeCall, RuntimeEvent,
+    PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime, RuntimeCall,
     ServicesPayment, Session, System,
 };
 
@@ -231,17 +232,49 @@ pub struct ExtBuilder {
     collators: Vec<(AccountId, Balance)>,
     // sudo key
     sudo: Option<AccountId>,
-    // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits
-    para_ids: Vec<(
-        u32,
-        ContainerChainGenesisData<MaxLengthTokenSymbol>,
-        Vec<Vec<u8>>,
-        u32,
-    )>,
+    // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits, session_credits
+    para_ids: Vec<ParaRegistrationParams>,
     // configuration to apply
     config: pallet_configuration::HostConfiguration,
     safe_xcm_version: Option<u32>,
     own_para_id: Option<ParaId>,
+}
+
+#[derive(Default, Clone)]
+pub struct ParaRegistrationParams {
+    para_id: u32,
+    genesis_data: ContainerChainGenesisData<MaxLengthTokenSymbol>,
+    bootnodes: Vec<Vec<u8>>,
+    block_production_credits: u32,
+    collator_assignment_credits: u32,
+}
+
+impl
+    From<(
+        u32,
+        ContainerChainGenesisData<MaxLengthTokenSymbol>,
+        Vec<Vec<u8>>,
+        u32,
+        u32,
+    )> for ParaRegistrationParams
+{
+    fn from(
+        value: (
+            u32,
+            ContainerChainGenesisData<MaxLengthTokenSymbol>,
+            Vec<Vec<u8>>,
+            u32,
+            u32,
+        ),
+    ) -> Self {
+        Self {
+            para_id: value.0,
+            genesis_data: value.1,
+            bootnodes: value.2,
+            block_production_credits: value.3,
+            collator_assignment_credits: value.4,
+        }
+    }
 }
 
 impl ExtBuilder {
@@ -260,15 +293,7 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_para_ids(
-        mut self,
-        para_ids: Vec<(
-            u32,
-            ContainerChainGenesisData<MaxLengthTokenSymbol>,
-            Vec<Vec<u8>>,
-            u32,
-        )>,
-    ) -> Self {
+    pub fn with_para_ids(mut self, para_ids: Vec<ParaRegistrationParams>) -> Self {
         self.para_ids = para_ids;
         self
     }
@@ -307,8 +332,8 @@ impl ExtBuilder {
                 .para_ids
                 .iter()
                 .cloned()
-                .map(|(para_id, genesis_data, _boot_nodes, _block_credits)| {
-                    (para_id.into(), genesis_data)
+                .map(|registered_para| {
+                    (registered_para.para_id.into(), registered_para.genesis_data)
                 })
                 .collect(),
         }
@@ -318,11 +343,28 @@ impl ExtBuilder {
         pallet_services_payment::GenesisConfig::<Runtime> {
             para_id_credits: self
                 .para_ids
+                .clone()
                 .into_iter()
-                .map(|(para_id, _genesis_data, _boot_nodes, block_credits)| {
-                    (para_id.into(), block_credits)
+                .map(|registered_para| {
+                    (
+                        registered_para.para_id.into(),
+                        registered_para.block_production_credits,
+                        registered_para.collator_assignment_credits,
+                    )
+                        .into()
                 })
                 .collect(),
+        }
+        .assimilate_storage(&mut t)
+        .unwrap();
+
+        pallet_data_preservers::GenesisConfig::<Runtime> {
+            para_id_boot_nodes: self
+                .para_ids
+                .into_iter()
+                .map(|registered_para| (registered_para.para_id.into(), registered_para.bootnodes))
+                .collect(),
+            _phantom: Default::default(),
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -520,6 +562,14 @@ pub fn current_author() -> AccountId {
 pub fn block_credits_to_required_balance(number_of_blocks: u32, para_id: ParaId) -> Balance {
     let block_cost = BlockProductionCost::block_cost(&para_id).0;
     (number_of_blocks as u128).saturating_mul(block_cost)
+}
+
+pub fn collator_assignment_credits_to_required_balance(
+    number_of_sessions: u32,
+    para_id: ParaId,
+) -> Balance {
+    let collator_assignment_cost = CollatorAssignmentCost::collator_assignment_cost(&para_id).0;
+    (number_of_sessions as u128).saturating_mul(collator_assignment_cost)
 }
 
 pub const ALICE: [u8; 32] = [4u8; 32];

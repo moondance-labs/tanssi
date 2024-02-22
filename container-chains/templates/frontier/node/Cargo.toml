@@ -18,6 +18,7 @@ jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
+serde_json = { workspace = true, features = [ "arbitrary_precision" ] }
 url = { workspace = true }
 
 # Local
@@ -88,9 +89,9 @@ cumulus-client-cli = { workspace = true }
 cumulus-client-consensus-aura = { workspace = true }
 cumulus-client-consensus-common = { workspace = true }
 cumulus-client-network = { workspace = true }
+cumulus-client-parachain-inherent = { workspace = true }
 cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
-cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
 
@@ -113,6 +114,7 @@ substrate-build-script-utils = { workspace = true }
 default = []
 runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",

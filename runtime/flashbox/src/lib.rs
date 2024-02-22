@@ -22,16 +22,12 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+use pallet_services_payment::ProvideCollatorAssignmentCost;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
-
-#[cfg(feature = "try-runtime")]
-use sp_runtime::TryRuntimeError;
-
-pub mod migrations;
 
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
@@ -39,14 +35,14 @@ use {
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
+        genesis_builder_helper::{build_config, create_default_config},
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            fungible::{Balanced, Credit, Inspect},
-            tokens::{PayFromAccount, UnityAssetBalanceConversion},
+            fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
+            tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
-            OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
+            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -80,9 +76,10 @@ use {
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, IdentityLookup,
+            Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
-        AccountId32, ApplyExtrinsicResult,
+        AccountId32, ApplyExtrinsicResult, RuntimeDebug,
     },
     sp_std::{marker::PhantomData, prelude::*},
     sp_version::RuntimeVersion,
@@ -95,8 +92,6 @@ pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
     sp_runtime::{MultiAddress, Perbill, Permill},
 };
-
-const LOG_TARGET: &str = "runtime::tanssi";
 
 /// Block type as expected by this runtime.
 pub type Block = generic::Block<Header, UncheckedExtrinsic>;
@@ -130,7 +125,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    pallet_maintenance_mode::ExecutiveHooks<Runtime>,
+    AllPalletsWithSystem,
 >;
 
 /// DANCE, the native token, uses 12 decimals of precision.
@@ -342,6 +337,7 @@ impl frame_system::Config for Runtime {
     /// The action to take on a Runtime Upgrade
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type RuntimeTask = RuntimeTask;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -468,11 +464,13 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
+    type WeightInfo = cumulus_pallet_parachain_system::weights::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type OutboundXcmpMessageSource = ();
-    type DmpMessageHandler = ();
+    // Ignore all DMP messages by enqueueing them into `()`:
+    type DmpQueue = frame_support::traits::EnqueueWithOrigin<(), sp_core::ConstU8<0>>;
     type ReservedDmpWeight = ();
     type XcmpMessageHandler = ();
     type ReservedXcmpWeight = ();
@@ -618,22 +616,31 @@ pub struct RemoveParaIdsWithNoCreditsImpl;
 impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
     fn remove_para_ids_with_no_credits(para_ids: &mut Vec<ParaId>) {
         let blocks_per_session = Period::get();
-        let credits_for_2_sessions = 2 * blocks_per_session;
+        let block_credits_for_2_sessions = 2 * blocks_per_session;
         para_ids.retain(|para_id| {
             // Check if the container chain has enough credits for producing blocks for 2 sessions
-            let free_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+            let free_block_credits = pallet_services_payment::BlockProductionCredits::<Runtime>::get(para_id)
+                .unwrap_or_default();
+
+            // Check if the container chain has enough credits for 2 session assignments
+            let free_session_credits = pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(para_id)
                 .unwrap_or_default();
 
             // Return if we can survive with free credits
-            if free_credits >= credits_for_2_sessions {
+            if free_block_credits >= block_credits_for_2_sessions && free_session_credits >= 2 {
                 return true
             }
 
-            let remaining_credits = credits_for_2_sessions.saturating_sub(free_credits);
+            let remaining_block_credits = block_credits_for_2_sessions.saturating_sub(free_block_credits);
+            let remaining_session_credits = 2u32.saturating_sub(free_session_credits);
 
             let (block_production_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideBlockProductionCost::block_cost(para_id);
+            let (collator_assignment_costs, _) = <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(para_id);
             // let's check if we can withdraw
-            let remaining_to_pay = (remaining_credits as u128).saturating_mul(block_production_costs);
+            let remaining_block_credits_to_pay = (remaining_block_credits as u128).saturating_mul(block_production_costs);
+            let remaining_session_credits_to_pay = (remaining_session_credits as u128).saturating_mul(collator_assignment_costs);
+            let remaining_to_pay = remaining_block_credits_to_pay.saturating_add(remaining_session_credits_to_pay);
+
             // This should take into account whether we tank goes below ED
             // The true refers to keepAlive
             Balances::can_withdraw(&pallet_services_payment::Pallet::<Runtime>::parachain_tank(*para_id), remaining_to_pay).into_result(true).is_ok()
@@ -647,13 +654,19 @@ impl RemoveParaIdsWithNoCredits for RemoveParaIdsWithNoCreditsImpl {
 
         let blocks_per_session = Period::get();
         // Enough credits to run any benchmark
-        let credits = 20 * blocks_per_session;
+        let block_credits = 20 * blocks_per_session;
+        let session_credits = 20;
 
         for para_id in para_ids {
-            assert_ok!(ServicesPayment::set_credits(
+            assert_ok!(ServicesPayment::set_block_production_credits(
                 RuntimeOrigin::root(),
                 *para_id,
-                credits,
+                block_credits,
+            ));
+            assert_ok!(ServicesPayment::set_collator_assignment_credits(
+                RuntimeOrigin::root(),
+                *para_id,
+                session_credits,
             ));
         }
     }
@@ -677,6 +690,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type GetRandomnessForNextBlock = ();
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsWithNoCreditsImpl;
+    type CollatorAssignmentHook = ServicesPayment;
     type WeightInfo = pallet_collator_assignment::weights::SubstrateWeight<Runtime>;
 }
 
@@ -686,6 +700,7 @@ impl pallet_authority_assignment::Config for Runtime {
 }
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * currency::MICRODANCE;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * currency::MICRODANCE;
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
@@ -694,26 +709,39 @@ impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
     }
 }
 
+pub struct CollatorAssignmentCost<Runtime>(PhantomData<Runtime>);
+impl ProvideCollatorAssignmentCost<Runtime> for CollatorAssignmentCost<Runtime> {
+    fn collator_assignment_cost(_para_id: &ParaId) -> (u128, Weight) {
+        (FIXED_COLLATOR_ASSIGNMENT_COST, Weight::zero())
+    }
+}
+
 parameter_types! {
     // 60 days worth of blocks
-    pub const MaxCreditsStored: BlockNumber = 60 * DAYS;
+    pub const FreeBlockProductionCredits: BlockNumber = 60 * DAYS;
+    // 60 days worth of blocks
+    pub const FreeCollatorAssignmentCredits: u32 = FreeBlockProductionCredits::get()/Period::get();
 }
 
 impl pallet_services_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
     type OnChargeForBlock = ();
+    type OnChargeForCollatorAssignment = ();
     /// Currency type for fee payment
     type Currency = Balances;
     /// Provider of a block cost which can adjust from block to block
     type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
+    /// Provider of a block cost which can adjust from block to block
+    type ProvideCollatorAssignmentCost = CollatorAssignmentCost<Runtime>;
+    /// The maximum number of block credits that can be accumulated
+    type FreeBlockProductionCredits = FreeBlockProductionCredits;
+    /// The maximum number of session credits that can be accumulated
+    type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type SetRefundAddressOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
-    /// The maximum number of credits that can be accumulated
-    type MaxCreditsStored = MaxCreditsStored;
     type WeightInfo = pallet_services_payment::weights::SubstrateWeight<Runtime>;
 }
-
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -977,7 +1005,7 @@ impl pallet_proxy::Config for Runtime {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = (migrations::FlashboxMigrations<Runtime>,);
+    type MigrationsList = (runtime_common::migrations::FlashboxMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
 
@@ -1017,57 +1045,12 @@ impl Contains<RuntimeCall> for NormalFilter {
     }
 }
 
-/// The hooks we want to run in Maintenance Mode
-pub struct MaintenanceHooks;
-
-impl OnInitialize<BlockNumber> for MaintenanceHooks {
-    fn on_initialize(n: BlockNumber) -> Weight {
-        AllPalletsWithSystem::on_initialize(n)
-    }
-}
-
-// We override onIdle for xcmQueue and dmpQueue pallets to not process messages inside it
-impl OnIdle<BlockNumber> for MaintenanceHooks {
-    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
-        Weight::zero()
-    }
-}
-
-impl OnRuntimeUpgrade for MaintenanceHooks {
-    fn on_runtime_upgrade() -> Weight {
-        AllPalletsWithSystem::on_runtime_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn try_on_runtime_upgrade(checks: bool) -> Result<Weight, TryRuntimeError> {
-        AllPalletsWithSystem::try_on_runtime_upgrade(checks)
-    }
-}
-
-impl OnFinalize<BlockNumber> for MaintenanceHooks {
-    fn on_finalize(n: BlockNumber) {
-        AllPalletsWithSystem::on_finalize(n)
-    }
-}
-
-impl OffchainWorker<BlockNumber> for MaintenanceHooks {
-    fn offchain_worker(n: BlockNumber) {
-        AllPalletsWithSystem::offchain_worker(n)
-    }
-}
-
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
-    type NormalDmpHandler = ();
-    type MaintenanceDmpHandler = ();
-    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
-    // operation
-    type NormalExecutiveHooks = AllPalletsWithSystem;
-    type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
 parameter_types! {
@@ -1080,7 +1063,9 @@ impl pallet_relay_storage_roots::Config for Runtime {
     type WeightInfo = ();
 }
 
-impl pallet_root_testing::Config for Runtime {}
+impl pallet_root_testing::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
 
 parameter_types! {
     pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
@@ -1151,13 +1136,144 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = pallet_tx_pause::weights::SubstrateWeight<Runtime>;
 }
 
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+pub enum StreamPaymentAssetId {
+    Native,
+}
+
+pub struct StreamPaymentAssets;
+impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
+    for StreamPaymentAssets
+{
+    fn transfer_deposit(
+        asset_id: &StreamPaymentAssetId,
+        from: &AccountId,
+        to: &AccountId,
+        amount: Balance,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        match asset_id {
+            StreamPaymentAssetId::Native => {
+                // We remove the hold before transfering.
+                Self::decrease_deposit(asset_id, from, amount)?;
+                Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
+            }
+        }
+    }
+
+    fn increase_deposit(
+        asset_id: &StreamPaymentAssetId,
+        account: &AccountId,
+        amount: Balance,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
+                account,
+                amount,
+            ),
+        }
+    }
+
+    fn decrease_deposit(
+        asset_id: &StreamPaymentAssetId,
+        account: &AccountId,
+        amount: Balance,
+    ) -> frame_support::pallet_prelude::DispatchResult {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::release(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
+                account,
+                amount,
+                Precision::Exact,
+            )
+            .map(|_| ()),
+        }
+    }
+
+    fn get_deposit(asset_id: &StreamPaymentAssetId, account: &AccountId) -> Balance {
+        match asset_id {
+            StreamPaymentAssetId::Native => Balances::balance_on_hold(
+                &pallet_stream_payment::HoldReason::StreamPayment.into(),
+                account,
+            ),
+        }
+    }
+
+    /// Benchmarks: should return the asset id which has the worst performance when interacting
+    /// with it.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_worst_case_asset_id() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should return the another asset id which has the worst performance when interacting
+    /// with it afther `bench_worst_case_asset_id`. This is to benchmark the worst case when changing config
+    /// from one asset to another.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_worst_case_asset_id2() -> StreamPaymentAssetId {
+        StreamPaymentAssetId::Native
+    }
+
+    /// Benchmarks: should set the balance for the asset id returned by `bench_worst_case_asset_id`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
+        // only one asset id
+        let StreamPaymentAssetId::Native = asset_id;
+
+        Balances::set_balance(account, amount);
+    }
+}
+
+#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+pub enum TimeUnit {
+    BlockNumber,
+    Timestamp,
+    // TODO: Container chains/relay block number.
+}
+
+pub struct TimeProvider;
+impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
+    fn now(unit: &TimeUnit) -> Option<Balance> {
+        match *unit {
+            TimeUnit::BlockNumber => Some(System::block_number().into()),
+            TimeUnit::Timestamp => Some(Timestamp::now().into()),
+        }
+    }
+
+    /// Benchmarks: should return the time unit which has the worst performance calling
+    /// `TimeProvider::now(unit)` with.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_worst_case_time_unit() -> TimeUnit {
+        // Both BlockNumber and Timestamp cost the same (1 db read), but overriding timestamp
+        // doesn't work well in benches, while block number works fine.
+        TimeUnit::BlockNumber
+    }
+
+    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn bench_set_now(instant: Balance) {
+        System::set_block_number(instant as u32)
+    }
+}
+
+impl pallet_stream_payment::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type StreamId = u64;
+    type TimeUnit = TimeUnit;
+    type Balance = Balance;
+    type AssetId = StreamPaymentAssetId;
+    type Assets = StreamPaymentAssets;
+    type TimeProvider = TimeProvider;
+    type WeightInfo = ();
+}
+
 parameter_types! {
     // 1 entry, storing 258 bytes on-chain
     pub const BasicDeposit: Balance = currency::deposit(1, 258);
     // 1 entry, storing 53 bytes on-chain
     pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
-    // Additional fields add 0 entries, storing 66 bytes on-chain
-    pub const FieldDeposit: Balance = currency::deposit(0, 66);
+    // Additional bytes adds 0 entries, storing 1 byte on-chain
+    pub const ByteDeposit: Balance = currency::deposit(0, 1);
     pub const MaxSubAccounts: u32 = 100;
     pub const MaxAdditionalFields: u32 = 100;
     pub const MaxRegistrars: u32 = 20;
@@ -1167,16 +1283,21 @@ impl pallet_identity::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type BasicDeposit = BasicDeposit;
-    type FieldDeposit = FieldDeposit;
+    type ByteDeposit = ByteDeposit;
     type SubAccountDeposit = SubAccountDeposit;
     type MaxSubAccounts = MaxSubAccounts;
-    type MaxAdditionalFields = MaxAdditionalFields;
     type MaxRegistrars = MaxRegistrars;
-    type IdentityInformation = pallet_identity::simple::IdentityInfo<Self::MaxAdditionalFields>;
+    type IdentityInformation = pallet_identity::legacy::IdentityInfo<MaxAdditionalFields>;
     // Slashed balances are burnt
     type Slashed = ();
     type ForceOrigin = EnsureRoot<AccountId>;
     type RegistrarOrigin = EnsureRoot<AccountId>;
+    type OffchainSignature = Signature;
+    type SigningPublicKey = <Signature as Verify>::Signer;
+    type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
+    type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
+    type MaxSuffixLength = ConstU32<7>;
+    type MaxUsernameLength = ConstU32<32>;
     type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1234,6 +1355,7 @@ construct_runtime!(
         // Monetary stuff.
         Balances: pallet_balances = 10,
         TransactionPayment: pallet_transaction_payment = 11,
+        StreamPayment: pallet_stream_payment = 12,
 
         // Other utilities
         Identity: pallet_identity = 15,
@@ -1287,6 +1409,7 @@ mod benches {
         [pallet_data_preservers, DataPreservers]
         [pallet_invulnerables, Invulnerables]
         [pallet_author_inherent, AuthorInherent]
+        [pallet_stream_payment, StreamPayment]
         [pallet_relay_storage_roots, RelayStorageRoots]
     );
 }
@@ -1402,6 +1525,16 @@ impl_runtime_apis! {
     impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
         fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
             ParachainSystem::collect_collation_info(header)
+        }
+    }
+
+    impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+        fn create_default_config() -> Vec<u8> {
+            create_default_config::<RuntimeGenesisConfig>()
+        }
+
+        fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+            build_config::<RuntimeGenesisConfig>(config)
         }
     }
 

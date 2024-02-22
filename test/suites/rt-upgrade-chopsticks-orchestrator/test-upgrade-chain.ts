@@ -20,6 +20,11 @@ describeSuite({
             await context.upgradeRuntime();
 
             const rtafter = api.consts.system.version.specVersion.toNumber();
+
+            if (rtBefore === rtafter) {
+                throw new Error("Runtime upgrade failed");
+            }
+
             log(`RT upgrade has increased specVersion from ${rtBefore} to ${rtafter}`);
 
             const specName = api.consts.system.version.specName.toString();

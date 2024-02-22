@@ -16,36 +16,36 @@
 
 pub mod basic;
 
-use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
-use cumulus_client_consensus_common::ParachainCandidate;
-use cumulus_client_consensus_proposer::ProposerInterface;
-use cumulus_primitives_core::{
-    relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
+use {
+    crate::{find_pre_digest, AuthorityId, OrchestratorAuraWorkerAuxData},
+    cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
+    cumulus_client_consensus_common::ParachainCandidate,
+    cumulus_client_consensus_proposer::ProposerInterface,
+    cumulus_client_parachain_inherent::{ParachainInherentData, ParachainInherentDataProvider},
+    cumulus_primitives_core::{
+        relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
+    },
+    cumulus_relay_chain_interface::RelayChainInterface,
+    futures::prelude::*,
+    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID},
+    parity_scale_codec::{Codec, Encode},
+    polkadot_node_primitives::{Collation, MaybeCompressedPoV},
+    polkadot_primitives::Id as ParaId,
+    sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
+    sp_application_crypto::{AppCrypto, AppPublic},
+    sp_consensus::BlockOrigin,
+    sp_consensus_aura::{digests::CompatibleDigestItem, Slot},
+    sp_core::crypto::{ByteArray, Pair},
+    sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider},
+    sp_keystore::{Keystore, KeystorePtr},
+    sp_runtime::{
+        generic::Digest,
+        traits::{Block as BlockT, HashingFor, Header as HeaderT, Member, Zero},
+    },
+    sp_state_machine::StorageChanges,
+    sp_timestamp::Timestamp,
+    std::{convert::TryFrom, error::Error, time::Duration},
 };
-use cumulus_primitives_parachain_inherent::ParachainInherentData;
-use cumulus_relay_chain_interface::RelayChainInterface;
-use parity_scale_codec::{Codec, Encode};
-
-use polkadot_node_primitives::{Collation, MaybeCompressedPoV};
-use polkadot_primitives::Id as ParaId;
-
-use crate::{find_pre_digest, AuthorityId, OrchestratorAuraWorkerAuxData};
-use futures::prelude::*;
-use nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID};
-use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};
-use sp_application_crypto::{AppCrypto, AppPublic};
-use sp_consensus::BlockOrigin;
-use sp_consensus_aura::{digests::CompatibleDigestItem, Slot};
-use sp_core::crypto::{ByteArray, Pair};
-use sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider};
-use sp_keystore::{Keystore, KeystorePtr};
-use sp_runtime::{
-    generic::Digest,
-    traits::{Block as BlockT, HashingFor, Header as HeaderT, Member, Zero},
-};
-use sp_state_machine::StorageChanges;
-use sp_timestamp::Timestamp;
-use std::{convert::TryFrom, error::Error, time::Duration};
 
 /// Parameters for instantiating a [`Collator`].
 pub struct Params<BI, CIDP, RClient, Proposer, CS> {
@@ -113,7 +113,7 @@ where
         parent_hash: Block::Hash,
         _timestamp: impl Into<Option<Timestamp>>,
     ) -> Result<(ParachainInherentData, InherentData), Box<dyn Error + Send + Sync + 'static>> {
-        let paras_inherent_data = ParachainInherentData::create_at(
+        let paras_inherent_data = ParachainInherentDataProvider::create_at(
             relay_parent,
             &self.relay_client,
             validation_data,
@@ -158,12 +158,14 @@ where
         inherent_data: (ParachainInherentData, InherentData),
         proposal_duration: Duration,
         max_pov_size: usize,
-    ) -> Result<(Collation, ParachainBlockData<Block>, Block::Hash), Box<dyn Error + Send + 'static>>
-    {
+    ) -> Result<
+        Option<(Collation, ParachainBlockData<Block>, Block::Hash)>,
+        Box<dyn Error + Send + 'static>,
+    > {
         let mut digest = additional_pre_digest.into().unwrap_or_default();
         digest.append(&mut slot_claim.pre_digest);
 
-        let proposal = self
+        let maybe_proposal = self
             .proposer
             .propose(
                 &parent_header,
@@ -175,6 +177,11 @@ where
             )
             .await
             .map_err(|e| Box::new(e) as Box<dyn Error + Send>)?;
+
+        let proposal = match maybe_proposal {
+            None => return Ok(None),
+            Some(p) => p,
+        };
 
         let sealed_importable = seal_tanssi::<_, P>(
             proposal.block,
@@ -223,7 +230,7 @@ where
                 );
             }
 
-            Ok((collation, block_data, post_hash))
+            Ok(Some((collation, block_data, post_hash)))
         } else {
             Err(
                 Box::<dyn Error + Send + Sync>::from("Unable to produce collation")
