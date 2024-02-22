@@ -128,6 +128,11 @@ import type {
     PalletMaintenanceModeEvent,
     PalletMigrationsError,
     PalletMigrationsEvent,
+    PalletMultisigCall,
+    PalletMultisigError,
+    PalletMultisigEvent,
+    PalletMultisigMultisig,
+    PalletMultisigTimepoint,
     PalletPooledStakingAllTargetPool,
     PalletPooledStakingCall,
     PalletPooledStakingCandidateEligibleCandidate,
@@ -403,6 +408,11 @@ declare module "@polkadot/types/types/registry" {
         PalletMaintenanceModeEvent: PalletMaintenanceModeEvent;
         PalletMigrationsError: PalletMigrationsError;
         PalletMigrationsEvent: PalletMigrationsEvent;
+        PalletMultisigCall: PalletMultisigCall;
+        PalletMultisigError: PalletMultisigError;
+        PalletMultisigEvent: PalletMultisigEvent;
+        PalletMultisigMultisig: PalletMultisigMultisig;
+        PalletMultisigTimepoint: PalletMultisigTimepoint;
         PalletPooledStakingAllTargetPool: PalletPooledStakingAllTargetPool;
         PalletPooledStakingCall: PalletPooledStakingCall;
         PalletPooledStakingCandidateEligibleCandidate: PalletPooledStakingCandidateEligibleCandidate;

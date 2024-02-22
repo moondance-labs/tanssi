@@ -34,6 +34,7 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletInflationRewardsChainsToRewardValue,
+    PalletMultisigMultisig,
     PalletProxyAnnouncement,
     PalletProxyProxyDefinition,
     PalletRegistrarDepositInfo,
@@ -334,6 +335,20 @@ declare module "@polkadot/api-base/types/storage" {
              * must be paused.
              */
             shouldPauseXcm: AugmentedQuery<ApiType, () => Observable<bool>, []> & QueryableStorageEntry<ApiType, []>;
+            /** Generic query */
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        multisig: {
+            /** The set of open multisig operations. */
+            multisigs: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: AccountId32 | string | Uint8Array,
+                    arg2: U8aFixed | string | Uint8Array
+                ) => Observable<Option<PalletMultisigMultisig>>,
+                [AccountId32, U8aFixed]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, U8aFixed]>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };

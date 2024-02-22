@@ -94,6 +94,11 @@ import type {
     PalletMaintenanceModeEvent,
     PalletMigrationsError,
     PalletMigrationsEvent,
+    PalletMultisigCall,
+    PalletMultisigError,
+    PalletMultisigEvent,
+    PalletMultisigMultisig,
+    PalletMultisigTimepoint,
     PalletProxyAnnouncement,
     PalletProxyCall,
     PalletProxyError,
@@ -266,6 +271,11 @@ declare module "@polkadot/types/types/registry" {
         PalletMaintenanceModeEvent: PalletMaintenanceModeEvent;
         PalletMigrationsError: PalletMigrationsError;
         PalletMigrationsEvent: PalletMigrationsEvent;
+        PalletMultisigCall: PalletMultisigCall;
+        PalletMultisigError: PalletMultisigError;
+        PalletMultisigEvent: PalletMultisigEvent;
+        PalletMultisigMultisig: PalletMultisigMultisig;
+        PalletMultisigTimepoint: PalletMultisigTimepoint;
         PalletProxyAnnouncement: PalletProxyAnnouncement;
         PalletProxyCall: PalletProxyCall;
         PalletProxyError: PalletProxyError;
