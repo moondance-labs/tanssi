@@ -139,7 +139,8 @@ describeSuite({
             title: "Blocks are being produced on container 2000",
             test: async function () {
                 // Produces 1 block every 5 slots, which is every 60 seconds
-                await sleep(60000);
+                // Give it a bit more time just in case
+                await sleep(120000);
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },

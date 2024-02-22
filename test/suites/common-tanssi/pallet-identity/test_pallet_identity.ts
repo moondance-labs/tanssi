@@ -92,13 +92,12 @@ describeSuite({
                 await context.createBlock([signedTx]);
 
                 const charlie_identity = await polkadotJs.query.identity.identityOf(general_user_charlie.address);
-
                 // Display has been set
-                const charlie_display = hexToString(charlie_identity.toJSON().info.display["raw"]);
+                const charlie_display = hexToString(charlie_identity.toJSON()[0].info.display["raw"]);
                 expect(charlie_display).to.equal("It's me, Charlie");
 
                 // Web has been set
-                const charlie_web = hexToString(charlie_identity.toJSON().info.web["raw"]);
+                const charlie_web = hexToString(charlie_identity.toJSON()[0].info.web["raw"]);
                 expect(charlie_web).to.equal("https://charlie.io");
 
                 // Event triggered
@@ -111,7 +110,7 @@ describeSuite({
                 // Currency reserved as deposit from Charlie's account
                 const charlie_balance = await polkadotJs.query.system.account(general_user_charlie.address);
                 const charlie_balance_reserved = charlie_balance.toJSON().data.reserved;
-                const expected_reserve = 12580000000000; // Basic deposit (1 item, 258 bytes)
+                const expected_reserve = 13010000000000; // Basic deposit (1 item, 301 bytes)
                 expect(charlie_balance_reserved).to.be.equal(expected_reserve);
             },
         });
@@ -140,7 +139,7 @@ describeSuite({
                 const bob_registrar_on_chain = identity_registrars.toArray()[0].toJSON();
 
                 expect(bob_registrar_on_chain.fee).to.be.equal(100);
-                expect(bob_registrar_on_chain.fields.length).to.be.equal(2);
+                expect(bob_registrar_on_chain.fields).to.be.equal(2);
             },
         });
     },

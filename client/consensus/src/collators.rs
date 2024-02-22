@@ -21,10 +21,10 @@ use {
     cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
     cumulus_client_consensus_common::ParachainCandidate,
     cumulus_client_consensus_proposer::ProposerInterface,
+    cumulus_client_parachain_inherent::{ParachainInherentData, ParachainInherentDataProvider},
     cumulus_primitives_core::{
         relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
     },
-    cumulus_primitives_parachain_inherent::ParachainInherentData,
     cumulus_relay_chain_interface::RelayChainInterface,
     futures::prelude::*,
     nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID},
@@ -113,7 +113,7 @@ where
         parent_hash: Block::Hash,
         _timestamp: impl Into<Option<Timestamp>>,
     ) -> Result<(ParachainInherentData, InherentData), Box<dyn Error + Send + Sync + 'static>> {
-        let paras_inherent_data = ParachainInherentData::create_at(
+        let paras_inherent_data = ParachainInherentDataProvider::create_at(
             relay_parent,
             &self.relay_client,
             validation_data,
@@ -158,12 +158,14 @@ where
         inherent_data: (ParachainInherentData, InherentData),
         proposal_duration: Duration,
         max_pov_size: usize,
-    ) -> Result<(Collation, ParachainBlockData<Block>, Block::Hash), Box<dyn Error + Send + 'static>>
-    {
+    ) -> Result<
+        Option<(Collation, ParachainBlockData<Block>, Block::Hash)>,
+        Box<dyn Error + Send + 'static>,
+    > {
         let mut digest = additional_pre_digest.into().unwrap_or_default();
         digest.append(&mut slot_claim.pre_digest);
 
-        let proposal = self
+        let maybe_proposal = self
             .proposer
             .propose(
                 &parent_header,
@@ -175,6 +177,11 @@ where
             )
             .await
             .map_err(|e| Box::new(e) as Box<dyn Error + Send>)?;
+
+        let proposal = match maybe_proposal {
+            None => return Ok(None),
+            Some(p) => p,
+        };
 
         let sealed_importable = seal_tanssi::<_, P>(
             proposal.block,
@@ -223,7 +230,7 @@ where
                 );
             }
 
-            Ok((collation, block_data, post_hash))
+            Ok(Some((collation, block_data, post_hash)))
         } else {
             Err(
                 Box::<dyn Error + Send + Sync>::from("Unable to produce collation")

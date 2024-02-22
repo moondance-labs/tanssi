@@ -11,7 +11,6 @@ import type { BTreeMap, Bytes, Null, Option, Struct, U8aFixed, Vec, bool, u128, 
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
-    CumulusPalletParachainSystemCodeUpgradeAuthorization,
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
     CumulusPalletParachainSystemUnincludedSegmentAncestor,
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker,
@@ -21,6 +20,7 @@ import type {
     FlashboxRuntimeSessionKeys,
     FrameSupportDispatchPerDispatchClassWeight,
     FrameSystemAccountInfo,
+    FrameSystemCodeUpgradeAuthorization,
     FrameSystemEventRecord,
     FrameSystemLastRuntimeUpgradeInfo,
     FrameSystemPhase,
@@ -31,6 +31,7 @@ import type {
     PalletBalancesIdAmount,
     PalletBalancesReserveData,
     PalletConfigurationHostConfiguration,
+    PalletIdentityAuthorityProperties,
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletInflationRewardsChainsToRewardValue,
@@ -75,6 +76,8 @@ declare module "@polkadot/api-base/types/storage" {
             /** Author of current block. */
             author: AugmentedQuery<ApiType, () => Observable<Option<U8aFixed>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /** Check if the inherent was included */
+            inherentIncluded: AugmentedQuery<ApiType, () => Observable<bool>, []> & QueryableStorageEntry<ApiType, []>;
             /** Generic query */
             [key: string]: QueryableStorageEntry<ApiType>;
         };
@@ -253,16 +256,44 @@ declare module "@polkadot/api-base/types/storage" {
         };
         identity: {
             /**
-             * Information that is pertinent to identify the entity behind an account.
+             * Reverse lookup from `username` to the `AccountId` that has registered it. The value should be a key in the
+             * `IdentityOf` map, but it may not if the user has cleared their identity.
+             *
+             * Multiple usernames may map to the same `AccountId`, but `IdentityOf` will only map to one primary username.
+             */
+            accountOfUsername: AugmentedQuery<
+                ApiType,
+                (arg: Bytes | string | Uint8Array) => Observable<Option<AccountId32>>,
+                [Bytes]
+            > &
+                QueryableStorageEntry<ApiType, [Bytes]>;
+            /**
+             * Information that is pertinent to identify the entity behind an account. First item is the registration, second
+             * is the account's primary username.
              *
              * TWOX-NOTE: OK ― `AccountId` is a secure hash.
              */
             identityOf: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletIdentityRegistration>>,
+                (
+                    arg: AccountId32 | string | Uint8Array
+                ) => Observable<Option<ITuple<[PalletIdentityRegistration, Option<Bytes>]>>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Usernames that an authority has granted, but that the account controller has not confirmed that they want it.
+             * Used primarily in cases where the `AccountId` cannot provide a signature because they are a pure proxy,
+             * multisig, etc. In order to confirm it, they should call [`Call::accept_username`].
+             *
+             * First tuple item is the account and second is the acceptance deadline.
+             */
+            pendingUsernames: AugmentedQuery<
+                ApiType,
+                (arg: Bytes | string | Uint8Array) => Observable<Option<ITuple<[AccountId32, u32]>>>,
+                [Bytes]
+            > &
+                QueryableStorageEntry<ApiType, [Bytes]>;
             /**
              * The set of registrars. Not expected to get very big as can only be added through a special origin (likely a
              * council motion).
@@ -291,6 +322,13 @@ declare module "@polkadot/api-base/types/storage" {
             superOf: AugmentedQuery<
                 ApiType,
                 (arg: AccountId32 | string | Uint8Array) => Observable<Option<ITuple<[AccountId32, Data]>>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /** A map of the accounts who are authorized to grant usernames. */
+            usernameAuthorities: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletIdentityAuthorityProperties>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
@@ -373,13 +411,6 @@ declare module "@polkadot/api-base/types/storage" {
              * of `on_initialize` and `on_finalize`.
              */
             announcedHrmpMessagesPerCandidate: AugmentedQuery<ApiType, () => Observable<u32>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /** The next authorized upgrade, if there is one. */
-            authorizedUpgrade: AugmentedQuery<
-                ApiType,
-                () => Observable<Option<CumulusPalletParachainSystemCodeUpgradeAuthorization>>,
-                []
-            > &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * A custom head data that should be returned as result of `validate_block`.
@@ -775,6 +806,13 @@ declare module "@polkadot/api-base/types/storage" {
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /** Total length (in bytes) for all extrinsics put together, for the current block. */
             allExtrinsicsLen: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /** `Some` if a code upgrade has been authorized. */
+            authorizedUpgrade: AugmentedQuery<
+                ApiType,
+                () => Observable<Option<FrameSystemCodeUpgradeAuthorization>>,
+                []
+            > &
                 QueryableStorageEntry<ApiType, []>;
             /** Map of block numbers to block hashes. */
             blockHash: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<H256>, [u32]> &

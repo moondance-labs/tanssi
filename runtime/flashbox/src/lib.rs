@@ -29,23 +29,20 @@ use sp_version::NativeVersion;
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
 
-#[cfg(feature = "try-runtime")]
-use sp_runtime::TryRuntimeError;
-
 use {
     cumulus_pallet_parachain_system::RelayNumberStrictlyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
+        genesis_builder_helper::{build_config, create_default_config},
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
             tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
-            OnInitialize, OnRuntimeUpgrade, OnUnbalanced,
+            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -79,6 +76,7 @@ use {
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, IdentityLookup,
+            Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult, RuntimeDebug,
@@ -127,7 +125,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    pallet_maintenance_mode::ExecutiveHooks<Runtime>,
+    AllPalletsWithSystem,
 >;
 
 /// DANCE, the native token, uses 12 decimals of precision.
@@ -339,6 +337,7 @@ impl frame_system::Config for Runtime {
     /// The action to take on a Runtime Upgrade
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type RuntimeTask = RuntimeTask;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -465,11 +464,13 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
+    type WeightInfo = cumulus_pallet_parachain_system::weights::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type OutboundXcmpMessageSource = ();
-    type DmpMessageHandler = ();
+    // Ignore all DMP messages by enqueueing them into `()`:
+    type DmpQueue = frame_support::traits::EnqueueWithOrigin<(), sp_core::ConstU8<0>>;
     type ReservedDmpWeight = ();
     type XcmpMessageHandler = ();
     type ReservedXcmpWeight = ();
@@ -1044,57 +1045,12 @@ impl Contains<RuntimeCall> for NormalFilter {
     }
 }
 
-/// The hooks we want to run in Maintenance Mode
-pub struct MaintenanceHooks;
-
-impl OnInitialize<BlockNumber> for MaintenanceHooks {
-    fn on_initialize(n: BlockNumber) -> Weight {
-        AllPalletsWithSystem::on_initialize(n)
-    }
-}
-
-// We override onIdle for xcmQueue and dmpQueue pallets to not process messages inside it
-impl OnIdle<BlockNumber> for MaintenanceHooks {
-    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
-        Weight::zero()
-    }
-}
-
-impl OnRuntimeUpgrade for MaintenanceHooks {
-    fn on_runtime_upgrade() -> Weight {
-        AllPalletsWithSystem::on_runtime_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn try_on_runtime_upgrade(checks: bool) -> Result<Weight, TryRuntimeError> {
-        AllPalletsWithSystem::try_on_runtime_upgrade(checks)
-    }
-}
-
-impl OnFinalize<BlockNumber> for MaintenanceHooks {
-    fn on_finalize(n: BlockNumber) {
-        AllPalletsWithSystem::on_finalize(n)
-    }
-}
-
-impl OffchainWorker<BlockNumber> for MaintenanceHooks {
-    fn offchain_worker(n: BlockNumber) {
-        AllPalletsWithSystem::offchain_worker(n)
-    }
-}
-
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
-    type NormalDmpHandler = ();
-    type MaintenanceDmpHandler = ();
-    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
-    // operation
-    type NormalExecutiveHooks = AllPalletsWithSystem;
-    type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
 parameter_types! {
@@ -1107,7 +1063,9 @@ impl pallet_relay_storage_roots::Config for Runtime {
     type WeightInfo = ();
 }
 
-impl pallet_root_testing::Config for Runtime {}
+impl pallet_root_testing::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
 
 parameter_types! {
     pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
@@ -1314,8 +1272,8 @@ parameter_types! {
     pub const BasicDeposit: Balance = currency::deposit(1, 258);
     // 1 entry, storing 53 bytes on-chain
     pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
-    // Additional fields add 0 entries, storing 66 bytes on-chain
-    pub const FieldDeposit: Balance = currency::deposit(0, 66);
+    // Additional bytes adds 0 entries, storing 1 byte on-chain
+    pub const ByteDeposit: Balance = currency::deposit(0, 1);
     pub const MaxSubAccounts: u32 = 100;
     pub const MaxAdditionalFields: u32 = 100;
     pub const MaxRegistrars: u32 = 20;
@@ -1325,16 +1283,21 @@ impl pallet_identity::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type BasicDeposit = BasicDeposit;
-    type FieldDeposit = FieldDeposit;
+    type ByteDeposit = ByteDeposit;
     type SubAccountDeposit = SubAccountDeposit;
     type MaxSubAccounts = MaxSubAccounts;
-    type MaxAdditionalFields = MaxAdditionalFields;
     type MaxRegistrars = MaxRegistrars;
-    type IdentityInformation = pallet_identity::simple::IdentityInfo<Self::MaxAdditionalFields>;
+    type IdentityInformation = pallet_identity::legacy::IdentityInfo<MaxAdditionalFields>;
     // Slashed balances are burnt
     type Slashed = ();
     type ForceOrigin = EnsureRoot<AccountId>;
     type RegistrarOrigin = EnsureRoot<AccountId>;
+    type OffchainSignature = Signature;
+    type SigningPublicKey = <Signature as Verify>::Signer;
+    type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
+    type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
+    type MaxSuffixLength = ConstU32<7>;
+    type MaxUsernameLength = ConstU32<32>;
     type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1582,6 +1545,16 @@ impl_runtime_apis! {
     impl cumulus_primitives_core::CollectCollationInfo<Block> for Runtime {
         fn collect_collation_info(header: &<Block as BlockT>::Header) -> cumulus_primitives_core::CollationInfo {
             ParachainSystem::collect_collation_info(header)
+        }
+    }
+
+    impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+        fn create_default_config() -> Vec<u8> {
+            create_default_config::<RuntimeGenesisConfig>()
+        }
+
+        fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+            build_config::<RuntimeGenesisConfig>(config)
         }
     }
 

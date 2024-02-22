@@ -549,10 +549,13 @@ where
             // Here you can check whether the hardware meets your chains' requirements. Putting a link
             // in there and swapping out the requirements for your own are probably a good idea. The
             // requirements for a para-chain are dictated by its relay-chain.
-            if collator && !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(hwbench) {
-                log::warn!(
-                    "⚠️  The hardware does not meet the minimal requirements for role 'Authority'."
-                );
+            if collator {
+                if let Err(err) = SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
+                    log::warn!(
+                        "⚠️  The hardware does not meet the minimal requirements {} for role 'Authority'.",
+                        err
+                    );
+                }
             }
 
             if let Some(ref mut telemetry) = telemetry {

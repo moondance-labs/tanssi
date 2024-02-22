@@ -13,13 +13,15 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
-pub use sp_core::{sr25519, storage::Storage, Get};
+pub use sp_core::Get;
 use {
     super::constants::{
         accounts::{ALICE, BOB, RANDOM},
         frontier_template, simple_template, westend,
     },
-    cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV8,
+    emulated_integration_tests_common::{
+        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
+    },
     frame_support::parameter_types,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
@@ -27,20 +29,16 @@ use {
     staging_xcm::prelude::*,
     staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     staging_xcm_executor::traits::ConvertLocation,
-    xcm_emulator::{
-        decl_test_networks, decl_test_parachains, decl_test_relay_chains, Chain,
-        DefaultMessageProcessor,
-    },
+    xcm_emulator::{decl_test_networks, decl_test_relay_chains, Chain},
 };
 
 decl_test_relay_chains! {
-    #[api_version(5)]
+    #[api_version(10)]
     pub struct Westend {
         genesis = westend::genesis(),
         on_init = (),
         runtime = westend_runtime,
         core = {
-            MessageProcessor: DefaultMessageProcessor<Westend>,
             SovereignAccountOf: westend_runtime::xcm_config::LocationConverter, //TODO: rename to SovereignAccountOf,
         },
         pallets = {
@@ -85,9 +83,9 @@ decl_test_parachains! {
         runtime = dancebox_runtime,
         core = {
             XcmpMessageHandler: dancebox_runtime::XcmpQueue,
-            DmpMessageHandler: dancebox_runtime::DmpQueue,
             LocationToAccountId: dancebox_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: dancebox_runtime::ParachainInfo,
+            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
         },
         pallets = {
             System: dancebox_runtime::System,
@@ -105,9 +103,9 @@ decl_test_parachains! {
         runtime = container_chain_template_frontier_runtime,
         core = {
             XcmpMessageHandler: container_chain_template_frontier_runtime::XcmpQueue,
-            DmpMessageHandler: container_chain_template_frontier_runtime::DmpQueue,
             LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
+            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
         },
         pallets = {
             System: container_chain_template_frontier_runtime::System,
@@ -122,9 +120,9 @@ decl_test_parachains! {
         runtime = container_chain_template_simple_runtime,
         core = {
             XcmpMessageHandler: container_chain_template_simple_runtime::XcmpQueue,
-            DmpMessageHandler: container_chain_template_simple_runtime::DmpQueue,
             LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
+            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
         },
         pallets = {
             System: container_chain_template_simple_runtime::System,
@@ -134,6 +132,10 @@ decl_test_parachains! {
         }
     }
 }
+
+impl_assert_events_helpers_for_parachain!(Dancebox);
+impl_assert_events_helpers_for_parachain!(FrontierTemplate);
+impl_assert_events_helpers_for_parachain!(SimpleTemplate);
 
 decl_test_networks! {
     pub struct WestendMockNet {
@@ -149,17 +151,17 @@ decl_test_networks! {
 
 parameter_types! {
     // Westend
-    pub WestendSender: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(ALICE);
-    pub WestendReceiver: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(BOB);
-    pub WestendEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = Westend::account_id_of(RANDOM);
+    pub WestendSender: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(ALICE);
+    pub WestendReceiver: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(BOB);
+    pub WestendEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(RANDOM);
     // Dancebox
     pub DanceboxSender: dancebox_runtime::AccountId = crate::AccountId::from(crate::ALICE);
     pub DanceboxReceiver: dancebox_runtime::AccountId = crate::AccountId::from(crate::BOB);
-    pub DanceboxEmptyReceiver: dancebox_runtime::AccountId = Dancebox::account_id_of(RANDOM);
+    pub DanceboxEmptyReceiver: dancebox_runtime::AccountId = DanceboxPara::account_id_of(RANDOM);
 
     // SimpleTemplate
-    pub SimpleTemplateSender: container_chain_template_simple_runtime::AccountId = SimpleTemplate::account_id_of(ALICE);
-    pub SimpleTemplateReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplate::account_id_of(BOB);
+    pub SimpleTemplateSender: container_chain_template_simple_runtime::AccountId = SimpleTemplatePara::account_id_of(ALICE);
+    pub SimpleTemplateReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplatePara::account_id_of(BOB);
 
     pub EthereumSender: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[0];
     pub EthereumReceiver: container_chain_template_frontier_runtime::AccountId = frontier_template::pre_funded_accounts()[1];

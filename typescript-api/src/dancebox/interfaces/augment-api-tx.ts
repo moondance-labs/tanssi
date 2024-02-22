@@ -16,12 +16,12 @@ import type { Bytes, Compact, Null, Option, U8aFixed, Vec, bool, u128, u16, u32,
 import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
+    CumulusPrimitivesCoreAggregateMessageOrigin,
     CumulusPrimitivesParachainInherentParachainInherentData,
     DanceboxRuntimeOriginCaller,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
-    PalletIdentityBitFlags,
     PalletIdentityJudgement,
     PalletIdentitySimpleIdentityInfo,
     PalletMultisigTimepoint,
@@ -32,6 +32,7 @@ import type {
     PalletStreamPaymentChangeKind,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentStreamConfig,
+    SpRuntimeMultiSignature,
     SpWeightsWeightV2Weight,
     StagingXcmV3MultiLocation,
     TpAuthorNotingInherentOwnParachainInherentData,
@@ -293,14 +294,6 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         dmpQueue: {
-            /** See [`Pallet::service_overweight`]. */
-            serviceOverweight: AugmentedSubmittable<
-                (
-                    index: u64 | AnyNumber | Uint8Array,
-                    weightLimit: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [u64, SpWeightsWeightV2Weight]
-            >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
@@ -807,6 +800,11 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         identity: {
+            /** See [`Pallet::accept_username`]. */
+            acceptUsername: AugmentedSubmittable<
+                (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
             /** See [`Pallet::add_registrar`]. */
             addRegistrar: AugmentedSubmittable<
                 (
@@ -846,6 +844,23 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [MultiAddress, Data]
+            >;
+            /** See [`Pallet::add_username_authority`]. */
+            addUsernameAuthority: AugmentedSubmittable<
+                (
+                    authority:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array,
+                    suffix: Bytes | string | Uint8Array,
+                    allocation: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress, Bytes, u32]
             >;
             /** See [`Pallet::cancel_request`]. */
             cancelRequest: AugmentedSubmittable<
@@ -899,10 +914,35 @@ declare module "@polkadot/api-base/types/submittable" {
             >;
             /** See [`Pallet::quit_sub`]. */
             quitSub: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /** See [`Pallet::remove_dangling_username`]. */
+            removeDanglingUsername: AugmentedSubmittable<
+                (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
+            /** See [`Pallet::remove_expired_approval`]. */
+            removeExpiredApproval: AugmentedSubmittable<
+                (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
             /** See [`Pallet::remove_sub`]. */
             removeSub: AugmentedSubmittable<
                 (
                     sub:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress]
+            >;
+            /** See [`Pallet::remove_username_authority`]. */
+            removeUsernameAuthority: AugmentedSubmittable<
+                (
+                    authority:
                         | MultiAddress
                         | { Id: any }
                         | { Index: any }
@@ -975,15 +1015,15 @@ declare module "@polkadot/api-base/types/submittable" {
             setFields: AugmentedSubmittable<
                 (
                     index: Compact<u32> | AnyNumber | Uint8Array,
-                    fields: PalletIdentityBitFlags
+                    fields: u64 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [Compact<u32>, PalletIdentityBitFlags]
+                [Compact<u32>, u64]
             >;
             /** See [`Pallet::set_identity`]. */
             setIdentity: AugmentedSubmittable<
                 (
                     info:
-                        | PalletIdentitySimpleIdentityInfo
+                        | PalletIdentityLegacyIdentityInfo
                         | {
                               additional?: any;
                               display?: any;
@@ -998,7 +1038,12 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletIdentitySimpleIdentityInfo]
+                [PalletIdentityLegacyIdentityInfo]
+            >;
+            /** See [`Pallet::set_primary_username`]. */
+            setPrimaryUsername: AugmentedSubmittable<
+                (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
             >;
             /** See [`Pallet::set_subs`]. */
             setSubs: AugmentedSubmittable<
@@ -1021,6 +1066,31 @@ declare module "@polkadot/api-base/types/submittable" {
                           ][]
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[AccountId32, Data]>>]
+            >;
+            /** See [`Pallet::set_username_for`]. */
+            setUsernameFor: AugmentedSubmittable<
+                (
+                    who:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array,
+                    username: Bytes | string | Uint8Array,
+                    signature:
+                        | Option<SpRuntimeMultiSignature>
+                        | null
+                        | Uint8Array
+                        | SpRuntimeMultiSignature
+                        | { Ed25519: any }
+                        | { Sr25519: any }
+                        | { Ecdsa: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress, Bytes, Option<SpRuntimeMultiSignature>]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -1240,6 +1310,17 @@ declare module "@polkadot/api-base/types/submittable" {
                     feeAssetItem: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [XcmVersionedMultiLocation, XcmVersionedMultiLocation, XcmVersionedMultiAssets, u32]
+            >;
+            /** See [`Pallet::transfer_assets`]. */
+            transferAssets: AugmentedSubmittable<
+                (
+                    dest: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    beneficiary: XcmVersionedMultiLocation | { V2: any } | { V3: any } | string | Uint8Array,
+                    assets: XcmVersionedMultiAssets | { V2: any } | { V3: any } | string | Uint8Array,
+                    feeAssetItem: u32 | AnyNumber | Uint8Array,
+                    weightLimit: XcmV3WeightLimit | { Unlimited: any } | { Limited: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [XcmVersionedMultiLocation, XcmVersionedMultiLocation, XcmVersionedMultiAssets, u32, XcmV3WeightLimit]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -1616,6 +1697,8 @@ declare module "@polkadot/api-base/types/submittable" {
                 (ratio: Perbill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [Perbill]
             >;
+            /** See `Pallet::trigger_defensive`. */
+            triggerDefensive: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
@@ -1774,6 +1857,8 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         sudo: {
+            /** See [`Pallet::remove_key`]. */
+            removeKey: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /** See [`Pallet::set_key`]. */
             setKey: AugmentedSubmittable<
                 (
@@ -1822,6 +1907,21 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         system: {
+            /** See [`Pallet::apply_authorized_upgrade`]. */
+            applyAuthorizedUpgrade: AugmentedSubmittable<
+                (code: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
+            /** See [`Pallet::authorize_upgrade`]. */
+            authorizeUpgrade: AugmentedSubmittable<
+                (codeHash: H256 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [H256]
+            >;
+            /** See [`Pallet::authorize_upgrade_without_checks`]. */
+            authorizeUpgradeWithoutChecks: AugmentedSubmittable<
+                (codeHash: H256 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [H256]
+            >;
             /** See [`Pallet::kill_prefix`]. */
             killPrefix: AugmentedSubmittable<
                 (
@@ -2023,14 +2123,6 @@ declare module "@polkadot/api-base/types/submittable" {
         xcmpQueue: {
             /** See [`Pallet::resume_xcm_execution`]. */
             resumeXcmExecution: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
-            /** See [`Pallet::service_overweight`]. */
-            serviceOverweight: AugmentedSubmittable<
-                (
-                    index: u64 | AnyNumber | Uint8Array,
-                    weightLimit: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [u64, SpWeightsWeightV2Weight]
-            >;
             /** See [`Pallet::suspend_xcm_execution`]. */
             suspendXcmExecution: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /** See [`Pallet::update_drop_threshold`]. */
@@ -2047,27 +2139,6 @@ declare module "@polkadot/api-base/types/submittable" {
             updateSuspendThreshold: AugmentedSubmittable<
                 (updated: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [u32]
-            >;
-            /** See [`Pallet::update_threshold_weight`]. */
-            updateThresholdWeight: AugmentedSubmittable<
-                (
-                    updated: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [SpWeightsWeightV2Weight]
-            >;
-            /** See [`Pallet::update_weight_restrict_decay`]. */
-            updateWeightRestrictDecay: AugmentedSubmittable<
-                (
-                    updated: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [SpWeightsWeightV2Weight]
-            >;
-            /** See [`Pallet::update_xcmp_max_individual_weight`]. */
-            updateXcmpMaxIndividualWeight: AugmentedSubmittable<
-                (
-                    updated: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [SpWeightsWeightV2Weight]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;

@@ -22,7 +22,6 @@ use {
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{assert_ok, dispatch::RawOrigin},
     frame_system::EventRecord,
-    sp_std::vec,
 };
 
 /// Create a funded user.

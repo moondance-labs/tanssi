@@ -32,26 +32,23 @@ pub use sp_runtime::BuildStorage;
 
 pub mod weights;
 
-#[cfg(feature = "try-runtime")]
-use sp_runtime::TryRuntimeError;
-
 use {
     cumulus_pallet_parachain_system::{RelayChainStateProof, RelayNumberStrictlyIncreases},
     cumulus_primitives_core::{
-        relay_chain::{self, BlockNumber as RelayBlockNumber, SessionIndex},
-        BodyId, DmpMessageHandler, ParaId,
+        relay_chain::{self, SessionIndex},
+        AggregateMessageOrigin, BodyId, ParaId,
     },
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
+        genesis_builder_helper::{build_config, create_default_config},
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
             tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OffchainWorker, OnFinalize, OnIdle,
-            OnInitialize, OnRuntimeUpgrade, OnUnbalanced, ValidatorRegistration,
+            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -89,7 +86,7 @@ use {
         create_runtime_str, generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Hash as HashT,
-            IdentityLookup,
+            IdentityLookup, Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
@@ -135,7 +132,7 @@ pub type Executive = frame_executive::Executive<
     Block,
     frame_system::ChainContext<Runtime>,
     Runtime,
-    pallet_maintenance_mode::ExecutiveHooks<Runtime>,
+    AllPalletsWithSystem,
 >;
 
 /// DANCE, the native token, uses 12 decimals of precision.
@@ -353,6 +350,7 @@ impl frame_system::Config for Runtime {
     /// The action to take on a Runtime Upgrade
     type OnSetCode = cumulus_pallet_parachain_system::ParachainSetCode<Self>;
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type RuntimeTask = RuntimeTask;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -477,6 +475,7 @@ impl pallet_transaction_payment::Config for Runtime {
 parameter_types! {
     pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
     pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+    pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
@@ -490,11 +489,12 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
+    type WeightInfo = cumulus_pallet_parachain_system::weights::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
     type OutboundXcmpMessageSource = XcmpQueue;
-    type DmpMessageHandler = MaintenanceMode;
+    type DmpQueue = frame_support::traits::EnqueueWithOrigin<MessageQueue, RelayOrigin>;
     type ReservedDmpWeight = ReservedDmpWeight;
     type XcmpMessageHandler = XcmpQueue;
     type ReservedXcmpWeight = ReservedXcmpWeight;
@@ -1199,85 +1199,12 @@ impl Contains<RuntimeCall> for NormalFilter {
     }
 }
 
-pub struct NormalDmpHandler;
-impl DmpMessageHandler for NormalDmpHandler {
-    // This implementation makes messages be queued
-    // Since the limit is 0, messages are queued for next iteration
-    fn handle_dmp_messages(
-        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-        limit: Weight,
-    ) -> Weight {
-        (if Migrations::should_pause_xcm() {
-            DmpQueue::handle_dmp_messages(iter, Weight::zero())
-        } else {
-            DmpQueue::handle_dmp_messages(iter, limit)
-        }) + <Runtime as frame_system::Config>::DbWeight::get().reads(1)
-    }
-}
-
-pub struct MaintenanceDmpHandler;
-impl DmpMessageHandler for MaintenanceDmpHandler {
-    // This implementation makes messages be queued
-    // Since the limit is 0, messages are queued for next iteration
-    fn handle_dmp_messages(
-        iter: impl Iterator<Item = (RelayBlockNumber, Vec<u8>)>,
-        _limit: Weight,
-    ) -> Weight {
-        DmpQueue::handle_dmp_messages(iter, Weight::zero())
-    }
-}
-
-/// The hooks we want to run in Maintenance Mode
-pub struct MaintenanceHooks;
-
-impl OnInitialize<BlockNumber> for MaintenanceHooks {
-    fn on_initialize(n: BlockNumber) -> Weight {
-        AllPalletsWithSystem::on_initialize(n)
-    }
-}
-
-// We override onIdle for xcmQueue and dmpQueue pallets to not process messages inside it
-impl OnIdle<BlockNumber> for MaintenanceHooks {
-    fn on_idle(_n: BlockNumber, _max_weight: Weight) -> Weight {
-        Weight::zero()
-    }
-}
-
-impl OnRuntimeUpgrade for MaintenanceHooks {
-    fn on_runtime_upgrade() -> Weight {
-        AllPalletsWithSystem::on_runtime_upgrade()
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn try_on_runtime_upgrade(checks: bool) -> Result<Weight, TryRuntimeError> {
-        AllPalletsWithSystem::try_on_runtime_upgrade(checks)
-    }
-}
-
-impl OnFinalize<BlockNumber> for MaintenanceHooks {
-    fn on_finalize(n: BlockNumber) {
-        AllPalletsWithSystem::on_finalize(n)
-    }
-}
-
-impl OffchainWorker<BlockNumber> for MaintenanceHooks {
-    fn offchain_worker(n: BlockNumber) {
-        AllPalletsWithSystem::offchain_worker(n)
-    }
-}
-
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = MaintenanceFilter;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = XcmExecutionManager;
-    type NormalDmpHandler = NormalDmpHandler;
-    type MaintenanceDmpHandler = MaintenanceDmpHandler;
-    // We use AllPalletsWithSystem because we dont want to change the hooks in normal
-    // operation
-    type NormalExecutiveHooks = AllPalletsWithSystem;
-    type MaintenanceExecutiveHooks = MaintenanceHooks;
 }
 
 parameter_types! {
@@ -1290,7 +1217,9 @@ impl pallet_relay_storage_roots::Config for Runtime {
     type WeightInfo = ();
 }
 
-impl pallet_root_testing::Config for Runtime {}
+impl pallet_root_testing::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+}
 
 parameter_types! {
     pub StakingAccount: AccountId32 = PalletId(*b"POOLSTAK").into_account_truncating();
@@ -1574,8 +1503,8 @@ parameter_types! {
     pub const BasicDeposit: Balance = currency::deposit(1, 258);
     // 1 entry, storing 53 bytes on-chain
     pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
-    // Additional fields add 0 entries, storing 66 bytes on-chain
-    pub const FieldDeposit: Balance = currency::deposit(0, 66);
+    // Additional bytes adds 0 entries, storing 1 byte on-chain
+    pub const ByteDeposit: Balance = currency::deposit(0, 1);
     pub const MaxSubAccounts: u32 = 100;
     pub const MaxAdditionalFields: u32 = 100;
     pub const MaxRegistrars: u32 = 20;
@@ -1585,16 +1514,21 @@ impl pallet_identity::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type BasicDeposit = BasicDeposit;
-    type FieldDeposit = FieldDeposit;
+    type ByteDeposit = ByteDeposit;
     type SubAccountDeposit = SubAccountDeposit;
     type MaxSubAccounts = MaxSubAccounts;
-    type MaxAdditionalFields = MaxAdditionalFields;
     type MaxRegistrars = MaxRegistrars;
-    type IdentityInformation = pallet_identity::simple::IdentityInfo<Self::MaxAdditionalFields>;
+    type IdentityInformation = pallet_identity::legacy::IdentityInfo<MaxAdditionalFields>;
     // Slashed balances are burnt
     type Slashed = ();
     type ForceOrigin = EnsureRoot<AccountId>;
     type RegistrarOrigin = EnsureRoot<AccountId>;
+    type OffchainSignature = Signature;
+    type SigningPublicKey = <Signature as Verify>::Signer;
+    type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
+    type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
+    type MaxSuffixLength = ConstU32<7>;
+    type MaxUsernameLength = ConstU32<32>;
     type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
 }
 
@@ -1707,6 +1641,7 @@ construct_runtime!(
         ForeignAssets: pallet_assets::<Instance1>::{Pallet, Call, Storage, Event<T>} = 54,
         ForeignAssetsCreator: pallet_foreign_asset_creator::{Pallet, Call, Storage, Event<T>} = 55,
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 56,
+        MessageQueue: pallet_message_queue::{Pallet, Call, Storage, Event<T>} = 57,
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
@@ -1740,7 +1675,7 @@ mod benches {
         [pallet_multisig, Multisig]
         [pallet_pooled_staking, PooledStaking]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
-        [pallet_xcm, PolkadotXcm]
+        [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         [pallet_stream_payment, StreamPayment]
         [pallet_relay_storage_roots, RelayStorageRoots]
@@ -1861,6 +1796,16 @@ impl_runtime_apis! {
         }
     }
 
+    impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
+        fn create_default_config() -> Vec<u8> {
+            create_default_config::<RuntimeGenesisConfig>()
+        }
+
+        fn build_config(config: Vec<u8>) -> sp_genesis_builder::Result {
+            build_config::<RuntimeGenesisConfig>(config)
+        }
+    }
+
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(
@@ -1871,6 +1816,7 @@ impl_runtime_apis! {
         ) {
             use frame_benchmarking::{Benchmarking, BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
@@ -1957,6 +1903,88 @@ impl_runtime_apis! {
 
                 fn alias_origin() -> Result<(MultiLocation, MultiLocation), BenchmarkError> {
                     Err(BenchmarkError::Skip)
+                }
+            }
+
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+            impl pallet_xcm::benchmarking::Config for Runtime {
+                fn reachable_dest() -> Option<MultiLocation> {
+                    Some(Parent.into())
+                }
+
+                fn teleportable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    // Relay/native token can be teleported between AH and Relay.
+                    Some((
+                        MultiAsset {
+                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            id: Concrete(Parent.into())
+                        },
+                        Parent.into(),
+                    ))
+                }
+
+                fn reserve_transferable_asset_and_dest() -> Option<(MultiAsset, MultiLocation)> {
+                    // AH can reserve transfer native token to some random parachain.
+                    let random_para_id = 43211234;
+                    ParachainSystem::open_outbound_hrmp_channel_for_benchmarks_or_tests(
+                        random_para_id.into()
+                    );
+                    Some((
+                        MultiAsset {
+                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            id: Concrete(Parent.into())
+                        },
+                        ParentThen(Parachain(random_para_id).into()).into(),
+                    ))
+                }
+
+                fn set_up_complex_asset_transfer(
+                ) -> Option<(MultiAssets, u32, MultiLocation, Box<dyn FnOnce()>)> {
+                    // Transfer to Relay some local AH asset (local-reserve-transfer) while paying
+                    // fees using teleported native token.
+                    // (We don't care that Relay doesn't accept incoming unknown AH local asset)
+                    let dest = Parent.into();
+
+                    let fee_amount = EXISTENTIAL_DEPOSIT;
+                    let fee_asset: MultiAsset = (MultiLocation::parent(), fee_amount).into();
+
+                    let who = frame_benchmarking::whitelisted_caller();
+                    // Give some multiple of the existential deposit
+                    let balance = fee_amount + EXISTENTIAL_DEPOSIT * 1000;
+                    let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
+                        &who, balance,
+                    );
+                    // verify initial balance
+                    assert_eq!(Balances::free_balance(&who), balance);
+
+                    // set up local asset
+                    let asset_amount = 10u128;
+                    let initial_asset_amount = asset_amount * 10;
+                    let (asset_id, _, _) = pallet_assets::benchmarking::create_default_minted_asset::<
+                        Runtime,
+                        pallet_assets::Instance1
+                    >(true, initial_asset_amount);
+                    let asset_location = MultiLocation::new(
+                        0,
+                        X2(PalletInstance(50), GeneralIndex(u32::from(asset_id).into()))
+                    );
+                    let transfer_asset: MultiAsset = (asset_location, asset_amount).into();
+
+                    let assets: MultiAssets = vec![fee_asset.clone(), transfer_asset].into();
+                    let fee_index = if assets.get(0).unwrap().eq(&fee_asset) { 0 } else { 1 };
+
+                    // verify transferred successfully
+                    let verify = Box::new(move || {
+                        // verify native balance after transfer, decreased by transferred fee amount
+                        // (plus transport fees)
+                        assert!(Balances::free_balance(&who) <= balance - fee_amount);
+                        // verify asset balance decreased by exactly transferred amount
+                        assert_eq!(
+                            ForeignAssets::balance(asset_id, &who),
+                            initial_asset_amount - asset_amount,
+                        );
+                    });
+                    Some((assets, fee_index as u32, dest, verify))
                 }
             }
 

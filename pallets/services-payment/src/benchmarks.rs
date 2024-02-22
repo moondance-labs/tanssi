@@ -148,8 +148,8 @@ mod benchmarks {
     fn on_container_author_noted() {
         let para_id = 1001u32;
         let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
-        let max_credit_stored = T::FreeBlockProductionCredits::get();
-        let balance_to_purchase = block_cost.saturating_mul(max_credit_stored.into());
+        let credits: BalanceOf<T> = 1000u32.into();
+        let balance_to_purchase = block_cost.saturating_mul(credits);
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
         let existential_deposit = <T::Currency>::minimum_balance();
         assert_ok!(Pallet::<T>::purchase_credits(

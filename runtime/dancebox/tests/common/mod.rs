@@ -46,7 +46,7 @@ pub use dancebox_runtime::{
     AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
     InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation, ParachainInfo,
-    PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime, RuntimeCall, RuntimeEvent,
+    PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime, RuntimeCall,
     ServicesPayment, Session, System,
 };
 

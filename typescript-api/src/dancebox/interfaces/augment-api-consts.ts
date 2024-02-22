@@ -15,6 +15,7 @@ import type {
     FrameSystemLimitsBlockWeights,
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
+    SpWeightsWeightV2Weight,
 } from "@polkadot/types/lookup";
 
 export type __AugmentedConst<ApiType extends ApiTypes> = AugmentedConst<ApiType>;
@@ -66,19 +67,20 @@ declare module "@polkadot/api-base/types/consts" {
             [key: string]: Codec;
         };
         identity: {
-            /** The amount held on deposit for a registered identity */
+            /** The amount held on deposit for a registered identity. */
             basicDeposit: u128 & AugmentedConst<ApiType>;
-            /** The amount held on deposit per additional field for a registered identity. */
-            fieldDeposit: u128 & AugmentedConst<ApiType>;
-            /**
-             * Maximum number of additional fields that may be stored in an ID. Needed to bound the I/O required to access an
-             * identity, but can be pretty high.
-             */
-            maxAdditionalFields: u32 & AugmentedConst<ApiType>;
+            /** The amount held on deposit per encoded byte for a registered identity. */
+            byteDeposit: u128 & AugmentedConst<ApiType>;
             /** Maxmimum number of registrars allowed in the system. Needed to bound the complexity of, e.g., updating judgements. */
             maxRegistrars: u32 & AugmentedConst<ApiType>;
             /** The maximum number of sub-accounts allowed per identified account. */
             maxSubAccounts: u32 & AugmentedConst<ApiType>;
+            /** The maximum length of a suffix. */
+            maxSuffixLength: u32 & AugmentedConst<ApiType>;
+            /** The maximum length of a username, including its suffix and any system-added delimiters. */
+            maxUsernameLength: u32 & AugmentedConst<ApiType>;
+            /** The number of blocks within which a username grant must be accepted. */
+            pendingUsernameExpiration: u32 & AugmentedConst<ApiType>;
             /**
              * The amount held on deposit for a registered subaccount. This should account for the fact that one storage
              * item's value will increase by the size of an account ID, and there will be another trie item whose value is the
@@ -196,9 +198,9 @@ declare module "@polkadot/api-base/types/consts" {
         };
         transactionPayment: {
             /**
-             * A fee mulitplier for `Operational` extrinsics to compute "virtual tip" to boost their `priority`
+             * A fee multiplier for `Operational` extrinsics to compute "virtual tip" to boost their `priority`
              *
-             * This value is multipled by the `final_fee` to obtain a "virtual tip" that is later added to a tip component in
+             * This value is multiplied by the `final_fee` to obtain a "virtual tip" that is later added to a tip component in
              * regular `priority` calculations. It means that a `Normal` transaction can front-run a similarly-sized
              * `Operational` extrinsic (with no tip), by including a tip value greater than the virtual tip.
              *
@@ -259,6 +261,17 @@ declare module "@polkadot/api-base/types/consts" {
         utility: {
             /** The limit on the number of batched calls. */
             batchedCallsLimit: u32 & AugmentedConst<ApiType>;
+            /** Generic const */
+            [key: string]: Codec;
+        };
+        xcmpQueue: {
+            /**
+             * The maximum number of inbound XCMP channels that can be suspended simultaneously.
+             *
+             * Any further channel suspensions will fail and messages may get dropped without further notice. Choosing a high
+             * value (1000) is okay; the trade-off that is described in [`InboundXcmpSuspended`] still applies at that scale.
+             */
+            maxInboundSuspended: u32 & AugmentedConst<ApiType>;
             /** Generic const */
             [key: string]: Codec;
         };
