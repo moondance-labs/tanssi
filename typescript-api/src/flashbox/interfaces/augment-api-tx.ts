@@ -23,6 +23,7 @@ import type {
     FlashboxRuntimeStreamPaymentAssetId,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
+    PalletMultisigTimepoint,
     PalletStreamPaymentChangeKind,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentStreamConfig,

@@ -23,7 +23,7 @@ import type {
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
     PalletIdentityJudgement,
-    PalletIdentitySimpleIdentityInfo,
+    PalletIdentityLegacyIdentityInfo,
     PalletMultisigTimepoint,
     PalletPooledStakingAllTargetPool,
     PalletPooledStakingPendingOperationQuery,
@@ -1119,6 +1119,40 @@ declare module "@polkadot/api-base/types/submittable" {
             enterMaintenanceMode: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /** See [`Pallet::resume_normal_operation`]. */
             resumeNormalOperation: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
+        messageQueue: {
+            /** See [`Pallet::execute_overweight`]. */
+            executeOverweight: AugmentedSubmittable<
+                (
+                    messageOrigin:
+                        | CumulusPrimitivesCoreAggregateMessageOrigin
+                        | { Here: any }
+                        | { Parent: any }
+                        | { Sibling: any }
+                        | string
+                        | Uint8Array,
+                    page: u32 | AnyNumber | Uint8Array,
+                    index: u32 | AnyNumber | Uint8Array,
+                    weightLimit: SpWeightsWeightV2Weight | { refTime?: any; proofSize?: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [CumulusPrimitivesCoreAggregateMessageOrigin, u32, u32, SpWeightsWeightV2Weight]
+            >;
+            /** See [`Pallet::reap_page`]. */
+            reapPage: AugmentedSubmittable<
+                (
+                    messageOrigin:
+                        | CumulusPrimitivesCoreAggregateMessageOrigin
+                        | { Here: any }
+                        | { Parent: any }
+                        | { Sibling: any }
+                        | string
+                        | Uint8Array,
+                    pageIndex: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [CumulusPrimitivesCoreAggregateMessageOrigin, u32]
+            >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };

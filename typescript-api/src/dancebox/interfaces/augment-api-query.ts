@@ -56,6 +56,8 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletInflationRewardsChainsToRewardValue,
+    PalletMessageQueueBookState,
+    PalletMessageQueuePage,
     PalletMultisigMultisig,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingPendingOperationKey,
