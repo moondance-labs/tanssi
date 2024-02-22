@@ -37,15 +37,12 @@ describeSuite({
             id: "E01",
             title: "Creates and cancel a multisig operation",
             test: async () => {
-
                 //Multisig creation
                 const otherSignatories = [dave.address, bob.address];
                 await context.createBlock(
-                    polkadotJs
-                        .tx.multisig.asMulti(threshold, otherSignatories, null, call, {})
-                        .signAsync(alice)
-                    );
-        
+                    polkadotJs.tx.multisig.asMulti(threshold, otherSignatories, null, call, {}).signAsync(alice)
+                );
+
                 // The multisig is created
                 let records = await polkadotJs.query.system.events();
                 let eventCount = records.filter((a) => {
@@ -58,13 +55,9 @@ describeSuite({
                 const multisigId = u8aToHex(encodedMultisigId);
                 const multisigInfo = await polkadotJs.query.multisig.multisigs(multisigId, callHash);
                 await context.createBlock(
-                    polkadotJs.tx.multisig.cancelAsMulti(
-                        threshold,
-                        otherSignatories,
-                        multisigInfo.unwrap().when,
-                        callHash
-                    )
-                    .signAsync(alice)
+                    polkadotJs.tx.multisig
+                        .cancelAsMulti(threshold, otherSignatories, multisigInfo.unwrap().when, callHash)
+                        .signAsync(alice)
                 );
 
                 // Multisig is cancelled
@@ -74,20 +67,17 @@ describeSuite({
                 });
                 expect(eventCount.length).to.be.equal(1);
             },
-          });
+        });
 
-          it({
+        it({
             id: "E02",
             title: "Approves a multisig operation",
             test: async function () {
-
                 //Multisig creation
                 const otherSignatories = [dave.address, bob.address];
                 await context.createBlock(
-                    polkadotJs
-                        .tx.multisig.asMulti(threshold, otherSignatories, null, call, {})
-                        .signAsync(alice)
-                    );
+                    polkadotJs.tx.multisig.asMulti(threshold, otherSignatories, null, call, {}).signAsync(alice)
+                );
 
                 //Multisig Approval
 
@@ -98,24 +88,24 @@ describeSuite({
 
                 await context.createBlock(
                     context
-                    .polkadotJs()
-                    .tx.multisig.approveAsMulti(
-                        threshold,
-                        [dave.address, alice.address],
-                        multisigInfo.unwrap().when,
-                        callHash,
-                        {}
-                    )
-                    .signAsync(bob)
+                        .polkadotJs()
+                        .tx.multisig.approveAsMulti(
+                            threshold,
+                            [dave.address, alice.address],
+                            multisigInfo.unwrap().when,
+                            callHash,
+                            {}
+                        )
+                        .signAsync(bob)
                 );
-            
-            // Multisig call is approved
-            const records = await polkadotJs.query.system.events();
-            const eventCount = records.filter((a) => {
-                return a.event.method == "MultisigApproval";
-              });
-              expect(eventCount.length).to.be.equal(1);
-            }
-          });
+
+                // Multisig call is approved
+                const records = await polkadotJs.query.system.events();
+                const eventCount = records.filter((a) => {
+                    return a.event.method == "MultisigApproval";
+                });
+                expect(eventCount.length).to.be.equal(1);
+            },
+        });
     },
 });
