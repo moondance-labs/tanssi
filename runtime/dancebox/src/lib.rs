@@ -1635,21 +1635,21 @@ impl pallet_treasury::Config for Runtime {
 }
 
 parameter_types! {
-	// One storage item; key size 32 + 20; value is size 4+4+16+20. Total = 1 * (52 + 44)
-	pub const DepositBase: Balance = currency::deposit(1, 96);
-	// Additional storage item size of 20 bytes.
-	pub const DepositFactor: Balance = currency::deposit(0, 20);
-	pub const MaxSignatories: u32 = 100;
+    // One storage item; key size 32 + 20; value is size 4+4+16+20. Total = 1 * (52 + 44)
+    pub const DepositBase: Balance = currency::deposit(1, 96);
+    // Additional storage item size of 20 bytes.
+    pub const DepositFactor: Balance = currency::deposit(0, 20);
+    pub const MaxSignatories: u32 = 100;
 }
 
 impl pallet_multisig::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type RuntimeCall = RuntimeCall;
-	type Currency = Balances;
-	type DepositBase = DepositBase;
-	type DepositFactor = DepositFactor;
-	type MaxSignatories = MaxSignatories;
-	type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeCall = RuntimeCall;
+    type Currency = Balances;
+    type DepositBase = DepositBase;
+    type DepositFactor = DepositFactor;
+    type MaxSignatories = MaxSignatories;
+    type WeightInfo = pallet_multisig::weights::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
