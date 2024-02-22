@@ -3985,6 +3985,7 @@ dependencies = [
  "pallet-invulnerables",
  "pallet-maintenance-mode",
  "pallet-migrations",
+ "pallet-multisig",
  "pallet-proxy",
  "pallet-registrar",
  "pallet-registrar-runtime-api",

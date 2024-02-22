@@ -51,6 +51,7 @@ frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
+pallet-multisig = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -152,6 +153,7 @@ std = [
 	"pallet-invulnerables/std",
 	"pallet-maintenance-mode/std",
 	"pallet-migrations/std",
+	"pallet-multisig/std",
 	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
 	"pallet-registrar/std",
@@ -225,6 +227,7 @@ runtime-benchmarks = [
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
+	"pallet-multisig/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-relay-storage-roots/runtime-benchmarks",
@@ -266,6 +269,7 @@ try-runtime = [
 	"pallet-invulnerables/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-migrations/try-runtime",
+	"pallet-multisig/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",
 	"pallet-relay-storage-roots/try-runtime",
