@@ -17,8 +17,8 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            SimpleTemplate, SimpleTemplatePallet, SimpleTemplateReceiver, Westend, WestendPallet,
-            WestendSender,
+            SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet, SimpleTemplateReceiver,
+            WestendRelay as Westend, WestendRelayPallet, WestendSender,
         },
         *,
     },
@@ -63,7 +63,7 @@ fn receive_tokens_from_the_relay_to_simple_template() {
         let root_origin = <SimpleTemplate as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <SimpleTemplate as SimpleTemplatePallet>::ForeignAssetsCreator::create_foreign_asset(
+            <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
                 westend_token_asset_id,
@@ -73,17 +73,19 @@ fn receive_tokens_from_the_relay_to_simple_template() {
             )
         );
 
-        assert_ok!(<SimpleTemplate as SimpleTemplatePallet>::AssetRate::create(
-            root_origin,
-            bx!(1),
-            FixedU128::from_u32(1)
-        ));
+        assert_ok!(
+            <SimpleTemplate as SimpleTemplateParaPallet>::AssetRate::create(
+                root_origin,
+                bx!(1),
+                FixedU128::from_u32(1)
+            )
+        );
     });
 
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(simple_template_dest),
                 bx!(simple_template_beneficiary),
@@ -100,18 +102,20 @@ fn receive_tokens_from_the_relay_to_simple_template() {
         assert_expected_events!(
             SimpleTemplate,
             vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: true,
+                        weight_used,
+                        ..
                     }) => {
-                    outcome: {
-                        outcome_weight = outcome.clone().weight_used();
-                        outcome.clone().ensure_complete().is_ok()
+                        weight_used: {
+                            outcome_weight = *weight_used;
+                            weight_used.all_gte(Weight::from_parts(0,0))
+                        },
                     },
-                },
             ]
         );
-        type ForeignAssets = <SimpleTemplate as SimpleTemplatePallet>::ForeignAssets;
+        type ForeignAssets = <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
         let native_balance =
@@ -159,7 +163,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_simple_template()
         let root_origin = <SimpleTemplate as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <SimpleTemplate as SimpleTemplatePallet>::ForeignAssetsCreator::create_foreign_asset(
+            <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
                 westend_token_asset_id,
@@ -174,7 +178,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_simple_template()
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(simple_template_dest),
                 bx!(simple_template_beneficiary),
@@ -187,20 +191,19 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_simple_template()
     // We should have received the tokens
     SimpleTemplate::execute_with(|| {
         type RuntimeEvent = <SimpleTemplate as Chain>::RuntimeEvent;
+
         assert_expected_events!(
             SimpleTemplate,
             vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: false,
+                        ..
                     }) => {
-                    outcome: {
-                        outcome.clone().ensure_complete().is_err()
                     },
-                },
             ]
         );
-        type ForeignAssets = <SimpleTemplate as SimpleTemplatePallet>::ForeignAssets;
+        type ForeignAssets = <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(
@@ -242,7 +245,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered_simple_templat
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(simple_template_dest),
                 bx!(simple_template_beneficiary),
@@ -258,17 +261,15 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered_simple_templat
         assert_expected_events!(
             SimpleTemplate,
             vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: false,
+                        ..
                     }) => {
-                    outcome: {
-                        outcome.clone().ensure_complete().is_err()
                     },
-                },
             ]
         );
-        type ForeignAssets = <SimpleTemplate as SimpleTemplatePallet>::ForeignAssets;
+        type ForeignAssets = <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(

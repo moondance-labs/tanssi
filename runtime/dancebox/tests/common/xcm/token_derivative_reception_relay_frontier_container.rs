@@ -17,8 +17,8 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            EthereumReceiver, FrontierTemplate, FrontierTemplatePallet, Westend, WestendPallet,
-            WestendSender,
+            EthereumReceiver, FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
+            WestendRelay as Westend, WestendRelayPallet, WestendSender,
         },
         *,
     },
@@ -63,7 +63,7 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
         let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::ForeignAssetsCreator::create_foreign_asset(
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
                 westend_token_asset_id,
@@ -74,7 +74,7 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
         );
 
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::AssetRate::create(
+            <FrontierTemplate as FrontierTemplateParaPallet>::AssetRate::create(
                 root_origin,
                 bx!(1),
                 FixedU128::from_u32(1)
@@ -85,7 +85,7 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(frontier_template_dest),
                 bx!(frontier_template_beneficiary),
@@ -102,18 +102,20 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
         assert_expected_events!(
             FrontierTemplate,
             vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: true,
+                        weight_used,
+                        ..
                     }) => {
-                    outcome: {
-                        outcome_weight = outcome.clone().weight_used();
-                        outcome.clone().ensure_complete().is_ok()
+                        weight_used: {
+                            outcome_weight = *weight_used;
+                            weight_used.all_gte(Weight::from_parts(0,0))
+                        },
                     },
-                },
             ]
         );
-        type ForeignAssets = <FrontierTemplate as FrontierTemplatePallet>::ForeignAssets;
+        type ForeignAssets = <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
         let native_balance =
@@ -161,7 +163,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
         let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <FrontierTemplate as FrontierTemplatePallet>::ForeignAssetsCreator::create_foreign_asset(
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
                 westend_token_asset_id,
@@ -176,7 +178,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(frontier_template_dest),
                 bx!(frontier_template_beneficiary),
@@ -192,17 +194,15 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
         assert_expected_events!(
             FrontierTemplate,
             vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: false,
+                        ..
                     }) => {
-                    outcome: {
-                        outcome.clone().ensure_complete().is_err()
                     },
-                },
             ]
         );
-        type ForeignAssets = <FrontierTemplate as FrontierTemplatePallet>::ForeignAssets;
+        type ForeignAssets = <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(
@@ -244,7 +244,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(frontier_template_dest),
                 bx!(frontier_template_beneficiary),
@@ -260,17 +260,15 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
         assert_expected_events!(
             FrontierTemplate,
             vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: false,
+                        ..
                     }) => {
-                    outcome: {
-                        outcome.clone().ensure_complete().is_err()
                     },
-                },
             ]
         );
-        type ForeignAssets = <FrontierTemplate as FrontierTemplatePallet>::ForeignAssets;
+        type ForeignAssets = <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(
