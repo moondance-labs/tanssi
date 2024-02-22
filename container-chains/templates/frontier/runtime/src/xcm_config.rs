@@ -300,7 +300,7 @@ impl AccountIdAssetIdConversion<AccountId, AssetId> for Runtime {
         let (prefix_part, id_part) = h160_account.as_fixed_bytes().split_at(18);
         if prefix_part == FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX {
             data.copy_from_slice(id_part);
-            let asset_id: AssetId = u16::from_be_bytes(data).into();
+            let asset_id: AssetId = u16::from_be_bytes(data);
             Some((prefix_part.to_vec(), asset_id))
         } else {
             None
