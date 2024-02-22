@@ -2,8 +2,8 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { ApiPromise } from "@polkadot/api";
 import { KeyringPair } from "@moonwall/util";
-import { blake2AsHex } from "@polkadot/util-crypto";
-import { extractFeeAuthor } from "util/block";
+import { blake2AsHex, createKeyMulti } from "@polkadot/util-crypto";
+import { u8aToHex } from "@polkadot/util";
 
 describeSuite({
     id: "CT1001",
@@ -29,6 +29,7 @@ describeSuite({
             const example_call = context.polkadotJs().tx.balances.transferKeepAlive(charlie.address, 20);
             call = example_call.method.toHex();
             callHash = blake2AsHex(call);
+
         });
 
         it({
@@ -36,34 +37,83 @@ describeSuite({
             title: "Creates and cancel a multisig operation",
             test: async () => {
 
+                //Multisig creation
                 const otherSignatories = [dave.address, bob.address];
                 await context.createBlock(
                     polkadotJs
-                        .tx.multisig.asMulti(1, otherSignatories, null, call, {})
+                        .tx.multisig.asMulti(2, otherSignatories, null, call, {})
                         .signAsync(alice)
                     );
         
                 // The multisig is created
-                let records = await context.polkadotJs().query.system.events();
-                let events = records.filter(
-                ({ event }) => event.section == "multisig" && event.method == "NewMultisig"
+                let records = await polkadotJs.query.system.events();
+                let eventCount = records.filter((a) => {
+                    return a.event.method == "NewMultisig";
+                });
+                expect(eventCount.length).to.be.equal(1);
+
+                //Multisig Cancelation
+                const encodedMultisigId = createKeyMulti([alice.address, dave.address, bob.address], 2);
+                const multisigId = u8aToHex(encodedMultisigId);
+                const multisigInfo = await polkadotJs.query.multisig.multisigs(multisigId, callHash);
+                await context.createBlock(
+                    polkadotJs.tx.multisig.cancelAsMulti(
+                        2,
+                        otherSignatories,
+                        multisigInfo.unwrap().when,
+                        callHash
+                    )
+                    .signAsync(alice)
                 );
-                expect(events).to.have.lengthOf(1);
-              
+
+                // Multisig is cancelled
+                records = await polkadotJs.query.system.events();
+                eventCount = records.filter((a) => {
+                    return a.event.method == "MultisigCancelled";
+                });
+                expect(eventCount.length).to.be.equal(1);
+            },
+          });
+
+          it({
+            id: "E02",
+            title: "Approves a multisig operation",
+            test: async function () {
+                const otherSignatories = [dave.address, bob.address];
+
+                // Alice creates a multisig
+                await context.createBlock(
+                polkadotJs
+                    .tx.multisig.asMulti(2, otherSignatories, null, call, {})
+                    .signAsync(alice)
+                );
+      
+                // Dave approves
+                const encodedMultisigId = createKeyMulti([alice.address, dave.address, bob.address], 2);
+                const multisigId = u8aToHex(encodedMultisigId);
+                const multisigInfo = await polkadotJs.query.multisig.multisigs(multisigId, callHash);
+
                 await context.createBlock(
                     context
-                        .polkadotJs()
-                        .tx.multisig.cancelAsMulti(1, otherSignatories, null, callHash)
-                        .signAsync(alice)
-                    );
-                
-                // The multisig is Canceled
-                records = await context.polkadotJs().query.system.events();
-                events = records.filter(
-                ({ event }) => event.section == "multisig" && event.method == "NewMultisig"
+                    .polkadotJs()
+                    .tx.multisig.approveAsMulti(
+                        2,
+                        otherSignatories,
+                        multisigInfo.unwrap().when,
+                        callHash,
+                        {}
+                    )
+                    .signAsync(dave)
                 );
-                expect(events).to.have.lengthOf(1);
-            },
+      
+            // Multisig call is approved
+            const records = await polkadotJs.query.system.events();
+            const eventCount = records.filter((a) => {
+                console.log(a.event.method);
+                return a.event.method == "MultisigApproval";
+              });
+              expect(eventCount.length).to.be.equal(1);
+            }
           });
     },
 });
