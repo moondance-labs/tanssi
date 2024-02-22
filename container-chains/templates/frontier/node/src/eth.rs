@@ -14,11 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-// Frontier
-pub use {
-    fc_consensus::FrontierBlockImport,
-    fc_rpc_core::types::{FeeHistoryCache, FeeHistoryCacheLimit, FilterPool},
-};
 // Local
 use container_chain_template_frontier_runtime::opaque::Block;
 

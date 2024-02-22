@@ -28,15 +28,13 @@ use {
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
     },
     cumulus_client_consensus_proposer::Proposer,
+    cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::{
         prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
     },
     cumulus_primitives_core::{
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair, Hash as PHash},
         ParaId,
-    },
-    cumulus_primitives_parachain_inherent::{
-        MockValidationDataInherentDataProvider, MockXcmConfig,
     },
     cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
     dancebox_runtime::{

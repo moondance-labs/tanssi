@@ -22,11 +22,9 @@ use {
     container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
+    cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::prepare_node_config,
     cumulus_primitives_core::{relay_chain::well_known_keys as RelayWellKnownKeys, ParaId},
-    cumulus_primitives_parachain_inherent::{
-        MockValidationDataInherentDataProvider, MockXcmConfig,
-    },
     fc_consensus::FrontierBlockImport,
     fc_db::DatabaseSource,
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
@@ -490,7 +488,6 @@ pub async fn start_dev_node(
         let backend = node_builder.backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
         let overrides = overrides;
-        let fee_history_cache = fee_history_cache;
         let block_data_cache = block_data_cache;
 
         Box::new(move |deny_unsafe, subscription_task_executor| {

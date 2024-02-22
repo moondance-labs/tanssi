@@ -15,6 +15,7 @@ log = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
 scale-info = { workspace = true, features = [ "derive" ] }
 serde = { workspace = true, optional = true, features = [ "derive" ] }
+serde_json = { workspace = true, features = [ "arbitrary_precision" ] }
 smallvec = { workspace = true }
 
 # Own
@@ -56,6 +57,7 @@ pallet-asset-rate = { workspace = true }
 pallet-assets = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
+pallet-message-queue = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -72,6 +74,7 @@ sp-consensus-aura = { workspace = true }
 sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true }
 sp-debug-derive = { workspace = true }
+sp-genesis-builder = { workspace = true }
 sp-inherents = { workspace = true }
 sp-offchain = { workspace = true }
 sp-runtime = { workspace = true }
@@ -113,16 +116,19 @@ frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
 
 [dev-dependencies]
+# Needed to force include the runtime-benchmark feature as emulated-integration-tests-common
+# hasn't implemented that feature
+assets-common = { workspace = true }
 container-chain-template-frontier-runtime  = { workspace = true, features = [ "std" ] }
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
-pallet-im-online = { workspace = true, features = [ "std" ] }
-pallet-message-queue = { workspace = true }
+emulated-integration-tests-common = { workspace = true }
 pallet-staking = { workspace = true, features = [ "std" ] }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
 polkadot-service = { workspace = true }
 sc-consensus-grandpa = { workspace = true }
+sc-service = { workspace = true }
 sp-consensus-babe = { workspace = true, features = [ "std" ] }
 sp-consensus-beefy = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true }
@@ -176,7 +182,6 @@ std = [
 	"pallet-data-preservers/std",
 	"pallet-foreign-asset-creator/std",
 	"pallet-identity/std",
-	"pallet-im-online/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
@@ -212,6 +217,7 @@ std = [
 	"scale-info/std",
 	"serde",
 	"serde?/std",
+	"serde_json/std",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-application-crypto/std",
@@ -222,6 +228,7 @@ std = [
 	"sp-consensus-slots/std",
 	"sp-core/std",
 	"sp-debug-derive/std",
+	"sp-genesis-builder/std",
 	"sp-inherents/std",
 	"sp-io/std",
 	"sp-offchain/std",
@@ -247,11 +254,14 @@ std = [
 force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [
+	"assets-common/runtime-benchmarks",
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
 	"container-chain-template-simple-runtime/runtime-benchmarks",
+	"cumulus-pallet-dmp-queue/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks",
 	"cumulus-primitives-utility/runtime-benchmarks",
 	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",
@@ -269,7 +279,6 @@ runtime-benchmarks = [
 	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
-	"pallet-im-online/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
@@ -294,6 +303,7 @@ runtime-benchmarks = [
 	"polkadot-runtime-parachains/runtime-benchmarks",
 	"polkadot-service/runtime-benchmarks",
 	"runtime-common/runtime-benchmarks",
+	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
@@ -319,6 +329,7 @@ try-runtime = [
 	"pallet-asset-rate/try-runtime",
 	"pallet-assets/try-runtime",
 	"pallet-assets/try-runtime",
+	"pallet-async-backing/try-runtime",
 	"pallet-author-inherent/try-runtime",
 	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
@@ -330,7 +341,6 @@ try-runtime = [
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-identity/try-runtime",
-	"pallet-im-online/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
@@ -345,6 +355,7 @@ try-runtime = [
 	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-staking/try-runtime",
+	"pallet-stream-payment/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",

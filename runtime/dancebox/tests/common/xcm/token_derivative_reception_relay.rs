@@ -17,7 +17,8 @@
 use {
     crate::common::xcm::{
         mocknets::{
-            Dancebox, DanceboxPallet, DanceboxReceiver, Westend, WestendPallet, WestendSender,
+            DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxReceiver,
+            WestendRelay as Westend, WestendRelayPallet, WestendSender,
         },
         *,
     },
@@ -62,7 +63,7 @@ fn receive_tokens_from_the_relay_to_tanssi() {
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <Dancebox as DanceboxPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
                 westend_token_asset_id,
@@ -72,7 +73,7 @@ fn receive_tokens_from_the_relay_to_tanssi() {
             )
         );
 
-        assert_ok!(<Dancebox as DanceboxPallet>::AssetRate::create(
+        assert_ok!(<Dancebox as DanceboxParaPallet>::AssetRate::create(
             root_origin,
             bx!(1),
             FixedU128::from_u32(1)
@@ -82,7 +83,7 @@ fn receive_tokens_from_the_relay_to_tanssi() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(dancebox_dest),
                 bx!(dancebox_beneficiary),
@@ -99,18 +100,20 @@ fn receive_tokens_from_the_relay_to_tanssi() {
         assert_expected_events!(
             Dancebox,
             vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
+                RuntimeEvent::MessageQueue(
+                    pallet_message_queue::Event::Processed {
+                        success: true,
+                        weight_used,
+                        ..
                     }) => {
-                    outcome: {
-                        outcome_weight = outcome.clone().weight_used();
-                        outcome.clone().ensure_complete().is_ok()
+                        weight_used: {
+                            outcome_weight = *weight_used;
+                            weight_used.all_gte(Weight::from_parts(0,0))
+                        },
                     },
-                },
             ]
         );
-        type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
         let native_balance = dancebox_runtime::WeightToFee::weight_to_fee(&outcome_weight);
@@ -157,7 +160,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
         let root_origin = <Dancebox as Chain>::RuntimeOrigin::root();
 
         assert_ok!(
-            <Dancebox as DanceboxPallet>::ForeignAssetsCreator::create_foreign_asset(
+            <Dancebox as DanceboxParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 MultiLocation::parent(),
                 westend_token_asset_id,
@@ -172,7 +175,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(dancebox_dest),
                 bx!(dancebox_beneficiary),
@@ -184,21 +187,8 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
     });
     // We should have received the tokens
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            Dancebox,
-            vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
-                    }) => {
-                    outcome: {
-                        outcome.clone().ensure_complete().is_err()
-                    },
-                },
-            ]
-        );
-        type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+        Dancebox::assert_dmp_queue_incomplete(None);
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(
@@ -240,7 +230,7 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         assert_ok!(
-            <Westend as WestendPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
                 alice_origin,
                 bx!(dancebox_dest),
                 bx!(dancebox_beneficiary),
@@ -252,21 +242,8 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     });
     // We should have received the tokens
     Dancebox::execute_with(|| {
-        type RuntimeEvent = <Dancebox as Chain>::RuntimeEvent;
-        assert_expected_events!(
-            Dancebox,
-            vec![
-                RuntimeEvent::DmpQueue(
-                    cumulus_pallet_dmp_queue::Event::ExecutedDownward {
-                        outcome, ..
-                    }) => {
-                    outcome: {
-                        outcome.clone().ensure_complete().is_err()
-                    },
-                },
-            ]
-        );
-        type ForeignAssets = <Dancebox as DanceboxPallet>::ForeignAssets;
+        Dancebox::assert_dmp_queue_incomplete(None);
+        type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // Assert receiver should not have received funds
         assert_eq!(

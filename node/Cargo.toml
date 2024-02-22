@@ -97,10 +97,10 @@ cumulus-client-consensus-aura = { workspace = true }
 cumulus-client-consensus-common = { workspace = true }
 cumulus-client-consensus-proposer = { workspace = true }
 cumulus-client-network = { workspace = true }
+cumulus-client-parachain-inherent = { workspace = true }
 cumulus-client-pov-recovery = { workspace = true }
 cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
-cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
@@ -108,6 +108,7 @@ substrate-build-script-utils = { workspace = true }
 [features]
 default = []
 runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
 	"dancebox-runtime/runtime-benchmarks",
 	"flashbox-runtime/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
