@@ -3878,7 +3878,7 @@ export default {
     },
     /** Lookup487: pallet_asset_rate::pallet::Error<T> */
     PalletAssetRateError: {
-        _enum: ["UnknownAssetKind", "AlreadyExists"],
+        _enum: ["UnknownAssetKind", "AlreadyExists", "Overflow"],
     },
     /** Lookup488: pallet_message_queue::BookState<cumulus_primitives_core::AggregateMessageOrigin> */
     PalletMessageQueueBookState: {
