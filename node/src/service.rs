@@ -28,16 +28,13 @@ use {
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
     },
     cumulus_client_consensus_proposer::Proposer,
-    cumulus_client_pov_recovery::{PoVRecovery, RecoveryDelayRange},
+    cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::{
         prepare_node_config, start_relay_chain_tasks, DARecoveryProfile, StartRelayChainTasksParams,
     },
     cumulus_primitives_core::{
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair, Hash as PHash},
         ParaId,
-    },
-    cumulus_primitives_parachain_inherent::{
-        MockValidationDataInherentDataProvider, MockXcmConfig,
     },
     cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
     dancebox_runtime::{
@@ -47,7 +44,7 @@ use {
     dc_orchestrator_chain_interface::{
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult,
     },
-    futures::{channel::mpsc, StreamExt},
+    futures::StreamExt,
     nimbus_primitives::NimbusPair,
     node_common::service::NodeBuilderConfig,
     node_common::service::{ManualSealConfiguration, NodeBuilder, Sealing},
@@ -61,7 +58,7 @@ use {
     },
     sc_consensus::BlockImport,
     sc_consensus::{BasicQueue, ImportQueue},
-    sc_executor::NativeElseWasmExecutor,
+    sc_executor::{NativeElseWasmExecutor, WasmExecutor},
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager},
@@ -72,9 +69,12 @@ use {
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
-    std::{future::Future, pin::Pin, sync::Arc, time::Duration},
+    std::{sync::Arc, time::Duration},
     substrate_prometheus_endpoint::Registry,
-    tc_consensus::collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
+    tc_consensus::{
+        collators::basic::{self as basic_tanssi_aura, Params as BasicTanssiAuraParams},
+        OrchestratorAuraWorkerAuxData,
+    },
     tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
 };
 
@@ -99,18 +99,31 @@ pub struct NodeConfig;
 impl NodeBuilderConfig for NodeConfig {
     type Block = Block;
     type RuntimeApi = RuntimeApi;
-    type ParachainNativeExecutor = ParachainNativeExecutor;
+    type ParachainExecutor = ParachainExecutor;
 }
 
+pub struct ContainerChainNodeConfig;
+impl NodeBuilderConfig for ContainerChainNodeConfig {
+    type Block = Block;
+    // TODO: RuntimeApi here should be the subset of runtime apis available for all containers
+    // Currently we are using the orchestrator runtime apis
+    type RuntimeApi = RuntimeApi;
+    type ParachainExecutor = ContainerChainExecutor;
+}
+
+// Orchestrator chain types
 type ParachainExecutor = NativeElseWasmExecutor<ParachainNativeExecutor>;
-
 pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
-
 pub type ParachainBackend = TFullBackend<Block>;
-
 type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
-
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
+
+// Container chains types
+type ContainerChainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
+pub type ContainerChainClient = TFullClient<Block, RuntimeApi, ContainerChainExecutor>;
+pub type ContainerChainBackend = ParachainBackend;
+type ContainerChainBlockImport =
+    TParachainBlockImport<Block, Arc<ContainerChainClient>, ContainerChainBackend>;
 
 thread_local!(static TIMESTAMP: std::cell::RefCell<u64> = std::cell::RefCell::new(0));
 
@@ -222,6 +235,33 @@ pub fn import_queue(
     // in the runtime
     let block_import =
         ParachainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
+
+    let import_queue = nimbus_consensus::import_queue(
+        node_builder.client.clone(),
+        block_import.clone(),
+        move |_, _| async move {
+            let time = sp_timestamp::InherentDataProvider::from_system_time();
+
+            Ok((time,))
+        },
+        &node_builder.task_manager.spawn_essential_handle(),
+        parachain_config.prometheus_registry(),
+        false,
+    )
+    .expect("function never fails");
+
+    (block_import, import_queue)
+}
+
+pub fn container_chain_import_queue(
+    parachain_config: &Configuration,
+    node_builder: &NodeBuilder<ContainerChainNodeConfig>,
+) -> (ContainerChainBlockImport, BasicQueue<Block>) {
+    // The nimbus import queue ONLY checks the signature correctness
+    // Any other checks corresponding to the author-correctness should be done
+    // in the runtime
+    let block_import =
+        ContainerChainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
 
     let import_queue = nimbus_consensus::import_queue(
         node_builder.client.clone(),
@@ -469,16 +509,16 @@ pub async fn start_node_impl_container(
     collator: bool,
 ) -> sc_service::error::Result<(
     TaskManager,
-    Arc<ParachainClient>,
+    Arc<ContainerChainClient>,
     Arc<ParachainBackend>,
-    Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
 )> {
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
-    let node_builder = NodeConfig::new_builder(&parachain_config, None)?;
+    let node_builder = ContainerChainNodeConfig::new_builder(&parachain_config, None)?;
 
-    let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
+    let (block_import, import_queue) =
+        container_chain_import_queue(&parachain_config, &node_builder);
     let import_queue_service = import_queue.service();
 
     log::info!("are we collators? {:?}", collator);
@@ -520,14 +560,10 @@ pub async fn start_node_impl_container(
 
     let relay_chain_slot_duration = Duration::from_secs(6);
 
-    let mut start_collation: Option<
-        Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
-    > = None;
-
     let overseer_handle = relay_chain_interface
         .overseer_handle()
         .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-    let (mut node_builder, node_import_queue_service) = node_builder.extract_import_queue_service();
+    let (mut node_builder, _) = node_builder.extract_import_queue_service();
 
     start_relay_chain_tasks(StartRelayChainTasksParams {
         client: node_builder.client.clone(),
@@ -551,88 +587,28 @@ pub async fn start_node_impl_container(
             .clone()
             .expect("Command line arguments do not allow this. qed");
 
-        // Given the sporadic nature of the explicit recovery operation and the
-        // possibility to retry infinite times this value is more than enough.
-        // In practice here we expect no more than one queued messages.
-        const RECOVERY_CHAN_SIZE: usize = 8;
-
-        let (recovery_chan_tx, recovery_chan_rx) = mpsc::channel(RECOVERY_CHAN_SIZE);
-
-        let consensus = cumulus_client_consensus_common::run_parachain_consensus(
-            para_id,
-            node_builder.client.clone(),
-            relay_chain_interface.clone(),
-            announce_block.clone(),
-            Some(recovery_chan_tx),
-        );
-
-        node_builder
-            .task_manager
-            .spawn_essential_handle()
-            .spawn_blocking("cumulus-consensus", None, consensus);
-
-        let pov_recovery = PoVRecovery::new(
-            Box::new(overseer_handle.clone()),
-            // We want that collators wait at maximum the relay chain slot duration before starting
-            // to recover blocks. Additionally, we wait at least half the slot time to give the
-            // relay chain the chance to increase availability.
-            RecoveryDelayRange {
-                min: relay_chain_slot_duration / 2,
-                max: relay_chain_slot_duration,
-            },
-            node_builder.client.clone(),
-            node_import_queue_service,
-            relay_chain_interface.clone(),
-            para_id,
-            recovery_chan_rx,
-            node_builder.network.sync_service.clone(),
-        );
-
-        node_builder.task_manager.spawn_essential_handle().spawn(
-            "cumulus-pov-recovery",
-            None,
-            pov_recovery.run(),
-        );
-
-        // Hack to fix logs, if this future is awaited by the ContainerChainSpawner thread,
-        // the logs will say "Orchestrator" instead of "Container-2000".
-        // Wrapping the future in this function fixes that.
-        #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
-        async fn wrap<F, O>(para_id: ParaId, f: F) -> O
-        where
-            F: Future<Output = O>,
-        {
-            f.await
-        }
-
         let node_spawn_handle = node_builder.task_manager.spawn_handle().clone();
         let node_client = node_builder.client.clone();
-
-        start_collation = Some(Arc::new(move || {
-            Box::pin(wrap(
-                para_id,
-                start_consensus_container(
-                    node_client.clone(),
-                    orchestrator_client.clone(),
-                    block_import.clone(),
-                    prometheus_registry.clone(),
-                    node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
-                    node_spawn_handle.clone(),
-                    relay_chain_interface.clone(),
-                    orchestrator_chain_interface.clone(),
-                    node_builder.transaction_pool.clone(),
-                    node_builder.network.sync_service.clone(),
-                    keystore.clone(),
-                    force_authoring,
-                    relay_chain_slot_duration,
-                    para_id,
-                    orchestrator_para_id,
-                    collator_key.clone(),
-                    overseer_handle.clone(),
-                    announce_block.clone(),
-                ),
-            ))
-        }));
+        start_consensus_container(
+            node_client.clone(),
+            orchestrator_client.clone(),
+            block_import.clone(),
+            prometheus_registry.clone(),
+            node_builder.telemetry.as_ref().map(|t| t.handle()).clone(),
+            node_spawn_handle.clone(),
+            relay_chain_interface.clone(),
+            orchestrator_chain_interface.clone(),
+            node_builder.transaction_pool.clone(),
+            node_builder.network.sync_service.clone(),
+            keystore.clone(),
+            force_authoring,
+            relay_chain_slot_duration,
+            para_id,
+            orchestrator_para_id,
+            collator_key.clone(),
+            overseer_handle.clone(),
+            announce_block.clone(),
+        );
     }
 
     node_builder.network.start_network.start_network();
@@ -641,7 +617,6 @@ pub async fn start_node_impl_container(
         node_builder.task_manager,
         node_builder.client,
         node_builder.backend,
-        start_collation,
     ))
 }
 
@@ -660,18 +635,17 @@ fn build_manual_seal_import_queue(
     ))
 }
 
-// TODO: this function does not need to be async
 #[sc_tracing::logging::prefix_logs_with(container_log_str(para_id))]
-async fn start_consensus_container(
-    client: Arc<ParachainClient>,
+fn start_consensus_container(
+    client: Arc<ContainerChainClient>,
     orchestrator_client: Arc<ParachainClient>,
-    block_import: ParachainBlockImport,
+    block_import: ContainerChainBlockImport,
     prometheus_registry: Option<Registry>,
     telemetry: Option<TelemetryHandle>,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
     orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
-    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
+    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ContainerChainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
     force_authoring: bool,
@@ -739,7 +713,7 @@ async fn start_consensus_container(
                 Ok((slot, timestamp, authorities_noting_inherent))
             }
         },
-        get_authorities_from_orchestrator: move |_block_hash, (relay_parent, _validation_data)| {
+        get_orchestrator_aux_data: move |_block_hash, (relay_parent, _validation_data)| {
             let relay_chain_interace_for_orch = relay_chain_interace_for_orch.clone();
             let orchestrator_client_for_cidp = orchestrator_client_for_cidp.clone();
 
@@ -764,7 +738,7 @@ async fn start_consensus_container(
                     para_id,
                 );
 
-                let aux_data = authorities.ok_or_else(|| {
+                let authorities = authorities.ok_or_else(|| {
                     Box::<dyn std::error::Error + Send + Sync>::from(
                         "Failed to fetch authorities with error",
                     )
@@ -772,9 +746,20 @@ async fn start_consensus_container(
 
                 log::info!(
                     "Authorities {:?} found for header {:?}",
-                    aux_data,
+                    authorities,
                     latest_header
                 );
+
+                let min_slot_freq = tc_consensus::min_slot_freq::<Block, ParachainClient, NimbusPair>(
+                    orchestrator_client_for_cidp.as_ref(),
+                    &latest_header.hash(),
+                    para_id,
+                );
+
+                let aux_data = OrchestratorAuraWorkerAuxData {
+                    authorities,
+                    min_slot_freq,
+                };
 
                 Ok(aux_data)
             }
@@ -876,32 +861,37 @@ fn start_consensus_orchestrator(
                 Ok((slot, timestamp, author_noting_inherent))
             }
         },
-        get_authorities_from_orchestrator:
-            move |block_hash: H256, (_relay_parent, _validation_data)| {
-                let client_set_aside_for_orch = client_set_aside_for_orch.clone();
+        get_orchestrator_aux_data: move |block_hash: H256, (_relay_parent, _validation_data)| {
+            let client_set_aside_for_orch = client_set_aside_for_orch.clone();
 
-                async move {
-                    let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
-                        client_set_aside_for_orch.as_ref(),
-                        &block_hash,
-                        para_id,
-                    );
+            async move {
+                let authorities = tc_consensus::authorities::<Block, ParachainClient, NimbusPair>(
+                    client_set_aside_for_orch.as_ref(),
+                    &block_hash,
+                    para_id,
+                );
 
-                    let aux_data = authorities.ok_or_else(|| {
-                        Box::<dyn std::error::Error + Send + Sync>::from(
-                            "Failed to fetch authorities with error",
-                        )
-                    })?;
+                let authorities = authorities.ok_or_else(|| {
+                    Box::<dyn std::error::Error + Send + Sync>::from(
+                        "Failed to fetch authorities with error",
+                    )
+                })?;
 
-                    log::info!(
-                        "Authorities {:?} found for header {:?}",
-                        aux_data,
-                        block_hash
-                    );
+                log::info!(
+                    "Authorities {:?} found for header {:?}",
+                    authorities,
+                    block_hash
+                );
 
-                    Ok(aux_data)
-                }
-            },
+                let aux_data = OrchestratorAuraWorkerAuxData {
+                    authorities,
+                    // This is the orchestrator consensus, it does not have a slot frequency
+                    min_slot_freq: None,
+                };
+
+                Ok(aux_data)
+            }
+        },
         block_import,
         para_client: client,
         relay_client: relay_chain_interface,

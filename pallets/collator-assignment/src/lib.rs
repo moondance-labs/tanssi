@@ -58,8 +58,9 @@ use {
     },
     sp_std::{fmt::Debug, prelude::*, vec},
     tp_traits::{
-        GetContainerChainAuthor, GetHostConfiguration, GetSessionContainerChains, ParaId,
-        RemoveInvulnerables, RemoveParaIdsWithNoCredits, ShouldRotateAllCollators, Slot,
+        CollatorAssignmentHook, GetContainerChainAuthor, GetHostConfiguration,
+        GetSessionContainerChains, ParaId, RemoveInvulnerables, RemoveParaIdsWithNoCredits,
+        ShouldRotateAllCollators, Slot,
     },
 };
 
@@ -102,6 +103,7 @@ pub mod pallet {
         type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
         type RemoveParaIdsWithNoCredits: RemoveParaIdsWithNoCredits;
+        type CollatorAssignmentHook: CollatorAssignmentHook;
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
     }
@@ -284,6 +286,30 @@ pub mod pallet {
                     old_assigned.clone()
                 }
             };
+
+            // TODO: this probably is asking for a refactor
+            // only apply the onCollatorAssignedHook if sufficient collators
+            for para_id in &container_chain_ids {
+                if !new_assigned
+                    .container_chains
+                    .get(para_id)
+                    .unwrap_or(&vec![])
+                    .is_empty()
+                {
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                }
+            }
+
+            for para_id in &parathreads {
+                if !new_assigned
+                    .container_chains
+                    .get(para_id)
+                    .unwrap_or(&vec![])
+                    .is_empty()
+                {
+                    T::CollatorAssignmentHook::on_collators_assigned(*para_id);
+                }
+            }
 
             let mut pending = PendingCollatorContainerChain::<T>::get();
             let old_assigned_changed = old_assigned != new_assigned;

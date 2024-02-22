@@ -21,7 +21,9 @@ smallvec = { workspace = true }
 # Local
 ccp-xcm = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
+runtime-common = { workspace = true }
 tp-consensus = { workspace = true }
+tp-impl-tanssi-pallets-config = { workspace = true }
 
 # Moonkit
 nimbus-primitives = { workspace = true }
@@ -45,6 +47,7 @@ frame-try-runtime = { workspace = true, optional = true }
 pallet-asset-rate = { workspace = true }
 pallet-assets = { workspace = true }
 pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
+pallet-message-queue = { workspace = true }
 pallet-proxy = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-sudo = { workspace = true }
@@ -59,6 +62,7 @@ sp-consensus-aura = { workspace = true }
 sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true }
 sp-debug-derive = { workspace = true }
+sp-genesis-builder = { workspace = true }
 sp-inherents = { workspace = true }
 sp-offchain = { workspace = true }
 sp-runtime = { workspace = true }
@@ -159,6 +163,7 @@ std = [
 	"pallet-foreign-asset-creator/std",
 	"pallet-hotfix-sufficients/std",
 	"pallet-maintenance-mode/std",
+	"pallet-message-queue/std",
 	"pallet-migrations/std",
 	"pallet-proxy/std",
 	"pallet-root-testing/std",
@@ -176,6 +181,7 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"precompile-utils/std",
+	"runtime-common/std",
 	"scale-info/std",
 	"serde",
 	"serde?/std",
@@ -185,6 +191,7 @@ std = [
 	"sp-consensus-slots/std",
 	"sp-core/std",
 	"sp-debug-derive/std",
+	"sp-genesis-builder/std",
 	"sp-inherents/std",
 	"sp-offchain/std",
 	"sp-runtime/std",
@@ -197,6 +204,7 @@ std = [
 	"staging-xcm-executor/std",
 	"staging-xcm/std",
 	"tp-consensus/std",
+	"tp-impl-tanssi-pallets-config/std",
 	"xcm-primitives/std",
 ]
 
@@ -204,9 +212,11 @@ std = [
 force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [
+	"cumulus-pallet-dmp-queue/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
+	"cumulus-primitives-core/runtime-benchmarks",
 	"cumulus-primitives-utility/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
@@ -224,6 +234,7 @@ runtime-benchmarks = [
 	"pallet-evm/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-hotfix-sufficients/runtime-benchmarks",
+	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
@@ -235,6 +246,7 @@ runtime-benchmarks = [
 	"parachains-common/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
+	"runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"staging-xcm-builder/runtime-benchmarks",
 	"staging-xcm-executor/runtime-benchmarks",
@@ -255,6 +267,7 @@ try-runtime = [
 	"nimbus-primitives/try-runtime",
 	"pallet-asset-rate/try-runtime",
 	"pallet-assets/try-runtime",
+	"pallet-async-backing/try-runtime",
 	"pallet-author-inherent/try-runtime",
 	"pallet-balances/try-runtime",
 	"pallet-base-fee/try-runtime",
@@ -265,6 +278,7 @@ try-runtime = [
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-hotfix-sufficients/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
+	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-root-testing/try-runtime",
@@ -276,5 +290,6 @@ try-runtime = [
 	"pallet-xcm/try-runtime",
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
+	"runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 ]

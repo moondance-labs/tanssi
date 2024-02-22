@@ -22,13 +22,13 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Collators are unassigned when a container chain does not have enough credits",
+            title: "Collators are unassigned when a container chain does not have enough block credits",
             test: async function () {
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
 
-                const tx2000free = polkadotJs.tx.servicesPayment.setCredits(paraId2000, 0n);
-                const tx2001free = polkadotJs.tx.servicesPayment.setCredits(paraId2001, 0n);
+                const tx2000free = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2000, 0n);
+                const tx2001free = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0n);
 
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000free).signAsync(alice)]);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2001free).signAsync(alice)]);
@@ -45,9 +45,12 @@ describeSuite({
         });
         it({
             id: "E02",
-            title: "Collators are not assigned when we buy 2 session + ED -1",
+            title: "Collators are not assigned when we buy 2 session + ED -1 of block credits",
             test: async function () {
-                const tx2000OneSession = polkadotJs.tx.servicesPayment.setCredits(paraId2000, blocksPerSession);
+                const tx2000OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(
+                    paraId2000,
+                    blocksPerSession
+                );
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice)]);
                 const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
                 // Now, buy some credits for container chain 2000. we only buy ones session -1
@@ -68,7 +71,7 @@ describeSuite({
         });
         it({
             id: "E03",
-            title: "Collators are assigned when we buy at least 2 session + ED",
+            title: "Collators are assigned when we buy at least 2 session + ED of block credits",
             test: async function () {
                 // Now, buy the remaining
                 const purchasedCredits = 1n;

@@ -28,6 +28,5 @@ mod transact;
 mod trap;
 
 pub use xcm_emulator::{
-    assert_expected_events, bx, helpers::weight_within_threshold, Parachain as Para,
-    RelayChain as Relay, TestExt,
+    assert_expected_events, bx, Parachain as Para, RelayChain as Relay, TestExt,
 };

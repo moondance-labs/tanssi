@@ -16,36 +16,36 @@
 
 pub mod basic;
 
-use cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface;
-use cumulus_client_consensus_common::ParachainCandidate;
-use cumulus_client_consensus_proposer::ProposerInterface;
-use cumulus_primitives_core::{
-    relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
+use {
+    crate::{find_pre_digest, AuthorityId, OrchestratorAuraWorkerAuxData},
+    cumulus_client_collator::service::ServiceInterface as CollatorServiceInterface,
+    cumulus_client_consensus_common::ParachainCandidate,
+    cumulus_client_consensus_proposer::ProposerInterface,
+    cumulus_client_parachain_inherent::{ParachainInherentData, ParachainInherentDataProvider},
+    cumulus_primitives_core::{
+        relay_chain::Hash as PHash, DigestItem, ParachainBlockData, PersistedValidationData,
+    },
+    cumulus_relay_chain_interface::RelayChainInterface,
+    futures::prelude::*,
+    nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID},
+    parity_scale_codec::{Codec, Encode},
+    polkadot_node_primitives::{Collation, MaybeCompressedPoV},
+    polkadot_primitives::Id as ParaId,
+    sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction},
+    sp_application_crypto::{AppCrypto, AppPublic},
+    sp_consensus::BlockOrigin,
+    sp_consensus_aura::{digests::CompatibleDigestItem, Slot},
+    sp_core::crypto::{ByteArray, Pair},
+    sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider},
+    sp_keystore::{Keystore, KeystorePtr},
+    sp_runtime::{
+        generic::Digest,
+        traits::{Block as BlockT, HashingFor, Header as HeaderT, Member, Zero},
+    },
+    sp_state_machine::StorageChanges,
+    sp_timestamp::Timestamp,
+    std::{convert::TryFrom, error::Error, time::Duration},
 };
-use cumulus_primitives_parachain_inherent::ParachainInherentData;
-use cumulus_relay_chain_interface::RelayChainInterface;
-use parity_scale_codec::{Codec, Encode};
-
-use polkadot_node_primitives::{Collation, MaybeCompressedPoV};
-use polkadot_primitives::Id as ParaId;
-
-use crate::AuthorityId;
-use futures::prelude::*;
-use nimbus_primitives::{CompatibleDigestItem as NimbusCompatibleDigestItem, NIMBUS_KEY_ID};
-use sc_consensus::{BlockImport, BlockImportParams, ForkChoiceStrategy, StateAction};
-use sp_application_crypto::{AppCrypto, AppPublic};
-use sp_consensus::BlockOrigin;
-use sp_consensus_aura::{digests::CompatibleDigestItem, Slot};
-use sp_core::crypto::{ByteArray, Pair};
-use sp_inherents::{CreateInherentDataProviders, InherentData, InherentDataProvider};
-use sp_keystore::{Keystore, KeystorePtr};
-use sp_runtime::{
-    generic::Digest,
-    traits::{Block as BlockT, HashingFor, Header as HeaderT, Member},
-};
-use sp_state_machine::StorageChanges;
-use sp_timestamp::Timestamp;
-use std::{convert::TryFrom, error::Error, time::Duration};
 
 /// Parameters for instantiating a [`Collator`].
 pub struct Params<BI, CIDP, RClient, Proposer, CS> {
@@ -87,7 +87,7 @@ where
     BI: BlockImport<Block> + Send + Sync + 'static,
     Proposer: ProposerInterface<Block>,
     CS: CollatorServiceInterface<Block>,
-    P: Pair,
+    P: Pair + Send + Sync + 'static,
     P::Public: AppPublic + Member,
     P::Signature: TryFrom<Vec<u8>> + Member + Codec,
 {
@@ -113,7 +113,7 @@ where
         parent_hash: Block::Hash,
         _timestamp: impl Into<Option<Timestamp>>,
     ) -> Result<(ParachainInherentData, InherentData), Box<dyn Error + Send + Sync + 'static>> {
-        let paras_inherent_data = ParachainInherentData::create_at(
+        let paras_inherent_data = ParachainInherentDataProvider::create_at(
             relay_parent,
             &self.relay_client,
             validation_data,
@@ -158,12 +158,14 @@ where
         inherent_data: (ParachainInherentData, InherentData),
         proposal_duration: Duration,
         max_pov_size: usize,
-    ) -> Result<(Collation, ParachainBlockData<Block>, Block::Hash), Box<dyn Error + Send + 'static>>
-    {
+    ) -> Result<
+        Option<(Collation, ParachainBlockData<Block>, Block::Hash)>,
+        Box<dyn Error + Send + 'static>,
+    > {
         let mut digest = additional_pre_digest.into().unwrap_or_default();
         digest.append(&mut slot_claim.pre_digest);
 
-        let proposal = self
+        let maybe_proposal = self
             .proposer
             .propose(
                 &parent_header,
@@ -175,6 +177,11 @@ where
             )
             .await
             .map_err(|e| Box::new(e) as Box<dyn Error + Send>)?;
+
+        let proposal = match maybe_proposal {
+            None => return Ok(None),
+            Some(p) => p,
+        };
 
         let sealed_importable = seal_tanssi::<_, P>(
             proposal.block,
@@ -223,7 +230,7 @@ where
                 );
             }
 
-            Ok((collation, block_data, post_hash))
+            Ok(Some((collation, block_data, post_hash)))
         } else {
             Err(
                 Box::<dyn Error + Send + Sync>::from("Unable to produce collation")
@@ -284,26 +291,66 @@ impl<Pub: Clone> SlotClaim<Pub> {
 }
 
 /// Attempt to claim a slot locally.
-pub fn tanssi_claim_slot<P>(
-    authorities: Vec<AuthorityId<P>>,
+pub fn tanssi_claim_slot<P, B>(
+    aux_data: OrchestratorAuraWorkerAuxData<P>,
+    chain_head: &B::Header,
     slot: Slot,
     force_authoring: bool,
     keystore: &KeystorePtr,
 ) -> Result<Option<SlotClaim<P::Public>>, Box<dyn Error>>
 where
-    P: Pair,
+    P: Pair + Send + Sync + 'static,
     P::Public: Codec + std::fmt::Debug,
     P::Signature: Codec,
+    B: BlockT,
 {
     let author_pub = {
-        let res = claim_slot_inner::<P>(slot, &authorities, keystore, force_authoring);
+        let res = claim_slot_inner::<P>(slot, &aux_data.authorities, keystore, force_authoring);
         match res {
             Some(p) => p,
             None => return Ok(None),
         }
     };
 
+    if is_parathread_and_should_skip_slot::<P, B>(&aux_data, chain_head, slot) {
+        return Ok(None);
+    }
+
     Ok(Some(SlotClaim::unchecked::<P>(author_pub, slot)))
+}
+
+/// Returns true if this container chain is a parathread and the collator should skip this slot and not produce a block
+pub fn is_parathread_and_should_skip_slot<P, B>(
+    aux_data: &OrchestratorAuraWorkerAuxData<P>,
+    chain_head: &B::Header,
+    slot: Slot,
+) -> bool
+where
+    P: Pair + Send + Sync + 'static,
+    P::Public: Codec + std::fmt::Debug,
+    P::Signature: Codec,
+    B: BlockT,
+{
+    if slot.is_zero() {
+        // Always produce on slot 0 (for tests)
+        return false;
+    }
+    if let Some(min_slot_freq) = aux_data.min_slot_freq {
+        if let Ok(chain_head_slot) = find_pre_digest::<B, P::Signature>(chain_head) {
+            let slot_diff = slot.saturating_sub(chain_head_slot);
+
+            // TODO: this doesn't take into account force authoring.
+            // So a node with `force_authoring = true` will not propose a block for a parathread until the
+            // `min_slot_freq` has elapsed.
+            slot_diff < min_slot_freq
+        } else {
+            // In case of error always propose
+            false
+        }
+    } else {
+        // Not a parathread: always propose
+        false
+    }
 }
 
 /// Attempt to claim a slot using a keystore.

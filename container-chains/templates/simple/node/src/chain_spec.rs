@@ -89,29 +89,25 @@ pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec
         })
         .collect();
 
-    ChainSpec::from_genesis(
-        // Name
-        "Development",
-        // ID
-        "dev",
-        ChainType::Development,
-        move || {
-            testnet_genesis(
-                default_funded_accounts.clone(),
-                para_id,
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-            )
-        },
-        boot_nodes,
-        None,
-        None,
-        None,
-        Some(properties),
+    ChainSpec::builder(
+        container_chain_template_simple_runtime::WASM_BINARY
+            .expect("WASM binary was not built, please build it!"),
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: para_id.into(),
         },
     )
+    .with_name("Development")
+    .with_id("dev")
+    .with_chain_type(ChainType::Development)
+    .with_genesis_config(testnet_genesis(
+        default_funded_accounts.clone(),
+        para_id,
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+    ))
+    .with_properties(properties)
+    .with_boot_nodes(boot_nodes)
+    .build()
 }
 
 pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
@@ -121,7 +117,7 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());
-    let protocol_id = Some(format!("container-chain-{}", para_id));
+    let protocol_id = format!("container-chain-{}", para_id);
 
     let mut default_funded_accounts = pre_funded_accounts();
     default_funded_accounts.sort();
@@ -134,49 +130,34 @@ pub fn local_testnet_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSp
         })
         .collect();
 
-    ChainSpec::from_genesis(
-        // Name
-        &format!("Simple Container {}", para_id),
-        // ID
-        &format!("simple_container_{}", para_id),
-        ChainType::Local,
-        move || {
-            testnet_genesis(
-                default_funded_accounts.clone(),
-                para_id,
-                get_account_id_from_seed::<sr25519::Public>("Alice"),
-            )
-        },
-        // Bootnodes
-        boot_nodes,
-        // Telemetry
-        None,
-        // Protocol ID
-        protocol_id.as_deref(),
-        // Fork ID
-        None,
-        // Properties
-        Some(properties),
-        // Extensions
+    ChainSpec::builder(
+        container_chain_template_simple_runtime::WASM_BINARY
+            .expect("WASM binary was not built, please build it!"),
         Extensions {
             relay_chain: "rococo-local".into(), // You MUST set this to the correct network!
             para_id: para_id.into(),
         },
     )
+    .with_name(&format!("Simple Container {}", para_id))
+    .with_id(&format!("simple_container_{}", para_id))
+    .with_chain_type(ChainType::Local)
+    .with_genesis_config(testnet_genesis(
+        default_funded_accounts.clone(),
+        para_id,
+        get_account_id_from_seed::<sr25519::Public>("Alice"),
+    ))
+    .with_properties(properties)
+    .with_protocol_id(&protocol_id)
+    .with_boot_nodes(boot_nodes)
+    .build()
 }
 
 fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     id: ParaId,
     root_key: AccountId,
-) -> container_chain_template_simple_runtime::RuntimeGenesisConfig {
-    container_chain_template_simple_runtime::RuntimeGenesisConfig {
-        system: container_chain_template_simple_runtime::SystemConfig {
-            code: container_chain_template_simple_runtime::WASM_BINARY
-                .expect("WASM binary was not build, please build it!")
-                .to_vec(),
-            ..Default::default()
-        },
+) -> serde_json::Value {
+    let g = container_chain_template_simple_runtime::RuntimeGenesisConfig {
         balances: container_chain_template_simple_runtime::BalancesConfig {
             balances: endowed_accounts
                 .iter()
@@ -205,7 +186,10 @@ fn testnet_genesis(
         polkadot_xcm: PolkadotXcmConfig::default(),
         transaction_payment: Default::default(),
         tx_pause: Default::default(),
-    }
+        system: Default::default(),
+    };
+
+    serde_json::to_value(&g).unwrap()
 }
 
 /// Get pre-funded accounts

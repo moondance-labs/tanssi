@@ -72,12 +72,12 @@ pub mod json;
 pub struct ContainerChainGenesisData<MaxLengthTokenSymbol: Get<u32>> {
     pub storage: Vec<ContainerChainGenesisDataItem>,
     // TODO: make all these Vec<u8> bounded
-    #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
+    #[serde(with = "sp_core::bytes")]
     pub name: Vec<u8>,
-    #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
+    #[serde(with = "sp_core::bytes")]
     pub id: Vec<u8>,
     pub fork_id: Option<Vec<u8>>,
-    #[cfg_attr(feature = "std", serde(with = "sp_core::bytes"))]
+    #[serde(with = "sp_core::bytes")]
     pub extensions: Vec<u8>,
     pub properties: Properties<MaxLengthTokenSymbol>,
 }

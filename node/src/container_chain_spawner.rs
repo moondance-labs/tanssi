@@ -27,12 +27,12 @@ use {
         container_chain_monitor::{SpawnedContainer, SpawnedContainersMonitor},
         service::{start_node_impl_container, NodeConfig, ParachainClient},
     },
-    cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dancebox_runtime::{AccountId, Block, BlockNumber},
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     futures::FutureExt,
+    node_common::command::generate_genesis_block,
     node_common::service::NodeBuilderConfig,
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_registrar_runtime_api::RegistrarApi,
@@ -92,10 +92,6 @@ pub struct ContainerChainSpawnerState {
 }
 
 pub struct ContainerChainState {
-    /// Async callback that enables collation on this container chain
-    // We don't use it since we are always restarting container chains
-    #[allow(unused)]
-    collate_on: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
     /// Handle that stops the container chain when dropped
     stop_handle: StopContainerChain,
 }
@@ -291,35 +287,22 @@ impl ContainerChainSpawner {
             container_chain_cli_config.database.set_path(&db_path);
 
             // Start container chain node
-            let (
-                mut container_chain_task_manager,
-                container_chain_client,
-                container_chain_db,
-                collate_on,
-            ) = start_node_impl_container(
-                container_chain_cli_config,
-                orchestrator_client.clone(),
-                relay_chain_interface.clone(),
-                orchestrator_chain_interface.clone(),
-                collator_key.clone(),
-                sync_keystore.clone(),
-                container_chain_para_id,
-                orchestrator_para_id,
-                validator,
-            )
-            .await?;
+            let (mut container_chain_task_manager, container_chain_client, container_chain_db) =
+                start_node_impl_container(
+                    container_chain_cli_config,
+                    orchestrator_client.clone(),
+                    relay_chain_interface.clone(),
+                    orchestrator_chain_interface.clone(),
+                    collator_key.clone(),
+                    sync_keystore.clone(),
+                    container_chain_para_id,
+                    orchestrator_para_id,
+                    validator && start_collation,
+                )
+                .await?;
 
             // Signal that allows to gracefully stop a container chain
             let (signal, on_exit) = oneshot::channel::<bool>();
-            let collate_on = collate_on.unwrap_or_else(|| {
-                assert!(
-                    !validator,
-                    "collate_on should be Some if validator flag is true"
-                );
-
-                // When running a full node we don't need to send any collate_on messages, so make this a noop
-                Arc::new(move || Box::pin(std::future::ready(())))
-            });
 
             let monitor_id;
             {
@@ -339,17 +322,12 @@ impl ContainerChainSpawner {
                 state.spawned_container_chains.insert(
                     container_chain_para_id,
                     ContainerChainState {
-                        collate_on: collate_on.clone(),
                         stop_handle: StopContainerChain {
                             signal,
                             id: monitor_id,
                         },
                     },
                 );
-            }
-
-            if start_collation {
-                collate_on().await;
             }
 
             // Add the container chain task manager as a child task to the parent task manager.
@@ -833,7 +811,6 @@ mod tests {
                 .insert(
                     container_chain_para_id,
                     ContainerChainState {
-                        collate_on: collate_on.clone(),
                         stop_handle: StopContainerChain { signal, id: 0 },
                     },
                 );

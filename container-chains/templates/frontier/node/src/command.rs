@@ -21,10 +21,10 @@ use {
         service::{self, frontier_database_dir, NodeConfig},
     },
     container_chain_template_frontier_runtime::Block,
-    cumulus_client_cli::generate_genesis_block,
     cumulus_primitives_core::ParaId,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    node_common::command::generate_genesis_block,
     node_common::service::NodeBuilderConfig as _,
     parity_scale_codec::Encode,
     polkadot_cli::IdentifyVariant,
@@ -40,14 +40,6 @@ use {
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::net::SocketAddr,
 };
-
-#[cfg(feature = "try-runtime")]
-use {
-    crate::client::TemplateRuntimeExecutor, try_runtime_cli::block_building_info::substrate_info,
-};
-
-#[cfg(feature = "try-runtime")]
-const SLOT_DURATION: u64 = 12;
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
@@ -235,11 +227,11 @@ pub fn run() -> Result<()> {
                 cmd.run(config, polkadot_config)
             })
         }
-        Some(Subcommand::ExportGenesisState(cmd)) => {
+        Some(Subcommand::ExportGenesisHead(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|mut config| {
                 let partials = NodeConfig::new_builder(&mut config, None)?;
-                cmd.run(&*config.chain_spec, &*partials.client)
+                cmd.run(partials.client)
             })
         }
         Some(Subcommand::ExportGenesisWasm(cmd)) => {
@@ -289,39 +281,17 @@ pub fn run() -> Result<()> {
             }
         }
         #[cfg(feature = "try-runtime")]
-        Some(Subcommand::TryRuntime(cmd)) => {
-            let runner = cli.create_runner(cmd)?;
-
-            use sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch};
-            type HostFunctionsOf<E> = ExtendedHostFunctions<
-                sp_io::SubstrateHostFunctions,
-                <E as NativeExecutionDispatch>::ExtendHostFunctions,
-            >;
-
-            // grab the task manager.
-            let registry = &runner
-                .config()
-                .prometheus_config
-                .as_ref()
-                .map(|cfg| &cfg.registry);
-            let task_manager =
-                sc_service::TaskManager::new(runner.config().tokio_handle.clone(), *registry)
-                    .map_err(|e| format!("Error: {:?}", e))?;
-
-            let info_provider = substrate_info(SLOT_DURATION);
-            runner.async_run(|_| {
-                Ok((
-                    cmd.run::<Block, HostFunctionsOf<TemplateRuntimeExecutor>, _>(Some(
-                        info_provider,
-                    )),
-                    task_manager,
-                ))
-            })
+        Some(Subcommand::TryRuntime(_)) => {
+            Err("Substrate's `try-runtime` subcommand has been migrated \
+            to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
+                .into())
         }
         #[cfg(not(feature = "try-runtime"))]
-        Some(Subcommand::TryRuntime) => Err("Try-runtime was not enabled when building the node. \
-			You can enable it with `--features try-runtime`."
-            .into()),
+        Some(Subcommand::TryRuntime) => {
+            Err("Substrate's `try-runtime` subcommand has been migrated \
+            to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
+                .into())
+        }
         None => {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
