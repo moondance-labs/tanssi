@@ -31,6 +31,23 @@ use {
     sp_std::vec::Vec,
 };
 
+/// The collator-assignment hook to react to collators beign assigned to container chains.
+pub trait CollatorAssignmentHook {
+    /// This hook is called when collators are assigned to a container
+    ///
+    /// The hook should never panic and is required to return the weight consumed.
+    fn on_collators_assigned(para_id: ParaId) -> Weight;
+}
+
+#[impl_trait_for_tuples::impl_for_tuples(5)]
+impl CollatorAssignmentHook for Tuple {
+    fn on_collators_assigned(p: ParaId) -> Weight {
+        let mut weight: Weight = Default::default();
+        for_tuples!( #( weight.saturating_accrue(Tuple::on_collators_assigned(p)); )* );
+        weight
+    }
+}
+
 /// The author-noting hook to react to container chains authoring.
 pub trait AuthorNotingHook<AccountId> {
     /// This hook is called partway through the `set_latest_author_data` inherent in author-noting.

@@ -7,7 +7,6 @@ import "@polkadot/types/types/registry";
 
 import type {
     CumulusPalletParachainSystemCall,
-    CumulusPalletParachainSystemCodeUpgradeAuthorization,
     CumulusPalletParachainSystemError,
     CumulusPalletParachainSystemEvent,
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
@@ -24,6 +23,8 @@ import type {
     FlashboxRuntimeRuntime,
     FlashboxRuntimeRuntimeHoldReason,
     FlashboxRuntimeSessionKeys,
+    FlashboxRuntimeStreamPaymentAssetId,
+    FlashboxRuntimeTimeUnit,
     FrameSupportDispatchDispatchClass,
     FrameSupportDispatchDispatchInfo,
     FrameSupportDispatchPays,
@@ -35,6 +36,7 @@ import type {
     FrameSupportTokensMiscBalanceStatus,
     FrameSystemAccountInfo,
     FrameSystemCall,
+    FrameSystemCodeUpgradeAuthorization,
     FrameSystemError,
     FrameSystemEvent,
     FrameSystemEventRecord,
@@ -73,15 +75,14 @@ import type {
     PalletDataPreserversCall,
     PalletDataPreserversError,
     PalletDataPreserversEvent,
-    PalletIdentityBitFlags,
+    PalletIdentityAuthorityProperties,
     PalletIdentityCall,
     PalletIdentityError,
     PalletIdentityEvent,
     PalletIdentityJudgement,
+    PalletIdentityLegacyIdentityInfo,
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
-    PalletIdentitySimpleIdentityField,
-    PalletIdentitySimpleIdentityInfo,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -102,12 +103,23 @@ import type {
     PalletRegistrarError,
     PalletRegistrarEvent,
     PalletRootTestingCall,
+    PalletRootTestingEvent,
     PalletServicesPaymentCall,
     PalletServicesPaymentError,
     PalletServicesPaymentEvent,
     PalletSessionCall,
     PalletSessionError,
     PalletSessionEvent,
+    PalletStreamPaymentCall,
+    PalletStreamPaymentChangeKind,
+    PalletStreamPaymentChangeRequest,
+    PalletStreamPaymentDepositChange,
+    PalletStreamPaymentError,
+    PalletStreamPaymentEvent,
+    PalletStreamPaymentHoldReason,
+    PalletStreamPaymentParty,
+    PalletStreamPaymentStream,
+    PalletStreamPaymentStreamConfig,
     PalletSudoCall,
     PalletSudoError,
     PalletSudoEvent,
@@ -127,7 +139,6 @@ import type {
     PalletUtilityCall,
     PalletUtilityError,
     PalletUtilityEvent,
-    ParachainInfoCall,
     PolkadotCorePrimitivesInboundDownwardMessage,
     PolkadotCorePrimitivesInboundHrmpMessage,
     PolkadotCorePrimitivesOutboundHrmpMessage,
@@ -155,6 +166,7 @@ import type {
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
+    StagingParachainInfoCall,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
     TpContainerChainGenesisDataContainerChainGenesisDataItem,
@@ -167,7 +179,6 @@ import type {
 declare module "@polkadot/types/types/registry" {
     interface InterfaceTypes {
         CumulusPalletParachainSystemCall: CumulusPalletParachainSystemCall;
-        CumulusPalletParachainSystemCodeUpgradeAuthorization: CumulusPalletParachainSystemCodeUpgradeAuthorization;
         CumulusPalletParachainSystemError: CumulusPalletParachainSystemError;
         CumulusPalletParachainSystemEvent: CumulusPalletParachainSystemEvent;
         CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot: CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot;
@@ -184,6 +195,8 @@ declare module "@polkadot/types/types/registry" {
         FlashboxRuntimeRuntime: FlashboxRuntimeRuntime;
         FlashboxRuntimeRuntimeHoldReason: FlashboxRuntimeRuntimeHoldReason;
         FlashboxRuntimeSessionKeys: FlashboxRuntimeSessionKeys;
+        FlashboxRuntimeStreamPaymentAssetId: FlashboxRuntimeStreamPaymentAssetId;
+        FlashboxRuntimeTimeUnit: FlashboxRuntimeTimeUnit;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
         FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
@@ -195,6 +208,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
         FrameSystemAccountInfo: FrameSystemAccountInfo;
         FrameSystemCall: FrameSystemCall;
+        FrameSystemCodeUpgradeAuthorization: FrameSystemCodeUpgradeAuthorization;
         FrameSystemError: FrameSystemError;
         FrameSystemEvent: FrameSystemEvent;
         FrameSystemEventRecord: FrameSystemEventRecord;
@@ -233,15 +247,14 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversCall: PalletDataPreserversCall;
         PalletDataPreserversError: PalletDataPreserversError;
         PalletDataPreserversEvent: PalletDataPreserversEvent;
-        PalletIdentityBitFlags: PalletIdentityBitFlags;
+        PalletIdentityAuthorityProperties: PalletIdentityAuthorityProperties;
         PalletIdentityCall: PalletIdentityCall;
         PalletIdentityError: PalletIdentityError;
         PalletIdentityEvent: PalletIdentityEvent;
         PalletIdentityJudgement: PalletIdentityJudgement;
+        PalletIdentityLegacyIdentityInfo: PalletIdentityLegacyIdentityInfo;
         PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
         PalletIdentityRegistration: PalletIdentityRegistration;
-        PalletIdentitySimpleIdentityField: PalletIdentitySimpleIdentityField;
-        PalletIdentitySimpleIdentityInfo: PalletIdentitySimpleIdentityInfo;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
@@ -262,12 +275,23 @@ declare module "@polkadot/types/types/registry" {
         PalletRegistrarError: PalletRegistrarError;
         PalletRegistrarEvent: PalletRegistrarEvent;
         PalletRootTestingCall: PalletRootTestingCall;
+        PalletRootTestingEvent: PalletRootTestingEvent;
         PalletServicesPaymentCall: PalletServicesPaymentCall;
         PalletServicesPaymentError: PalletServicesPaymentError;
         PalletServicesPaymentEvent: PalletServicesPaymentEvent;
         PalletSessionCall: PalletSessionCall;
         PalletSessionError: PalletSessionError;
         PalletSessionEvent: PalletSessionEvent;
+        PalletStreamPaymentCall: PalletStreamPaymentCall;
+        PalletStreamPaymentChangeKind: PalletStreamPaymentChangeKind;
+        PalletStreamPaymentChangeRequest: PalletStreamPaymentChangeRequest;
+        PalletStreamPaymentDepositChange: PalletStreamPaymentDepositChange;
+        PalletStreamPaymentError: PalletStreamPaymentError;
+        PalletStreamPaymentEvent: PalletStreamPaymentEvent;
+        PalletStreamPaymentHoldReason: PalletStreamPaymentHoldReason;
+        PalletStreamPaymentParty: PalletStreamPaymentParty;
+        PalletStreamPaymentStream: PalletStreamPaymentStream;
+        PalletStreamPaymentStreamConfig: PalletStreamPaymentStreamConfig;
         PalletSudoCall: PalletSudoCall;
         PalletSudoError: PalletSudoError;
         PalletSudoEvent: PalletSudoEvent;
@@ -287,7 +311,6 @@ declare module "@polkadot/types/types/registry" {
         PalletUtilityCall: PalletUtilityCall;
         PalletUtilityError: PalletUtilityError;
         PalletUtilityEvent: PalletUtilityEvent;
-        ParachainInfoCall: ParachainInfoCall;
         PolkadotCorePrimitivesInboundDownwardMessage: PolkadotCorePrimitivesInboundDownwardMessage;
         PolkadotCorePrimitivesInboundHrmpMessage: PolkadotCorePrimitivesInboundHrmpMessage;
         PolkadotCorePrimitivesOutboundHrmpMessage: PolkadotCorePrimitivesOutboundHrmpMessage;
@@ -315,6 +338,7 @@ declare module "@polkadot/types/types/registry" {
         SpVersionRuntimeVersion: SpVersionRuntimeVersion;
         SpWeightsRuntimeDbWeight: SpWeightsRuntimeDbWeight;
         SpWeightsWeightV2Weight: SpWeightsWeightV2Weight;
+        StagingParachainInfoCall: StagingParachainInfoCall;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
         TpContainerChainGenesisDataContainerChainGenesisData: TpContainerChainGenesisDataContainerChainGenesisData;
         TpContainerChainGenesisDataContainerChainGenesisDataItem: TpContainerChainGenesisDataContainerChainGenesisDataItem;

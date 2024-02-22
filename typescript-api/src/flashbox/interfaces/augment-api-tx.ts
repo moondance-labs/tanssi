@@ -20,9 +20,13 @@ import type {
     FlashboxRuntimeOriginCaller,
     FlashboxRuntimeProxyType,
     FlashboxRuntimeSessionKeys,
-    PalletIdentityBitFlags,
+    FlashboxRuntimeStreamPaymentAssetId,
     PalletIdentityJudgement,
-    PalletIdentitySimpleIdentityInfo,
+    PalletIdentityLegacyIdentityInfo,
+    PalletStreamPaymentChangeKind,
+    PalletStreamPaymentDepositChange,
+    PalletStreamPaymentStreamConfig,
+    SpRuntimeMultiSignature,
     SpWeightsWeightV2Weight,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpContainerChainGenesisDataContainerChainGenesisData,
@@ -254,6 +258,11 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         identity: {
+            /** See [`Pallet::accept_username`]. */
+            acceptUsername: AugmentedSubmittable<
+                (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
             /** See [`Pallet::add_registrar`]. */
             addRegistrar: AugmentedSubmittable<
                 (
@@ -293,6 +302,23 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [MultiAddress, Data]
+            >;
+            /** See [`Pallet::add_username_authority`]. */
+            addUsernameAuthority: AugmentedSubmittable<
+                (
+                    authority:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array,
+                    suffix: Bytes | string | Uint8Array,
+                    allocation: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress, Bytes, u32]
             >;
             /** See [`Pallet::cancel_request`]. */
             cancelRequest: AugmentedSubmittable<
@@ -346,10 +372,35 @@ declare module "@polkadot/api-base/types/submittable" {
             >;
             /** See [`Pallet::quit_sub`]. */
             quitSub: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /** See [`Pallet::remove_dangling_username`]. */
+            removeDanglingUsername: AugmentedSubmittable<
+                (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
+            /** See [`Pallet::remove_expired_approval`]. */
+            removeExpiredApproval: AugmentedSubmittable<
+                (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
             /** See [`Pallet::remove_sub`]. */
             removeSub: AugmentedSubmittable<
                 (
                     sub:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress]
+            >;
+            /** See [`Pallet::remove_username_authority`]. */
+            removeUsernameAuthority: AugmentedSubmittable<
+                (
+                    authority:
                         | MultiAddress
                         | { Id: any }
                         | { Index: any }
@@ -422,15 +473,15 @@ declare module "@polkadot/api-base/types/submittable" {
             setFields: AugmentedSubmittable<
                 (
                     index: Compact<u32> | AnyNumber | Uint8Array,
-                    fields: PalletIdentityBitFlags
+                    fields: u64 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [Compact<u32>, PalletIdentityBitFlags]
+                [Compact<u32>, u64]
             >;
             /** See [`Pallet::set_identity`]. */
             setIdentity: AugmentedSubmittable<
                 (
                     info:
-                        | PalletIdentitySimpleIdentityInfo
+                        | PalletIdentityLegacyIdentityInfo
                         | {
                               additional?: any;
                               display?: any;
@@ -445,7 +496,12 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PalletIdentitySimpleIdentityInfo]
+                [PalletIdentityLegacyIdentityInfo]
+            >;
+            /** See [`Pallet::set_primary_username`]. */
+            setPrimaryUsername: AugmentedSubmittable<
+                (username: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
             >;
             /** See [`Pallet::set_subs`]. */
             setSubs: AugmentedSubmittable<
@@ -468,6 +524,31 @@ declare module "@polkadot/api-base/types/submittable" {
                           ][]
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[AccountId32, Data]>>]
+            >;
+            /** See [`Pallet::set_username_for`]. */
+            setUsernameFor: AugmentedSubmittable<
+                (
+                    who:
+                        | MultiAddress
+                        | { Id: any }
+                        | { Index: any }
+                        | { Raw: any }
+                        | { Address32: any }
+                        | { Address20: any }
+                        | string
+                        | Uint8Array,
+                    username: Bytes | string | Uint8Array,
+                    signature:
+                        | Option<SpRuntimeMultiSignature>
+                        | null
+                        | Uint8Array
+                        | SpRuntimeMultiSignature
+                        | { Ed25519: any }
+                        | { Sr25519: any }
+                        | { Ecdsa: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [MultiAddress, Bytes, Option<SpRuntimeMultiSignature>]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -833,6 +914,8 @@ declare module "@polkadot/api-base/types/submittable" {
                 (ratio: Perbill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [Perbill]
             >;
+            /** See `Pallet::trigger_defensive`. */
+            triggerDefensive: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
@@ -845,11 +928,19 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u128]
             >;
-            /** See [`Pallet::set_credits`]. */
-            setCredits: AugmentedSubmittable<
+            /** See [`Pallet::set_block_production_credits`]. */
+            setBlockProductionCredits: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    credits: u32 | AnyNumber | Uint8Array
+                    freeBlockCredits: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, u32]
+            >;
+            /** See [`Pallet::set_collator_assignment_credits`]. */
+            setCollatorAssignmentCredits: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    freeCollatorAssignmentCredits: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, u32]
             >;
@@ -860,6 +951,14 @@ declare module "@polkadot/api-base/types/submittable" {
                     givenFreeCredits: bool | boolean | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [u32, bool]
+            >;
+            /** See [`Pallet::set_refund_address`]. */
+            setRefundAddress: AugmentedSubmittable<
+                (
+                    paraId: u32 | AnyNumber | Uint8Array,
+                    refundAddress: Option<AccountId32> | null | Uint8Array | AccountId32 | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Option<AccountId32>]
             >;
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -878,7 +977,105 @@ declare module "@polkadot/api-base/types/submittable" {
             /** Generic tx */
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        streamPayment: {
+            /** See [`Pallet::accept_requested_change`]. */
+            acceptRequestedChange: AugmentedSubmittable<
+                (
+                    streamId: u64 | AnyNumber | Uint8Array,
+                    requestNonce: u32 | AnyNumber | Uint8Array,
+                    depositChange:
+                        | Option<PalletStreamPaymentDepositChange>
+                        | null
+                        | Uint8Array
+                        | PalletStreamPaymentDepositChange
+                        | { Increase: any }
+                        | { Decrease: any }
+                        | { Absolute: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, u32, Option<PalletStreamPaymentDepositChange>]
+            >;
+            /** See [`Pallet::cancel_change_request`]. */
+            cancelChangeRequest: AugmentedSubmittable<
+                (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::close_stream`]. */
+            closeStream: AugmentedSubmittable<
+                (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::immediately_change_deposit`]. */
+            immediatelyChangeDeposit: AugmentedSubmittable<
+                (
+                    streamId: u64 | AnyNumber | Uint8Array,
+                    assetId: FlashboxRuntimeStreamPaymentAssetId | "Native" | number | Uint8Array,
+                    change:
+                        | PalletStreamPaymentDepositChange
+                        | { Increase: any }
+                        | { Decrease: any }
+                        | { Absolute: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u64, FlashboxRuntimeStreamPaymentAssetId, PalletStreamPaymentDepositChange]
+            >;
+            /** See [`Pallet::open_stream`]. */
+            openStream: AugmentedSubmittable<
+                (
+                    target: AccountId32 | string | Uint8Array,
+                    config:
+                        | PalletStreamPaymentStreamConfig
+                        | { timeUnit?: any; assetId?: any; rate?: any }
+                        | string
+                        | Uint8Array,
+                    initialDeposit: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, PalletStreamPaymentStreamConfig, u128]
+            >;
+            /** See [`Pallet::perform_payment`]. */
+            performPayment: AugmentedSubmittable<
+                (streamId: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u64]
+            >;
+            /** See [`Pallet::request_change`]. */
+            requestChange: AugmentedSubmittable<
+                (
+                    streamId: u64 | AnyNumber | Uint8Array,
+                    kind:
+                        | PalletStreamPaymentChangeKind
+                        | { Suggestion: any }
+                        | { Mandatory: any }
+                        | string
+                        | Uint8Array,
+                    newConfig:
+                        | PalletStreamPaymentStreamConfig
+                        | { timeUnit?: any; assetId?: any; rate?: any }
+                        | string
+                        | Uint8Array,
+                    depositChange:
+                        | Option<PalletStreamPaymentDepositChange>
+                        | null
+                        | Uint8Array
+                        | PalletStreamPaymentDepositChange
+                        | { Increase: any }
+                        | { Decrease: any }
+                        | { Absolute: any }
+                        | string
+                ) => SubmittableExtrinsic<ApiType>,
+                [
+                    u64,
+                    PalletStreamPaymentChangeKind,
+                    PalletStreamPaymentStreamConfig,
+                    Option<PalletStreamPaymentDepositChange>
+                ]
+            >;
+            /** Generic tx */
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         sudo: {
+            /** See [`Pallet::remove_key`]. */
+            removeKey: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /** See [`Pallet::set_key`]. */
             setKey: AugmentedSubmittable<
                 (
@@ -927,6 +1124,21 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         system: {
+            /** See [`Pallet::apply_authorized_upgrade`]. */
+            applyAuthorizedUpgrade: AugmentedSubmittable<
+                (code: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [Bytes]
+            >;
+            /** See [`Pallet::authorize_upgrade`]. */
+            authorizeUpgrade: AugmentedSubmittable<
+                (codeHash: H256 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [H256]
+            >;
+            /** See [`Pallet::authorize_upgrade_without_checks`]. */
+            authorizeUpgradeWithoutChecks: AugmentedSubmittable<
+                (codeHash: H256 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [H256]
+            >;
             /** See [`Pallet::kill_prefix`]. */
             killPrefix: AugmentedSubmittable<
                 (

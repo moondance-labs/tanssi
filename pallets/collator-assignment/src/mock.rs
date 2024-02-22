@@ -74,6 +74,7 @@ impl system::Config for Test {
     type SS58Prefix = ConstU16<42>;
     type OnSetCode = ();
     type MaxConsumers = frame_support::traits::ConstU32<16>;
+    type RuntimeTask = ();
 }
 
 // Pallet to provide some mock data, used to test
@@ -235,6 +236,7 @@ impl pallet_collator_assignment::Config for Test {
     type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type RemoveParaIdsWithNoCredits = RemoveParaIdsAbove5000;
+    type CollatorAssignmentHook = ();
     type WeightInfo = ();
 }
 

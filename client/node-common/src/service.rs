@@ -35,8 +35,9 @@ use {
         run_manual_seal, ConsensusDataProvider, EngineCommand, ManualSealParams,
     },
     sc_executor::{
-        HeapAllocStrategy, NativeElseWasmExecutor, NativeExecutionDispatch, WasmExecutor,
-        DEFAULT_HEAP_ALLOC_STRATEGY,
+        sp_wasm_interface::{ExtendedHostFunctions, HostFunctions},
+        HeapAllocStrategy, NativeElseWasmExecutor, NativeExecutionDispatch, RuntimeVersionOf,
+        WasmExecutor, DEFAULT_HEAP_ALLOC_STRATEGY,
     },
     sc_network::{config::FullNetworkConfiguration, NetworkBlock, NetworkService},
     sc_network_sync::SyncingService,
@@ -52,6 +53,7 @@ use {
     sp_api::ConstructRuntimeApi,
     sp_block_builder::BlockBuilder,
     sp_consensus::SelectChain,
+    sp_core::traits::CodeExecutor,
     sp_inherents::CreateInherentDataProviders,
     sp_offchain::OffchainWorkerApi,
     sp_runtime::Percent,
@@ -64,7 +66,7 @@ use {
 pub trait NodeBuilderConfig {
     type Block;
     type RuntimeApi;
-    type ParachainNativeExecutor;
+    type ParachainExecutor;
 
     /// Create a new `NodeBuilder` using the types of this `Config`, along
     /// with the parachain `Configuration` and an optional `HwBench`.
@@ -75,7 +77,8 @@ pub trait NodeBuilderConfig {
     where
         Self: Sized,
         BlockOf<Self>: cumulus_primitives_core::BlockT,
-        ParachainNativeExecutorOf<Self>: NativeExecutionDispatch + 'static,
+        ExecutorOf<Self>:
+            Clone + CodeExecutor + RuntimeVersionOf + TanssiExecutorExt + Sync + Send + 'static,
         RuntimeApiOf<Self>:
             ConstructRuntimeApi<BlockOf<Self>, ClientOf<Self>> + Sync + Send + 'static,
         ConstructedRuntimeApiOf<Self>:
@@ -89,8 +92,7 @@ pub type BlockOf<T> = <T as NodeBuilderConfig>::Block;
 pub type BlockHashOf<T> = <BlockOf<T> as cumulus_primitives_core::BlockT>::Hash;
 pub type BlockHeaderOf<T> = <BlockOf<T> as cumulus_primitives_core::BlockT>::Header;
 pub type RuntimeApiOf<T> = <T as NodeBuilderConfig>::RuntimeApi;
-pub type ParachainNativeExecutorOf<T> = <T as NodeBuilderConfig>::ParachainNativeExecutor;
-pub type ExecutorOf<T> = NativeElseWasmExecutor<ParachainNativeExecutorOf<T>>;
+pub type ExecutorOf<T> = <T as NodeBuilderConfig>::ParachainExecutor;
 pub type ClientOf<T> = TFullClient<BlockOf<T>, RuntimeApiOf<T>, ExecutorOf<T>>;
 pub type BackendOf<T> = TFullBackend<BlockOf<T>>;
 pub type ConstructedRuntimeApiOf<T> =
@@ -130,7 +132,7 @@ pub struct NodeBuilder<
     SImportQueueService = (),
 > where
     BlockOf<T>: cumulus_primitives_core::BlockT,
-    ParachainNativeExecutorOf<T>: NativeExecutionDispatch + 'static,
+    ExecutorOf<T>: Clone + CodeExecutor + RuntimeVersionOf + Sync + Send + 'static,
     RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
     ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
 {
@@ -157,13 +159,39 @@ pub struct Network<Block: cumulus_primitives_core::BlockT> {
     pub sync_service: Arc<SyncingService<Block>>,
 }
 
+/// Allows to create a parachain-defined executor from a `WasmExecutor`
+pub trait TanssiExecutorExt {
+    type HostFun: HostFunctions;
+    fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self;
+}
+
+impl TanssiExecutorExt for WasmExecutor<sp_io::SubstrateHostFunctions> {
+    type HostFun = sp_io::SubstrateHostFunctions;
+
+    fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self {
+        wasm_executor
+    }
+}
+
+impl<D> TanssiExecutorExt for NativeElseWasmExecutor<D>
+where
+    D: NativeExecutionDispatch,
+{
+    type HostFun = ExtendedHostFunctions<sp_io::SubstrateHostFunctions, D::ExtendHostFunctions>;
+
+    fn new_with_wasm_executor(wasm_executor: WasmExecutor<Self::HostFun>) -> Self {
+        NativeElseWasmExecutor::new_with_wasm_executor(wasm_executor)
+    }
+}
+
 // `new` function doesn't take self, and the Rust compiler cannot infer that
 // only one type T implements `TypeIdentity`. With thus need a separate impl
 // block with concrete types `()`.
 impl<T: NodeBuilderConfig> NodeBuilder<T>
 where
     BlockOf<T>: cumulus_primitives_core::BlockT,
-    ParachainNativeExecutorOf<T>: NativeExecutionDispatch + 'static,
+    ExecutorOf<T>:
+        Clone + CodeExecutor + RuntimeVersionOf + TanssiExecutorExt + Sync + Send + 'static,
     RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
     ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>> + BlockBuilder<BlockOf<T>>,
 {
@@ -255,7 +283,7 @@ impl<T: NodeBuilderConfig, SNetwork, STxHandler, SImportQueueService>
     NodeBuilder<T, SNetwork, STxHandler, SImportQueueService>
 where
     BlockOf<T>: cumulus_primitives_core::BlockT,
-    ParachainNativeExecutorOf<T>: NativeExecutionDispatch + 'static,
+    ExecutorOf<T>: Clone + CodeExecutor + RuntimeVersionOf + Sync + Send + 'static,
     RuntimeApiOf<T>: ConstructRuntimeApi<BlockOf<T>, ClientOf<T>> + Sync + Send + 'static,
     ConstructedRuntimeApiOf<T>: TaggedTransactionQueue<BlockOf<T>>
         + BlockBuilder<BlockOf<T>>
@@ -521,10 +549,13 @@ where
             // Here you can check whether the hardware meets your chains' requirements. Putting a link
             // in there and swapping out the requirements for your own are probably a good idea. The
             // requirements for a para-chain are dictated by its relay-chain.
-            if collator && !SUBSTRATE_REFERENCE_HARDWARE.check_hardware(hwbench) {
-                log::warn!(
-                    "⚠️  The hardware does not meet the minimal requirements for role 'Authority'."
-                );
+            if collator {
+                if let Err(err) = SUBSTRATE_REFERENCE_HARDWARE.check_hardware(&hwbench) {
+                    log::warn!(
+                        "⚠️  The hardware does not meet the minimal requirements {} for role 'Authority'.",
+                        err
+                    );
+                }
             }
 
             if let Some(ref mut telemetry) = telemetry {

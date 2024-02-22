@@ -20,11 +20,12 @@ use {
         cli::{Cli, ContainerChainCli, RelayChainCli, Subcommand},
         service::{self, IdentifyVariant, NodeConfig},
     },
-    cumulus_client_cli::{extract_genesis_wasm, generate_genesis_block},
+    cumulus_client_cli::extract_genesis_wasm,
     cumulus_primitives_core::ParaId,
     dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
+    node_common::command::generate_genesis_block,
     node_common::service::NodeBuilderConfig as _,
     parity_scale_codec::Encode,
     polkadot_service::WestendChainSpec,
@@ -37,9 +38,6 @@ use {
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::{io::Write, net::SocketAddr},
 };
-
-#[cfg(feature = "try-runtime")]
-use crate::service::ParachainNativeExecutor;
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
@@ -356,11 +354,11 @@ pub fn run() -> Result<()> {
                 cmd.run(config, polkadot_config)
             })
         }
-        Some(Subcommand::ExportGenesisState(cmd)) => {
+        Some(Subcommand::ExportGenesisHead(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let client = NodeConfig::new_builder(&config, None)?.client;
-                cmd.run(&*config.chain_spec, &*client)
+                cmd.run(client)
             })
         }
         Some(Subcommand::ExportGenesisWasm(params)) => {
@@ -423,47 +421,19 @@ pub fn run() -> Result<()> {
                 _ => Err("Benchmarking sub-command unsupported".into()),
             }
         }
+        Some(Subcommand::Key(cmd)) => Ok(cmd.run(&cli)?),
         #[cfg(feature = "try-runtime")]
-        Some(Subcommand::TryRuntime(cmd)) => {
-            use {
-                dancebox_runtime::MILLISECS_PER_BLOCK,
-                sc_executor::{sp_wasm_interface::ExtendedHostFunctions, NativeExecutionDispatch},
-                try_runtime_cli::block_building_info::timestamp_with_aura_info,
-            };
-
-            let runner = cli.create_runner(cmd)?;
-
-            type HostFunctionsOf<E> = ExtendedHostFunctions<
-                sp_io::SubstrateHostFunctions,
-                <E as NativeExecutionDispatch>::ExtendHostFunctions,
-            >;
-
-            // grab the task manager.
-            let registry = &runner
-                .config()
-                .prometheus_config
-                .as_ref()
-                .map(|cfg| &cfg.registry);
-            let task_manager =
-                sc_service::TaskManager::new(runner.config().tokio_handle.clone(), *registry)
-                    .map_err(|e| format!("Error: {:?}", e))?;
-
-            let info_provider = timestamp_with_aura_info(MILLISECS_PER_BLOCK);
-
-            runner.async_run(|_| {
-                Ok((
-                    cmd.run::<Block, HostFunctionsOf<ParachainNativeExecutor>, _>(Some(
-                        info_provider,
-                    )),
-                    task_manager,
-                ))
-            })
+        Some(Subcommand::TryRuntime(_)) => {
+            Err("Substrate's `try-runtime` subcommand has been migrated \
+            to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
+                .into())
         }
         #[cfg(not(feature = "try-runtime"))]
-        Some(Subcommand::TryRuntime) => Err("Try-runtime was not enabled when building the node. \
-			You can enable it with `--features try-runtime`."
-            .into()),
-        Some(Subcommand::Key(cmd)) => Ok(cmd.run(&cli)?),
+        Some(Subcommand::TryRuntime) => {
+            Err("Substrate's `try-runtime` subcommand has been migrated \
+            to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
+                .into())
+        }
         None => {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();

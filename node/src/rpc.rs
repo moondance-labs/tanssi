@@ -21,7 +21,7 @@
 
 #![warn(missing_docs)]
 
-pub use sc_rpc::{DenyUnsafe, SubscriptionTaskExecutor};
+pub use sc_rpc::DenyUnsafe;
 use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
