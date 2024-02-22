@@ -35,6 +35,7 @@ use {
     parachains_common::{
         impls::AccountIdOf,
         message_queue::{NarrowOriginToSibling, ParaIdToSibling},
+        xcm_config::AssetFeeAsExistentialDepositMultiplier,
     },
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     sp_core::ConstU32,
@@ -392,28 +393,8 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
 >;
 
 /// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
-pub type AssetRateAsMultiplier = AssetFeeAsExistentialDepositMultiplier<
-    Runtime,
-    WeightToFee,
-    CustomConverter,
-    ForeignAssetsInstance,
->;
-
-// TODO: move to https://github.com/paritytech/polkadot-sdk/pull/2903 once its merged
-pub struct CustomConverter;
-impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, Balance>
-    for CustomConverter
-{
-    type Error = ();
-    fn to_asset_balance(balance: Balance, asset_id: AssetId) -> Result<Balance, Self::Error> {
-        let rate = pallet_asset_rate::ConversionRateToNative::<Runtime>::get(asset_id).ok_or(())?;
-        Ok(sp_runtime::FixedU128::from_u32(1)
-            .checked_div(&rate)
-            .ok_or(())?
-            .saturating_mul_int(balance))
-    }
-}
-
+pub type AssetRateAsMultiplier =
+    AssetFeeAsExistentialDepositMultiplier<Runtime, WeightToFee, AssetRate, ForeignAssetsInstance>;
 // TODO: this should probably move to somewhere in the polkadot-sdk repo
 pub struct NativeAssetReserve;
 impl frame_support::traits::ContainsPair<MultiAsset, MultiLocation> for NativeAssetReserve {
@@ -470,49 +451,5 @@ impl Parse for MultiLocation {
         } else {
             None
         }
-    }
-}
-
-pub struct AssetFeeAsExistentialDepositMultiplier<
-    Runtime,
-    WeightToFee,
-    BalanceConverter,
-    AssetInstance: 'static,
->(PhantomData<(Runtime, WeightToFee, BalanceConverter, AssetInstance)>);
-impl<CurrencyBalance, Runtime, WeightToFee, BalanceConverter, AssetInstance>
-    cumulus_primitives_utility::ChargeWeightInFungibles<
-        AccountIdOf<Runtime>,
-        pallet_assets::Pallet<Runtime, AssetInstance>,
-    >
-    for AssetFeeAsExistentialDepositMultiplier<
-        Runtime,
-        WeightToFee,
-        BalanceConverter,
-        AssetInstance,
-    >
-where
-    Runtime: pallet_assets::Config<AssetInstance>,
-    WeightToFee: frame_support::weights::WeightToFee<Balance = CurrencyBalance>,
-    BalanceConverter: ConversionToAssetBalance<
-        CurrencyBalance,
-        <Runtime as pallet_assets::Config<AssetInstance>>::AssetId,
-        <Runtime as pallet_assets::Config<AssetInstance>>::Balance,
-    >,
-{
-    fn charge_weight_in_fungibles(
-        asset_id: <pallet_assets::Pallet<Runtime, AssetInstance> as Inspect<
-            AccountIdOf<Runtime>,
-        >>::AssetId,
-        weight: Weight,
-    ) -> Result<
-        <pallet_assets::Pallet<Runtime, AssetInstance> as Inspect<AccountIdOf<Runtime>>>::Balance,
-        XcmError,
-    > {
-        let amount = WeightToFee::weight_to_fee(&weight);
-        // If the amount gotten is not at least the ED, then make it be the ED of the asset
-        // This is to avoid burning assets and decreasing the supply
-        let asset_amount = BalanceConverter::to_asset_balance(amount, asset_id)
-            .map_err(|_| XcmError::TooExpensive)?;
-        Ok(asset_amount)
     }
 }
