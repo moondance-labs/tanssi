@@ -1,19 +1,8 @@
-import { CompiledContract } from "@moonwall/cli";
-import chalk from "chalk";
 import fs from "fs/promises";
 import path from "path";
 import child_process from "child_process";
-import solc from "solc";
-import { Abi } from "viem";
-import crypto from "crypto";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-
-const sourceByReference = {} as { [ref: string]: string };
-const countByReference = {} as { [ref: string]: number };
-const refByContract = {} as { [contract: string]: string };
-const contractMd5 = {} as { [contract: string]: string };
-const solcVersion = solc.version();
 
 yargs(hideBin(process.argv))
     .usage("Usage: $0")
