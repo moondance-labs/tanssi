@@ -79,7 +79,7 @@ pub struct ContainerChainSpawner {
     pub state: Arc<Mutex<ContainerChainSpawnerState>>,
 
     // Async callback that enables collation on the orchestrator chain
-    pub collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    pub collate_on_tanssi: Arc<dyn Fn() + Send + Sync>,
 }
 
 #[derive(Default)]
@@ -116,6 +116,7 @@ pub enum CcSpawnMsg {
 
 impl ContainerChainSpawner {
     /// Try to start a new container chain. In case of error, this panics and stops the node.
+    #[must_use]
     fn spawn(
         &self,
         container_chain_para_id: ParaId,
@@ -443,7 +444,7 @@ impl ContainerChainSpawner {
 
         // Call collate_on, to start collation on a chain that was already running before
         if let Some(f) = call_collate_on {
-            f().await;
+            f();
         }
 
         // Stop all container chains that are no longer needed
@@ -469,8 +470,7 @@ impl ContainerChainSpawner {
 }
 
 struct HandleUpdateAssignmentResult {
-    call_collate_on:
-        Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>>,
+    call_collate_on: Option<Arc<dyn Fn() + Send + Sync>>,
     chains_to_stop: Vec<ParaId>,
     chains_to_start: Vec<ParaId>,
     need_to_restart: bool,
@@ -480,7 +480,7 @@ struct HandleUpdateAssignmentResult {
 fn handle_update_assignment_state_change(
     state: &mut ContainerChainSpawnerState,
     orchestrator_para_id: ParaId,
-    collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+    collate_on_tanssi: Arc<dyn Fn() + Send + Sync>,
     current: Option<ParaId>,
     next: Option<ParaId>,
 ) -> HandleUpdateAssignmentResult {
@@ -734,15 +734,13 @@ fn parse_boot_nodes_ignore_invalid(
 
 #[cfg(test)]
 mod tests {
-    use futures::executor::block_on;
-
     use super::*;
 
     // Copy of ContainerChainSpawner with extra assertions for tests, and mocked spawn function.
     struct MockContainerChainSpawner {
         state: Arc<Mutex<ContainerChainSpawnerState>>,
         orchestrator_para_id: ParaId,
-        collate_on_tanssi: Arc<dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync>,
+        collate_on_tanssi: Arc<dyn Fn() + Send + Sync>,
         // Keep track of the last CollateOn message, for tests
         currently_collating_on: Arc<Mutex<Option<ParaId>>>,
     }
@@ -753,7 +751,7 @@ mod tests {
             // The node always starts as an orchestrator chain collator
             let currently_collating_on = Arc::new(Mutex::new(Some(orchestrator_para_id)));
             let currently_collating_on2 = currently_collating_on.clone();
-            let collate_closure = move || async move {
+            let collate_closure = move || {
                 let mut cco = currently_collating_on2.lock().unwrap();
                 // TODO: this sometimes fails, see comment in stop_collating_orchestrator
                 /*
@@ -766,9 +764,7 @@ mod tests {
                 */
                 *cco = Some(orchestrator_para_id);
             };
-            let collate_on_tanssi: Arc<
-                dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
-            > = Arc::new(move || Box::pin((collate_closure.clone())()));
+            let collate_on_tanssi: Arc<dyn Fn() + Send + Sync> = Arc::new(collate_closure);
 
             Self {
                 state: Arc::new(Mutex::new(ContainerChainSpawnerState {
@@ -783,10 +779,10 @@ mod tests {
             }
         }
 
-        async fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
+        fn spawn(&self, container_chain_para_id: ParaId, start_collation: bool) {
             let (signal, _on_exit) = oneshot::channel();
             let currently_collating_on2 = self.currently_collating_on.clone();
-            let collate_closure = move || async move {
+            let collate_closure = move || {
                 let mut cco = currently_collating_on2.lock().unwrap();
                 // TODO: this is also wrong, see comment in test keep_collating_on_container
                 /*
@@ -799,9 +795,7 @@ mod tests {
                 */
                 *cco = Some(container_chain_para_id);
             };
-            let collate_on: Arc<
-                dyn Fn() -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + Sync,
-            > = Arc::new(move || Box::pin((collate_closure.clone())()));
+            let collate_on: Arc<dyn Fn() + Send + Sync> = Arc::new(collate_closure);
 
             let old = self
                 .state
@@ -822,7 +816,7 @@ mod tests {
             );
 
             if start_collation {
-                collate_on().await;
+                collate_on();
             }
         }
 
@@ -892,7 +886,7 @@ mod tests {
 
             // Call collate_on, to start collation on a chain that was already running before
             if let Some(f) = call_collate_on {
-                block_on(async { f().await });
+                f();
             }
 
             // Stop all container chains that are no longer needed
@@ -905,7 +899,7 @@ mod tests {
                 // Edge case: when starting the node it may be assigned to a container chain, so we need to
                 // start a container chain already collating.
                 let start_collation = Some(para_id) == current;
-                block_on(async { self.spawn(para_id, start_collation).await });
+                self.spawn(para_id, start_collation);
             }
 
             // Assert that if we are currently assigned to a container chain, we are collating there
