@@ -4719,7 +4719,7 @@ fn test_division_by_0() {
             ));
 
             use frame_support::traits::tokens::ConversionToAssetBalance;
-            let balance = dancebox_runtime::xcm_config::CustomConverter::to_asset_balance(1, 1);
+            let balance = AssetRate::to_asset_balance(1, 1);
             assert!(balance.is_err());
         });
 }

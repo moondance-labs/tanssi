@@ -33,6 +33,7 @@ pallet-evm-precompile-balances-erc20 = { workspace = true }
 pallet-evm-precompile-batch = { workspace = true }
 pallet-evm-precompile-call-permit = { workspace = true }
 pallet-evm-precompile-xcm-utils = { workspace = true }
+pallet-foreign-asset-creator = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 xcm-primitives = { workspace = true }
@@ -43,6 +44,8 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
+pallet-asset-rate = { workspace = true }
+pallet-assets = { workspace = true }
 pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
 pallet-message-queue = { workspace = true }
 pallet-proxy = { workspace = true }
@@ -139,6 +142,8 @@ std = [
 	"log/std",
 	"nimbus-primitives/std",
 	"num_enum/std",
+	"pallet-asset-rate/std",
+	"pallet-assets/std",
 	"pallet-async-backing/std",
 	"pallet-author-inherent/std",
 	"pallet-balances/std",
@@ -155,6 +160,7 @@ std = [
 	"pallet-evm-precompile-simple/std",
 	"pallet-evm-precompile-xcm-utils/std",
 	"pallet-evm/std",
+	"pallet-foreign-asset-creator/std",
 	"pallet-hotfix-sufficients/std",
 	"pallet-maintenance-mode/std",
 	"pallet-message-queue/std",
@@ -218,12 +224,15 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"hex-literal",
 	"nimbus-primitives/runtime-benchmarks",
+	"pallet-asset-rate/runtime-benchmarks",
+	"pallet-assets/runtime-benchmarks",
 	"pallet-author-inherent/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
 	"pallet-cc-authorities-noting/runtime-benchmarks",
 	"pallet-ethereum/runtime-benchmarks",
 	"pallet-evm-precompile-xcm-utils/runtime-benchmarks",
 	"pallet-evm/runtime-benchmarks",
+	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-hotfix-sufficients/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
@@ -256,6 +265,8 @@ try-runtime = [
 	"frame-system/try-runtime",
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
+	"pallet-asset-rate/try-runtime",
+	"pallet-assets/try-runtime",
 	"pallet-async-backing/try-runtime",
 	"pallet-author-inherent/try-runtime",
 	"pallet-balances/try-runtime",
@@ -264,6 +275,7 @@ try-runtime = [
 	"pallet-ethereum/try-runtime",
 	"pallet-evm-chain-id/try-runtime",
 	"pallet-evm/try-runtime",
+	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-hotfix-sufficients/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-message-queue/try-runtime",

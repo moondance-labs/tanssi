@@ -35,7 +35,7 @@
                         "name": "tanssi",
                         "binPath": "../target/release/tanssi-node",
                         "options": [
-                            "--chain=dancebox-local",
+                            "--chain=dancebox",
                             "--sealing=manual",
                             "--collator",
                             "--dev-service",

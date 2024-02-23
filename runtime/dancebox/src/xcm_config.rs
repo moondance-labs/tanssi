@@ -16,8 +16,8 @@
 
 use {
     super::{
-        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, Balance,
-        Balances, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
+        weights::xcm::XcmWeight as XcmGenericWeights, AccountId, AllPalletsWithSystem, AssetRate,
+        Balance, Balances, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
         ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
         RuntimeOrigin, WeightToFee, XcmpQueue,
     },
@@ -341,7 +341,6 @@ impl pallet_asset_rate::Config for Runtime {
 
 use {
     crate::ForeignAssets,
-    sp_runtime::{traits::CheckedDiv, FixedPointNumber},
     staging_xcm_builder::{FungiblesAdapter, NoChecking},
     staging_xcm_executor::traits::JustTry,
 };
@@ -367,24 +366,9 @@ pub type AssetRateAsMultiplier =
     parachains_common::xcm_config::AssetFeeAsExistentialDepositMultiplier<
         Runtime,
         WeightToFee,
-        CustomConverter,
+        AssetRate,
         ForeignAssetsInstance,
     >;
-
-// TODO: move to https://github.com/paritytech/polkadot-sdk/pull/2903 once its merged
-pub struct CustomConverter;
-impl frame_support::traits::tokens::ConversionToAssetBalance<Balance, AssetId, Balance>
-    for CustomConverter
-{
-    type Error = ();
-    fn to_asset_balance(balance: Balance, asset_id: AssetId) -> Result<Balance, Self::Error> {
-        let rate = pallet_asset_rate::ConversionRateToNative::<Runtime>::get(asset_id).ok_or(())?;
-        Ok(sp_runtime::FixedU128::from_u32(1)
-            .checked_div(&rate)
-            .ok_or(())?
-            .saturating_mul_int(balance))
-    }
-}
 
 // TODO: this should probably move to somewhere in the polkadot-sdk repo
 pub struct NativeAssetReserve;
