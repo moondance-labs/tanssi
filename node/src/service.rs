@@ -53,18 +53,19 @@ use {
     polkadot_cli::ProvideRuntimeApi,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_service::Handle,
+    sc_basic_authorship::ProposerFactory,
     sc_client_api::{
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
-    sc_consensus::BlockImport,
-    sc_consensus::{BasicQueue, ImportQueue},
+    sc_consensus::{BasicQueue, BlockImport, ImportQueue},
     sc_executor::{NativeElseWasmExecutor, WasmExecutor},
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager},
     sc_telemetry::TelemetryHandle,
+    sc_transaction_pool::FullPool,
     sp_api::StorageProof,
-    sp_consensus::SyncOracle,
+    sp_consensus::{EnableProofRecording, SyncOracle},
     sp_consensus_slots::Slot,
     sp_core::{traits::SpawnEssentialNamed, H256},
     sp_keystore::KeystorePtr,
@@ -117,6 +118,8 @@ pub type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
 pub type ParachainBackend = TFullBackend<Block>;
 type DevParachainBlockImport = OrchestratorParachainBlockImport<Arc<ParachainClient>>;
 type ParachainBlockImport = TParachainBlockImport<Block, Arc<ParachainClient>, ParachainBackend>;
+type ParachainProposerFactory =
+    ProposerFactory<FullPool<Block, ParachainClient>, ParachainClient, EnableProofRecording>;
 
 // Container chains types
 type ContainerChainExecutor = WasmExecutor<sp_io::SubstrateHostFunctions>;
@@ -405,16 +408,20 @@ async fn start_node_impl(
             let relay_interface = relay_chain_interface.clone();
             let node_sync_service = node_builder.network.sync_service.clone();
             let overseer = overseer_handle.clone();
+            let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
+                node_spawn_handle.clone(),
+                node_client.clone(),
+                node_builder.transaction_pool.clone(),
+                node_builder.prometheus_registry.as_ref(),
+                node_telemetry_handle.clone(),
+            );
 
             move || {
                 start_consensus_orchestrator(
                     node_client.clone(),
                     block_import.clone(),
-                    node_builder.prometheus_registry.clone(),
-                    node_telemetry_handle.clone(),
                     node_spawn_handle.clone(),
                     relay_interface.clone(),
-                    node_builder.transaction_pool.clone(),
                     node_sync_service.clone(),
                     node_keystore.clone(),
                     force_authoring,
@@ -423,6 +430,7 @@ async fn start_node_impl(
                     collator_key.clone(),
                     overseer.clone(),
                     announce_block.clone(),
+                    proposer_factory.clone(),
                 )
             }
         };
@@ -798,11 +806,8 @@ fn start_consensus_container(
 fn start_consensus_orchestrator(
     client: Arc<ParachainClient>,
     block_import: ParachainBlockImport,
-    prometheus_registry: Option<Registry>,
-    telemetry: Option<TelemetryHandle>,
     spawner: SpawnTaskHandle,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
-    transaction_pool: Arc<sc_transaction_pool::FullPool<Block, ParachainClient>>,
     sync_oracle: Arc<SyncingService<Block>>,
     keystore: KeystorePtr,
     force_authoring: bool,
@@ -811,17 +816,10 @@ fn start_consensus_orchestrator(
     collator_key: CollatorPair,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
+    proposer_factory: ParachainProposerFactory,
 ) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
-
-    let proposer_factory = sc_basic_authorship::ProposerFactory::with_proof_recording(
-        spawner.clone(),
-        client.clone(),
-        transaction_pool,
-        prometheus_registry.as_ref(),
-        telemetry.clone(),
-    );
 
     let proposer = Proposer::new(proposer_factory);
 
