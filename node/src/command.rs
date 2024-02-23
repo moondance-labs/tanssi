@@ -434,6 +434,16 @@ pub fn run() -> Result<()> {
             to a standalone CLI (https://github.com/paritytech/try-runtime-cli)"
                 .into())
         }
+        Some(Subcommand::PrecompileWasm(cmd)) => {
+            let runner = cli.create_runner(cmd)?;
+            runner.async_run(|mut config| {
+                let partials = NodeConfig::new_builder(&mut config, None)?;
+                Ok((
+                    cmd.run(partials.backend, config.chain_spec),
+                    partials.task_manager,
+                ))
+            })
+        }
         None => {
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();

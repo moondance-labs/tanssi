@@ -12123,6 +12123,7 @@ dependencies = [
  "rpassword",
  "sc-client-api",
  "sc-client-db",
+ "sc-executor",
  "sc-keystore",
  "sc-mixnet",
  "sc-network",
@@ -12138,6 +12139,8 @@ dependencies = [
  "sp-keystore",
  "sp-panic-handler",
  "sp-runtime",
+ "sp-state-machine",
+ "sp-storage",
  "sp-version",
  "thiserror",
  "tokio",
@@ -12499,6 +12502,7 @@ name = "sc-executor"
 version = "0.10.0-dev"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.6.0#fb422ea2572811a4d339dc100cb32d6aa63fe0c9"
 dependencies = [
+ "log",
  "parity-scale-codec",
  "parking_lot 0.12.1",
  "sc-executor-common",
@@ -12521,6 +12525,7 @@ name = "sc-executor-common"
 version = "0.10.0-dev"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-v1.6.0#fb422ea2572811a4d339dc100cb32d6aa63fe0c9"
 dependencies = [
+ "parity-scale-codec",
  "sc-allocator",
  "sp-maybe-compressed-blob",
  "sp-wasm-interface",
@@ -12537,10 +12542,12 @@ dependencies = [
  "cfg-if",
  "libc",
  "log",
+ "parity-scale-codec",
  "parking_lot 0.12.1",
  "rustix 0.36.17",
  "sc-allocator",
  "sc-executor-common",
+ "sp-core",
  "sp-runtime-interface",
  "sp-wasm-interface",
  "wasmtime",
