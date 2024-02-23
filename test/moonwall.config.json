@@ -9,6 +9,7 @@
             "timeout": 120000,
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
+	    "runScripts": ["compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c dancebox_dev"],
             "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
@@ -17,7 +18,7 @@
                     {
                         "name": "tanssi",
                         "binPath": "../target/release/tanssi-node",
-                        "options": ["--dev", "--sealing=manual", "--no-hardware-benchmarks"],
+                        "options": ["--dev", "--sealing=manual", "--no-hardware-benchmarks", "--wasmtime-precompiled=wasm"],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true
                     }

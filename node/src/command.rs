@@ -41,7 +41,7 @@ use {
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
-        "dev" => Box::new(chain_spec::dancebox::development_config(
+        "dev" | "dancebox_dev" => Box::new(chain_spec::dancebox::development_config(
             para_id,
             vec![],
             vec![2000.into(), 2001.into()],
