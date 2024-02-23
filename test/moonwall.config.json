@@ -9,7 +9,7 @@
             "timeout": 120000,
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/common-tanssi", "suites/dev-tanssi"],
-	    "runScripts": ["compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c dancebox_dev"],
+            "runScripts": ["compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c dancebox_dev"],
             "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
@@ -18,7 +18,12 @@
                     {
                         "name": "tanssi",
                         "binPath": "../target/release/tanssi-node",
-                        "options": ["--dev", "--sealing=manual", "--no-hardware-benchmarks", "--wasmtime-precompiled=wasm"],
+                        "options": [
+                            "--dev",
+                            "--sealing=manual",
+                            "--no-hardware-benchmarks",
+                            "--wasmtime-precompiled=wasm"
+                        ],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true
                     }
@@ -35,13 +40,7 @@
                     {
                         "name": "tanssi",
                         "binPath": "../target/release/tanssi-node",
-                        "options": [
-                            "--chain=dancebox",
-                            "--sealing=manual",
-                            "--collator",
-                            "--dev-service",
-                            "--tmp"
-                        ],
+                        "options": ["--chain=dancebox", "--sealing=manual", "--collator", "--dev-service", "--tmp"],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true
                     }
@@ -51,7 +50,10 @@
         {
             "name": "dev_frontier_template",
             "testFileDir": ["suites/common-all", "suites/common-xcm", "suites/dev-frontier-template"],
-            "runScripts": ["pre-build-contracts.ts"],
+            "runScripts": [
+                "pre-build-contracts.ts",
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-frontier-node -o wasm -c dev"
+            ],
             "multiThreads": true,
             "reporters": ["basic"],
             "contracts": "helpers/",
@@ -61,7 +63,12 @@
                     {
                         "name": "frontier-template",
                         "binPath": "../target/release/container-chain-template-frontier-node",
-                        "options": ["--dev", "--sealing=manual"],
+                        "options": [
+                            "--dev",
+                            "--sealing=manual",
+                            "--no-hardware-benchmarks",
+                            "--wasmtime-precompiled=wasm"
+                        ],
                         "newRpcBehaviour": true
                     }
                 ]
@@ -70,6 +77,9 @@
         {
             "name": "dev_simple_template",
             "testFileDir": ["suites/common-all", "suites/common-xcm"],
+            "runScripts": [
+                "compile-wasm.ts compile -b ../target/release/container-chain-template-simple-node -o wasm -c dev"
+            ],
             "multiThreads": true,
             "reporters": ["basic"],
             "contracts": "helpers/",
@@ -79,7 +89,12 @@
                     {
                         "name": "simple-template",
                         "binPath": "../target/release/container-chain-template-simple-node",
-                        "options": ["--dev", "--sealing=manual"],
+                        "options": [
+                            "--dev",
+                            "--sealing=manual",
+                            "--no-hardware-benchmarks",
+                            "--wasmtime-precompiled=wasm"
+                        ],
                         "newRpcBehaviour": true,
                         "disableDefaultEthProviders": true
                     }
@@ -426,6 +441,7 @@
             "name": "dev_flashbox",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/common-all", "suites/common-tanssi"],
+            "runScripts": ["compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c flashbox_dev"],
             "multiThreads": true,
             "reporters": ["basic"],
             "foundation": {
@@ -444,7 +460,8 @@
                             "--no-hardware-benchmarks",
                             "--no-prometheus",
                             "--no-telemetry",
-                            "--reserved-only"
+                            "--reserved-only",
+                            "--wasmtime-precompiled=wasm"
                         ],
                         "disableDefaultEthProviders": true,
                         "newRpcBehaviour": true
