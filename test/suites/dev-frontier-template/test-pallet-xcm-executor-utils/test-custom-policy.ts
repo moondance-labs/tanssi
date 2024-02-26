@@ -1,4 +1,4 @@
-import { beforeAll, describeSuite, expect, } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { KeyringPair, alith } from "@moonwall/util";
 import { ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
@@ -18,8 +18,7 @@ describeSuite({
             polkadotJs = context.polkadotJs();
 
             // Create parent asset
-            const createForeignAsset = await polkadotJs.tx.sudo
-            .sudo(
+            const createForeignAsset = await polkadotJs.tx.sudo.sudo(
                 polkadotJs.tx.utility.batch([
                     // Register parent asset as 1
                     polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
@@ -51,17 +50,16 @@ describeSuite({
                             allowedAssets: [
                                 {
                                     concrete: {
-                                            parents: 2,
-                                            interior: { Here: null },
+                                        parents: 2,
+                                        interior: { Here: null },
                                     },
                                     fun: {
                                         Fungible: 1_000,
                                     },
-                                }
-                            ]
-                        
-                        },
-                    )
+                                },
+                            ],
+                        }
+                    ),
                 ])
             );
 
@@ -72,7 +70,6 @@ describeSuite({
                     allowFailures: false,
                 }
             );
-
         });
 
         it({
