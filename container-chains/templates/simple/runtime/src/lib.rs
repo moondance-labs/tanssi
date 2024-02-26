@@ -145,18 +145,15 @@ pub type Executive = frame_executive::Executive<
 pub mod currency {
     use super::Balance;
 
-    // Provide a common factor between runtimes based on a supply of 10_000_000 tokens.
-    pub const SUPPLY_FACTOR: Balance = 100;
-
     pub const MICROUNIT: Balance = 1_000_000;
     pub const MILLIUNIT: Balance = 1_000_000_000;
     pub const UNIT: Balance = 1_000_000_000_000;
     pub const KILOUNIT: Balance = 1_000_000_000_000_000;
 
-    pub const STORAGE_BYTE_FEE: Balance = 100 * MICROUNIT * SUPPLY_FACTOR;
+    pub const STORAGE_BYTE_FEE: Balance = 100 * MICROUNIT;
 
     pub const fn deposit(items: u32, bytes: u32) -> Balance {
-        items as Balance * 100 * MILLIUNIT * SUPPLY_FACTOR + (bytes as Balance) * STORAGE_BYTE_FEE
+        items as Balance * 100 * MILLIUNIT + (bytes as Balance) * STORAGE_BYTE_FEE
     }
 }
 
