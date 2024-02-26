@@ -29,7 +29,10 @@ use {
     },
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
-    pallet_xcm_executor_utils::{DefaultTrustPolicy, filters::{IsReserveFilter, IsTeleportFilter,}},
+    pallet_xcm_executor_utils::{
+        filters::{IsReserveFilter, IsTeleportFilter},
+        DefaultTrustPolicy,
+    },
     parachains_common::{
         message_queue::{NarrowOriginToSibling, ParaIdToSibling},
         xcm_config::AssetFeeAsExistentialDepositMultiplier,
@@ -404,4 +407,3 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
 /// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
 pub type AssetRateAsMultiplier =
     AssetFeeAsExistentialDepositMultiplier<Runtime, WeightToFee, AssetRate, ForeignAssetsInstance>;
-

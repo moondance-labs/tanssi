@@ -28,7 +28,10 @@ use {
     },
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
-    pallet_xcm_executor_utils::{DefaultTrustPolicy, filters::{IsReserveFilter, IsTeleportFilter,}},
+    pallet_xcm_executor_utils::{
+        filters::{IsReserveFilter, IsTeleportFilter},
+        DefaultTrustPolicy,
+    },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     polkadot_runtime_common::xcm_sender::NoPriceForMessageDelivery,
     sp_core::ConstU32,
@@ -393,7 +396,6 @@ pub type AssetRateAsMultiplier =
         AssetRate,
         ForeignAssetsInstance,
     >;
-
 
 parameter_types! {
     pub const TrustPolicyMaxAssets: u32 = 1000;
