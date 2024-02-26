@@ -302,7 +302,9 @@ async fn start_node_impl(
             .base
             .base
             .import_params
-            .wasmtime_precompiled.is_none() {
+            .wasmtime_precompiled
+            .is_none()
+        {
             container_chain_cli
                 .base
                 .base
